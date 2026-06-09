@@ -2,7 +2,7 @@
 
 ## Product Shape
 
-Pluris Haven is an Android-first offline app with a SvelteKit site/web app. The core product should not require an account, network access, or a hosted server. Online services are optional and must be enabled one at a time with a clear disclaimer.
+Pluris Haven has native Android, future native iOS, and a SvelteKit website. The core app should not require an account, network access, or a hosted server. Online services are optional and must be enabled one at a time with a clear disclaimer.
 
 ## Required Modules
 
@@ -105,9 +105,9 @@ These may be readable by a server or third-party service only when needed for an
 - proxy trigger metadata
 - external service IDs
 
-## Server Schema Sketch
+## Future Server Schema Sketch
 
-The Drizzle schema in `src/lib/server/db/schema.ts` mirrors the optional server-side sync/integration model:
+The website will eventually need server-side tables for accounts, sync, import/export, and integrations. Do not add that code until those features start. Expected entities:
 
 - `users`
 - `systems`

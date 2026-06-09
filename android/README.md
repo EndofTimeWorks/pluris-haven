@@ -19,7 +19,7 @@ Native Android is the first real app target. The app must be useful without an a
 - `ANDROID_HOME` set, or `local.properties` containing `sdk.dir=/path/to/Android/Sdk`.
 - Gradle 9.x or Android Studio's bundled Gradle.
 
-The current repository does not include a Gradle wrapper yet. Add one after the Android SDK is installed and the project syncs cleanly.
+This directory includes a Gradle wrapper.
 
 ## Source Of Truth
 
