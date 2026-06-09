@@ -1,171 +1,188 @@
-# SP Replacement - DB Schema
+# Pluris Haven - Offline-First Data Model
 
-## Stack
-- **Backend:** SvelteKit (SSR web UI + `/api` routes for Flutter/Slack)
-- **DB:** PostgreSQL + Drizzle ORM
-- **Auth:** better-auth (Google + Apple OAuth)
-- **Async jobs:** pg-boss (runs on same Postgres, no extra service)
-- **Mobile:** Flutter (iOS + Android)
-- **Hosting:** Coolify (self-hosted, migrate to Railway/Fly.io if needed)
-- **Encryption:** Tiered - Tier 1 server-readable (at rest), Tier 2 true E2E (client-side AES-256-GCM)
+## Product Shape
 
-### How SvelteKit is used
-- **Tier 1 data** (display names, fronting status) - SSR `load()` → Drizzle → Postgres directly (no API hop)
-- **Tier 2 data** (journal, private notes) - SvelteKit serves the app shell only, browser decrypts via Web Crypto API (requires JS)
-- `/api` routes expose REST endpoints for Flutter and Slack webhooks
-- Both share the same Drizzle schema and types
+Pluris Haven is an Android-first offline app with a SvelteKit site/web app. The core product should not require an account, network access, or a hosted server. Online services are optional and must be enabled one at a time with a clear disclaimer.
 
----
+## Required Modules
 
-## Encryption Model
+- Logs
+- Chat
+- Archive
+- Journal
+- Polls
+- Custom fronts
+- Custom terms
+- Different languages
+- Folders
+- Export
+- Simply Plural import
+- PluralKit import
+- Sticky Android notification
+- Friends
+- Statistics
 
-```
-Google/Apple OAuth → HKDF(sub + server_pepper) → Master Key (never stored)
-Master Key → unwraps → Symmetric Key (AES-256-GCM, stored wrapped on server)
-Symmetric Key → encrypts → all private data before upload
-```
+## Android Stack
 
-Recovery options (any one unlocks the symmetric key):
-- Google OAuth
-- Apple OAuth
-- 24-word BIP39 recovery mnemonic (shown once on signup)
+- Kotlin native Android app.
+- Jetpack Compose for UI.
+- ViewModels/state holders with unidirectional data flow.
+- Repository layer over local database and optional remote data sources.
+- Local database is the source of truth.
+- Android Keystore for key material where possible.
+- Foreground notification for current front and quick actions.
 
----
+## Storage Strategy
 
-## Key Management
+### Local Device Store
 
-```sql
-users
-  id          uuid        PK
-  email       text        UNIQUE
-  created_at  timestamptz
+The Android app owns the primary copy of user data. Local records should be queryable offline for:
 
--- Each linked Google/Apple account
-oauth_providers
-  id            uuid        PK
-  user_id       uuid        FK users
-  provider      text        -- 'google' | 'apple'
-  provider_sub  text        -- stable ID from provider
-  wrapped_key   bytea       -- symmetric key wrapped with HKDF(sub + server_pepper)
-  created_at    timestamptz
+- current front and front history
+- logs
+- chats and messages
+- journals
+- polls and votes
+- members
+- folders
+- custom terms
+- archives
+- statistics
+- import/export manifests
+- service connection settings
 
--- Recovery mnemonic path
-recovery_keys
-  id           uuid   PK
-  user_id      uuid   FK users
-  wrapped_key  bytea  -- symmetric key wrapped with key derived from recovery mnemonic
-  key_hint     text   -- first 4 words only, for identification
+Sensitive local fields should be encrypted at rest before real user data is stored. Export should produce a complete portable archive so the user can back up or leave without depending on the hosted service.
 
--- For receiving encrypted keys from other users (partner access)
-partner_public_keys
-  id          uuid   PK
-  user_id     uuid   FK users
-  public_key  bytea
-```
+### Optional Server Store
 
----
+The server exists for opt-in features:
 
-## Tier 1 - Server-readable (encrypted at rest, not E2E)
+- web account access
+- encrypted sync
+- friends and trusted sharing
+- Slack/Plura connection
+- PluralKit connection
+- hosted backup/export
+- long-running import jobs
 
-> Server can read these fields. Required by the Slack bot (plura) for message proxying,
-> PluralKit sync, and partner front view. E2E is impossible here by design - the bot
-> needs plaintext to function. Encrypted at rest in Postgres, tokens encrypted at app level.
+The server should not be required for normal Android use.
 
-```sql
-systems
-  id                              uuid        PK
-  user_id                         uuid        FK users UNIQUE
-  display_name                    text
-  slack_workspace_id              text
-  slack_user_id                   text
-  slack_oauth_token               text        -- app-level encrypted (not E2E)
-  currently_fronting_member_id    uuid        FK members NULLABLE
-  created_at                      timestamptz
+## Online Service Disclaimer
 
-members
-  id           uuid        PK
-  system_id    uuid        FK systems
-  display_name text
-  avatar_url   text        NULLABLE
-  pronouns     text        NULLABLE
-  color        text        NULLABLE  -- hex
-  enabled      boolean     DEFAULT true
-  created_at   timestamptz
+Before connecting any online service, the UI must explain:
 
-aliases
-  id         uuid  PK
-  member_id  uuid  FK members
-  system_id  uuid  FK systems
-  alias      text
+- the service name
+- what data leaves the device
+- whether Pluris Haven can read that data
+- whether the third-party service can read that data
+- how to disconnect
+- what remote data remains after disconnecting
 
-triggers
-  id         uuid  PK
-  member_id  uuid  FK members
-  system_id  uuid  FK systems
-  type       text  -- 'prefix' | 'suffix' | 'contains' etc.
-  text       text
-```
+This applies to sync, friends, Slack/Plura, PluralKit, cloud backup, hosted import, and any future integration.
 
----
+## Privacy Tiers
 
-## Tier 2 - True E2E (server sees ciphertext only)
+### Local/private
 
-> Flutter encrypts before upload. In browser, Web Crypto API encrypts client-side (requires JS).
-> SvelteKit serves the app shell only - never reads plaintext Tier 2 content.
-> These fields are never needed by the bot or PK sync.
+These stay local by default and are end-to-end encrypted before optional sync:
 
-```sql
--- 1:1 with members, holds all sensitive member data
-member_private_data
-  id              uuid   PK
-  member_id       uuid   FK members UNIQUE
-  encrypted_data  bytea  -- JSON: { description, notes, birthday, custom_fields: {...} }
-  iv              bytea
+- journal content
+- chat message bodies
+- private member fields
+- poll questions/options/votes
+- detailed logs
+- archive notes
+- custom fields
 
--- Timestamps plaintext (needed for ordering/querying), notes encrypted
-front_history
-  id              uuid        PK
-  system_id       uuid        FK systems
-  member_id       uuid        FK members NULLABLE  -- null = unknown/headspace
-  started_at      timestamptz
-  ended_at        timestamptz NULLABLE
-  encrypted_note  bytea       NULLABLE
-  note_iv         bytea       NULLABLE
+### Integration-readable
 
--- member_id null = system-wide journal entry
-journal_entries
-  id                 uuid        PK
-  system_id          uuid        FK systems
-  member_id          uuid        FK members NULLABLE
-  created_at         timestamptz  -- plaintext for ordering
-  encrypted_content  bytea
-  iv                 bytea
-```
+These may be readable by a server or third-party service only when needed for an enabled integration:
 
----
+- selected display names
+- selected avatar URLs
+- selected pronouns
+- selected front status
+- proxy trigger metadata
+- external service IDs
 
-## Partner Access
+## Server Schema Sketch
 
-```sql
-partner_access
-  id                  uuid        PK
-  system_id           uuid        FK systems   -- system being shared
-  partner_user_id     uuid        FK users     -- who has access
-  access_level        text        -- 'front_only' | 'members' | 'full'
-  wrapped_system_key  bytea       -- system symmetric key encrypted with partner's public key
-  created_at          timestamptz
+The Drizzle schema in `src/lib/server/db/schema.ts` mirrors the optional server-side sync/integration model:
 
--- To revoke: delete partner's wrapped_system_key row. Lazy re-encryption of Tier 2 data via pg-boss if desired.
-```
+- `users`
+- `systems`
+- `folders`
+- `members`
+- `custom_terms`
+- `front_states`
+- `front_events`
+- `logs`
+- `chats`
+- `chat_messages`
+- `journal_entries`
+- `polls`
+- `poll_votes`
+- `friends`
+- `service_connections`
+- `import_jobs`
+- `export_jobs`
+- `archives`
 
----
+Ciphertext columns are used where the hosted service should not read content. Plaintext columns are limited to routing, ordering, integration metadata, and user-visible labels that the user has chosen to share.
 
-## Notes
+## Import/Export
 
-- **Timestamps are always plaintext** - required for ordering front history and "who's fronting now" queries
-- **Partner front access** - reads `systems.currently_fronting_member_id` joined with `members.display_name` (both plaintext)
-- **Partner journal/private access** - uses `wrapped_system_key` to decrypt journal entries client-side
-- **Slack bot** - only ever touches plaintext tables (systems, members, aliases, triggers)
-- **SP import** - parse export JSON client-side in Flutter, encrypt private fields, upload. Avatars re-hosted to S3/R2
-- **PluralKit import** - same flow, already prototyped in plura (Rust) for reference
-- **Key revocation** - remove partner's `wrapped_system_key` from `partner_access`. Lazy re-encryption on next access via pg-boss job
+Import/export are part of the app core and must work offline.
+
+### Export
+
+Export must work locally and include:
+
+- system profile
+- members
+- folders
+- logs
+- front history
+- chats
+- journals
+- polls and votes
+- custom terms
+- archive metadata
+- import provenance
+- service connection metadata, excluding tokens by default
+
+Encrypted export is the default. Plain JSON export can exist for portability, but it must require an explicit warning because it exposes private data.
+
+### SP Import
+
+Simply Plural import should parse exports locally first. Users choose what to import and what, if anything, to later sync online.
+
+### PK Import
+
+PluralKit import should preserve proxy/member/fronting data while keeping private Pluris Haven-only fields local unless the user opts into sync.
+
+## Android Sticky Notification
+
+The Android app should provide a persistent notification for:
+
+- current front display
+- quick front switch
+- custom front state selection
+- pause/clear front
+- offline status
+
+This should be local-first and should not require the server.
+
+## Statistics
+
+Stats should be computed locally first:
+
+- fronting time by member/state
+- switch frequency
+- journal activity
+- poll participation
+- chat activity
+- import totals
+- archive totals
+
+Server-side stats can exist only as an opt-in sync convenience.

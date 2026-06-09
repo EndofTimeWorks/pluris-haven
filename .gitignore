@@ -1,4 +1,9 @@
 node_modules
+.idea
+**/.idea
+.gradle
+**/.gradle
+**/local.properties
 
 # Output
 .output
@@ -7,6 +12,7 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+**/build
 
 # OS
 .DS_Store
