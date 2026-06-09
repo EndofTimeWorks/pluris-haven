@@ -1,16 +1,16 @@
 # Pluris Haven
 
-An offline-first home for plural systems. Inspired by Simply Plural and PluralKit.
+An offline-first home for plural systems.
 
-Pluris Haven is built around a local Android app first, with a web app/site for desktop access and project information. The default experience should work without an account, a server, or network access. Online services are optional integrations and must clearly explain what data leaves the device before they are connected.
+The project has three targets: Android, iOS, and website. Local app use should work without an account. Online features such as accounts, friends, sync, and hosted import/export are optional.
 
 ## Product Direction
 
-- **Android first** - the primary app starts as a local-first mobile experience.
-- **Web alongside mobile** - SvelteKit provides the public site and a browser app for desktop workflows.
+- **Android first** - current native app target.
+- **iOS later** - native iOS app when the core model is stable.
+- **Website alongside apps** - accounts, hosted import/export, project info, and later web access.
 - **Offline by default** - core records live on-device and remain usable without a connection.
-- **Opt-in online services** - sync, friends, Slack/Plura, PluralKit, backups, and imports are explicit connections with privacy disclaimers.
-- **Plural-system focused** - language, fronting, identity, logs, and sharing are designed around system workflows rather than generic notes.
+- **Opt-in online services** - sync, friends, PluralKit, backups, and hosted imports need clear data notices.
 
 ## Core Features
 
@@ -33,18 +33,17 @@ Pluris Haven is built around a local Android app first, with a web app/site for 
 ## Stack
 
 - **Android:** Kotlin + Jetpack Compose, local-first.
-- **Web/Site:** SvelteKit.
+- **iOS:** Swift/SwiftUI, planned.
+- **Website:** SvelteKit.
 - **Local data:** encrypted device database first; server sync is optional.
-- **Server:** PostgreSQL + Drizzle ORM for opt-in sync, integrations, web accounts, and hosted backups.
-- **Auth:** better-auth for online accounts only.
-- **Async jobs:** future server-side import and integration workers.
+- **Server:** add account/sync/import backend when those features start.
 - **Hosting:** Coolify.
 
 ## Repo Layout
 
-- `apps/pluris-haven-andorid` - native Android app.
-- `src/routes` - SvelteKit site/web app.
-- `src/lib/server` - optional server-side database and integration code.
+- `android` - native Android app.
+- `ios` - future native iOS app.
+- `website` - SvelteKit website/app.
 
 ## Privacy Model
 
@@ -63,14 +62,20 @@ Online data is split into two tiers:
 
 ## Developing
 
-For the current SvelteKit site:
+Website:
 
 ```sh
+cd website
 pnpm install
 pnpm dev
 ```
 
-The Android app lives under `apps/pluris-haven-andorid`.
+Android:
+
+```sh
+cd android
+./gradlew :app:assembleDebug
+```
 
 ## License
 

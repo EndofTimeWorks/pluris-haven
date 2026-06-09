@@ -49,9 +49,9 @@
 	<section>
 		<h2>Current build</h2>
 		<ul>
-			<li>Android project: <code>apps/pluris-haven-andorid</code></li>
-			<li>Root web project: SvelteKit</li>
-			<li>Server code: optional sync and integrations only</li>
+			<li>Android: <code>android</code></li>
+			<li>Website: <code>website</code></li>
+			<li>iOS: planned</li>
 		</ul>
 	</section>
 </main>
