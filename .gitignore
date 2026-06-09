@@ -1,4 +1,6 @@
 node_modules
+**/node_modules
+.vscode
 .idea
 **/.idea
 .gradle
@@ -7,10 +9,12 @@ node_modules
 
 # Output
 .output
+**/.output
 .vercel
 .netlify
 .wrangler
 /.svelte-kit
+**/.svelte-kit
 /build
 **/build
 
