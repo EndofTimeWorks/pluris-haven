@@ -1,46 +1,77 @@
 # Pluris Haven
 
-A home for plural systems. Inspired by Simply Plural (sunsetting) and PluralKit.
+An offline-first home for plural systems. Inspired by Simply Plural and PluralKit.
 
-Built by and for plural systems. Privacy-first, with tiered encryption so your private data stays yours.
+Pluris Haven is built around a local Android app first, with a web app/site for desktop access and project information. The default experience should work without an account, a server, or network access. Online services are optional integrations and must clearly explain what data leaves the device before they are connected.
 
-## Features
+## Product Direction
 
-- **Member management** — profiles, avatars, pronouns, colors
-- **Fronting tracker** — log and view front history
-- **Journal** — system and member journals, fully E2E encrypted
-- **Partner access** — share front status or member info with trusted partners
-- **Slack integration** — message proxying via [Plura](https://github.com/Suya1671/plura)
-- **Import** — bring your data from Simply Plural or PluralKit
-- **Mobile** — Flutter app for iOS and Android
-- **Web** — full SvelteKit web app
+- **Android first** - the primary app starts as a local-first mobile experience.
+- **Web alongside mobile** - SvelteKit provides the public site and a browser app for desktop workflows.
+- **Offline by default** - core records live on-device and remain usable without a connection.
+- **Opt-in online services** - sync, friends, Slack/Plura, PluralKit, backups, and imports are explicit connections with privacy disclaimers.
+- **Plural-system focused** - language, fronting, identity, logs, and sharing are designed around system workflows rather than generic notes.
+
+## Core Features
+
+- **Logs** - timeline entries for fronts, switches, notable events, and imported history.
+- **Chat** - local system chat and optional proxied/connected chat integrations.
+- **Archive** - preserve old members, chats, fronts, polls, journals, folders, and imports without deleting them.
+- **Journal** - private system and member journals, encrypted before online sync.
+- **Polls** - local decision polls with member votes and archived results.
+- **Custom fronts** - custom front states beyond a single current member.
+- **Custom terms** - configurable system language for members, fronts, roles, and relationship terms.
+- **Different languages** - app text and user-defined labels should support multilingual systems.
+- **Folders** - organize members, journals, logs, polls, and archive items.
+- **Export** - full local export so users can leave or back up their data.
+- **SP import** - import Simply Plural exports.
+- **PK import** - import PluralKit data.
+- **Sticky notification** - Android foreground notification for current front and quick front changes.
+- **Friends** - optional trusted sharing for front status, selected profiles, and shared history.
+- **Statistics** - local fronting, journal, poll, and activity stats.
 
 ## Stack
 
-- **Backend/Web:** SvelteKit (SSR for Tier 1 data, app shell for Tier 2)
-- **DB:** PostgreSQL + Drizzle ORM
-- **Auth:** better-auth (Google + Apple OAuth)
-- **Async jobs:** pg-boss
-- **Mobile:** Flutter
-- **Hosting:** Coolify
+- **Android:** Kotlin + Jetpack Compose, local-first.
+- **Web/Site:** SvelteKit.
+- **Local data:** encrypted device database first; server sync is optional.
+- **Server:** PostgreSQL + Drizzle ORM for opt-in sync, integrations, web accounts, and hosted backups.
+- **Auth:** better-auth for online accounts only.
+- **Async jobs:** future server-side import and integration workers.
+- **Hosting:** Coolify.
+
+## Repo Layout
+
+- `apps/pluris-haven-andorid` - native Android app.
+- `src/routes` - SvelteKit site/web app.
+- `src/lib/server` - optional server-side database and integration code.
+- `sp-replacement-schema.md` - local-first data model and sync boundary.
 
 ## Privacy Model
 
-Data is split into two tiers:
+Default data stays local. Any online connection must show a plain-language disclaimer before setup:
 
-- **Tier 1** (display names, fronting status, triggers) — server-readable, needed for Slack bot and PK sync
-- **Tier 2** (journal, private notes, custom fields) — true E2E, AES-256-GCM encrypted client-side before upload. Server sees ciphertext only.
+- what service is being connected
+- what data is uploaded or shared
+- whether the service can read that data
+- how to disconnect it
+- what data remains after disconnecting
 
-Key derivation: `OAuth sub → HKDF(sub + server_pepper) → Master Key → Symmetric Key`
+Online data is split into two tiers:
 
-Recovery via Google OAuth, Apple OAuth, or a 24-word BIP39 mnemonic.
+- **Local/private data** - journals, private notes, custom fields, archives, polls, and detailed logs stay local or are end-to-end encrypted before sync.
+- **Integration-readable data** - only the fields required for a connected service, such as front status or proxy metadata, may be readable by the server or third-party service.
 
 ## Developing
+
+For the current SvelteKit site:
 
 ```sh
 pnpm install
 pnpm dev
 ```
+
+The Android app lives under `apps/pluris-haven-andorid`.
 
 ## License
 
