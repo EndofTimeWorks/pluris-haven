@@ -11,7 +11,9 @@ fun PlurisHavenApp(
 	fileStatus: String?,
 	onImport: () -> Unit,
 	onSetFront: (String) -> Unit,
+	onToggleMemberFront: (String) -> Unit,
 	onClearFront: () -> Unit,
+	onAddMember: (String, String, String) -> Unit,
 	onAddLog: (String) -> Unit,
 	onExport: () -> Unit
 ) {
@@ -21,7 +23,9 @@ fun PlurisHavenApp(
 			fileStatus = fileStatus,
 			onImport = onImport,
 			onSetFront = onSetFront,
+			onToggleMemberFront = onToggleMemberFront,
 			onClearFront = onClearFront,
+			onAddMember = onAddMember,
 			onAddLog = onAddLog,
 			onExport = onExport
 		)
