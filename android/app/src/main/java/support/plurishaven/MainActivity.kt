@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import support.plurishaven.core.storage.HavenArchive
+import support.plurishaven.core.storage.HavenMember
 import support.plurishaven.core.storage.HavenState
 import support.plurishaven.core.storage.LocalHavenStateStore
 
@@ -84,18 +85,73 @@ class MainActivity : ComponentActivity() {
 					val nextFront = label.trim().ifBlank { "Unknown" }
 					saveState(
 						state = havenState
-							.copy(currentFront = nextFront)
+							.copy(
+								currentFront = nextFront,
+								currentFrontMemberIds = emptyList()
+							)
 							.withLog("front", "Set front: $nextFront"),
 						status = "Saved"
 					)
 				},
+				onToggleMemberFront = { memberId ->
+					val member = havenState.members.firstOrNull { it.id == memberId }
+					if (member != null) {
+						val nextFrontIds = if (memberId in havenState.currentFrontMemberIds) {
+							havenState.currentFrontMemberIds - memberId
+						} else {
+							havenState.currentFrontMemberIds + memberId
+						}
+						val namesById = havenState.members.associateBy { it.id }
+						val nextFrontLabel = nextFrontIds
+							.mapNotNull { id -> namesById[id]?.name }
+							.ifEmpty { listOf("None") }
+							.joinToString(", ")
+						val action = if (memberId in havenState.currentFrontMemberIds) {
+							"Removed from front: ${member.name}"
+						} else {
+							"Added to front: ${member.name}"
+						}
+
+						saveState(
+							state = havenState
+								.copy(
+									currentFront = nextFrontLabel,
+									currentFrontMemberIds = nextFrontIds
+								)
+								.withLog("front", action),
+							status = "Saved"
+						)
+					} else {
+						fileStatus = "Member not found"
+					}
+				},
 				onClearFront = {
 					saveState(
 						state = havenState
-							.copy(currentFront = "None")
+							.copy(
+								currentFront = "None",
+								currentFrontMemberIds = emptyList()
+							)
 							.withLog("front", "Cleared front"),
 						status = "Saved"
 					)
+				},
+				onAddMember = { name, pronouns, colorHex ->
+					val cleanName = name.trim()
+					if (cleanName.isNotEmpty()) {
+						val member = HavenMember(
+							id = "member-${System.currentTimeMillis()}",
+							name = cleanName,
+							pronouns = pronouns.trim(),
+							colorHex = colorHex
+						)
+						saveState(
+							state = havenState
+								.copy(members = havenState.members + member)
+								.withLog("member", "Added member: ${member.name}"),
+							status = "Saved"
+						)
+					}
 				},
 				onAddLog = { text ->
 					val cleanText = text.trim()
