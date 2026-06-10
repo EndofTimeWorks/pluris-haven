@@ -1,23 +1,28 @@
 package support.plurishaven
 
 import androidx.compose.runtime.Composable
+import support.plurishaven.core.storage.HavenState
 import support.plurishaven.feature.home.HomeScreen
 import support.plurishaven.ui.theme.PlurisHavenTheme
 
 @Composable
 fun PlurisHavenApp(
+	state: HavenState,
 	fileStatus: String?,
-	importText: String?,
 	onImport: () -> Unit,
-	onImportConsumed: () -> Unit,
-	onExport: (String) -> Unit
+	onSetFront: (String) -> Unit,
+	onClearFront: () -> Unit,
+	onAddLog: (String) -> Unit,
+	onExport: () -> Unit
 ) {
 	PlurisHavenTheme {
 		HomeScreen(
+			state = state,
 			fileStatus = fileStatus,
-			importText = importText,
 			onImport = onImport,
-			onImportConsumed = onImportConsumed,
+			onSetFront = onSetFront,
+			onClearFront = onClearFront,
+			onAddLog = onAddLog,
 			onExport = onExport
 		)
 	}
