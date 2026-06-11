@@ -153,6 +153,21 @@ Export must work locally and include:
 
 Encrypted export is the default. Plain JSON export can exist for portability, but it must require an explicit warning because it exposes private data.
 
+### Current Android Archive
+
+The app has not shipped, so the local archive does not need backward compatibility with earlier Pluris Haven test data. The current plain JSON format is `pluris-haven/offline` version 1 and is shaped around the Simply Plural data we need to import:
+
+- `folders`: groups with name, color, parent ID, description, and emoji
+- `members`: display name, pronouns, color, folder, description, avatar URL, PluralKit ID, archive state, and custom field values
+- `customFields`: user-defined profile fields
+- `notes`: general or member-linked notes
+- `currentFrontMemberIds`: the active member front list
+- `currentFrontStartedAt`: when the active front began
+- `frontHistory`: front sessions with member IDs, start time, and optional end time
+- `logs`: local app events
+
+This can keep changing until release. The compatibility target is Simply Plural import, not the earlier temporary Pluris Haven export shape. Before real private data is stored long-term, the app should add encrypted export and an explicit plain-JSON warning.
+
 ### SP Import
 
 Simply Plural import should parse exports locally first. Users choose what to import and what, if anything, to later sync online.
