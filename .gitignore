@@ -31,3 +31,10 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Local reverse-engineering/reference dumps
+e.txt
+simply-plural-.zip
+simply-plural-apk/
+simply-plural-native/
+sp/
