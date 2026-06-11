@@ -8,7 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import support.plurishaven.core.storage.HavenArchive
+import support.plurishaven.core.storage.HavenCustomField
+import support.plurishaven.core.storage.HavenFolder
 import support.plurishaven.core.storage.HavenMember
+import support.plurishaven.core.storage.HavenNote
 import support.plurishaven.core.storage.HavenState
 import support.plurishaven.core.storage.LocalHavenStateStore
 
@@ -85,9 +88,9 @@ class MainActivity : ComponentActivity() {
 					val nextFront = label.trim().ifBlank { "Unknown" }
 					saveState(
 						state = havenState
-							.copy(
-								currentFront = nextFront,
-								currentFrontMemberIds = emptyList()
+							.withCurrentFront(
+								label = nextFront,
+								memberIds = emptyList()
 							)
 							.withLog("front", "Set front: $nextFront"),
 						status = "Saved"
@@ -114,9 +117,9 @@ class MainActivity : ComponentActivity() {
 
 						saveState(
 							state = havenState
-								.copy(
-									currentFront = nextFrontLabel,
-									currentFrontMemberIds = nextFrontIds
+								.withCurrentFront(
+									label = nextFrontLabel,
+									memberIds = nextFrontIds
 								)
 								.withLog("front", action),
 							status = "Saved"
@@ -128,27 +131,135 @@ class MainActivity : ComponentActivity() {
 				onClearFront = {
 					saveState(
 						state = havenState
-							.copy(
-								currentFront = "None",
-								currentFrontMemberIds = emptyList()
+							.withCurrentFront(
+								label = "None",
+								memberIds = emptyList()
 							)
 							.withLog("front", "Cleared front"),
 						status = "Saved"
 					)
 				},
-				onAddMember = { name, pronouns, colorHex ->
+				onAddMember = { name, pronouns, colorHex, folderId, description, avatarUrl, pluralKitId ->
 					val cleanName = name.trim()
 					if (cleanName.isNotEmpty()) {
 						val member = HavenMember(
 							id = "member-${System.currentTimeMillis()}",
 							name = cleanName,
 							pronouns = pronouns.trim(),
-							colorHex = colorHex
+							colorHex = colorHex,
+							folderId = folderId,
+							description = description.trim(),
+							avatarUrl = avatarUrl.trim(),
+							pluralKitId = pluralKitId.trim(),
+							archived = false,
+							archivedReason = "",
+							customFields = emptyMap()
 						)
 						saveState(
 							state = havenState
 								.copy(members = havenState.members + member)
 								.withLog("member", "Added member: ${member.name}"),
+							status = "Saved"
+						)
+					}
+				},
+				onUpdateMemberField = { memberId, fieldId, value ->
+					val field = havenState.customFields.firstOrNull { it.id == fieldId }
+					val member = havenState.members.firstOrNull { it.id == memberId }
+					if (field != null && member != null) {
+						val nextMember = member.copy(
+							customFields = member.customFields + (fieldId to value.trim())
+						)
+						saveState(
+							state = havenState
+								.copy(
+									members = havenState.members.map {
+										if (it.id == memberId) nextMember else it
+									}
+								)
+								.withLog("member", "Updated ${field.name} for ${member.name}"),
+							status = "Saved"
+						)
+					}
+				},
+				onToggleMemberArchived = { memberId ->
+					val member = havenState.members.firstOrNull { it.id == memberId }
+					if (member != null) {
+						val nextArchived = !member.archived
+						saveState(
+							state = havenState
+								.copy(
+									members = havenState.members.map {
+										if (it.id == memberId) {
+											it.copy(
+												archived = nextArchived,
+												archivedReason = if (nextArchived) "Archived locally" else ""
+											)
+										} else {
+											it
+										}
+									}
+								)
+								.withLog(
+									"member",
+									if (nextArchived) "Archived member: ${member.name}" else "Restored member: ${member.name}"
+								),
+							status = "Saved"
+						)
+					}
+				},
+				onAddFolder = { name, colorHex ->
+					val cleanName = name.trim()
+					if (cleanName.isNotEmpty()) {
+						val folder = HavenFolder(
+							id = "folder-${System.currentTimeMillis()}",
+							name = cleanName,
+							colorHex = colorHex,
+							parentId = null,
+							description = "",
+							emoji = ""
+						)
+						saveState(
+							state = havenState
+								.copy(folders = havenState.folders + folder)
+								.withLog("folder", "Added folder: ${folder.name}"),
+							status = "Saved"
+						)
+					}
+				},
+				onAddCustomField = { name ->
+					val cleanName = name.trim()
+					if (cleanName.isNotEmpty()) {
+						val field = HavenCustomField(
+							id = "field-${System.currentTimeMillis()}",
+							name = cleanName,
+							type = "text",
+							order = havenState.customFields.size
+						)
+						saveState(
+							state = havenState
+								.copy(customFields = havenState.customFields + field)
+								.withLog("field", "Added custom field: ${field.name}"),
+							status = "Saved"
+						)
+					}
+				},
+				onAddNote = { title, body, memberId, colorHex ->
+					val cleanBody = body.trim()
+					if (cleanBody.isNotEmpty()) {
+						val note = HavenNote(
+							id = "note-${System.currentTimeMillis()}",
+							title = title.trim(),
+							body = cleanBody,
+							colorHex = colorHex,
+							memberId = memberId,
+							createdAtEpochMillis = System.currentTimeMillis(),
+							markdown = false
+						)
+						saveState(
+							state = havenState
+								.copy(notes = listOf(note) + havenState.notes)
+								.withLog("note", "Added note${note.memberId?.let { " for member" } ?: ""}"),
 							status = "Saved"
 						)
 					}
