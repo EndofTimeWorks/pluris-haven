@@ -1,6 +1,8 @@
 package support.plurishaven.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,25 +11,26 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,11 +62,12 @@ private enum class HomeTab(
 	val label: String,
 	val mark: String
 ) {
-	Front("Front", "F"),
-	Members("Members", "M"),
-	Groups("Groups", "G"),
-	Notes("Notes", "N"),
-	Data("Data", "D")
+	Dashboard("Dashboard", "dashboard"),
+	Front("Front", "front"),
+	Members("Members", "members"),
+	Groups("Groups", "groups"),
+	Notes("Notes", "notes"),
+	Data("Data", "data")
 }
 
 private val MemberColors = listOf(
@@ -94,77 +98,187 @@ fun HomeScreen(
 	onExport: () -> Unit,
 	modifier: Modifier = Modifier
 ) {
-	var selectedTab by rememberSaveable { mutableStateOf(HomeTab.Front) }
+	var selectedTab by rememberSaveable { mutableStateOf(HomeTab.Dashboard) }
 
 	Scaffold(
 		modifier = modifier.fillMaxSize(),
 		containerColor = MaterialTheme.colorScheme.background,
 		topBar = {
 			TopAppBar(
+				navigationIcon = {
+					if (selectedTab != HomeTab.Dashboard) {
+						TextButton(onClick = { selectedTab = HomeTab.Dashboard }) {
+							Text("<")
+						}
+					}
+				},
 				title = {
 					Column {
-						Text("Pluris Haven")
 						Text(
-							text = fileStatus ?: "saved on device",
-							style = MaterialTheme.typography.labelMedium,
-							color = MaterialTheme.colorScheme.onSurfaceVariant
+							text = if (selectedTab == HomeTab.Dashboard) "Pluris Haven" else selectedTab.label,
+							style = MaterialTheme.typography.titleMedium,
+							fontWeight = FontWeight.Medium
 						)
+						if (selectedTab == HomeTab.Dashboard) {
+							Text(
+								text = fileStatus ?: "saved on device",
+								style = MaterialTheme.typography.labelMedium,
+								color = MaterialTheme.colorScheme.onSurfaceVariant
+							)
+						}
 					}
 				},
 				colors = TopAppBarDefaults.topAppBarColors(
-					containerColor = MaterialTheme.colorScheme.surface
+					containerColor = MaterialTheme.colorScheme.surface,
+					titleContentColor = MaterialTheme.colorScheme.onSurface,
+					navigationIconContentColor = MaterialTheme.colorScheme.onSurface
 				)
 			)
 		},
-		bottomBar = {
-			NavigationBar {
-				HomeTab.entries.forEach { tab ->
-					NavigationBarItem(
-						selected = selectedTab == tab,
-						onClick = { selectedTab = tab },
-						icon = { Text(tab.mark, fontWeight = FontWeight.Bold) },
-						label = { Text(tab.label) }
-					)
-				}
+	) { innerPadding ->
+		Column(
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(innerPadding)
+		) {
+			when (selectedTab) {
+				HomeTab.Dashboard -> DashboardTab(
+					state = state,
+					onSelectTab = { selectedTab = it },
+					contentPadding = PaddingValues()
+				)
+
+				HomeTab.Front -> FrontTab(
+					state = state,
+					onSetFront = onSetFront,
+					onToggleMemberFront = onToggleMemberFront,
+					onClearFront = onClearFront,
+					contentPadding = PaddingValues()
+				)
+
+				HomeTab.Members -> MembersTab(
+					state = state,
+					onAddMember = onAddMember,
+					onUpdateMemberField = onUpdateMemberField,
+					onToggleMemberArchived = onToggleMemberArchived,
+					onAddCustomField = onAddCustomField,
+					onToggleMemberFront = onToggleMemberFront,
+					contentPadding = PaddingValues()
+				)
+
+				HomeTab.Groups -> GroupsTab(
+					state = state,
+					onAddFolder = onAddFolder,
+					contentPadding = PaddingValues()
+				)
+
+				HomeTab.Notes -> NotesTab(
+					state = state,
+					onAddNote = onAddNote,
+					contentPadding = PaddingValues()
+				)
+
+				HomeTab.Data -> DataTab(
+					state = state,
+					onExport = onExport,
+					onImport = onImport,
+					contentPadding = PaddingValues()
+				)
 			}
 		}
-	) { innerPadding ->
-		when (selectedTab) {
-			HomeTab.Front -> FrontTab(
-				state = state,
-				onSetFront = onSetFront,
-				onToggleMemberFront = onToggleMemberFront,
-				onClearFront = onClearFront,
-				contentPadding = innerPadding
-			)
+	}
+}
 
-			HomeTab.Members -> MembersTab(
-				state = state,
-				onAddMember = onAddMember,
-				onUpdateMemberField = onUpdateMemberField,
-				onToggleMemberArchived = onToggleMemberArchived,
-				onAddCustomField = onAddCustomField,
-				onToggleMemberFront = onToggleMemberFront,
-				contentPadding = innerPadding
-			)
+@Composable
+private fun DashboardTab(
+	state: HavenState,
+	onSelectTab: (HomeTab) -> Unit,
+	contentPadding: PaddingValues
+) {
+	val dashboardItems = listOf(
+		DashboardTileSpec("Members", "${state.members.size} saved", HomeTab.Members),
+		DashboardTileSpec("Front History", "${state.frontHistory.size} entries", HomeTab.Front),
+		DashboardTileSpec("Groups", "${state.folders.size} groups", HomeTab.Groups),
+		DashboardTileSpec("Notes", "${state.notes.size} notes", HomeTab.Notes),
+		DashboardTileSpec("Import / Export", "local archive", HomeTab.Data),
+		DashboardTileSpec("Sync", "off by default", HomeTab.Data)
+	)
 
-			HomeTab.Groups -> GroupsTab(
-				state = state,
-				onAddFolder = onAddFolder,
-				contentPadding = innerPadding
+	LazyColumn(
+		modifier = Modifier
+			.fillMaxSize()
+			.padding(contentPadding),
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
+	) {
+		item {
+			CurrentFrontCard(
+				currentFront = state.currentFrontLabel,
+				activeCount = state.currentFrontMemberIds.size,
+				startedAtEpochMillis = state.currentFrontStartedAtEpochMillis
 			)
+		}
 
-			HomeTab.Notes -> NotesTab(
-				state = state,
-				onAddNote = onAddNote,
-				contentPadding = innerPadding
+		items(dashboardItems, key = { it.label }) { tile ->
+			DashboardTile(
+				spec = tile,
+				onClick = { onSelectTab(tile.tab) }
 			)
+		}
+	}
+}
 
-			HomeTab.Data -> DataTab(
-				state = state,
-				onExport = onExport,
-				onImport = onImport,
-				contentPadding = innerPadding
+private data class DashboardTileSpec(
+	val label: String,
+	val detail: String,
+	val tab: HomeTab
+)
+
+@Composable
+private fun DashboardTile(
+	spec: DashboardTileSpec,
+	onClick: () -> Unit,
+	modifier: Modifier = Modifier
+) {
+	Card(
+		modifier = modifier
+			.fillMaxWidth()
+			.clickable(onClick = onClick),
+		colors = CardDefaults.cardColors(
+			containerColor = MaterialTheme.colorScheme.surfaceVariant,
+			contentColor = MaterialTheme.colorScheme.onSurface
+		),
+		elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+		shape = MaterialTheme.shapes.medium
+	) {
+		Row(
+			modifier = Modifier
+				.fillMaxWidth()
+				.padding(horizontal = 16.dp, vertical = 18.dp),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(12.dp)
+		) {
+			ColorDot("#E4BE63", size = 18)
+			Column(modifier = Modifier.weight(1f)) {
+				Text(
+					text = spec.label,
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.SemiBold,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis
+				)
+				Text(
+					text = spec.detail,
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis
+				)
+			}
+			Text(
+				text = ">",
+				style = MaterialTheme.typography.titleMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}
 	}
@@ -185,8 +299,8 @@ private fun FrontTab(
 		modifier = Modifier
 			.fillMaxSize()
 			.padding(contentPadding),
-		contentPadding = PaddingValues(16.dp),
-		verticalArrangement = Arrangement.spacedBy(14.dp)
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
 	) {
 		item {
 			CurrentFrontCard(
@@ -197,8 +311,8 @@ private fun FrontTab(
 		}
 
 		item {
-			Panel {
-				PanelTitle("Quick switch")
+			Section {
+				SectionTitle("Fronters")
 				if (visibleMembers.isEmpty()) {
 					Text(
 						text = "Add members first, then front from here.",
@@ -217,8 +331,8 @@ private fun FrontTab(
 		}
 
 		item {
-			Panel {
-				PanelTitle("Custom front")
+			Section {
+				SectionTitle("Custom front")
 				OutlinedTextField(
 					value = frontInput,
 					onValueChange = { frontInput = it },
@@ -243,8 +357,8 @@ private fun FrontTab(
 		}
 
 		item {
-			Panel {
-				PanelTitle("Front history")
+			Section {
+				SectionTitle("Front history")
 				if (state.frontHistory.isEmpty()) {
 					Text(
 						text = "No front history yet.",
@@ -266,44 +380,58 @@ private fun CurrentFrontCard(
 	activeCount: Int,
 	startedAtEpochMillis: Long?
 ) {
-	ElevatedCard(
-		colors = CardDefaults.elevatedCardColors(
-			containerColor = MaterialTheme.colorScheme.primaryContainer,
-			contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+	Card(
+		colors = CardDefaults.cardColors(
+			containerColor = MaterialTheme.colorScheme.surface,
+			contentColor = MaterialTheme.colorScheme.onSurface
 		),
-		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
-		shape = MaterialTheme.shapes.extraLarge
+		elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+		shape = MaterialTheme.shapes.medium,
+		modifier = Modifier.border(
+			width = 1.dp,
+			color = MaterialTheme.colorScheme.outline,
+			shape = MaterialTheme.shapes.medium
+		)
 	) {
-		Column(
+		Row(
 			modifier = Modifier
 				.fillMaxWidth()
-				.padding(20.dp),
-			verticalArrangement = Arrangement.spacedBy(12.dp)
+				.padding(14.dp),
+			horizontalArrangement = Arrangement.spacedBy(12.dp),
+			verticalAlignment = Alignment.CenterVertically
 		) {
-			Text(
-				text = "Current front",
-				style = MaterialTheme.typography.labelLarge
+			Box(
+				modifier = Modifier
+					.width(4.dp)
+					.height(54.dp)
+					.clip(MaterialTheme.shapes.small)
+					.background(MaterialTheme.colorScheme.primary)
 			)
-			Text(
-				text = currentFront,
-				style = MaterialTheme.typography.displaySmall,
-				fontWeight = FontWeight.Bold,
-				maxLines = 3,
-				overflow = TextOverflow.Ellipsis
-			)
-			AssistChip(
-				onClick = {},
-				label = {
-					Text(if (activeCount == 0) "custom / none" else "$activeCount active")
-				}
-			)
-			if (startedAtEpochMillis != null) {
+			Column(
+				modifier = Modifier.weight(1f),
+				verticalArrangement = Arrangement.spacedBy(3.dp)
+			) {
 				Text(
-					text = "Since ${formatLogTime(startedAtEpochMillis)}",
-					style = MaterialTheme.typography.bodyMedium,
-					color = MaterialTheme.colorScheme.onPrimaryContainer
+					text = "Currently fronting",
+					style = MaterialTheme.typography.labelLarge,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
+				Text(
+					text = currentFront,
+					style = MaterialTheme.typography.titleLarge,
+					fontWeight = FontWeight.SemiBold,
+					maxLines = 2,
+					overflow = TextOverflow.Ellipsis
+				)
+				if (startedAtEpochMillis != null) {
+					Text(
+						text = "since ${formatLogTime(startedAtEpochMillis)}",
+						style = MaterialTheme.typography.bodySmall,
+						color = MaterialTheme.colorScheme.onSurfaceVariant
+					)
+				}
 			}
+			CountPill(if (activeCount == 0) "none" else "$activeCount")
 		}
 	}
 }
@@ -331,12 +459,37 @@ private fun MembersTab(
 		modifier = Modifier
 			.fillMaxSize()
 			.padding(contentPadding),
-		contentPadding = PaddingValues(16.dp),
-		verticalArrangement = Arrangement.spacedBy(14.dp)
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
 	) {
 		item {
-			Panel {
-				PanelTitle("Add member")
+			SectionTitle("Members")
+		}
+
+		if (state.members.isEmpty()) {
+			item {
+				EmptyRow("No members yet.")
+			}
+		} else {
+			items(state.members, key = { it.id }) { member ->
+				MemberCard(
+					member = member,
+					folder = state.folders.firstOrNull { it.id == member.folderId },
+					customFields = state.customFields.sortedBy { it.order },
+					notes = state.notes.filter { it.memberId == member.id },
+					active = member.id in state.currentFrontMemberIds,
+					onToggleFront = { onToggleMemberFront(member.id) },
+					onUpdateField = { fieldId, value ->
+						onUpdateMemberField(member.id, fieldId, value)
+					},
+					onToggleArchived = { onToggleMemberArchived(member.id) }
+				)
+			}
+		}
+
+		item {
+			Section {
+				SectionTitle("Add member")
 				OutlinedTextField(
 					value = name,
 					onValueChange = { name = it },
@@ -429,8 +582,8 @@ private fun MembersTab(
 		}
 
 		item {
-			Panel {
-				PanelTitle("Custom fields")
+			Section {
+				SectionTitle("Custom fields")
 				OutlinedTextField(
 					value = customFieldName,
 					onValueChange = { customFieldName = it },
@@ -456,33 +609,6 @@ private fun MembersTab(
 						)
 					}
 				}
-			}
-		}
-
-		if (state.members.isEmpty()) {
-			item {
-				Panel {
-					PanelTitle("Members")
-					Text(
-						text = "No members yet.",
-						color = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
-			}
-		} else {
-			items(state.members, key = { it.id }) { member ->
-				MemberCard(
-					member = member,
-					folder = state.folders.firstOrNull { it.id == member.folderId },
-					customFields = state.customFields.sortedBy { it.order },
-					notes = state.notes.filter { it.memberId == member.id },
-					active = member.id in state.currentFrontMemberIds,
-					onToggleFront = { onToggleMemberFront(member.id) },
-					onUpdateField = { fieldId, value ->
-						onUpdateMemberField(member.id, fieldId, value)
-					},
-					onToggleArchived = { onToggleMemberArchived(member.id) }
-				)
 			}
 		}
 	}
@@ -529,7 +655,7 @@ private fun MemberCard(
 	onUpdateField: (String, String) -> Unit,
 	onToggleArchived: () -> Unit
 ) {
-	Panel {
+	Section {
 		MemberHeader(member = member, active = active)
 		if (folder != null) {
 			MetadataLine(
@@ -649,48 +775,16 @@ private fun GroupsTab(
 		modifier = Modifier
 			.fillMaxSize()
 			.padding(contentPadding),
-		contentPadding = PaddingValues(16.dp),
-		verticalArrangement = Arrangement.spacedBy(14.dp)
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
 	) {
 		item {
-			Panel {
-				PanelTitle("Add group")
-				OutlinedTextField(
-					value = name,
-					onValueChange = { name = it },
-					modifier = Modifier.fillMaxWidth(),
-					singleLine = true,
-					label = { Text("Name") }
-				)
-				Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-					MemberColors.forEach { option ->
-						FilterChip(
-							selected = colorHex == option,
-							onClick = { colorHex = option },
-							label = { ColorDot(option) }
-						)
-					}
-				}
-				Button(
-					onClick = {
-						onAddFolder(name, colorHex)
-						name = ""
-					}
-				) {
-					Text("Add")
-				}
-			}
+			SectionTitle("Groups")
 		}
 
 		if (state.folders.isEmpty()) {
 			item {
-				Panel {
-					PanelTitle("Groups")
-					Text(
-						text = "No groups yet.",
-						color = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
+				EmptyRow("No groups yet.")
 			}
 		} else {
 			items(state.folders, key = { it.id }) { folder ->
@@ -717,6 +811,36 @@ private fun GroupsTab(
 				)
 			}
 		}
+
+		item {
+			Section {
+				SectionTitle("Add group")
+				OutlinedTextField(
+					value = name,
+					onValueChange = { name = it },
+					modifier = Modifier.fillMaxWidth(),
+					singleLine = true,
+					label = { Text("Name") }
+				)
+				Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+					MemberColors.forEach { option ->
+						FilterChip(
+							selected = colorHex == option,
+							onClick = { colorHex = option },
+							label = { ColorDot(option) }
+						)
+					}
+				}
+				Button(
+					onClick = {
+						onAddFolder(name, colorHex)
+						name = ""
+					}
+				) {
+					Text("Add")
+				}
+			}
+		}
 	}
 }
 
@@ -725,7 +849,7 @@ private fun GroupCard(
 	folder: HavenFolder,
 	members: List<HavenMember>
 ) {
-	Panel {
+	Section {
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
 			horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -774,12 +898,29 @@ private fun NotesTab(
 		modifier = Modifier
 			.fillMaxSize()
 			.padding(contentPadding),
-		contentPadding = PaddingValues(16.dp),
-		verticalArrangement = Arrangement.spacedBy(14.dp)
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
 	) {
 		item {
-			Panel {
-				PanelTitle("Add note")
+			SectionTitle("Notes")
+		}
+
+		if (state.notes.isEmpty()) {
+			item {
+				EmptyRow("No notes yet.")
+			}
+		} else {
+			items(state.notes, key = { it.id }) { note ->
+				NoteCard(
+					note = note,
+					member = state.members.firstOrNull { it.id == note.memberId }
+				)
+			}
+		}
+
+		item {
+			Section {
+				SectionTitle("Add note")
 				OutlinedTextField(
 					value = title,
 					onValueChange = { title = it },
@@ -831,25 +972,6 @@ private fun NotesTab(
 				}
 			}
 		}
-
-		if (state.notes.isEmpty()) {
-			item {
-				Panel {
-					PanelTitle("Notes")
-					Text(
-						text = "No notes yet.",
-						color = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
-			}
-		} else {
-			items(state.notes, key = { it.id }) { note ->
-				NoteCard(
-					note = note,
-					member = state.members.firstOrNull { it.id == note.memberId }
-				)
-			}
-		}
 	}
 }
 
@@ -858,7 +980,7 @@ private fun NoteCard(
 	note: HavenNote,
 	member: HavenMember?
 ) {
-	Panel {
+	Section {
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
 			horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -992,12 +1114,12 @@ private fun DataTab(
 		modifier = Modifier
 			.fillMaxSize()
 			.padding(contentPadding),
-		contentPadding = PaddingValues(16.dp),
-		verticalArrangement = Arrangement.spacedBy(14.dp)
+		contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp)
 	) {
 		item {
-			Panel {
-				PanelTitle("Local data")
+			Section {
+				SectionTitle("Local data")
 				LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 					item { AssistChip(onClick = {}, label = { Text("${state.members.size} members") }) }
 					item { AssistChip(onClick = {}, label = { Text("${state.folders.size} groups") }) }
@@ -1021,8 +1143,8 @@ private fun DataTab(
 		}
 
 		item {
-			Panel {
-				PanelTitle("Sync")
+			Section {
+				SectionTitle("Sync")
 				Text("Off by default.")
 				Text(
 					text = "Accounts, friends, PluralKit, and bridges should sit behind an explicit sync setup later.",
@@ -1034,21 +1156,48 @@ private fun DataTab(
 }
 
 @Composable
-private fun Panel(
+private fun EmptyRow(text: String) {
+	Surface(
+		modifier = Modifier
+			.fillMaxWidth()
+			.border(
+				width = 1.dp,
+				color = MaterialTheme.colorScheme.outline,
+				shape = MaterialTheme.shapes.medium
+			),
+		shape = MaterialTheme.shapes.medium,
+		color = MaterialTheme.colorScheme.surface,
+		contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+	) {
+		Text(
+			text = text,
+			modifier = Modifier.padding(12.dp),
+			style = MaterialTheme.typography.bodyMedium
+		)
+	}
+}
+
+@Composable
+private fun Section(
 	content: @Composable ColumnScope.() -> Unit
 ) {
-	ElevatedCard(
-		colors = CardDefaults.elevatedCardColors(
+	Card(
+		colors = CardDefaults.cardColors(
 			containerColor = MaterialTheme.colorScheme.surface
 		),
-		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-		shape = MaterialTheme.shapes.large
+		elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+		shape = MaterialTheme.shapes.medium,
+		modifier = Modifier.border(
+			width = 1.dp,
+			color = MaterialTheme.colorScheme.outline,
+			shape = MaterialTheme.shapes.medium
+		)
 	) {
 		Column(
 			modifier = Modifier
 				.fillMaxWidth()
-				.padding(16.dp),
-			verticalArrangement = Arrangement.spacedBy(12.dp)
+				.padding(12.dp),
+			verticalArrangement = Arrangement.spacedBy(10.dp)
 		) {
 			content()
 		}
@@ -1056,12 +1205,28 @@ private fun Panel(
 }
 
 @Composable
-private fun PanelTitle(text: String) {
+private fun SectionTitle(text: String) {
 	Text(
 		text = text,
-		style = MaterialTheme.typography.titleMedium,
+		style = MaterialTheme.typography.titleSmall,
 		fontWeight = FontWeight.SemiBold
 	)
+}
+
+@Composable
+private fun CountPill(text: String) {
+	Surface(
+		shape = MaterialTheme.shapes.small,
+		color = MaterialTheme.colorScheme.surfaceVariant,
+		contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+	) {
+		Text(
+			text = text,
+			modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+			style = MaterialTheme.typography.labelMedium,
+			fontWeight = FontWeight.Medium
+		)
+	}
 }
 
 @Composable
