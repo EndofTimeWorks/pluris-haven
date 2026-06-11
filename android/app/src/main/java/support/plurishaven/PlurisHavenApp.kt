@@ -13,7 +13,12 @@ fun PlurisHavenApp(
 	onSetFront: (String) -> Unit,
 	onToggleMemberFront: (String) -> Unit,
 	onClearFront: () -> Unit,
-	onAddMember: (String, String, String) -> Unit,
+	onAddMember: (String, String, String, String?, String, String, String) -> Unit,
+	onUpdateMemberField: (String, String, String) -> Unit,
+	onToggleMemberArchived: (String) -> Unit,
+	onAddFolder: (String, String) -> Unit,
+	onAddCustomField: (String) -> Unit,
+	onAddNote: (String, String, String?, String) -> Unit,
 	onAddLog: (String) -> Unit,
 	onExport: () -> Unit
 ) {
@@ -26,6 +31,11 @@ fun PlurisHavenApp(
 			onToggleMemberFront = onToggleMemberFront,
 			onClearFront = onClearFront,
 			onAddMember = onAddMember,
+			onUpdateMemberField = onUpdateMemberField,
+			onToggleMemberArchived = onToggleMemberArchived,
+			onAddFolder = onAddFolder,
+			onAddCustomField = onAddCustomField,
+			onAddNote = onAddNote,
 			onAddLog = onAddLog,
 			onExport = onExport
 		)
