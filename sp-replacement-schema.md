@@ -2,7 +2,7 @@
 
 ## Product Shape
 
-Pluris Haven has native Android, future native iOS, and a SvelteKit website. The core app should not require an account, network access, or a hosted server. Online services are optional and must be enabled one at a time with a clear disclaimer.
+Pluris Haven has a Flutter mobile app for Android first and iOS next, plus a SvelteKit website. The core app should not require an account, network access, or a hosted server. Online services are optional and must be enabled one at a time with a clear disclaimer.
 
 ## Required Modules
 
@@ -22,21 +22,20 @@ Pluris Haven has native Android, future native iOS, and a SvelteKit website. The
 - Friends
 - Statistics
 
-## Android Stack
+## Mobile Stack
 
-- Kotlin native Android app.
-- Jetpack Compose for UI.
-- ViewModels/state holders with unidirectional data flow.
+- Flutter app in `mobile`.
+- Dart state holders with unidirectional data flow.
 - Repository layer over local database and optional remote data sources.
 - Local database is the source of truth.
-- Android Keystore for key material where possible.
-- Foreground notification for current front and quick actions.
+- Platform keystores for key material where possible.
+- Android foreground notification for current front and quick actions.
 
 ## Storage Strategy
 
 ### Local Device Store
 
-The Android app owns the primary copy of user data. Local records should be queryable offline for:
+The mobile app owns the primary copy of user data. Local records should be queryable offline for:
 
 - current front and front history
 - logs
@@ -65,7 +64,7 @@ The server exists for opt-in features:
 - hosted backup/export
 - long-running import jobs
 
-The server should not be required for normal Android use.
+The server should not be required for normal mobile use.
 
 ## Online Service Disclaimer
 
@@ -153,7 +152,7 @@ Export must work locally and include:
 
 Encrypted export is the default. Plain JSON export can exist for portability, but it must require an explicit warning because it exposes private data.
 
-### Current Android Archive
+### Current Mobile Archive
 
 The app has not shipped, so the local archive does not need backward compatibility with earlier Pluris Haven test data. The current plain JSON format is `pluris-haven/offline` version 1 and is shaped around the Simply Plural data we need to import:
 
