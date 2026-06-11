@@ -1,6 +1,5 @@
 package support.plurishaven.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -29,28 +28,29 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-	primary = Color(0xFFC7D2FE),
-	onPrimary = Color(0xFF1E1B4B),
-	primaryContainer = Color(0xFF3730A3),
-	onPrimaryContainer = Color(0xFFE0E7FF),
-	secondary = Color(0xFF99F6E4),
-	onSecondary = Color(0xFF042F2E),
-	secondaryContainer = Color(0xFF115E59),
-	onSecondaryContainer = Color(0xFFCCFBF1),
-	tertiary = Color(0xFFFCD34D),
-	tertiaryContainer = Color(0xFF92400E),
-	onTertiaryContainer = Color(0xFFFFFBEB),
-	background = Color(0xFF0F172A),
-	onBackground = Color(0xFFE5E7EB),
-	surface = Color(0xFF111827),
-	onSurface = Color(0xFFE5E7EB),
-	surfaceVariant = Color(0xFF1E293B),
-	onSurfaceVariant = Color(0xFFCBD5E1)
+	primary = Color(0xFF7D6AF2),
+	onPrimary = Color(0xFFFFFFFF),
+	primaryContainer = Color(0xFF35324A),
+	onPrimaryContainer = Color(0xFFE7E2FF),
+	secondary = Color(0xFFE4BE63),
+	onSecondary = Color(0xFF261D07),
+	secondaryContainer = Color(0xFF4A3A18),
+	onSecondaryContainer = Color(0xFFFFE7A5),
+	tertiary = Color(0xFF8ED8C6),
+	tertiaryContainer = Color(0xFF1D4B45),
+	onTertiaryContainer = Color(0xFFC6FFF1),
+	background = Color(0xFF191B24),
+	onBackground = Color(0xFFE9E6EF),
+	surface = Color(0xFF22242F),
+	onSurface = Color(0xFFE9E6EF),
+	surfaceVariant = Color(0xFF292C38),
+	onSurfaceVariant = Color(0xFFC7C3D0),
+	outline = Color(0xFF343847)
 )
 
 @Composable
 fun PlurisHavenTheme(
-	darkTheme: Boolean = isSystemInDarkTheme(),
+	darkTheme: Boolean = true,
 	content: @Composable () -> Unit
 ) {
 	MaterialTheme(
