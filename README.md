@@ -6,8 +6,7 @@ The project has three targets: Android, iOS, and website. Local app use should w
 
 ## Product Direction
 
-- **Android first** - current native app target.
-- **iOS later** - native iOS app when the core model is stable.
+- **Flutter app first** - Android now, iOS next, and web when the app model is stable.
 - **Website alongside apps** - accounts, hosted import/export, project info, and later web access.
 - **Offline by default** - core records live on-device and remain usable without a connection.
 - **Opt-in online services** - sync, friends, PluralKit, backups, and hosted imports need clear data notices.
@@ -32,8 +31,7 @@ The project has three targets: Android, iOS, and website. Local app use should w
 
 ## Stack
 
-- **Android:** Kotlin + Jetpack Compose, local-first.
-- **iOS:** Swift/SwiftUI, planned.
+- **Mobile app:** Flutter, local-first.
 - **Website:** SvelteKit.
 - **Local data:** encrypted device database first; server sync is optional.
 - **Server:** add account/sync/import backend when those features start.
@@ -41,8 +39,7 @@ The project has three targets: Android, iOS, and website. Local app use should w
 
 ## Repo Layout
 
-- `android` - native Android app.
-- `ios` - future native iOS app.
+- `mobile` - Flutter app for Android, iOS, and future web.
 - `website` - SvelteKit website/app.
 - `sp-replacement-schema.md` - local-first data model and sync boundary.
 
@@ -71,12 +68,26 @@ pnpm install
 pnpm dev
 ```
 
-Android:
+Mobile app:
 
 ```sh
-cd android
-./gradlew :app:assembleDebug
+cd mobile
+flutter analyze
+flutter test
+flutter run
 ```
+
+This repo pins Flutter through mise:
+
+```sh
+mise trust
+mise install
+cd mobile
+flutter devices
+flutter run
+```
+
+For Android Studio, open the `mobile` directory as the Flutter project. Install the Flutter and Dart plugins, use the Flutter SDK managed by mise, and run the `main.dart` configuration on an emulator or device.
 
 ## License
 
