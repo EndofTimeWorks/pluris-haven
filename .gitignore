@@ -5,6 +5,7 @@ node_modules
 **/.idea
 .gradle
 **/.gradle
+**/.kotlin
 **/local.properties
 
 # Output
