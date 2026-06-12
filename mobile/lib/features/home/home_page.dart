@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../data/local/haven_repository.dart';
 
+const _spSurface = Color(0xFF232532);
+const _spCard = Color(0xFF2B2E3D);
+const _spLine = Color(0xFF3A3E50);
+const _spText = Color(0xFFECEAF2);
+const _spMuted = Color(0xFFC4C0CE);
+const _spPurple = Color(0xFF7B61FF);
+const _spGold = Color(0xFFF2C75C);
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.repository});
 
@@ -15,8 +23,10 @@ class HomePage extends StatelessWidget {
         final home = snapshot.data;
 
         return Scaffold(
+          drawer: SpDrawer(snapshot: home),
           appBar: AppBar(
-            toolbarHeight: 88,
+            toolbarHeight: 86,
+            titleSpacing: 0,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -28,8 +38,8 @@ class HomePage extends StatelessWidget {
                 Text(
                   home?.systemName ?? 'saved on device',
                   style: const TextStyle(
+                    color: _spMuted,
                     fontSize: 13,
-                    color: Color(0xFFC7C3D0),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -37,14 +47,14 @@ class HomePage extends StatelessWidget {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
+            padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
             children: [
-              SystemOverviewCard(snapshot: home),
+              SystemListEntry(snapshot: home),
               const SizedBox(height: 12),
-              CurrentFrontPanel(snapshot: home, repository: repository),
+              CurrentFrontEntry(snapshot: home, repository: repository),
               const SizedBox(height: 14),
-              for (final module in _modules(home)) ...[
-                ModuleRow(module: module),
+              for (final item in _items(home)) ...[
+                SpNavigationEntry(item: item),
                 const SizedBox(height: 10),
               ],
             ],
@@ -54,22 +64,23 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  List<HomeModule> _modules(HomeSnapshot? snapshot) {
-    final home = snapshot;
-
+  List<HomeNavigationItem> _items(HomeSnapshot? home) {
     return [
-      HomeModule('Members', '${home?.memberCount ?? 0} saved'),
-      HomeModule('Front History', '${home?.frontHistoryCount ?? 0} entries'),
-      HomeModule('Groups', '${home?.groupCount ?? 0} groups'),
-      HomeModule('Notes', '${home?.noteCount ?? 0} notes'),
-      const HomeModule('Import / Export', 'local archive'),
-      const HomeModule('Sync', 'off by default'),
+      HomeNavigationItem('Members', '${home?.memberCount ?? 0} saved'),
+      HomeNavigationItem(
+        'Front History',
+        '${home?.frontHistoryCount ?? 0} entries',
+      ),
+      HomeNavigationItem('Groups', '${home?.groupCount ?? 0} groups'),
+      HomeNavigationItem('Notes', '${home?.noteCount ?? 0} notes'),
+      const HomeNavigationItem('Import / Export', 'local archive'),
+      const HomeNavigationItem('Sync', 'off by default'),
     ];
   }
 }
 
-class SystemOverviewCard extends StatelessWidget {
-  const SystemOverviewCard({super.key, required this.snapshot});
+class SpDrawer extends StatelessWidget {
+  const SpDrawer({super.key, required this.snapshot});
 
   final HomeSnapshot? snapshot;
 
@@ -77,42 +88,48 @@ class SystemOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final home = snapshot;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-        child: Row(
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+              child: Row(
                 children: [
-                  Text(
-                    home?.systemName ?? 'Local system',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
-                    style: const TextStyle(
-                      color: Color(0xFFC7C3D0),
-                      fontSize: 15,
+                  const SpAvatar(size: 52, color: _spPurple),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          home?.systemName ?? 'Local system',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
+                          style: const TextStyle(color: _spMuted, fontSize: 13),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+            const Divider(height: 1),
+            const DrawerEntry(label: 'Members'),
+            const DrawerEntry(label: 'Front History'),
+            const DrawerEntry(label: 'Groups'),
+            const DrawerEntry(label: 'Notes'),
+            const DrawerEntry(label: 'Import / Export'),
+            const Divider(height: 24),
+            const DrawerEntry(label: 'App options'),
+            const DrawerEntry(label: 'About'),
           ],
         ),
       ),
@@ -120,8 +137,63 @@ class SystemOverviewCard extends StatelessWidget {
   }
 }
 
-class CurrentFrontPanel extends StatelessWidget {
-  const CurrentFrontPanel({
+class DrawerEntry extends StatelessWidget {
+  const DrawerEntry({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      trailing: const Text('>', style: TextStyle(color: _spMuted)),
+      onTap: () => Navigator.pop(context),
+    );
+  }
+}
+
+class SystemListEntry extends StatelessWidget {
+  const SystemListEntry({super.key, required this.snapshot});
+
+  final HomeSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final home = snapshot;
+
+    return SpCard(
+      child: Row(
+        children: [
+          const SpAvatar(size: 52, color: _spPurple),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  home?.systemName ?? 'Local system',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
+                  style: const TextStyle(color: _spMuted, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CurrentFrontEntry extends StatelessWidget {
+  const CurrentFrontEntry({
     super.key,
     required this.snapshot,
     required this.repository,
@@ -134,68 +206,57 @@ class CurrentFrontPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final home = snapshot;
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Theme.of(context).colorScheme.outline),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showFrontSheet(context),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Currently fronting',
-                      style: TextStyle(
-                        color: Color(0xFFC7C3D0),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      home?.currentFrontText ?? 'None',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  StatusPill(text: home?.currentFrontStatus ?? 'none'),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'set front',
-                    style: TextStyle(
-                      color: Color(0xFFC7C3D0),
-                      fontWeight: FontWeight.w600,
-                    ),
+    return SpCard(
+      outlined: true,
+      onTap: () => _showFrontSheet(context),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _spPurple,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Currently fronting',
+                  style: TextStyle(
+                    color: _spMuted,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  home?.currentFrontText ?? 'None',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _spText,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              StatusPill(text: home?.currentFrontStatus ?? 'none'),
+              const SizedBox(height: 8),
+              const Text(
+                'set front',
+                style: TextStyle(color: _spMuted, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -203,8 +264,9 @@ class CurrentFrontPanel extends StatelessWidget {
   Future<void> _showFrontSheet(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: _spSurface,
       builder: (context) => CustomFrontSheet(repository: repository),
     );
   }
@@ -238,35 +300,44 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           18,
           18 + MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                textInputAction: TextInputAction.done,
-                onSubmitted: _setFront,
-                decoration: const InputDecoration(
-                  labelText: 'Custom front',
-                  border: OutlineInputBorder(),
+            const Text(
+              'Set custom front',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: _setFront,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => _setFront(_controller.text),
+                    child: const Text('Set'),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            FilledButton(
-              onPressed: () => _setFront(_controller.text),
-              child: const Text('Set'),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              onPressed: () async {
-                await widget.repository.clearCurrentFront();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Clear'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      await widget.repository.clearCurrentFront();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: const Text('Clear'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -282,64 +353,117 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 }
 
-class ModuleRow extends StatelessWidget {
-  const ModuleRow({super.key, required this.module});
+class SpNavigationEntry extends StatelessWidget {
+  const SpNavigationEntry({super.key, required this.item});
 
-  final HomeModule module;
+  final HomeNavigationItem item;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SpCard(
+      onTap: () {},
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      child: Row(
+        children: [
+          const AccentDot(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.subtitle,
+                  style: const TextStyle(color: _spMuted, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            '>',
+            style: TextStyle(
+              color: _spMuted,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SpCard extends StatelessWidget {
+  const SpCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.outlined = false,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool outlined;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        color: _spCard,
+        borderRadius: BorderRadius.circular(12),
+        border: outlined ? Border.all(color: _spLine) : null,
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-          child: Row(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      module.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      module.subtitle,
-                      style: const TextStyle(
-                        color: Color(0xFFC7C3D0),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Text(
-                '>',
-                style: TextStyle(
-                  color: Color(0xFFC7C3D0),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
+        onTap: onTap,
+        child: content,
       ),
+    );
+  }
+}
+
+class SpAvatar extends StatelessWidget {
+  const SpAvatar({super.key, required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class AccentDot extends StatelessWidget {
+  const AccentDot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(color: _spGold, shape: BoxShape.circle),
+      child: SizedBox(width: 20, height: 20),
     );
   }
 }
@@ -353,25 +477,22 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: _spSurface,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         child: Text(
           text,
-          style: const TextStyle(
-            color: Color(0xFFC7C3D0),
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
         ),
       ),
     );
   }
 }
 
-class HomeModule {
-  const HomeModule(this.title, this.subtitle);
+class HomeNavigationItem {
+  const HomeNavigationItem(this.title, this.subtitle);
 
   final String title;
   final String subtitle;
