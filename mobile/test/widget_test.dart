@@ -25,7 +25,7 @@ void main() {
     expect(find.text('Pluris Haven'), findsOneWidget);
     expect(find.text('Currently fronting'), findsOneWidget);
     expect(find.text('Members'), findsOneWidget);
-    expect(find.text('Custom front'), findsOneWidget);
+    expect(find.text('Local system'), findsWidgets);
   });
 
   testWidgets('sets and clears a custom front from the home screen', (
@@ -46,15 +46,21 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
+    await tester.tap(find.text('set front'));
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.byType(TextField), 'blurry co-con');
     await tester.tap(find.text('Set'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('blurry co-con'), findsOneWidget);
     expect(find.text('fronting'), findsOneWidget);
 
+    await tester.tap(find.text('set front'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Clear'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);

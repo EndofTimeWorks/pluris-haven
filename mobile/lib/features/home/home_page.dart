@@ -16,12 +16,13 @@ class HomePage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
+            toolbarHeight: 88,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Pluris Haven',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -29,18 +30,19 @@ class HomePage extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFFC7C3D0),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
             children: [
-              CurrentFrontPanel(snapshot: home),
+              SystemOverviewCard(snapshot: home),
               const SizedBox(height: 12),
-              CustomFrontCard(repository: repository),
-              const SizedBox(height: 12),
+              CurrentFrontPanel(snapshot: home, repository: repository),
+              const SizedBox(height: 14),
               for (final module in _modules(home)) ...[
                 ModuleRow(module: module),
                 const SizedBox(height: 10),
@@ -56,34 +58,18 @@ class HomePage extends StatelessWidget {
     final home = snapshot;
 
     return [
-      HomeModule(
-        'Members',
-        '${home?.memberCount ?? 0} saved',
-        Icons.groups_rounded,
-      ),
-      HomeModule(
-        'Front History',
-        '${home?.frontHistoryCount ?? 0} entries',
-        Icons.history_rounded,
-      ),
-      HomeModule(
-        'Groups',
-        '${home?.groupCount ?? 0} groups',
-        Icons.folder_rounded,
-      ),
-      HomeModule('Notes', '${home?.noteCount ?? 0} notes', Icons.notes_rounded),
-      const HomeModule(
-        'Import / Export',
-        'local archive',
-        Icons.import_export_rounded,
-      ),
-      const HomeModule('Sync', 'off by default', Icons.sync_disabled_rounded),
+      HomeModule('Members', '${home?.memberCount ?? 0} saved'),
+      HomeModule('Front History', '${home?.frontHistoryCount ?? 0} entries'),
+      HomeModule('Groups', '${home?.groupCount ?? 0} groups'),
+      HomeModule('Notes', '${home?.noteCount ?? 0} notes'),
+      const HomeModule('Import / Export', 'local archive'),
+      const HomeModule('Sync', 'off by default'),
     ];
   }
 }
 
-class CurrentFrontPanel extends StatelessWidget {
-  const CurrentFrontPanel({super.key, required this.snapshot});
+class SystemOverviewCard extends StatelessWidget {
+  const SystemOverviewCard({super.key, required this.snapshot});
 
   final HomeSnapshot? snapshot;
 
@@ -91,22 +77,17 @@ class CurrentFrontPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final home = snapshot;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline),
-      ),
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         child: Row(
           children: [
             Container(
-              width: 4,
-              height: 56,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(4),
+                shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 14),
@@ -114,27 +95,24 @@ class CurrentFrontPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Currently fronting',
-                    style: TextStyle(
-                      color: Color(0xFFC7C3D0),
-                      fontWeight: FontWeight.w600,
+                  Text(
+                    home?.systemName ?? 'Local system',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    home?.currentFrontText ?? 'None',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
                     style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFC7C3D0),
+                      fontSize: 15,
                     ),
                   ),
                 ],
               ),
             ),
-            StatusPill(text: home?.currentFrontStatus ?? 'none'),
           ],
         ),
       ),
@@ -142,16 +120,106 @@ class CurrentFrontPanel extends StatelessWidget {
   }
 }
 
-class CustomFrontCard extends StatefulWidget {
-  const CustomFrontCard({super.key, required this.repository});
+class CurrentFrontPanel extends StatelessWidget {
+  const CurrentFrontPanel({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+  });
+
+  final HomeSnapshot? snapshot;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final home = snapshot;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showFrontSheet(context),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Currently fronting',
+                      style: TextStyle(
+                        color: Color(0xFFC7C3D0),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      home?.currentFrontText ?? 'None',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  StatusPill(text: home?.currentFrontStatus ?? 'none'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'set front',
+                    style: TextStyle(
+                      color: Color(0xFFC7C3D0),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showFrontSheet(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => CustomFrontSheet(repository: repository),
+    );
+  }
+}
+
+class CustomFrontSheet extends StatefulWidget {
+  const CustomFrontSheet({super.key, required this.repository});
 
   final HavenRepository repository;
 
   @override
-  State<CustomFrontCard> createState() => _CustomFrontCardState();
+  State<CustomFrontSheet> createState() => _CustomFrontSheetState();
 }
 
-class _CustomFrontCardState extends State<CustomFrontCard> {
+class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _controller = TextEditingController();
 
   @override
@@ -162,42 +230,43 @@ class _CustomFrontCardState extends State<CustomFrontCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const Text(
-              'Custom front',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              textInputAction: TextInputAction.done,
-              onSubmitted: _setFront,
-              decoration: const InputDecoration(
-                labelText: 'Label',
-                border: OutlineInputBorder(),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: _setFront,
+                decoration: const InputDecoration(
+                  labelText: 'Custom front',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                FilledButton(
-                  onPressed: () => _setFront(_controller.text),
-                  child: const Text('Set'),
-                ),
-                const SizedBox(width: 10),
-                OutlinedButton(
-                  onPressed: () async {
-                    _controller.clear();
-                    await widget.repository.clearCurrentFront();
-                  },
-                  child: const Text('Clear'),
-                ),
-              ],
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: () => _setFront(_controller.text),
+              child: const Text('Set'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: () async {
+                await widget.repository.clearCurrentFront();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Clear'),
             ),
           ],
         ),
@@ -207,7 +276,9 @@ class _CustomFrontCardState extends State<CustomFrontCard> {
 
   Future<void> _setFront(String label) async {
     await widget.repository.setCustomFront(label);
-    _controller.clear();
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 
@@ -223,11 +294,18 @@ class ModuleRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: () {},
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
           child: Row(
             children: [
-              Icon(module.icon, color: Theme.of(context).colorScheme.secondary),
-              const SizedBox(width: 14),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +328,14 @@ class ModuleRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFC7C3D0)),
+              const Text(
+                '>',
+                style: TextStyle(
+                  color: Color(0xFFC7C3D0),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ),
@@ -286,9 +371,8 @@ class StatusPill extends StatelessWidget {
 }
 
 class HomeModule {
-  const HomeModule(this.title, this.subtitle, this.icon);
+  const HomeModule(this.title, this.subtitle);
 
   final String title;
   final String subtitle;
-  final IconData icon;
 }
