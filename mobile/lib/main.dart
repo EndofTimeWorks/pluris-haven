@@ -27,23 +27,36 @@ class PlurisHavenApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF7D6AF2),
-          secondary: Color(0xFFE4BE63),
-          surface: Color(0xFF22242F),
-          surfaceContainerHighest: Color(0xFF292C38),
-          onSurface: Color(0xFFE9E6EF),
-          onSurfaceVariant: Color(0xFFC7C3D0),
-          outline: Color(0xFF343847),
+          primary: Color(0xFF7B61FF),
+          secondary: Color(0xFFF2C75C),
+          surface: Color(0xFF232532),
+          surfaceContainerHighest: Color(0xFF2B2E3D),
+          onSurface: Color(0xFFECEAF2),
+          onSurfaceVariant: Color(0xFFC4C0CE),
+          outline: Color(0xFF3A3E50),
         ),
-        scaffoldBackgroundColor: const Color(0xFF191B24),
+        scaffoldBackgroundColor: const Color(0xFF171922),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF22242F),
-          foregroundColor: Color(0xFFE9E6EF),
+          backgroundColor: Color(0xFF232532),
+          foregroundColor: Color(0xFFECEAF2),
           elevation: 0,
           centerTitle: false,
         ),
+        drawerTheme: const DrawerThemeData(
+          backgroundColor: Color(0xFF232532),
+          scrimColor: Color(0x99000000),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFF3A3E50),
+          thickness: 1,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF171922),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
         cardTheme: CardThemeData(
-          color: const Color(0xFF292C38),
+          color: const Color(0xFF2B2E3D),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
