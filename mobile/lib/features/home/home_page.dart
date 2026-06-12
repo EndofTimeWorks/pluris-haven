@@ -87,7 +87,11 @@ class _HomePageState extends State<HomePage> {
   Widget _buildSection(HomeSnapshot? home) {
     switch (_section) {
       case SpSection.dashboard:
-        return DashboardPage(snapshot: home, onSelect: _selectSection);
+        return DashboardPage(
+          snapshot: home,
+          repository: widget.repository,
+          onSelect: _selectSection,
+        );
       case SpSection.members:
         return MembersPage(snapshot: home);
       case SpSection.frontHistory:
@@ -251,33 +255,50 @@ class DashboardPage extends StatelessWidget {
   const DashboardPage({
     super.key,
     required this.snapshot,
+    required this.repository,
     required this.onSelect,
   });
 
   final HomeSnapshot? snapshot;
+  final HavenRepository repository;
   final ValueChanged<SpSection> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 24),
       children: [
-        DashboardSystemHeader(snapshot: snapshot),
-        const Divider(height: 1),
-        Expanded(
-          child: GridView(
-            padding: const EdgeInsets.all(10),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 150,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
+        SystemListEntry(snapshot: snapshot),
+        const SizedBox(height: 10),
+        CurrentFrontEntry(snapshot: snapshot, repository: repository),
+        const SizedBox(height: 18),
+        const DashboardSectionTitle('Main'),
+        const SizedBox(height: 8),
+        DashboardActionGrid(items: _primaryItems(snapshot), onSelect: onSelect),
+        const SizedBox(height: 18),
+        const DashboardSectionTitle('Tools'),
+        const SizedBox(height: 8),
+        SpCard(
+          padding: EdgeInsets.zero,
+          child: Column(
             children: [
-              for (final item in _items(snapshot))
-                SpDashboardTile(
-                  item: item,
-                  onTap: () => onSelect(item.section),
-                ),
+              SpSettingsRow(
+                'Import / Export',
+                'bring in SP data or back this up',
+                onTap: () => onSelect(SpSection.importExport),
+              ),
+              const Divider(height: 1, color: _spLine, indent: 16),
+              SpSettingsRow(
+                'Sync',
+                'off until you choose otherwise',
+                onTap: () => onSelect(SpSection.sync),
+              ),
+              const Divider(height: 1, color: _spLine, indent: 16),
+              SpSettingsRow(
+                'Customize',
+                'theme, home layout, privacy defaults',
+                onTap: () => onSelect(SpSection.appOptions),
+              ),
             ],
           ),
         ),
@@ -285,7 +306,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  List<HomeNavigationItem> _items(HomeSnapshot? home) {
+  List<HomeNavigationItem> _primaryItems(HomeSnapshot? home) {
     return [
       HomeNavigationItem(
         'Members',
@@ -299,84 +320,6 @@ class DashboardPage extends StatelessWidget {
         SpSection.frontHistory,
         Icons.history_rounded,
       ),
-      const HomeNavigationItem(
-        'Analytics',
-        'local stats',
-        SpSection.analytics,
-        Icons.analytics_rounded,
-      ),
-      const HomeNavigationItem(
-        'Chat',
-        'offline',
-        SpSection.chat,
-        Icons.chat_rounded,
-      ),
-      const HomeNavigationItem(
-        'Polls',
-        '0 active',
-        SpSection.polls,
-        Icons.how_to_vote_rounded,
-      ),
-      const HomeNavigationItem(
-        'Friends',
-        'sync required',
-        SpSection.friends,
-        Icons.people_rounded,
-      ),
-      const HomeNavigationItem(
-        'Useful Links',
-        'local help',
-        SpSection.usefulLinks,
-        Icons.star_rounded,
-      ),
-      const HomeNavigationItem(
-        'App Reminders',
-        '0 scheduled',
-        SpSection.reminders,
-        Icons.notification_add_rounded,
-      ),
-      const HomeNavigationItem(
-        'Privacy Buckets',
-        'sharing profiles',
-        SpSection.privacyBuckets,
-        Icons.privacy_tip_rounded,
-      ),
-      const HomeNavigationItem(
-        'Tokens',
-        'disabled',
-        SpSection.tokens,
-        Icons.verified_user_rounded,
-      ),
-      const HomeNavigationItem(
-        'User Report',
-        'local report',
-        SpSection.userReport,
-        Icons.picture_as_pdf_rounded,
-      ),
-      const HomeNavigationItem(
-        'Notification History',
-        '0 alerts',
-        SpSection.notificationHistory,
-        Icons.notifications_active_rounded,
-      ),
-      const HomeNavigationItem(
-        "How-to's",
-        'guides',
-        SpSection.howtos,
-        Icons.school_rounded,
-      ),
-      const HomeNavigationItem(
-        'Custom Fields',
-        '0 fields',
-        SpSection.customFields,
-        Icons.table_rows_rounded,
-      ),
-      const HomeNavigationItem(
-        'Account Settings',
-        'local profile',
-        SpSection.accountSettings,
-        Icons.settings_rounded,
-      ),
       HomeNavigationItem(
         'Groups',
         '${home?.groupCount ?? 0} groups',
@@ -388,18 +331,6 @@ class DashboardPage extends StatelessWidget {
         '${home?.noteCount ?? 0} notes',
         SpSection.notes,
         Icons.sticky_note_2_rounded,
-      ),
-      const HomeNavigationItem(
-        'Import / Export',
-        'local archive',
-        SpSection.importExport,
-        Icons.archive_rounded,
-      ),
-      const HomeNavigationItem(
-        'Sync',
-        'off by default',
-        SpSection.sync,
-        Icons.sync_disabled_rounded,
       ),
     ];
   }
@@ -629,12 +560,21 @@ class AppOptionsPage extends StatelessWidget {
     return const SpPage(
       children: [
         SpSettingsGroup(
-          title: 'App options',
+          title: 'Customize',
           rows: [
-            SpSettingsRow('Theme', 'dark'),
+            SpSettingsRow('Theme', 'dark, light, or system'),
+            SpSettingsRow('Accent color', 'purple for now'),
+            SpSettingsRow('Dashboard', 'choose visible shortcuts'),
+            SpSettingsRow('Member cards', 'compact or detailed'),
+          ],
+        ),
+        SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'Local defaults',
+          rows: [
             SpSettingsRow('Language', 'system default'),
             SpSettingsRow('Security', 'device storage'),
-            SpSettingsRow('Notifications', 'off'),
+            SpSettingsRow('Sync', 'off by default'),
             SpSettingsRow('Accessibility', 'default sizing'),
           ],
         ),
@@ -958,6 +898,53 @@ class SpDashboardTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class DashboardSectionTitle extends StatelessWidget {
+  const DashboardSectionTitle(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: _spMuted,
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class DashboardActionGrid extends StatelessWidget {
+  const DashboardActionGrid({
+    super.key,
+    required this.items,
+    required this.onSelect,
+  });
+
+  final List<HomeNavigationItem> items;
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 170,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.15,
+      ),
+      children: [
+        for (final item in items)
+          SpDashboardTile(item: item, onTap: () => onSelect(item.section)),
+      ],
     );
   }
 }
@@ -1399,14 +1386,15 @@ class SpSettingsGroup extends StatelessWidget {
 }
 
 class SpSettingsRow extends StatelessWidget {
-  const SpSettingsRow(this.title, this.subtitle, {super.key});
+  const SpSettingsRow(this.title, this.subtitle, {super.key, this.onTap});
 
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
         children: [
@@ -1438,6 +1426,12 @@ class SpSettingsRow extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return InkWell(onTap: onTap, child: content);
   }
 }
 
