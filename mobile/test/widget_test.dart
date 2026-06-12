@@ -22,9 +22,10 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    expect(find.text('Pluris Haven'), findsOneWidget);
-    expect(find.text('Currently fronting'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Front History'), findsOneWidget);
+    expect(find.text('Analytics'), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
   });
 
@@ -45,6 +46,9 @@ void main() {
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
+
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
