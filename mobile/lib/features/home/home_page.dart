@@ -16,11 +16,19 @@ enum SpSection {
   frontHistory('Front History'),
   groups('Groups'),
   notes('Notes'),
+  analytics('Analytics'),
   chat('Chat'),
   polls('Polls'),
   friends('Friends'),
+  usefulLinks('Useful Links'),
   reminders('Reminders'),
   privacyBuckets('Privacy buckets'),
+  tokens('Tokens'),
+  userReport('User Report'),
+  notificationHistory('Notification History'),
+  howtos("How-to's"),
+  customFields('Custom Fields'),
+  accountSettings('Account Settings'),
   importExport('Import / Export'),
   sync('Sync'),
   appOptions('App options'),
@@ -57,27 +65,11 @@ class _HomePageState extends State<HomePage> {
             onSelect: _selectSection,
           ),
           appBar: AppBar(
-            toolbarHeight: 86,
+            toolbarHeight: 48,
             titleSpacing: 0,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pluris Haven',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _section == SpSection.dashboard
-                      ? home?.systemName ?? 'saved on device'
-                      : _section.label,
-                  style: const TextStyle(
-                    color: _spMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            title: Text(
+              _section.label,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
           body: _buildSection(home),
@@ -95,11 +87,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildSection(HomeSnapshot? home) {
     switch (_section) {
       case SpSection.dashboard:
-        return DashboardPage(
-          snapshot: home,
-          repository: widget.repository,
-          onSelect: _selectSection,
-        );
+        return DashboardPage(snapshot: home, onSelect: _selectSection);
       case SpSection.members:
         return MembersPage(snapshot: home);
       case SpSection.frontHistory:
@@ -108,6 +96,17 @@ class _HomePageState extends State<HomePage> {
         return GroupsPage(snapshot: home);
       case SpSection.notes:
         return NotesPage(snapshot: home);
+      case SpSection.analytics:
+        return const OfflineFeaturePage(
+          title: 'Analytics',
+          body:
+              'Local front and member analytics will be calculated from the device archive.',
+          rows: [
+            SpSettingsRow('Front time', 'not enough data'),
+            SpSettingsRow('Member activity', 'empty'),
+            SpSettingsRow('Trends', 'local only'),
+          ],
+        );
       case SpSection.chat:
         return const OfflineFeaturePage(
           title: 'Chat',
@@ -117,6 +116,17 @@ class _HomePageState extends State<HomePage> {
             SpSettingsRow('Local board', 'not created'),
             SpSettingsRow('Synced chat', 'off'),
             SpSettingsRow('Attachments', 'local only'),
+          ],
+        );
+      case SpSection.usefulLinks:
+        return const OfflineFeaturePage(
+          title: 'Useful Links',
+          body:
+              'Useful SP links and local help pages can live here without accounts.',
+          rows: [
+            SpSettingsRow('Import guide', 'planned'),
+            SpSettingsRow('Local backups', 'planned'),
+            SpSettingsRow('Project links', 'local'),
           ],
         );
       case SpSection.polls:
@@ -162,6 +172,69 @@ class _HomePageState extends State<HomePage> {
             SpSettingsRow('Public', 'off'),
           ],
         );
+      case SpSection.tokens:
+        return const OfflineFeaturePage(
+          title: 'Tokens',
+          body: 'API tokens are hidden until account sync exists.',
+          rows: [
+            SpSettingsRow('Local token store', 'empty'),
+            SpSettingsRow('API tokens', 'disabled'),
+            SpSettingsRow('Import tokens', 'not supported'),
+          ],
+        );
+      case SpSection.userReport:
+        return const OfflineFeaturePage(
+          title: 'User Report',
+          body: 'Reports can be generated from local app logs later.',
+          rows: [
+            SpSettingsRow('Diagnostics', 'off'),
+            SpSettingsRow('Export report', 'not generated'),
+            SpSettingsRow('Privacy', 'device only'),
+          ],
+        );
+      case SpSection.notificationHistory:
+        return const OfflineFeaturePage(
+          title: 'Notification History',
+          body:
+              'Notification history will show reminders and sync alerts once notifications exist.',
+          rows: [
+            SpSettingsRow('Unread', '0'),
+            SpSettingsRow('Archived', '0'),
+            SpSettingsRow('Push notifications', 'off'),
+          ],
+        );
+      case SpSection.howtos:
+        return const OfflineFeaturePage(
+          title: "How-to's",
+          body:
+              'Short guides for fronting, importing, backups, and sync will be kept offline.',
+          rows: [
+            SpSettingsRow('Fronting', 'planned'),
+            SpSettingsRow('Importing from SP', 'planned'),
+            SpSettingsRow('Backups', 'planned'),
+          ],
+        );
+      case SpSection.customFields:
+        return const OfflineFeaturePage(
+          title: 'Custom Fields',
+          body: 'Custom profile fields from SP imports will appear here.',
+          rows: [
+            SpSettingsRow('System fields', '0'),
+            SpSettingsRow('Member fields', '0'),
+            SpSettingsRow('Import mapping', 'planned'),
+          ],
+        );
+      case SpSection.accountSettings:
+        return const OfflineFeaturePage(
+          title: 'Account Settings',
+          body:
+              'There is no required cloud account. Local profile settings live here.',
+          rows: [
+            SpSettingsRow('Local profile', 'saved on device'),
+            SpSettingsRow('Security', 'device storage'),
+            SpSettingsRow('Connected accounts', 'none'),
+          ],
+        );
       case SpSection.importExport:
         return const ImportExportPage();
       case SpSection.sync:
@@ -178,27 +251,36 @@ class DashboardPage extends StatelessWidget {
   const DashboardPage({
     super.key,
     required this.snapshot,
-    required this.repository,
     required this.onSelect,
   });
 
   final HomeSnapshot? snapshot;
-  final HavenRepository repository;
   final ValueChanged<SpSection> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
+    return Column(
       children: [
-        SystemListEntry(snapshot: snapshot),
-        const SizedBox(height: 12),
-        CurrentFrontEntry(snapshot: snapshot, repository: repository),
-        const SizedBox(height: 14),
-        for (final item in _items(snapshot)) ...[
-          SpNavigationEntry(item: item, onTap: () => onSelect(item.section)),
-          const SizedBox(height: 10),
-        ],
+        DashboardSystemHeader(snapshot: snapshot),
+        const Divider(height: 1),
+        Expanded(
+          child: GridView(
+            padding: const EdgeInsets.all(10),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 150,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            children: [
+              for (final item in _items(snapshot))
+                SpDashboardTile(
+                  item: item,
+                  onTap: () => onSelect(item.section),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -207,7 +289,7 @@ class DashboardPage extends StatelessWidget {
     return [
       HomeNavigationItem(
         'Members',
-        '${home?.memberCount ?? 0} saved',
+        '${home?.memberCount ?? 0}',
         SpSection.members,
         Icons.people_alt_rounded,
       ),
@@ -216,6 +298,84 @@ class DashboardPage extends StatelessWidget {
         '${home?.frontHistoryCount ?? 0} entries',
         SpSection.frontHistory,
         Icons.history_rounded,
+      ),
+      const HomeNavigationItem(
+        'Analytics',
+        'local stats',
+        SpSection.analytics,
+        Icons.analytics_rounded,
+      ),
+      const HomeNavigationItem(
+        'Chat',
+        'offline',
+        SpSection.chat,
+        Icons.chat_rounded,
+      ),
+      const HomeNavigationItem(
+        'Polls',
+        '0 active',
+        SpSection.polls,
+        Icons.how_to_vote_rounded,
+      ),
+      const HomeNavigationItem(
+        'Friends',
+        'sync required',
+        SpSection.friends,
+        Icons.people_rounded,
+      ),
+      const HomeNavigationItem(
+        'Useful Links',
+        'local help',
+        SpSection.usefulLinks,
+        Icons.star_rounded,
+      ),
+      const HomeNavigationItem(
+        'App Reminders',
+        '0 scheduled',
+        SpSection.reminders,
+        Icons.notification_add_rounded,
+      ),
+      const HomeNavigationItem(
+        'Privacy Buckets',
+        'sharing profiles',
+        SpSection.privacyBuckets,
+        Icons.privacy_tip_rounded,
+      ),
+      const HomeNavigationItem(
+        'Tokens',
+        'disabled',
+        SpSection.tokens,
+        Icons.verified_user_rounded,
+      ),
+      const HomeNavigationItem(
+        'User Report',
+        'local report',
+        SpSection.userReport,
+        Icons.picture_as_pdf_rounded,
+      ),
+      const HomeNavigationItem(
+        'Notification History',
+        '0 alerts',
+        SpSection.notificationHistory,
+        Icons.notifications_active_rounded,
+      ),
+      const HomeNavigationItem(
+        "How-to's",
+        'guides',
+        SpSection.howtos,
+        Icons.school_rounded,
+      ),
+      const HomeNavigationItem(
+        'Custom Fields',
+        '0 fields',
+        SpSection.customFields,
+        Icons.table_rows_rounded,
+      ),
+      const HomeNavigationItem(
+        'Account Settings',
+        'local profile',
+        SpSection.accountSettings,
+        Icons.settings_rounded,
       ),
       HomeNavigationItem(
         'Groups',
@@ -228,36 +388,6 @@ class DashboardPage extends StatelessWidget {
         '${home?.noteCount ?? 0} notes',
         SpSection.notes,
         Icons.sticky_note_2_rounded,
-      ),
-      const HomeNavigationItem(
-        'Chat',
-        'local board later',
-        SpSection.chat,
-        Icons.forum_rounded,
-      ),
-      const HomeNavigationItem(
-        'Polls',
-        '0 active',
-        SpSection.polls,
-        Icons.poll_rounded,
-      ),
-      const HomeNavigationItem(
-        'Friends',
-        'sync required',
-        SpSection.friends,
-        Icons.group_add_rounded,
-      ),
-      const HomeNavigationItem(
-        'Privacy Buckets',
-        'sharing profiles',
-        SpSection.privacyBuckets,
-        Icons.lock_rounded,
-      ),
-      const HomeNavigationItem(
-        'Reminders',
-        '0 scheduled',
-        SpSection.reminders,
-        Icons.notifications_rounded,
       ),
       const HomeNavigationItem(
         'Import / Export',
@@ -762,6 +892,76 @@ class DrawerEntry extends StatelessWidget {
   }
 }
 
+class DashboardSystemHeader extends StatelessWidget {
+  const DashboardSystemHeader({super.key, required this.snapshot});
+
+  final HomeSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final home = snapshot;
+
+    return SizedBox(
+      height: 58,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            const SpAvatar(size: 24, color: _spPurple, label: 'PH'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                home?.systemName ?? 'Local system',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, color: _spText),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SpDashboardTile extends StatelessWidget {
+  const SpDashboardTile({super.key, required this.item, required this.onTap});
+
+  final HomeNavigationItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _spCard,
+          foregroundColor: _spText,
+          elevation: 0,
+          padding: const EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(item.icon, color: _spGold, size: 22),
+            const SizedBox(height: 18),
+            Text(
+              item.title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, height: 1.15),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class SystemListEntry extends StatelessWidget {
   const SystemListEntry({super.key, required this.snapshot});
 
@@ -774,7 +974,7 @@ class SystemListEntry extends StatelessWidget {
     return SpCard(
       child: Row(
         children: [
-          const SpAvatar(size: 52, color: _spPurple),
+          const SpAvatar(size: 52, color: _spPurple, label: 'PH'),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -1282,10 +1482,16 @@ class SpCard extends StatelessWidget {
 }
 
 class SpAvatar extends StatelessWidget {
-  const SpAvatar({super.key, required this.size, required this.color});
+  const SpAvatar({
+    super.key,
+    required this.size,
+    required this.color,
+    this.label,
+  });
 
   final double size;
   final Color color;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -1293,6 +1499,17 @@ class SpAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: label == null
+          ? null
+          : Text(
+              label!,
+              style: TextStyle(
+                color: _spText,
+                fontSize: size * 0.3,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
     );
   }
 }
