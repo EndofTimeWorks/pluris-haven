@@ -10,20 +10,52 @@ const _spMuted = Color(0xFFC4C0CE);
 const _spPurple = Color(0xFF7B61FF);
 const _spGold = Color(0xFFF2C75C);
 
-class HomePage extends StatelessWidget {
+enum SpSection {
+  dashboard('Dashboard'),
+  members('Members'),
+  frontHistory('Front History'),
+  groups('Groups'),
+  notes('Notes'),
+  chat('Chat'),
+  polls('Polls'),
+  friends('Friends'),
+  reminders('Reminders'),
+  privacyBuckets('Privacy buckets'),
+  importExport('Import / Export'),
+  sync('Sync'),
+  appOptions('App options'),
+  about('About');
+
+  const SpSection(this.label);
+
+  final String label;
+}
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.repository});
 
   final HavenRepository repository;
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  SpSection _section = SpSection.dashboard;
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<HomeSnapshot>(
-      stream: repository.watchHomeSnapshot(),
+      stream: widget.repository.watchHomeSnapshot(),
       builder: (context, snapshot) {
         final home = snapshot.data;
 
         return Scaffold(
-          drawer: SpDrawer(snapshot: home),
+          drawer: SpDrawer(
+            snapshot: home,
+            selected: _section,
+            onSelect: _selectSection,
+          ),
           appBar: AppBar(
             toolbarHeight: 86,
             titleSpacing: 0,
@@ -36,7 +68,9 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  home?.systemName ?? 'saved on device',
+                  _section == SpSection.dashboard
+                      ? home?.systemName ?? 'saved on device'
+                      : _section.label,
                   style: const TextStyle(
                     color: _spMuted,
                     fontSize: 13,
@@ -46,43 +80,524 @@ class HomePage extends StatelessWidget {
               ],
             ),
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
-            children: [
-              SystemListEntry(snapshot: home),
-              const SizedBox(height: 12),
-              CurrentFrontEntry(snapshot: home, repository: repository),
-              const SizedBox(height: 14),
-              for (final item in _items(home)) ...[
-                SpNavigationEntry(item: item),
-                const SizedBox(height: 10),
-              ],
-            ],
-          ),
+          body: _buildSection(home),
         );
       },
     );
   }
 
+  void _selectSection(SpSection section) {
+    setState(() {
+      _section = section;
+    });
+  }
+
+  Widget _buildSection(HomeSnapshot? home) {
+    switch (_section) {
+      case SpSection.dashboard:
+        return DashboardPage(
+          snapshot: home,
+          repository: widget.repository,
+          onSelect: _selectSection,
+        );
+      case SpSection.members:
+        return MembersPage(snapshot: home);
+      case SpSection.frontHistory:
+        return FrontHistoryPage(snapshot: home, repository: widget.repository);
+      case SpSection.groups:
+        return GroupsPage(snapshot: home);
+      case SpSection.notes:
+        return NotesPage(snapshot: home);
+      case SpSection.chat:
+        return const OfflineFeaturePage(
+          title: 'Chat',
+          body:
+              'SP chat depends on accounts and sync. Local message boards can live here later.',
+          rows: [
+            SpSettingsRow('Local board', 'not created'),
+            SpSettingsRow('Synced chat', 'off'),
+            SpSettingsRow('Attachments', 'local only'),
+          ],
+        );
+      case SpSection.polls:
+        return const OfflineFeaturePage(
+          title: 'Polls',
+          body:
+              'Polls are kept in the shell so imported SP data has a place to land.',
+          rows: [
+            SpSettingsRow('Active polls', '0'),
+            SpSettingsRow('Closed polls', '0'),
+            SpSettingsRow('Poll archive', 'empty'),
+          ],
+        );
+      case SpSection.friends:
+        return const OfflineFeaturePage(
+          title: 'Friends',
+          body: 'Friends are disabled until encrypted sync exists.',
+          rows: [
+            SpSettingsRow('Friend list', 'not shared'),
+            SpSettingsRow('Privacy', 'local only'),
+            SpSettingsRow('Requests', 'off'),
+          ],
+        );
+      case SpSection.reminders:
+        return const OfflineFeaturePage(
+          title: 'Reminders',
+          body:
+              'Local reminders can work without an account once notifications are wired.',
+          rows: [
+            SpSettingsRow('One-time reminders', '0'),
+            SpSettingsRow('Repeating reminders', '0'),
+            SpSettingsRow('Notifications', 'off'),
+          ],
+        );
+      case SpSection.privacyBuckets:
+        return const OfflineFeaturePage(
+          title: 'Privacy buckets',
+          body:
+              'SP privacy buckets map cleanly to local sharing profiles later.',
+          rows: [
+            SpSettingsRow('Private', 'device only'),
+            SpSettingsRow('Trusted', 'not synced'),
+            SpSettingsRow('Public', 'off'),
+          ],
+        );
+      case SpSection.importExport:
+        return const ImportExportPage();
+      case SpSection.sync:
+        return const SyncPage();
+      case SpSection.appOptions:
+        return const AppOptionsPage();
+      case SpSection.about:
+        return const AboutPage();
+    }
+  }
+}
+
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+    required this.onSelect,
+  });
+
+  final HomeSnapshot? snapshot;
+  final HavenRepository repository;
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
+      children: [
+        SystemListEntry(snapshot: snapshot),
+        const SizedBox(height: 12),
+        CurrentFrontEntry(snapshot: snapshot, repository: repository),
+        const SizedBox(height: 14),
+        for (final item in _items(snapshot)) ...[
+          SpNavigationEntry(item: item, onTap: () => onSelect(item.section)),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
   List<HomeNavigationItem> _items(HomeSnapshot? home) {
     return [
-      HomeNavigationItem('Members', '${home?.memberCount ?? 0} saved'),
+      HomeNavigationItem(
+        'Members',
+        '${home?.memberCount ?? 0} saved',
+        SpSection.members,
+        Icons.people_alt_rounded,
+      ),
       HomeNavigationItem(
         'Front History',
         '${home?.frontHistoryCount ?? 0} entries',
+        SpSection.frontHistory,
+        Icons.history_rounded,
       ),
-      HomeNavigationItem('Groups', '${home?.groupCount ?? 0} groups'),
-      HomeNavigationItem('Notes', '${home?.noteCount ?? 0} notes'),
-      const HomeNavigationItem('Import / Export', 'local archive'),
-      const HomeNavigationItem('Sync', 'off by default'),
+      HomeNavigationItem(
+        'Groups',
+        '${home?.groupCount ?? 0} groups',
+        SpSection.groups,
+        Icons.folder_rounded,
+      ),
+      HomeNavigationItem(
+        'Notes',
+        '${home?.noteCount ?? 0} notes',
+        SpSection.notes,
+        Icons.sticky_note_2_rounded,
+      ),
+      const HomeNavigationItem(
+        'Chat',
+        'local board later',
+        SpSection.chat,
+        Icons.forum_rounded,
+      ),
+      const HomeNavigationItem(
+        'Polls',
+        '0 active',
+        SpSection.polls,
+        Icons.poll_rounded,
+      ),
+      const HomeNavigationItem(
+        'Friends',
+        'sync required',
+        SpSection.friends,
+        Icons.group_add_rounded,
+      ),
+      const HomeNavigationItem(
+        'Privacy Buckets',
+        'sharing profiles',
+        SpSection.privacyBuckets,
+        Icons.lock_rounded,
+      ),
+      const HomeNavigationItem(
+        'Reminders',
+        '0 scheduled',
+        SpSection.reminders,
+        Icons.notifications_rounded,
+      ),
+      const HomeNavigationItem(
+        'Import / Export',
+        'local archive',
+        SpSection.importExport,
+        Icons.archive_rounded,
+      ),
+      const HomeNavigationItem(
+        'Sync',
+        'off by default',
+        SpSection.sync,
+        Icons.sync_disabled_rounded,
+      ),
     ];
   }
 }
 
-class SpDrawer extends StatelessWidget {
-  const SpDrawer({super.key, required this.snapshot});
+class MembersPage extends StatelessWidget {
+  const MembersPage({super.key, required this.snapshot});
 
   final HomeSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpPage(
+      children: [
+        const SpSearchField(hintText: 'Search members'),
+        const SizedBox(height: 12),
+        const SpFilterRow(filters: ['All', 'Fronting', 'Archived']),
+        const SizedBox(height: 12),
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Members',
+                trailing: StatusPill(text: '${snapshot?.memberCount ?? 0}'),
+              ),
+              const SizedBox(height: 12),
+              const SpEmptyState(
+                title: 'No members saved locally',
+                body: 'Imported Simply Plural members will show up here.',
+              ),
+              const SizedBox(height: 14),
+              const SpActionRow(primary: 'Add member', secondary: 'Import'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class FrontHistoryPage extends StatelessWidget {
+  const FrontHistoryPage({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+  });
+
+  final HomeSnapshot? snapshot;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpPage(
+      children: [
+        CurrentFrontEntry(snapshot: snapshot, repository: repository),
+        const SizedBox(height: 12),
+        const SpFilterRow(filters: ['Today', 'Week', 'Month', 'All']),
+        const SizedBox(height: 12),
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Front history',
+                trailing: StatusPill(
+                  text: '${snapshot?.frontHistoryCount ?? 0} entries',
+                ),
+              ),
+              const SizedBox(height: 12),
+              const SpEmptyState(
+                title: 'No front history yet',
+                body: 'Set a front or import an archive to fill this in.',
+              ),
+              const SizedBox(height: 14),
+              const SpActionRow(primary: 'Add entry', secondary: 'Filter'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class GroupsPage extends StatelessWidget {
+  const GroupsPage({super.key, required this.snapshot});
+
+  final HomeSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpPage(
+      children: [
+        const SpSearchField(hintText: 'Search groups'),
+        const SizedBox(height: 12),
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Groups',
+                trailing: StatusPill(text: '${snapshot?.groupCount ?? 0}'),
+              ),
+              const SizedBox(height: 12),
+              const SpEmptyState(
+                title: 'No groups yet',
+                body: 'Groups keep members organized without needing sync.',
+              ),
+              const SizedBox(height: 14),
+              const SpActionRow(primary: 'Add group', secondary: 'Import'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class NotesPage extends StatelessWidget {
+  const NotesPage({super.key, required this.snapshot});
+
+  final HomeSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpPage(
+      children: [
+        const SpSearchField(hintText: 'Search notes'),
+        const SizedBox(height: 12),
+        const SpFilterRow(filters: ['All', 'Pinned', 'Private']),
+        const SizedBox(height: 12),
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Notes',
+                trailing: StatusPill(text: '${snapshot?.noteCount ?? 0}'),
+              ),
+              const SizedBox(height: 12),
+              const SpEmptyState(
+                title: 'No notes yet',
+                body: 'Local notes can be attached to members or kept general.',
+              ),
+              const SizedBox(height: 14),
+              const SpActionRow(primary: 'Add note', secondary: 'Import'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ImportExportPage extends StatelessWidget {
+  const ImportExportPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SpPage(
+      children: [
+        SpSettingsGroup(
+          title: 'Import',
+          rows: [
+            SpSettingsRow('Import Simply Plural', 'JSON export or archive'),
+            SpSettingsRow('Import PluralKit', 'members and groups'),
+            SpSettingsRow('Review imported data', 'before saving changes'),
+          ],
+        ),
+        SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'Export',
+          rows: [
+            SpSettingsRow('Export local archive', 'portable JSON'),
+            SpSettingsRow('Encrypted export', 'password protected'),
+            SpSettingsRow('Backup folder', 'choose later'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class SyncPage extends StatelessWidget {
+  const SyncPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SpPage(
+      children: [
+        SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Sync is off',
+                trailing: StatusPill(text: 'local'),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Pluris Haven keeps data on this device unless sync is turned on.',
+                style: TextStyle(color: _spMuted, height: 1.35),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'Sync',
+          rows: [
+            SpSettingsRow('Encrypted sync', 'not configured'),
+            SpSettingsRow('Friends', 'not shared'),
+            SpSettingsRow('Backups', 'manual for now'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class AppOptionsPage extends StatelessWidget {
+  const AppOptionsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SpPage(
+      children: [
+        SpSettingsGroup(
+          title: 'App options',
+          rows: [
+            SpSettingsRow('Theme', 'dark'),
+            SpSettingsRow('Language', 'system default'),
+            SpSettingsRow('Security', 'device storage'),
+            SpSettingsRow('Notifications', 'off'),
+            SpSettingsRow('Accessibility', 'default sizing'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SpPage(
+      children: [
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pluris Haven',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Offline-first plural system tracker.',
+                style: TextStyle(color: _spMuted, height: 1.35),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'About',
+          rows: [
+            SpSettingsRow('Storage', 'saved on device'),
+            SpSettingsRow('Compatibility', 'Simply Plural import planned'),
+            SpSettingsRow('Source', 'local project'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class OfflineFeaturePage extends StatelessWidget {
+  const OfflineFeaturePage({
+    super.key,
+    required this.title,
+    required this.body,
+    required this.rows,
+  });
+
+  final String title;
+  final String body;
+  final List<SpSettingsRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpPage(
+      children: [
+        SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: title,
+                trailing: const StatusPill(text: 'offline'),
+              ),
+              const SizedBox(height: 8),
+              Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SpSettingsGroup(title: title, rows: rows),
+      ],
+    );
+  }
+}
+
+class SpDrawer extends StatelessWidget {
+  const SpDrawer({
+    super.key,
+    required this.snapshot,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final HomeSnapshot? snapshot;
+  final SpSection selected;
+  final ValueChanged<SpSection> onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -122,14 +637,91 @@ class SpDrawer extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            const DrawerEntry(label: 'Members'),
-            const DrawerEntry(label: 'Front History'),
-            const DrawerEntry(label: 'Groups'),
-            const DrawerEntry(label: 'Notes'),
-            const DrawerEntry(label: 'Import / Export'),
+            DrawerEntry(
+              label: 'Dashboard',
+              section: SpSection.dashboard,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Members',
+              section: SpSection.members,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Front History',
+              section: SpSection.frontHistory,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Groups',
+              section: SpSection.groups,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Notes',
+              section: SpSection.notes,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Chat',
+              section: SpSection.chat,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Polls',
+              section: SpSection.polls,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Friends',
+              section: SpSection.friends,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Privacy buckets',
+              section: SpSection.privacyBuckets,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Reminders',
+              section: SpSection.reminders,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Import / Export',
+              section: SpSection.importExport,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Sync',
+              section: SpSection.sync,
+              selected: selected,
+              onSelect: onSelect,
+            ),
             const Divider(height: 24),
-            const DrawerEntry(label: 'App options'),
-            const DrawerEntry(label: 'About'),
+            DrawerEntry(
+              label: 'App options',
+              section: SpSection.appOptions,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'About',
+              section: SpSection.about,
+              selected: selected,
+              onSelect: onSelect,
+            ),
           ],
         ),
       ),
@@ -138,17 +730,34 @@ class SpDrawer extends StatelessWidget {
 }
 
 class DrawerEntry extends StatelessWidget {
-  const DrawerEntry({super.key, required this.label});
+  const DrawerEntry({
+    super.key,
+    required this.label,
+    required this.section,
+    required this.selected,
+    required this.onSelect,
+  });
 
   final String label;
+  final SpSection section;
+  final SpSection selected;
+  final ValueChanged<SpSection> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = selected == section;
+
     return ListTile(
       dense: true,
+      selected: isSelected,
+      selectedColor: _spText,
+      selectedTileColor: _spCard,
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       trailing: const Text('>', style: TextStyle(color: _spMuted)),
-      onTap: () => Navigator.pop(context),
+      onTap: () {
+        Navigator.pop(context);
+        onSelect(section);
+      },
     );
   }
 }
@@ -354,18 +963,19 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 }
 
 class SpNavigationEntry extends StatelessWidget {
-  const SpNavigationEntry({super.key, required this.item});
+  const SpNavigationEntry({super.key, required this.item, this.onTap});
 
   final HomeNavigationItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return SpCard(
-      onTap: () {},
+      onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       child: Row(
         children: [
-          const AccentDot(),
+          SpIconBubble(icon: item.icon),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -393,6 +1003,237 @@ class SpNavigationEntry extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SpIconBubble extends StatelessWidget {
+  const SpIconBubble({super.key, required this.icon, this.color = _spGold});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        shape: BoxShape.circle,
+      ),
+      child: SizedBox(
+        width: 38,
+        height: 38,
+        child: Icon(icon, color: color, size: 21),
+      ),
+    );
+  }
+}
+
+class SpPage extends StatelessWidget {
+  const SpPage({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
+      children: children,
+    );
+  }
+}
+
+class SpSearchField extends StatelessWidget {
+  const SpSearchField({super.key, required this.hintText});
+
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      readOnly: true,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: _spCard,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _spLine),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _spPurple),
+        ),
+      ),
+    );
+  }
+}
+
+class SpFilterRow extends StatelessWidget {
+  const SpFilterRow({super.key, required this.filters});
+
+  final List<String> filters;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final filter in filters) ...[
+            StatusPill(text: filter),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class SpSectionHeader extends StatelessWidget {
+  const SpSectionHeader({super.key, required this.title, this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+        ),
+        ?trailing,
+      ],
+    );
+  }
+}
+
+class SpEmptyState extends StatelessWidget {
+  const SpEmptyState({super.key, required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _spSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _spLine),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SpActionRow extends StatelessWidget {
+  const SpActionRow({
+    super.key,
+    required this.primary,
+    required this.secondary,
+  });
+
+  final String primary;
+  final String secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        FilledButton(onPressed: () {}, child: Text(primary)),
+        const SizedBox(width: 10),
+        OutlinedButton(onPressed: () {}, child: Text(secondary)),
+      ],
+    );
+  }
+}
+
+class SpSettingsGroup extends StatelessWidget {
+  const SpSettingsGroup({super.key, required this.title, required this.rows});
+
+  final String title;
+  final List<SpSettingsRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i != rows.length - 1)
+              const Divider(height: 1, color: _spLine, indent: 16),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class SpSettingsRow extends StatelessWidget {
+  const SpSettingsRow(this.title, this.subtitle, {super.key});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Row(
+        children: [
+          const AccentDot(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: _spMuted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            '>',
+            style: TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -492,8 +1333,10 @@ class StatusPill extends StatelessWidget {
 }
 
 class HomeNavigationItem {
-  const HomeNavigationItem(this.title, this.subtitle);
+  const HomeNavigationItem(this.title, this.subtitle, this.section, this.icon);
 
   final String title;
   final String subtitle;
+  final SpSection section;
+  final IconData icon;
 }
