@@ -65,6 +65,29 @@ void main() {
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);
   });
+
+  testWidgets('opens an familiar section from the dashboard', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Members').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search members'), findsOneWidget);
+    expect(find.text('No members saved locally'), findsOneWidget);
+  });
 }
 
 class FakeHavenRepository implements HavenRepository {
