@@ -25,7 +25,7 @@ void main() {
     expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Members'), findsOneWidget);
     expect(find.text('Front History'), findsOneWidget);
-    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Customize'), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
   });
 
