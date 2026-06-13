@@ -42,6 +42,7 @@ The project has three targets: Android, iOS, and website. Local app use should w
 - `mobile` - Flutter app for Android, iOS, and future web.
 - `website` - SvelteKit website/app.
 - `docs/product-goals.md` - final product goals, MVP scope, and later-stage boundaries.
+- `docs/release/mobile.md` - mobile CI, version tags, and GitHub Release workflow.
 - `sp-replacement-schema.md` - local-first data model and sync boundary.
 
 ## Privacy Model
