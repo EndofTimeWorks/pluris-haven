@@ -27,8 +27,94 @@ class HomeSnapshot {
       currentFrontLabel?.trim().isNotEmpty == true ? 'fronting' : 'none';
 }
 
+enum HavenThemeMode {
+  dark('dark', 'Dark'),
+  light('light', 'Light'),
+  system('system', 'System');
+
+  const HavenThemeMode(this.storageValue, this.label);
+
+  final String storageValue;
+  final String label;
+
+  static HavenThemeMode fromStorage(String? value) {
+    return HavenThemeMode.values.firstWhere(
+      (mode) => mode.storageValue == value,
+      orElse: () => HavenThemeMode.dark,
+    );
+  }
+}
+
+enum HavenAccentColor {
+  purple('purple', 'Purple', 0xFF7B61FF),
+  gold('gold', 'Gold', 0xFFF2C75C),
+  teal('teal', 'Teal', 0xFF5FD6C2),
+  rose('rose', 'Rose', 0xFFFF7AA8);
+
+  const HavenAccentColor(this.storageValue, this.label, this.argb);
+
+  final String storageValue;
+  final String label;
+  final int argb;
+
+  static HavenAccentColor fromStorage(String? value) {
+    return HavenAccentColor.values.firstWhere(
+      (accent) => accent.storageValue == value,
+      orElse: () => HavenAccentColor.purple,
+    );
+  }
+}
+
+class AppCustomization {
+  const AppCustomization({
+    required this.themeMode,
+    required this.accentColor,
+    required this.compactDashboard,
+    required this.showDashboardSubtitles,
+  });
+
+  final HavenThemeMode themeMode;
+  final HavenAccentColor accentColor;
+  final bool compactDashboard;
+  final bool showDashboardSubtitles;
+
+  static const defaults = AppCustomization(
+    themeMode: HavenThemeMode.dark,
+    accentColor: HavenAccentColor.purple,
+    compactDashboard: false,
+    showDashboardSubtitles: true,
+  );
+
+  AppCustomization copyWith({
+    HavenThemeMode? themeMode,
+    HavenAccentColor? accentColor,
+    bool? compactDashboard,
+    bool? showDashboardSubtitles,
+  }) {
+    return AppCustomization(
+      themeMode: themeMode ?? this.themeMode,
+      accentColor: accentColor ?? this.accentColor,
+      compactDashboard: compactDashboard ?? this.compactDashboard,
+      showDashboardSubtitles:
+          showDashboardSubtitles ?? this.showDashboardSubtitles,
+    );
+  }
+}
+
 abstract interface class HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot();
+
+  Stream<AppCustomization> watchCustomization();
+
+  Future<AppCustomization> loadCustomization();
+
+  Future<void> setThemeMode(HavenThemeMode mode);
+
+  Future<void> setAccentColor(HavenAccentColor color);
+
+  Future<void> setCompactDashboard(bool compact);
+
+  Future<void> setShowDashboardSubtitles(bool show);
 
   Future<void> setCustomFront(String label);
 
@@ -82,6 +168,20 @@ class LocalHavenRepository implements HavenRepository {
     return _mapHomeSnapshot(row);
   }
 
+  @override
+  Stream<AppCustomization> watchCustomization() {
+    return database
+        .select(database.appPreferences)
+        .watch()
+        .map(_mapCustomizationRows);
+  }
+
+  @override
+  Future<AppCustomization> loadCustomization() async {
+    final rows = await database.select(database.appPreferences).get();
+    return _mapCustomizationRows(rows);
+  }
+
   String get _homeSnapshotSql => '''
 SELECT
   COALESCE((SELECT name FROM plural_systems WHERE id = ? LIMIT 1), 'Local system') AS system_name,
@@ -112,6 +212,62 @@ SELECT
       frontHistoryCount: data['front_history_count'] as int,
       currentFrontLabel: data['current_front_label'] as String?,
     );
+  }
+
+  AppCustomization _mapCustomizationRows(List<AppPreference> rows) {
+    final values = {for (final row in rows) row.key: row.value};
+
+    return AppCustomization(
+      themeMode: HavenThemeMode.fromStorage(values[_themeModeKey]),
+      accentColor: HavenAccentColor.fromStorage(values[_accentColorKey]),
+      compactDashboard: _readBool(values[_compactDashboardKey]),
+      showDashboardSubtitles: _readBool(
+        values[_showDashboardSubtitlesKey],
+        defaultValue: true,
+      ),
+    );
+  }
+
+  bool _readBool(String? value, {bool defaultValue = false}) {
+    if (value == null) {
+      return defaultValue;
+    }
+
+    return value == 'true';
+  }
+
+  @override
+  Future<void> setThemeMode(HavenThemeMode mode) {
+    return _writePreference(_themeModeKey, mode.storageValue);
+  }
+
+  @override
+  Future<void> setAccentColor(HavenAccentColor color) {
+    return _writePreference(_accentColorKey, color.storageValue);
+  }
+
+  @override
+  Future<void> setCompactDashboard(bool compact) {
+    return _writePreference(_compactDashboardKey, compact.toString());
+  }
+
+  @override
+  Future<void> setShowDashboardSubtitles(bool show) {
+    return _writePreference(_showDashboardSubtitlesKey, show.toString());
+  }
+
+  Future<void> _writePreference(String key, String value) {
+    final now = DateTime.now().toUtc();
+
+    return database
+        .into(database.appPreferences)
+        .insertOnConflictUpdate(
+          AppPreferencesCompanion.insert(
+            key: key,
+            value: value,
+            updatedAt: now,
+          ),
+        );
   }
 
   @override
@@ -160,3 +316,8 @@ SELECT
         );
   }
 }
+
+const _themeModeKey = 'theme_mode';
+const _accentColorKey = 'accent_color';
+const _compactDashboardKey = 'compact_dashboard';
+const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
