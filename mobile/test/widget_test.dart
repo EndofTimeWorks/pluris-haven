@@ -92,6 +92,42 @@ void main() {
     expect(find.text('Search members'), findsOneWidget);
     expect(find.text('No members saved locally'), findsOneWidget);
   });
+
+  testWidgets('updates customization from the app options page', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Customize'));
+    await tester.tap(find.text('Customize'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dark'), findsOneWidget);
+    await tester.tap(find.text('Theme'));
+    await tester.pumpAndSettle();
+    expect(find.text('Light'), findsOneWidget);
+
+    await tester.tap(find.text('Compact dashboard'));
+    await tester.pumpAndSettle();
+    expect((await repository.loadCustomization()).compactDashboard, isTrue);
+  });
 }
 
 class FakeHavenRepository implements HavenRepository {
@@ -100,13 +136,50 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _controller.add(_snapshot),
     );
+    _customizationController = StreamController<AppCustomization>.broadcast(
+      sync: true,
+      onListen: () => _customizationController.add(_customization),
+    );
   }
 
   HomeSnapshot _snapshot;
+  AppCustomization _customization = AppCustomization.defaults;
   late final StreamController<HomeSnapshot> _controller;
+  late final StreamController<AppCustomization> _customizationController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
+
+  @override
+  Stream<AppCustomization> watchCustomization() =>
+      _customizationController.stream;
+
+  @override
+  Future<AppCustomization> loadCustomization() async => _customization;
+
+  @override
+  Future<void> setThemeMode(HavenThemeMode mode) async {
+    _customization = _customization.copyWith(themeMode: mode);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setAccentColor(HavenAccentColor color) async {
+    _customization = _customization.copyWith(accentColor: color);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setCompactDashboard(bool compact) async {
+    _customization = _customization.copyWith(compactDashboard: compact);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setShowDashboardSubtitles(bool show) async {
+    _customization = _customization.copyWith(showDashboardSubtitles: show);
+    _customizationController.add(_customization);
+  }
 
   @override
   Future<void> setCustomFront(String label) async {
@@ -134,5 +207,8 @@ class FakeHavenRepository implements HavenRepository {
     _controller.add(_snapshot);
   }
 
-  Future<void> close() => _controller.close();
+  Future<void> close() async {
+    await _controller.close();
+    await _customizationController.close();
+  }
 }
