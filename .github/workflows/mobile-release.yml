@@ -1,0 +1,157 @@
+name: Mobile Release
+
+on:
+  push:
+    tags:
+      - "mobile-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version name, e.g. 0.1.0"
+        required: true
+      build_number:
+        description: "Android/iOS build number"
+        required: true
+        default: "1"
+      prerelease:
+        description: "Create a prerelease"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Build Android APKs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.6"
+          channel: stable
+          cache: true
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            raw="${GITHUB_REF_NAME#mobile-v}"
+            version="${raw%%+*}"
+            if [[ "${raw}" == *"+"* ]]; then
+              build="${raw##*+}"
+            else
+              build="${GITHUB_RUN_NUMBER}"
+            fi
+            tag="${GITHUB_REF_NAME}"
+            if [[ "${version}" == 0.* || "${version}" == *-* ]]; then
+              prerelease=true
+            else
+              prerelease=false
+            fi
+          else
+            version="${{ inputs.version }}"
+            build="${{ inputs.build_number }}"
+            tag="mobile-v${version}+${build}"
+            prerelease="${{ inputs.prerelease }}"
+          fi
+
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version: ${version}" >&2
+            exit 1
+          fi
+          if [[ ! "${build}" =~ ^[0-9]+$ ]]; then
+            echo "Invalid build number: ${build}" >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "build=${build}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter --no-color analyze
+
+      - name: Test
+        run: flutter --no-color test
+
+      - name: Build release APK
+        run: >
+          flutter --no-color build apk --release
+          --build-name "${{ steps.version.outputs.version }}"
+          --build-number "${{ steps.version.outputs.build }}"
+
+      - name: Build split per ABI APKs
+        run: >
+          flutter --no-color build apk --release --split-per-abi
+          --build-name "${{ steps.version.outputs.version }}"
+          --build-number "${{ steps.version.outputs.build }}"
+
+      - name: Collect release artifacts
+        shell: bash
+        run: |
+          mkdir -p ../release/mobile
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-universal.apk"
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi="${apk#build/app/outputs/flutter-apk/app-}"
+            abi="${abi%-release.apk}"
+            cp "${apk}" "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-${abi}.apk"
+          done
+          (cd ../release/mobile && sha256sum *.apk > SHA256SUMS.txt)
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: pluris-haven-mobile-release
+          path: release/mobile/*
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        shell: bash
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          notes="Pluris Haven mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}"
+          prerelease_flag=()
+          if [[ "${{ steps.version.outputs.prerelease }}" == "true" ]]; then
+            prerelease_flag=(--prerelease)
+          fi
+
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            gh release upload "${{ steps.version.outputs.tag }}" release/mobile/* --clobber
+          else
+            gh release create "${{ steps.version.outputs.tag }}" \
+              release/mobile/* \
+              --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+              --notes "${notes}" \
+              "${prerelease_flag[@]}"
+          fi
