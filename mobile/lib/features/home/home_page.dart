@@ -72,7 +72,16 @@ class _HomePageState extends State<HomePage> {
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
-          body: _buildSection(home),
+          body: StreamBuilder<AppCustomization>(
+            stream: widget.repository.watchCustomization(),
+            initialData: AppCustomization.defaults,
+            builder: (context, customizationSnapshot) {
+              return _buildSection(
+                home,
+                customizationSnapshot.data ?? AppCustomization.defaults,
+              );
+            },
+          ),
         );
       },
     );
@@ -84,11 +93,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Widget _buildSection(HomeSnapshot? home) {
+  Widget _buildSection(HomeSnapshot? home, AppCustomization customization) {
     switch (_section) {
       case SpSection.dashboard:
         return DashboardPage(
           snapshot: home,
+          customization: customization,
           repository: widget.repository,
           onSelect: _selectSection,
         );
@@ -244,7 +254,10 @@ class _HomePageState extends State<HomePage> {
       case SpSection.sync:
         return const SyncPage();
       case SpSection.appOptions:
-        return const AppOptionsPage();
+        return AppOptionsPage(
+          customization: customization,
+          repository: widget.repository,
+        );
       case SpSection.about:
         return const AboutPage();
     }
@@ -255,11 +268,13 @@ class DashboardPage extends StatelessWidget {
   const DashboardPage({
     super.key,
     required this.snapshot,
+    required this.customization,
     required this.repository,
     required this.onSelect,
   });
 
   final HomeSnapshot? snapshot;
+  final AppCustomization customization;
   final HavenRepository repository;
   final ValueChanged<SpSection> onSelect;
 
@@ -274,7 +289,11 @@ class DashboardPage extends StatelessWidget {
         const SizedBox(height: 18),
         const DashboardSectionTitle('Main'),
         const SizedBox(height: 8),
-        DashboardActionGrid(items: _primaryItems(snapshot), onSelect: onSelect),
+        DashboardActionGrid(
+          items: _primaryItems(snapshot),
+          customization: customization,
+          onSelect: onSelect,
+        ),
         const SizedBox(height: 18),
         const DashboardSectionTitle('Tools'),
         const SizedBox(height: 8),
@@ -553,23 +572,55 @@ class SyncPage extends StatelessWidget {
 }
 
 class AppOptionsPage extends StatelessWidget {
-  const AppOptionsPage({super.key});
+  const AppOptionsPage({
+    super.key,
+    required this.customization,
+    required this.repository,
+  });
+
+  final AppCustomization customization;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    return const SpPage(
+    return SpPage(
       children: [
         SpSettingsGroup(
           title: 'Customize',
           rows: [
-            SpSettingsRow('Theme', 'dark, light, or system'),
-            SpSettingsRow('Accent color', 'purple for now'),
-            SpSettingsRow('Dashboard', 'choose visible shortcuts'),
-            SpSettingsRow('Member cards', 'compact or detailed'),
+            SpSettingsRow(
+              'Theme',
+              customization.themeMode.label,
+              onTap: () => repository.setThemeMode(
+                _nextThemeMode(customization.themeMode),
+              ),
+            ),
+            SpSettingsRow(
+              'Accent color',
+              customization.accentColor.label,
+              trailing: AccentSwatch(
+                color: Color(customization.accentColor.argb),
+              ),
+              onTap: () => repository.setAccentColor(
+                _nextAccentColor(customization.accentColor),
+              ),
+            ),
+            SpSwitchRow(
+              title: 'Compact dashboard',
+              subtitle: 'smaller shortcuts, more room',
+              value: customization.compactDashboard,
+              onChanged: repository.setCompactDashboard,
+            ),
+            SpSwitchRow(
+              title: 'Dashboard subtitles',
+              subtitle: 'show counts under shortcuts',
+              value: customization.showDashboardSubtitles,
+              onChanged: repository.setShowDashboardSubtitles,
+            ),
           ],
         ),
-        SizedBox(height: 12),
-        SpSettingsGroup(
+        const SizedBox(height: 12),
+        const SpSettingsGroup(
           title: 'Local defaults',
           rows: [
             SpSettingsRow('Language', 'system default'),
@@ -580,6 +631,20 @@ class AppOptionsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  HavenThemeMode _nextThemeMode(HavenThemeMode current) {
+    return switch (current) {
+      HavenThemeMode.dark => HavenThemeMode.light,
+      HavenThemeMode.light => HavenThemeMode.system,
+      HavenThemeMode.system => HavenThemeMode.dark,
+    };
+  }
+
+  HavenAccentColor _nextAccentColor(HavenAccentColor current) {
+    final values = HavenAccentColor.values;
+    final nextIndex = (values.indexOf(current) + 1) % values.length;
+    return values[nextIndex];
   }
 }
 
@@ -865,9 +930,17 @@ class DashboardSystemHeader extends StatelessWidget {
 }
 
 class SpDashboardTile extends StatelessWidget {
-  const SpDashboardTile({super.key, required this.item, required this.onTap});
+  const SpDashboardTile({
+    super.key,
+    required this.item,
+    required this.compact,
+    required this.showSubtitle,
+    required this.onTap,
+  });
 
   final HomeNavigationItem item;
+  final bool compact;
+  final bool showSubtitle;
   final VoidCallback onTap;
 
   @override
@@ -887,7 +960,7 @@ class SpDashboardTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(item.icon, color: _spGold, size: 22),
-            const SizedBox(height: 18),
+            SizedBox(height: compact ? 10 : 14),
             Text(
               item.title,
               textAlign: TextAlign.center,
@@ -895,6 +968,16 @@ class SpDashboardTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, height: 1.15),
             ),
+            if (showSubtitle && !compact) ...[
+              const SizedBox(height: 5),
+              Text(
+                item.subtitle,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: _spMuted, fontSize: 11),
+              ),
+            ],
           ],
         ),
       ),
@@ -924,10 +1007,12 @@ class DashboardActionGrid extends StatelessWidget {
   const DashboardActionGrid({
     super.key,
     required this.items,
+    required this.customization,
     required this.onSelect,
   });
 
   final List<HomeNavigationItem> items;
+  final AppCustomization customization;
   final ValueChanged<SpSection> onSelect;
 
   @override
@@ -943,7 +1028,12 @@ class DashboardActionGrid extends StatelessWidget {
       ),
       children: [
         for (final item in items)
-          SpDashboardTile(item: item, onTap: () => onSelect(item.section)),
+          SpDashboardTile(
+            item: item,
+            compact: customization.compactDashboard,
+            showSubtitle: customization.showDashboardSubtitles,
+            onTap: () => onSelect(item.section),
+          ),
       ],
     );
   }
@@ -1358,7 +1448,7 @@ class SpSettingsGroup extends StatelessWidget {
   const SpSettingsGroup({super.key, required this.title, required this.rows});
 
   final String title;
-  final List<SpSettingsRow> rows;
+  final List<Widget> rows;
 
   @override
   Widget build(BuildContext context) {
@@ -1386,10 +1476,17 @@ class SpSettingsGroup extends StatelessWidget {
 }
 
 class SpSettingsRow extends StatelessWidget {
-  const SpSettingsRow(this.title, this.subtitle, {super.key, this.onTap});
+  const SpSettingsRow(
+    this.title,
+    this.subtitle, {
+    super.key,
+    this.trailing,
+    this.onTap,
+  });
 
   final String title;
   final String subtitle;
+  final Widget? trailing;
   final VoidCallback? onTap;
 
   @override
@@ -1419,10 +1516,11 @@ class SpSettingsRow extends StatelessWidget {
               ],
             ),
           ),
-          const Text(
-            '>',
-            style: TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
-          ),
+          trailing ??
+              const Text(
+                '>',
+                style: TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
+              ),
         ],
       ),
     );
@@ -1432,6 +1530,54 @@ class SpSettingsRow extends StatelessWidget {
     }
 
     return InkWell(onTap: onTap, child: content);
+  }
+}
+
+class SpSwitchRow extends StatelessWidget {
+  const SpSwitchRow({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      activeThumbColor: Theme.of(context).colorScheme.primary,
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: _spMuted, fontSize: 13),
+      ),
+    );
+  }
+}
+
+class AccentSwatch extends StatelessWidget {
+  const AccentSwatch({super.key, required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: const SizedBox(width: 22, height: 22),
+    );
   }
 }
 
