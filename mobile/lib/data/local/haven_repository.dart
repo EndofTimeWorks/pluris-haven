@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'supported_language.dart';
 
 class HomeSnapshot {
   const HomeSnapshot({
@@ -72,6 +73,7 @@ class AppCustomization {
     required this.compactDashboard,
     required this.showDashboardSubtitles,
     required this.dashboardShortcutIds,
+    required this.languageCode,
   });
 
   final HavenThemeMode themeMode;
@@ -79,6 +81,7 @@ class AppCustomization {
   final bool compactDashboard;
   final bool showDashboardSubtitles;
   final List<String> dashboardShortcutIds;
+  final String languageCode;
 
   static AppCustomization get defaults => AppCustomization(
     themeMode: HavenThemeMode.dark,
@@ -86,6 +89,7 @@ class AppCustomization {
     compactDashboard: false,
     showDashboardSubtitles: true,
     dashboardShortcutIds: defaultDashboardShortcutIds,
+    languageCode: systemLanguageCode,
   );
 
   AppCustomization copyWith({
@@ -94,6 +98,7 @@ class AppCustomization {
     bool? compactDashboard,
     bool? showDashboardSubtitles,
     List<String>? dashboardShortcutIds,
+    String? languageCode,
   }) {
     return AppCustomization(
       themeMode: themeMode ?? this.themeMode,
@@ -104,8 +109,11 @@ class AppCustomization {
       dashboardShortcutIds: List.unmodifiable(
         dashboardShortcutIds ?? this.dashboardShortcutIds,
       ),
+      languageCode: languageCode ?? this.languageCode,
     );
   }
+
+  SupportedLanguage get language => supportedLanguageForCode(languageCode);
 }
 
 const defaultDashboardShortcutIds = [
@@ -134,6 +142,8 @@ abstract interface class HavenRepository {
   Future<void> setShowDashboardSubtitles(bool show);
 
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
+
+  Future<void> setLanguageCode(String languageCode);
 
   Future<void> setDashboardShortcutVisible(String shortcutId, bool visible);
 
@@ -251,6 +261,7 @@ SELECT
         defaultValue: true,
       ),
       dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
+      languageCode: _readLanguageCode(values[_languageCodeKey]),
     );
   }
 
@@ -280,6 +291,10 @@ SELECT
     return List.unmodifiable(ids);
   }
 
+  String _readLanguageCode(String? value) {
+    return supportedLanguageForCode(value).code;
+  }
+
   @override
   Future<void> setThemeMode(HavenThemeMode mode) {
     return _writePreference(_themeModeKey, mode.storageValue);
@@ -305,6 +320,14 @@ SELECT
     return _writePreference(
       _dashboardShortcutIdsKey,
       _serializeIds(shortcutIds),
+    );
+  }
+
+  @override
+  Future<void> setLanguageCode(String languageCode) {
+    return _writePreference(
+      _languageCodeKey,
+      supportedLanguageForCode(languageCode).code,
     );
   }
 
@@ -433,3 +456,4 @@ const _accentColorKey = 'accent_color';
 const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
+const _languageCodeKey = 'language_code';
