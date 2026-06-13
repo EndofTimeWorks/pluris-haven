@@ -1,0 +1,121 @@
+name: Mobile Dev Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-dev-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-dev-release
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Build Android dev APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.6"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter --no-color analyze
+
+      - name: Test
+        run: flutter --no-color test
+
+      - name: Build dev APK
+        run: >
+          flutter --no-color build apk --debug
+          --build-name 0.1.0
+          --build-number "${GITHUB_RUN_NUMBER}"
+
+      - name: Collect dev build
+        shell: bash
+        run: |
+          mkdir -p ../release/mobile-dev
+          cp build/app/outputs/flutter-apk/app-debug.apk ../release/mobile-dev/pluris-haven-dev.apk
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "run=${GITHUB_RUN_NUMBER}"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > ../release/mobile-dev/BUILD.txt
+          (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
+          cat > ../release/mobile-dev/NOTES.md <<EOF
+          Dev build from ${GITHUB_SHA}.
+
+          This APK is debug-signed and replaced by the next main-branch dev build.
+          EOF
+
+      - name: Upload dev artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: pluris-haven-dev-apk
+          path: release/mobile-dev/*
+          if-no-files-found: error
+
+      - name: Publish moving dev release
+        shell: bash
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f mobile-dev "${GITHUB_SHA}"
+          git push --force origin refs/tags/mobile-dev
+
+          if gh release view mobile-dev >/dev/null 2>&1; then
+            gh release edit mobile-dev \
+              --target "${GITHUB_SHA}" \
+              --title "Pluris Haven Mobile Dev" \
+              --notes-file release/mobile-dev/NOTES.md \
+              --prerelease \
+              --latest=false
+            gh release upload mobile-dev \
+              release/mobile-dev/pluris-haven-dev.apk \
+              release/mobile-dev/BUILD.txt \
+              release/mobile-dev/SHA256SUMS.txt \
+              --clobber
+          else
+            gh release create mobile-dev \
+              release/mobile-dev/pluris-haven-dev.apk \
+              release/mobile-dev/BUILD.txt \
+              release/mobile-dev/SHA256SUMS.txt \
+              --target "${GITHUB_SHA}" \
+              --title "Pluris Haven Mobile Dev" \
+              --notes-file release/mobile-dev/NOTES.md \
+              --prerelease \
+              --latest=false
+          fi
