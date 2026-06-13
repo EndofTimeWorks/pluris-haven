@@ -1,20 +1,17 @@
-# Mobile Release Process
+# Mobile Builds
 
-Mobile CI runs on pushes and pull requests that touch `mobile/**`.
-For debug builds, use the APK artifact from the `Mobile CI` workflow. That is
-the easiest path during early development because it needs no version tag and
-does not create a permanent GitHub Release.
+There are two tracks:
 
-The release workflow builds Android APKs and publishes a GitHub Release.
-Normal pushes should use CI artifacts. GitHub Releases are reserved for explicit
-version tags or manual workflow runs, so `main` does not fill up with throwaway
-releases during early development.
+- dev builds from `main`
+- versioned releases from tags
 
-## Debug Builds
+## Dev Builds
 
-Push to `main`, then open the finished `Mobile CI` workflow run and download the
-`pluris-haven-debug-apk` artifact. Use this for emulator/device testing between
-real releases.
+Push to `main`. `Mobile Dev Release` builds a debug-signed APK and updates the
+single `mobile-dev` GitHub prerelease.
+
+Download `pluris-haven-dev.apk` from that release when testing on a phone or
+emulator. The next `main` build replaces it.
 
 ## Version Tags
 
