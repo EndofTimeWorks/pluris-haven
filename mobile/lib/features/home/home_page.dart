@@ -291,68 +291,160 @@ class DashboardPage extends StatelessWidget {
         const DashboardSectionTitle('Main'),
         const SizedBox(height: 8),
         DashboardActionGrid(
-          items: _primaryItems(snapshot),
+          items: _dashboardItems(snapshot, customization.dashboardShortcutIds),
           customization: customization,
           onSelect: onSelect,
         ),
-        const SizedBox(height: 18),
-        const DashboardSectionTitle('Tools'),
-        const SizedBox(height: 8),
-        SpCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              SpSettingsRow(
-                'Import / Export',
-                'bring in SP data or back this up',
-                onTap: () => onSelect(SpSection.importExport),
-              ),
-              const Divider(height: 1, color: _spLine, indent: 16),
-              SpSettingsRow(
-                'Sync',
-                'off until you choose otherwise',
-                onTap: () => onSelect(SpSection.sync),
-              ),
-              const Divider(height: 1, color: _spLine, indent: 16),
-              SpSettingsRow(
-                'Customize',
-                'theme, home layout, privacy defaults',
-                onTap: () => onSelect(SpSection.appOptions),
-              ),
-            ],
+        if (customization.dashboardShortcutIds.isEmpty) ...[
+          const SizedBox(height: 10),
+          const SpEmptyState(
+            title: 'No dashboard shortcuts',
+            body: 'Open Customize to add shortcuts back.',
           ),
-        ),
+        ],
       ],
     );
   }
 
-  List<HomeNavigationItem> _primaryItems(HomeSnapshot? home) {
+  List<HomeNavigationItem> _dashboardItems(
+    HomeSnapshot? home,
+    List<String> ids,
+  ) {
+    final definitions = {for (final item in dashboardShortcuts) item.id: item};
+
     return [
-      HomeNavigationItem(
-        'Members',
-        '${home?.memberCount ?? 0}',
-        SpSection.members,
-        Icons.people_alt_rounded,
-      ),
-      HomeNavigationItem(
-        'Front History',
-        '${home?.frontHistoryCount ?? 0} entries',
-        SpSection.frontHistory,
-        Icons.history_rounded,
-      ),
-      HomeNavigationItem(
-        'Groups',
-        '${home?.groupCount ?? 0} groups',
-        SpSection.groups,
-        Icons.folder_rounded,
-      ),
-      HomeNavigationItem(
-        'Notes',
-        '${home?.noteCount ?? 0} notes',
-        SpSection.notes,
-        Icons.sticky_note_2_rounded,
-      ),
+      for (final id in ids)
+        if (definitions[id] case final definition?) definition.item(home),
     ];
+  }
+}
+
+const dashboardShortcuts = [
+  DashboardShortcutDefinition(
+    id: 'members',
+    title: 'Members',
+    section: SpSection.members,
+    icon: Icons.people_alt_rounded,
+    countKind: DashboardCountKind.members,
+  ),
+  DashboardShortcutDefinition(
+    id: 'front-history',
+    title: 'Front History',
+    section: SpSection.frontHistory,
+    icon: Icons.history_rounded,
+    countKind: DashboardCountKind.frontHistory,
+  ),
+  DashboardShortcutDefinition(
+    id: 'groups',
+    title: 'Groups',
+    section: SpSection.groups,
+    icon: Icons.folder_rounded,
+    countKind: DashboardCountKind.groups,
+  ),
+  DashboardShortcutDefinition(
+    id: 'notes',
+    title: 'Notes',
+    section: SpSection.notes,
+    icon: Icons.sticky_note_2_rounded,
+    countKind: DashboardCountKind.notes,
+  ),
+  DashboardShortcutDefinition(
+    id: 'import-export',
+    title: 'Import / Export',
+    subtitle: 'local archive',
+    section: SpSection.importExport,
+    icon: Icons.archive_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'sync',
+    title: 'Sync',
+    subtitle: 'off by default',
+    section: SpSection.sync,
+    icon: Icons.sync_disabled_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'customize',
+    title: 'Customize',
+    subtitle: 'layout and theme',
+    section: SpSection.appOptions,
+    icon: Icons.tune_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'analytics',
+    title: 'Analytics',
+    subtitle: 'local stats',
+    section: SpSection.analytics,
+    icon: Icons.analytics_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'reminders',
+    title: 'Reminders',
+    subtitle: '0 scheduled',
+    section: SpSection.reminders,
+    icon: Icons.notification_add_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'custom-fields',
+    title: 'Custom Fields',
+    subtitle: 'profile fields',
+    section: SpSection.customFields,
+    icon: Icons.table_rows_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'friends',
+    title: 'Friends',
+    subtitle: 'sync required',
+    section: SpSection.friends,
+    icon: Icons.people_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'chat',
+    title: 'Chat',
+    subtitle: 'offline board',
+    section: SpSection.chat,
+    icon: Icons.chat_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'polls',
+    title: 'Polls',
+    subtitle: '0 active',
+    section: SpSection.polls,
+    icon: Icons.how_to_vote_rounded,
+  ),
+];
+
+enum DashboardCountKind { members, frontHistory, groups, notes }
+
+class DashboardShortcutDefinition {
+  const DashboardShortcutDefinition({
+    required this.id,
+    required this.title,
+    required this.section,
+    required this.icon,
+    this.subtitle,
+    this.countKind,
+  });
+
+  final String id;
+  final String title;
+  final SpSection section;
+  final IconData icon;
+  final String? subtitle;
+  final DashboardCountKind? countKind;
+
+  HomeNavigationItem item(HomeSnapshot? home) {
+    return HomeNavigationItem(title, _subtitle(home), section, icon);
+  }
+
+  String _subtitle(HomeSnapshot? home) {
+    return switch (countKind) {
+      DashboardCountKind.members => '${home?.memberCount ?? 0}',
+      DashboardCountKind.frontHistory =>
+        '${home?.frontHistoryCount ?? 0} entries',
+      DashboardCountKind.groups => '${home?.groupCount ?? 0} groups',
+      DashboardCountKind.notes => '${home?.noteCount ?? 0} notes',
+      null => subtitle ?? '',
+    };
   }
 }
 
@@ -771,6 +863,11 @@ class AppOptionsPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        DashboardShortcutManager(
+          customization: customization,
+          repository: repository,
+        ),
+        const SizedBox(height: 12),
         const SpSettingsGroup(
           title: 'Local defaults',
           rows: [
@@ -796,6 +893,141 @@ class AppOptionsPage extends StatelessWidget {
     final values = HavenAccentColor.values;
     final nextIndex = (values.indexOf(current) + 1) % values.length;
     return values[nextIndex];
+  }
+}
+
+class DashboardShortcutManager extends StatelessWidget {
+  const DashboardShortcutManager({
+    super.key,
+    required this.customization,
+    required this.repository,
+  });
+
+  final AppCustomization customization;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeIds = customization.dashboardShortcutIds;
+    final rows = <Widget>[
+      for (final shortcut in _orderedShortcutDefinitions(activeIds))
+        DashboardShortcutRow(
+          shortcut: shortcut,
+          visible: activeIds.contains(shortcut.id),
+          canMoveUp: activeIds.indexOf(shortcut.id) > 0,
+          canMoveDown:
+              activeIds.contains(shortcut.id) &&
+              activeIds.indexOf(shortcut.id) < activeIds.length - 1,
+          onVisibleChanged: (visible) =>
+              repository.setDashboardShortcutVisible(shortcut.id, visible),
+          onMoveUp: () => repository.moveDashboardShortcut(shortcut.id, -1),
+          onMoveDown: () => repository.moveDashboardShortcut(shortcut.id, 1),
+        ),
+      DashboardResetRow(onReset: repository.resetDashboardShortcuts),
+    ];
+
+    return SpSettingsGroup(title: 'Dashboard shortcuts', rows: rows);
+  }
+
+  List<DashboardShortcutDefinition> _orderedShortcutDefinitions(
+    List<String> activeIds,
+  ) {
+    final definitions = {for (final item in dashboardShortcuts) item.id: item};
+    final ordered = <DashboardShortcutDefinition>[
+      for (final id in activeIds) ?definitions.remove(id),
+      ...definitions.values,
+    ];
+    return ordered;
+  }
+}
+
+class DashboardShortcutRow extends StatelessWidget {
+  const DashboardShortcutRow({
+    super.key,
+    required this.shortcut,
+    required this.visible,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onVisibleChanged,
+    required this.onMoveUp,
+    required this.onMoveDown,
+  });
+
+  final DashboardShortcutDefinition shortcut;
+  final bool visible;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final ValueChanged<bool> onVisibleChanged;
+  final VoidCallback onMoveUp;
+  final VoidCallback onMoveDown;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      child: Row(
+        children: [
+          SpIconBubble(
+            icon: shortcut.icon,
+            color: visible ? _spGold : _spMuted,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  shortcut.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  visible ? 'shown on dashboard' : 'hidden',
+                  style: const TextStyle(color: _spMuted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: ValueKey('shortcut-up-${shortcut.id}'),
+            tooltip: 'Move up',
+            onPressed: visible && canMoveUp ? onMoveUp : null,
+            icon: const Icon(Icons.keyboard_arrow_up_rounded),
+          ),
+          IconButton(
+            key: ValueKey('shortcut-down-${shortcut.id}'),
+            tooltip: 'Move down',
+            onPressed: visible && canMoveDown ? onMoveDown : null,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          ),
+          Switch(
+            key: ValueKey('shortcut-visible-${shortcut.id}'),
+            value: visible,
+            onChanged: onVisibleChanged,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DashboardResetRow extends StatelessWidget {
+  const DashboardResetRow({super.key, required this.onReset});
+
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpSettingsRow(
+      'Reset dashboard',
+      'restore default shortcut order',
+      trailing: const Icon(Icons.restart_alt_rounded, color: _spMuted),
+      onTap: onReset,
+    );
   }
 }
 

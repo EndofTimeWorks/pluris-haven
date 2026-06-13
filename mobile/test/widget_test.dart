@@ -127,6 +127,28 @@ void main() {
     await tester.tap(find.text('Compact dashboard'));
     await tester.pumpAndSettle();
     expect((await repository.loadCustomization()).compactDashboard, isTrue);
+
+    await tester.scrollUntilVisible(find.text('Analytics'), 220);
+    await tester.tap(find.byKey(const ValueKey('shortcut-visible-analytics')));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).dashboardShortcutIds,
+      contains('analytics'),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('shortcut-up-analytics')));
+    await tester.pumpAndSettle();
+    final shortcutIds =
+        (await repository.loadCustomization()).dashboardShortcutIds;
+    expect(shortcutIds.indexOf('analytics'), shortcutIds.length - 2);
+
+    await tester.scrollUntilVisible(find.text('Reset dashboard'), 220);
+    await tester.tap(find.text('Reset dashboard'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).dashboardShortcutIds,
+      defaultDashboardShortcutIds,
+    );
   });
 
   testWidgets('shows supported importers and PluralKit live setup', (
@@ -221,6 +243,45 @@ class FakeHavenRepository implements HavenRepository {
   Future<void> setShowDashboardSubtitles(bool show) async {
     _customization = _customization.copyWith(showDashboardSubtitles: show);
     _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
+    _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setDashboardShortcutVisible(String shortcutId, bool visible) {
+    final ids = _customization.dashboardShortcutIds.toList();
+    final existingIndex = ids.indexOf(shortcutId);
+    if (visible && existingIndex == -1) {
+      ids.add(shortcutId);
+    } else if (!visible && existingIndex != -1) {
+      ids.removeAt(existingIndex);
+    }
+    return setDashboardShortcutIds(ids);
+  }
+
+  @override
+  Future<void> moveDashboardShortcut(String shortcutId, int delta) {
+    final ids = _customization.dashboardShortcutIds.toList();
+    final index = ids.indexOf(shortcutId);
+    if (index == -1 || delta == 0) {
+      return Future.value();
+    }
+    final newIndex = (index + delta).clamp(0, ids.length - 1);
+    if (newIndex == index) {
+      return Future.value();
+    }
+    final id = ids.removeAt(index);
+    ids.insert(newIndex, id);
+    return setDashboardShortcutIds(ids);
+  }
+
+  @override
+  Future<void> resetDashboardShortcuts() {
+    return setDashboardShortcutIds(defaultDashboardShortcutIds);
   }
 
   @override
