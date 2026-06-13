@@ -128,6 +128,17 @@ void main() {
     await tester.pumpAndSettle();
     expect((await repository.loadCustomization()).compactDashboard, isTrue);
 
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('language-setting-row')),
+      220,
+    );
+    await tester.tap(find.byKey(const ValueKey('language-setting-row')));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose your language'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('language-option-ar')).first);
+    await tester.pumpAndSettle();
+    expect((await repository.loadCustomization()).languageCode, 'ar');
+
     await tester.scrollUntilVisible(find.text('Analytics'), 220);
     await tester.tap(find.byKey(const ValueKey('shortcut-visible-analytics')));
     await tester.pumpAndSettle();
@@ -248,6 +259,12 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
     _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setLanguageCode(String languageCode) async {
+    _customization = _customization.copyWith(languageCode: languageCode);
     _customizationController.add(_customization);
   }
 
