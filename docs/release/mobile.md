@@ -3,27 +3,32 @@
 Mobile CI runs on pushes and pull requests that touch `mobile/**`.
 
 The release workflow builds Android APKs and publishes a GitHub Release.
+Normal pushes should use CI artifacts. GitHub Releases are reserved for explicit
+version tags or manual workflow runs, so `main` does not fill up with throwaway
+releases during early development.
 
 ## Version Tags
 
 Use tags in this format:
 
 ```sh
-git tag mobile-v0.1.0+1
-git push origin mobile-v0.1.0+1
+git tag mobile-v0.1.0-dev.1+1
+git push origin mobile-v0.1.0-dev.1+1
 ```
 
+- `0.1.0-dev.1` becomes the GitHub Release version.
 - `0.1.0` becomes Flutter `--build-name`.
 - `1` becomes Flutter `--build-number`.
 - If the tag omits `+1`, the workflow uses the GitHub run number.
-- `0.x` versions are published as GitHub prereleases.
+- `0.x` and `-dev` / `-alpha` / `-rc` versions are published as GitHub
+  prereleases.
 
 Examples:
 
 ```sh
-mobile-v0.1.0+1
-mobile-v0.1.1+2
-mobile-v0.2.0+3
+mobile-v0.1.0-dev.1+1
+mobile-v0.1.0-alpha.1+2
+mobile-v0.1.0+3
 ```
 
 Do not use `1.0.0` tags until the mobile app is actually release-ready.
@@ -32,7 +37,7 @@ Do not use `1.0.0` tags until the mobile app is actually release-ready.
 
 The `Mobile Release` workflow can also be run manually from GitHub Actions with:
 
-- `version`: version name such as `0.1.0`
+- `version`: SemVer version such as `0.1.0-dev.1`
 - `build_number`: integer build number
 - `prerelease`: whether to mark the GitHub Release as prerelease
 
