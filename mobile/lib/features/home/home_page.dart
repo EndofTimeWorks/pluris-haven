@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
 
 const _spSurface = Color(0xFF232532);
@@ -509,18 +510,32 @@ class ImportExportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SpPage(
+    return SpPage(
       children: [
-        SpSettingsGroup(
-          title: 'Import',
-          rows: [
-            SpSettingsRow('Import Simply Plural', 'JSON export or archive'),
-            SpSettingsRow('Import PluralKit', 'members and groups'),
-            SpSettingsRow('Review imported data', 'before saving changes'),
-          ],
+        const SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Importers',
+                trailing: StatusPill(text: 'dedupe first'),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Every import stages a review and matches against existing members before saving.',
+                style: TextStyle(color: _spMuted, height: 1.35),
+              ),
+            ],
+          ),
         ),
-        SizedBox(height: 12),
-        SpSettingsGroup(
+        const SizedBox(height: 12),
+        for (final source in ImportSource.values) ...[
+          ImportSourceCard(source: source),
+          const SizedBox(height: 10),
+        ],
+        const SizedBox(height: 2),
+        const SpSettingsGroup(
           title: 'Export',
           rows: [
             SpSettingsRow('Export local archive', 'portable JSON'),
@@ -529,6 +544,142 @@ class ImportExportPage extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class ImportSourceCard extends StatelessWidget {
+  const ImportSourceCard({super.key, required this.source});
+
+  final ImportSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      onTap: source == ImportSource.pluralKitLive
+          ? () => _showPluralKitLiveSheet(context)
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SpSectionHeader(
+            title: source.label,
+            trailing: StatusPill(text: source.status.label),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            source.subtitle,
+            style: const TextStyle(color: _spMuted, height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          ImportMetaRow(label: 'Input', value: source.inputLabel),
+          const SizedBox(height: 8),
+          ImportMetaRow(label: 'Job', value: source.jobSource),
+          const SizedBox(height: 8),
+          ImportMetaRow(label: 'Dedupe', value: source.dedupeLabel),
+        ],
+      ),
+    );
+  }
+
+  void _showPluralKitLiveSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: _spSurface,
+      builder: (context) => const PluralKitLiveSheet(),
+    );
+  }
+}
+
+class ImportMetaRow extends StatelessWidget {
+  const ImportMetaRow({super.key, required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 64,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: _spMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class PluralKitLiveSheet extends StatelessWidget {
+  const PluralKitLiveSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const shape = PluralKitLiveImportShape();
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'PluralKit live import',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Use the pk;token as the Authorization header. Tokens should stay request-scoped for one-shot import and must never be exported.',
+              style: TextStyle(color: _spMuted, height: 1.35),
+            ),
+            const SizedBox(height: 14),
+            const TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'pk;token',
+                helperText: 'Stored later in secure storage',
+              ),
+            ),
+            const SizedBox(height: 14),
+            const SpSettingsGroup(
+              title: 'Conflict strategy',
+              rows: [
+                SpSettingsRow('Skip', 'default re-import behavior'),
+                SpSettingsRow('Update', 'refresh matched imported fields'),
+                SpSettingsRow('Create', 'always append new records'),
+              ],
+            ),
+            const SizedBox(height: 14),
+            SpSettingsGroup(
+              title: 'First import plan',
+              rows: [
+                for (final step in shape.firstImportSteps)
+                  SpSettingsRow(step, 'local staging'),
+              ],
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

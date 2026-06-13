@@ -128,6 +128,48 @@ void main() {
     await tester.pumpAndSettle();
     expect((await repository.loadCustomization()).compactDashboard, isTrue);
   });
+
+  testWidgets('shows supported importers and PluralKit live setup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simply Plural'), findsOneWidget);
+    expect(find.text('PluralKit file'), findsOneWidget);
+    expect(find.text('PluralKit live'), findsOneWidget);
+    expect(find.text('Tupperbox'), findsOneWidget);
+    expect(find.text('PluralSpace'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Prism'), 240);
+    expect(find.text('Prism'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('PluralKit live'), -240);
+    await tester.tap(find.text('PluralKit live'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pk;token'), findsOneWidget);
+    expect(find.text('Validate token with GET /systems/@me'), findsOneWidget);
+  });
 }
 
 class FakeHavenRepository implements HavenRepository {
