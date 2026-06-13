@@ -42,6 +42,7 @@ void main() {
     expect(customization.compactDashboard, isFalse);
     expect(customization.showDashboardSubtitles, isTrue);
     expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
+    expect(customization.languageCode, 'system');
 
     await repository.setThemeMode(HavenThemeMode.system);
     await repository.setAccentColor(HavenAccentColor.teal);
@@ -50,6 +51,7 @@ void main() {
     await repository.setDashboardShortcutVisible('analytics', true);
     await repository.moveDashboardShortcut('analytics', -10);
     await repository.setDashboardShortcutVisible('notes', false);
+    await repository.setLanguageCode('pt-BR');
 
     customization = await repository.loadCustomization();
     expect(customization.themeMode, HavenThemeMode.system);
@@ -58,6 +60,8 @@ void main() {
     expect(customization.showDashboardSubtitles, isFalse);
     expect(customization.dashboardShortcutIds.first, 'analytics');
     expect(customization.dashboardShortcutIds, isNot(contains('notes')));
+    expect(customization.languageCode, 'pt-BR');
+    expect(customization.language.label, 'português brasileiro');
 
     await repository.resetDashboardShortcuts();
     customization = await repository.loadCustomization();

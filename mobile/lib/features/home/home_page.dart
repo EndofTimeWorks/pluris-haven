@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
+import '../../data/local/supported_language.dart';
 
 const _spSurface = Color(0xFF232532);
 const _spCard = Color(0xFF2B2E3D);
@@ -860,6 +861,16 @@ class AppOptionsPage extends StatelessWidget {
               value: customization.showDashboardSubtitles,
               onChanged: repository.setShowDashboardSubtitles,
             ),
+            SpSettingsRow(
+              'Language',
+              customization.language.label,
+              key: const ValueKey('language-setting-row'),
+              onTap: () => showLanguagePicker(
+                context,
+                selectedCode: customization.languageCode,
+                repository: repository,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -871,7 +882,6 @@ class AppOptionsPage extends StatelessWidget {
         const SpSettingsGroup(
           title: 'Local defaults',
           rows: [
-            SpSettingsRow('Language', 'system default'),
             SpSettingsRow('Security', 'device storage'),
             SpSettingsRow('Sync', 'off by default'),
             SpSettingsRow('Accessibility', 'default sizing'),
@@ -893,6 +903,105 @@ class AppOptionsPage extends StatelessWidget {
     final values = HavenAccentColor.values;
     final nextIndex = (values.indexOf(current) + 1) % values.length;
     return values[nextIndex];
+  }
+}
+
+void showLanguagePicker(
+  BuildContext context, {
+  required String selectedCode,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        LanguagePickerSheet(selectedCode: selectedCode, repository: repository),
+  );
+}
+
+class LanguagePickerSheet extends StatelessWidget {
+  const LanguagePickerSheet({
+    super.key,
+    required this.selectedCode,
+    required this.repository,
+  });
+
+  final String selectedCode;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        children: [
+          const Text(
+            'Choose your language',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Interface text stays English until translations are added.',
+            style: TextStyle(color: _spMuted, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          for (final language in supportedLanguages)
+            SpLanguageOption(
+              key: ValueKey('language-option-${language.code}'),
+              language: language,
+              selected: language.code == selectedCode,
+              onTap: () async {
+                await repository.setLanguageCode(language.code);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class SpLanguageOption extends StatelessWidget {
+  const SpLanguageOption({
+    super.key,
+    required this.language,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SupportedLanguage language;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected ? _spLine : _spCard,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          title: Text(
+            language.label,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            language.code,
+            style: const TextStyle(color: _spMuted),
+          ),
+          trailing: selected
+              ? Icon(
+                  Icons.check_circle_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                )
+              : null,
+          onTap: onTap,
+        ),
+      ),
+    );
   }
 }
 
