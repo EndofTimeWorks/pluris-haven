@@ -41,6 +41,7 @@ The project has three targets: Android, iOS, and website. Local app use should w
 
 - `mobile` - Flutter app for Android, iOS, and future web.
 - `website` - SvelteKit website/app.
+- `docs/release/mobile.md` - mobile CI, version tags, and GitHub Release workflow.
 
 ## Privacy Model
 
