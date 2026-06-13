@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
+import 'data/local/supported_language.dart';
 import 'features/home/home_page.dart';
 
 Future<void> main() async {
@@ -30,6 +32,13 @@ class PlurisHavenApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Pluris Haven',
+          locale: _locale(customization.languageCode),
+          supportedLocales: supportedLanguageLocales,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
           themeMode: _themeMode(customization.themeMode),
           theme: _buildTheme(customization, Brightness.light),
           darkTheme: _buildTheme(customization, Brightness.dark),
@@ -37,6 +46,14 @@ class PlurisHavenApp extends StatelessWidget {
         );
       },
     );
+  }
+
+  Locale? _locale(String languageCode) {
+    if (languageCode == systemLanguageCode) {
+      return null;
+    }
+
+    return supportedLanguageForCode(languageCode).locale;
   }
 
   ThemeMode _themeMode(HavenThemeMode mode) {
