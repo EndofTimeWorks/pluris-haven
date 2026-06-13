@@ -71,18 +71,21 @@ class AppCustomization {
     required this.accentColor,
     required this.compactDashboard,
     required this.showDashboardSubtitles,
+    required this.dashboardShortcutIds,
   });
 
   final HavenThemeMode themeMode;
   final HavenAccentColor accentColor;
   final bool compactDashboard;
   final bool showDashboardSubtitles;
+  final List<String> dashboardShortcutIds;
 
-  static const defaults = AppCustomization(
+  static AppCustomization get defaults => AppCustomization(
     themeMode: HavenThemeMode.dark,
     accentColor: HavenAccentColor.purple,
     compactDashboard: false,
     showDashboardSubtitles: true,
+    dashboardShortcutIds: defaultDashboardShortcutIds,
   );
 
   AppCustomization copyWith({
@@ -90,6 +93,7 @@ class AppCustomization {
     HavenAccentColor? accentColor,
     bool? compactDashboard,
     bool? showDashboardSubtitles,
+    List<String>? dashboardShortcutIds,
   }) {
     return AppCustomization(
       themeMode: themeMode ?? this.themeMode,
@@ -97,9 +101,22 @@ class AppCustomization {
       compactDashboard: compactDashboard ?? this.compactDashboard,
       showDashboardSubtitles:
           showDashboardSubtitles ?? this.showDashboardSubtitles,
+      dashboardShortcutIds: List.unmodifiable(
+        dashboardShortcutIds ?? this.dashboardShortcutIds,
+      ),
     );
   }
 }
+
+const defaultDashboardShortcutIds = [
+  'members',
+  'front-history',
+  'groups',
+  'notes',
+  'import-export',
+  'sync',
+  'customize',
+];
 
 abstract interface class HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot();
@@ -115,6 +132,14 @@ abstract interface class HavenRepository {
   Future<void> setCompactDashboard(bool compact);
 
   Future<void> setShowDashboardSubtitles(bool show);
+
+  Future<void> setDashboardShortcutIds(List<String> shortcutIds);
+
+  Future<void> setDashboardShortcutVisible(String shortcutId, bool visible);
+
+  Future<void> moveDashboardShortcut(String shortcutId, int delta);
+
+  Future<void> resetDashboardShortcuts();
 
   Future<void> setCustomFront(String label);
 
@@ -225,6 +250,7 @@ SELECT
         values[_showDashboardSubtitlesKey],
         defaultValue: true,
       ),
+      dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
     );
   }
 
@@ -234,6 +260,24 @@ SELECT
     }
 
     return value == 'true';
+  }
+
+  List<String> _readShortcutIds(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return defaultDashboardShortcutIds;
+    }
+
+    final ids = value
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+
+    if (ids.isEmpty) {
+      return defaultDashboardShortcutIds;
+    }
+
+    return List.unmodifiable(ids);
   }
 
   @override
@@ -254,6 +298,73 @@ SELECT
   @override
   Future<void> setShowDashboardSubtitles(bool show) {
     return _writePreference(_showDashboardSubtitlesKey, show.toString());
+  }
+
+  @override
+  Future<void> setDashboardShortcutIds(List<String> shortcutIds) {
+    return _writePreference(
+      _dashboardShortcutIdsKey,
+      _serializeIds(shortcutIds),
+    );
+  }
+
+  @override
+  Future<void> setDashboardShortcutVisible(
+    String shortcutId,
+    bool visible,
+  ) async {
+    final customization = await loadCustomization();
+    final ids = customization.dashboardShortcutIds.toList();
+    final existingIndex = ids.indexOf(shortcutId);
+
+    if (visible && existingIndex == -1) {
+      ids.add(shortcutId);
+    } else if (!visible && existingIndex != -1) {
+      ids.removeAt(existingIndex);
+    }
+
+    await setDashboardShortcutIds(ids);
+  }
+
+  @override
+  Future<void> moveDashboardShortcut(String shortcutId, int delta) async {
+    if (delta == 0) {
+      return;
+    }
+
+    final customization = await loadCustomization();
+    final ids = customization.dashboardShortcutIds.toList();
+    final index = ids.indexOf(shortcutId);
+    if (index == -1) {
+      return;
+    }
+
+    final newIndex = (index + delta).clamp(0, ids.length - 1);
+    if (newIndex == index) {
+      return;
+    }
+
+    final id = ids.removeAt(index);
+    ids.insert(newIndex, id);
+    await setDashboardShortcutIds(ids);
+  }
+
+  @override
+  Future<void> resetDashboardShortcuts() {
+    return setDashboardShortcutIds(defaultDashboardShortcutIds);
+  }
+
+  String _serializeIds(List<String> shortcutIds) {
+    final seen = <String>{};
+    final ids = <String>[];
+    for (final id in shortcutIds) {
+      final trimmed = id.trim();
+      if (trimmed.isEmpty || !seen.add(trimmed)) {
+        continue;
+      }
+      ids.add(trimmed);
+    }
+    return ids.join(',');
   }
 
   Future<void> _writePreference(String key, String value) {
@@ -321,3 +432,4 @@ const _themeModeKey = 'theme_mode';
 const _accentColorKey = 'accent_color';
 const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
+const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';

@@ -41,16 +41,26 @@ void main() {
     expect(customization.accentColor, HavenAccentColor.purple);
     expect(customization.compactDashboard, isFalse);
     expect(customization.showDashboardSubtitles, isTrue);
+    expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
 
     await repository.setThemeMode(HavenThemeMode.system);
     await repository.setAccentColor(HavenAccentColor.teal);
     await repository.setCompactDashboard(true);
     await repository.setShowDashboardSubtitles(false);
+    await repository.setDashboardShortcutVisible('analytics', true);
+    await repository.moveDashboardShortcut('analytics', -10);
+    await repository.setDashboardShortcutVisible('notes', false);
 
     customization = await repository.loadCustomization();
     expect(customization.themeMode, HavenThemeMode.system);
     expect(customization.accentColor, HavenAccentColor.teal);
     expect(customization.compactDashboard, isTrue);
     expect(customization.showDashboardSubtitles, isFalse);
+    expect(customization.dashboardShortcutIds.first, 'analytics');
+    expect(customization.dashboardShortcutIds, isNot(contains('notes')));
+
+    await repository.resetDashboardShortcuts();
+    customization = await repository.loadCustomization();
+    expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
   });
 }
