@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version name, e.g. 0.1.0"
+        description: "SemVer version, e.g. 0.1.0-dev.1"
         required: true
       build_number:
         description: "Android/iOS build number"
@@ -56,27 +56,29 @@ jobs:
         shell: bash
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            raw="${GITHUB_REF_NAME#mobile-v}"
-            version="${raw%%+*}"
-            if [[ "${raw}" == *"+"* ]]; then
-              build="${raw##*+}"
+            semver="${GITHUB_REF_NAME#mobile-v}"
+            version="${semver%%+*}"
+            build_name="${version%%-*}"
+            if [[ "${semver}" == *"+"* ]]; then
+              build="${semver##*+}"
             else
               build="${GITHUB_RUN_NUMBER}"
             fi
             tag="${GITHUB_REF_NAME}"
-            if [[ "${version}" == 0.* || "${version}" == *-* ]]; then
+            if [[ "${build_name}" == 0.* || "${version}" == *-* ]]; then
               prerelease=true
             else
               prerelease=false
             fi
           else
             version="${{ inputs.version }}"
+            build_name="${version%%-*}"
             build="${{ inputs.build_number }}"
             tag="mobile-v${version}+${build}"
             prerelease="${{ inputs.prerelease }}"
           fi
 
-          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "Invalid version: ${version}" >&2
             exit 1
           fi
@@ -86,6 +88,7 @@ jobs:
           fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "build_name=${build_name}" >> "${GITHUB_OUTPUT}"
           echo "build=${build}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
@@ -105,13 +108,13 @@ jobs:
       - name: Build release APK
         run: >
           flutter --no-color build apk --release
-          --build-name "${{ steps.version.outputs.version }}"
+          --build-name "${{ steps.version.outputs.build_name }}"
           --build-number "${{ steps.version.outputs.build }}"
 
       - name: Build split per ABI APKs
         run: >
           flutter --no-color build apk --release --split-per-abi
-          --build-name "${{ steps.version.outputs.version }}"
+          --build-name "${{ steps.version.outputs.build_name }}"
           --build-number "${{ steps.version.outputs.build }}"
 
       - name: Collect release artifacts
