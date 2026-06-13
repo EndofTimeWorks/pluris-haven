@@ -21,51 +21,90 @@ class PlurisHavenApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Pluris Haven',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF7B61FF),
-          secondary: Color(0xFFF2C75C),
-          surface: Color(0xFF232532),
-          surfaceContainerHighest: Color(0xFF2B2E3D),
-          onSurface: Color(0xFFECEAF2),
-          onSurfaceVariant: Color(0xFFC4C0CE),
-          outline: Color(0xFF3A3E50),
-        ),
-        scaffoldBackgroundColor: const Color(0xFF171922),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF232532),
-          foregroundColor: Color(0xFFECEAF2),
-          elevation: 0,
-          centerTitle: false,
-        ),
-        drawerTheme: const DrawerThemeData(
-          backgroundColor: Color(0xFF232532),
-          scrimColor: Color(0x99000000),
-        ),
-        dividerTheme: const DividerThemeData(
-          color: Color(0xFF3A3E50),
-          thickness: 1,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF171922),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF2B2E3D),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: EdgeInsets.zero,
-        ),
-        useMaterial3: true,
+    return StreamBuilder<AppCustomization>(
+      stream: repository.watchCustomization(),
+      initialData: AppCustomization.defaults,
+      builder: (context, snapshot) {
+        final customization = snapshot.data ?? AppCustomization.defaults;
+
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Pluris Haven',
+          themeMode: _themeMode(customization.themeMode),
+          theme: _buildTheme(customization, Brightness.light),
+          darkTheme: _buildTheme(customization, Brightness.dark),
+          home: HomePage(repository: repository),
+        );
+      },
+    );
+  }
+
+  ThemeMode _themeMode(HavenThemeMode mode) {
+    return switch (mode) {
+      HavenThemeMode.dark => ThemeMode.dark,
+      HavenThemeMode.light => ThemeMode.light,
+      HavenThemeMode.system => ThemeMode.system,
+    };
+  }
+
+  ThemeData _buildTheme(AppCustomization customization, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final accent = Color(customization.accentColor.argb);
+    final surface = isDark ? const Color(0xFF232532) : const Color(0xFFF7F4FC);
+    final background = isDark
+        ? const Color(0xFF171922)
+        : const Color(0xFFF1EFF7);
+    final card = isDark ? const Color(0xFF2B2E3D) : Colors.white;
+    final onSurface = isDark
+        ? const Color(0xFFECEAF2)
+        : const Color(0xFF252334);
+    final muted = isDark ? const Color(0xFFC4C0CE) : const Color(0xFF605C70);
+    final outline = isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3);
+
+    return ThemeData(
+      brightness: brightness,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: accent,
+        onPrimary: Colors.white,
+        secondary: const Color(0xFFF2C75C),
+        onSecondary: const Color(0xFF211B00),
+        error: const Color(0xFFFFB4AB),
+        onError: const Color(0xFF690005),
+        surface: surface,
+        onSurface: onSurface,
+        onSurfaceVariant: muted,
+        outline: outline,
+        shadow: Colors.black,
+        inverseSurface: onSurface,
+        onInverseSurface: surface,
+        inversePrimary: accent,
+        surfaceTint: accent,
       ),
-      home: HomePage(repository: repository),
+      scaffoldBackgroundColor: background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: surface,
+        foregroundColor: onSurface,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: surface,
+        scrimColor: Colors.black.withValues(alpha: 0.6),
+      ),
+      dividerTheme: DividerThemeData(color: outline, thickness: 1),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: background,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      cardTheme: CardThemeData(
+        color: card,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.zero,
+      ),
+      useMaterial3: true,
     );
   }
 }

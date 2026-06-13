@@ -95,6 +95,15 @@ class ImportRecords extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class AppPreferences extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 @DriftDatabase(
   tables: [
     PluralSystems,
@@ -104,16 +113,22 @@ class ImportRecords extends Table {
     FrontSessions,
     FrontSessionMembers,
     ImportRecords,
+    AppPreferences,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.createTable(appPreferences);
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
