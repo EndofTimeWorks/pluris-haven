@@ -105,7 +105,7 @@ class _HomePageState extends State<HomePage> {
           onSelect: _selectSection,
         );
       case SpSection.members:
-        return MembersPage(snapshot: home);
+        return MembersPage(snapshot: home, repository: widget.repository);
       case SpSection.frontHistory:
         return FrontHistoryPage(snapshot: home, repository: widget.repository);
       case SpSection.groups:
@@ -450,38 +450,231 @@ class DashboardShortcutDefinition {
 }
 
 class MembersPage extends StatelessWidget {
-  const MembersPage({super.key, required this.snapshot});
+  const MembersPage({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+  });
 
   final HomeSnapshot? snapshot;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    return SpPage(
-      children: [
-        const SpSearchField(hintText: 'Search members'),
-        const SizedBox(height: 12),
-        const SpFilterRow(filters: ['All', 'Fronting', 'Archived']),
-        const SizedBox(height: 12),
-        SpCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SpSectionHeader(
-                title: 'Members',
-                trailing: StatusPill(text: '${snapshot?.memberCount ?? 0}'),
+    return StreamBuilder<List<MemberSummary>>(
+      stream: repository.watchMembers(),
+      initialData: const [],
+      builder: (context, membersSnapshot) {
+        final members = membersSnapshot.data ?? const <MemberSummary>[];
+
+        return SpPage(
+          children: [
+            const SpSearchField(hintText: 'Search members'),
+            const SizedBox(height: 12),
+            const SpFilterRow(filters: ['All', 'Fronting', 'Archived']),
+            const SizedBox(height: 12),
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Members',
+                    trailing: StatusPill(text: '${snapshot?.memberCount ?? 0}'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (members.isEmpty)
+                    const SpEmptyState(
+                      title: 'No members saved locally',
+                      body:
+                          'Add members here or import a Simply Plural export.',
+                    )
+                  else
+                    for (final member in members) ...[
+                      MemberListTile(member: member, repository: repository),
+                      if (member != members.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: 'Add member',
+                    secondary: 'Import',
+                    onPrimary: () => showAddMemberSheet(context, repository),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              const SpEmptyState(
-                title: 'No members saved locally',
-                body: 'Imported Simply Plural members will show up here.',
-              ),
-              const SizedBox(height: 14),
-              const SpActionRow(primary: 'Add member', secondary: 'Import'),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
+  }
+}
+
+class MemberListTile extends StatelessWidget {
+  const MemberListTile({
+    super.key,
+    required this.member,
+    required this.repository,
+  });
+
+  final MemberSummary member;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: SpAvatar(size: 42, color: _memberColor(member), label: _initial),
+      title: Text(
+        member.displayName,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      subtitle: Text(
+        member.pronouns?.isNotEmpty == true ? member.pronouns! : 'no pronouns',
+        style: const TextStyle(color: _spMuted),
+      ),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'Member actions',
+        onSelected: (value) {
+          if (value == 'front') {
+            repository.setFrontMembers([member.id]);
+          } else if (value == 'archive') {
+            repository.archiveMember(member.id);
+          }
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: 'front', child: Text('Set front')),
+          PopupMenuItem(value: 'archive', child: Text('Archive')),
+        ],
+      ),
+    );
+  }
+
+  String get _initial {
+    final trimmed = member.displayName.trim();
+    return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+  }
+
+  Color _memberColor(MemberSummary member) {
+    final value = member.colorHex?.replaceFirst('#', '');
+    if (value == null || value.length != 6) {
+      return _spPurple;
+    }
+
+    final parsed = int.tryParse('FF$value', radix: 16);
+    return parsed == null ? _spPurple : Color(parsed);
+  }
+}
+
+void showAddMemberSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddMemberSheet(repository: repository),
+  );
+}
+
+class AddMemberSheet extends StatefulWidget {
+  const AddMemberSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<AddMemberSheet> createState() => _AddMemberSheetState();
+}
+
+class _AddMemberSheetState extends State<AddMemberSheet> {
+  final _nameController = TextEditingController();
+  final _pronounsController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  HavenAccentColor _color = HavenAccentColor.purple;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _pronounsController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Add member',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('member-name-field'),
+              controller: _nameController,
+              autofocus: true,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-pronouns-field'),
+              controller: _pronounsController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Pronouns'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _descriptionController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final color in HavenAccentColor.values)
+                  ChoiceChip(
+                    label: Text(color.label),
+                    selected: _color == color,
+                    onSelected: (_) => setState(() => _color = color),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const ValueKey('save-member-button'),
+              onPressed: _save,
+              child: const Text('Save member'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    await widget.repository.saveMember(
+      MemberDraft(
+        displayName: _nameController.text,
+        pronouns: _pronounsController.text,
+        colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
+        description: _descriptionController.text,
+      ),
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 
@@ -1661,6 +1854,7 @@ class CustomFrontSheet extends StatefulWidget {
 
 class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _controller = TextEditingController();
+  final _selectedMemberIds = <String>{};
 
   @override
   void dispose() {
@@ -1671,7 +1865,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           18,
           0,
@@ -1683,13 +1877,71 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Set custom front',
+              'Set front',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
+            StreamBuilder<List<MemberSummary>>(
+              stream: widget.repository.watchMembers(),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                if (members.isEmpty) {
+                  return const SpEmptyState(
+                    title: 'No members yet',
+                    body: 'Add members first, or set a custom front below.',
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final member in members)
+                          FilterChip(
+                            label: Text(member.displayName),
+                            selected: _selectedMemberIds.contains(member.id),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedMemberIds.add(member.id);
+                                } else {
+                                  _selectedMemberIds.remove(member.id);
+                                }
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      key: const ValueKey('set-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : _setMemberFront,
+                      child: Text(
+                        _selectedMemberIds.length <= 1
+                            ? 'Set selected'
+                            : 'Set co-front',
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: _spLine),
+            const SizedBox(height: 12),
+            const Text(
+              'Custom front',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: _controller,
-              autofocus: true,
               textInputAction: TextInputAction.done,
               onSubmitted: _setFront,
               decoration: const InputDecoration(labelText: 'Label'),
@@ -1725,6 +1977,13 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<void> _setFront(String label) async {
     await widget.repository.setCustomFront(label);
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _setMemberFront() async {
+    await widget.repository.setFrontMembers(_selectedMemberIds.toList());
     if (mounted) {
       Navigator.pop(context);
     }
@@ -1919,18 +2178,22 @@ class SpActionRow extends StatelessWidget {
     super.key,
     required this.primary,
     required this.secondary,
+    this.onPrimary,
+    this.onSecondary,
   });
 
   final String primary;
   final String secondary;
+  final VoidCallback? onPrimary;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        FilledButton(onPressed: () {}, child: Text(primary)),
+        FilledButton(onPressed: onPrimary ?? () {}, child: Text(primary)),
         const SizedBox(width: 10),
-        OutlinedButton(onPressed: () {}, child: Text(secondary)),
+        OutlinedButton(onPressed: onSecondary ?? () {}, child: Text(secondary)),
       ],
     );
   }
