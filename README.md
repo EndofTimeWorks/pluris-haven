@@ -27,6 +27,13 @@ other network features are opt-in.
 - `docs/release/mobile.md` - mobile dev builds and releases
 - `sp-replacement-schema.md` - local data model notes
 
+## CI
+
+- `Mobile CI` checks mobile changes and uploads a debug APK artifact.
+- `Mobile Dev Release` updates the `mobile-dev` prerelease from `main`.
+- `Mobile Release` builds tagged APK releases.
+- `Website CI` audits, checks, and builds the website.
+
 ## Mobile
 
 ```sh
