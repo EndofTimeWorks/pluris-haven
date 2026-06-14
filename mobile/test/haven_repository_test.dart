@@ -22,11 +22,19 @@ void main() {
     expect(snapshot.currentFrontStatus, 'fronting');
     expect(snapshot.frontHistoryCount, 1);
 
+    var history = await repository.watchFrontHistory().first;
+    expect(history, hasLength(1));
+    expect(history.single.label, 'blurry co-con');
+    expect(history.single.isActive, isTrue);
+
     await repository.clearCurrentFront();
     snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.currentFrontText, 'None');
     expect(snapshot.currentFrontStatus, 'none');
     expect(snapshot.frontHistoryCount, 1);
+
+    history = await repository.watchFrontHistory().first;
+    expect(history.single.isActive, isFalse);
   });
 
   test('stores app customization in the local database', () async {
@@ -91,6 +99,9 @@ void main() {
     snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.currentFrontText, 'Iris');
     expect(snapshot.frontHistoryCount, 1);
+
+    final history = await repository.watchFrontHistory().first;
+    expect(history.single.label, 'Iris');
 
     final frontLinks = await database
         .select(database.frontSessionMembers)
