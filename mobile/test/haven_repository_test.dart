@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
@@ -160,5 +162,35 @@ void main() {
 
     final snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.noteCount, 1);
+  });
+
+  test('exports a versioned local archive', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(
+      const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
+    );
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveNote(
+      const NoteDraft(title: 'Grounding', body: 'Drink water.'),
+    );
+    final member = (await repository.watchMembers().first).single;
+    await repository.setFrontMembers([member.id]);
+
+    final archive =
+        jsonDecode(await repository.buildLocalArchiveJson())
+            as Map<String, dynamic>;
+
+    expect(archive['format'], 'pluris_haven.local_archive');
+    expect(archive['version'], 1);
+    expect((archive['members'] as List), hasLength(1));
+    expect((archive['groups'] as List), hasLength(1));
+    expect((archive['notes'] as List), hasLength(1));
+    expect((archive['fronts'] as List), hasLength(1));
+    expect((archive['front_members'] as List), hasLength(1));
+    expect((archive['preferences'] as List), isA<List>());
   });
 }

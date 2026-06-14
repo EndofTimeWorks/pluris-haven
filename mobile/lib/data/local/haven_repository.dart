@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
@@ -278,6 +280,8 @@ abstract interface class HavenRepository {
   Future<void> setCustomFront(String label);
 
   Future<void> clearCurrentFront();
+
+  Future<String> buildLocalArchiveJson();
 }
 
 class LocalHavenRepository implements HavenRepository {
@@ -807,6 +811,56 @@ SELECT
     await _endOpenFrontSessions(now);
   }
 
+  @override
+  Future<String> buildLocalArchiveJson() async {
+    final systems = await (database.select(
+      database.pluralSystems,
+    )..where((system) => system.id.equals(localSystemId))).get();
+    final members = await (database.select(
+      database.members,
+    )..where((member) => member.systemId.equals(localSystemId))).get();
+    final groups = await (database.select(
+      database.systemGroups,
+    )..where((group) => group.systemId.equals(localSystemId))).get();
+    final notes = await (database.select(
+      database.notes,
+    )..where((note) => note.systemId.equals(localSystemId))).get();
+    final fronts = await (database.select(
+      database.frontSessions,
+    )..where((front) => front.systemId.equals(localSystemId))).get();
+    final frontIds = fronts.map((front) => front.id).toSet();
+    final frontMembers = await database
+        .select(database.frontSessionMembers)
+        .get();
+    final importRecords = await (database.select(
+      database.importRecords,
+    )..where((record) => record.systemId.equals(localSystemId))).get();
+    final preferences = await database.select(database.appPreferences).get();
+
+    final archive = {
+      'format': 'pluris_haven.local_archive',
+      'version': 1,
+      'exported_at': DateTime.now().toUtc().toIso8601String(),
+      'system': systems.isEmpty ? null : _systemToJson(systems.single),
+      'members': [for (final member in members) _memberToJson(member)],
+      'groups': [for (final group in groups) _groupToJson(group)],
+      'notes': [for (final note in notes) _noteToJson(note)],
+      'fronts': [for (final front in fronts) _frontToJson(front)],
+      'front_members': [
+        for (final link in frontMembers)
+          if (frontIds.contains(link.sessionId)) _frontMemberToJson(link),
+      ],
+      'import_records': [
+        for (final record in importRecords) _importRecordToJson(record),
+      ],
+      'preferences': [
+        for (final preference in preferences) _preferenceToJson(preference),
+      ],
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(archive);
+  }
+
   Future<void> _endOpenFrontSessions(DateTime endedAt) {
     return (database.update(database.frontSessions)..where(
           (session) =>
@@ -824,6 +878,75 @@ SELECT
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+
+  Map<String, Object?> _systemToJson(PluralSystem system) => {
+    'id': system.id,
+    'name': system.name,
+    'created_at': system.createdAt.toIso8601String(),
+    'updated_at': system.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _memberToJson(Member member) => {
+    'id': member.id,
+    'display_name': member.displayName,
+    'pronouns': member.pronouns,
+    'color_hex': member.colorHex,
+    'folder_id': member.folderId,
+    'description': member.description,
+    'avatar_url': member.avatarUrl,
+    'pluralkit_id': member.pluralKitId,
+    'archived': member.archived,
+    'created_at': member.createdAt.toIso8601String(),
+    'updated_at': member.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _groupToJson(SystemGroup group) => {
+    'id': group.id,
+    'parent_group_id': group.parentGroupId,
+    'name': group.name,
+    'color_hex': group.colorHex,
+    'description': group.description,
+    'emoji': group.emoji,
+    'created_at': group.createdAt.toIso8601String(),
+    'updated_at': group.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _noteToJson(Note note) => {
+    'id': note.id,
+    'member_id': note.memberId,
+    'title': note.title,
+    'body': note.body,
+    'created_at': note.createdAt.toIso8601String(),
+    'updated_at': note.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _frontToJson(FrontSession front) => {
+    'id': front.id,
+    'label': front.label,
+    'started_at': front.startedAt.toIso8601String(),
+    'ended_at': front.endedAt?.toIso8601String(),
+    'created_at': front.createdAt.toIso8601String(),
+    'updated_at': front.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _frontMemberToJson(FrontSessionMember link) => {
+    'session_id': link.sessionId,
+    'member_id': link.memberId,
+  };
+
+  Map<String, Object?> _importRecordToJson(ImportRecord record) => {
+    'id': record.id,
+    'source': record.source,
+    'file_name': record.fileName,
+    'summary_json': record.summaryJson,
+    'imported_at': record.importedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _preferenceToJson(AppPreference preference) => {
+    'key': preference.key,
+    'value': preference.value,
+    'updated_at': preference.updatedAt.toIso8601String(),
+  };
 }
 
 const _themeModeKey = 'theme_mode';
