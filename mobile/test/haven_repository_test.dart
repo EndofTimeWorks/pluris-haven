@@ -67,4 +67,42 @@ void main() {
     customization = await repository.loadCustomization();
     expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
   });
+
+  test('stores members and links them to front sessions', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.saveMember(
+      const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
+    );
+
+    var members = await repository.watchMembers().first;
+    expect(members, hasLength(1));
+    expect(members.single.displayName, 'Iris');
+    expect(members.single.pronouns, 'she/they');
+
+    var snapshot = await repository.loadHomeSnapshot();
+    expect(snapshot.memberCount, 1);
+
+    await repository.setFrontMembers([members.single.id]);
+    snapshot = await repository.loadHomeSnapshot();
+    expect(snapshot.currentFrontText, 'Iris');
+    expect(snapshot.frontHistoryCount, 1);
+
+    final frontLinks = await database
+        .select(database.frontSessionMembers)
+        .get();
+    expect(frontLinks, hasLength(1));
+    expect(frontLinks.single.memberId, members.single.id);
+
+    await repository.archiveMember(members.single.id);
+    members = await repository.watchMembers().first;
+    expect(members, isEmpty);
+
+    snapshot = await repository.loadHomeSnapshot();
+    expect(snapshot.memberCount, 0);
+  });
 }
