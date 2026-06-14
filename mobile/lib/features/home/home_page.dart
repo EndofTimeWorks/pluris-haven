@@ -1746,6 +1746,31 @@ class AboutPage extends StatelessWidget {
             SpSettingsRow('Source', 'local project'),
           ],
         ),
+        SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'Support',
+          rows: [
+            SpSettingsRow('GitHub Sponsors', 'EndofTimeWorks'),
+            SpSettingsRow('Patreon', 'patreon.com/EndofTimeWorks'),
+          ],
+        ),
+        SizedBox(height: 12),
+        SpCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Monero',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 8),
+              SelectableText(
+                '85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ',
+                style: TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
