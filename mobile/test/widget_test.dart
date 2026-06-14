@@ -91,6 +91,31 @@ void main() {
 
     expect(find.text('Search members'), findsOneWidget);
     expect(find.text('No members saved locally'), findsOneWidget);
+
+    await tester.tap(find.text('Add member'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Iris',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('member-pronouns-field')),
+      'she/they',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iris'), findsOneWidget);
+    expect(find.text('she/they'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Set front'));
+    await tester.pumpAndSettle();
+
+    expect(repository._snapshot.currentFrontText, 'Iris');
+    expect(repository._snapshot.frontHistoryCount, 1);
   });
 
   testWidgets('updates customization from the app options page', (
@@ -215,15 +240,33 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _customizationController.add(_customization),
     );
+    _membersController = StreamController<List<MemberSummary>>.broadcast(
+      sync: true,
+      onListen: () => _membersController.add(_visibleMembers),
+    );
   }
 
   HomeSnapshot _snapshot;
   AppCustomization _customization = AppCustomization.defaults;
+  List<MemberSummary> _members = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
+  late final StreamController<List<MemberSummary>> _membersController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
+
+  @override
+  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false}) {
+    if (includeArchived) {
+      return _membersController.stream.map(List.unmodifiable);
+    }
+
+    return _membersController.stream.map(
+      (members) =>
+          List.unmodifiable(members.where((member) => !member.archived)),
+    );
+  }
 
   @override
   Stream<AppCustomization> watchCustomization() =>
@@ -302,33 +345,112 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> saveMember(MemberDraft draft) async {
+    final displayName = draft.displayName.trim();
+    if (displayName.isEmpty) {
+      return;
+    }
+
+    _members = [
+      ..._members,
+      MemberSummary(
+        id: 'fake-member-${_members.length + 1}',
+        displayName: displayName,
+        pronouns: _nullIfBlank(draft.pronouns),
+        colorHex: _nullIfBlank(draft.colorHex),
+        description: _nullIfBlank(draft.description),
+      ),
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
+
+  @override
+  Future<void> archiveMember(String memberId) async {
+    _members = [
+      for (final member in _members)
+        if (member.id == memberId)
+          MemberSummary(
+            id: member.id,
+            displayName: member.displayName,
+            pronouns: member.pronouns,
+            colorHex: member.colorHex,
+            description: member.description,
+            archived: true,
+          )
+        else
+          member,
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
+
+  @override
+  Future<void> setFrontMembers(List<String> memberIds) async {
+    final ids = memberIds.toSet();
+    final selected = _visibleMembers
+        .where((member) => ids.contains(member.id))
+        .toList(growable: false);
+
+    if (selected.isEmpty) {
+      return clearCurrentFront();
+    }
+
+    _emitSnapshot(
+      frontHistoryCount: _snapshot.frontHistoryCount + 1,
+      currentFrontLabel: selected
+          .map((member) => member.displayName)
+          .join(', '),
+    );
+  }
+
+  @override
   Future<void> setCustomFront(String label) async {
-    _snapshot = HomeSnapshot(
-      systemName: _snapshot.systemName,
-      memberCount: _snapshot.memberCount,
-      groupCount: _snapshot.groupCount,
-      noteCount: _snapshot.noteCount,
+    _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
       currentFrontLabel: label,
     );
-    _controller.add(_snapshot);
   }
 
   @override
   Future<void> clearCurrentFront() async {
+    _emitSnapshot(clearCurrentFront: true);
+  }
+
+  List<MemberSummary> get _visibleMembers =>
+      _members.where((member) => !member.archived).toList(growable: false);
+
+  void _emitMembers() {
+    _membersController.add(_members);
+  }
+
+  void _emitSnapshot({
+    int? memberCount,
+    int? frontHistoryCount,
+    String? currentFrontLabel,
+    bool clearCurrentFront = false,
+  }) {
     _snapshot = HomeSnapshot(
       systemName: _snapshot.systemName,
-      memberCount: _snapshot.memberCount,
+      memberCount: memberCount ?? _snapshot.memberCount,
       groupCount: _snapshot.groupCount,
       noteCount: _snapshot.noteCount,
-      frontHistoryCount: _snapshot.frontHistoryCount,
-      currentFrontLabel: null,
+      frontHistoryCount: frontHistoryCount ?? _snapshot.frontHistoryCount,
+      currentFrontLabel: clearCurrentFront
+          ? null
+          : currentFrontLabel ?? _snapshot.currentFrontLabel,
     );
     _controller.add(_snapshot);
+  }
+
+  String? _nullIfBlank(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   Future<void> close() async {
     await _controller.close();
     await _customizationController.close();
+    await _membersController.close();
   }
 }
