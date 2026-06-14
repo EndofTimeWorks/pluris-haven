@@ -105,4 +105,29 @@ void main() {
     snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.memberCount, 0);
   });
+
+  test('stores groups in the local database', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.saveGroup(
+      const GroupDraft(
+        name: 'Caretakers',
+        emoji: '*',
+        description: 'Internal support crew',
+      ),
+    );
+
+    final groups = await repository.watchGroups().first;
+    expect(groups, hasLength(1));
+    expect(groups.single.name, 'Caretakers');
+    expect(groups.single.emoji, '*');
+    expect(groups.single.description, 'Internal support crew');
+
+    final snapshot = await repository.loadHomeSnapshot();
+    expect(snapshot.groupCount, 1);
+  });
 }
