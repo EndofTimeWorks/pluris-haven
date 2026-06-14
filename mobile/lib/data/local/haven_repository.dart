@@ -118,6 +118,22 @@ class NoteDraft {
   final String? memberId;
 }
 
+class FrontHistoryEntry {
+  const FrontHistoryEntry({
+    required this.id,
+    required this.label,
+    required this.startedAt,
+    this.endedAt,
+  });
+
+  final String id;
+  final String label;
+  final DateTime startedAt;
+  final DateTime? endedAt;
+
+  bool get isActive => endedAt == null;
+}
+
 enum HavenThemeMode {
   dark('dark', 'Dark'),
   light('light', 'Light'),
@@ -224,6 +240,8 @@ abstract interface class HavenRepository {
   Stream<List<GroupSummary>> watchGroups();
 
   Stream<List<NoteSummary>> watchNotes();
+
+  Stream<List<FrontHistoryEntry>> watchFrontHistory();
 
   Stream<AppCustomization> watchCustomization();
 
@@ -377,6 +395,30 @@ class LocalHavenRepository implements HavenRepository {
     );
   }
 
+  @override
+  Stream<List<FrontHistoryEntry>> watchFrontHistory() {
+    final query = database.select(database.frontSessions)
+      ..where((session) => session.systemId.equals(localSystemId))
+      ..orderBy([
+        (session) => OrderingTerm(
+          expression: session.startedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          FrontHistoryEntry(
+            id: row.id,
+            label: _frontLabel(row.label),
+            startedAt: row.startedAt,
+            endedAt: row.endedAt,
+          ),
+      ],
+    );
+  }
+
   Future<HomeSnapshot> loadHomeSnapshot() async {
     final row = await database
         .customSelect(_homeSnapshotSql, variables: _homeSnapshotVariables)
@@ -429,6 +471,11 @@ SELECT
       frontHistoryCount: data['front_history_count'] as int,
       currentFrontLabel: data['current_front_label'] as String?,
     );
+  }
+
+  String _frontLabel(String? label) {
+    final trimmed = label?.trim();
+    return trimmed == null || trimmed.isEmpty ? 'Unknown front' : trimmed;
   }
 
   AppCustomization _mapCustomizationRows(List<AppPreference> rows) {

@@ -57,8 +57,9 @@ void main() {
     await tester.tap(find.text('Set'));
     await tester.pumpAndSettle();
 
-    expect(find.text('blurry co-con'), findsOneWidget);
+    expect(find.text('blurry co-con'), findsWidgets);
     expect(find.text('fronting'), findsOneWidget);
+    expect(find.text('started 1/1 12:00 - active'), findsOneWidget);
 
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
@@ -68,6 +69,7 @@ void main() {
 
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);
+    expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
   });
 
   testWidgets('opens an SP-style section from the dashboard', (tester) async {
@@ -331,6 +333,11 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _notesController.add(_notes),
     );
+    _frontHistoryController =
+        StreamController<List<FrontHistoryEntry>>.broadcast(
+          sync: true,
+          onListen: () => _frontHistoryController.add(_frontHistory),
+        );
   }
 
   HomeSnapshot _snapshot;
@@ -338,11 +345,13 @@ class FakeHavenRepository implements HavenRepository {
   List<MemberSummary> _members = const [];
   List<GroupSummary> _groups = const [];
   List<NoteSummary> _notes = const [];
+  List<FrontHistoryEntry> _frontHistory = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
   late final StreamController<List<GroupSummary>> _groupsController;
   late final StreamController<List<NoteSummary>> _notesController;
+  late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
@@ -367,6 +376,11 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<NoteSummary>> watchNotes() {
     return _notesController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<FrontHistoryEntry>> watchFrontHistory() {
+    return _frontHistoryController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -503,6 +517,7 @@ class FakeHavenRepository implements HavenRepository {
           .map((member) => member.displayName)
           .join(', '),
     );
+    _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
   }
 
   @override
@@ -555,10 +570,12 @@ class FakeHavenRepository implements HavenRepository {
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
       currentFrontLabel: label,
     );
+    _addFrontHistoryEntry(label);
   }
 
   @override
   Future<void> clearCurrentFront() async {
+    _endOpenFrontHistory();
     _emitSnapshot(clearCurrentFront: true);
   }
 
@@ -567,6 +584,36 @@ class FakeHavenRepository implements HavenRepository {
 
   void _emitMembers() {
     _membersController.add(_members);
+  }
+
+  void _addFrontHistoryEntry(String label) {
+    final now = DateTime(2026, 1, 1, 12, _frontHistory.length);
+    _endOpenFrontHistory(endedAt: now);
+    _frontHistory = [
+      FrontHistoryEntry(
+        id: 'fake-front-${_frontHistory.length + 1}',
+        label: label,
+        startedAt: now,
+      ),
+      ..._frontHistory,
+    ];
+    _frontHistoryController.add(_frontHistory);
+  }
+
+  void _endOpenFrontHistory({DateTime? endedAt}) {
+    final ended = endedAt ?? DateTime(2026, 1, 1, 13);
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        entry.isActive
+            ? FrontHistoryEntry(
+                id: entry.id,
+                label: entry.label,
+                startedAt: entry.startedAt,
+                endedAt: ended,
+              )
+            : entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
   }
 
   void _emitSnapshot({
@@ -601,5 +648,6 @@ class FakeHavenRepository implements HavenRepository {
     await _membersController.close();
     await _groupsController.close();
     await _notesController.close();
+    await _frontHistoryController.close();
   }
 }
