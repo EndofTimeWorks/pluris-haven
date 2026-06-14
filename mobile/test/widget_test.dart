@@ -118,6 +118,45 @@ void main() {
     expect(repository._snapshot.frontHistoryCount, 1);
   });
 
+  testWidgets('adds a local group from the groups section', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Groups').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No groups yet'), findsOneWidget);
+
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      'Caretakers',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('group-emoji-field')),
+      '*',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-group-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Caretakers'), findsOneWidget);
+    expect(repository._snapshot.groupCount, 1);
+  });
+
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
@@ -244,14 +283,20 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _membersController.add(_visibleMembers),
     );
+    _groupsController = StreamController<List<GroupSummary>>.broadcast(
+      sync: true,
+      onListen: () => _groupsController.add(_groups),
+    );
   }
 
   HomeSnapshot _snapshot;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
+  List<GroupSummary> _groups = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
+  late final StreamController<List<GroupSummary>> _groupsController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
@@ -266,6 +311,11 @@ class FakeHavenRepository implements HavenRepository {
       (members) =>
           List.unmodifiable(members.where((member) => !member.archived)),
     );
+  }
+
+  @override
+  Stream<List<GroupSummary>> watchGroups() {
+    return _groupsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -405,6 +455,28 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> saveGroup(GroupDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    _groups = [
+      ..._groups,
+      GroupSummary(
+        id: 'fake-group-${_groups.length + 1}',
+        name: name,
+        parentGroupId: _nullIfBlank(draft.parentGroupId),
+        colorHex: _nullIfBlank(draft.colorHex),
+        description: _nullIfBlank(draft.description),
+        emoji: _nullIfBlank(draft.emoji),
+      ),
+    ];
+    _groupsController.add(_groups);
+    _emitSnapshot(groupCount: _groups.length);
+  }
+
+  @override
   Future<void> setCustomFront(String label) async {
     _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
@@ -426,6 +498,7 @@ class FakeHavenRepository implements HavenRepository {
 
   void _emitSnapshot({
     int? memberCount,
+    int? groupCount,
     int? frontHistoryCount,
     String? currentFrontLabel,
     bool clearCurrentFront = false,
@@ -433,7 +506,7 @@ class FakeHavenRepository implements HavenRepository {
     _snapshot = HomeSnapshot(
       systemName: _snapshot.systemName,
       memberCount: memberCount ?? _snapshot.memberCount,
-      groupCount: _snapshot.groupCount,
+      groupCount: groupCount ?? _snapshot.groupCount,
       noteCount: _snapshot.noteCount,
       frontHistoryCount: frontHistoryCount ?? _snapshot.frontHistoryCount,
       currentFrontLabel: clearCurrentFront
@@ -452,5 +525,6 @@ class FakeHavenRepository implements HavenRepository {
     await _controller.close();
     await _customizationController.close();
     await _membersController.close();
+    await _groupsController.close();
   }
 }

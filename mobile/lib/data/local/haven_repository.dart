@@ -60,6 +60,40 @@ class MemberDraft {
   final String? description;
 }
 
+class GroupSummary {
+  const GroupSummary({
+    required this.id,
+    required this.name,
+    this.parentGroupId,
+    this.colorHex,
+    this.description,
+    this.emoji,
+  });
+
+  final String id;
+  final String name;
+  final String? parentGroupId;
+  final String? colorHex;
+  final String? description;
+  final String? emoji;
+}
+
+class GroupDraft {
+  const GroupDraft({
+    required this.name,
+    this.parentGroupId,
+    this.colorHex,
+    this.description,
+    this.emoji,
+  });
+
+  final String name;
+  final String? parentGroupId;
+  final String? colorHex;
+  final String? description;
+  final String? emoji;
+}
+
 enum HavenThemeMode {
   dark('dark', 'Dark'),
   light('light', 'Light'),
@@ -163,6 +197,8 @@ abstract interface class HavenRepository {
 
   Stream<List<MemberSummary>> watchMembers({bool includeArchived = false});
 
+  Stream<List<GroupSummary>> watchGroups();
+
   Stream<AppCustomization> watchCustomization();
 
   Future<AppCustomization> loadCustomization();
@@ -190,6 +226,8 @@ abstract interface class HavenRepository {
   Future<void> archiveMember(String memberId);
 
   Future<void> setFrontMembers(List<String> memberIds);
+
+  Future<void> saveGroup(GroupDraft draft);
 
   Future<void> setCustomFront(String label);
 
@@ -260,6 +298,29 @@ class LocalHavenRepository implements HavenRepository {
             colorHex: row.colorHex,
             description: row.description,
             archived: row.archived,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<GroupSummary>> watchGroups() {
+    final query = database.select(database.systemGroups)
+      ..where((group) => group.systemId.equals(localSystemId))
+      ..orderBy([
+        (group) => OrderingTerm(expression: group.name, mode: OrderingMode.asc),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          GroupSummary(
+            id: row.id,
+            name: row.name,
+            parentGroupId: row.parentGroupId,
+            colorHex: row.colorHex,
+            description: row.description,
+            emoji: row.emoji,
           ),
       ],
     );
@@ -537,6 +598,31 @@ SELECT
         ]);
       });
     });
+  }
+
+  @override
+  Future<void> saveGroup(GroupDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.systemGroups)
+        .insert(
+          SystemGroupsCompanion.insert(
+            id: 'group-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            name: name,
+            parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
+            colorHex: Value(_nullIfBlank(draft.colorHex)),
+            description: Value(_nullIfBlank(draft.description)),
+            emoji: Value(_nullIfBlank(draft.emoji)),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
   }
 
   String _serializeIds(List<String> shortcutIds) {

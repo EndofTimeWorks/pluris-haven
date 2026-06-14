@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage> {
       case SpSection.frontHistory:
         return FrontHistoryPage(snapshot: home, repository: widget.repository);
       case SpSection.groups:
-        return GroupsPage(snapshot: home);
+        return GroupsPage(snapshot: home, repository: widget.repository);
       case SpSection.notes:
         return NotesPage(snapshot: home);
       case SpSection.analytics:
@@ -551,19 +551,27 @@ class MemberListTile extends StatelessWidget {
   }
 
   String get _initial {
-    final trimmed = member.displayName.trim();
-    return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+    return _initialFor(member.displayName);
   }
 
   Color _memberColor(MemberSummary member) {
-    final value = member.colorHex?.replaceFirst('#', '');
-    if (value == null || value.length != 6) {
-      return _spPurple;
-    }
-
-    final parsed = int.tryParse('FF$value', radix: 16);
-    return parsed == null ? _spPurple : Color(parsed);
+    return _colorFromHex(member.colorHex);
   }
+}
+
+String _initialFor(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+}
+
+Color _colorFromHex(String? colorHex, {Color fallback = _spPurple}) {
+  final value = colorHex?.replaceFirst('#', '');
+  if (value == null || value.length != 6) {
+    return fallback;
+  }
+
+  final parsed = int.tryParse('FF$value', radix: 16);
+  return parsed == null ? fallback : Color(parsed);
 }
 
 void showAddMemberSheet(BuildContext context, HavenRepository repository) {
@@ -722,36 +730,204 @@ class FrontHistoryPage extends StatelessWidget {
 }
 
 class GroupsPage extends StatelessWidget {
-  const GroupsPage({super.key, required this.snapshot});
+  const GroupsPage({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+  });
 
   final HomeSnapshot? snapshot;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    return SpPage(
-      children: [
-        const SpSearchField(hintText: 'Search groups'),
-        const SizedBox(height: 12),
-        SpCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SpSectionHeader(
-                title: 'Groups',
-                trailing: StatusPill(text: '${snapshot?.groupCount ?? 0}'),
+    return StreamBuilder<List<GroupSummary>>(
+      stream: repository.watchGroups(),
+      initialData: const [],
+      builder: (context, groupSnapshot) {
+        final groups = groupSnapshot.data ?? const <GroupSummary>[];
+
+        return SpPage(
+          children: [
+            const SpSearchField(hintText: 'Search groups'),
+            const SizedBox(height: 12),
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Groups',
+                    trailing: StatusPill(text: '${snapshot?.groupCount ?? 0}'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (groups.isEmpty)
+                    const SpEmptyState(
+                      title: 'No groups yet',
+                      body:
+                          'Groups keep members organized without needing sync.',
+                    )
+                  else
+                    for (final group in groups) ...[
+                      GroupListTile(group: group),
+                      if (group != groups.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: 'Add group',
+                    secondary: 'Import',
+                    onPrimary: () => showAddGroupSheet(context, repository),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              const SpEmptyState(
-                title: 'No groups yet',
-                body: 'Groups keep members organized without needing sync.',
-              ),
-              const SizedBox(height: 14),
-              const SpActionRow(primary: 'Add group', secondary: 'Import'),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
+  }
+}
+
+class GroupListTile extends StatelessWidget {
+  const GroupListTile({super.key, required this.group});
+
+  final GroupSummary group;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: SpAvatar(
+        size: 42,
+        color: _colorFromHex(group.colorHex, fallback: _spGold),
+        label: group.emoji?.trim().isNotEmpty == true
+            ? group.emoji!.trim()
+            : _initialFor(group.name),
+      ),
+      title: Text(
+        group.name,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      subtitle: Text(
+        group.description?.isNotEmpty == true
+            ? group.description!
+            : 'no description',
+        style: const TextStyle(color: _spMuted),
+      ),
+    );
+  }
+}
+
+void showAddGroupSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddGroupSheet(repository: repository),
+  );
+}
+
+class AddGroupSheet extends StatefulWidget {
+  const AddGroupSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<AddGroupSheet> createState() => _AddGroupSheetState();
+}
+
+class _AddGroupSheetState extends State<AddGroupSheet> {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _emojiController = TextEditingController();
+  HavenAccentColor _color = HavenAccentColor.gold;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _emojiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Add group',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('group-name-field'),
+              controller: _nameController,
+              autofocus: true,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('group-emoji-field'),
+              controller: _emojiController,
+              maxLength: 4,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Emoji'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _descriptionController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final color in HavenAccentColor.values)
+                  ChoiceChip(
+                    label: Text(color.label),
+                    selected: _color == color,
+                    onSelected: (_) => setState(() => _color = color),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const ValueKey('save-group-button'),
+              onPressed: _save,
+              child: const Text('Save group'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    await widget.repository.saveGroup(
+      GroupDraft(
+        name: _nameController.text,
+        emoji: _emojiController.text,
+        colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
+        description: _descriptionController.text,
+      ),
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 
