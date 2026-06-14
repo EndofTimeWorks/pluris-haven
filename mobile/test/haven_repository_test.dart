@@ -130,4 +130,24 @@ void main() {
     final snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.groupCount, 1);
   });
+
+  test('stores notes in the local database', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.saveNote(
+      const NoteDraft(title: 'Grounding', body: 'Drink water and check meds.'),
+    );
+
+    final notes = await repository.watchNotes().first;
+    expect(notes, hasLength(1));
+    expect(notes.single.title, 'Grounding');
+    expect(notes.single.body, 'Drink water and check meds.');
+
+    final snapshot = await repository.loadHomeSnapshot();
+    expect(snapshot.noteCount, 1);
+  });
 }

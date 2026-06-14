@@ -157,6 +157,46 @@ void main() {
     expect(repository._snapshot.groupCount, 1);
   });
 
+  testWidgets('adds a local note from the notes section', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Notes').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No notes yet'), findsOneWidget);
+
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('note-title-field')),
+      'Grounding',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('note-body-field')),
+      'Drink water and check meds.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Grounding'), findsOneWidget);
+    expect(find.text('Drink water and check meds.'), findsOneWidget);
+    expect(repository._snapshot.noteCount, 1);
+  });
+
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
@@ -287,16 +327,22 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _groupsController.add(_groups),
     );
+    _notesController = StreamController<List<NoteSummary>>.broadcast(
+      sync: true,
+      onListen: () => _notesController.add(_notes),
+    );
   }
 
   HomeSnapshot _snapshot;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
   List<GroupSummary> _groups = const [];
+  List<NoteSummary> _notes = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
   late final StreamController<List<GroupSummary>> _groupsController;
+  late final StreamController<List<NoteSummary>> _notesController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
@@ -316,6 +362,11 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<GroupSummary>> watchGroups() {
     return _groupsController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<NoteSummary>> watchNotes() {
+    return _notesController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -477,6 +528,28 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> saveNote(NoteDraft draft) async {
+    final title = draft.title.trim();
+    final body = draft.body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    _notes = [
+      NoteSummary(
+        id: 'fake-note-${_notes.length + 1}',
+        title: title.isEmpty ? 'Untitled note' : title,
+        body: body,
+        memberId: _nullIfBlank(draft.memberId),
+        updatedAt: DateTime(2026),
+      ),
+      ..._notes,
+    ];
+    _notesController.add(_notes);
+    _emitSnapshot(noteCount: _notes.length);
+  }
+
+  @override
   Future<void> setCustomFront(String label) async {
     _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
@@ -499,6 +572,7 @@ class FakeHavenRepository implements HavenRepository {
   void _emitSnapshot({
     int? memberCount,
     int? groupCount,
+    int? noteCount,
     int? frontHistoryCount,
     String? currentFrontLabel,
     bool clearCurrentFront = false,
@@ -507,7 +581,7 @@ class FakeHavenRepository implements HavenRepository {
       systemName: _snapshot.systemName,
       memberCount: memberCount ?? _snapshot.memberCount,
       groupCount: groupCount ?? _snapshot.groupCount,
-      noteCount: _snapshot.noteCount,
+      noteCount: noteCount ?? _snapshot.noteCount,
       frontHistoryCount: frontHistoryCount ?? _snapshot.frontHistoryCount,
       currentFrontLabel: clearCurrentFront
           ? null
@@ -526,5 +600,6 @@ class FakeHavenRepository implements HavenRepository {
     await _customizationController.close();
     await _membersController.close();
     await _groupsController.close();
+    await _notesController.close();
   }
 }
