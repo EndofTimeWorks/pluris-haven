@@ -94,6 +94,30 @@ class GroupDraft {
   final String? emoji;
 }
 
+class NoteSummary {
+  const NoteSummary({
+    required this.id,
+    required this.title,
+    required this.body,
+    this.memberId,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String title;
+  final String body;
+  final String? memberId;
+  final DateTime updatedAt;
+}
+
+class NoteDraft {
+  const NoteDraft({required this.title, required this.body, this.memberId});
+
+  final String title;
+  final String body;
+  final String? memberId;
+}
+
 enum HavenThemeMode {
   dark('dark', 'Dark'),
   light('light', 'Light'),
@@ -199,6 +223,8 @@ abstract interface class HavenRepository {
 
   Stream<List<GroupSummary>> watchGroups();
 
+  Stream<List<NoteSummary>> watchNotes();
+
   Stream<AppCustomization> watchCustomization();
 
   Future<AppCustomization> loadCustomization();
@@ -228,6 +254,8 @@ abstract interface class HavenRepository {
   Future<void> setFrontMembers(List<String> memberIds);
 
   Future<void> saveGroup(GroupDraft draft);
+
+  Future<void> saveNote(NoteDraft draft);
 
   Future<void> setCustomFront(String label);
 
@@ -321,6 +349,29 @@ class LocalHavenRepository implements HavenRepository {
             colorHex: row.colorHex,
             description: row.description,
             emoji: row.emoji,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<NoteSummary>> watchNotes() {
+    final query = database.select(database.notes)
+      ..where((note) => note.systemId.equals(localSystemId))
+      ..orderBy([
+        (note) =>
+            OrderingTerm(expression: note.updatedAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          NoteSummary(
+            id: row.id,
+            title: row.title,
+            body: row.body,
+            memberId: row.memberId,
+            updatedAt: row.updatedAt,
           ),
       ],
     );
@@ -619,6 +670,30 @@ SELECT
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
             emoji: Value(_nullIfBlank(draft.emoji)),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> saveNote(NoteDraft draft) async {
+    final title = draft.title.trim();
+    final body = draft.body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.notes)
+        .insert(
+          NotesCompanion.insert(
+            id: 'note-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            memberId: Value(_nullIfBlank(draft.memberId)),
+            title: title.isEmpty ? 'Untitled note' : title,
+            body: body,
             createdAt: now,
             updatedAt: now,
           ),
