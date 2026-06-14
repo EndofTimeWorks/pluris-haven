@@ -269,7 +269,7 @@ void main() {
     );
   });
 
-  testWidgets('shows supported importers and PluralKit live setup', (
+  testWidgets('shows upload-first import setup and PluralKit live fields', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1200);
@@ -295,20 +295,22 @@ void main() {
     await tester.tap(find.text('Import / Export'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Import setup'), findsOneWidget);
+    expect(find.text('Upload file'), findsOneWidget);
+    expect(find.text('Service'), findsOneWidget);
     expect(find.text('Simply Plural'), findsOneWidget);
-    expect(find.text('PluralKit file'), findsOneWidget);
-    expect(find.text('PluralKit live'), findsOneWidget);
-    expect(find.text('Tupperbox'), findsOneWidget);
-    expect(find.text('PluralSpace'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Prism'), 240);
-    expect(find.text('Prism'), findsOneWidget);
+    expect(find.text('Simply Plural plan'), findsOneWidget);
+    expect(find.text('Preview before writing'), findsNothing);
+    expect(find.text('Review matches'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('PluralKit live'), -240);
-    await tester.tap(find.text('PluralKit live'));
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
     await tester.pumpAndSettle();
 
     expect(find.text('pk;token'), findsOneWidget);
-    expect(find.text('Validate token with GET /systems/@me'), findsOneWidget);
+    expect(find.text('PluralKit live plan'), findsOneWidget);
+    expect(find.text('needs network'), findsOneWidget);
   });
 
   testWidgets('builds a local archive from import export', (tester) async {

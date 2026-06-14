@@ -1,6 +1,10 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/import/import_plan.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
@@ -1173,13 +1177,28 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
   }
 }
 
-class ImportExportPage extends StatelessWidget {
+class ImportExportPage extends StatefulWidget {
   const ImportExportPage({super.key, required this.repository});
 
   final HavenRepository repository;
 
   @override
+  State<ImportExportPage> createState() => _ImportExportPageState();
+}
+
+class _ImportExportPageState extends State<ImportExportPage> {
+  ImportSource _source = ImportSource.simplyPlural;
+  ImportConflictStrategy _strategy = ImportConflictStrategy.skip;
+  String? _fileName;
+  int? _fileSize;
+  ImportFileGuess? _guess;
+
+  ImportSourcePlan get _plan => importPlanFor(_source);
+
+  @override
   Widget build(BuildContext context) {
+    final plan = _plan;
+
     return SpPage(
       children: [
         const SpCard(
@@ -1200,10 +1219,19 @@ class ImportExportPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        for (final source in ImportSource.values) ...[
-          ImportSourceCard(source: source),
-          const SizedBox(height: 10),
-        ],
+        ImportSetupCard(
+          source: _source,
+          strategy: _strategy,
+          fileName: _fileName,
+          fileSize: _fileSize,
+          guess: _guess,
+          plan: plan,
+          onPickFile: _pickImportFile,
+          onSourceChanged: (source) => setState(() => _source = source),
+          onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
+        ),
+        const SizedBox(height: 12),
+        ImportPlanCard(plan: plan),
         const SizedBox(height: 2),
         SpSettingsGroup(
           title: 'Export',
@@ -1211,7 +1239,7 @@ class ImportExportPage extends StatelessWidget {
             SpSettingsRow(
               'Export local archive',
               'portable JSON',
-              onTap: () => showLocalArchiveSheet(context, repository),
+              onTap: () => showLocalArchiveSheet(context, widget.repository),
             ),
             const SpSettingsRow('Encrypted export', 'password protected'),
             const SpSettingsRow('Backup folder', 'choose later'),
@@ -1219,6 +1247,42 @@ class ImportExportPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _pickImportFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: 'Choose import file',
+      type: FileType.custom,
+      allowedExtensions: ['json', 'zip', 'prism', 'txt'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty || !mounted) {
+      return;
+    }
+
+    final file = result.files.single;
+    final guess = guessImportSourceFromFile(
+      fileName: file.name,
+      textPreview: _textPreview(file.bytes),
+    );
+
+    setState(() {
+      _fileName = file.name;
+      _fileSize = file.size;
+      _guess = guess;
+      if (guess.source != null) {
+        _source = guess.source!;
+      }
+    });
+  }
+
+  String? _textPreview(Uint8List? bytes) {
+    if (bytes == null || bytes.isEmpty) {
+      return null;
+    }
+
+    final previewBytes = bytes.length > 65536 ? bytes.sublist(0, 65536) : bytes;
+    return utf8.decode(previewBytes, allowMalformed: true);
   }
 }
 
@@ -1317,46 +1381,230 @@ class LocalArchiveSheet extends StatelessWidget {
   }
 }
 
-class ImportSourceCard extends StatelessWidget {
-  const ImportSourceCard({super.key, required this.source});
+class ImportSetupCard extends StatelessWidget {
+  const ImportSetupCard({
+    super.key,
+    required this.source,
+    required this.strategy,
+    required this.fileName,
+    required this.fileSize,
+    required this.guess,
+    required this.plan,
+    required this.onPickFile,
+    required this.onSourceChanged,
+    required this.onStrategyChanged,
+  });
 
   final ImportSource source;
+  final ImportConflictStrategy strategy;
+  final String? fileName;
+  final int? fileSize;
+  final ImportFileGuess? guess;
+  final ImportSourcePlan plan;
+  final VoidCallback onPickFile;
+  final ValueChanged<ImportSource> onSourceChanged;
+  final ValueChanged<ImportConflictStrategy> onStrategyChanged;
 
   @override
   Widget build(BuildContext context) {
     return SpCard(
-      onTap: source == ImportSource.pluralKitLive
-          ? () => _showPluralKitLiveSheet(context)
-          : null,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SpSectionHeader(
-            title: source.label,
-            trailing: StatusPill(text: source.status.label),
+            title: 'Import setup',
+            trailing: StatusPill(text: plan.status.label),
           ),
-          const SizedBox(height: 6),
-          Text(
-            source.subtitle,
-            style: const TextStyle(color: _spMuted, height: 1.35),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            key: const ValueKey('choose-import-file-button'),
+            onPressed: onPickFile,
+            icon: const Icon(Icons.upload_file_rounded),
+            label: Text(
+              fileName == null ? 'Upload file' : 'Choose another file',
+            ),
           ),
+          if (fileName != null) ...[
+            const SizedBox(height: 10),
+            ImportFileSummary(
+              fileName: fileName!,
+              fileSize: fileSize,
+              guess: guess,
+            ),
+          ],
+          const SizedBox(height: 12),
+          DropdownButtonFormField<ImportSource>(
+            key: const ValueKey('import-source-dropdown'),
+            initialValue: source,
+            decoration: const InputDecoration(labelText: 'Service'),
+            items: [
+              for (final source in ImportSource.values)
+                DropdownMenuItem(value: source, child: Text(source.label)),
+            ],
+            onChanged: (source) {
+              if (source != null) {
+                onSourceChanged(source);
+              }
+            },
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<ImportConflictStrategy>(
+            initialValue: strategy,
+            decoration: const InputDecoration(labelText: 'When a match exists'),
+            items: [
+              for (final strategy in ImportConflictStrategy.values)
+                DropdownMenuItem(value: strategy, child: Text(strategy.label)),
+            ],
+            onChanged: (strategy) {
+              if (strategy != null) {
+                onStrategyChanged(strategy);
+              }
+            },
+          ),
+          if (plan.requiresToken) ...[
+            const SizedBox(height: 10),
+            const TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'pk;token',
+                helperText: 'Used for live import; not exported.',
+              ),
+            ),
+          ],
+          if (plan.requiresPassphrase) ...[
+            const SizedBox(height: 10),
+            const TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'Passphrase',
+                helperText: 'Used locally to decrypt the preview.',
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           ImportMetaRow(label: 'Input', value: source.inputLabel),
           const SizedBox(height: 8),
           ImportMetaRow(label: 'Job', value: source.jobSource),
           const SizedBox(height: 8),
           ImportMetaRow(label: 'Dedupe', value: source.dedupeLabel),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.fact_check_rounded),
+            label: const Text('Preview import - parser next'),
+          ),
         ],
       ),
     );
   }
+}
 
-  void _showPluralKitLiveSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: _spSurface,
-      builder: (context) => const PluralKitLiveSheet(),
+class ImportFileSummary extends StatelessWidget {
+  const ImportFileSummary({
+    super.key,
+    required this.fileName,
+    required this.fileSize,
+    required this.guess,
+  });
+
+  final String fileName;
+  final int? fileSize;
+  final ImportFileGuess? guess;
+
+  @override
+  Widget build(BuildContext context) {
+    final detected = guess?.source;
+    final label = detected == null
+        ? 'Choose service'
+        : '${detected.label} (${((guess?.confidence ?? 0) * 100).round()}%)';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _spSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _spLine),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(fileName, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(
+            [
+              if (fileSize != null) _formatBytes(fileSize!),
+              guess?.reason ?? 'waiting for detection',
+            ].join(' - '),
+            style: const TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
+          ),
+          const SizedBox(height: 8),
+          StatusPill(text: label),
+        ],
+      ),
+    );
+  }
+}
+
+class ImportPlanCard extends StatelessWidget {
+  const ImportPlanCard({super.key, required this.plan});
+
+  final ImportSourcePlan plan;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      outlined: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SpSectionHeader(
+            title: '${plan.source.label} plan',
+            trailing: StatusPill(
+              text: plan.canPreviewOffline
+                  ? 'offline preview'
+                  : 'needs network',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final count in plan.previewCounts)
+                StatusPill(text: count.label),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (final step in plan.steps) ...[
+            Text(
+              step.title,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              step.detail,
+              style: const TextStyle(
+                color: _spMuted,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          const Divider(height: 18),
+          for (final note in plan.privacyNotes) ...[
+            Text(
+              note,
+              style: const TextStyle(
+                color: _spMuted,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1394,63 +1642,14 @@ class ImportMetaRow extends StatelessWidget {
   }
 }
 
-class PluralKitLiveSheet extends StatelessWidget {
-  const PluralKitLiveSheet({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    const shape = PluralKitLiveImportShape();
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'PluralKit live import',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Use the pk;token as the Authorization header. Tokens should stay request-scoped for one-shot import and must never be exported.',
-              style: TextStyle(color: _spMuted, height: 1.35),
-            ),
-            const SizedBox(height: 14),
-            const TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'pk;token',
-                helperText: 'Stored later in secure storage',
-              ),
-            ),
-            const SizedBox(height: 14),
-            const SpSettingsGroup(
-              title: 'Conflict strategy',
-              rows: [
-                SpSettingsRow('Skip', 'default re-import behavior'),
-                SpSettingsRow('Update', 'refresh matched imported fields'),
-                SpSettingsRow('Create', 'always append new records'),
-              ],
-            ),
-            const SizedBox(height: 14),
-            SpSettingsGroup(
-              title: 'First import plan',
-              rows: [
-                for (final step in shape.firstImportSteps)
-                  SpSettingsRow(step, 'local staging'),
-              ],
-            ),
-            const SizedBox(height: 14),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
-            ),
-          ],
-        ),
-      ),
-    );
+String _formatBytes(int bytes) {
+  if (bytes < 1024) {
+    return '$bytes B';
   }
+  if (bytes < 1024 * 1024) {
+    return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  }
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 class SyncPage extends StatelessWidget {
