@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -309,6 +310,46 @@ void main() {
     expect(find.text('pk;token'), findsOneWidget);
     expect(find.text('Validate token with GET /systems/@me'), findsOneWidget);
   });
+
+  testWidgets('builds a local archive from import export', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveNote(
+      const NoteDraft(title: 'Grounding', body: 'Water'),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Export local archive'), 240);
+    await tester.ensureVisible(find.text('Export local archive'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export local archive'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local archive'), findsOneWidget);
+    expect(find.text('Copy JSON'), findsOneWidget);
+    expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
+    expect(find.textContaining('Caretakers'), findsOneWidget);
+  });
 }
 
 class FakeHavenRepository implements HavenRepository {
@@ -577,6 +618,31 @@ class FakeHavenRepository implements HavenRepository {
   Future<void> clearCurrentFront() async {
     _endOpenFrontHistory();
     _emitSnapshot(clearCurrentFront: true);
+  }
+
+  @override
+  Future<String> buildLocalArchiveJson() async {
+    return const JsonEncoder.withIndent('  ').convert({
+      'format': 'pluris_haven.local_archive',
+      'version': 1,
+      'system': {'id': 'local-system', 'name': _snapshot.systemName},
+      'members': [
+        for (final member in _members)
+          {'id': member.id, 'display_name': member.displayName},
+      ],
+      'groups': [
+        for (final group in _groups) {'id': group.id, 'name': group.name},
+      ],
+      'notes': [
+        for (final note in _notes) {'id': note.id, 'title': note.title},
+      ],
+      'fronts': [
+        for (final front in _frontHistory)
+          {'id': front.id, 'label': front.label},
+      ],
+      'front_members': [],
+      'preferences': [],
+    });
   }
 
   List<MemberSummary> get _visibleMembers =>
