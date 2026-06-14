@@ -143,7 +143,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          notes="Pluris Haven mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}"
           prerelease_flag=()
           if [[ "${{ steps.version.outputs.prerelease }}" == "true" ]]; then
             prerelease_flag=(--prerelease)
@@ -155,6 +154,6 @@ jobs:
             gh release create "${{ steps.version.outputs.tag }}" \
               release/mobile/* \
               --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
-              --notes "${notes}" \
+              --generate-notes \
               "${prerelease_flag[@]}"
           fi
