@@ -28,6 +28,38 @@ class HomeSnapshot {
       currentFrontLabel?.trim().isNotEmpty == true ? 'fronting' : 'none';
 }
 
+class MemberSummary {
+  const MemberSummary({
+    required this.id,
+    required this.displayName,
+    this.pronouns,
+    this.colorHex,
+    this.description,
+    this.archived = false,
+  });
+
+  final String id;
+  final String displayName;
+  final String? pronouns;
+  final String? colorHex;
+  final String? description;
+  final bool archived;
+}
+
+class MemberDraft {
+  const MemberDraft({
+    required this.displayName,
+    this.pronouns,
+    this.colorHex,
+    this.description,
+  });
+
+  final String displayName;
+  final String? pronouns;
+  final String? colorHex;
+  final String? description;
+}
+
 enum HavenThemeMode {
   dark('dark', 'Dark'),
   light('light', 'Light'),
@@ -129,6 +161,8 @@ const defaultDashboardShortcutIds = [
 abstract interface class HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot();
 
+  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false});
+
   Stream<AppCustomization> watchCustomization();
 
   Future<AppCustomization> loadCustomization();
@@ -150,6 +184,12 @@ abstract interface class HavenRepository {
   Future<void> moveDashboardShortcut(String shortcutId, int delta);
 
   Future<void> resetDashboardShortcuts();
+
+  Future<void> saveMember(MemberDraft draft);
+
+  Future<void> archiveMember(String memberId);
+
+  Future<void> setFrontMembers(List<String> memberIds);
 
   Future<void> setCustomFront(String label);
 
@@ -193,6 +233,36 @@ class LocalHavenRepository implements HavenRepository {
         )
         .watchSingle()
         .map(_mapHomeSnapshot);
+  }
+
+  @override
+  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false}) {
+    final query = database.select(database.members)
+      ..orderBy([
+        (member) => OrderingTerm(
+          expression: member.displayName,
+          mode: OrderingMode.asc,
+        ),
+      ]);
+
+    query.where((member) => member.systemId.equals(localSystemId));
+    if (!includeArchived) {
+      query.where((member) => member.archived.equals(false));
+    }
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          MemberSummary(
+            id: row.id,
+            displayName: row.displayName,
+            pronouns: row.pronouns,
+            colorHex: row.colorHex,
+            description: row.description,
+            archived: row.archived,
+          ),
+      ],
+    );
   }
 
   Future<HomeSnapshot> loadHomeSnapshot() async {
@@ -377,6 +447,98 @@ SELECT
     return setDashboardShortcutIds(defaultDashboardShortcutIds);
   }
 
+  @override
+  Future<void> saveMember(MemberDraft draft) async {
+    final displayName = draft.displayName.trim();
+    if (displayName.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.members)
+        .insert(
+          MembersCompanion.insert(
+            id: 'member-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            displayName: displayName,
+            pronouns: Value(_nullIfBlank(draft.pronouns)),
+            colorHex: Value(_nullIfBlank(draft.colorHex)),
+            description: Value(_nullIfBlank(draft.description)),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> archiveMember(String memberId) async {
+    final now = DateTime.now().toUtc();
+    await (database.update(database.members)..where(
+          (member) =>
+              member.systemId.equals(localSystemId) &
+              member.id.equals(memberId),
+        ))
+        .write(
+          MembersCompanion(archived: const Value(true), updatedAt: Value(now)),
+        );
+  }
+
+  @override
+  Future<void> setFrontMembers(List<String> memberIds) async {
+    final ids = memberIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (ids.isEmpty) {
+      return clearCurrentFront();
+    }
+
+    final members =
+        await (database.select(database.members)..where(
+              (member) =>
+                  member.systemId.equals(localSystemId) &
+                  member.archived.equals(false) &
+                  member.id.isIn(ids),
+            ))
+            .get();
+    if (members.isEmpty) {
+      return clearCurrentFront();
+    }
+
+    final now = DateTime.now().toUtc();
+    final label = members.map((member) => member.displayName).join(', ');
+
+    await database.transaction(() async {
+      await _endOpenFrontSessions(now);
+      final sessionId = 'front-${now.microsecondsSinceEpoch}';
+
+      await database
+          .into(database.frontSessions)
+          .insert(
+            FrontSessionsCompanion.insert(
+              id: sessionId,
+              systemId: localSystemId,
+              label: Value(label),
+              startedAt: now,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      await database.batch((batch) {
+        batch.insertAll(database.frontSessionMembers, [
+          for (final member in members)
+            FrontSessionMembersCompanion.insert(
+              sessionId: sessionId,
+              memberId: member.id,
+            ),
+        ]);
+      });
+    });
+  }
+
   String _serializeIds(List<String> shortcutIds) {
     final seen = <String>{};
     final ids = <String>[];
@@ -448,6 +610,11 @@ SELECT
             updatedAt: Value(endedAt),
           ),
         );
+  }
+
+  String? _nullIfBlank(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }
 
