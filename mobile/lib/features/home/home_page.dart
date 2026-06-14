@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
@@ -252,7 +253,7 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.importExport:
-        return const ImportExportPage();
+        return ImportExportPage(repository: widget.repository);
       case SpSection.sync:
         return const SyncPage();
       case SpSection.appOptions:
@@ -1173,7 +1174,9 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
 }
 
 class ImportExportPage extends StatelessWidget {
-  const ImportExportPage({super.key});
+  const ImportExportPage({super.key, required this.repository});
+
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
@@ -1202,15 +1205,114 @@ class ImportExportPage extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         const SizedBox(height: 2),
-        const SpSettingsGroup(
+        SpSettingsGroup(
           title: 'Export',
           rows: [
-            SpSettingsRow('Export local archive', 'portable JSON'),
-            SpSettingsRow('Encrypted export', 'password protected'),
-            SpSettingsRow('Backup folder', 'choose later'),
+            SpSettingsRow(
+              'Export local archive',
+              'portable JSON',
+              onTap: () => showLocalArchiveSheet(context, repository),
+            ),
+            const SpSettingsRow('Encrypted export', 'password protected'),
+            const SpSettingsRow('Backup folder', 'choose later'),
           ],
         ),
       ],
+    );
+  }
+}
+
+void showLocalArchiveSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => LocalArchiveSheet(repository: repository),
+  );
+}
+
+class LocalArchiveSheet extends StatelessWidget {
+  const LocalArchiveSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: FutureBuilder<String>(
+        future: repository.buildLocalArchiveJson(),
+        builder: (context, snapshot) {
+          final archive = snapshot.data;
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              0,
+              18,
+              18 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Local archive',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'JSON export for backup or migration. It includes local members, groups, notes, fronts, and app preferences.',
+                  style: TextStyle(color: _spMuted, height: 1.35),
+                ),
+                const SizedBox(height: 14),
+                if (snapshot.connectionState != ConnectionState.done)
+                  const Center(child: CircularProgressIndicator())
+                else if (snapshot.hasError)
+                  Text(
+                    'Could not build archive: ${snapshot.error}',
+                    style: const TextStyle(color: _spMuted),
+                  )
+                else ...[
+                  FilledButton.icon(
+                    key: const ValueKey('copy-local-archive-button'),
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: archive!));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Archive copied')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.copy_rounded),
+                    label: const Text('Copy JSON'),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 320),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _spSurface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _spLine),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        archive!,
+                        style: const TextStyle(
+                          color: _spMuted,
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
