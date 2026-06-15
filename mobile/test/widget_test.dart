@@ -201,6 +201,86 @@ void main() {
     expect(repository._snapshot.noteCount, 1);
   });
 
+  testWidgets('adds a local message from the chat section', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Chat');
+    await tester.pumpAndSettle();
+
+    expect(find.text('No messages yet'), findsOneWidget);
+
+    await tester.tap(find.text('Add message'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('message-body-field')),
+      'Check in after dinner.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-message-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Check in after dinner.'), findsOneWidget);
+  });
+
+  testWidgets('adds a local reminder from the reminders section', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Reminders');
+    await tester.pumpAndSettle();
+
+    expect(find.text('No reminders yet'), findsOneWidget);
+
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-schedule-field')),
+      'Daily',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-body-field')),
+      'With water',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Medication'), findsOneWidget);
+    expect(find.text('Daily'), findsOneWidget);
+    expect(find.text('With water'), findsOneWidget);
+  });
+
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
@@ -355,6 +435,13 @@ void main() {
   });
 }
 
+Future<void> openDrawerSection(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Open navigation menu'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
 class FakeHavenRepository implements HavenRepository {
   FakeHavenRepository(this._snapshot) {
     _controller = StreamController<HomeSnapshot>.broadcast(
@@ -377,6 +464,20 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _notesController.add(_notes),
     );
+    _messagesController = StreamController<List<MessageSummary>>.broadcast(
+      sync: true,
+      onListen: () => _messagesController.add(_messages),
+    );
+    _remindersController = StreamController<List<ReminderSummary>>.broadcast(
+      sync: true,
+      onListen: () => _remindersController.add(_reminders),
+    );
+    _notificationEventsController =
+        StreamController<List<NotificationEventSummary>>.broadcast(
+          sync: true,
+          onListen: () =>
+              _notificationEventsController.add(_notificationEvents),
+        );
     _frontHistoryController =
         StreamController<List<FrontHistoryEntry>>.broadcast(
           sync: true,
@@ -389,12 +490,19 @@ class FakeHavenRepository implements HavenRepository {
   List<MemberSummary> _members = const [];
   List<GroupSummary> _groups = const [];
   List<NoteSummary> _notes = const [];
+  List<MessageSummary> _messages = const [];
+  List<ReminderSummary> _reminders = const [];
+  List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
   late final StreamController<List<GroupSummary>> _groupsController;
   late final StreamController<List<NoteSummary>> _notesController;
+  late final StreamController<List<MessageSummary>> _messagesController;
+  late final StreamController<List<ReminderSummary>> _remindersController;
+  late final StreamController<List<NotificationEventSummary>>
+  _notificationEventsController;
   late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
 
   @override
@@ -420,6 +528,21 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<NoteSummary>> watchNotes() {
     return _notesController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<MessageSummary>> watchMessages() {
+    return _messagesController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<ReminderSummary>> watchReminders() {
+    return _remindersController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<NotificationEventSummary>> watchNotificationEvents() {
+    return _notificationEventsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -609,6 +732,62 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> saveMessage(MessageDraft draft) async {
+    final body = draft.body.trim();
+    if (body.isEmpty) {
+      return;
+    }
+
+    _messages = [
+      MessageSummary(
+        id: 'fake-message-${_messages.length + 1}',
+        body: body,
+        memberId: _nullIfBlank(draft.memberId),
+        createdAt: DateTime(2026),
+      ),
+      ..._messages,
+    ];
+    _messagesController.add(_messages);
+  }
+
+  @override
+  Future<void> saveReminder(ReminderDraft draft) async {
+    final title = draft.title.trim();
+    final schedule = draft.scheduleText.trim();
+    if (title.isEmpty || schedule.isEmpty) {
+      return;
+    }
+
+    _reminders = [
+      ReminderSummary(
+        id: 'fake-reminder-${_reminders.length + 1}',
+        title: title,
+        body: _nullIfBlank(draft.body),
+        scheduleText: schedule,
+        enabled: draft.enabled,
+        updatedAt: DateTime(2026),
+      ),
+      ..._reminders,
+    ];
+    _remindersController.add(_reminders);
+  }
+
+  @override
+  Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
+    _notificationEvents = [
+      NotificationEventSummary(
+        id: 'fake-notification-${_notificationEvents.length + 1}',
+        kind: draft.kind,
+        title: draft.title,
+        body: draft.body,
+        createdAt: DateTime(2026),
+      ),
+      ..._notificationEvents,
+    ];
+    _notificationEventsController.add(_notificationEvents);
+  }
+
+  @override
   Future<void> setCustomFront(String label) async {
     _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
@@ -639,11 +818,23 @@ class FakeHavenRepository implements HavenRepository {
       'notes': [
         for (final note in _notes) {'id': note.id, 'title': note.title},
       ],
+      'messages': [
+        for (final message in _messages)
+          {'id': message.id, 'body': message.body},
+      ],
+      'reminders': [
+        for (final reminder in _reminders)
+          {'id': reminder.id, 'title': reminder.title},
+      ],
       'fronts': [
         for (final front in _frontHistory)
           {'id': front.id, 'label': front.label},
       ],
       'front_members': [],
+      'notification_events': [
+        for (final event in _notificationEvents)
+          {'id': event.id, 'title': event.title},
+      ],
       'preferences': [],
     });
   }
@@ -724,6 +915,9 @@ class FakeHavenRepository implements HavenRepository {
     await _membersController.close();
     await _groupsController.close();
     await _notesController.close();
+    await _messagesController.close();
+    await _remindersController.close();
+    await _notificationEventsController.close();
     await _frontHistoryController.close();
   }
 }

@@ -165,6 +165,42 @@ void main() {
     expect(snapshot.noteCount, 1);
   });
 
+  test('stores messages, reminders, and notification events locally', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.saveMessage(
+      const MessageDraft(body: 'Remember to check in.'),
+    );
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Medication',
+        body: 'With water',
+        scheduleText: 'Daily',
+      ),
+    );
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'front',
+        title: 'Front changed',
+        body: 'Iris is fronting',
+      ),
+    );
+
+    final messages = await repository.watchMessages().first;
+    final reminders = await repository.watchReminders().first;
+    final events = await repository.watchNotificationEvents().first;
+
+    expect(messages.single.body, 'Remember to check in.');
+    expect(reminders.single.title, 'Medication');
+    expect(reminders.single.scheduleText, 'Daily');
+    expect(events.single.kind, 'front');
+    expect(events.single.title, 'Front changed');
+  });
+
   test('exports a versioned local archive', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -178,6 +214,17 @@ void main() {
     await repository.saveNote(
       const NoteDraft(title: 'Grounding', body: 'Drink water.'),
     );
+    await repository.saveMessage(const MessageDraft(body: 'System check-in.'));
+    await repository.saveReminder(
+      const ReminderDraft(title: 'Meds', scheduleText: 'Daily'),
+    );
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'front',
+        title: 'Front changed',
+        body: 'Iris is fronting',
+      ),
+    );
     final member = (await repository.watchMembers().first).single;
     await repository.setFrontMembers([member.id]);
 
@@ -190,8 +237,11 @@ void main() {
     expect((archive['members'] as List), hasLength(1));
     expect((archive['groups'] as List), hasLength(1));
     expect((archive['notes'] as List), hasLength(1));
+    expect((archive['messages'] as List), hasLength(1));
+    expect((archive['reminders'] as List), hasLength(1));
     expect((archive['fronts'] as List), hasLength(1));
     expect((archive['front_members'] as List), hasLength(1));
+    expect((archive['notification_events'] as List), hasLength(1));
     expect((archive['preferences'] as List), isA<List>());
   });
 
@@ -206,6 +256,17 @@ void main() {
     await source.saveGroup(const GroupDraft(name: 'Caretakers'));
     await source.saveNote(
       const NoteDraft(title: 'Grounding', body: 'Drink water.'),
+    );
+    await source.saveMessage(const MessageDraft(body: 'System check-in.'));
+    await source.saveReminder(
+      const ReminderDraft(title: 'Meds', scheduleText: 'Daily'),
+    );
+    await source.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'front',
+        title: 'Front changed',
+        body: 'Iris is fronting',
+      ),
     );
     final member = (await source.watchMembers().first).single;
     await source.setFrontMembers([member.id]);
@@ -227,6 +288,9 @@ void main() {
     expect(await target.watchMembers().first, hasLength(1));
     expect(await target.watchGroups().first, hasLength(1));
     expect(await target.watchNotes().first, hasLength(1));
+    expect(await target.watchMessages().first, hasLength(1));
+    expect(await target.watchReminders().first, hasLength(1));
+    expect(await target.watchNotificationEvents().first, hasLength(1));
     expect(await target.watchFrontHistory().first, hasLength(1));
 
     final snapshot = await target.loadHomeSnapshot();
