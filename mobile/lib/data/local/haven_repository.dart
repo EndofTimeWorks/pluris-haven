@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../import/import_sources.dart';
 import 'app_database.dart';
 import 'supported_language.dart';
 
@@ -282,6 +283,12 @@ abstract interface class HavenRepository {
   Future<void> clearCurrentFront();
 
   Future<String> buildLocalArchiveJson();
+
+  Future<void> importLocalArchiveJson(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.skip,
+    String? fileName,
+  });
 }
 
 class LocalHavenRepository implements HavenRepository {
@@ -861,6 +868,225 @@ SELECT
     return const JsonEncoder.withIndent('  ').convert(archive);
   }
 
+  @override
+  Future<void> importLocalArchiveJson(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.skip,
+    String? fileName,
+  }) async {
+    final decoded = jsonDecode(archiveJson);
+    if (decoded is! Map<String, Object?>) {
+      throw const FormatException('Expected a JSON object archive.');
+    }
+    if (decoded['format'] != 'pluris_haven.local_archive') {
+      throw const FormatException('Unsupported archive format.');
+    }
+    if (decoded['version'] != 1) {
+      throw FormatException(
+        'Unsupported archive version: ${decoded['version']}.',
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final members = _jsonObjectList(decoded['members']);
+    final groups = _jsonObjectList(decoded['groups']);
+    final notes = _jsonObjectList(decoded['notes']);
+    final fronts = _jsonObjectList(decoded['fronts']);
+    final frontMembers = _jsonObjectList(decoded['front_members']);
+    final preferences = _jsonObjectList(decoded['preferences']);
+
+    await database.transaction(() async {
+      final system = decoded['system'];
+      if (system is Map<String, Object?>) {
+        final name = _stringValue(system['name'])?.trim();
+        if (name != null && name.isNotEmpty) {
+          await database
+              .into(database.pluralSystems)
+              .insertOnConflictUpdate(
+                PluralSystemsCompanion.insert(
+                  id: localSystemId,
+                  name: name,
+                  createdAt: _dateValue(system['created_at']) ?? now,
+                  updatedAt: now,
+                ),
+              );
+        }
+      }
+
+      for (final group in groups) {
+        await _importGroup(group, strategy, now);
+      }
+      for (final member in members) {
+        await _importMember(member, strategy, now);
+      }
+      for (final note in notes) {
+        await _importNote(note, strategy, now);
+      }
+      for (final front in fronts) {
+        await _importFront(front, strategy, now);
+      }
+      for (final link in frontMembers) {
+        await _importFrontMember(link);
+      }
+      for (final preference in preferences) {
+        await _importPreference(preference, strategy, now);
+      }
+
+      await database
+          .into(database.importRecords)
+          .insert(
+            ImportRecordsCompanion.insert(
+              id: 'import-${now.microsecondsSinceEpoch}',
+              systemId: localSystemId,
+              source: ImportSource.plurisHavenArchive.jobSource,
+              fileName: Value(_nullIfBlank(fileName)),
+              summaryJson: Value(
+                jsonEncode({
+                  'members': members.length,
+                  'groups': groups.length,
+                  'notes': notes.length,
+                  'fronts': fronts.length,
+                  'front_members': frontMembers.length,
+                  'preferences': preferences.length,
+                }),
+              ),
+              importedAt: now,
+            ),
+          );
+    });
+  }
+
+  Future<void> _importGroup(
+    Map<String, Object?> group,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(group, 'id');
+    final name = _requiredString(group, 'name');
+    final companion = SystemGroupsCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      parentGroupId: Value(_stringValue(group['parent_group_id'])),
+      name: name,
+      colorHex: Value(_stringValue(group['color_hex'])),
+      description: Value(_stringValue(group['description'])),
+      emoji: Value(_stringValue(group['emoji'])),
+      createdAt: _dateValue(group['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(group['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.systemGroups, companion, strategy);
+  }
+
+  Future<void> _importMember(
+    Map<String, Object?> member,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(member, 'id');
+    final displayName = _requiredString(member, 'display_name');
+    final companion = MembersCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      displayName: displayName,
+      pronouns: Value(_stringValue(member['pronouns'])),
+      colorHex: Value(_stringValue(member['color_hex'])),
+      folderId: Value(_stringValue(member['folder_id'])),
+      description: Value(_stringValue(member['description'])),
+      avatarUrl: Value(_stringValue(member['avatar_url'])),
+      pluralKitId: Value(_stringValue(member['pluralkit_id'])),
+      archived: Value(member['archived'] == true),
+      createdAt: _dateValue(member['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(member['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.members, companion, strategy);
+  }
+
+  Future<void> _importNote(
+    Map<String, Object?> note,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(note, 'id');
+    final title = _requiredString(note, 'title');
+    final companion = NotesCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      memberId: Value(_stringValue(note['member_id'])),
+      title: title,
+      body: _stringValue(note['body']) ?? '',
+      createdAt: _dateValue(note['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(note['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.notes, companion, strategy);
+  }
+
+  Future<void> _importFront(
+    Map<String, Object?> front,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(front, 'id');
+    final companion = FrontSessionsCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      label: Value(_stringValue(front['label'])),
+      startedAt: _dateValue(front['started_at']) ?? now,
+      endedAt: Value(_dateValue(front['ended_at'])),
+      createdAt: _dateValue(front['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(front['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.frontSessions, companion, strategy);
+  }
+
+  Future<void> _importFrontMember(Map<String, Object?> link) {
+    return database
+        .into(database.frontSessionMembers)
+        .insert(
+          FrontSessionMembersCompanion.insert(
+            sessionId: _requiredString(link, 'session_id'),
+            memberId: _requiredString(link, 'member_id'),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
+  Future<void> _importPreference(
+    Map<String, Object?> preference,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final companion = AppPreferencesCompanion.insert(
+      key: _requiredString(preference, 'key'),
+      value: _requiredString(preference, 'value'),
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(preference['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.appPreferences, companion, strategy);
+  }
+
+  Future<void> _insertArchiveRow<TableDsl extends Table, D>(
+    TableInfo<TableDsl, D> table,
+    Insertable<D> companion,
+    ImportConflictStrategy strategy,
+  ) {
+    if (strategy == ImportConflictStrategy.update) {
+      return database.into(table).insertOnConflictUpdate(companion);
+    }
+
+    return database
+        .into(table)
+        .insert(companion, mode: InsertMode.insertOrIgnore);
+  }
+
   Future<void> _endOpenFrontSessions(DateTime endedAt) {
     return (database.update(database.frontSessions)..where(
           (session) =>
@@ -877,6 +1103,43 @@ SELECT
   String? _nullIfBlank(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  List<Map<String, Object?>> _jsonObjectList(Object? value) {
+    if (value == null) {
+      return const [];
+    }
+    if (value is! List) {
+      throw const FormatException('Expected an archive list.');
+    }
+
+    return [
+      for (final item in value)
+        if (item is Map<String, Object?>) item else _throwArchiveObjectError(),
+    ];
+  }
+
+  Map<String, Object?> _throwArchiveObjectError() {
+    throw const FormatException('Expected an archive object in list.');
+  }
+
+  String _requiredString(Map<String, Object?> object, String key) {
+    final value = _stringValue(object[key]);
+    if (value == null || value.trim().isEmpty) {
+      throw FormatException('Missing required archive field: $key.');
+    }
+    return value;
+  }
+
+  String? _stringValue(Object? value) => value is String ? value : null;
+
+  DateTime? _dateValue(Object? value) {
+    final text = _stringValue(value);
+    if (text == null || text.trim().isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(text)?.toUtc();
   }
 
   Map<String, Object?> _systemToJson(PluralSystem system) => {

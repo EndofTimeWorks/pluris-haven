@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 
@@ -192,5 +193,53 @@ void main() {
     expect((archive['fronts'] as List), hasLength(1));
     expect((archive['front_members'] as List), hasLength(1));
     expect((archive['preferences'] as List), isA<List>());
+  });
+
+  test('imports a local archive into an empty database', () async {
+    final sourceDatabase = AppDatabase(NativeDatabase.memory());
+    final source = LocalHavenRepository(sourceDatabase);
+    await source.ensureLocalSystem();
+
+    await source.saveMember(
+      const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
+    );
+    await source.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await source.saveNote(
+      const NoteDraft(title: 'Grounding', body: 'Drink water.'),
+    );
+    final member = (await source.watchMembers().first).single;
+    await source.setFrontMembers([member.id]);
+
+    final archive = await source.buildLocalArchiveJson();
+    await sourceDatabase.close();
+
+    final targetDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(targetDatabase.close);
+    final target = LocalHavenRepository(targetDatabase);
+    await target.ensureLocalSystem();
+
+    await target.importLocalArchiveJson(
+      archive,
+      strategy: ImportConflictStrategy.update,
+      fileName: 'backup.json',
+    );
+
+    expect(await target.watchMembers().first, hasLength(1));
+    expect(await target.watchGroups().first, hasLength(1));
+    expect(await target.watchNotes().first, hasLength(1));
+    expect(await target.watchFrontHistory().first, hasLength(1));
+
+    final snapshot = await target.loadHomeSnapshot();
+    expect(snapshot.memberCount, 1);
+    expect(snapshot.groupCount, 1);
+    expect(snapshot.noteCount, 1);
+    expect(snapshot.frontHistoryCount, 1);
+
+    final importRecords = await targetDatabase
+        .select(targetDatabase.importRecords)
+        .get();
+    expect(importRecords, hasLength(1));
+    expect(importRecords.single.source, 'plurishaven_archive');
+    expect(importRecords.single.fileName, 'backup.json');
   });
 }
