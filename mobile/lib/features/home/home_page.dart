@@ -130,16 +130,7 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.chat:
-        return const OfflineFeaturePage(
-          title: 'Chat',
-          body:
-              'SP chat depends on accounts and sync. Local message boards can live here later.',
-          rows: [
-            SpSettingsRow('Local board', 'not created'),
-            SpSettingsRow('Synced chat', 'off'),
-            SpSettingsRow('Attachments', 'local only'),
-          ],
-        );
+        return MessagesPage(repository: widget.repository);
       case SpSection.usefulLinks:
         return const OfflineFeaturePage(
           title: 'Useful Links',
@@ -173,16 +164,7 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.reminders:
-        return const OfflineFeaturePage(
-          title: 'Reminders',
-          body:
-              'Local reminders can work without an account once notifications are wired.',
-          rows: [
-            SpSettingsRow('One-time reminders', '0'),
-            SpSettingsRow('Repeating reminders', '0'),
-            SpSettingsRow('Notifications', 'off'),
-          ],
-        );
+        return RemindersPage(repository: widget.repository);
       case SpSection.privacyBuckets:
         return const OfflineFeaturePage(
           title: 'Privacy buckets',
@@ -215,16 +197,7 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.notificationHistory:
-        return const OfflineFeaturePage(
-          title: 'Notification History',
-          body:
-              'Notification history will show reminders and sync alerts once notifications exist.',
-          rows: [
-            SpSettingsRow('Unread', '0'),
-            SpSettingsRow('Archived', '0'),
-            SpSettingsRow('Push notifications', 'off'),
-          ],
-        );
+        return NotificationHistoryPage(repository: widget.repository);
       case SpSection.howtos:
         return const OfflineFeaturePage(
           title: "How-to's",
@@ -1175,6 +1148,440 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+}
+
+class MessagesPage extends StatelessWidget {
+  const MessagesPage({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<MessageSummary>>(
+      stream: repository.watchMessages(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final messages = snapshot.data ?? const <MessageSummary>[];
+
+        return SpPage(
+          children: [
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Messages',
+                    trailing: StatusPill(text: '${messages.length}'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (messages.isEmpty)
+                    const SpEmptyState(
+                      title: 'No messages yet',
+                      body: 'Leave local notes for the system here.',
+                    )
+                  else
+                    for (final message in messages) ...[
+                      MessageTile(message: message),
+                      if (message != messages.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: 'Add message',
+                    secondary: 'Import',
+                    onPrimary: () => showAddMessageSheet(context, repository),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class MessageTile extends StatelessWidget {
+  const MessageTile({super.key, required this.message});
+
+  final MessageSummary message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message.body, style: const TextStyle(height: 1.35)),
+          const SizedBox(height: 4),
+          Text(
+            _shortDateTime(message.createdAt),
+            style: const TextStyle(color: _spMuted, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void showAddMessageSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddMessageSheet(repository: repository),
+  );
+}
+
+class AddMessageSheet extends StatefulWidget {
+  const AddMessageSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<AddMessageSheet> createState() => _AddMessageSheetState();
+}
+
+class _AddMessageSheetState extends State<AddMessageSheet> {
+  final _bodyController = TextEditingController();
+
+  @override
+  void dispose() {
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Add message',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('message-body-field'),
+              controller: _bodyController,
+              minLines: 3,
+              maxLines: 6,
+              decoration: const InputDecoration(labelText: 'Message'),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const ValueKey('save-message-button'),
+              onPressed: _save,
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    await widget.repository.saveMessage(
+      MessageDraft(body: _bodyController.text),
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+}
+
+class RemindersPage extends StatelessWidget {
+  const RemindersPage({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<ReminderSummary>>(
+      stream: repository.watchReminders(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final reminders = snapshot.data ?? const <ReminderSummary>[];
+
+        return SpPage(
+          children: [
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Reminders',
+                    trailing: StatusPill(text: '${reminders.length}'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (reminders.isEmpty)
+                    const SpEmptyState(
+                      title: 'No reminders yet',
+                      body:
+                          'Create local reminders before notification scheduling is wired.',
+                    )
+                  else
+                    for (final reminder in reminders) ...[
+                      ReminderTile(reminder: reminder),
+                      if (reminder != reminders.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: 'Add reminder',
+                    secondary: 'Notification settings',
+                    onPrimary: () => showAddReminderSheet(context, repository),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class ReminderTile extends StatelessWidget {
+  const ReminderTile({super.key, required this.reminder});
+
+  final ReminderSummary reminder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            reminder.enabled
+                ? Icons.notifications_active_rounded
+                : Icons.notifications_off_rounded,
+            color: _spGold,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reminder.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  reminder.scheduleText,
+                  style: const TextStyle(color: _spMuted, fontSize: 12),
+                ),
+                if (reminder.body?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  Text(reminder.body!, style: const TextStyle(height: 1.35)),
+                ],
+              ],
+            ),
+          ),
+          StatusPill(text: reminder.enabled ? 'on' : 'off'),
+        ],
+      ),
+    );
+  }
+}
+
+void showAddReminderSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddReminderSheet(repository: repository),
+  );
+}
+
+class AddReminderSheet extends StatefulWidget {
+  const AddReminderSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<AddReminderSheet> createState() => _AddReminderSheetState();
+}
+
+class _AddReminderSheetState extends State<AddReminderSheet> {
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+  final _scheduleController = TextEditingController(text: 'Daily');
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    _scheduleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Add reminder',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('reminder-title-field'),
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('reminder-schedule-field'),
+              controller: _scheduleController,
+              decoration: const InputDecoration(
+                labelText: 'Schedule',
+                helperText: 'Example: Daily, Weekly, After Iris fronts',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('reminder-body-field'),
+              controller: _bodyController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Note'),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const ValueKey('save-reminder-button'),
+              onPressed: _save,
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    await widget.repository.saveReminder(
+      ReminderDraft(
+        title: _titleController.text,
+        body: _bodyController.text,
+        scheduleText: _scheduleController.text,
+      ),
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+}
+
+class NotificationHistoryPage extends StatelessWidget {
+  const NotificationHistoryPage({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<NotificationEventSummary>>(
+      stream: repository.watchNotificationEvents(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final events = snapshot.data ?? const <NotificationEventSummary>[];
+
+        return SpPage(
+          children: [
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Notification history',
+                    trailing: StatusPill(text: '${events.length}'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (events.isEmpty)
+                    const SpEmptyState(
+                      title: 'No notifications yet',
+                      body:
+                          'Front notifications and reminders will be recorded here.',
+                    )
+                  else
+                    for (final event in events) ...[
+                      NotificationEventTile(event: event),
+                      if (event != events.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class NotificationEventTile extends StatelessWidget {
+  const NotificationEventTile({super.key, required this.event});
+
+  final NotificationEventSummary event;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.notifications_rounded, color: _spGold, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(event.body, style: const TextStyle(height: 1.35)),
+                const SizedBox(height: 4),
+                Text(
+                  '${event.kind} - ${_shortDateTime(event.createdAt)}',
+                  style: const TextStyle(color: _spMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          if (event.isUnread) const StatusPill(text: 'new'),
+        ],
+      ),
+    );
   }
 }
 

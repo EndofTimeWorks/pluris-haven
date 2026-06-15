@@ -168,9 +168,12 @@ ImportPreview _previewPlurisArchive(
     'members': _listCount(decoded['members']),
     'groups': _listCount(decoded['groups']),
     'notes': _listCount(decoded['notes']),
+    'messages': _listCount(decoded['messages']),
+    'reminders': _listCount(decoded['reminders']),
     'fronts': _listCount(decoded['fronts']),
     'front_members': _listCount(decoded['front_members']),
     'import_records': _listCount(decoded['import_records']),
+    'notification_events': _listCount(decoded['notification_events']),
     'preferences': _listCount(decoded['preferences']),
   };
 
