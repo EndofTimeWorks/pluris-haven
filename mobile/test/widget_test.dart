@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/main.dart';
 
@@ -646,6 +647,13 @@ class FakeHavenRepository implements HavenRepository {
       'preferences': [],
     });
   }
+
+  @override
+  Future<void> importLocalArchiveJson(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.skip,
+    String? fileName,
+  }) async {}
 
   List<MemberSummary> get _visibleMembers =>
       _members.where((member) => !member.archived).toList(growable: false);
