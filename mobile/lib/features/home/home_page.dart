@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/import/import_plan.dart';
+import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
@@ -1191,7 +1192,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
   ImportConflictStrategy _strategy = ImportConflictStrategy.skip;
   String? _fileName;
   int? _fileSize;
+  String? _fileText;
   ImportFileGuess? _guess;
+  ImportPreview? _preview;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
 
@@ -1225,13 +1228,18 @@ class _ImportExportPageState extends State<ImportExportPage> {
           fileName: _fileName,
           fileSize: _fileSize,
           guess: _guess,
+          preview: _preview,
           plan: plan,
           onPickFile: _pickImportFile,
-          onSourceChanged: (source) => setState(() => _source = source),
+          onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
         ),
         const SizedBox(height: 12),
         ImportPlanCard(plan: plan),
+        if (_preview != null) ...[
+          const SizedBox(height: 12),
+          ImportPreviewCard(preview: _preview!),
+        ],
         const SizedBox(height: 2),
         SpSettingsGroup(
           title: 'Export',
@@ -1261,28 +1269,53 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     final file = result.files.single;
+    final text = _decodeFileText(file.bytes);
     final guess = guessImportSourceFromFile(
       fileName: file.name,
-      textPreview: _textPreview(file.bytes),
+      textPreview: text,
     );
+    final preview = text == null
+        ? null
+        : previewImportText(
+            fileName: file.name,
+            text: text,
+            selectedSource: guess.source,
+          );
 
     setState(() {
       _fileName = file.name;
       _fileSize = file.size;
+      _fileText = text;
       _guess = guess;
+      _preview = preview;
       if (guess.source != null) {
         _source = guess.source!;
       }
     });
   }
 
-  String? _textPreview(Uint8List? bytes) {
+  void _selectImportSource(ImportSource source) {
+    final fileName = _fileName;
+    final text = _fileText;
+
+    setState(() {
+      _source = source;
+      _preview = fileName == null || text == null
+          ? null
+          : previewImportText(
+              fileName: fileName,
+              text: text,
+              selectedSource: source,
+            );
+    });
+  }
+
+  String? _decodeFileText(Uint8List? bytes) {
     if (bytes == null || bytes.isEmpty) {
       return null;
     }
 
-    final previewBytes = bytes.length > 65536 ? bytes.sublist(0, 65536) : bytes;
-    return utf8.decode(previewBytes, allowMalformed: true);
+    return utf8.decode(bytes, allowMalformed: true);
   }
 }
 
@@ -1389,6 +1422,7 @@ class ImportSetupCard extends StatelessWidget {
     required this.fileName,
     required this.fileSize,
     required this.guess,
+    required this.preview,
     required this.plan,
     required this.onPickFile,
     required this.onSourceChanged,
@@ -1400,6 +1434,7 @@ class ImportSetupCard extends StatelessWidget {
   final String? fileName;
   final int? fileSize;
   final ImportFileGuess? guess;
+  final ImportPreview? preview;
   final ImportSourcePlan plan;
   final VoidCallback onPickFile;
   final ValueChanged<ImportSource> onSourceChanged;
@@ -1491,7 +1526,9 @@ class ImportSetupCard extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: null,
             icon: const Icon(Icons.fact_check_rounded),
-            label: const Text('Preview import - parser next'),
+            label: Text(
+              preview == null ? 'Preview import' : 'Preview ready - write next',
+            ),
           ),
         ],
       ),
@@ -1539,6 +1576,65 @@ class ImportFileSummary extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           StatusPill(text: label),
+        ],
+      ),
+    );
+  }
+}
+
+class ImportPreviewCard extends StatelessWidget {
+  const ImportPreviewCard({super.key, required this.preview});
+
+  final ImportPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final notableEvents = preview.warningsAndErrors;
+
+    return SpCard(
+      outlined: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SpSectionHeader(
+            title: 'Preview',
+            trailing: StatusPill(
+              text: preview.canApply ? 'valid shape' : 'needs attention',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${preview.source.label} - ${preview.fileName}',
+            style: const TextStyle(color: _spMuted, height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in preview.counts.entries)
+                if (entry.value > 0)
+                  StatusPill(text: '${entry.key}: ${entry.value}'),
+              if (!preview.counts.values.any((count) => count > 0))
+                const StatusPill(text: 'no records found'),
+            ],
+          ),
+          if (notableEvents.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            for (final event in notableEvents) ...[
+              Text(
+                '${event.stage}: ${event.message}',
+                style: TextStyle(
+                  color: event.severity == ImportPreviewSeverity.error
+                      ? Theme.of(context).colorScheme.error
+                      : _spMuted,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+          ],
         ],
       ),
     );

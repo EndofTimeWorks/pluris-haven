@@ -82,6 +82,14 @@ ImportFileGuess guessImportSourceFromFile({
     );
   }
 
+  if (_hasAny(name, ['pluris-haven', 'pluris_haven', 'plurishaven'])) {
+    return const ImportFileGuess(
+      source: ImportSource.plurisHavenArchive,
+      confidence: 0.9,
+      reason: 'filename looks like a Pluris Haven archive',
+    );
+  }
+
   if (_hasAny(name, [
     'simply plural',
     'simply-plural',
@@ -124,6 +132,17 @@ ImportFileGuess guessImportSourceFromFile({
       source: null,
       confidence: 0,
       reason: 'pick a service after upload',
+    );
+  }
+
+  if (_hasAny(text, [
+    '"format":"pluris_haven.local_archive"',
+    '"format": "pluris_haven.local_archive"',
+  ])) {
+    return const ImportFileGuess(
+      source: ImportSource.plurisHavenArchive,
+      confidence: 0.98,
+      reason: 'file is a Pluris Haven local archive',
     );
   }
 
@@ -177,6 +196,40 @@ ImportFileGuess guessImportSourceFromFile({
 
 ImportSourcePlan importPlanFor(ImportSource source) {
   return switch (source) {
+    ImportSource.plurisHavenArchive => const ImportSourcePlan(
+      source: ImportSource.plurisHavenArchive,
+      status: ImportPlanStatus.ready,
+      defaultConflictStrategy: ImportConflictStrategy.skip,
+      previewCounts: [
+        ImportPlanCount('members'),
+        ImportPlanCount('groups'),
+        ImportPlanCount('notes'),
+        ImportPlanCount('front history'),
+        ImportPlanCount('preferences'),
+      ],
+      privacyNotes: [
+        'Archive import previews before writing anything.',
+        'This is the backup and restore path for local data.',
+      ],
+      steps: [
+        ImportPlanStep(
+          'Read archive',
+          'Accept a Pluris Haven local archive JSON export.',
+        ),
+        ImportPlanStep(
+          'Validate format',
+          'Require format pluris_haven.local_archive and a supported version.',
+        ),
+        ImportPlanStep(
+          'Review contents',
+          'Show local members, groups, notes, fronts, and preferences before writing.',
+        ),
+        ImportPlanStep(
+          'Restore locally',
+          'Apply selected records and keep an import record for future dedupe.',
+        ),
+      ],
+    ),
     ImportSource.simplyPlural => const ImportSourcePlan(
       source: ImportSource.simplyPlural,
       status: ImportPlanStatus.next,
