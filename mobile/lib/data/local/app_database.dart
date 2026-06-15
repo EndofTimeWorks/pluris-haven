@@ -62,6 +62,33 @@ class Notes extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class Messages extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get memberId => text().nullable()();
+  TextColumn get body => text()();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class Reminders extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get title => text()();
+  TextColumn get body => text().nullable()();
+  TextColumn get scheduleText => text()();
+  BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class FrontSessions extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -95,6 +122,19 @@ class ImportRecords extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class NotificationEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get kind => text()();
+  TextColumn get title => text()();
+  TextColumn get body => text()();
+  DateTimeColumn get readAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class AppPreferences extends Table {
   TextColumn get key => text()();
   TextColumn get value => text()();
@@ -110,9 +150,12 @@ class AppPreferences extends Table {
     SystemGroups,
     Members,
     Notes,
+    Messages,
+    Reminders,
     FrontSessions,
     FrontSessionMembers,
     ImportRecords,
+    NotificationEvents,
     AppPreferences,
   ],
 )
@@ -120,13 +163,18 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
         await migrator.createTable(appPreferences);
+      }
+      if (from < 3) {
+        await migrator.createTable(messages);
+        await migrator.createTable(reminders);
+        await migrator.createTable(notificationEvents);
       }
     },
     beforeOpen: (details) async {

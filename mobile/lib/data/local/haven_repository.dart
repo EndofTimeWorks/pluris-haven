@@ -121,6 +121,93 @@ class NoteDraft {
   final String? memberId;
 }
 
+class MessageSummary {
+  const MessageSummary({
+    required this.id,
+    required this.body,
+    this.memberId,
+    required this.createdAt,
+    this.archived = false,
+  });
+
+  final String id;
+  final String body;
+  final String? memberId;
+  final DateTime createdAt;
+  final bool archived;
+}
+
+class MessageDraft {
+  const MessageDraft({required this.body, this.memberId});
+
+  final String body;
+  final String? memberId;
+}
+
+class ReminderSummary {
+  const ReminderSummary({
+    required this.id,
+    required this.title,
+    this.body,
+    required this.scheduleText,
+    required this.enabled,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String title;
+  final String? body;
+  final String scheduleText;
+  final bool enabled;
+  final DateTime updatedAt;
+}
+
+class ReminderDraft {
+  const ReminderDraft({
+    required this.title,
+    this.body,
+    required this.scheduleText,
+    this.enabled = true,
+  });
+
+  final String title;
+  final String? body;
+  final String scheduleText;
+  final bool enabled;
+}
+
+class NotificationEventSummary {
+  const NotificationEventSummary({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.body,
+    this.readAt,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String kind;
+  final String title;
+  final String body;
+  final DateTime? readAt;
+  final DateTime createdAt;
+
+  bool get isUnread => readAt == null;
+}
+
+class NotificationEventDraft {
+  const NotificationEventDraft({
+    required this.kind,
+    required this.title,
+    required this.body,
+  });
+
+  final String kind;
+  final String title;
+  final String body;
+}
+
 class FrontHistoryEntry {
   const FrontHistoryEntry({
     required this.id,
@@ -244,6 +331,12 @@ abstract interface class HavenRepository {
 
   Stream<List<NoteSummary>> watchNotes();
 
+  Stream<List<MessageSummary>> watchMessages();
+
+  Stream<List<ReminderSummary>> watchReminders();
+
+  Stream<List<NotificationEventSummary>> watchNotificationEvents();
+
   Stream<List<FrontHistoryEntry>> watchFrontHistory();
 
   Stream<AppCustomization> watchCustomization();
@@ -277,6 +370,12 @@ abstract interface class HavenRepository {
   Future<void> saveGroup(GroupDraft draft);
 
   Future<void> saveNote(NoteDraft draft);
+
+  Future<void> saveMessage(MessageDraft draft);
+
+  Future<void> saveReminder(ReminderDraft draft);
+
+  Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
   Future<void> setCustomFront(String label);
 
@@ -401,6 +500,85 @@ class LocalHavenRepository implements HavenRepository {
             body: row.body,
             memberId: row.memberId,
             updatedAt: row.updatedAt,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<MessageSummary>> watchMessages() {
+    final query = database.select(database.messages)
+      ..where(
+        (message) =>
+            message.systemId.equals(localSystemId) &
+            message.archived.equals(false),
+      )
+      ..orderBy([
+        (message) => OrderingTerm(
+          expression: message.createdAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          MessageSummary(
+            id: row.id,
+            body: row.body,
+            memberId: row.memberId,
+            createdAt: row.createdAt,
+            archived: row.archived,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<ReminderSummary>> watchReminders() {
+    final query = database.select(database.reminders)
+      ..where((reminder) => reminder.systemId.equals(localSystemId))
+      ..orderBy([
+        (reminder) => OrderingTerm(
+          expression: reminder.updatedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          ReminderSummary(
+            id: row.id,
+            title: row.title,
+            body: row.body,
+            scheduleText: row.scheduleText,
+            enabled: row.enabled,
+            updatedAt: row.updatedAt,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<NotificationEventSummary>> watchNotificationEvents() {
+    final query = database.select(database.notificationEvents)
+      ..where((event) => event.systemId.equals(localSystemId))
+      ..orderBy([
+        (event) =>
+            OrderingTerm(expression: event.createdAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          NotificationEventSummary(
+            id: row.id,
+            kind: row.kind,
+            title: row.title,
+            body: row.body,
+            readAt: row.readAt,
+            createdAt: row.createdAt,
           ),
       ],
     );
@@ -758,6 +936,76 @@ SELECT
         );
   }
 
+  @override
+  Future<void> saveMessage(MessageDraft draft) async {
+    final body = draft.body.trim();
+    if (body.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.messages)
+        .insert(
+          MessagesCompanion.insert(
+            id: 'message-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            memberId: Value(_nullIfBlank(draft.memberId)),
+            body: body,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> saveReminder(ReminderDraft draft) async {
+    final title = draft.title.trim();
+    final scheduleText = draft.scheduleText.trim();
+    if (title.isEmpty || scheduleText.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.reminders)
+        .insert(
+          RemindersCompanion.insert(
+            id: 'reminder-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            title: title,
+            body: Value(_nullIfBlank(draft.body)),
+            scheduleText: scheduleText,
+            enabled: Value(draft.enabled),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
+    final title = draft.title.trim();
+    final body = draft.body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.notificationEvents)
+        .insert(
+          NotificationEventsCompanion.insert(
+            id: 'notification-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            kind: draft.kind.trim().isEmpty ? 'general' : draft.kind.trim(),
+            title: title.isEmpty ? 'Notification' : title,
+            body: body,
+            createdAt: now,
+          ),
+        );
+  }
+
   String _serializeIds(List<String> shortcutIds) {
     final seen = <String>{};
     final ids = <String>[];
@@ -832,6 +1080,12 @@ SELECT
     final notes = await (database.select(
       database.notes,
     )..where((note) => note.systemId.equals(localSystemId))).get();
+    final messages = await (database.select(
+      database.messages,
+    )..where((message) => message.systemId.equals(localSystemId))).get();
+    final reminders = await (database.select(
+      database.reminders,
+    )..where((reminder) => reminder.systemId.equals(localSystemId))).get();
     final fronts = await (database.select(
       database.frontSessions,
     )..where((front) => front.systemId.equals(localSystemId))).get();
@@ -842,6 +1096,9 @@ SELECT
     final importRecords = await (database.select(
       database.importRecords,
     )..where((record) => record.systemId.equals(localSystemId))).get();
+    final notificationEvents = await (database.select(
+      database.notificationEvents,
+    )..where((event) => event.systemId.equals(localSystemId))).get();
     final preferences = await database.select(database.appPreferences).get();
 
     final archive = {
@@ -852,6 +1109,10 @@ SELECT
       'members': [for (final member in members) _memberToJson(member)],
       'groups': [for (final group in groups) _groupToJson(group)],
       'notes': [for (final note in notes) _noteToJson(note)],
+      'messages': [for (final message in messages) _messageToJson(message)],
+      'reminders': [
+        for (final reminder in reminders) _reminderToJson(reminder),
+      ],
       'fronts': [for (final front in fronts) _frontToJson(front)],
       'front_members': [
         for (final link in frontMembers)
@@ -859,6 +1120,9 @@ SELECT
       ],
       'import_records': [
         for (final record in importRecords) _importRecordToJson(record),
+      ],
+      'notification_events': [
+        for (final event in notificationEvents) _notificationEventToJson(event),
       ],
       'preferences': [
         for (final preference in preferences) _preferenceToJson(preference),
@@ -891,8 +1155,11 @@ SELECT
     final members = _jsonObjectList(decoded['members']);
     final groups = _jsonObjectList(decoded['groups']);
     final notes = _jsonObjectList(decoded['notes']);
+    final messages = _jsonObjectList(decoded['messages']);
+    final reminders = _jsonObjectList(decoded['reminders']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
+    final notificationEvents = _jsonObjectList(decoded['notification_events']);
     final preferences = _jsonObjectList(decoded['preferences']);
 
     await database.transaction(() async {
@@ -922,11 +1189,20 @@ SELECT
       for (final note in notes) {
         await _importNote(note, strategy, now);
       }
+      for (final message in messages) {
+        await _importMessage(message, strategy, now);
+      }
+      for (final reminder in reminders) {
+        await _importReminder(reminder, strategy, now);
+      }
       for (final front in fronts) {
         await _importFront(front, strategy, now);
       }
       for (final link in frontMembers) {
         await _importFrontMember(link);
+      }
+      for (final event in notificationEvents) {
+        await _importNotificationEvent(event, strategy, now);
       }
       for (final preference in preferences) {
         await _importPreference(preference, strategy, now);
@@ -945,8 +1221,11 @@ SELECT
                   'members': members.length,
                   'groups': groups.length,
                   'notes': notes.length,
+                  'messages': messages.length,
+                  'reminders': reminders.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
+                  'notification_events': notificationEvents.length,
                   'preferences': preferences.length,
                 }),
               ),
@@ -1026,6 +1305,50 @@ SELECT
     return _insertArchiveRow(database.notes, companion, strategy);
   }
 
+  Future<void> _importMessage(
+    Map<String, Object?> message,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(message, 'id');
+    final body = _requiredString(message, 'body');
+    final companion = MessagesCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      memberId: Value(_stringValue(message['member_id'])),
+      body: body,
+      archived: Value(message['archived'] == true),
+      createdAt: _dateValue(message['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(message['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.messages, companion, strategy);
+  }
+
+  Future<void> _importReminder(
+    Map<String, Object?> reminder,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(reminder, 'id');
+    final title = _requiredString(reminder, 'title');
+    final scheduleText = _requiredString(reminder, 'schedule_text');
+    final companion = RemindersCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      title: title,
+      body: Value(_stringValue(reminder['body'])),
+      scheduleText: scheduleText,
+      enabled: Value(reminder['enabled'] != false),
+      createdAt: _dateValue(reminder['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(reminder['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.reminders, companion, strategy);
+  }
+
   Future<void> _importFront(
     Map<String, Object?> front,
     ImportConflictStrategy strategy,
@@ -1056,6 +1379,23 @@ SELECT
           ),
           mode: InsertMode.insertOrIgnore,
         );
+  }
+
+  Future<void> _importNotificationEvent(
+    Map<String, Object?> event,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final companion = NotificationEventsCompanion.insert(
+      id: _requiredString(event, 'id'),
+      systemId: localSystemId,
+      kind: _requiredString(event, 'kind'),
+      title: _requiredString(event, 'title'),
+      body: _requiredString(event, 'body'),
+      readAt: Value(_dateValue(event['read_at'])),
+      createdAt: _dateValue(event['created_at']) ?? now,
+    );
+    return _insertArchiveRow(database.notificationEvents, companion, strategy);
   }
 
   Future<void> _importPreference(
@@ -1183,6 +1523,25 @@ SELECT
     'updated_at': note.updatedAt.toIso8601String(),
   };
 
+  Map<String, Object?> _messageToJson(Message message) => {
+    'id': message.id,
+    'member_id': message.memberId,
+    'body': message.body,
+    'archived': message.archived,
+    'created_at': message.createdAt.toIso8601String(),
+    'updated_at': message.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _reminderToJson(Reminder reminder) => {
+    'id': reminder.id,
+    'title': reminder.title,
+    'body': reminder.body,
+    'schedule_text': reminder.scheduleText,
+    'enabled': reminder.enabled,
+    'created_at': reminder.createdAt.toIso8601String(),
+    'updated_at': reminder.updatedAt.toIso8601String(),
+  };
+
   Map<String, Object?> _frontToJson(FrontSession front) => {
     'id': front.id,
     'label': front.label,
@@ -1203,6 +1562,15 @@ SELECT
     'file_name': record.fileName,
     'summary_json': record.summaryJson,
     'imported_at': record.importedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _notificationEventToJson(NotificationEvent event) => {
+    'id': event.id,
+    'kind': event.kind,
+    'title': event.title,
+    'body': event.body,
+    'read_at': event.readAt?.toIso8601String(),
+    'created_at': event.createdAt.toIso8601String(),
   };
 
   Map<String, Object?> _preferenceToJson(AppPreference preference) => {

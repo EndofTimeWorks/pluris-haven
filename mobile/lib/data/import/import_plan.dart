@@ -204,7 +204,10 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
         ImportPlanCount('notes'),
+        ImportPlanCount('messages'),
+        ImportPlanCount('reminders'),
         ImportPlanCount('front history'),
+        ImportPlanCount('notifications'),
         ImportPlanCount('preferences'),
       ],
       privacyNotes: [
