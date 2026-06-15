@@ -1238,7 +1238,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
         ImportPlanCard(plan: plan),
         if (_preview != null) ...[
           const SizedBox(height: 12),
-          ImportPreviewCard(preview: _preview!),
+          ImportPreviewCard(
+            preview: _preview!,
+            onApply: _preview!.source == ImportSource.plurisHavenArchive
+                ? _applyLocalArchive
+                : null,
+          ),
         ],
         const SizedBox(height: 2),
         SpSettingsGroup(
@@ -1316,6 +1321,25 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     return utf8.decode(bytes, allowMalformed: true);
+  }
+
+  Future<void> _applyLocalArchive() async {
+    final text = _fileText;
+    if (text == null) {
+      return;
+    }
+
+    await widget.repository.importLocalArchiveJson(
+      text,
+      strategy: _strategy,
+      fileName: _fileName,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Archive imported')));
+    }
   }
 }
 
@@ -1583,9 +1607,10 @@ class ImportFileSummary extends StatelessWidget {
 }
 
 class ImportPreviewCard extends StatelessWidget {
-  const ImportPreviewCard({super.key, required this.preview});
+  const ImportPreviewCard({super.key, required this.preview, this.onApply});
 
   final ImportPreview preview;
+  final Future<void> Function()? onApply;
 
   @override
   Widget build(BuildContext context) {
@@ -1635,6 +1660,16 @@ class ImportPreviewCard extends StatelessWidget {
               const SizedBox(height: 6),
             ],
           ],
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: preview.canApply && onApply != null
+                ? () async => onApply!()
+                : null,
+            icon: const Icon(Icons.restore_rounded),
+            label: Text(
+              onApply == null ? 'Write support coming next' : 'Import archive',
+            ),
+          ),
         ],
       ),
     );
