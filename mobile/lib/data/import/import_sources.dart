@@ -30,6 +30,13 @@ enum ImportConflictStrategy {
 }
 
 enum ImportSource {
+  plurisHavenArchive(
+    label: 'Pluris Haven archive',
+    subtitle: 'Local JSON backup exported from this app',
+    inputKinds: [ImportInputKind.file],
+    status: ImporterStatus.readyShape,
+    dedupeKeys: ['local IDs', 'PluralKit IDs', 'normalized names'],
+  ),
   simplyPlural(
     label: 'Simply Plural',
     subtitle: 'JSON export or backup archive',
@@ -88,6 +95,7 @@ enum ImportSource {
   final List<String> dedupeKeys;
 
   String get jobSource => switch (this) {
+    ImportSource.plurisHavenArchive => 'plurishaven_archive',
     ImportSource.simplyPlural => 'simplyplural_file',
     ImportSource.pluralKitFile => 'pluralkit_file',
     ImportSource.pluralKitLive => 'pluralkit_api',
