@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1675,22 +1677,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     final file = result.files.single;
-    ImportTextPayload? payload;
-    try {
-      final bytes = file.bytes;
-      payload = bytes == null
-          ? null
-          : decodeImportFileBytes(fileName: file.name, bytes: bytes);
-    } on FormatException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not read import file: ${error.message}'),
-          ),
-        );
-      }
-    }
-    final text = payload?.text;
+    final text = _decodeFileText(file.bytes);
     final guess = guessImportSourceFromFile(
       fileName: file.name,
       textPreview: text,
@@ -1729,6 +1716,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
               selectedSource: source,
             );
     });
+  }
+
+  String? _decodeFileText(Uint8List? bytes) {
+    if (bytes == null || bytes.isEmpty) {
+      return null;
+    }
+
+    return utf8.decode(bytes, allowMalformed: true);
   }
 
   Future<void> _applyImportFile() async {
