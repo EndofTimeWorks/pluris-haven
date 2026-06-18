@@ -13,8 +13,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: mobile-dev-release
-  cancel-in-progress: true
+  group: mobile-dev-release-${{ github.run_number }}
+  cancel-in-progress: false
 
 jobs:
   android:
@@ -61,21 +61,36 @@ jobs:
           --build-name 0.0.1
           --build-number "${GITHUB_RUN_NUMBER}"
 
+      - name: Resolve dev version
+        id: version
+        shell: bash
+        run: |
+          version="0.0.1-dev.${GITHUB_RUN_NUMBER}"
+          build="${GITHUB_RUN_NUMBER}"
+          tag="mobile-v${version}+${build}"
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "build=${build}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
       - name: Collect dev build
         shell: bash
         run: |
           mkdir -p ../release/mobile-dev
           cp build/app/outputs/flutter-apk/app-debug.apk ../release/mobile-dev/pluris-haven-dev.apk
           {
+            echo "version=${{ steps.version.outputs.version }}"
+            echo "build=${{ steps.version.outputs.build }}"
+            echo "tag=${{ steps.version.outputs.tag }}"
             echo "commit=${GITHUB_SHA}"
             echo "run=${GITHUB_RUN_NUMBER}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > ../release/mobile-dev/BUILD.txt
           (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
           cat > ../release/mobile-dev/NOTES.md <<EOF
-          Pre-alpha dev build from ${GITHUB_SHA}.
+          Dev build ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }} from ${GITHUB_SHA}.
 
-          This APK is debug-signed and replaced by the next main-branch dev build.
+          This APK is debug-signed. It is for local testing, not Play Store distribution.
           EOF
 
       - name: Upload dev artifact
@@ -85,7 +100,7 @@ jobs:
           path: release/mobile-dev/*
           if-no-files-found: error
 
-      - name: Publish moving dev release
+      - name: Publish dev prerelease
         shell: bash
         working-directory: .
         env:
@@ -93,28 +108,26 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f mobile-dev "${GITHUB_SHA}"
-          git push --force origin refs/tags/mobile-dev
+          tag="${{ steps.version.outputs.tag }}"
 
-          if gh release view mobile-dev >/dev/null 2>&1; then
-            gh release edit mobile-dev \
-              --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile 0.0.1-prealpha dev" \
-              --notes-file release/mobile-dev/NOTES.md \
-              --prerelease \
-              --latest=false
-            gh release upload mobile-dev \
+          if ! git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            git tag "${tag}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${tag}"
+          fi
+
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            gh release upload "${tag}" \
               release/mobile-dev/pluris-haven-dev.apk \
               release/mobile-dev/BUILD.txt \
               release/mobile-dev/SHA256SUMS.txt \
               --clobber
           else
-            gh release create mobile-dev \
+            gh release create "${tag}" \
               release/mobile-dev/pluris-haven-dev.apk \
               release/mobile-dev/BUILD.txt \
               release/mobile-dev/SHA256SUMS.txt \
               --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile 0.0.1-prealpha dev" \
+              --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
               --notes-file release/mobile-dev/NOTES.md \
               --prerelease \
               --latest=false

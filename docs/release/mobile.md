@@ -6,15 +6,19 @@ There are two build tracks.
 
 `Mobile Dev Release` runs on `main` when `mobile/**` changes.
 
-It updates one prerelease:
+It creates one prerelease per run:
 
-- tag: `mobile-dev`
+- tag: `mobile-v0.0.1-dev.<run>+<run>`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
 
 Use this APK for normal phone/emulator testing between releases. It is
-debug-signed and replaced by the next dev build.
+debug-signed.
+
+Old dev builds stay visible in GitHub Releases. For Obtainium, track GitHub
+Releases and allow prereleases. The asset name stays `pluris-haven-dev.apk`, so
+the newest prerelease should be the update target.
 
 ## Versioned Releases
 
@@ -37,6 +41,7 @@ Meaning:
 Examples:
 
 ```text
+mobile-v0.0.1-dev.42+42
 mobile-v0.0.1-prealpha.1+1
 mobile-v0.0.1-alpha.1+2
 mobile-v0.0.1+3
