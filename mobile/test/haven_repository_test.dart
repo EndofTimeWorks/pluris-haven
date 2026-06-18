@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
@@ -305,5 +306,47 @@ void main() {
     expect(importRecords, hasLength(1));
     expect(importRecords.single.source, 'plurishaven_archive');
     expect(importRecords.single.fileName, 'backup.json');
+  });
+
+  test('imports normalized external archives', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    final normalized = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'simply-plural.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "system": {"name": "Imported system"},
+  "members": [{"id": "m1", "name": "Iris", "pronouns": "she/they"}],
+  "frontHistory": [
+    {"id": "f1", "startedAt": "2026-01-01T12:00:00Z", "members": ["m1"]}
+  ],
+  "messages": [{"id": "msg1", "body": "hello"}]
+}
+''',
+    );
+
+    await repository.importLocalArchiveJson(
+      normalized.archiveJson,
+      source: ImportSource.simplyPlural,
+      fileName: 'simply-plural.json',
+    );
+
+    final members = await repository.watchMembers().first;
+    final fronts = await repository.watchFrontHistory().first;
+    final messages = await repository.watchMessages().first;
+
+    expect(members.single.displayName, 'Iris');
+    expect(members.single.pronouns, 'she/they');
+    expect(fronts.single.label, 'Unknown front');
+    expect(messages.single.body, 'hello');
+
+    final importRecords = await database.select(database.importRecords).get();
+    expect(importRecords.single.source, 'simplyplural_file');
   });
 }

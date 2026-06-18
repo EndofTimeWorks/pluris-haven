@@ -844,6 +844,7 @@ class FakeHavenRepository implements HavenRepository {
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
     String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
   }) async {}
 
   List<MemberSummary> get _visibleMembers =>

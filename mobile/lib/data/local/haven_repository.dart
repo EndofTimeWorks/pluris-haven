@@ -387,6 +387,7 @@ abstract interface class HavenRepository {
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
     String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
   });
 }
 
@@ -1137,6 +1138,7 @@ SELECT
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
     String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
   }) async {
     final decoded = jsonDecode(archiveJson);
     if (decoded is! Map<String, Object?>) {
@@ -1214,7 +1216,7 @@ SELECT
             ImportRecordsCompanion.insert(
               id: 'import-${now.microsecondsSinceEpoch}',
               systemId: localSystemId,
-              source: ImportSource.plurisHavenArchive.jobSource,
+              source: source.jobSource,
               fileName: Value(_nullIfBlank(fileName)),
               summaryJson: Value(
                 jsonEncode({
