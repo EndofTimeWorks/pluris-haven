@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'import_archive_mapper.dart';
 import 'import_plan.dart';
 import 'import_sources.dart';
 
@@ -107,18 +108,11 @@ ImportPreview previewImportText({
       source: source,
       fileName: fileName,
       decoded: decoded,
-      keys: const {'tuppers': 'tuppers', 'tags': 'tags'},
     ),
     ImportSource.pluralSpace => _previewLooseSource(
       source: source,
       fileName: fileName,
       decoded: decoded,
-      keys: const {
-        'members': 'members',
-        'groups': 'groups',
-        'fronts': 'fronts',
-        'notes': 'notes',
-      },
     ),
     ImportSource.prism => ImportPreview(
       source: source,
@@ -201,69 +195,18 @@ ImportPreview _previewSimplyPlural(
   String fileName,
   Map<String, Object?> decoded,
 ) {
-  final counts = <String, int>{
-    'members': _countFirstList(decoded, const [
-      'members',
-      'membersList',
-      'profiles',
-    ]),
-    'groups': _countFirstList(decoded, const ['groups', 'folders']),
-    'front_history': _countFirstList(decoded, const [
-      'frontHistory',
-      'fronthistory',
-      'fronts',
-      'switches',
-    ]),
-    'custom_fronts': _countFirstList(decoded, const [
-      'customFronts',
-      'customfronts',
-      'custom_fronts',
-    ]),
-    'custom_fields': _countFirstList(decoded, const [
-      'customFields',
-      'customfields',
-      'custom_fields',
-    ]),
-    'notes': _countFirstList(decoded, const ['notes']),
-    'messages': _countFirstList(decoded, const ['messages', 'chat']),
-  };
-
-  return ImportPreview(
+  return _previewNormalizedSource(
     source: ImportSource.simplyPlural,
     fileName: fileName,
-    counts: counts,
-    canApply: true,
-    events: const [
-      ImportPreviewEvent(
-        severity: ImportPreviewSeverity.warning,
-        stage: 'preview',
-        message:
-            'Simply Plural parser is shape-only right now; review counts before write support is added.',
-      ),
-    ],
+    decoded: decoded,
   );
 }
 
 ImportPreview _previewPluralKit(String fileName, Map<String, Object?> decoded) {
-  final counts = <String, int>{
-    'members': _countFirstList(decoded, const ['members']),
-    'groups': _countFirstList(decoded, const ['groups']),
-    'switches': _countFirstList(decoded, const ['switches']),
-  };
-
-  return ImportPreview(
+  return _previewNormalizedSource(
     source: ImportSource.pluralKitFile,
     fileName: fileName,
-    counts: counts,
-    canApply: true,
-    events: const [
-      ImportPreviewEvent(
-        severity: ImportPreviewSeverity.warning,
-        stage: 'preview',
-        message:
-            'PluralKit parser is shape-only right now; front intervals are not written yet.',
-      ),
-    ],
+    decoded: decoded,
   );
 }
 
@@ -271,37 +214,76 @@ ImportPreview _previewLooseSource({
   required ImportSource source,
   required String fileName,
   required Map<String, Object?> decoded,
-  required Map<String, String> keys,
 }) {
-  final counts = {
-    for (final entry in keys.entries)
-      entry.value: _listCount(decoded[entry.key]),
-  };
+  return _previewNormalizedSource(
+    source: source,
+    fileName: fileName,
+    decoded: decoded,
+  );
+}
+
+ImportPreview _previewNormalizedSource({
+  required ImportSource source,
+  required String fileName,
+  required Map<String, Object?> decoded,
+}) {
+  NormalizedImportArchive normalized;
+  try {
+    normalized = normalizeImportTextToLocalArchive(
+      source: source,
+      fileName: fileName,
+      text: jsonEncode(decoded),
+    );
+  } on FormatException catch (error) {
+    return ImportPreview(
+      source: source,
+      fileName: fileName,
+      counts: const {},
+      canApply: false,
+      events: [
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.error,
+          stage: 'normalize',
+          message: error.message,
+        ),
+      ],
+    );
+  }
+
+  final foundRecords = normalized.counts.entries.any(
+    (entry) => entry.key != 'front_members' && entry.value > 0,
+  );
 
   return ImportPreview(
     source: source,
     fileName: fileName,
-    counts: counts,
-    canApply: true,
+    counts: normalized.counts,
+    canApply: foundRecords,
     events: [
+      const ImportPreviewEvent(
+        severity: ImportPreviewSeverity.info,
+        stage: 'normalize',
+        message: 'Recognized records can be imported into the local archive.',
+      ),
+      if (!foundRecords)
+        const ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: 'normalize',
+          message: 'No importable records were recognized.',
+        ),
+      for (final warning in normalized.warnings)
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: 'normalize',
+          message: warning,
+        ),
       ImportPreviewEvent(
         severity: ImportPreviewSeverity.warning,
         stage: 'preview',
-        message:
-            '${source.label} parser is shape-only right now; write support is not implemented yet.',
+        message: '${source.label} import is best-effort. Review after import.',
       ),
     ],
   );
-}
-
-int _countFirstList(Map<String, Object?> object, List<String> keys) {
-  for (final key in keys) {
-    final count = _listCount(object[key]);
-    if (count > 0) {
-      return count;
-    }
-  }
-  return 0;
 }
 
 int _listCount(Object? value) => value is List ? value.length : 0;
