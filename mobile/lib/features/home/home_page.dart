@@ -112,13 +112,25 @@ class _HomePageState extends State<HomePage> {
           onSelect: _selectSection,
         );
       case SpSection.members:
-        return MembersPage(snapshot: home, repository: widget.repository);
+        return MembersPage(
+          snapshot: home,
+          repository: widget.repository,
+          onImport: () => _selectSection(SpSection.importExport),
+        );
       case SpSection.frontHistory:
         return FrontHistoryPage(snapshot: home, repository: widget.repository);
       case SpSection.groups:
-        return GroupsPage(snapshot: home, repository: widget.repository);
+        return GroupsPage(
+          snapshot: home,
+          repository: widget.repository,
+          onImport: () => _selectSection(SpSection.importExport),
+        );
       case SpSection.notes:
-        return NotesPage(snapshot: home, repository: widget.repository);
+        return NotesPage(
+          snapshot: home,
+          repository: widget.repository,
+          onImport: () => _selectSection(SpSection.importExport),
+        );
       case SpSection.analytics:
         return const OfflineFeaturePage(
           title: 'Analytics',
@@ -131,7 +143,10 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.chat:
-        return MessagesPage(repository: widget.repository);
+        return MessagesPage(
+          repository: widget.repository,
+          onImport: () => _selectSection(SpSection.importExport),
+        );
       case SpSection.usefulLinks:
         return const OfflineFeaturePage(
           title: 'Useful Links',
@@ -434,10 +449,12 @@ class MembersPage extends StatelessWidget {
     super.key,
     required this.snapshot,
     required this.repository,
+    required this.onImport,
   });
 
   final HomeSnapshot? snapshot;
   final HavenRepository repository;
+  final VoidCallback onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -479,6 +496,7 @@ class MembersPage extends StatelessWidget {
                     primary: 'Add member',
                     secondary: 'Import',
                     onPrimary: () => showAddMemberSheet(context, repository),
+                    onSecondary: onImport,
                   ),
                 ],
               ),
@@ -782,10 +800,12 @@ class GroupsPage extends StatelessWidget {
     super.key,
     required this.snapshot,
     required this.repository,
+    required this.onImport,
   });
 
   final HomeSnapshot? snapshot;
   final HavenRepository repository;
+  final VoidCallback onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -825,6 +845,7 @@ class GroupsPage extends StatelessWidget {
                     primary: 'Add group',
                     secondary: 'Import',
                     onPrimary: () => showAddGroupSheet(context, repository),
+                    onSecondary: onImport,
                   ),
                 ],
               ),
@@ -984,10 +1005,12 @@ class NotesPage extends StatelessWidget {
     super.key,
     required this.snapshot,
     required this.repository,
+    required this.onImport,
   });
 
   final HomeSnapshot? snapshot;
   final HavenRepository repository;
+  final VoidCallback onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -1029,6 +1052,7 @@ class NotesPage extends StatelessWidget {
                     primary: 'Add note',
                     secondary: 'Import',
                     onPrimary: () => showAddNoteSheet(context, repository),
+                    onSecondary: onImport,
                   ),
                 ],
               ),
@@ -1153,9 +1177,14 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
 }
 
 class MessagesPage extends StatelessWidget {
-  const MessagesPage({super.key, required this.repository});
+  const MessagesPage({
+    super.key,
+    required this.repository,
+    required this.onImport,
+  });
 
   final HavenRepository repository;
+  final VoidCallback onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -1192,6 +1221,7 @@ class MessagesPage extends StatelessWidget {
                     primary: 'Add message',
                     secondary: 'Import',
                     onPrimary: () => showAddMessageSheet(context, repository),
+                    onSecondary: onImport,
                   ),
                 ],
               ),
@@ -1603,6 +1633,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
   String? _fileText;
   ImportFileGuess? _guess;
   ImportPreview? _preview;
+  bool _isPickingImport = false;
+  bool _isApplyingImport = false;
+  String? _importStatus;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
 
@@ -1618,12 +1651,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Importers',
-                trailing: StatusPill(text: 'dedupe first'),
+                title: 'Import',
+                trailing: StatusPill(text: 'preview first'),
               ),
               SizedBox(height: 8),
               Text(
-                'Every import stages a review and matches against existing members before saving.',
+                'Upload an export, check what was found, then import it into local storage.',
                 style: TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
@@ -1642,11 +1675,22 @@ class _ImportExportPageState extends State<ImportExportPage> {
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
         ),
+        if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
+          const SizedBox(height: 12),
+          ImportProgressCard(
+            status: _importStatus,
+            isActive: _isPickingImport || _isApplyingImport,
+          ),
+        ],
         const SizedBox(height: 12),
         ImportPlanCard(plan: plan),
         if (_preview != null) ...[
           const SizedBox(height: 12),
-          ImportPreviewCard(preview: _preview!, onApply: _applyImportFile),
+          ImportPreviewCard(
+            preview: _preview!,
+            onApply: _isApplyingImport ? null : _applyImportFile,
+            isImporting: _isApplyingImport,
+          ),
         ],
         const SizedBox(height: 2),
         SpSettingsGroup(
@@ -1666,6 +1710,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   Future<void> _pickImportFile() async {
+    setState(() {
+      _isPickingImport = true;
+      _importStatus = 'Waiting for file picker...';
+    });
     final result = await FilePicker.platform.pickFiles(
       dialogTitle: 'Choose import file',
       type: FileType.custom,
@@ -1673,10 +1721,19 @@ class _ImportExportPageState extends State<ImportExportPage> {
       withData: true,
     );
     if (result == null || result.files.isEmpty || !mounted) {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = 'No file selected.';
+        });
+      }
       return;
     }
 
     final file = result.files.single;
+    setState(() {
+      _importStatus = 'Reading ${file.name}...';
+    });
     final text = _decodeFileText(file.bytes);
     final guess = guessImportSourceFromFile(
       fileName: file.name,
@@ -1699,6 +1756,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
       if (guess.source != null) {
         _source = guess.source!;
       }
+      _isPickingImport = false;
+      _importStatus = preview == null
+          ? 'Could not read ${file.name}.'
+          : 'Preview ready: ${_countSummary(preview.counts)}.';
     });
   }
 
@@ -1732,24 +1793,62 @@ class _ImportExportPageState extends State<ImportExportPage> {
       return;
     }
 
-    final normalized = normalizeImportTextToLocalArchive(
-      source: _source,
-      fileName: _fileName ?? 'import.json',
-      text: text,
-    );
+    setState(() {
+      _isApplyingImport = true;
+      _importStatus = 'Preparing ${_source.label} import...';
+    });
 
-    await widget.repository.importLocalArchiveJson(
-      normalized.archiveJson,
-      strategy: _strategy,
-      fileName: _fileName,
-      source: _source,
-    );
+    try {
+      final normalized = normalizeImportTextToLocalArchive(
+        source: _source,
+        fileName: _fileName ?? 'import.json',
+        text: text,
+      );
+
+      if (mounted) {
+        setState(() {
+          _importStatus = 'Writing ${_countSummary(normalized.counts)}...';
+        });
+      }
+
+      await widget.repository.importLocalArchiveJson(
+        normalized.archiveJson,
+        strategy: _strategy,
+        fileName: _fileName,
+        source: _source,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isApplyingImport = false;
+          _importStatus =
+              'Import complete: ${_countSummary(normalized.counts)}.';
+        });
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() {
+          _isApplyingImport = false;
+          _importStatus = 'Import failed: $error';
+        });
+      }
+      return;
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('${_source.label} imported')));
     }
+  }
+
+  String _countSummary(Map<String, int> counts) {
+    final visible = counts.entries
+        .where((entry) => entry.value > 0)
+        .map((entry) => '${entry.value} ${entry.key}')
+        .join(', ');
+
+    return visible.isEmpty ? 'no records found' : visible;
   }
 }
 
@@ -2017,10 +2116,16 @@ class ImportFileSummary extends StatelessWidget {
 }
 
 class ImportPreviewCard extends StatelessWidget {
-  const ImportPreviewCard({super.key, required this.preview, this.onApply});
+  const ImportPreviewCard({
+    super.key,
+    required this.preview,
+    this.onApply,
+    this.isImporting = false,
+  });
 
   final ImportPreview preview;
   final Future<void> Function()? onApply;
+  final bool isImporting;
 
   @override
   Widget build(BuildContext context) {
@@ -2075,11 +2180,65 @@ class ImportPreviewCard extends StatelessWidget {
             onPressed: preview.canApply && onApply != null
                 ? () async => onApply!()
                 : null,
-            icon: const Icon(Icons.restore_rounded),
-            label: Text(
-              onApply == null ? 'Write support coming next' : 'Import archive',
-            ),
+            icon: isImporting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.restore_rounded),
+            label: Text(isImporting ? 'Importing...' : 'Import archive'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class ImportProgressCard extends StatelessWidget {
+  const ImportProgressCard({
+    super.key,
+    required this.status,
+    required this.isActive,
+  });
+
+  final String? status;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      outlined: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (isActive)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 18,
+                  color: _spGold,
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  status ?? 'Import ready.',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          if (isActive) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ],
         ],
       ),
     );

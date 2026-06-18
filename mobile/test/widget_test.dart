@@ -161,6 +161,32 @@ void main() {
     expect(repository._snapshot.groupCount, 1);
   });
 
+  testWidgets('routes section import actions to import setup', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Members').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Import'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Import setup'), findsOneWidget);
+    expect(find.text('Upload file'), findsOneWidget);
+    expect(find.text('Service'), findsOneWidget);
+  });
+
   testWidgets('adds a local note from the notes section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
