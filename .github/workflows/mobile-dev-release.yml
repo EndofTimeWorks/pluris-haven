@@ -58,7 +58,7 @@ jobs:
       - name: Build dev APK
         run: >
           flutter --no-color build apk --debug
-          --build-name 0.1.0
+          --build-name 0.0.1
           --build-number "${GITHUB_RUN_NUMBER}"
 
       - name: Collect dev build
@@ -73,7 +73,7 @@ jobs:
           } > ../release/mobile-dev/BUILD.txt
           (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
           cat > ../release/mobile-dev/NOTES.md <<EOF
-          Dev build from ${GITHUB_SHA}.
+          Pre-alpha dev build from ${GITHUB_SHA}.
 
           This APK is debug-signed and replaced by the next main-branch dev build.
           EOF
@@ -99,7 +99,7 @@ jobs:
           if gh release view mobile-dev >/dev/null 2>&1; then
             gh release edit mobile-dev \
               --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile Dev" \
+              --title "Pluris Haven Mobile 0.0.1-prealpha dev" \
               --notes-file release/mobile-dev/NOTES.md \
               --prerelease \
               --latest=false
@@ -114,7 +114,7 @@ jobs:
               release/mobile-dev/BUILD.txt \
               release/mobile-dev/SHA256SUMS.txt \
               --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile Dev" \
+              --title "Pluris Haven Mobile 0.0.1-prealpha dev" \
               --notes-file release/mobile-dev/NOTES.md \
               --prerelease \
               --latest=false
