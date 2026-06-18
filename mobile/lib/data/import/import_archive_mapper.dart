@@ -1,6 +1,21 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:archive/archive.dart';
 
 import 'import_sources.dart';
+
+class ImportTextPayload {
+  const ImportTextPayload({
+    required this.fileName,
+    required this.text,
+    this.warnings = const [],
+  });
+
+  final String fileName;
+  final String text;
+  final List<String> warnings;
+}
 
 class NormalizedImportArchive {
   const NormalizedImportArchive({
@@ -16,6 +31,64 @@ class NormalizedImportArchive {
   final String archiveJson;
   final Map<String, int> counts;
   final List<String> warnings;
+}
+
+ImportTextPayload decodeImportFileBytes({
+  required String fileName,
+  required Uint8List bytes,
+}) {
+  if (fileName.toLowerCase().endsWith('.zip')) {
+    return _decodeZipImport(fileName: fileName, bytes: bytes);
+  }
+
+  return ImportTextPayload(
+    fileName: fileName,
+    text: utf8.decode(bytes, allowMalformed: true),
+  );
+}
+
+ImportTextPayload _decodeZipImport({
+  required String fileName,
+  required Uint8List bytes,
+}) {
+  Archive archive;
+  try {
+    archive = ZipDecoder().decodeBytes(bytes);
+  } on ArchiveException catch (error) {
+    throw FormatException('Could not read zip archive: ${error.message}');
+  }
+
+  final manifestFile = archive.findFile('manifest.json');
+  final dataFile = archive.findFile('data.json');
+  if (manifestFile == null || dataFile == null) {
+    throw const FormatException(
+      'Zip imports must contain manifest.json and data.json.',
+    );
+  }
+
+  final manifest = _jsonObjectFromBytes(manifestFile.content, 'manifest.json');
+  final data = _jsonObjectFromBytes(dataFile.content, 'data.json');
+  data['pluralspace'] = true;
+  data['manifest'] = manifest;
+  data['system'] ??= {
+    'name':
+        _firstString(manifest, const ['system_name', 'systemName', 'name']) ??
+        'PluralSpace import',
+  };
+
+  return ImportTextPayload(
+    fileName: fileName,
+    text: jsonEncode(data),
+    warnings: const ['Read data.json from PluralSpace zip export.'],
+  );
+}
+
+Map<String, Object?> _jsonObjectFromBytes(Uint8List bytes, String name) {
+  final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: true));
+  if (decoded is! Map<String, Object?>) {
+    throw FormatException('$name must contain a JSON object.');
+  }
+  return decoded;
 }
 
 NormalizedImportArchive normalizeImportTextToLocalArchive({
@@ -39,9 +112,6 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
     );
   }
 
-  if (source == ImportSource.prism) {
-    throw const FormatException('Prism imports need decryption first.');
-  }
   if (source == ImportSource.pluralKitLive) {
     throw const FormatException('PluralKit live import needs a token.');
   }
@@ -120,8 +190,10 @@ class _ExternalArchiveNormalizer {
 
   String _systemName() {
     final users = _firstList(decoded, const ['users']);
+    final systemSettings = _firstList(decoded, const ['systemSettings']);
     final system =
         _mapValue(decoded['system']) ??
+        (systemSettings.isEmpty ? null : _mapValue(systemSettings.first)) ??
         (users.isEmpty ? null : _mapValue(users.first)) ??
         decoded;
     return _firstString(system, const [
@@ -137,6 +209,7 @@ class _ExternalArchiveNormalizer {
   List<Map<String, Object?>> _normalizeMembers() {
     final items = switch (source) {
       ImportSource.tupperbox => _firstList(decoded, const ['tuppers']),
+      ImportSource.prism => _firstList(decoded, const ['headmates']),
       _ => _firstList(decoded, const ['members', 'membersList', 'profiles']),
     };
 
@@ -181,6 +254,7 @@ class _ExternalArchiveNormalizer {
       'group',
       'groupId',
       'group_id',
+      'memberGroupId',
     ]);
 
     return {
@@ -205,6 +279,7 @@ class _ExternalArchiveNormalizer {
         'info',
         'bio',
         'content',
+        'notes',
       ]),
       'avatar_url': _firstString(member, const [
         'avatar_url',
@@ -218,6 +293,7 @@ class _ExternalArchiveNormalizer {
         'pluralKitId',
         'pkId',
         'pk_id',
+        'pluralkitId',
         'uuid',
       ]),
       'archived': member['archived'] == true,
@@ -227,7 +303,10 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeGroups() {
-    final items = _firstList(decoded, const ['groups', 'folders']);
+    final items = switch (source) {
+      ImportSource.prism => _firstList(decoded, const ['memberGroups']),
+      _ => _firstList(decoded, const ['groups', 'folders', 'member_groups']),
+    };
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final group = _mapValue(items[index]);
@@ -264,6 +343,7 @@ class _ExternalArchiveNormalizer {
       'parentGroupId',
       'parentId',
       'parent',
+      'parent_group',
     ]);
 
     return {
@@ -281,7 +361,12 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeNotes() {
-    final items = _firstList(decoded, const ['notes', 'journals']);
+    final items = _firstList(decoded, const [
+      'notes',
+      'journals',
+      'journal_entries',
+      'journalEntries',
+    ]);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
@@ -302,6 +387,7 @@ class _ExternalArchiveNormalizer {
       'text',
       'content',
       'note',
+      'markdown',
     ])?.trim();
     final title = _firstString(note, const [
       'title',
@@ -337,11 +423,15 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeMessages() {
-    final items = _firstList(decoded, const [
-      'messages',
-      'chat',
-      'messageBoard',
-    ]);
+    final items = [
+      ..._firstList(decoded, const [
+        'messages',
+        'chat',
+        'messageBoard',
+        'memberBoardPosts',
+      ]),
+      ..._pluralSpaceChannelMessages(),
+    ];
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final message = _mapValue(items[index]);
@@ -365,6 +455,7 @@ class _ExternalArchiveNormalizer {
       'text',
       'content',
       'message',
+      'markdown',
     ])?.trim();
     if (body == null || body.isEmpty) {
       warnings.add('Skipped message #${index + 1}: missing body.');
@@ -451,6 +542,7 @@ class _ExternalArchiveNormalizer {
       'fronthistory',
       'fronts',
       'switches',
+      'frontSessions',
     ]);
     final sessions = <Map<String, Object?>>[];
     final links = <Map<String, Object?>>[];
@@ -485,6 +577,8 @@ class _ExternalArchiveNormalizer {
           'custom',
           'name',
           'status',
+          'comment',
+          'customStatus',
         ]),
         'started_at': start,
         'ended_at': _dateString(front, const [
@@ -522,6 +616,7 @@ class _ExternalArchiveNormalizer {
         'member',
         'memberId',
         'member_id',
+        'headmateId',
       ]);
       return single == null ? const [] : [single];
     }
@@ -551,6 +646,9 @@ class _ExternalArchiveNormalizer {
       'member_id',
       'memberId',
       'member',
+      'headmateId',
+      'senderMemberId',
+      'targetMemberId',
       'author',
       'authorId',
     ]);
@@ -558,6 +656,39 @@ class _ExternalArchiveNormalizer {
       return null;
     }
     return _memberIdsByExternalId[external] ?? _stableId('member', external);
+  }
+
+  List<Map<String, Object?>> _pluralSpaceChannelMessages() {
+    final channels = _firstList(decoded, const [
+      'chat_channels',
+      'chatChannels',
+    ]);
+    final messages = <Map<String, Object?>>[];
+    for (final channelValue in channels) {
+      final channel = _mapValue(channelValue);
+      if (channel == null) {
+        continue;
+      }
+      final channelName =
+          _firstString(channel, const ['name', 'title', 'label']) ?? 'Chat';
+      for (final messageValue in _firstList(channel, const ['messages'])) {
+        final message = _mapValue(messageValue);
+        if (message == null) {
+          continue;
+        }
+        final body = _firstString(message, const [
+          'body',
+          'text',
+          'content',
+          'message',
+        ]);
+        messages.add({
+          ...message,
+          if (body != null) 'body': '$channelName\n$body',
+        });
+      }
+    }
+    return messages;
   }
 
   void _fillMissingFrontEnds(List<Map<String, Object?>> sessions) {

@@ -114,18 +114,10 @@ ImportPreview previewImportText({
       fileName: fileName,
       decoded: decoded,
     ),
-    ImportSource.prism => ImportPreview(
+    ImportSource.prism => _previewNormalizedSource(
       source: source,
       fileName: fileName,
-      counts: const {},
-      canApply: false,
-      events: const [
-        ImportPreviewEvent(
-          severity: ImportPreviewSeverity.warning,
-          stage: 'decrypt',
-          message: 'Prism preview needs encrypted file decryption first.',
-        ),
-      ],
+      decoded: decoded,
     ),
   };
 }
