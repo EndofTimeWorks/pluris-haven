@@ -23,26 +23,28 @@ debug-signed and replaced by the next dev build.
 Tag format:
 
 ```sh
-git tag mobile-v0.1.0-dev.1+1
-git push origin mobile-v0.1.0-dev.1+1
+git tag mobile-v0.0.1-prealpha.1+1
+git push origin mobile-v0.0.1-prealpha.1+1
 ```
 
 Meaning:
 
-- `0.1.0-dev.1` is the GitHub release version.
-- `0.1.0` is passed to Flutter as `--build-name`.
+- `0.0.1-prealpha.1` is the GitHub release version.
+- `0.0.1` is passed to Flutter as `--build-name`.
 - `1` is passed to Flutter as `--build-number`.
 - If the build number is omitted, the workflow run number is used.
 
 Examples:
 
 ```text
-mobile-v0.1.0-dev.1+1
-mobile-v0.1.0-alpha.1+2
-mobile-v0.1.0+3
+mobile-v0.0.1-prealpha.1+1
+mobile-v0.0.1-alpha.1+2
+mobile-v0.0.1+3
 ```
 
-Use `0.x` until the app is actually stable. Do not tag `1.0.0` yet.
+Use `0.0.x-prealpha.*` while the app is still rough and importer-heavy. Do not
+tag `1.0.0` until the mobile app, imports, sync, and backups are actually
+stable.
 
 ## Release Assets
 
