@@ -1,10 +1,9 @@
-import 'dart:convert';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/import/import_archive_mapper.dart';
+import '../../data/import/import_file_decoder.dart';
 import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
@@ -1714,7 +1713,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _isPickingImport = true;
       _importStatus = 'Waiting for file picker...';
     });
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       dialogTitle: 'Choose import file',
       type: FileType.custom,
       allowedExtensions: ['json', 'zip', 'prism', 'txt'],
@@ -1734,21 +1733,25 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _importStatus = 'Reading ${file.name}...';
     });
-    final text = _decodeFileText(file.bytes);
-    final guess = guessImportSourceFromFile(
+    final decoded = decodeImportFileBytes(
       fileName: file.name,
+      bytes: file.bytes,
+    );
+    final text = decoded?.text;
+    final guess = guessImportSourceFromFile(
+      fileName: decoded?.displayName ?? file.name,
       textPreview: text,
     );
     final preview = text == null
         ? null
         : previewImportText(
-            fileName: file.name,
+            fileName: decoded?.displayName ?? file.name,
             text: text,
             selectedSource: guess.source,
           );
 
     setState(() {
-      _fileName = file.name;
+      _fileName = decoded?.displayName ?? file.name;
       _fileSize = file.size;
       _fileText = text;
       _guess = guess;
@@ -1758,7 +1761,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
       _isPickingImport = false;
       _importStatus = preview == null
-          ? 'Could not read ${file.name}.'
+          ? 'Could not read an import JSON from ${file.name}.'
           : 'Preview ready: ${_countSummary(preview.counts)}.';
     });
   }
@@ -1777,14 +1780,6 @@ class _ImportExportPageState extends State<ImportExportPage> {
               selectedSource: source,
             );
     });
-  }
-
-  String? _decodeFileText(Uint8List? bytes) {
-    if (bytes == null || bytes.isEmpty) {
-      return null;
-    }
-
-    return utf8.decode(bytes, allowMalformed: true);
   }
 
   Future<void> _applyImportFile() async {
