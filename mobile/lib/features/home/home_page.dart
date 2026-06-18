@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/import/import_archive_mapper.dart';
 import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
@@ -1645,12 +1646,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         ImportPlanCard(plan: plan),
         if (_preview != null) ...[
           const SizedBox(height: 12),
-          ImportPreviewCard(
-            preview: _preview!,
-            onApply: _preview!.source == ImportSource.plurisHavenArchive
-                ? _applyLocalArchive
-                : null,
-          ),
+          ImportPreviewCard(preview: _preview!, onApply: _applyImportFile),
         ],
         const SizedBox(height: 2),
         SpSettingsGroup(
@@ -1730,22 +1726,29 @@ class _ImportExportPageState extends State<ImportExportPage> {
     return utf8.decode(bytes, allowMalformed: true);
   }
 
-  Future<void> _applyLocalArchive() async {
+  Future<void> _applyImportFile() async {
     final text = _fileText;
     if (text == null) {
       return;
     }
 
+    final normalized = normalizeImportTextToLocalArchive(
+      source: _source,
+      fileName: _fileName ?? 'import.json',
+      text: text,
+    );
+
     await widget.repository.importLocalArchiveJson(
-      text,
+      normalized.archiveJson,
       strategy: _strategy,
       fileName: _fileName,
+      source: _source,
     );
 
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Archive imported')));
+      ).showSnackBar(SnackBar(content: Text('${_source.label} imported')));
     }
   }
 }
