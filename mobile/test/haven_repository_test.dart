@@ -348,5 +348,12 @@ void main() {
 
     final importRecords = await database.select(database.importRecords).get();
     expect(importRecords.single.source, 'simplyplural_file');
+
+    final payloads = await database.select(database.importPayloads).get();
+    expect(payloads.map((payload) => payload.collection), contains('members'));
+
+    final reExported = await repository.buildLocalArchiveJson();
+    expect(reExported, contains('"raw_payloads"'));
+    expect(reExported, contains('"collection": "members"'));
   });
 }

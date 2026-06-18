@@ -122,6 +122,19 @@ class ImportRecords extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class ImportPayloads extends Table {
+  TextColumn get id => text()();
+  TextColumn get importRecordId => text().references(ImportRecords, #id)();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get source => text()();
+  TextColumn get collection => text()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get importedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class NotificationEvents extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -155,6 +168,7 @@ class AppPreferences extends Table {
     FrontSessions,
     FrontSessionMembers,
     ImportRecords,
+    ImportPayloads,
     NotificationEvents,
     AppPreferences,
   ],
@@ -163,7 +177,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -175,6 +189,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(messages);
         await migrator.createTable(reminders);
         await migrator.createTable(notificationEvents);
+      }
+      if (from < 4) {
+        await migrator.createTable(importPayloads);
       }
     },
     beforeOpen: (details) async {
