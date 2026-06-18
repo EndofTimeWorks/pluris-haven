@@ -1097,6 +1097,9 @@ SELECT
     final importRecords = await (database.select(
       database.importRecords,
     )..where((record) => record.systemId.equals(localSystemId))).get();
+    final importPayloads = await (database.select(
+      database.importPayloads,
+    )..where((payload) => payload.systemId.equals(localSystemId))).get();
     final notificationEvents = await (database.select(
       database.notificationEvents,
     )..where((event) => event.systemId.equals(localSystemId))).get();
@@ -1121,6 +1124,9 @@ SELECT
       ],
       'import_records': [
         for (final record in importRecords) _importRecordToJson(record),
+      ],
+      'raw_payloads': [
+        for (final payload in importPayloads) _importPayloadToJson(payload),
       ],
       'notification_events': [
         for (final event in notificationEvents) _notificationEventToJson(event),
@@ -1161,6 +1167,7 @@ SELECT
     final reminders = _jsonObjectList(decoded['reminders']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
+    final rawPayloads = _jsonObjectList(decoded['raw_payloads']);
     final notificationEvents = _jsonObjectList(decoded['notification_events']);
     final preferences = _jsonObjectList(decoded['preferences']);
 
@@ -1210,11 +1217,12 @@ SELECT
         await _importPreference(preference, strategy, now);
       }
 
+      final importRecordId = 'import-${now.microsecondsSinceEpoch}';
       await database
           .into(database.importRecords)
           .insert(
             ImportRecordsCompanion.insert(
-              id: 'import-${now.microsecondsSinceEpoch}',
+              id: importRecordId,
               systemId: localSystemId,
               source: source.jobSource,
               fileName: Value(_nullIfBlank(fileName)),
@@ -1227,6 +1235,7 @@ SELECT
                   'reminders': reminders.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
+                  'raw_payloads': rawPayloads.length,
                   'notification_events': notificationEvents.length,
                   'preferences': preferences.length,
                 }),
@@ -1234,6 +1243,10 @@ SELECT
               importedAt: now,
             ),
           );
+
+      for (final payload in rawPayloads) {
+        await _importPayload(payload, importRecordId, source, strategy, now);
+      }
     });
   }
 
@@ -1415,6 +1428,26 @@ SELECT
     return _insertArchiveRow(database.appPreferences, companion, strategy);
   }
 
+  Future<void> _importPayload(
+    Map<String, Object?> payload,
+    String importRecordId,
+    ImportSource source,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(payload, 'id');
+    final companion = ImportPayloadsCompanion.insert(
+      id: id,
+      importRecordId: importRecordId,
+      systemId: localSystemId,
+      source: _stringValue(payload['source']) ?? source.jobSource,
+      collection: _requiredString(payload, 'collection'),
+      payloadJson: _requiredString(payload, 'payload_json'),
+      importedAt: _dateValue(payload['imported_at']) ?? now,
+    );
+    return _insertArchiveRow(database.importPayloads, companion, strategy);
+  }
+
   Future<void> _insertArchiveRow<TableDsl extends Table, D>(
     TableInfo<TableDsl, D> table,
     Insertable<D> companion,
@@ -1564,6 +1597,15 @@ SELECT
     'file_name': record.fileName,
     'summary_json': record.summaryJson,
     'imported_at': record.importedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _importPayloadToJson(ImportPayload payload) => {
+    'id': payload.id,
+    'import_record_id': payload.importRecordId,
+    'source': payload.source,
+    'collection': payload.collection,
+    'payload_json': payload.payloadJson,
+    'imported_at': payload.importedAt.toIso8601String(),
   };
 
   Map<String, Object?> _notificationEventToJson(NotificationEvent event) => {

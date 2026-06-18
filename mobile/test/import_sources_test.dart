@@ -238,6 +238,118 @@ void main() {
     );
   });
 
+  test(
+    'normalizes richer Simply Plural export collections without data loss',
+    () {
+      final archive = normalizeImportTextToLocalArchive(
+        source: ImportSource.simplyPlural,
+        fileName: 'sp-rich.json',
+        importedAt: DateTime.utc(2026),
+        text: '''
+{
+  "users": [
+    {
+      "_id": "system-user",
+      "username": "SP System",
+      "fields": {"favorite": "tea"},
+      "lastOperationTime": 1767225600000
+    }
+  ],
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "avatarUuid": "avatar-1",
+      "info": {"age": "20s"},
+      "lastOperationTime": 1767225600000
+    }
+  ],
+  "groups": [
+    {
+      "_id": "g1",
+      "name": "Main",
+      "members": ["m1"]
+    }
+  ],
+  "customFields": [
+    {"_id": "field1", "name": "Age", "type": "text"}
+  ],
+  "boardMessages": [
+    {
+      "_id": "b1",
+      "title": "Board",
+      "message": "Check supplies",
+      "writtenBy": "m1",
+      "writtenAt": 1767225600000
+    }
+  ],
+  "chatMessages": [
+    {
+      "_id": "c1",
+      "message": "hi",
+      "channel": "general",
+      "writer": "m1",
+      "writtenAt": 1767225600000
+    }
+  ],
+  "comments": [
+    {
+      "_id": "comment1",
+      "collection": "frontHistory",
+      "documentId": "front1",
+      "text": "front note",
+      "time": 1767225600000
+    }
+  ],
+  "repeatedReminders": [
+    {
+      "_id": "r1",
+      "name": "Meds",
+      "message": "Take meds",
+      "dayInterval": 1,
+      "lastOperationTime": 1767225600000
+    }
+  ],
+  "frontHistory": [
+    {
+      "_id": "front1",
+      "member": "m1",
+      "custom": false,
+      "startTime": 1767225600000,
+      "endTime": 1767229200000
+    }
+  ],
+  "privacyBuckets": [
+    {"_id": "bucket1", "name": "Trusted"}
+  ]
+}
+''',
+      );
+
+      expect(archive.counts['members'], 1);
+      expect(archive.counts['groups'], 1);
+      expect(archive.counts['messages'], 3);
+      expect(archive.counts['reminders'], 1);
+      expect(archive.counts['fronts'], 1);
+      expect(archive.counts['front_members'], 1);
+      expect(archive.counts['raw_payloads'], 10);
+      expect(
+        archive.archiveJson,
+        contains('"avatar_url": "sp-avatar:avatar-1"'),
+      );
+      expect(
+        archive.archiveJson,
+        contains('"folder_id": "simplyplural_file-group-g1"'),
+      );
+      expect(
+        archive.archiveJson,
+        contains('"title": "Imported custom fields"'),
+      );
+      expect(archive.archiveJson, contains('"collection": "privacyBuckets"'));
+      expect(archive.archiveJson, contains('"body": "Board\\nCheck supplies"'));
+    },
+  );
+
   test('normalizes PluralKit export switches into front intervals', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.pluralKitFile,
