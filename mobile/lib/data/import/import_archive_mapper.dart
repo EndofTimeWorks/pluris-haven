@@ -83,9 +83,11 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> fronts;
   late final List<Map<String, Object?>> frontMembers;
   late final List<Map<String, Object?>> reminders;
+  late final List<Map<String, Object?>> rawPayloads;
 
   void normalize() {
     groups = _normalizeGroups();
+    _indexGroupMembers();
     members = _normalizeMembers();
     notes = _normalizeNotes();
     messages = _normalizeMessages();
@@ -93,6 +95,7 @@ class _ExternalArchiveNormalizer {
     final frontData = _normalizeFronts();
     fronts = frontData.fronts;
     frontMembers = frontData.frontMembers;
+    rawPayloads = _normalizeRawPayloads();
   }
 
   Map<String, Object?> archive() => {
@@ -113,6 +116,7 @@ class _ExternalArchiveNormalizer {
     'reminders': reminders,
     'fronts': fronts,
     'front_members': frontMembers,
+    'raw_payloads': rawPayloads,
     'import_records': const [],
     'notification_events': const [],
     'preferences': const [],
@@ -182,6 +186,10 @@ class _ExternalArchiveNormalizer {
       'groupId',
       'group_id',
     ]);
+    final groupId = groupExternalId == null
+        ? _groupIdsByExternalId['member:$externalId']
+        : _groupIdsByExternalId[groupExternalId] ??
+              _stableId('group', groupExternalId);
 
     return {
       'id': id,
@@ -195,10 +203,7 @@ class _ExternalArchiveNormalizer {
           'color_hex',
         ]),
       ),
-      'folder_id': groupExternalId == null
-          ? null
-          : _groupIdsByExternalId[groupExternalId] ??
-                _stableId('group', groupExternalId),
+      'folder_id': groupId,
       'description': _firstString(member, const [
         'description',
         'desc',
@@ -206,13 +211,7 @@ class _ExternalArchiveNormalizer {
         'bio',
         'content',
       ]),
-      'avatar_url': _firstString(member, const [
-        'avatar_url',
-        'avatarUrl',
-        'avatar',
-        'image',
-        'imageUrl',
-      ]),
+      'avatar_url': _avatarReference(member),
       'pluralkit_id': _firstString(member, const [
         'pluralkit_id',
         'pluralKitId',
@@ -240,6 +239,44 @@ class _ExternalArchiveNormalizer {
       }
     }
     return records;
+  }
+
+  void _indexGroupMembers() {
+    for (final groupValue in _firstList(decoded, const ['groups', 'folders'])) {
+      final group = _mapValue(groupValue);
+      if (group == null) {
+        continue;
+      }
+      final groupExternalId =
+          _firstString(group, const ['id', 'uuid', 'uid', '_id', 'folderId']) ??
+          _firstString(group, const ['name', 'displayName', 'title']);
+      if (groupExternalId == null) {
+        continue;
+      }
+      final groupId =
+          _groupIdsByExternalId[groupExternalId] ??
+          _stableId('group', groupExternalId);
+      final members = group['members'];
+      if (members is! List) {
+        continue;
+      }
+      for (final member in members) {
+        final memberExternalId = member is String
+            ? member
+            : member is Map<String, Object?>
+            ? _firstString(member, const [
+                'id',
+                'uuid',
+                'uid',
+                '_id',
+                'memberId',
+              ])
+            : null;
+        if (memberExternalId != null) {
+          _groupIdsByExternalId['member:$memberExternalId'] = groupId;
+        }
+      }
+    }
   }
 
   Map<String, Object?>? _groupRecord(Map<String, Object?> group, int index) {
@@ -293,6 +330,7 @@ class _ExternalArchiveNormalizer {
         records.add(record);
       }
     }
+    records.addAll(_normalizeCustomFieldsAsNotes());
     return records;
   }
 
@@ -337,10 +375,13 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeMessages() {
-    final items = _firstList(decoded, const [
+    final items = _combinedLists(decoded, const [
       'messages',
       'chat',
       'messageBoard',
+      'boardMessages',
+      'chatMessages',
+      'comments',
     ]);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
@@ -365,6 +406,7 @@ class _ExternalArchiveNormalizer {
       'text',
       'content',
       'message',
+      'title',
     ])?.trim();
     if (body == null || body.isEmpty) {
       warnings.add('Skipped message #${index + 1}: missing body.');
@@ -377,23 +419,36 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('message', externalId),
       'member_id': _memberRef(message),
-      'body': body,
+      'body': _messageBody(message, body),
       'archived': message['archived'] == true,
       'created_at': _dateString(message, const [
         'created_at',
         'createdAt',
         'date',
+        'writtenAt',
+        'updatedAt',
+        'time',
       ]),
       'updated_at': _dateString(message, const [
         'updated_at',
         'updatedAt',
         'date',
+        'writtenAt',
+        'lastOperationTime',
+        'time',
       ]),
     };
   }
 
   List<Map<String, Object?>> _normalizeReminders() {
-    final items = _firstList(decoded, const ['reminders', 'alerts']);
+    final items = _combinedLists(decoded, const [
+      'reminders',
+      'alerts',
+      'repeatedReminders',
+      'repeatedRemidners',
+      'automatedReminders',
+      'queuedEvents',
+    ]);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final reminder = _mapValue(items[index]);
@@ -423,6 +478,9 @@ class _ExternalArchiveNormalizer {
       'schedule',
       'frequency',
       'time',
+      'dayInterval',
+      'due',
+      'startTime',
     ])?.trim();
     if (title == null ||
         title.isEmpty ||
@@ -437,7 +495,13 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('reminder', externalId),
       'title': title,
-      'body': _firstString(reminder, const ['body', 'text', 'description']),
+      'body': _firstString(reminder, const [
+        'body',
+        'text',
+        'description',
+        'message',
+        'event',
+      ]),
       'schedule_text': schedule,
       'enabled': reminder['enabled'] != false,
       'created_at': _dateString(reminder, const ['created_at', 'createdAt']),
@@ -485,6 +549,8 @@ class _ExternalArchiveNormalizer {
           'custom',
           'name',
           'status',
+          'customStatus',
+          'comment',
         ]),
         'started_at': start,
         'ended_at': _dateString(front, const [
@@ -516,7 +582,8 @@ class _ExternalArchiveNormalizer {
         front['members'] ??
         front['memberIds'] ??
         front['member_ids'] ??
-        front['fronters'];
+        front['fronters'] ??
+        front['member'];
     if (value is! List) {
       final single = _firstString(front, const [
         'member',
@@ -551,6 +618,9 @@ class _ExternalArchiveNormalizer {
       'member_id',
       'memberId',
       'member',
+      'writtenBy',
+      'writtenFor',
+      'writer',
       'author',
       'authorId',
     ]);
@@ -576,6 +646,116 @@ class _ExternalArchiveNormalizer {
 
   String _stableId(String kind, String externalId) =>
       '${source.jobSource}-$kind-${_slug(externalId)}';
+
+  String? _avatarReference(Map<String, Object?> object) {
+    final url = _firstString(object, const [
+      'avatar_url',
+      'avatarUrl',
+      'avatar',
+      'image',
+      'imageUrl',
+    ]);
+    if (url != null) {
+      return url;
+    }
+
+    final uuid = _firstString(object, const ['avatarUuid', 'avatar_uuid']);
+    return uuid == null ? null : 'sp-avatar:$uuid';
+  }
+
+  String _messageBody(Map<String, Object?> message, String body) {
+    final title = _firstString(message, const ['title']);
+    final channel = _firstString(message, const ['channel', 'collection']);
+    final parts = [
+      if (title != null && title != body) title,
+      body,
+      if (channel != null) 'Source: $channel',
+    ];
+    return parts.join('\n');
+  }
+
+  List<Map<String, Object?>> _normalizeCustomFieldsAsNotes() {
+    final records = <Map<String, Object?>>[];
+    final fields = _firstList(decoded, const ['customFields']);
+    if (fields.isNotEmpty) {
+      records.add({
+        'id': _stableId('note', 'custom-fields-index'),
+        'member_id': null,
+        'title': 'Imported custom fields',
+        'body': const JsonEncoder.withIndent('  ').convert(fields),
+        'created_at': importedAt.toIso8601String(),
+        'updated_at': importedAt.toIso8601String(),
+      });
+    }
+
+    for (final userValue in _firstList(decoded, const ['users'])) {
+      final user = _mapValue(userValue);
+      final userFields = user == null ? null : _mapValue(user['fields']);
+      if (userFields == null || userFields.isEmpty) {
+        continue;
+      }
+      final updatedAt =
+          _dateString(user!, const ['lastOperationTime']) ??
+          importedAt.toIso8601String();
+      records.add({
+        'id': _stableId('note', 'system-custom-field-values'),
+        'member_id': null,
+        'title': 'Imported system custom field values',
+        'body': const JsonEncoder.withIndent('  ').convert(userFields),
+        'created_at': updatedAt,
+        'updated_at': updatedAt,
+      });
+    }
+
+    for (final memberValue in _firstList(decoded, const ['members'])) {
+      final member = _mapValue(memberValue);
+      final info = member == null ? null : _mapValue(member['info']);
+      if (member == null || info == null || info.isEmpty) {
+        continue;
+      }
+      final externalId = _firstString(member, const [
+        'id',
+        'uuid',
+        'uid',
+        '_id',
+        'memberId',
+      ]);
+      if (externalId == null) {
+        continue;
+      }
+      final updatedAt =
+          _dateString(member, const ['lastOperationTime']) ??
+          importedAt.toIso8601String();
+      records.add({
+        'id': _stableId('note', 'member-custom-field-values-$externalId'),
+        'member_id':
+            _memberIdsByExternalId[externalId] ??
+            _stableId('member', externalId),
+        'title': 'Imported custom field values',
+        'body': const JsonEncoder.withIndent('  ').convert(info),
+        'created_at': updatedAt,
+        'updated_at': updatedAt,
+      });
+    }
+
+    return records;
+  }
+
+  List<Map<String, Object?>> _normalizeRawPayloads() {
+    return [
+      for (final entry in decoded.entries)
+        if (entry.value is! List || (entry.value as List).isNotEmpty)
+          {
+            'id': _stableId('raw', entry.key),
+            'source': source.jobSource,
+            'collection': entry.key,
+            'payload_json': const JsonEncoder.withIndent(
+              '  ',
+            ).convert(entry.value),
+            'imported_at': importedAt.toIso8601String(),
+          },
+    ];
+  }
 }
 
 class _FrontData {
@@ -593,6 +773,7 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'reminders': _listCount(archive['reminders']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),
+  'raw_payloads': _listCount(archive['raw_payloads']),
 };
 
 List<Object?> _firstList(Map<String, Object?> object, List<String> keys) {
@@ -606,6 +787,17 @@ List<Object?> _firstList(Map<String, Object?> object, List<String> keys) {
     }
   }
   return const [];
+}
+
+List<Object?> _combinedLists(Map<String, Object?> object, List<String> keys) {
+  return [
+    for (final key in keys)
+      ...switch (object[key]) {
+        final List value => value,
+        final Map value => value.values,
+        _ => const <Object?>[],
+      },
+  ];
 }
 
 Map<String, Object?>? _mapValue(Object? value) =>

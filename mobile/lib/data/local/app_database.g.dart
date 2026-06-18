@@ -4157,6 +4157,488 @@ class ImportRecordsCompanion extends UpdateCompanion<ImportRecord> {
   }
 }
 
+class $ImportPayloadsTable extends ImportPayloads
+    with TableInfo<$ImportPayloadsTable, ImportPayload> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImportPayloadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importRecordIdMeta = const VerificationMeta(
+    'importRecordId',
+  );
+  @override
+  late final GeneratedColumn<String> importRecordId = GeneratedColumn<String>(
+    'import_record_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES import_records (id)',
+    ),
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _collectionMeta = const VerificationMeta(
+    'collection',
+  );
+  @override
+  late final GeneratedColumn<String> collection = GeneratedColumn<String>(
+    'collection',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> importedAt = GeneratedColumn<DateTime>(
+    'imported_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    importRecordId,
+    systemId,
+    source,
+    collection,
+    payloadJson,
+    importedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'import_payloads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ImportPayload> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('import_record_id')) {
+      context.handle(
+        _importRecordIdMeta,
+        importRecordId.isAcceptableOrUnknown(
+          data['import_record_id']!,
+          _importRecordIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importRecordIdMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('collection')) {
+      context.handle(
+        _collectionMeta,
+        collection.isAcceptableOrUnknown(data['collection']!, _collectionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_collectionMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_importedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ImportPayload map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImportPayload(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      importRecordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}import_record_id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      collection: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}collection'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}imported_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ImportPayloadsTable createAlias(String alias) {
+    return $ImportPayloadsTable(attachedDatabase, alias);
+  }
+}
+
+class ImportPayload extends DataClass implements Insertable<ImportPayload> {
+  final String id;
+  final String importRecordId;
+  final String systemId;
+  final String source;
+  final String collection;
+  final String payloadJson;
+  final DateTime importedAt;
+  const ImportPayload({
+    required this.id,
+    required this.importRecordId,
+    required this.systemId,
+    required this.source,
+    required this.collection,
+    required this.payloadJson,
+    required this.importedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['import_record_id'] = Variable<String>(importRecordId);
+    map['system_id'] = Variable<String>(systemId);
+    map['source'] = Variable<String>(source);
+    map['collection'] = Variable<String>(collection);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['imported_at'] = Variable<DateTime>(importedAt);
+    return map;
+  }
+
+  ImportPayloadsCompanion toCompanion(bool nullToAbsent) {
+    return ImportPayloadsCompanion(
+      id: Value(id),
+      importRecordId: Value(importRecordId),
+      systemId: Value(systemId),
+      source: Value(source),
+      collection: Value(collection),
+      payloadJson: Value(payloadJson),
+      importedAt: Value(importedAt),
+    );
+  }
+
+  factory ImportPayload.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImportPayload(
+      id: serializer.fromJson<String>(json['id']),
+      importRecordId: serializer.fromJson<String>(json['importRecordId']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      source: serializer.fromJson<String>(json['source']),
+      collection: serializer.fromJson<String>(json['collection']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      importedAt: serializer.fromJson<DateTime>(json['importedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'importRecordId': serializer.toJson<String>(importRecordId),
+      'systemId': serializer.toJson<String>(systemId),
+      'source': serializer.toJson<String>(source),
+      'collection': serializer.toJson<String>(collection),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'importedAt': serializer.toJson<DateTime>(importedAt),
+    };
+  }
+
+  ImportPayload copyWith({
+    String? id,
+    String? importRecordId,
+    String? systemId,
+    String? source,
+    String? collection,
+    String? payloadJson,
+    DateTime? importedAt,
+  }) => ImportPayload(
+    id: id ?? this.id,
+    importRecordId: importRecordId ?? this.importRecordId,
+    systemId: systemId ?? this.systemId,
+    source: source ?? this.source,
+    collection: collection ?? this.collection,
+    payloadJson: payloadJson ?? this.payloadJson,
+    importedAt: importedAt ?? this.importedAt,
+  );
+  ImportPayload copyWithCompanion(ImportPayloadsCompanion data) {
+    return ImportPayload(
+      id: data.id.present ? data.id.value : this.id,
+      importRecordId: data.importRecordId.present
+          ? data.importRecordId.value
+          : this.importRecordId,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      source: data.source.present ? data.source.value : this.source,
+      collection: data.collection.present
+          ? data.collection.value
+          : this.collection,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportPayload(')
+          ..write('id: $id, ')
+          ..write('importRecordId: $importRecordId, ')
+          ..write('systemId: $systemId, ')
+          ..write('source: $source, ')
+          ..write('collection: $collection, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('importedAt: $importedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    importRecordId,
+    systemId,
+    source,
+    collection,
+    payloadJson,
+    importedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImportPayload &&
+          other.id == this.id &&
+          other.importRecordId == this.importRecordId &&
+          other.systemId == this.systemId &&
+          other.source == this.source &&
+          other.collection == this.collection &&
+          other.payloadJson == this.payloadJson &&
+          other.importedAt == this.importedAt);
+}
+
+class ImportPayloadsCompanion extends UpdateCompanion<ImportPayload> {
+  final Value<String> id;
+  final Value<String> importRecordId;
+  final Value<String> systemId;
+  final Value<String> source;
+  final Value<String> collection;
+  final Value<String> payloadJson;
+  final Value<DateTime> importedAt;
+  final Value<int> rowid;
+  const ImportPayloadsCompanion({
+    this.id = const Value.absent(),
+    this.importRecordId = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.collection = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImportPayloadsCompanion.insert({
+    required String id,
+    required String importRecordId,
+    required String systemId,
+    required String source,
+    required String collection,
+    required String payloadJson,
+    required DateTime importedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       importRecordId = Value(importRecordId),
+       systemId = Value(systemId),
+       source = Value(source),
+       collection = Value(collection),
+       payloadJson = Value(payloadJson),
+       importedAt = Value(importedAt);
+  static Insertable<ImportPayload> custom({
+    Expression<String>? id,
+    Expression<String>? importRecordId,
+    Expression<String>? systemId,
+    Expression<String>? source,
+    Expression<String>? collection,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? importedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (importRecordId != null) 'import_record_id': importRecordId,
+      if (systemId != null) 'system_id': systemId,
+      if (source != null) 'source': source,
+      if (collection != null) 'collection': collection,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImportPayloadsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? importRecordId,
+    Value<String>? systemId,
+    Value<String>? source,
+    Value<String>? collection,
+    Value<String>? payloadJson,
+    Value<DateTime>? importedAt,
+    Value<int>? rowid,
+  }) {
+    return ImportPayloadsCompanion(
+      id: id ?? this.id,
+      importRecordId: importRecordId ?? this.importRecordId,
+      systemId: systemId ?? this.systemId,
+      source: source ?? this.source,
+      collection: collection ?? this.collection,
+      payloadJson: payloadJson ?? this.payloadJson,
+      importedAt: importedAt ?? this.importedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (importRecordId.present) {
+      map['import_record_id'] = Variable<String>(importRecordId.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (collection.present) {
+      map['collection'] = Variable<String>(collection.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<DateTime>(importedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportPayloadsCompanion(')
+          ..write('id: $id, ')
+          ..write('importRecordId: $importRecordId, ')
+          ..write('systemId: $systemId, ')
+          ..write('source: $source, ')
+          ..write('collection: $collection, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $NotificationEventsTable extends NotificationEvents
     with TableInfo<$NotificationEventsTable, NotificationEvent> {
   @override
@@ -4886,6 +5368,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FrontSessionMembersTable frontSessionMembers =
       $FrontSessionMembersTable(this);
   late final $ImportRecordsTable importRecords = $ImportRecordsTable(this);
+  late final $ImportPayloadsTable importPayloads = $ImportPayloadsTable(this);
   late final $NotificationEventsTable notificationEvents =
       $NotificationEventsTable(this);
   late final $AppPreferencesTable appPreferences = $AppPreferencesTable(this);
@@ -4903,6 +5386,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     frontSessions,
     frontSessionMembers,
     importRecords,
+    importPayloads,
     notificationEvents,
     appPreferences,
   ];
@@ -5057,6 +5541,24 @@ final class $$PluralSystemsTableReferences
     ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_importRecordsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ImportPayloadsTable, List<ImportPayload>>
+  _importPayloadsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.importPayloads,
+    aliasName: 'plural_systems__id__import_payloads__system_id',
+  );
+
+  $$ImportPayloadsTableProcessedTableManager get importPayloadsRefs {
+    final manager = $$ImportPayloadsTableTableManager(
+      $_db,
+      $_db.importPayloads,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_importPayloadsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5279,6 +5781,31 @@ class $$PluralSystemsTableFilterComposer
           }) => $$ImportRecordsTableFilterComposer(
             $db: $db,
             $table: $db.importRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> importPayloadsRefs(
+    Expression<bool> Function($$ImportPayloadsTableFilterComposer f) f,
+  ) {
+    final $$ImportPayloadsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.importPayloads,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportPayloadsTableFilterComposer(
+            $db: $db,
+            $table: $db.importPayloads,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5540,6 +6067,31 @@ class $$PluralSystemsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> importPayloadsRefs<T extends Object>(
+    Expression<T> Function($$ImportPayloadsTableAnnotationComposer a) f,
+  ) {
+    final $$ImportPayloadsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.importPayloads,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportPayloadsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.importPayloads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> notificationEventsRefs<T extends Object>(
     Expression<T> Function($$NotificationEventsTableAnnotationComposer a) f,
   ) {
@@ -5588,6 +6140,7 @@ class $$PluralSystemsTableTableManager
             bool remindersRefs,
             bool frontSessionsRefs,
             bool importRecordsRefs,
+            bool importPayloadsRefs,
             bool notificationEventsRefs,
           })
         > {
@@ -5647,6 +6200,7 @@ class $$PluralSystemsTableTableManager
                 remindersRefs = false,
                 frontSessionsRefs = false,
                 importRecordsRefs = false,
+                importPayloadsRefs = false,
                 notificationEventsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -5659,6 +6213,7 @@ class $$PluralSystemsTableTableManager
                     if (remindersRefs) db.reminders,
                     if (frontSessionsRefs) db.frontSessions,
                     if (importRecordsRefs) db.importRecords,
+                    if (importPayloadsRefs) db.importPayloads,
                     if (notificationEventsRefs) db.notificationEvents,
                   ],
                   addJoins: null,
@@ -5811,6 +6366,27 @@ class $$PluralSystemsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (importPayloadsRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          ImportPayload
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._importPayloadsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).importPayloadsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (notificationEventsRefs)
                         await $_getPrefetchedData<
                           PluralSystem,
@@ -5860,6 +6436,7 @@ typedef $$PluralSystemsTableProcessedTableManager =
         bool remindersRefs,
         bool frontSessionsRefs,
         bool importRecordsRefs,
+        bool importPayloadsRefs,
         bool notificationEventsRefs,
       })
     >;
@@ -8776,6 +9353,24 @@ final class $$ImportRecordsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$ImportPayloadsTable, List<ImportPayload>>
+  _importPayloadsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.importPayloads,
+    aliasName: 'import_records__id__import_payloads__import_record_id',
+  );
+
+  $$ImportPayloadsTableProcessedTableManager get importPayloadsRefs {
+    final manager = $$ImportPayloadsTableTableManager(
+      $_db,
+      $_db.importPayloads,
+    ).filter((f) => f.importRecordId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_importPayloadsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ImportRecordsTableFilterComposer
@@ -8833,6 +9428,31 @@ class $$ImportRecordsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> importPayloadsRefs(
+    Expression<bool> Function($$ImportPayloadsTableFilterComposer f) f,
+  ) {
+    final $$ImportPayloadsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.importPayloads,
+      getReferencedColumn: (t) => t.importRecordId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportPayloadsTableFilterComposer(
+            $db: $db,
+            $table: $db.importPayloads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -8944,6 +9564,31 @@ class $$ImportRecordsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> importPayloadsRefs<T extends Object>(
+    Expression<T> Function($$ImportPayloadsTableAnnotationComposer a) f,
+  ) {
+    final $$ImportPayloadsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.importPayloads,
+      getReferencedColumn: (t) => t.importRecordId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportPayloadsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.importPayloads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ImportRecordsTableTableManager
@@ -8959,7 +9604,7 @@ class $$ImportRecordsTableTableManager
           $$ImportRecordsTableUpdateCompanionBuilder,
           (ImportRecord, $$ImportRecordsTableReferences),
           ImportRecord,
-          PrefetchHooks Function({bool systemId})
+          PrefetchHooks Function({bool systemId, bool importPayloadsRefs})
         > {
   $$ImportRecordsTableTableManager(_$AppDatabase db, $ImportRecordsTable table)
     : super(
@@ -9016,7 +9661,476 @@ class $$ImportRecordsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({systemId = false}) {
+          prefetchHooksCallback:
+              ({systemId = false, importPayloadsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (importPayloadsRefs) db.importPayloads,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.systemId,
+                                    referencedTable:
+                                        $$ImportRecordsTableReferences
+                                            ._systemIdTable(db),
+                                    referencedColumn:
+                                        $$ImportRecordsTableReferences
+                                            ._systemIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (importPayloadsRefs)
+                        await $_getPrefetchedData<
+                          ImportRecord,
+                          $ImportRecordsTable,
+                          ImportPayload
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ImportRecordsTableReferences
+                              ._importPayloadsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ImportRecordsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).importPayloadsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.importRecordId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ImportRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ImportRecordsTable,
+      ImportRecord,
+      $$ImportRecordsTableFilterComposer,
+      $$ImportRecordsTableOrderingComposer,
+      $$ImportRecordsTableAnnotationComposer,
+      $$ImportRecordsTableCreateCompanionBuilder,
+      $$ImportRecordsTableUpdateCompanionBuilder,
+      (ImportRecord, $$ImportRecordsTableReferences),
+      ImportRecord,
+      PrefetchHooks Function({bool systemId, bool importPayloadsRefs})
+    >;
+typedef $$ImportPayloadsTableCreateCompanionBuilder =
+    ImportPayloadsCompanion Function({
+      required String id,
+      required String importRecordId,
+      required String systemId,
+      required String source,
+      required String collection,
+      required String payloadJson,
+      required DateTime importedAt,
+      Value<int> rowid,
+    });
+typedef $$ImportPayloadsTableUpdateCompanionBuilder =
+    ImportPayloadsCompanion Function({
+      Value<String> id,
+      Value<String> importRecordId,
+      Value<String> systemId,
+      Value<String> source,
+      Value<String> collection,
+      Value<String> payloadJson,
+      Value<DateTime> importedAt,
+      Value<int> rowid,
+    });
+
+final class $$ImportPayloadsTableReferences
+    extends BaseReferences<_$AppDatabase, $ImportPayloadsTable, ImportPayload> {
+  $$ImportPayloadsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ImportRecordsTable _importRecordIdTable(_$AppDatabase db) => db
+      .importRecords
+      .createAlias('import_payloads__import_record_id__import_records__id');
+
+  $$ImportRecordsTableProcessedTableManager get importRecordId {
+    final $_column = $_itemColumn<String>('import_record_id')!;
+
+    final manager = $$ImportRecordsTableTableManager(
+      $_db,
+      $_db.importRecords,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_importRecordIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) => db
+      .pluralSystems
+      .createAlias('import_payloads__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ImportPayloadsTableFilterComposer
+    extends Composer<_$AppDatabase, $ImportPayloadsTable> {
+  $$ImportPayloadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get collection => $composableBuilder(
+    column: $table.collection,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ImportRecordsTableFilterComposer get importRecordId {
+    final $$ImportRecordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.importRecordId,
+      referencedTable: $db.importRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportRecordsTableFilterComposer(
+            $db: $db,
+            $table: $db.importRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportPayloadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ImportPayloadsTable> {
+  $$ImportPayloadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get collection => $composableBuilder(
+    column: $table.collection,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ImportRecordsTableOrderingComposer get importRecordId {
+    final $$ImportRecordsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.importRecordId,
+      referencedTable: $db.importRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportRecordsTableOrderingComposer(
+            $db: $db,
+            $table: $db.importRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportPayloadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ImportPayloadsTable> {
+  $$ImportPayloadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get collection => $composableBuilder(
+    column: $table.collection,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  $$ImportRecordsTableAnnotationComposer get importRecordId {
+    final $$ImportRecordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.importRecordId,
+      referencedTable: $db.importRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImportRecordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.importRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportPayloadsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ImportPayloadsTable,
+          ImportPayload,
+          $$ImportPayloadsTableFilterComposer,
+          $$ImportPayloadsTableOrderingComposer,
+          $$ImportPayloadsTableAnnotationComposer,
+          $$ImportPayloadsTableCreateCompanionBuilder,
+          $$ImportPayloadsTableUpdateCompanionBuilder,
+          (ImportPayload, $$ImportPayloadsTableReferences),
+          ImportPayload,
+          PrefetchHooks Function({bool importRecordId, bool systemId})
+        > {
+  $$ImportPayloadsTableTableManager(
+    _$AppDatabase db,
+    $ImportPayloadsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ImportPayloadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ImportPayloadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ImportPayloadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> importRecordId = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> collection = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime> importedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ImportPayloadsCompanion(
+                id: id,
+                importRecordId: importRecordId,
+                systemId: systemId,
+                source: source,
+                collection: collection,
+                payloadJson: payloadJson,
+                importedAt: importedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String importRecordId,
+                required String systemId,
+                required String source,
+                required String collection,
+                required String payloadJson,
+                required DateTime importedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ImportPayloadsCompanion.insert(
+                id: id,
+                importRecordId: importRecordId,
+                systemId: systemId,
+                source: source,
+                collection: collection,
+                payloadJson: payloadJson,
+                importedAt: importedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ImportPayloadsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({importRecordId = false, systemId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -9036,16 +10150,31 @@ class $$ImportRecordsTableTableManager
                       dynamic
                     >
                   >(state) {
+                    if (importRecordId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.importRecordId,
+                                referencedTable: $$ImportPayloadsTableReferences
+                                    ._importRecordIdTable(db),
+                                referencedColumn:
+                                    $$ImportPayloadsTableReferences
+                                        ._importRecordIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
                     if (systemId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
                                 currentColumn: table.systemId,
-                                referencedTable: $$ImportRecordsTableReferences
+                                referencedTable: $$ImportPayloadsTableReferences
                                     ._systemIdTable(db),
-                                referencedColumn: $$ImportRecordsTableReferences
-                                    ._systemIdTable(db)
-                                    .id,
+                                referencedColumn:
+                                    $$ImportPayloadsTableReferences
+                                        ._systemIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -9061,19 +10190,19 @@ class $$ImportRecordsTableTableManager
       );
 }
 
-typedef $$ImportRecordsTableProcessedTableManager =
+typedef $$ImportPayloadsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ImportRecordsTable,
-      ImportRecord,
-      $$ImportRecordsTableFilterComposer,
-      $$ImportRecordsTableOrderingComposer,
-      $$ImportRecordsTableAnnotationComposer,
-      $$ImportRecordsTableCreateCompanionBuilder,
-      $$ImportRecordsTableUpdateCompanionBuilder,
-      (ImportRecord, $$ImportRecordsTableReferences),
-      ImportRecord,
-      PrefetchHooks Function({bool systemId})
+      $ImportPayloadsTable,
+      ImportPayload,
+      $$ImportPayloadsTableFilterComposer,
+      $$ImportPayloadsTableOrderingComposer,
+      $$ImportPayloadsTableAnnotationComposer,
+      $$ImportPayloadsTableCreateCompanionBuilder,
+      $$ImportPayloadsTableUpdateCompanionBuilder,
+      (ImportPayload, $$ImportPayloadsTableReferences),
+      ImportPayload,
+      PrefetchHooks Function({bool importRecordId, bool systemId})
     >;
 typedef $$NotificationEventsTableCreateCompanionBuilder =
     NotificationEventsCompanion Function({
@@ -9633,6 +10762,8 @@ class $AppDatabaseManager {
       $$FrontSessionMembersTableTableManager(_db, _db.frontSessionMembers);
   $$ImportRecordsTableTableManager get importRecords =>
       $$ImportRecordsTableTableManager(_db, _db.importRecords);
+  $$ImportPayloadsTableTableManager get importPayloads =>
+      $$ImportPayloadsTableTableManager(_db, _db.importPayloads);
   $$NotificationEventsTableTableManager get notificationEvents =>
       $$NotificationEventsTableTableManager(_db, _db.notificationEvents);
   $$AppPreferencesTableTableManager get appPreferences =>
