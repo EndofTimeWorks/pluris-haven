@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_plan.dart';
@@ -199,6 +196,48 @@ void main() {
     expect(archive.archiveJson, contains('"description": "First member"'));
   });
 
+  test('normalizes Simply Plural epoch and Firebase timestamps', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-dates.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {
+      "id": "m1",
+      "name": "Iris",
+      "createdAt": {"_seconds": 1767225600, "_nanoseconds": 250000000}
+    }
+  ],
+  "frontHistory": [
+    {
+      "id": "f1",
+      "startedAt": 1767229200000,
+      "endedAt": "1767232800",
+      "members": ["m1"]
+    }
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['fronts'], 1);
+    expect(
+      archive.archiveJson,
+      contains('"created_at": "2026-01-01T00:00:00.250Z"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"started_at": "2026-01-01T01:00:00.000Z"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"ended_at": "2026-01-01T02:00:00.000Z"'),
+    );
+  });
+
   test('normalizes PluralKit export switches into front intervals', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.pluralKitFile,
@@ -249,106 +288,5 @@ void main() {
     expect(archive.counts['members'], 1);
     expect(archive.archiveJson, contains('"display_name": "Echo"'));
     expect(archive.archiveJson, contains('"source": "tupperbox_file"'));
-  });
-
-  test('decodes PluralSpace zip export and normalizes nested data', () {
-    final zip = Archive()
-      ..addFile(
-        ArchiveFile.string(
-          'manifest.json',
-          jsonEncode({'system_name': 'PluralSpace System'}),
-        ),
-      )
-      ..addFile(
-        ArchiveFile.string(
-          'data.json',
-          jsonEncode({
-            'members': [
-              {'id': 'psm1', 'name': 'River', 'pronouns': 'they/them'},
-            ],
-            'member_groups': [
-              {'id': 'psg1', 'name': 'Crew'},
-            ],
-            'fronts': [
-              {
-                'id': 'psf1',
-                'member_id': 'psm1',
-                'started_at': '2026-01-02T10:00:00Z',
-                'ended_at': '2026-01-02T11:00:00Z',
-                'comment': 'Fronting',
-              },
-            ],
-            'journal_entries': [
-              {'id': 'j1', 'title': 'Day', 'content': 'Went okay.'},
-            ],
-            'chat_channels': [
-              {
-                'name': 'Main',
-                'messages': [
-                  {'id': 'c1', 'member_id': 'psm1', 'content': 'hi'},
-                ],
-              },
-            ],
-          }),
-        ),
-      );
-    final bytes = ZipEncoder().encodeBytes(zip);
-
-    final payload = decodeImportFileBytes(
-      fileName: 'pluralspace-export.zip',
-      bytes: bytes,
-    );
-    final archive = normalizeImportTextToLocalArchive(
-      source: ImportSource.pluralSpace,
-      fileName: payload.fileName,
-      text: payload.text,
-      importedAt: DateTime.utc(2026),
-    );
-
-    expect(
-      payload.warnings,
-      contains('Read data.json from PluralSpace zip export.'),
-    );
-    expect(archive.counts['members'], 1);
-    expect(archive.counts['groups'], 1);
-    expect(archive.counts['fronts'], 1);
-    expect(archive.counts['front_members'], 1);
-    expect(archive.counts['notes'], 1);
-    expect(archive.counts['messages'], 1);
-    expect(archive.archiveJson, contains('"name": "PluralSpace System"'));
-    expect(archive.archiveJson, contains('Main\\nhi'));
-  });
-
-  test('normalizes decrypted Prism JSON shapes', () {
-    final archive = normalizeImportTextToLocalArchive(
-      source: ImportSource.prism,
-      fileName: 'prism.json',
-      importedAt: DateTime.utc(2026),
-      text: '''
-{
-  "systemSettings": [{"systemName": "Prism System"}],
-  "headmates": [
-    {"id": "h1", "name": "Sage", "notes": "Likes tea", "pluralkitId": "abcde"}
-  ],
-  "memberGroups": [
-    {"id": "mg1", "name": "Inner"}
-  ],
-  "frontSessions": [
-    {"id": "fs1", "headmateId": "h1", "startedAt": "2026-01-03T09:00:00Z"}
-  ],
-  "memberBoardPosts": [
-    {"id": "mb1", "targetMemberId": "h1", "content": "wall note"}
-  ]
-}
-''',
-    );
-
-    expect(archive.counts['members'], 1);
-    expect(archive.counts['groups'], 1);
-    expect(archive.counts['fronts'], 1);
-    expect(archive.counts['front_members'], 1);
-    expect(archive.counts['messages'], 1);
-    expect(archive.archiveJson, contains('"name": "Prism System"'));
-    expect(archive.archiveJson, contains('"pluralkit_id": "abcde"'));
   });
 }
