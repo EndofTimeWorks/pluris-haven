@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
+import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_plan.dart';
 import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
@@ -115,6 +120,32 @@ void main() {
     expect(preview.counts['groups'], 1);
     expect(preview.counts['fronts'], 1);
     expect(preview.counts['preferences'], 1);
+  });
+
+  test('extracts the import JSON from a zipped backup', () {
+    final archive = Archive()
+      ..addFile(ArchiveFile.string('avatars/avatar-1.png', 'not json'))
+      ..addFile(
+        ArchiveFile.string(
+          'Simply Plural Export/export.json',
+          jsonEncode({
+            'members': [
+              {'id': 'm1', 'name': 'Iris'},
+            ],
+            'frontHistory': [],
+          }),
+        ),
+      );
+
+    final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    final decoded = decodeImportFileBytes(
+      fileName: 'Simply Plural Backup.zip',
+      bytes: bytes,
+    );
+
+    expect(decoded, isNotNull);
+    expect(decoded!.displayName, contains('export.json'));
+    expect(decoded.text, contains('"Iris"'));
   });
 
   test('previews invalid archive as not applyable', () {
