@@ -3439,9 +3439,9 @@ class SpActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        FilledButton(onPressed: onPrimary ?? () {}, child: Text(primary)),
+        FilledButton(onPressed: onPrimary, child: Text(primary)),
         const SizedBox(width: 10),
-        OutlinedButton(onPressed: onSecondary ?? () {}, child: Text(secondary)),
+        OutlinedButton(onPressed: onSecondary, child: Text(secondary)),
       ],
     );
   }
