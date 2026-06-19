@@ -1,4 +1,4 @@
-package support.plurishaven
+package works.endoftime.plurishaven
 
 import io.flutter.embedding.android.FlutterActivity
 
