@@ -31,6 +31,30 @@ class HomeSnapshot {
       currentFrontLabel?.trim().isNotEmpty == true ? 'fronting' : 'none';
 }
 
+class BackgroundJobSummary {
+  const BackgroundJobSummary({
+    required this.id,
+    required this.type,
+    required this.status,
+    this.source,
+    this.fileName,
+    this.error,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String type;
+  final String status;
+  final String? source;
+  final String? fileName;
+  final String? error;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool get isActive => status == 'queued' || status == 'running';
+}
+
 class MemberSummary {
   const MemberSummary({
     required this.id,
@@ -383,6 +407,17 @@ abstract interface class HavenRepository {
 
   Future<String> buildLocalArchiveJson();
 
+  Stream<List<BackgroundJobSummary>> watchBackgroundJobs();
+
+  Future<String> enqueueImportArchiveJob(
+    String archiveJson, {
+    required ImportConflictStrategy strategy,
+    String? fileName,
+    required ImportSource source,
+  });
+
+  Future<bool> runBackgroundJob(String jobId);
+
   Future<void> importLocalArchiveJson(
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
@@ -428,6 +463,21 @@ class LocalHavenRepository implements HavenRepository {
         )
         .watchSingle()
         .map(_mapHomeSnapshot);
+  }
+
+  @override
+  Stream<List<BackgroundJobSummary>> watchBackgroundJobs() {
+    final query = database.select(database.backgroundJobs)
+      ..where((job) => job.systemId.equals(localSystemId))
+      ..orderBy([
+        (job) =>
+            OrderingTerm(expression: job.createdAt, mode: OrderingMode.desc),
+      ])
+      ..limit(8);
+
+    return query.watch().map(
+      (rows) => [for (final row in rows) _backgroundJobSummary(row)],
+    );
   }
 
   @override
@@ -1140,6 +1190,109 @@ SELECT
   }
 
   @override
+  Future<String> enqueueImportArchiveJob(
+    String archiveJson, {
+    required ImportConflictStrategy strategy,
+    String? fileName,
+    required ImportSource source,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final jobId = 'job-${now.microsecondsSinceEpoch}';
+    await database
+        .into(database.backgroundJobs)
+        .insert(
+          BackgroundJobsCompanion.insert(
+            id: jobId,
+            systemId: localSystemId,
+            type: 'import_archive',
+            status: 'queued',
+            source: Value(source.name),
+            fileName: Value(_nullIfBlank(fileName)),
+            payloadJson: jsonEncode({
+              'archive_json': archiveJson,
+              'strategy': strategy.name,
+            }),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    return jobId;
+  }
+
+  @override
+  Future<bool> runBackgroundJob(String jobId) async {
+    final job = await (database.select(
+      database.backgroundJobs,
+    )..where((job) => job.id.equals(jobId))).getSingleOrNull();
+    if (job == null || job.status == 'done') {
+      return true;
+    }
+
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.backgroundJobs,
+    )..where((job) => job.id.equals(jobId))).write(
+      BackgroundJobsCompanion(
+        status: const Value('running'),
+        error: const Value(null),
+        startedAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+
+    try {
+      if (job.type == 'import_archive') {
+        final payload = jsonDecode(job.payloadJson);
+        if (payload is! Map<String, Object?>) {
+          throw const FormatException('Import job payload is invalid.');
+        }
+        final source = ImportSource.values.firstWhere(
+          (source) => source.name == job.source,
+          orElse: () => ImportSource.plurisHavenArchive,
+        );
+        final strategyName = _stringValue(payload['strategy']);
+        final strategy = ImportConflictStrategy.values.firstWhere(
+          (strategy) => strategy.name == strategyName,
+          orElse: () => ImportConflictStrategy.skip,
+        );
+        await importLocalArchiveJson(
+          _requiredString(payload, 'archive_json'),
+          strategy: strategy,
+          fileName: job.fileName,
+          source: source,
+        );
+      } else {
+        throw FormatException('Unsupported background job type: ${job.type}.');
+      }
+
+      final finished = DateTime.now().toUtc();
+      await (database.update(
+        database.backgroundJobs,
+      )..where((job) => job.id.equals(jobId))).write(
+        BackgroundJobsCompanion(
+          status: const Value('done'),
+          updatedAt: Value(finished),
+          finishedAt: Value(finished),
+        ),
+      );
+      return true;
+    } on Object catch (error) {
+      final failed = DateTime.now().toUtc();
+      await (database.update(
+        database.backgroundJobs,
+      )..where((job) => job.id.equals(jobId))).write(
+        BackgroundJobsCompanion(
+          status: const Value('failed'),
+          error: Value(error.toString()),
+          updatedAt: Value(failed),
+          finishedAt: Value(failed),
+        ),
+      );
+      return false;
+    }
+  }
+
+  @override
   Future<void> importLocalArchiveJson(
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
@@ -1622,6 +1775,19 @@ SELECT
     'value': preference.value,
     'updated_at': preference.updatedAt.toIso8601String(),
   };
+}
+
+BackgroundJobSummary _backgroundJobSummary(BackgroundJob row) {
+  return BackgroundJobSummary(
+    id: row.id,
+    type: row.type,
+    status: row.status,
+    source: row.source,
+    fileName: row.fileName,
+    error: row.error,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  );
 }
 
 const _themeModeKey = 'theme_mode';

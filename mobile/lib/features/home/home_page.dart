@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../background/background_tasks.dart';
 import '../../data/import/import_archive_mapper.dart';
 import '../../data/import/import_file_decoder.dart';
 import '../../data/import/import_plan.dart';
@@ -1691,6 +1692,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
             isImporting: _isApplyingImport,
           ),
         ],
+        const SizedBox(height: 12),
+        ImportJobsCard(repository: widget.repository),
         const SizedBox(height: 2),
         SpSettingsGroup(
           title: 'Export',
@@ -1806,7 +1809,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         });
       }
 
-      await widget.repository.importLocalArchiveJson(
+      final jobId = await widget.repository.enqueueImportArchiveJob(
         normalized.archiveJson,
         strategy: _strategy,
         fileName: _fileName,
@@ -1815,10 +1818,28 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       if (mounted) {
         setState(() {
-          _isApplyingImport = false;
-          _importStatus =
-              'Import complete: ${_countSummary(normalized.counts)}.';
+          _importStatus = 'Queued import: ${_countSummary(normalized.counts)}.';
         });
+      }
+
+      try {
+        await scheduleImportArchiveJob(jobId);
+        if (mounted) {
+          setState(() {
+            _isApplyingImport = false;
+            _importStatus = 'Import queued. It can finish in the background.';
+          });
+        }
+      } on Object {
+        final completed = await widget.repository.runBackgroundJob(jobId);
+        if (mounted) {
+          setState(() {
+            _isApplyingImport = false;
+            _importStatus = completed
+                ? 'Import complete: ${_countSummary(normalized.counts)}.'
+                : 'Import failed. Check recent jobs below.';
+          });
+        }
       }
     } on Object catch (error) {
       if (mounted) {
@@ -2237,6 +2258,95 @@ class ImportProgressCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class ImportJobsCard extends StatelessWidget {
+  const ImportJobsCard({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<BackgroundJobSummary>>(
+      stream: repository.watchBackgroundJobs(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final jobs = snapshot.data ?? const <BackgroundJobSummary>[];
+        return SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(
+                title: 'Recent jobs',
+                trailing: StatusPill(
+                  text: jobs.isEmpty ? 'none' : '${jobs.length}',
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (jobs.isEmpty)
+                const Text(
+                  'No imports queued yet.',
+                  style: TextStyle(color: _spMuted),
+                )
+              else
+                for (final job in jobs) ...[
+                  ImportJobRow(job: job),
+                  if (job != jobs.last)
+                    const Divider(height: 1, color: _spLine),
+                ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ImportJobRow extends StatelessWidget {
+  const ImportJobRow({super.key, required this.job});
+
+  final BackgroundJobSummary job;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      leading: Icon(_icon, color: _color, size: 20),
+      title: Text(
+        job.fileName ?? job.type,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      subtitle: Text(
+        job.error ?? '${job.status} - ${_shortDateTime(job.updatedAt)}',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: _spMuted),
+      ),
+      trailing: StatusPill(text: job.status),
+    );
+  }
+
+  IconData get _icon {
+    return switch (job.status) {
+      'done' => Icons.check_circle_rounded,
+      'failed' => Icons.error_rounded,
+      'running' => Icons.sync_rounded,
+      _ => Icons.schedule_rounded,
+    };
+  }
+
+  Color get _color {
+    return switch (job.status) {
+      'done' => _spGold,
+      'failed' => const Color(0xFFFFB4AB),
+      'running' => _spPurple,
+      _ => _spMuted,
+    };
   }
 }
 

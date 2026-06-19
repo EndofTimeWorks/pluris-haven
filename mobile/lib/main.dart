@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
@@ -8,6 +9,7 @@ import 'features/home/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeBackgroundTasks();
 
   final database = AppDatabase();
   final repository = LocalHavenRepository(database);
