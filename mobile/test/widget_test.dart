@@ -403,6 +403,68 @@ void main() {
     expect(find.text('No reminders yet'), findsOneWidget);
   });
 
+  testWidgets('creates and votes on a local poll', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Polls');
+    await tester.pumpAndSettle();
+
+    expect(find.text('No polls yet'), findsOneWidget);
+
+    await tester.tap(find.text('Create poll'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-question-field')),
+      'Dinner?',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-0')),
+      'Soup',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-1')),
+      'Rice',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-poll-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dinner?'), findsOneWidget);
+    expect(find.text('Soup'), findsOneWidget);
+    expect(find.text('Rice'), findsOneWidget);
+
+    await tester.tap(find.text('Soup'));
+    await tester.pumpAndSettle();
+
+    expect(repository._polls.single.selectedCount, 1);
+    expect(repository._polls.single.options.first.selected, isTrue);
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(repository._polls.single.closed, isTrue);
+
+    await tester.tap(find.byTooltip('Delete poll'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dinner?'), findsNothing);
+    expect(find.text('No polls yet'), findsOneWidget);
+  });
+
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
@@ -664,6 +726,10 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _remindersController.add(_reminders),
     );
+    _pollsController = StreamController<List<PollSummary>>.broadcast(
+      sync: true,
+      onListen: () => _pollsController.add(_polls),
+    );
     _notificationEventsController =
         StreamController<List<NotificationEventSummary>>.broadcast(
           sync: true,
@@ -689,6 +755,7 @@ class FakeHavenRepository implements HavenRepository {
   List<NoteSummary> _notes = const [];
   List<MessageSummary> _messages = const [];
   List<ReminderSummary> _reminders = const [];
+  List<PollSummary> _polls = const [];
   List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
   List<BackgroundJobSummary> _backgroundJobs = const [];
@@ -699,6 +766,7 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<NoteSummary>> _notesController;
   late final StreamController<List<MessageSummary>> _messagesController;
   late final StreamController<List<ReminderSummary>> _remindersController;
+  late final StreamController<List<PollSummary>> _pollsController;
   late final StreamController<List<NotificationEventSummary>>
   _notificationEventsController;
   late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
@@ -738,6 +806,11 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<ReminderSummary>> watchReminders() {
     return _remindersController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<PollSummary>> watchPolls() {
+    return _pollsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -1061,6 +1134,102 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> savePoll(PollDraft draft) async {
+    final question = draft.question.trim();
+    final options = draft.options
+        .map((option) => option.trim())
+        .where((option) => option.isNotEmpty)
+        .toList();
+    if (question.isEmpty || options.length < 2) {
+      return;
+    }
+
+    final pollId = 'fake-poll-${_polls.length + 1}';
+    _polls = [
+      PollSummary(
+        id: pollId,
+        question: question,
+        description: _nullIfBlank(draft.description),
+        kind: draft.kind,
+        closed: false,
+        updatedAt: DateTime(2026),
+        options: [
+          for (var index = 0; index < options.length; index++)
+            PollOptionSummary(
+              id: '$pollId-option-$index',
+              body: options[index],
+              position: index,
+              selected: false,
+            ),
+        ],
+      ),
+      ..._polls,
+    ];
+    _pollsController.add(_polls);
+  }
+
+  @override
+  Future<void> togglePollOption(String pollId, String optionId) async {
+    _polls = [
+      for (final poll in _polls)
+        if (poll.id == pollId && !poll.closed)
+          PollSummary(
+            id: poll.id,
+            question: poll.question,
+            description: poll.description,
+            kind: poll.kind,
+            closed: poll.closed,
+            updatedAt: DateTime(2026),
+            options: [
+              for (final option in poll.options)
+                PollOptionSummary(
+                  id: option.id,
+                  body: option.body,
+                  position: option.position,
+                  selected: poll.kind == PollKind.singleChoice
+                      ? option.id == optionId && !option.selected
+                      : option.id == optionId
+                      ? !option.selected
+                      : option.selected,
+                ),
+            ],
+          )
+        else
+          poll,
+    ];
+    _pollsController.add(_polls);
+  }
+
+  @override
+  Future<void> closePoll(String pollId) async {
+    _polls = [
+      for (final poll in _polls)
+        if (poll.id == pollId)
+          PollSummary(
+            id: poll.id,
+            question: poll.question,
+            description: poll.description,
+            kind: poll.kind,
+            closed: true,
+            options: poll.options,
+            updatedAt: DateTime(2026),
+          )
+        else
+          poll,
+    ];
+    _pollsController.add(_polls);
+  }
+
+  @override
+  Future<void> deletePoll(String pollId) async {
+    _polls = [
+      for (final poll in _polls)
+        if (poll.id != pollId) poll,
+    ];
+    _pollsController.add(_polls);
+  }
+
+  @override
   Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
     _notificationEvents = [
       NotificationEventSummary(
@@ -1114,6 +1283,25 @@ class FakeHavenRepository implements HavenRepository {
         for (final reminder in _reminders)
           {'id': reminder.id, 'title': reminder.title},
       ],
+      'polls': [
+        for (final poll in _polls)
+          {
+            'id': poll.id,
+            'question': poll.question,
+            'kind': poll.kind.storageValue,
+          },
+      ],
+      'poll_options': [
+        for (final poll in _polls)
+          for (final option in poll.options)
+            {
+              'id': option.id,
+              'poll_id': poll.id,
+              'body': option.body,
+              'position': option.position,
+            },
+      ],
+      'poll_votes': [],
       'fronts': [
         for (final front in _frontHistory)
           {'id': front.id, 'label': front.label},
@@ -1251,6 +1439,7 @@ class FakeHavenRepository implements HavenRepository {
     await _notesController.close();
     await _messagesController.close();
     await _remindersController.close();
+    await _pollsController.close();
     await _notificationEventsController.close();
     await _frontHistoryController.close();
     await _backgroundJobsController.close();

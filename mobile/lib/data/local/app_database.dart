@@ -89,6 +89,39 @@ class Reminders extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class Polls extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get question => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get kind => text().withDefault(const Constant('single_choice'))();
+  BoolColumn get closed => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class PollOptions extends Table {
+  TextColumn get id => text()();
+  TextColumn get pollId => text().references(Polls, #id)();
+  TextColumn get body => text()();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class PollVotes extends Table {
+  TextColumn get pollId => text().references(Polls, #id)();
+  TextColumn get optionId => text().references(PollOptions, #id)();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {pollId, optionId};
+}
+
 class FrontSessions extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -183,6 +216,9 @@ class AppPreferences extends Table {
     Notes,
     Messages,
     Reminders,
+    Polls,
+    PollOptions,
+    PollVotes,
     FrontSessions,
     FrontSessionMembers,
     ImportRecords,
@@ -196,7 +232,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -214,6 +250,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await migrator.createTable(backgroundJobs);
+      }
+      if (from < 6) {
+        await migrator.createTable(polls);
+        await migrator.createTable(pollOptions);
+        await migrator.createTable(pollVotes);
       }
     },
     beforeOpen: (details) async {
