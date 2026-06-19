@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: mobile-dev-release-${{ github.run_number }}
+  group: mobile-dev-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -80,23 +80,45 @@ jobs:
       - name: Test
         run: flutter --no-color test
 
-      - name: Build dev APK
-        run: >
-          flutter --no-color build apk --debug
-          --build-name "0.0.1-pre-alpha.dev.${GITHUB_RUN_NUMBER}"
-          --build-number "${GITHUB_RUN_NUMBER}"
-
       - name: Resolve dev version
         id: version
         shell: bash
         run: |
-          version="0.0.1-pre-alpha.dev.${GITHUB_RUN_NUMBER}"
-          build="${GITHUB_RUN_NUMBER}"
-          tag="mobile-v${version}+${build}"
+          version_line="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
+          version="${version_line%%+*}"
+          build="${version_line##*+}"
+          tag="mobile-v${version_line}"
+
+          if [[ -z "${version_line}" || "${version_line}" == "${version}" ]]; then
+            echo "mobile/pubspec.yaml must contain a SemVer version with +build metadata." >&2
+            exit 1
+          fi
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "Invalid SemVer version: ${version}" >&2
+            exit 1
+          fi
+          if [[ ! "${build}" =~ ^[0-9]+$ ]]; then
+            echo "Invalid Android build number: ${build}" >&2
+            exit 1
+          fi
+          if [[ "${version}" != *"-pre-alpha.dev."* ]]; then
+            echo "Dev builds must use a pre-alpha dev version, for example 0.0.1-pre-alpha.dev.16+16." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Release tag ${tag} already exists. Bump mobile/pubspec.yaml before publishing another dev release." >&2
+            exit 1
+          fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "build=${build}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build dev APK
+        run: >
+          flutter --no-color build apk --debug
+          --build-name "${{ steps.version.outputs.version }}"
+          --build-number "${{ steps.version.outputs.build }}"
 
       - name: Collect dev build
         shell: bash
@@ -135,25 +157,15 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           tag="${{ steps.version.outputs.tag }}"
 
-          if ! git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
-            git tag "${tag}" "${GITHUB_SHA}"
-            git push origin "refs/tags/${tag}"
-          fi
+          git tag "${tag}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${tag}"
 
-          if gh release view "${tag}" >/dev/null 2>&1; then
-            gh release upload "${tag}" \
-              release/mobile-dev/pluris-haven-dev.apk \
-              release/mobile-dev/BUILD.txt \
-              release/mobile-dev/SHA256SUMS.txt \
-              --clobber
-          else
-            gh release create "${tag}" \
-              release/mobile-dev/pluris-haven-dev.apk \
-              release/mobile-dev/BUILD.txt \
-              release/mobile-dev/SHA256SUMS.txt \
-              --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile pre-alpha debug ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
-              --notes-file release/mobile-dev/NOTES.md \
-              --prerelease \
-              --latest=false
-          fi
+          gh release create "${tag}" \
+            release/mobile-dev/pluris-haven-dev.apk \
+            release/mobile-dev/BUILD.txt \
+            release/mobile-dev/SHA256SUMS.txt \
+            --target "${GITHUB_SHA}" \
+            --title "Pluris Haven Mobile pre-alpha debug ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+            --notes-file release/mobile-dev/NOTES.md \
+            --prerelease \
+            --latest=false
