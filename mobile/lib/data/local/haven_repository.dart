@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../import/import_sources.dart';
 import 'app_database.dart';
@@ -1320,9 +1322,14 @@ SELECT
     final reminders = _jsonObjectList(decoded['reminders']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
+    final avatarAssets = _jsonObjectList(decoded['avatar_assets']);
     final rawPayloads = _jsonObjectList(decoded['raw_payloads']);
     final notificationEvents = _jsonObjectList(decoded['notification_events']);
     final preferences = _jsonObjectList(decoded['preferences']);
+    final localAvatarRefs = await _localizeImportAvatars(
+      members: members,
+      avatarAssets: avatarAssets,
+    );
 
     await database.transaction(() async {
       final system = decoded['system'];
@@ -1346,7 +1353,12 @@ SELECT
         await _importGroup(group, strategy, now);
       }
       for (final member in members) {
-        await _importMember(member, strategy, now);
+        await _importMember(
+          member,
+          strategy,
+          now,
+          localAvatarRefs[_requiredString(member, 'id')],
+        );
       }
       for (final note in notes) {
         await _importNote(note, strategy, now);
@@ -1388,6 +1400,7 @@ SELECT
                   'reminders': reminders.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
+                  'avatar_assets': avatarAssets.length,
                   'raw_payloads': rawPayloads.length,
                   'notification_events': notificationEvents.length,
                   'preferences': preferences.length,
@@ -1401,6 +1414,152 @@ SELECT
         await _importPayload(payload, importRecordId, source, strategy, now);
       }
     });
+  }
+
+  Future<Map<String, String?>> _localizeImportAvatars({
+    required List<Map<String, Object?>> members,
+    required List<Map<String, Object?>> avatarAssets,
+  }) async {
+    final assetsById = <String, _ImportAvatarBytes>{};
+    for (final asset in avatarAssets) {
+      final id = _stringValue(asset['id']);
+      final encodedBytes = _stringValue(asset['bytes_base64']);
+      if (id == null || encodedBytes == null) {
+        continue;
+      }
+      try {
+        assetsById[id] = _ImportAvatarBytes(
+          id: id,
+          name: _stringValue(asset['name']) ?? id,
+          mimeType: _stringValue(asset['mime_type']),
+          bytes: base64Decode(encodedBytes),
+        );
+      } on FormatException {
+        continue;
+      }
+    }
+
+    final refs = <String, String?>{};
+    for (final member in members) {
+      final memberId = _requiredString(member, 'id');
+      final avatarUrl = _stringValue(member['avatar_url']);
+      if (avatarUrl == null || avatarUrl.startsWith('local-avatar:')) {
+        refs[memberId] = avatarUrl;
+        continue;
+      }
+
+      if (avatarUrl.startsWith('import-asset:') ||
+          avatarUrl.startsWith('sp-avatar:')) {
+        final assetId = avatarUrl.split(':').last;
+        final asset = assetsById[assetId];
+        refs[memberId] = asset == null
+            ? avatarUrl
+            : await _storeAvatarBytes(
+                id: asset.id,
+                sourceName: asset.name,
+                mimeType: asset.mimeType,
+                bytes: asset.bytes,
+              );
+        continue;
+      }
+
+      if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+        refs[memberId] = await _downloadAndStoreAvatar(avatarUrl);
+        continue;
+      }
+
+      refs[memberId] = avatarUrl;
+    }
+    return refs;
+  }
+
+  Future<String?> _downloadAndStoreAvatar(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAbsolutePath) {
+      return url;
+    }
+
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    try {
+      final request = await client.getUrl(uri);
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return url;
+      }
+
+      final bytes = await _readAvatarResponseBytes(response);
+      if (bytes == null || bytes.isEmpty) {
+        return url;
+      }
+
+      return _storeAvatarBytes(
+        id: uri.pathSegments.isEmpty ? 'remote-avatar' : uri.pathSegments.last,
+        sourceName: uri.pathSegments.isEmpty
+            ? 'remote-avatar'
+            : uri.pathSegments.last,
+        mimeType: response.headers.contentType?.mimeType,
+        bytes: bytes,
+      );
+    } on Object {
+      return url;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<Uint8List?> _readAvatarResponseBytes(
+    HttpClientResponse response,
+  ) async {
+    const maxAvatarBytes = 10 * 1024 * 1024;
+    final chunks = <List<int>>[];
+    var total = 0;
+    await for (final chunk in response) {
+      total += chunk.length;
+      if (total > maxAvatarBytes) {
+        return null;
+      }
+      chunks.add(chunk);
+    }
+    final bytes = Uint8List(total);
+    var offset = 0;
+    for (final chunk in chunks) {
+      bytes.setRange(offset, offset + chunk.length, chunk);
+      offset += chunk.length;
+    }
+    return bytes;
+  }
+
+  Future<String> _storeAvatarBytes({
+    required String id,
+    required String sourceName,
+    required String? mimeType,
+    required Uint8List bytes,
+  }) async {
+    final root = await _avatarRootDirectory();
+    final extension = _avatarExtension(sourceName, mimeType);
+    final safeId = _safeFilePart(id);
+    final digest = base64Url
+        .encode(bytes.take(18).toList())
+        .replaceAll('=', '');
+    final fileName = '$safeId-$digest$extension';
+    final file = File('${root.path}/$fileName');
+    await file.writeAsBytes(bytes, flush: true);
+    return 'local-avatar:$fileName';
+  }
+
+  Future<Directory> _avatarRootDirectory() async {
+    Directory base;
+    try {
+      base = await getApplicationDocumentsDirectory();
+    } on Object {
+      base = Directory('${Directory.systemTemp.path}/pluris-haven-test');
+    }
+
+    final avatars = Directory('${base.path}/avatars');
+    if (!await avatars.exists()) {
+      await avatars.create(recursive: true);
+    }
+    return avatars;
   }
 
   Future<void> _importGroup(
@@ -1430,6 +1589,7 @@ SELECT
     Map<String, Object?> member,
     ImportConflictStrategy strategy,
     DateTime now,
+    String? localAvatarUrl,
   ) {
     final id = _requiredString(member, 'id');
     final displayName = _requiredString(member, 'display_name');
@@ -1441,7 +1601,7 @@ SELECT
       colorHex: Value(_stringValue(member['color_hex'])),
       folderId: Value(_stringValue(member['folder_id'])),
       description: Value(_stringValue(member['description'])),
-      avatarUrl: Value(_stringValue(member['avatar_url'])),
+      avatarUrl: Value(localAvatarUrl ?? _stringValue(member['avatar_url'])),
       pluralKitId: Value(_stringValue(member['pluralkit_id'])),
       archived: Value(member['archived'] == true),
       createdAt: _dateValue(member['created_at']) ?? now,
@@ -1788,6 +1948,53 @@ BackgroundJobSummary _backgroundJobSummary(BackgroundJob row) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   );
+}
+
+class _ImportAvatarBytes {
+  const _ImportAvatarBytes({
+    required this.id,
+    required this.name,
+    required this.mimeType,
+    required this.bytes,
+  });
+
+  final String id;
+  final String name;
+  final String? mimeType;
+  final Uint8List bytes;
+}
+
+String _avatarExtension(String sourceName, String? mimeType) {
+  final lowerName = sourceName.toLowerCase();
+  if (lowerName.endsWith('.png')) {
+    return '.png';
+  }
+  if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+    return '.jpg';
+  }
+  if (lowerName.endsWith('.webp')) {
+    return '.webp';
+  }
+  if (lowerName.endsWith('.gif')) {
+    return '.gif';
+  }
+
+  return switch (mimeType) {
+    'image/png' => '.png',
+    'image/jpeg' => '.jpg',
+    'image/webp' => '.webp',
+    'image/gif' => '.gif',
+    _ => '.bin',
+  };
+}
+
+String _safeFilePart(String value) {
+  final cleaned = value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9._-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^[-.]+|[-.]+$'), '');
+  return cleaned.isEmpty ? 'avatar' : cleaned;
 }
 
 const _themeModeKey = 'theme_mode';

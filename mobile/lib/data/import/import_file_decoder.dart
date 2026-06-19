@@ -8,11 +8,27 @@ class DecodedImportFile {
     required this.displayName,
     required this.text,
     required this.detail,
+    this.avatarAssets = const [],
   });
 
   final String displayName;
   final String text;
   final String detail;
+  final List<ImportAvatarAsset> avatarAssets;
+}
+
+class ImportAvatarAsset {
+  const ImportAvatarAsset({
+    required this.id,
+    required this.name,
+    required this.bytes,
+    this.mimeType,
+  });
+
+  final String id;
+  final String name;
+  final Uint8List bytes;
+  final String? mimeType;
 }
 
 DecodedImportFile? decodeImportFileBytes({
@@ -50,16 +66,33 @@ DecodedImportFile? _decodeZipImport({
 }) {
   final archive = ZipDecoder().decodeBytes(bytes, verify: true);
   _ZipJsonCandidate? best;
+  final avatarAssets = <ImportAvatarAsset>[];
 
   for (final entry in archive) {
     final name = entry.name;
     final lowerName = name.toLowerCase();
-    if (!entry.isFile || !lowerName.endsWith('.json')) {
+    if (!entry.isFile) {
       continue;
     }
 
     final fileBytes = entry.readBytes();
     if (fileBytes == null || fileBytes.isEmpty) {
+      continue;
+    }
+
+    if (_looksLikeAvatarAsset(lowerName)) {
+      avatarAssets.add(
+        ImportAvatarAsset(
+          id: _avatarAssetId(name),
+          name: name,
+          bytes: Uint8List.fromList(fileBytes),
+          mimeType: _mimeTypeForName(lowerName),
+        ),
+      );
+      continue;
+    }
+
+    if (!lowerName.endsWith('.json')) {
       continue;
     }
 
@@ -83,8 +116,44 @@ DecodedImportFile? _decodeZipImport({
   return DecodedImportFile(
     displayName: '$fileName / ${selected.name}',
     text: selected.text,
-    detail: 'Read ${selected.name} from $fileName.',
+    detail: avatarAssets.isEmpty
+        ? 'Read ${selected.name} from $fileName.'
+        : 'Read ${selected.name} and ${avatarAssets.length} avatars from $fileName.',
+    avatarAssets: avatarAssets,
   );
+}
+
+bool _looksLikeAvatarAsset(String lowerName) {
+  if (!lowerName.contains('avatar')) {
+    return false;
+  }
+  return lowerName.endsWith('.png') ||
+      lowerName.endsWith('.jpg') ||
+      lowerName.endsWith('.jpeg') ||
+      lowerName.endsWith('.webp') ||
+      lowerName.endsWith('.gif');
+}
+
+String _avatarAssetId(String name) {
+  final fileName = name.split('/').last;
+  final dot = fileName.lastIndexOf('.');
+  return dot <= 0 ? fileName : fileName.substring(0, dot);
+}
+
+String? _mimeTypeForName(String lowerName) {
+  if (lowerName.endsWith('.png')) {
+    return 'image/png';
+  }
+  if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+    return 'image/jpeg';
+  }
+  if (lowerName.endsWith('.webp')) {
+    return 'image/webp';
+  }
+  if (lowerName.endsWith('.gif')) {
+    return 'image/gif';
+  }
+  return null;
 }
 
 int _jsonCandidateScore(String name, String text, int length) {
