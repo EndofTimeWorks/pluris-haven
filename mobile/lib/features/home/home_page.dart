@@ -12,6 +12,7 @@ import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
+import '../../debug/debug_log.dart';
 
 const _spSurface = Color(0xFF232532);
 const _spCard = Color(0xFF2B2E3D);
@@ -2033,6 +2034,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
               selectedSource: source,
             );
     });
+    final preview = _preview;
+    if (preview != null) {
+      appDebugLog(
+        'Import preview source=${preview.source.name} file=${preview.fileName} '
+        'canApply=${preview.canApply} counts=${preview.counts} '
+        'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
+      );
+    }
   }
 
   Future<void> _applyImportFile() async {
@@ -2054,6 +2063,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
         text: text,
         avatarAssets: _fileAvatarAssets,
       );
+      appDebugLog(
+        'Apply import source=${_source.name} file=${_fileName ?? 'import.json'} '
+        'counts=${normalized.counts} warnings=${normalized.warnings.length}',
+      );
 
       if (mounted) {
         setState(() {
@@ -2067,6 +2080,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         fileName: _fileName,
         source: _source,
       );
+      appDebugLog('Import job queued id=$jobId source=${_source.name}');
 
       if (mounted) {
         setState(() {
@@ -2075,6 +2089,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
 
       importCompleted = await widget.repository.runBackgroundJob(jobId);
+      appDebugLog('Import job finished id=$jobId success=$importCompleted');
       if (mounted) {
         setState(() {
           _isApplyingImport = false;
@@ -2650,6 +2665,7 @@ class ImportJobRow extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
+      onTap: () => _showJobDetails(context),
       leading: Icon(_icon, color: _color, size: 20),
       title: Text(
         job.fileName ?? job.type,
@@ -2664,6 +2680,102 @@ class ImportJobRow extends StatelessWidget {
         style: const TextStyle(color: _spMuted),
       ),
       trailing: StatusPill(text: job.status),
+    );
+  }
+
+  void _showJobDetails(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: _spCard,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 18,
+            right: 18,
+            bottom: 18 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(_icon, color: _color),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        job.fileName ?? job.type,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    StatusPill(text: job.status),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _JobDetailLine(label: 'Type', value: job.type),
+                if (job.source != null)
+                  _JobDetailLine(label: 'Source', value: job.source!),
+                _JobDetailLine(
+                  label: 'Created',
+                  value: _shortDateTime(job.createdAt),
+                ),
+                _JobDetailLine(
+                  label: 'Updated',
+                  value: _shortDateTime(job.updatedAt),
+                ),
+                if (job.error != null && job.error!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Full error',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: job.error!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Error copied')),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('Copy'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _spSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _spLine),
+                    ),
+                    child: SelectableText(
+                      job.error!,
+                      style: const TextStyle(color: _spMuted, height: 1.35),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No error recorded for this job.',
+                    style: TextStyle(color: _spMuted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -2683,6 +2795,41 @@ class ImportJobRow extends StatelessWidget {
       'running' => _spPurple,
       _ => _spMuted,
     };
+  }
+}
+
+class _JobDetailLine extends StatelessWidget {
+  const _JobDetailLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 86,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _spMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
