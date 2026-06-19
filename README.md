@@ -67,4 +67,6 @@ Local data stays local by default. Any online connection must say:
 
 ## License
 
-MIT
+Pluris Haven is source-available for noncommercial use. Commercial use,
+including selling builds or hosted access, requires a separate written license
+from EndofTimeWorks. See [LICENSE](LICENSE).
