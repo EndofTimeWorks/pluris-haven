@@ -135,6 +135,24 @@ class ImportPayloads extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class BackgroundJobs extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get type => text()();
+  TextColumn get status => text()();
+  TextColumn get source => text().nullable()();
+  TextColumn get fileName => text().nullable()();
+  TextColumn get payloadJson => text()();
+  TextColumn get error => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get startedAt => dateTime().nullable()();
+  DateTimeColumn get finishedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class NotificationEvents extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -169,6 +187,7 @@ class AppPreferences extends Table {
     FrontSessionMembers,
     ImportRecords,
     ImportPayloads,
+    BackgroundJobs,
     NotificationEvents,
     AppPreferences,
   ],
@@ -177,7 +196,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -192,6 +211,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await migrator.createTable(importPayloads);
+      }
+      if (from < 5) {
+        await migrator.createTable(backgroundJobs);
       }
     },
     beforeOpen: (details) async {

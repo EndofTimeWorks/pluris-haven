@@ -4639,6 +4639,717 @@ class ImportPayloadsCompanion extends UpdateCompanion<ImportPayload> {
   }
 }
 
+class $BackgroundJobsTable extends BackgroundJobs
+    with TableInfo<$BackgroundJobsTable, BackgroundJob> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BackgroundJobsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _finishedAtMeta = const VerificationMeta(
+    'finishedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> finishedAt = GeneratedColumn<DateTime>(
+    'finished_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    systemId,
+    type,
+    status,
+    source,
+    fileName,
+    payloadJson,
+    error,
+    createdAt,
+    updatedAt,
+    startedAt,
+    finishedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'background_jobs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BackgroundJob> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    }
+    if (data.containsKey('finished_at')) {
+      context.handle(
+        _finishedAtMeta,
+        finishedAt.isAcceptableOrUnknown(data['finished_at']!, _finishedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BackgroundJob map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BackgroundJob(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      ),
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      ),
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      error: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      ),
+      finishedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}finished_at'],
+      ),
+    );
+  }
+
+  @override
+  $BackgroundJobsTable createAlias(String alias) {
+    return $BackgroundJobsTable(attachedDatabase, alias);
+  }
+}
+
+class BackgroundJob extends DataClass implements Insertable<BackgroundJob> {
+  final String id;
+  final String systemId;
+  final String type;
+  final String status;
+  final String? source;
+  final String? fileName;
+  final String payloadJson;
+  final String? error;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? startedAt;
+  final DateTime? finishedAt;
+  const BackgroundJob({
+    required this.id,
+    required this.systemId,
+    required this.type,
+    required this.status,
+    this.source,
+    this.fileName,
+    required this.payloadJson,
+    this.error,
+    required this.createdAt,
+    required this.updatedAt,
+    this.startedAt,
+    this.finishedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['system_id'] = Variable<String>(systemId);
+    map['type'] = Variable<String>(type);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || source != null) {
+      map['source'] = Variable<String>(source);
+    }
+    if (!nullToAbsent || fileName != null) {
+      map['file_name'] = Variable<String>(fileName);
+    }
+    map['payload_json'] = Variable<String>(payloadJson);
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || startedAt != null) {
+      map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || finishedAt != null) {
+      map['finished_at'] = Variable<DateTime>(finishedAt);
+    }
+    return map;
+  }
+
+  BackgroundJobsCompanion toCompanion(bool nullToAbsent) {
+    return BackgroundJobsCompanion(
+      id: Value(id),
+      systemId: Value(systemId),
+      type: Value(type),
+      status: Value(status),
+      source: source == null && nullToAbsent
+          ? const Value.absent()
+          : Value(source),
+      fileName: fileName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileName),
+      payloadJson: Value(payloadJson),
+      error: error == null && nullToAbsent
+          ? const Value.absent()
+          : Value(error),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      startedAt: startedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAt),
+      finishedAt: finishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(finishedAt),
+    );
+  }
+
+  factory BackgroundJob.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BackgroundJob(
+      id: serializer.fromJson<String>(json['id']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      type: serializer.fromJson<String>(json['type']),
+      status: serializer.fromJson<String>(json['status']),
+      source: serializer.fromJson<String?>(json['source']),
+      fileName: serializer.fromJson<String?>(json['fileName']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      error: serializer.fromJson<String?>(json['error']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      finishedAt: serializer.fromJson<DateTime?>(json['finishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'systemId': serializer.toJson<String>(systemId),
+      'type': serializer.toJson<String>(type),
+      'status': serializer.toJson<String>(status),
+      'source': serializer.toJson<String?>(source),
+      'fileName': serializer.toJson<String?>(fileName),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'error': serializer.toJson<String?>(error),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'finishedAt': serializer.toJson<DateTime?>(finishedAt),
+    };
+  }
+
+  BackgroundJob copyWith({
+    String? id,
+    String? systemId,
+    String? type,
+    String? status,
+    Value<String?> source = const Value.absent(),
+    Value<String?> fileName = const Value.absent(),
+    String? payloadJson,
+    Value<String?> error = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> startedAt = const Value.absent(),
+    Value<DateTime?> finishedAt = const Value.absent(),
+  }) => BackgroundJob(
+    id: id ?? this.id,
+    systemId: systemId ?? this.systemId,
+    type: type ?? this.type,
+    status: status ?? this.status,
+    source: source.present ? source.value : this.source,
+    fileName: fileName.present ? fileName.value : this.fileName,
+    payloadJson: payloadJson ?? this.payloadJson,
+    error: error.present ? error.value : this.error,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    startedAt: startedAt.present ? startedAt.value : this.startedAt,
+    finishedAt: finishedAt.present ? finishedAt.value : this.finishedAt,
+  );
+  BackgroundJob copyWithCompanion(BackgroundJobsCompanion data) {
+    return BackgroundJob(
+      id: data.id.present ? data.id.value : this.id,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      type: data.type.present ? data.type.value : this.type,
+      status: data.status.present ? data.status.value : this.status,
+      source: data.source.present ? data.source.value : this.source,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      error: data.error.present ? data.error.value : this.error,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      finishedAt: data.finishedAt.present
+          ? data.finishedAt.value
+          : this.finishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackgroundJob(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('type: $type, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('fileName: $fileName, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('error: $error, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    type,
+    status,
+    source,
+    fileName,
+    payloadJson,
+    error,
+    createdAt,
+    updatedAt,
+    startedAt,
+    finishedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BackgroundJob &&
+          other.id == this.id &&
+          other.systemId == this.systemId &&
+          other.type == this.type &&
+          other.status == this.status &&
+          other.source == this.source &&
+          other.fileName == this.fileName &&
+          other.payloadJson == this.payloadJson &&
+          other.error == this.error &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.startedAt == this.startedAt &&
+          other.finishedAt == this.finishedAt);
+}
+
+class BackgroundJobsCompanion extends UpdateCompanion<BackgroundJob> {
+  final Value<String> id;
+  final Value<String> systemId;
+  final Value<String> type;
+  final Value<String> status;
+  final Value<String?> source;
+  final Value<String?> fileName;
+  final Value<String> payloadJson;
+  final Value<String?> error;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> startedAt;
+  final Value<DateTime?> finishedAt;
+  final Value<int> rowid;
+  const BackgroundJobsCompanion({
+    this.id = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.status = const Value.absent(),
+    this.source = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.error = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BackgroundJobsCompanion.insert({
+    required String id,
+    required String systemId,
+    required String type,
+    required String status,
+    this.source = const Value.absent(),
+    this.fileName = const Value.absent(),
+    required String payloadJson,
+    this.error = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       systemId = Value(systemId),
+       type = Value(type),
+       status = Value(status),
+       payloadJson = Value(payloadJson),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<BackgroundJob> custom({
+    Expression<String>? id,
+    Expression<String>? systemId,
+    Expression<String>? type,
+    Expression<String>? status,
+    Expression<String>? source,
+    Expression<String>? fileName,
+    Expression<String>? payloadJson,
+    Expression<String>? error,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? finishedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (systemId != null) 'system_id': systemId,
+      if (type != null) 'type': type,
+      if (status != null) 'status': status,
+      if (source != null) 'source': source,
+      if (fileName != null) 'file_name': fileName,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (error != null) 'error': error,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (startedAt != null) 'started_at': startedAt,
+      if (finishedAt != null) 'finished_at': finishedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BackgroundJobsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? systemId,
+    Value<String>? type,
+    Value<String>? status,
+    Value<String?>? source,
+    Value<String?>? fileName,
+    Value<String>? payloadJson,
+    Value<String?>? error,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? startedAt,
+    Value<DateTime?>? finishedAt,
+    Value<int>? rowid,
+  }) {
+    return BackgroundJobsCompanion(
+      id: id ?? this.id,
+      systemId: systemId ?? this.systemId,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      source: source ?? this.source,
+      fileName: fileName ?? this.fileName,
+      payloadJson: payloadJson ?? this.payloadJson,
+      error: error ?? this.error,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      startedAt: startedAt ?? this.startedAt,
+      finishedAt: finishedAt ?? this.finishedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (finishedAt.present) {
+      map['finished_at'] = Variable<DateTime>(finishedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackgroundJobsCompanion(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('type: $type, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('fileName: $fileName, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('error: $error, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $NotificationEventsTable extends NotificationEvents
     with TableInfo<$NotificationEventsTable, NotificationEvent> {
   @override
@@ -5369,6 +6080,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $FrontSessionMembersTable(this);
   late final $ImportRecordsTable importRecords = $ImportRecordsTable(this);
   late final $ImportPayloadsTable importPayloads = $ImportPayloadsTable(this);
+  late final $BackgroundJobsTable backgroundJobs = $BackgroundJobsTable(this);
   late final $NotificationEventsTable notificationEvents =
       $NotificationEventsTable(this);
   late final $AppPreferencesTable appPreferences = $AppPreferencesTable(this);
@@ -5387,6 +6099,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     frontSessionMembers,
     importRecords,
     importPayloads,
+    backgroundJobs,
     notificationEvents,
     appPreferences,
   ];
@@ -5559,6 +6272,24 @@ final class $$PluralSystemsTableReferences
     ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_importPayloadsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BackgroundJobsTable, List<BackgroundJob>>
+  _backgroundJobsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.backgroundJobs,
+    aliasName: 'plural_systems__id__background_jobs__system_id',
+  );
+
+  $$BackgroundJobsTableProcessedTableManager get backgroundJobsRefs {
+    final manager = $$BackgroundJobsTableTableManager(
+      $_db,
+      $_db.backgroundJobs,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_backgroundJobsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5806,6 +6537,31 @@ class $$PluralSystemsTableFilterComposer
           }) => $$ImportPayloadsTableFilterComposer(
             $db: $db,
             $table: $db.importPayloads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> backgroundJobsRefs(
+    Expression<bool> Function($$BackgroundJobsTableFilterComposer f) f,
+  ) {
+    final $$BackgroundJobsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.backgroundJobs,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BackgroundJobsTableFilterComposer(
+            $db: $db,
+            $table: $db.backgroundJobs,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6092,6 +6848,31 @@ class $$PluralSystemsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> backgroundJobsRefs<T extends Object>(
+    Expression<T> Function($$BackgroundJobsTableAnnotationComposer a) f,
+  ) {
+    final $$BackgroundJobsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.backgroundJobs,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BackgroundJobsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.backgroundJobs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> notificationEventsRefs<T extends Object>(
     Expression<T> Function($$NotificationEventsTableAnnotationComposer a) f,
   ) {
@@ -6141,6 +6922,7 @@ class $$PluralSystemsTableTableManager
             bool frontSessionsRefs,
             bool importRecordsRefs,
             bool importPayloadsRefs,
+            bool backgroundJobsRefs,
             bool notificationEventsRefs,
           })
         > {
@@ -6201,6 +6983,7 @@ class $$PluralSystemsTableTableManager
                 frontSessionsRefs = false,
                 importRecordsRefs = false,
                 importPayloadsRefs = false,
+                backgroundJobsRefs = false,
                 notificationEventsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -6214,6 +6997,7 @@ class $$PluralSystemsTableTableManager
                     if (frontSessionsRefs) db.frontSessions,
                     if (importRecordsRefs) db.importRecords,
                     if (importPayloadsRefs) db.importPayloads,
+                    if (backgroundJobsRefs) db.backgroundJobs,
                     if (notificationEventsRefs) db.notificationEvents,
                   ],
                   addJoins: null,
@@ -6387,6 +7171,27 @@ class $$PluralSystemsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (backgroundJobsRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          BackgroundJob
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._backgroundJobsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).backgroundJobsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (notificationEventsRefs)
                         await $_getPrefetchedData<
                           PluralSystem,
@@ -6437,6 +7242,7 @@ typedef $$PluralSystemsTableProcessedTableManager =
         bool frontSessionsRefs,
         bool importRecordsRefs,
         bool importPayloadsRefs,
+        bool backgroundJobsRefs,
         bool notificationEventsRefs,
       })
     >;
@@ -10204,6 +11010,468 @@ typedef $$ImportPayloadsTableProcessedTableManager =
       ImportPayload,
       PrefetchHooks Function({bool importRecordId, bool systemId})
     >;
+typedef $$BackgroundJobsTableCreateCompanionBuilder =
+    BackgroundJobsCompanion Function({
+      required String id,
+      required String systemId,
+      required String type,
+      required String status,
+      Value<String?> source,
+      Value<String?> fileName,
+      required String payloadJson,
+      Value<String?> error,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> finishedAt,
+      Value<int> rowid,
+    });
+typedef $$BackgroundJobsTableUpdateCompanionBuilder =
+    BackgroundJobsCompanion Function({
+      Value<String> id,
+      Value<String> systemId,
+      Value<String> type,
+      Value<String> status,
+      Value<String?> source,
+      Value<String?> fileName,
+      Value<String> payloadJson,
+      Value<String?> error,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> finishedAt,
+      Value<int> rowid,
+    });
+
+final class $$BackgroundJobsTableReferences
+    extends BaseReferences<_$AppDatabase, $BackgroundJobsTable, BackgroundJob> {
+  $$BackgroundJobsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) => db
+      .pluralSystems
+      .createAlias('background_jobs__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BackgroundJobsTableFilterComposer
+    extends Composer<_$AppDatabase, $BackgroundJobsTable> {
+  $$BackgroundJobsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BackgroundJobsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BackgroundJobsTable> {
+  $$BackgroundJobsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BackgroundJobsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BackgroundJobsTable> {
+  $$BackgroundJobsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get finishedAt => $composableBuilder(
+    column: $table.finishedAt,
+    builder: (column) => column,
+  );
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BackgroundJobsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BackgroundJobsTable,
+          BackgroundJob,
+          $$BackgroundJobsTableFilterComposer,
+          $$BackgroundJobsTableOrderingComposer,
+          $$BackgroundJobsTableAnnotationComposer,
+          $$BackgroundJobsTableCreateCompanionBuilder,
+          $$BackgroundJobsTableUpdateCompanionBuilder,
+          (BackgroundJob, $$BackgroundJobsTableReferences),
+          BackgroundJob,
+          PrefetchHooks Function({bool systemId})
+        > {
+  $$BackgroundJobsTableTableManager(
+    _$AppDatabase db,
+    $BackgroundJobsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BackgroundJobsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BackgroundJobsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BackgroundJobsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                Value<String?> fileName = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> finishedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BackgroundJobsCompanion(
+                id: id,
+                systemId: systemId,
+                type: type,
+                status: status,
+                source: source,
+                fileName: fileName,
+                payloadJson: payloadJson,
+                error: error,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String systemId,
+                required String type,
+                required String status,
+                Value<String?> source = const Value.absent(),
+                Value<String?> fileName = const Value.absent(),
+                required String payloadJson,
+                Value<String?> error = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> finishedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BackgroundJobsCompanion.insert(
+                id: id,
+                systemId: systemId,
+                type: type,
+                status: status,
+                source: source,
+                fileName: fileName,
+                payloadJson: payloadJson,
+                error: error,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BackgroundJobsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({systemId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (systemId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.systemId,
+                                referencedTable: $$BackgroundJobsTableReferences
+                                    ._systemIdTable(db),
+                                referencedColumn:
+                                    $$BackgroundJobsTableReferences
+                                        ._systemIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BackgroundJobsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BackgroundJobsTable,
+      BackgroundJob,
+      $$BackgroundJobsTableFilterComposer,
+      $$BackgroundJobsTableOrderingComposer,
+      $$BackgroundJobsTableAnnotationComposer,
+      $$BackgroundJobsTableCreateCompanionBuilder,
+      $$BackgroundJobsTableUpdateCompanionBuilder,
+      (BackgroundJob, $$BackgroundJobsTableReferences),
+      BackgroundJob,
+      PrefetchHooks Function({bool systemId})
+    >;
 typedef $$NotificationEventsTableCreateCompanionBuilder =
     NotificationEventsCompanion Function({
       required String id,
@@ -10764,6 +12032,8 @@ class $AppDatabaseManager {
       $$ImportRecordsTableTableManager(_db, _db.importRecords);
   $$ImportPayloadsTableTableManager get importPayloads =>
       $$ImportPayloadsTableTableManager(_db, _db.importPayloads);
+  $$BackgroundJobsTableTableManager get backgroundJobs =>
+      $$BackgroundJobsTableTableManager(_db, _db.backgroundJobs);
   $$NotificationEventsTableTableManager get notificationEvents =>
       $$NotificationEventsTableTableManager(_db, _db.notificationEvents);
   $$AppPreferencesTableTableManager get appPreferences =>

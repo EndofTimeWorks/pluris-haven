@@ -509,6 +509,11 @@ class FakeHavenRepository implements HavenRepository {
           sync: true,
           onListen: () => _frontHistoryController.add(_frontHistory),
         );
+    _backgroundJobsController =
+        StreamController<List<BackgroundJobSummary>>.broadcast(
+          sync: true,
+          onListen: () => _backgroundJobsController.add(_backgroundJobs),
+        );
   }
 
   HomeSnapshot _snapshot;
@@ -520,6 +525,7 @@ class FakeHavenRepository implements HavenRepository {
   List<ReminderSummary> _reminders = const [];
   List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
+  List<BackgroundJobSummary> _backgroundJobs = const [];
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
@@ -530,6 +536,8 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<NotificationEventSummary>>
   _notificationEventsController;
   late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
+  late final StreamController<List<BackgroundJobSummary>>
+  _backgroundJobsController;
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
@@ -574,6 +582,11 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<FrontHistoryEntry>> watchFrontHistory() {
     return _frontHistoryController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<BackgroundJobSummary>> watchBackgroundJobs() {
+    return _backgroundJobsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -866,6 +879,51 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<String> enqueueImportArchiveJob(
+    String archiveJson, {
+    required ImportConflictStrategy strategy,
+    String? fileName,
+    required ImportSource source,
+  }) async {
+    final now = DateTime(2026, 1, 1, 14, _backgroundJobs.length);
+    final jobId = 'fake-job-${_backgroundJobs.length + 1}';
+    _backgroundJobs = [
+      BackgroundJobSummary(
+        id: jobId,
+        type: 'import_archive',
+        status: 'queued',
+        source: source.name,
+        fileName: fileName,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ..._backgroundJobs,
+    ];
+    _backgroundJobsController.add(_backgroundJobs);
+    return jobId;
+  }
+
+  @override
+  Future<bool> runBackgroundJob(String jobId) async {
+    _backgroundJobs = [
+      for (final job in _backgroundJobs)
+        job.id == jobId
+            ? BackgroundJobSummary(
+                id: job.id,
+                type: job.type,
+                status: 'done',
+                source: job.source,
+                fileName: job.fileName,
+                createdAt: job.createdAt,
+                updatedAt: DateTime(2026, 1, 1, 15),
+              )
+            : job,
+    ];
+    _backgroundJobsController.add(_backgroundJobs);
+    return true;
+  }
+
+  @override
   Future<void> importLocalArchiveJson(
     String archiveJson, {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
@@ -946,5 +1004,6 @@ class FakeHavenRepository implements HavenRepository {
     await _remindersController.close();
     await _notificationEventsController.close();
     await _frontHistoryController.close();
+    await _backgroundJobsController.close();
   }
 }
