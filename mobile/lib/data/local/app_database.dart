@@ -41,6 +41,8 @@ class Members extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get avatarUrl => text().nullable()();
   TextColumn get pluralKitId => text().nullable()();
+  BoolColumn get isCustomFront =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -82,6 +84,32 @@ class Reminders extends Table {
   TextColumn get body => text().nullable()();
   TextColumn get scheduleText => text()();
   BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class CustomFieldDefinitions extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get name => text()();
+  TextColumn get fieldType => text().withDefault(const Constant('text'))();
+  TextColumn get privacy => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class CustomFieldValues extends Table {
+  TextColumn get id => text()();
+  TextColumn get fieldId => text().references(CustomFieldDefinitions, #id)();
+  TextColumn get memberId => text().nullable().references(Members, #id)();
+  TextColumn get value => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -216,6 +244,8 @@ class AppPreferences extends Table {
     Notes,
     Messages,
     Reminders,
+    CustomFieldDefinitions,
+    CustomFieldValues,
     Polls,
     PollOptions,
     PollVotes,
@@ -232,7 +262,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -255,6 +285,11 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(polls);
         await migrator.createTable(pollOptions);
         await migrator.createTable(pollVotes);
+      }
+      if (from < 7) {
+        await migrator.addColumn(members, members.isCustomFront);
+        await migrator.createTable(customFieldDefinitions);
+        await migrator.createTable(customFieldValues);
       }
     },
     beforeOpen: (details) async {

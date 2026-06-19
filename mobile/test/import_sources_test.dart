@@ -398,7 +398,7 @@ void main() {
     {
       "_id": "system-user",
       "username": "SP System",
-      "fields": {"favorite": "tea"},
+      "fields": {"field1": "tea"},
       "lastOperationTime": 1767225600000
     }
   ],
@@ -407,7 +407,7 @@ void main() {
       "_id": "m1",
       "name": "Iris",
       "avatarUuid": "avatar-1",
-      "info": {"age": "20s"},
+      "info": {"field1": "20s"},
       "lastOperationTime": 1767225600000
     }
   ],
@@ -476,8 +476,10 @@ void main() {
 ''',
       );
 
-      expect(archive.counts['members'], 1);
+      expect(archive.counts['members'], 2);
       expect(archive.counts['groups'], 1);
+      expect(archive.counts['custom_fields'], 1);
+      expect(archive.counts['custom_field_values'], 2);
       expect(archive.counts['messages'], 3);
       expect(archive.counts['reminders'], 1);
       expect(archive.counts['fronts'], 1);
@@ -492,6 +494,10 @@ void main() {
         archive.archiveJson,
         contains('"folder_id": "simplyplural_file-group-g1"'),
       );
+      expect(archive.archiveJson, contains('"is_custom_front": true'));
+      expect(archive.archiveJson, contains('"name": "Age"'));
+      expect(archive.archiveJson, contains('"value": "20s"'));
+      expect(archive.archiveJson, contains('"value": "tea"'));
       expect(
         archive.archiveJson,
         isNot(contains('"title": "Imported custom fields"')),
