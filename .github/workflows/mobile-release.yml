@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "SemVer version, e.g. 0.0.1-prealpha.1"
+        description: "SemVer version, e.g. 0.0.1-pre-alpha.1"
         required: true
       build_number:
         description: "Android/iOS build number"
@@ -58,7 +58,7 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             semver="${GITHUB_REF_NAME#mobile-v}"
             version="${semver%%+*}"
-            build_name="${version%%-*}"
+            build_name="${version}"
             if [[ "${semver}" == *"+"* ]]; then
               build="${semver##*+}"
             else
@@ -72,7 +72,7 @@ jobs:
             fi
           else
             version="${{ inputs.version }}"
-            build_name="${version%%-*}"
+            build_name="${version}"
             build="${{ inputs.build_number }}"
             tag="mobile-v${version}+${build}"
             prerelease="${{ inputs.prerelease }}"
@@ -95,6 +95,26 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Configure Android signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_KEYSTORE_PASSWORD}" || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
+            echo "Android signing secrets are not configured." >&2
+            exit 1
+          fi
+          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > android/app/pluris-haven-upload.jks
+          {
+            echo "storeFile=pluris-haven-upload.jks"
+            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "keyAlias=${ANDROID_KEY_ALIAS}"
+            echo "keyPassword=${ANDROID_KEY_PASSWORD}"
+          } > android/key.properties
 
       - name: Verify formatting
         run: dart format --set-exit-if-changed lib test
