@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/import/import_archive_mapper.dart';
@@ -528,7 +530,11 @@ class MemberListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: SpAvatar(size: 42, color: _memberColor(member), label: _initial),
+      leading: MemberAvatar(
+        member: member,
+        color: _memberColor(member),
+        label: _initial,
+      ),
       title: Text(
         member.displayName,
         style: const TextStyle(fontWeight: FontWeight.w800),
@@ -582,6 +588,67 @@ class MemberListTile extends StatelessWidget {
 
   Color _memberColor(MemberSummary member) {
     return _colorFromHex(member.colorHex);
+  }
+}
+
+class MemberAvatar extends StatelessWidget {
+  const MemberAvatar({
+    super.key,
+    required this.member,
+    required this.color,
+    required this.label,
+  });
+
+  final MemberSummary member;
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = member.avatarUrl;
+    if (avatarUrl == null || avatarUrl.trim().isEmpty) {
+      return SpAvatar(size: 42, color: color, label: label);
+    }
+    if (avatarUrl.startsWith('local-avatar:')) {
+      return FutureBuilder<File?>(
+        future: _localAvatarFile(avatarUrl),
+        builder: (context, snapshot) {
+          final file = snapshot.data;
+          return SpAvatar(
+            size: 42,
+            color: color,
+            label: label,
+            image: file == null ? null : FileImage(file),
+          );
+        },
+      );
+    }
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return SpAvatar(
+        size: 42,
+        color: color,
+        label: label,
+        image: NetworkImage(avatarUrl),
+      );
+    }
+    return SpAvatar(size: 42, color: color, label: label);
+  }
+}
+
+Future<File?> _localAvatarFile(String avatarUrl) async {
+  final fileName = avatarUrl.replaceFirst('local-avatar:', '').trim();
+  if (fileName.isEmpty || fileName.contains('/') || fileName.contains('\\')) {
+    return null;
+  }
+  try {
+    final base = await getApplicationDocumentsDirectory();
+    final file = File('${base.path}/avatars/$fileName');
+    return file.existsSync() ? file : null;
+  } on Object {
+    final file = File(
+      '${Directory.systemTemp.path}/pluris-haven-test/avatars/$fileName',
+    );
+    return file.existsSync() ? file : null;
   }
 }
 
@@ -5123,11 +5190,13 @@ class SpAvatar extends StatelessWidget {
     required this.size,
     required this.color,
     this.label,
+    this.image,
   });
 
   final double size;
   final Color color;
   final String? label;
+  final ImageProvider? image;
 
   @override
   Widget build(BuildContext context) {
@@ -5137,9 +5206,16 @@ class SpAvatar extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          image: image == null
+              ? null
+              : DecorationImage(image: image!, fit: BoxFit.cover),
+        ),
         alignment: Alignment.center,
-        child: label == null
+        child: image != null || label == null
             ? null
             : ExcludeSemantics(
                 child: Text(
