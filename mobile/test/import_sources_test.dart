@@ -272,6 +272,108 @@ void main() {
     );
   });
 
+  test('warns and skips dangling Simply Plural import references', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-dangling.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris", "folderId": "missing-group"}
+  ],
+  "groups": [
+    {"_id": "g1", "name": "Main", "parent": "missing-parent"}
+  ],
+  "frontHistory": [
+    {"_id": "front1", "member": "missing-member", "startTime": 1767225600000},
+    {"_id": "front2", "startTime": 1767225600000}
+  ],
+  "reminders": [
+    {"_id": "reminder1", "name": "No schedule"}
+  ],
+  "messages": [
+    {"_id": "message1", "body": "Hello", "writer": "missing-member"}
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['groups'], 1);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 0);
+    expect(archive.counts['reminders'], 0);
+    expect(
+      archive.warnings,
+      contains('Member "Iris" ignored missing group "missing-group".'),
+    );
+    expect(
+      archive.warnings,
+      contains('Group "Main" ignored missing parent "missing-parent".'),
+    );
+    expect(
+      archive.warnings,
+      contains('Front #1 ignored missing member "missing-member".'),
+    );
+    expect(
+      archive.warnings,
+      contains('Skipped front #2: no member ids or custom label.'),
+    );
+    expect(
+      archive.warnings,
+      contains('Skipped reminder #1: missing title or schedule.'),
+    );
+    expect(
+      archive.warnings,
+      contains('Ignored missing member reference "missing-member".'),
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final member = (decoded['members'] as List).single as Map<String, dynamic>;
+    final group = (decoded['groups'] as List).single as Map<String, dynamic>;
+    final message =
+        (decoded['messages'] as List).single as Map<String, dynamic>;
+    expect(member['folder_id'], isNull);
+    expect(group['parent_group_id'], isNull);
+    expect(message['member_id'], isNull);
+  });
+
+  test('keeps custom-labeled fronts and swaps backwards intervals', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-custom-front.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "frontHistory": [
+    {
+      "_id": "custom-front",
+      "custom": "Asleep",
+      "startTime": 1767229200000,
+      "endTime": 1767225600000
+    }
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 0);
+    expect(archive.archiveJson, contains('"label": "Asleep"'));
+    expect(
+      archive.archiveJson,
+      contains('"started_at": "2026-01-01T00:00:00.000Z"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"ended_at": "2026-01-01T01:00:00.000Z"'),
+    );
+    expect(
+      archive.warnings,
+      contains('Front #1 ended before it started; swapped start and end.'),
+    );
+  });
+
   test(
     'normalizes richer Simply Plural export collections without data loss',
     () {
