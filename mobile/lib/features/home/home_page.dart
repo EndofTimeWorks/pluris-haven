@@ -176,15 +176,9 @@ class _HomePageState extends State<HomePage> {
           ],
         );
       case SpSection.polls:
-        return const OfflineFeaturePage(
-          title: 'Polls',
-          body:
-              'Polls are kept in the shell so imported SP data has a place to land.',
-          rows: [
-            SpSettingsRow('Active polls', '0'),
-            SpSettingsRow('Closed polls', '0'),
-            SpSettingsRow('Poll archive', 'empty'),
-          ],
+        return PollsPage(
+          repository: widget.repository,
+          onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.friends:
         return const OfflineFeaturePage(
@@ -899,6 +893,7 @@ class GroupsPage extends StatelessWidget {
       initialData: const [],
       builder: (context, groupSnapshot) {
         final groups = groupSnapshot.data ?? const <GroupSummary>[];
+        final displayGroups = _orderedGroupsForDisplay(groups);
 
         return SpPage(
           children: [
@@ -920,9 +915,16 @@ class GroupsPage extends StatelessWidget {
                           'Groups keep members organized without needing sync.',
                     )
                   else
-                    for (final group in groups) ...[
-                      GroupListTile(group: group),
-                      if (group != groups.last)
+                    for (
+                      var index = 0;
+                      index < displayGroups.length;
+                      index++
+                    ) ...[
+                      GroupListTile(
+                        group: displayGroups[index].group,
+                        depth: displayGroups[index].depth,
+                      ),
+                      if (index != displayGroups.length - 1)
                         const Divider(height: 1, color: _spLine),
                     ],
                   const SizedBox(height: 14),
@@ -942,31 +944,95 @@ class GroupsPage extends StatelessWidget {
   }
 }
 
-class GroupListTile extends StatelessWidget {
-  const GroupListTile({super.key, required this.group});
+class _DisplayGroup {
+  const _DisplayGroup({required this.group, required this.depth});
 
   final GroupSummary group;
+  final int depth;
+}
+
+List<_DisplayGroup> _orderedGroupsForDisplay(List<GroupSummary> groups) {
+  final byParent = <String?, List<GroupSummary>>{};
+  final groupIds = groups.map((group) => group.id).toSet();
+  for (final group in groups) {
+    final parentId = groupIds.contains(group.parentGroupId)
+        ? group.parentGroupId
+        : null;
+    byParent.putIfAbsent(parentId, () => <GroupSummary>[]).add(group);
+  }
+  for (final siblings in byParent.values) {
+    siblings.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+  }
+
+  final ordered = <_DisplayGroup>[];
+  final visited = <String>{};
+  void visit(String? parentId, int depth) {
+    for (final group in byParent[parentId] ?? const <GroupSummary>[]) {
+      if (!visited.add(group.id)) {
+        continue;
+      }
+      ordered.add(_DisplayGroup(group: group, depth: depth));
+      visit(group.id, depth + 1);
+    }
+  }
+
+  visit(null, 0);
+  for (final group in groups) {
+    if (visited.add(group.id)) {
+      ordered.add(_DisplayGroup(group: group, depth: 0));
+    }
+  }
+  return ordered;
+}
+
+class GroupListTile extends StatelessWidget {
+  const GroupListTile({super.key, required this.group, this.depth = 0});
+
+  final GroupSummary group;
+  final int depth;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: SpAvatar(
-        size: 42,
-        color: _colorFromHex(group.colorHex, fallback: _spGold),
-        label: group.emoji?.trim().isNotEmpty == true
-            ? group.emoji!.trim()
-            : _initialFor(group.name),
-      ),
-      title: Text(
-        group.name,
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text(
-        group.description?.isNotEmpty == true
-            ? group.description!
-            : 'no description',
-        style: const TextStyle(color: _spMuted),
+    final hasDescription = group.description?.trim().isNotEmpty == true;
+    return Semantics(
+      label: depth == 0
+          ? group.name
+          : '${group.name}, nested group level $depth',
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: depth * 18.0),
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (depth > 0) ...[
+                const Icon(
+                  Icons.subdirectory_arrow_right_rounded,
+                  color: _spMuted,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+              ],
+              SpAvatar(
+                size: 42,
+                color: _colorFromHex(group.colorHex, fallback: _spGold),
+                label: group.emoji?.trim().isNotEmpty == true
+                    ? group.emoji!.trim()
+                    : _initialFor(group.name),
+              ),
+            ],
+          ),
+          title: Text(
+            group.name,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            hasDescription ? group.description!.trim() : 'no description',
+            style: const TextStyle(color: _spMuted),
+          ),
+        ),
       ),
     );
   }
@@ -1422,6 +1488,307 @@ class _AddMessageSheetState extends State<AddMessageSheet> {
   Future<void> _save() async {
     await widget.repository.saveMessage(
       MessageDraft(body: _bodyController.text),
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+}
+
+class PollsPage extends StatelessWidget {
+  const PollsPage({
+    super.key,
+    required this.repository,
+    required this.onImport,
+  });
+
+  final HavenRepository repository;
+  final VoidCallback onImport;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<PollSummary>>(
+      stream: repository.watchPolls(),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final polls = snapshot.data ?? const <PollSummary>[];
+        final openCount = polls.where((poll) => !poll.closed).length;
+
+        return SpPage(
+          children: [
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: 'Polls',
+                    trailing: StatusPill(text: '$openCount open'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (polls.isEmpty)
+                    const SpEmptyState(
+                      title: 'No polls yet',
+                      body: 'Create a local vote for system decisions.',
+                    )
+                  else
+                    for (final poll in polls) ...[
+                      PollTile(poll: poll, repository: repository),
+                      if (poll != polls.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: 'Create poll',
+                    secondary: 'Import',
+                    onPrimary: () => showAddPollSheet(context, repository),
+                    onSecondary: onImport,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class PollTile extends StatelessWidget {
+  const PollTile({super.key, required this.poll, required this.repository});
+
+  final PollSummary poll;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      poll.question,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (poll.description?.trim().isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        poll.description!,
+                        style: const TextStyle(color: _spMuted, height: 1.35),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              StatusPill(text: poll.statusLabel),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final option in poll.options)
+            Semantics(
+              button: true,
+              selected: option.selected,
+              enabled: !poll.closed,
+              label:
+                  '${option.body}, ${option.selected ? 'selected' : 'not selected'}',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: poll.closed
+                    ? null
+                    : () => repository.togglePollOption(poll.id, option.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        option.selected
+                            ? Icons.check_circle_rounded
+                            : poll.kind == PollKind.singleChoice
+                            ? Icons.radio_button_unchecked_rounded
+                            : Icons.check_box_outline_blank_rounded,
+                        color: option.selected ? _spGold : _spMuted,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(option.body)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                '${poll.kind.label} - ${poll.selectedCount} selected',
+                style: const TextStyle(color: _spMuted, fontSize: 12),
+              ),
+              const Spacer(),
+              if (!poll.closed)
+                TextButton(
+                  onPressed: () => repository.closePoll(poll.id),
+                  child: const Text('Close'),
+                ),
+              IconButton(
+                tooltip: 'Delete poll',
+                onPressed: () => confirmDelete(
+                  context,
+                  title: 'Delete poll?',
+                  body: 'This poll and its local responses will be removed.',
+                  onDelete: () => repository.deletePoll(poll.id),
+                ),
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void showAddPollSheet(BuildContext context, HavenRepository repository) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddPollSheet(repository: repository),
+  );
+}
+
+class AddPollSheet extends StatefulWidget {
+  const AddPollSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<AddPollSheet> createState() => _AddPollSheetState();
+}
+
+class _AddPollSheetState extends State<AddPollSheet> {
+  final _questionController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _optionControllers = [TextEditingController(), TextEditingController()];
+  PollKind _kind = PollKind.singleChoice;
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    _descriptionController.dispose();
+    for (final controller in _optionControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Create poll',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('poll-question-field'),
+              controller: _questionController,
+              autofocus: true,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Question'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('poll-description-field'),
+              controller: _descriptionController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                helperText: 'Optional context for the vote',
+              ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<PollKind>(
+              key: const ValueKey('poll-kind-field'),
+              initialValue: _kind,
+              decoration: const InputDecoration(labelText: 'Voting'),
+              items: [
+                for (final kind in PollKind.values)
+                  DropdownMenuItem(value: kind, child: Text(kind.label)),
+              ],
+              onChanged: (kind) {
+                if (kind != null) {
+                  setState(() => _kind = kind);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            for (var index = 0; index < _optionControllers.length; index++) ...[
+              TextField(
+                key: ValueKey('poll-option-field-$index'),
+                controller: _optionControllers[index],
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+              ),
+              const SizedBox(height: 10),
+            ],
+            OutlinedButton.icon(
+              onPressed: _addOption,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add option'),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const ValueKey('save-poll-button'),
+              onPressed: _save,
+              child: const Text('Save poll'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addOption() {
+    setState(() {
+      _optionControllers.add(TextEditingController());
+    });
+  }
+
+  Future<void> _save() async {
+    await widget.repository.savePoll(
+      PollDraft(
+        question: _questionController.text,
+        description: _descriptionController.text,
+        kind: _kind,
+        options: [for (final controller in _optionControllers) controller.text],
+      ),
     );
     if (mounted) {
       Navigator.pop(context);
@@ -2730,40 +3097,7 @@ class ImportJobRow extends StatelessWidget {
                 ),
                 if (job.error != null && job.error!.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Full error',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: job.error!));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Error copied')),
-                          );
-                        },
-                        icon: const Icon(Icons.copy_rounded),
-                        label: const Text('Copy'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _spSurface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _spLine),
-                    ),
-                    child: SelectableText(
-                      job.error!,
-                      style: const TextStyle(color: _spMuted, height: 1.35),
-                    ),
-                  ),
+                  _JobErrorPreview(error: job.error!),
                 ] else ...[
                   const SizedBox(height: 16),
                   const Text(
@@ -2796,6 +3130,79 @@ class ImportJobRow extends StatelessWidget {
       _ => _spMuted,
     };
   }
+}
+
+class _JobErrorPreview extends StatelessWidget {
+  const _JobErrorPreview({required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _boundedJobError(error);
+    final isTruncated = preview.length < error.trim().length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Error',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: preview));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isTruncated ? 'Error preview copied' : 'Error copied',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy_rounded),
+              label: Text(isTruncated ? 'Copy preview' : 'Copy'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (isTruncated) ...[
+          const Text(
+            'Showing a safe preview. The full error is too large to render here.',
+            style: TextStyle(color: _spMuted),
+          ),
+          const SizedBox(height: 8),
+        ],
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _spSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _spLine),
+          ),
+          child: SelectableText(
+            preview,
+            style: const TextStyle(color: _spMuted, height: 1.35),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _boundedJobError(String error) {
+  final trimmed = error.trim();
+  const maxLength = 4000;
+  if (trimmed.length <= maxLength) {
+    return trimmed;
+  }
+  return '${trimmed.substring(0, maxLength)}\n\n'
+      '...truncated ${trimmed.length - maxLength} chars';
 }
 
 class _JobDetailLine extends StatelessWidget {
@@ -3148,6 +3555,17 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                         Navigator.pop(context);
                       }
                     },
+                  ),
+                if (widget.customization.customAccentHex != null)
+                  ChoiceChip(
+                    label: Text(
+                      'Custom ${widget.customization.customAccentHex!.toUpperCase()}',
+                    ),
+                    selected: true,
+                    avatar: AccentSwatch(
+                      color: Color(widget.customization.effectiveAccentArgb),
+                    ),
+                    onSelected: (_) {},
                   ),
               ],
             ),
@@ -4673,11 +5091,15 @@ class StatusPill extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: ExcludeSemantics(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: _spMuted,
-                fontWeight: FontWeight.w800,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: _spMuted,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),

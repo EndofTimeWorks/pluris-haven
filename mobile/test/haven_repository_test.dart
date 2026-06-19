@@ -208,6 +208,45 @@ void main() {
     expect(events.single.title, 'Front changed');
   });
 
+  test('stores and updates local polls', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        description: 'Pick what works tonight.',
+        kind: PollKind.singleChoice,
+        options: ['Soup', 'Rice', 'Soup'],
+      ),
+    );
+
+    var polls = await repository.watchPolls().first;
+    expect(polls, hasLength(1));
+    expect(polls.single.question, 'Dinner?');
+    expect(polls.single.description, 'Pick what works tonight.');
+    expect(polls.single.options.map((option) => option.body), ['Soup', 'Rice']);
+
+    await repository.togglePollOption(
+      polls.single.id,
+      polls.single.options.first.id,
+    );
+    polls = await repository.watchPolls().first;
+    expect(polls.single.selectedCount, 1);
+    expect(polls.single.options.first.selected, isTrue);
+
+    await repository.closePoll(polls.single.id);
+    polls = await repository.watchPolls().first;
+    expect(polls.single.closed, isTrue);
+
+    await repository.deletePoll(polls.single.id);
+    polls = await repository.watchPolls().first;
+    expect(polls, isEmpty);
+  });
+
   test('exports a versioned local archive', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -224,6 +263,13 @@ void main() {
     await repository.saveMessage(const MessageDraft(body: 'System check-in.'));
     await repository.saveReminder(
       const ReminderDraft(title: 'Meds', scheduleText: 'Daily'),
+    );
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.multipleChoice,
+        options: ['Soup', 'Rice'],
+      ),
     );
     await repository.recordNotificationEvent(
       const NotificationEventDraft(
@@ -246,6 +292,9 @@ void main() {
     expect((archive['notes'] as List), hasLength(1));
     expect((archive['messages'] as List), hasLength(1));
     expect((archive['reminders'] as List), hasLength(1));
+    expect((archive['polls'] as List), hasLength(1));
+    expect((archive['poll_options'] as List), hasLength(2));
+    expect((archive['poll_votes'] as List), isA<List>());
     expect((archive['fronts'] as List), hasLength(1));
     expect((archive['front_members'] as List), hasLength(1));
     expect((archive['notification_events'] as List), hasLength(1));
@@ -267,6 +316,13 @@ void main() {
     await source.saveMessage(const MessageDraft(body: 'System check-in.'));
     await source.saveReminder(
       const ReminderDraft(title: 'Meds', scheduleText: 'Daily'),
+    );
+    await source.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.multipleChoice,
+        options: ['Soup', 'Rice'],
+      ),
     );
     await source.recordNotificationEvent(
       const NotificationEventDraft(
@@ -297,6 +353,9 @@ void main() {
     expect(await target.watchNotes().first, hasLength(1));
     expect(await target.watchMessages().first, hasLength(1));
     expect(await target.watchReminders().first, hasLength(1));
+    final polls = await target.watchPolls().first;
+    expect(polls, hasLength(1));
+    expect(polls.single.options, hasLength(2));
     expect(await target.watchNotificationEvents().first, hasLength(1));
     expect(await target.watchFrontHistory().first, hasLength(1));
 
@@ -349,7 +408,7 @@ void main() {
 
     expect(members.single.displayName, 'Iris');
     expect(members.single.pronouns, 'she/they');
-    expect(fronts.single.label, 'Unknown front');
+    expect(fronts.single.label, 'Iris');
     expect(messages.single.body, 'hello');
 
     final importRecords = await database.select(database.importRecords).get();
