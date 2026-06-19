@@ -151,6 +151,32 @@ void main() {
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
+  test('extracts avatar-only Simply Plural backup zips', () {
+    final archive = Archive()
+      ..addFile(
+        ArchiveFile(
+          '7f066fa379e74fc784007375037c1154a3a3946f76ef6b401c9b9371a4a85a93.png',
+          4,
+          [1, 2, 3, 4],
+        ),
+      );
+
+    final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    final decoded = decodeImportFileBytes(
+      fileName: 'Avatars_system.zip',
+      bytes: bytes,
+    );
+
+    expect(decoded, isNotNull);
+    expect(decoded!.text, '{}');
+    expect(decoded.avatarAssets, hasLength(1));
+    expect(
+      decoded.avatarAssets.single.id,
+      '7f066fa379e74fc784007375037c1154a3a3946f76ef6b401c9b9371a4a85a93',
+    );
+    expect(decoded.avatarAssets.single.mimeType, 'image/png');
+  });
+
   test('previews invalid archive as not applyable', () {
     final preview = previewImportText(
       fileName: 'bad.json',
