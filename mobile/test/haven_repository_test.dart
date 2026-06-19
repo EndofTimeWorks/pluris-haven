@@ -80,6 +80,10 @@ void main() {
     await repository.resetDashboardShortcuts();
     customization = await repository.loadCustomization();
     expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
+
+    await repository.setDashboardShortcutIds(const []);
+    customization = await repository.loadCustomization();
+    expect(customization.dashboardShortcutIds, isEmpty);
   });
 
   test('stores members and links them to front sessions', () async {

@@ -15,7 +15,7 @@ if (hasUploadSigning) {
 }
 
 android {
-    namespace = "support.plurishaven"
+    namespace = "works.endoftime.plurishaven"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "support.plurishaven"
+        applicationId = "works.endoftime.plurishaven"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
