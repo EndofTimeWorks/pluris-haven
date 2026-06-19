@@ -80,9 +80,12 @@ class _ExternalArchiveNormalizer {
   final warnings = <String>[];
   final _memberIdsByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
+  final _customFieldIdsByExternalId = <String, String>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
+  late final List<Map<String, Object?>> customFields;
+  late final List<Map<String, Object?>> customFieldValues;
   late final List<Map<String, Object?>> notes;
   late final List<Map<String, Object?>> messages;
   late final List<Map<String, Object?>> fronts;
@@ -94,6 +97,8 @@ class _ExternalArchiveNormalizer {
     groups = _normalizeGroups();
     _indexGroupMembers();
     members = _normalizeMembers();
+    customFields = _normalizeCustomFields();
+    customFieldValues = _normalizeCustomFieldValues();
     notes = _normalizeNotes();
     messages = _normalizeMessages();
     reminders = _normalizeReminders();
@@ -116,6 +121,8 @@ class _ExternalArchiveNormalizer {
     },
     'members': members,
     'groups': groups,
+    'custom_fields': customFields,
+    'custom_field_values': customFieldValues,
     'notes': notes,
     'messages': messages,
     'reminders': reminders,
@@ -172,10 +179,39 @@ class _ExternalArchiveNormalizer {
         records.add(record);
       }
     }
+    if (source == ImportSource.simplyPlural) {
+      final customFronts = _firstList(decoded, const [
+        'customFronts',
+        'custom_fronts',
+        'frontStatuses',
+        'FrontStatuses',
+      ]);
+      for (var index = 0; index < customFronts.length; index++) {
+        final customFront = _mapValue(customFronts[index]);
+        if (customFront == null) {
+          warnings.add(
+            'Skipped custom front #${index + 1}: expected an object.',
+          );
+          continue;
+        }
+        final record = _memberRecord(
+          customFront,
+          records.length,
+          isCustomFront: true,
+        );
+        if (record != null) {
+          records.add(record);
+        }
+      }
+    }
     return records;
   }
 
-  Map<String, Object?>? _memberRecord(Map<String, Object?> member, int index) {
+  Map<String, Object?>? _memberRecord(
+    Map<String, Object?> member,
+    int index, {
+    bool isCustomFront = false,
+  }) {
     final name = _firstString(member, const [
       'display_name',
       'displayName',
@@ -239,9 +275,121 @@ class _ExternalArchiveNormalizer {
         'uuid',
       ]),
       'archived': member['archived'] == true,
+      'is_custom_front': isCustomFront || member['is_custom_front'] == true,
       'created_at': _dateString(member, const ['created_at', 'createdAt']),
       'updated_at': _dateString(member, const ['updated_at', 'updatedAt']),
     };
+  }
+
+  List<Map<String, Object?>> _normalizeCustomFields() {
+    final items = _firstList(decoded, const [
+      'customFields',
+      'custom_fields',
+      'fields',
+    ]);
+    final records = <Map<String, Object?>>[];
+    for (var index = 0; index < items.length; index++) {
+      final field = _mapValue(items[index]);
+      if (field == null) {
+        warnings.add('Skipped custom field #${index + 1}: expected an object.');
+        continue;
+      }
+      final name = _firstString(field, const [
+        'name',
+        'label',
+        'title',
+      ])?.trim();
+      if (name == null || name.isEmpty) {
+        warnings.add('Skipped custom field #${index + 1}: missing name.');
+        continue;
+      }
+      final externalId =
+          _firstString(field, const ['_id', 'id', 'uuid', 'fieldId']) ??
+          _slug(name);
+      final id = _stableId('custom-field', externalId);
+      _customFieldIdsByExternalId[externalId] = id;
+      records.add({
+        'id': id,
+        'name': name,
+        'field_type': _customFieldType(field['type']),
+        'privacy': _firstString(field, const ['privacy', 'private', 'bucket']),
+        'position':
+            _intValue(field['order']) ?? _intValue(field['position']) ?? index,
+        'created_at': _dateString(field, const ['created_at', 'createdAt']),
+        'updated_at': _dateString(field, const ['updated_at', 'updatedAt']),
+      });
+    }
+    return records;
+  }
+
+  List<Map<String, Object?>> _normalizeCustomFieldValues() {
+    final records = <Map<String, Object?>>[];
+    for (final userValue in _firstList(decoded, const ['users'])) {
+      final user = _mapValue(userValue);
+      final fields = user == null ? null : _mapValue(user['fields']);
+      if (fields == null || fields.isEmpty) {
+        continue;
+      }
+      records.addAll(
+        _customFieldValueRecords(
+          fields,
+          ownerExternalId: 'system',
+          memberId: null,
+          updatedAt: _dateString(user!, const ['lastOperationTime']),
+        ),
+      );
+    }
+
+    for (final memberValue in _firstList(decoded, const ['members'])) {
+      final member = _mapValue(memberValue);
+      final info = member == null ? null : _mapValue(member['info']);
+      if (member == null || info == null || info.isEmpty) {
+        continue;
+      }
+      final externalId = _firstString(member, const [
+        '_id',
+        'id',
+        'uuid',
+        'memberId',
+        'uid',
+      ]);
+      if (externalId == null) {
+        continue;
+      }
+      records.addAll(
+        _customFieldValueRecords(
+          info,
+          ownerExternalId: externalId,
+          memberId: _memberIdsByExternalId[externalId],
+          updatedAt: _dateString(member, const ['lastOperationTime']),
+        ),
+      );
+    }
+    return records;
+  }
+
+  List<Map<String, Object?>> _customFieldValueRecords(
+    Map<String, Object?> values, {
+    required String ownerExternalId,
+    required String? memberId,
+    required String? updatedAt,
+  }) {
+    final records = <Map<String, Object?>>[];
+    for (final entry in values.entries) {
+      final fieldId = _customFieldIdsByExternalId[entry.key];
+      if (fieldId == null || entry.value == null) {
+        continue;
+      }
+      records.add({
+        'id': _stableId('custom-field-value', '$ownerExternalId-${entry.key}'),
+        'field_id': fieldId,
+        'member_id': memberId,
+        'value': _customFieldValue(entry.value),
+        'created_at': updatedAt,
+        'updated_at': updatedAt,
+      });
+    }
+    return records;
   }
 
   List<Map<String, Object?>> _normalizeGroups() {
@@ -824,6 +972,8 @@ class _FrontData {
 Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'members': _listCount(archive['members']),
   'groups': _listCount(archive['groups']),
+  'custom_fields': _listCount(archive['custom_fields']),
+  'custom_field_values': _listCount(archive['custom_field_values']),
   'notes': _listCount(archive['notes']),
   'messages': _listCount(archive['messages']),
   'reminders': _listCount(archive['reminders']),
@@ -937,6 +1087,43 @@ String? _normalizeColor(String? value) {
     return null;
   }
   return trimmed.startsWith('#') ? trimmed : '#$trimmed';
+}
+
+int? _intValue(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  return null;
+}
+
+String _customFieldType(Object? value) {
+  if (value is int) {
+    return switch (value) {
+      2 || 6 => 'date',
+      _ => 'text',
+    };
+  }
+  final text = value?.toString().trim().toLowerCase();
+  return switch (text) {
+    'number' || 'numeric' || 'integer' => 'number',
+    'date' || 'datetime' || 'timestamp' => 'date',
+    'bool' || 'boolean' => 'boolean',
+    'select' || 'choice' || 'dropdown' => 'select',
+    _ => 'text',
+  };
+}
+
+String _customFieldValue(Object? value) {
+  if (value is String) {
+    return value;
+  }
+  return const JsonEncoder.withIndent('  ').convert(value);
 }
 
 String _slug(String value) {

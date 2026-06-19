@@ -66,6 +66,7 @@ class MemberSummary {
     this.colorHex,
     this.description,
     this.archived = false,
+    this.isCustomFront = false,
   });
 
   final String id;
@@ -74,6 +75,7 @@ class MemberSummary {
   final String? colorHex;
   final String? description;
   final bool archived;
+  final bool isCustomFront;
 }
 
 class MemberDraft {
@@ -218,6 +220,38 @@ enum PollKind {
       orElse: () => PollKind.singleChoice,
     );
   }
+}
+
+class CustomFieldSummary {
+  const CustomFieldSummary({
+    required this.id,
+    required this.name,
+    required this.fieldType,
+    this.privacy,
+    required this.position,
+    required this.valueCount,
+  });
+
+  final String id;
+  final String name;
+  final String fieldType;
+  final String? privacy;
+  final int position;
+  final int valueCount;
+}
+
+class CustomFieldValueSummary {
+  const CustomFieldValueSummary({
+    required this.id,
+    required this.fieldId,
+    this.memberId,
+    required this.value,
+  });
+
+  final String id;
+  final String fieldId;
+  final String? memberId;
+  final String value;
 }
 
 class PollOptionSummary {
@@ -447,6 +481,10 @@ abstract interface class HavenRepository {
 
   Stream<List<ReminderSummary>> watchReminders();
 
+  Stream<List<CustomFieldSummary>> watchCustomFields();
+
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues();
+
   Stream<List<PollSummary>> watchPolls();
 
   Stream<List<NotificationEventSummary>> watchNotificationEvents();
@@ -615,9 +653,58 @@ class LocalHavenRepository implements HavenRepository {
             colorHex: row.colorHex,
             description: row.description,
             archived: row.archived,
+            isCustomFront: row.isCustomFront,
           ),
       ],
     );
+  }
+
+  @override
+  Stream<List<CustomFieldSummary>> watchCustomFields() {
+    final query = database.select(database.customFieldDefinitions)
+      ..where((field) => field.systemId.equals(localSystemId))
+      ..orderBy([
+        (field) =>
+            OrderingTerm(expression: field.position, mode: OrderingMode.asc),
+        (field) => OrderingTerm(expression: field.name, mode: OrderingMode.asc),
+      ]);
+
+    return query.watch().asyncMap((fields) async {
+      final values = await database.select(database.customFieldValues).get();
+      final valueCounts = <String, int>{};
+      for (final value in values) {
+        valueCounts[value.fieldId] = (valueCounts[value.fieldId] ?? 0) + 1;
+      }
+      return [
+        for (final field in fields)
+          CustomFieldSummary(
+            id: field.id,
+            name: field.name,
+            fieldType: field.fieldType,
+            privacy: field.privacy,
+            position: field.position,
+            valueCount: valueCounts[field.id] ?? 0,
+          ),
+      ];
+    });
+  }
+
+  @override
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() {
+    return database
+        .select(database.customFieldValues)
+        .watch()
+        .map(
+          (rows) => [
+            for (final row in rows)
+              CustomFieldValueSummary(
+                id: row.id,
+                fieldId: row.fieldId,
+                memberId: row.memberId,
+                value: row.value,
+              ),
+          ],
+        );
   }
 
   @override
@@ -883,7 +970,7 @@ class LocalHavenRepository implements HavenRepository {
   String get _homeSnapshotSql => '''
 SELECT
   COALESCE((SELECT name FROM plural_systems WHERE id = ? LIMIT 1), 'Local system') AS system_name,
-  (SELECT COUNT(*) FROM members WHERE system_id = ? AND archived = 0) AS member_count,
+  (SELECT COUNT(*) FROM members WHERE system_id = ? AND archived = 0 AND is_custom_front = 0) AS member_count,
   (SELECT COUNT(*) FROM system_groups WHERE system_id = ?) AS group_count,
   (SELECT COUNT(*) FROM notes WHERE system_id = ?) AS note_count,
   (SELECT COUNT(*) FROM front_sessions WHERE system_id = ?) AS front_history_count,
@@ -1574,6 +1661,13 @@ SELECT
     final reminders = await (database.select(
       database.reminders,
     )..where((reminder) => reminder.systemId.equals(localSystemId))).get();
+    final customFields = await (database.select(
+      database.customFieldDefinitions,
+    )..where((field) => field.systemId.equals(localSystemId))).get();
+    final customFieldIds = customFields.map((field) => field.id).toSet();
+    final customFieldValues = await database
+        .select(database.customFieldValues)
+        .get();
     final polls = await (database.select(
       database.polls,
     )..where((poll) => poll.systemId.equals(localSystemId))).get();
@@ -1609,6 +1703,14 @@ SELECT
       'messages': [for (final message in messages) _messageToJson(message)],
       'reminders': [
         for (final reminder in reminders) _reminderToJson(reminder),
+      ],
+      'custom_fields': [
+        for (final field in customFields) _customFieldToJson(field),
+      ],
+      'custom_field_values': [
+        for (final value in customFieldValues)
+          if (customFieldIds.contains(value.fieldId))
+            _customFieldValueToJson(value),
       ],
       'polls': [for (final poll in polls) _pollToJson(poll)],
       'poll_options': [
@@ -1786,6 +1888,8 @@ SELECT
     final notes = _jsonObjectList(decoded['notes']);
     final messages = _jsonObjectList(decoded['messages']);
     final reminders = _jsonObjectList(decoded['reminders']);
+    final customFields = _jsonObjectList(decoded['custom_fields']);
+    final customFieldValues = _jsonObjectList(decoded['custom_field_values']);
     final polls = _jsonObjectList(decoded['polls']);
     final pollOptions = _jsonObjectList(decoded['poll_options']);
     final pollVotes = _jsonObjectList(decoded['poll_votes']);
@@ -1800,6 +1904,8 @@ SELECT
       members: members,
       notes: notes,
       messages: messages,
+      customFields: customFields,
+      customFieldValues: customFieldValues,
       polls: polls,
       pollOptions: pollOptions,
       pollVotes: pollVotes,
@@ -1810,6 +1916,7 @@ SELECT
       'Import archive source=${source.name} file=${fileName ?? '(none)'} '
       'members=${members.length} groups=${groups.length} notes=${notes.length} '
       'messages=${messages.length} reminders=${reminders.length} fronts=${fronts.length} '
+      'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
       'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
     );
@@ -1856,6 +1963,12 @@ SELECT
       for (final reminder in reminders) {
         await _importReminder(reminder, strategy, now);
       }
+      for (final field in customFields) {
+        await _importCustomField(field, strategy, now);
+      }
+      for (final value in customFieldValues) {
+        await _importCustomFieldValue(value, strategy, now);
+      }
       for (final poll in polls) {
         await _importPoll(poll, strategy, now);
       }
@@ -1894,6 +2007,8 @@ SELECT
                   'notes': notes.length,
                   'messages': messages.length,
                   'reminders': reminders.length,
+                  'custom_fields': customFields.length,
+                  'custom_field_values': customFieldValues.length,
                   'polls': polls.length,
                   'poll_options': pollOptions.length,
                   'poll_votes': pollVotes.length,
@@ -1920,6 +2035,8 @@ SELECT
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> notes,
     required List<Map<String, Object?>> messages,
+    required List<Map<String, Object?>> customFields,
+    required List<Map<String, Object?>> customFieldValues,
     required List<Map<String, Object?>> polls,
     required List<Map<String, Object?>> pollOptions,
     required List<Map<String, Object?>> pollVotes,
@@ -1931,6 +2048,9 @@ SELECT
     }.whereType<String>().toSet();
     final memberIds = {
       for (final member in members) _stringValue(member['id']),
+    }.whereType<String>().toSet();
+    final customFieldIds = {
+      for (final field in customFields) _stringValue(field['id']),
     }.whereType<String>().toSet();
     final pollIds = {
       for (final poll in polls) _stringValue(poll['id']),
@@ -1974,6 +2094,19 @@ SELECT
         cleanupCount++;
       }
     }
+
+    customFieldValues.removeWhere((value) {
+      final fieldId = _stringValue(value['field_id']);
+      final memberId = _stringValue(value['member_id']);
+      final keep =
+          fieldId != null &&
+          customFieldIds.contains(fieldId) &&
+          (memberId == null || memberIds.contains(memberId));
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
 
     pollOptions.removeWhere((option) {
       final pollId = _stringValue(option['poll_id']);
@@ -2202,6 +2335,7 @@ SELECT
       description: Value(_stringValue(member['description'])),
       avatarUrl: Value(localAvatarUrl ?? _stringValue(member['avatar_url'])),
       pluralKitId: Value(_stringValue(member['pluralkit_id'])),
+      isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
       createdAt: _dateValue(member['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -2274,6 +2408,52 @@ SELECT
           : (_dateValue(reminder['updated_at']) ?? now),
     );
     return _insertArchiveRow(database.reminders, companion, strategy);
+  }
+
+  Future<void> _importCustomField(
+    Map<String, Object?> field,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(field, 'id');
+    final name = _requiredString(field, 'name');
+    final companion = CustomFieldDefinitionsCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      name: name,
+      fieldType: Value(_stringValue(field['field_type']) ?? 'text'),
+      privacy: Value(_stringValue(field['privacy'])),
+      position: Value(_intValue(field['position']) ?? 0),
+      createdAt: _dateValue(field['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(field['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(
+      database.customFieldDefinitions,
+      companion,
+      strategy,
+    );
+  }
+
+  Future<void> _importCustomFieldValue(
+    Map<String, Object?> value,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(value, 'id');
+    final fieldId = _requiredString(value, 'field_id');
+    final companion = CustomFieldValuesCompanion.insert(
+      id: id,
+      fieldId: fieldId,
+      memberId: Value(_stringValue(value['member_id'])),
+      value: _stringValue(value['value']) ?? '',
+      createdAt: _dateValue(value['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(value['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.customFieldValues, companion, strategy);
   }
 
   Future<void> _importPoll(
@@ -2519,6 +2699,7 @@ SELECT
     'description': member.description,
     'avatar_url': member.avatarUrl,
     'pluralkit_id': member.pluralKitId,
+    'is_custom_front': member.isCustomFront,
     'archived': member.archived,
     'created_at': member.createdAt.toIso8601String(),
     'updated_at': member.updatedAt.toIso8601String(),
@@ -2561,6 +2742,25 @@ SELECT
     'enabled': reminder.enabled,
     'created_at': reminder.createdAt.toIso8601String(),
     'updated_at': reminder.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _customFieldToJson(CustomFieldDefinition field) => {
+    'id': field.id,
+    'name': field.name,
+    'field_type': field.fieldType,
+    'privacy': field.privacy,
+    'position': field.position,
+    'created_at': field.createdAt.toIso8601String(),
+    'updated_at': field.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _customFieldValueToJson(CustomFieldValue value) => {
+    'id': value.id,
+    'field_id': value.fieldId,
+    'member_id': value.memberId,
+    'value': value.value,
+    'created_at': value.createdAt.toIso8601String(),
+    'updated_at': value.updatedAt.toIso8601String(),
   };
 
   Map<String, Object?> _pollToJson(Poll poll) => {

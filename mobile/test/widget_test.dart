@@ -726,6 +726,16 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _remindersController.add(_reminders),
     );
+    _customFieldsController =
+        StreamController<List<CustomFieldSummary>>.broadcast(
+          sync: true,
+          onListen: () => _customFieldsController.add(_customFields),
+        );
+    _customFieldValuesController =
+        StreamController<List<CustomFieldValueSummary>>.broadcast(
+          sync: true,
+          onListen: () => _customFieldValuesController.add(_customFieldValues),
+        );
     _pollsController = StreamController<List<PollSummary>>.broadcast(
       sync: true,
       onListen: () => _pollsController.add(_polls),
@@ -755,6 +765,8 @@ class FakeHavenRepository implements HavenRepository {
   List<NoteSummary> _notes = const [];
   List<MessageSummary> _messages = const [];
   List<ReminderSummary> _reminders = const [];
+  final List<CustomFieldSummary> _customFields = const [];
+  final List<CustomFieldValueSummary> _customFieldValues = const [];
   List<PollSummary> _polls = const [];
   List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
@@ -766,6 +778,9 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<NoteSummary>> _notesController;
   late final StreamController<List<MessageSummary>> _messagesController;
   late final StreamController<List<ReminderSummary>> _remindersController;
+  late final StreamController<List<CustomFieldSummary>> _customFieldsController;
+  late final StreamController<List<CustomFieldValueSummary>>
+  _customFieldValuesController;
   late final StreamController<List<PollSummary>> _pollsController;
   late final StreamController<List<NotificationEventSummary>>
   _notificationEventsController;
@@ -806,6 +821,16 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<ReminderSummary>> watchReminders() {
     return _remindersController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<CustomFieldSummary>> watchCustomFields() {
+    return _customFieldsController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() {
+    return _customFieldValuesController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -1439,6 +1464,8 @@ class FakeHavenRepository implements HavenRepository {
     await _notesController.close();
     await _messagesController.close();
     await _remindersController.close();
+    await _customFieldsController.close();
+    await _customFieldValuesController.close();
     await _pollsController.close();
     await _notificationEventsController.close();
     await _frontHistoryController.close();
