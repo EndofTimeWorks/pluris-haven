@@ -1,21 +1,83 @@
-MIT License
+Pluris Haven Source-Available Noncommercial License v0.1
 
-Copyright (c) 2025 System-End
+Copyright (c) 2026 EndofTimeWorks
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to Pluris Haven and all source code, documentation,
+assets, build files, and other materials in this repository unless a file
+clearly says otherwise.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Noncommercial permission
+
+You may use, copy, study, modify, build, and share this software for
+noncommercial purposes, including personal use, education, research,
+accessibility work, community review, and self-hosting for yourself or a small
+private group.
+
+You may distribute modified versions for noncommercial purposes only if you:
+
+- keep this license with the distribution;
+- keep copyright notices intact;
+- give clear credit to "Pluris Haven" and "EndofTimeWorks";
+- state that you changed the software, if you changed it; and
+- do not imply that EndofTimeWorks endorses your modified version.
+
+2. Commercial use is not granted
+
+This license does not allow commercial use.
+
+Commercial use includes, without limitation:
+
+- selling the software or a modified version;
+- charging for access to a hosted version;
+- using the software in a paid product, paid service, or paid bundle;
+- distributing the software through a commercial marketplace for money;
+- using the software to provide paid support, managed hosting, or consulting;
+- monetizing the software through advertising, sponsorships, subscriptions,
+  in-app purchases, or other revenue tied to the software.
+
+Commercial use requires a separate written commercial license from
+EndofTimeWorks. Commercial licenses may include revenue-sharing or other payment
+terms. No commercial rights are granted until both sides agree in writing.
+
+3. Attribution
+
+Any public copy, fork, hosted instance, modified version, app listing, package,
+or published build must provide reasonable attribution to:
+
+Pluris Haven by EndofTimeWorks
+
+Attribution should be visible in a reasonable place for the format, such as an
+About page, README, app listing, credits screen, documentation page, package
+metadata, or source notice.
+
+4. Trademarks and names
+
+This license does not grant trademark rights. Do not use the names "Pluris
+Haven" or "EndofTimeWorks" in a way that suggests endorsement, official status,
+or ownership of your modified version unless EndofTimeWorks gives written
+permission.
+
+5. Contributions
+
+Unless otherwise agreed in writing, contributions submitted to this repository
+are licensed under this same license. By submitting a contribution, you confirm
+that you have the right to license it this way.
+
+6. Third-party components
+
+Third-party dependencies, SDKs, fonts, icons, and tools keep their own licenses.
+This license only covers the parts of this repository that EndofTimeWorks owns
+or has the right to license.
+
+7. No warranty
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE, SECURITY, AVAILABILITY, AND
+NONINFRINGEMENT. USE IT AT YOUR OWN RISK.
+
+8. Limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, ENDOFTIMEWORKS AND CONTRIBUTORS WILL
+NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE.
