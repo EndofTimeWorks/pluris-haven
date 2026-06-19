@@ -80,7 +80,7 @@ DecodedImportFile? _decodeZipImport({
       continue;
     }
 
-    if (_looksLikeAvatarAsset(lowerName)) {
+    if (_looksLikeAvatarAsset(lowerName, zipFileName: fileName)) {
       avatarAssets.add(
         ImportAvatarAsset(
           id: _avatarAssetId(name),
@@ -110,7 +110,15 @@ DecodedImportFile? _decodeZipImport({
 
   final selected = best;
   if (selected == null) {
-    return null;
+    if (avatarAssets.isEmpty) {
+      return null;
+    }
+    return DecodedImportFile(
+      displayName: fileName,
+      text: '{}',
+      detail: 'Read ${avatarAssets.length} avatars from $fileName.',
+      avatarAssets: avatarAssets,
+    );
   }
 
   return DecodedImportFile(
@@ -123,8 +131,9 @@ DecodedImportFile? _decodeZipImport({
   );
 }
 
-bool _looksLikeAvatarAsset(String lowerName) {
-  if (!lowerName.contains('avatar')) {
+bool _looksLikeAvatarAsset(String lowerName, {required String zipFileName}) {
+  final lowerZipName = zipFileName.toLowerCase();
+  if (!lowerName.contains('avatar') && !lowerZipName.contains('avatar')) {
     return false;
   }
   return lowerName.endsWith('.png') ||
