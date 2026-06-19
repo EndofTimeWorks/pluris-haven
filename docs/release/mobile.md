@@ -8,8 +8,8 @@ There are two build tracks.
 
 It creates one prerelease from the checked-in `mobile/pubspec.yaml` version:
 
-- pubspec version: `0.0.1-pre-alpha.dev.16+16`
-- tag: `mobile-v0.0.1-pre-alpha.dev.16+16`
+- pubspec version: `0.0.1-pre-alpha.dev.17+17`
+- tag: `mobile-v0.0.1-pre-alpha.dev.17+17`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -27,7 +27,7 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.0.1-pre-alpha.dev.17+17
+version: 0.0.1-pre-alpha.dev.18+18
 ```
 
 The `.dev.N` part is the SemVer prerelease ordering. The `+N` part is Android's
@@ -60,8 +60,8 @@ Meaning:
 Examples:
 
 ```text
-mobile-v0.0.1-pre-alpha.dev.16+16
 mobile-v0.0.1-pre-alpha.dev.17+17
+mobile-v0.0.1-pre-alpha.dev.18+18
 mobile-v0.0.1-pre-alpha.1+1
 mobile-v0.0.1-alpha.1+2
 mobile-v0.0.1+3
