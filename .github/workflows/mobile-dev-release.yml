@@ -59,6 +59,11 @@ jobs:
             exit 1
           fi
           printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > android/app/pluris-haven-upload.jks
+          if ! keytool -list -keystore android/app/pluris-haven-upload.jks -storepass "${ANDROID_KEYSTORE_PASSWORD}" -alias "${ANDROID_KEY_ALIAS}" >/dev/null 2>&1; then
+            echo "Android signing key alias was not found in the uploaded keystore." >&2
+            echo "Set ANDROID_KEY_ALIAS to the alias used with keytool -genkeypair, usually pluris-haven-upload." >&2
+            exit 1
+          fi
           {
             echo "storeFile=pluris-haven-upload.jks"
             echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"

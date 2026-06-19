@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../background/background_tasks.dart';
 import '../../data/import/import_archive_mapper.dart';
 import '../../data/import/import_file_decoder.dart';
 import '../../data/import/import_plan.dart';
@@ -475,7 +475,7 @@ class MembersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MemberSummary>>(
-      stream: repository.watchMembers(),
+      stream: repository.watchMembers(includeArchived: true),
       initialData: const [],
       builder: (context, membersSnapshot) {
         final members = membersSnapshot.data ?? const <MemberSummary>[];
@@ -543,22 +543,37 @@ class MemberListTile extends StatelessWidget {
         member.displayName,
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      subtitle: Text(
-        member.pronouns?.isNotEmpty == true ? member.pronouns! : 'no pronouns',
-        style: const TextStyle(color: _spMuted),
-      ),
+      subtitle: Text(_subtitle, style: const TextStyle(color: _spMuted)),
       trailing: PopupMenuButton<String>(
         tooltip: 'Member actions',
         onSelected: (value) {
           if (value == 'front') {
             repository.setFrontMembers([member.id]);
+          } else if (value == 'edit') {
+            showMemberSheet(context, repository, member: member);
           } else if (value == 'archive') {
             repository.archiveMember(member.id);
+          } else if (value == 'restore') {
+            repository.restoreMember(member.id);
+          } else if (value == 'delete') {
+            confirmDelete(
+              context,
+              title: 'Delete member?',
+              body:
+                  '${member.displayName} will be permanently removed from this local system.',
+              onDelete: () => repository.deleteMember(member.id),
+            );
           }
         },
-        itemBuilder: (context) => const [
-          PopupMenuItem(value: 'front', child: Text('Set front')),
-          PopupMenuItem(value: 'archive', child: Text('Archive')),
+        itemBuilder: (context) => [
+          if (!member.archived)
+            const PopupMenuItem(value: 'front', child: Text('Set front')),
+          const PopupMenuItem(value: 'edit', child: Text('Edit')),
+          if (member.archived)
+            const PopupMenuItem(value: 'restore', child: Text('Restore'))
+          else
+            const PopupMenuItem(value: 'archive', child: Text('Archive')),
+          const PopupMenuItem(value: 'delete', child: Text('Delete')),
         ],
       ),
     );
@@ -566,6 +581,13 @@ class MemberListTile extends StatelessWidget {
 
   String get _initial {
     return _initialFor(member.displayName);
+  }
+
+  String get _subtitle {
+    final pronouns = member.pronouns?.isNotEmpty == true
+        ? member.pronouns!
+        : 'no pronouns';
+    return member.archived ? '$pronouns - archived' : pronouns;
   }
 
   Color _memberColor(MemberSummary member) {
@@ -589,19 +611,29 @@ Color _colorFromHex(String? colorHex, {Color fallback = _spPurple}) {
 }
 
 void showAddMemberSheet(BuildContext context, HavenRepository repository) {
+  showMemberSheet(context, repository);
+}
+
+void showMemberSheet(
+  BuildContext context,
+  HavenRepository repository, {
+  MemberSummary? member,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) => AddMemberSheet(repository: repository),
+    builder: (context) =>
+        AddMemberSheet(repository: repository, member: member),
   );
 }
 
 class AddMemberSheet extends StatefulWidget {
-  const AddMemberSheet({super.key, required this.repository});
+  const AddMemberSheet({super.key, required this.repository, this.member});
 
   final HavenRepository repository;
+  final MemberSummary? member;
 
   @override
   State<AddMemberSheet> createState() => _AddMemberSheetState();
@@ -612,6 +644,22 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   final _pronounsController = TextEditingController();
   final _descriptionController = TextEditingController();
   HavenAccentColor _color = HavenAccentColor.purple;
+
+  bool get _isEditing => widget.member != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final member = widget.member;
+    if (member == null) {
+      return;
+    }
+
+    _nameController.text = member.displayName;
+    _pronounsController.text = member.pronouns ?? '';
+    _descriptionController.text = member.description ?? '';
+    _color = _closestAccentForHex(member.colorHex);
+  }
 
   @override
   void dispose() {
@@ -635,7 +683,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Add member',
+              'Member',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -676,7 +724,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             FilledButton(
               key: const ValueKey('save-member-button'),
               onPressed: _save,
-              child: const Text('Save member'),
+              child: Text(_isEditing ? 'Save changes' : 'Save member'),
             ),
           ],
         ),
@@ -685,19 +733,39 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   Future<void> _save() async {
-    await widget.repository.saveMember(
-      MemberDraft(
-        displayName: _nameController.text,
-        pronouns: _pronounsController.text,
-        colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
-        description: _descriptionController.text,
-      ),
+    final draft = MemberDraft(
+      displayName: _nameController.text,
+      pronouns: _pronounsController.text,
+      colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
+      description: _descriptionController.text,
     );
+    final member = widget.member;
+    if (member == null) {
+      await widget.repository.saveMember(draft);
+    } else {
+      await widget.repository.updateMember(member.id, draft);
+    }
 
     if (mounted) {
       Navigator.pop(context);
     }
   }
+}
+
+HavenAccentColor _closestAccentForHex(String? colorHex) {
+  if (colorHex == null) {
+    return HavenAccentColor.purple;
+  }
+
+  final normalized = colorHex.toUpperCase();
+  for (final color in HavenAccentColor.values) {
+    final hex = '#${color.argb.toRadixString(16).substring(2)}'.toUpperCase();
+    if (hex == normalized) {
+      return color;
+    }
+  }
+
+  return HavenAccentColor.purple;
 }
 
 class FrontHistoryPage extends StatelessWidget {
@@ -1059,7 +1127,7 @@ class NotesPage extends StatelessWidget {
                     )
                   else
                     for (final note in notes) ...[
-                      NoteListTile(note: note),
+                      NoteListTile(note: note, repository: repository),
                       if (note != notes.last)
                         const Divider(height: 1, color: _spLine),
                     ],
@@ -1081,9 +1149,10 @@ class NotesPage extends StatelessWidget {
 }
 
 class NoteListTile extends StatelessWidget {
-  const NoteListTile({super.key, required this.note});
+  const NoteListTile({super.key, required this.note, required this.repository});
 
   final NoteSummary note;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
@@ -1101,6 +1170,16 @@ class NoteListTile extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(color: _spMuted),
+      ),
+      trailing: IconButton(
+        tooltip: 'Delete note',
+        onPressed: () => confirmDelete(
+          context,
+          title: 'Delete note?',
+          body: 'This note will be permanently removed.',
+          onDelete: () => repository.deleteNote(note.id),
+        ),
+        icon: const Icon(Icons.delete_outline_rounded),
       ),
     );
   }
@@ -1381,7 +1460,7 @@ class RemindersPage extends StatelessWidget {
                     )
                   else
                     for (final reminder in reminders) ...[
-                      ReminderTile(reminder: reminder),
+                      ReminderTile(reminder: reminder, repository: repository),
                       if (reminder != reminders.last)
                         const Divider(height: 1, color: _spLine),
                     ],
@@ -1402,9 +1481,14 @@ class RemindersPage extends StatelessWidget {
 }
 
 class ReminderTile extends StatelessWidget {
-  const ReminderTile({super.key, required this.reminder});
+  const ReminderTile({
+    super.key,
+    required this.reminder,
+    required this.repository,
+  });
 
   final ReminderSummary reminder;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
@@ -1441,7 +1525,21 @@ class ReminderTile extends StatelessWidget {
               ],
             ),
           ),
-          StatusPill(text: reminder.enabled ? 'on' : 'off'),
+          Column(
+            children: [
+              StatusPill(text: reminder.enabled ? 'on' : 'off'),
+              IconButton(
+                tooltip: 'Delete reminder',
+                onPressed: () => confirmDelete(
+                  context,
+                  title: 'Delete reminder?',
+                  body: 'This reminder will be permanently removed.',
+                  onDelete: () => repository.deleteReminder(reminder.id),
+                ),
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1467,23 +1565,39 @@ class AddReminderSheet extends StatefulWidget {
   State<AddReminderSheet> createState() => _AddReminderSheetState();
 }
 
+enum ReminderScheduleKind {
+  daily('Daily'),
+  weekly('Weekly'),
+  monthly('Monthly'),
+  afterFront('After member fronts');
+
+  const ReminderScheduleKind(this.label);
+
+  final String label;
+}
+
 class _AddReminderSheetState extends State<AddReminderSheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  final _scheduleController = TextEditingController(text: 'Daily');
+  final _timeController = TextEditingController(text: '09:00');
+  final _detailController = TextEditingController();
+  ReminderScheduleKind _scheduleKind = ReminderScheduleKind.daily;
+  String _weekday = 'Monday';
+  int _monthDay = 1;
 
   @override
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
-    _scheduleController.dispose();
+    _timeController.dispose();
+    _detailController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           18,
           0,
@@ -1505,15 +1619,86 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('reminder-schedule-field'),
-              controller: _scheduleController,
-              decoration: const InputDecoration(
-                labelText: 'Schedule',
-                helperText: 'Example: Daily, Weekly, After Iris fronts',
-              ),
+            DropdownButtonFormField<ReminderScheduleKind>(
+              key: const ValueKey('reminder-schedule-kind-field'),
+              initialValue: _scheduleKind,
+              decoration: const InputDecoration(labelText: 'Schedule'),
+              items: [
+                for (final kind in ReminderScheduleKind.values)
+                  DropdownMenuItem(value: kind, child: Text(kind.label)),
+              ],
+              onChanged: (kind) {
+                if (kind != null) {
+                  setState(() => _scheduleKind = kind);
+                }
+              },
             ),
             const SizedBox(height: 10),
+            if (_scheduleKind == ReminderScheduleKind.weekly) ...[
+              DropdownButtonFormField<String>(
+                key: const ValueKey('reminder-weekday-field'),
+                initialValue: _weekday,
+                decoration: const InputDecoration(labelText: 'Day'),
+                items: const [
+                  DropdownMenuItem(value: 'Monday', child: Text('Monday')),
+                  DropdownMenuItem(value: 'Tuesday', child: Text('Tuesday')),
+                  DropdownMenuItem(
+                    value: 'Wednesday',
+                    child: Text('Wednesday'),
+                  ),
+                  DropdownMenuItem(value: 'Thursday', child: Text('Thursday')),
+                  DropdownMenuItem(value: 'Friday', child: Text('Friday')),
+                  DropdownMenuItem(value: 'Saturday', child: Text('Saturday')),
+                  DropdownMenuItem(value: 'Sunday', child: Text('Sunday')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _weekday = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (_scheduleKind == ReminderScheduleKind.monthly) ...[
+              DropdownButtonFormField<int>(
+                key: const ValueKey('reminder-month-day-field'),
+                initialValue: _monthDay,
+                decoration: const InputDecoration(labelText: 'Day of month'),
+                items: [
+                  for (var day = 1; day <= 31; day++)
+                    DropdownMenuItem(value: day, child: Text('$day')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _monthDay = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (_scheduleKind == ReminderScheduleKind.afterFront) ...[
+              TextField(
+                key: const ValueKey('reminder-front-detail-field'),
+                controller: _detailController,
+                decoration: const InputDecoration(
+                  labelText: 'Member or front label',
+                  helperText: 'Queued until this member or label fronts',
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (_scheduleKind != ReminderScheduleKind.afterFront) ...[
+              TextField(
+                key: const ValueKey('reminder-time-field'),
+                controller: _timeController,
+                keyboardType: TextInputType.datetime,
+                decoration: const InputDecoration(
+                  labelText: 'Time',
+                  helperText: '24-hour local time, like 09:00',
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             TextField(
               key: const ValueKey('reminder-body-field'),
               controller: _bodyController,
@@ -1538,12 +1723,28 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       ReminderDraft(
         title: _titleController.text,
         body: _bodyController.text,
-        scheduleText: _scheduleController.text,
+        scheduleText: _scheduleText,
       ),
     );
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  String get _scheduleText {
+    final time = _timeController.text.trim();
+    final detail = _detailController.text.trim();
+    return switch (_scheduleKind) {
+      ReminderScheduleKind.daily => 'Daily${time.isEmpty ? '' : ' at $time'}',
+      ReminderScheduleKind.weekly =>
+        'Weekly on $_weekday${time.isEmpty ? '' : ' at $time'}',
+      ReminderScheduleKind.monthly =>
+        'Monthly on day $_monthDay${time.isEmpty ? '' : ' at $time'}',
+      ReminderScheduleKind.afterFront =>
+        detail.isEmpty
+            ? 'After a selected front starts'
+            : 'After $detail fronts',
+    };
   }
 }
 
@@ -1845,6 +2046,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _importStatus = 'Preparing ${_source.label} import...';
     });
 
+    var importCompleted = false;
     try {
       final normalized = normalizeImportTextToLocalArchive(
         source: _source,
@@ -1868,28 +2070,18 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       if (mounted) {
         setState(() {
-          _importStatus = 'Queued import: ${_countSummary(normalized.counts)}.';
+          _importStatus = 'Importing ${_countSummary(normalized.counts)}...';
         });
       }
 
-      try {
-        await scheduleImportArchiveJob(jobId);
-        if (mounted) {
-          setState(() {
-            _isApplyingImport = false;
-            _importStatus = 'Import queued. It can finish in the background.';
-          });
-        }
-      } on Object {
-        final completed = await widget.repository.runBackgroundJob(jobId);
-        if (mounted) {
-          setState(() {
-            _isApplyingImport = false;
-            _importStatus = completed
-                ? 'Import complete: ${_countSummary(normalized.counts)}.'
-                : 'Import failed. Check recent jobs below.';
-          });
-        }
+      importCompleted = await widget.repository.runBackgroundJob(jobId);
+      if (mounted) {
+        setState(() {
+          _isApplyingImport = false;
+          _importStatus = importCompleted
+              ? 'Import complete: ${_countSummary(normalized.counts)}.'
+              : 'Import failed. Check recent jobs below.';
+        });
       }
     } on Object catch (error) {
       if (mounted) {
@@ -1901,10 +2093,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
       return;
     }
 
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${_source.label} import queued')));
+    if (mounted && importCompleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${_source.label} import complete')),
+      );
     }
   }
 
@@ -2014,59 +2206,77 @@ class LocalArchiveSheet extends StatelessWidget {
 }
 
 Future<String?> showPasteImportJsonSheet(BuildContext context) {
-  final controller = TextEditingController();
-
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) {
-      return SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Paste JSON',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                key: const ValueKey('paste-import-json-field'),
-                controller: controller,
-                autofocus: true,
-                minLines: 8,
-                maxLines: 14,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                decoration: const InputDecoration(
-                  hintText: '{"members": [...]}',
-                  labelText: 'Export JSON',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () {
-                  final text = controller.text.trim();
-                  Navigator.pop(context, text.isEmpty ? null : text);
-                },
-                icon: const Icon(Icons.fact_check_rounded),
-                label: const Text('Preview pasted JSON'),
-              ),
-            ],
-          ),
+    builder: (context) => const PasteImportJsonSheet(),
+  );
+}
+
+class PasteImportJsonSheet extends StatefulWidget {
+  const PasteImportJsonSheet({super.key});
+
+  @override
+  State<PasteImportJsonSheet> createState() => _PasteImportJsonSheetState();
+}
+
+class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
         ),
-      );
-    },
-  ).whenComplete(controller.dispose);
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Paste JSON',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('paste-import-json-field'),
+              controller: _controller,
+              autofocus: true,
+              minLines: 8,
+              maxLines: 14,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                hintText: '{"members": [...]}',
+                labelText: 'Export JSON',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: () {
+                final text = _controller.text.trim();
+                Navigator.pop(context, text.isEmpty ? null : text);
+              },
+              icon: const Icon(Icons.fact_check_rounded),
+              label: const Text('Preview pasted JSON'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class ImportSetupCard extends StatelessWidget {
@@ -2647,12 +2857,14 @@ class AppOptionsPage extends StatelessWidget {
             ),
             SpSettingsRow(
               'Accent color',
-              customization.accentColor.label,
+              customization.accentLabel,
               trailing: AccentSwatch(
-                color: Color(customization.accentColor.argb),
+                color: Color(customization.effectiveAccentArgb),
               ),
-              onTap: () => repository.setAccentColor(
-                _nextAccentColor(customization.accentColor),
+              onTap: () => showAccentPicker(
+                context,
+                customization: customization,
+                repository: repository,
               ),
             ),
             SpSwitchRow(
@@ -2704,12 +2916,137 @@ class AppOptionsPage extends StatelessWidget {
       HavenThemeMode.system => HavenThemeMode.dark,
     };
   }
+}
 
-  HavenAccentColor _nextAccentColor(HavenAccentColor current) {
-    final values = HavenAccentColor.values;
-    final nextIndex = (values.indexOf(current) + 1) % values.length;
-    return values[nextIndex];
+void showAccentPicker(
+  BuildContext context, {
+  required AppCustomization customization,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        AccentPickerSheet(customization: customization, repository: repository),
+  );
+}
+
+class AccentPickerSheet extends StatefulWidget {
+  const AccentPickerSheet({
+    super.key,
+    required this.customization,
+    required this.repository,
+  });
+
+  final AppCustomization customization;
+  final HavenRepository repository;
+
+  @override
+  State<AccentPickerSheet> createState() => _AccentPickerSheetState();
+}
+
+class _AccentPickerSheetState extends State<AccentPickerSheet> {
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.customization.customAccentHex ?? '',
+    );
   }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Accent color',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final accent in HavenAccentColor.values)
+                  ChoiceChip(
+                    label: Text(accent.label),
+                    selected:
+                        widget.customization.customAccentHex == null &&
+                        widget.customization.accentColor == accent,
+                    avatar: AccentSwatch(color: Color(accent.argb)),
+                    onSelected: (_) async {
+                      await widget.repository.setAccentColor(accent);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('custom-accent-hex-field'),
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Custom hex',
+                hintText: '#7B61FF',
+                errorText: _error,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const ValueKey('save-custom-accent-button'),
+              onPressed: _save,
+              icon: const Icon(Icons.palette_rounded),
+              label: const Text('Use custom color'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final text = _controller.text.trim();
+    final normalized = _normalizeUiHexColor(text);
+    if (normalized == null) {
+      setState(() => _error = 'Use 6 hex digits, like #7B61FF.');
+      return;
+    }
+    await widget.repository.setCustomAccentColor(normalized);
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+}
+
+String? _normalizeUiHexColor(String value) {
+  final trimmed = value.trim().replaceFirst('#', '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(trimmed)) {
+    return null;
+  }
+  return '#${trimmed.toUpperCase()}';
 }
 
 void showLanguagePicker(
@@ -2951,9 +3288,9 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SpPage(
+    return SpPage(
       children: [
-        SpCard(
+        const SpCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2974,16 +3311,40 @@ class AboutPage extends StatelessWidget {
           title: 'About',
           rows: [
             SpSettingsRow('Storage', 'saved on device'),
-            SpSettingsRow('Compatibility', 'Simply Plural import planned'),
-            SpSettingsRow('Source', 'local project'),
+            SpSettingsRow(
+              'Compatibility',
+              'Simply Plural import in progress',
+              trailing: SizedBox.shrink(),
+              interactive: false,
+            ),
+            SpSettingsRow(
+              'Source',
+              'EndofTimeWorks',
+              trailing: SizedBox.shrink(),
+              interactive: false,
+            ),
           ],
         ),
         SizedBox(height: 12),
         SpSettingsGroup(
           title: 'Support',
           rows: [
-            SpSettingsRow('GitHub Sponsors', 'EndofTimeWorks'),
-            SpSettingsRow('Patreon', 'patreon.com/EndofTimeWorks'),
+            SpSettingsRow(
+              'GitHub Sponsors',
+              'EndofTimeWorks',
+              onTap: () => launchExternalUrl(
+                context,
+                Uri.https('github.com', '/sponsors/EndofTimeWorks'),
+              ),
+            ),
+            SpSettingsRow(
+              'Patreon',
+              'patreon.com/EndofTimeWorks',
+              onTap: () => launchExternalUrl(
+                context,
+                Uri.https('patreon.com', '/EndofTimeWorks'),
+              ),
+            ),
           ],
         ),
         SizedBox(height: 12),
@@ -2991,12 +3352,12 @@ class AboutPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Monero',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
-              SizedBox(height: 8),
-              SelectableText(
+              const SizedBox(height: 8),
+              const SelectableText(
                 '85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ',
                 style: TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
               ),
@@ -3005,6 +3366,45 @@ class AboutPage extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+Future<void> launchExternalUrl(BuildContext context, Uri url) async {
+  final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+  if (!launched && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Could not open $url')));
+  }
+}
+
+Future<void> confirmDelete(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required Future<void> Function() onDelete,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(title),
+      content: Text(body),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    await onDelete();
   }
 }
 
@@ -3695,15 +4095,17 @@ class SpIconBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        shape: BoxShape.circle,
-      ),
-      child: SizedBox(
-        width: 38,
-        height: 38,
-        child: Icon(icon, color: color, size: 21),
+    return ExcludeSemantics(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.18),
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, color: color, size: 21),
+        ),
       ),
     );
   }
@@ -3886,12 +4288,14 @@ class SpSettingsRow extends StatelessWidget {
     super.key,
     this.trailing,
     this.onTap,
+    this.interactive = true,
   });
 
   final String title;
   final String subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
@@ -3928,6 +4332,10 @@ class SpSettingsRow extends StatelessWidget {
         ],
       ),
     );
+
+    if (!interactive) {
+      return content;
+    }
 
     return InkWell(
       onTap:
@@ -4064,21 +4472,27 @@ class SpAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: label == null
-          ? null
-          : Text(
-              label!,
-              style: TextStyle(
-                color: _spText,
-                fontSize: size * 0.3,
-                fontWeight: FontWeight.w900,
+    return Semantics(
+      label: label == null ? 'System avatar' : 'Avatar $label',
+      image: true,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: label == null
+            ? null
+            : ExcludeSemantics(
+                child: Text(
+                  label!,
+                  style: TextStyle(
+                    color: _spText,
+                    fontSize: size * 0.3,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -4102,16 +4516,24 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: _spSurface,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        child: Text(
-          text,
-          style: const TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
+    return Semantics(
+      label: 'Status $text',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _spSurface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: ExcludeSemantics(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: _spMuted,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ),
       ),
     );

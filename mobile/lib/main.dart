@@ -68,7 +68,7 @@ class PlurisHavenApp extends StatelessWidget {
 
   ThemeData _buildTheme(AppCustomization customization, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final accent = Color(customization.accentColor.argb);
+    final accent = Color(customization.effectiveAccentArgb);
     final surface = isDark ? const Color(0xFF232532) : const Color(0xFFF7F4FC);
     final background = isDark
         ? const Color(0xFF171922)
