@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,29 +69,43 @@ class _HomePageState extends State<HomePage> {
       builder: (context, snapshot) {
         final home = snapshot.data;
 
-        return Scaffold(
-          drawer: SpDrawer(
-            snapshot: home,
-            selected: _section,
-            onSelect: _selectSection,
-          ),
-          appBar: AppBar(
-            toolbarHeight: 48,
-            titleSpacing: 0,
-            title: Text(
-              _section.label,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        return PopScope(
+          canPop: _section == SpSection.dashboard,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && _section != SpSection.dashboard) {
+              _selectSection(SpSection.dashboard);
+            }
+          },
+          child: Scaffold(
+            drawer: SpDrawer(
+              snapshot: home,
+              selected: _section,
+              onSelect: _selectSection,
             ),
-          ),
-          body: StreamBuilder<AppCustomization>(
-            stream: widget.repository.watchCustomization(),
-            initialData: AppCustomization.defaults,
-            builder: (context, customizationSnapshot) {
-              return _buildSection(
-                home,
-                customizationSnapshot.data ?? AppCustomization.defaults,
-              );
-            },
+            appBar: AppBar(
+              toolbarHeight: 48,
+              titleSpacing: 0,
+              title: Text(
+                _section.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            body: SafeArea(
+              top: false,
+              child: StreamBuilder<AppCustomization>(
+                stream: widget.repository.watchCustomization(),
+                initialData: AppCustomization.defaults,
+                builder: (context, customizationSnapshot) {
+                  return _buildSection(
+                    home,
+                    customizationSnapshot.data ?? AppCustomization.defaults,
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
@@ -1631,6 +1647,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   String? _fileName;
   int? _fileSize;
   String? _fileText;
+  List<ImportAvatarAsset> _fileAvatarAssets = const [];
   ImportFileGuess? _guess;
   ImportPreview? _preview;
   bool _isPickingImport = false;
@@ -1672,6 +1689,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           preview: _preview,
           plan: plan,
           onPickFile: _pickImportFile,
+          onPasteJson: _pasteImportJson,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
         ),
@@ -1740,23 +1758,54 @@ class _ImportExportPageState extends State<ImportExportPage> {
       fileName: file.name,
       bytes: file.bytes,
     );
-    final text = decoded?.text;
+    _setImportText(
+      displayName: decoded?.displayName ?? file.name,
+      fileSize: file.size,
+      text: decoded?.text,
+      avatarAssets: decoded?.avatarAssets ?? const [],
+      unreadableStatus: 'Could not read an import JSON from ${file.name}.',
+    );
+  }
+
+  Future<void> _pasteImportJson() async {
+    final pasted = await showPasteImportJsonSheet(context);
+    if (pasted == null || !mounted) {
+      return;
+    }
+
+    _setImportText(
+      displayName: 'pasted-import.json',
+      fileSize: utf8.encode(pasted).length,
+      text: pasted,
+      avatarAssets: const [],
+      unreadableStatus: 'Could not read the pasted JSON.',
+    );
+  }
+
+  void _setImportText({
+    required String displayName,
+    required int? fileSize,
+    required String? text,
+    required List<ImportAvatarAsset> avatarAssets,
+    required String unreadableStatus,
+  }) {
     final guess = guessImportSourceFromFile(
-      fileName: decoded?.displayName ?? file.name,
+      fileName: displayName,
       textPreview: text,
     );
     final preview = text == null
         ? null
         : previewImportText(
-            fileName: decoded?.displayName ?? file.name,
+            fileName: displayName,
             text: text,
             selectedSource: guess.source,
           );
 
     setState(() {
-      _fileName = decoded?.displayName ?? file.name;
-      _fileSize = file.size;
+      _fileName = displayName;
+      _fileSize = fileSize;
       _fileText = text;
+      _fileAvatarAssets = avatarAssets;
       _guess = guess;
       _preview = preview;
       if (guess.source != null) {
@@ -1764,7 +1813,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
       _isPickingImport = false;
       _importStatus = preview == null
-          ? 'Could not read an import JSON from ${file.name}.'
+          ? unreadableStatus
           : 'Preview ready: ${_countSummary(preview.counts)}.';
     });
   }
@@ -1801,6 +1850,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         source: _source,
         fileName: _fileName ?? 'import.json',
         text: text,
+        avatarAssets: _fileAvatarAssets,
       );
 
       if (mounted) {
@@ -1854,7 +1904,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('${_source.label} imported')));
+      ).showSnackBar(SnackBar(content: Text('${_source.label} import queued')));
     }
   }
 
@@ -1963,6 +2013,62 @@ class LocalArchiveSheet extends StatelessWidget {
   }
 }
 
+Future<String?> showPasteImportJsonSheet(BuildContext context) {
+  final controller = TextEditingController();
+
+  return showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) {
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            0,
+            18,
+            18 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Paste JSON',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const ValueKey('paste-import-json-field'),
+                controller: controller,
+                autofocus: true,
+                minLines: 8,
+                maxLines: 14,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                decoration: const InputDecoration(
+                  hintText: '{"members": [...]}',
+                  labelText: 'Export JSON',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () {
+                  final text = controller.text.trim();
+                  Navigator.pop(context, text.isEmpty ? null : text);
+                },
+                icon: const Icon(Icons.fact_check_rounded),
+                label: const Text('Preview pasted JSON'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  ).whenComplete(controller.dispose);
+}
+
 class ImportSetupCard extends StatelessWidget {
   const ImportSetupCard({
     super.key,
@@ -1974,6 +2080,7 @@ class ImportSetupCard extends StatelessWidget {
     required this.preview,
     required this.plan,
     required this.onPickFile,
+    required this.onPasteJson,
     required this.onSourceChanged,
     required this.onStrategyChanged,
   });
@@ -1986,6 +2093,7 @@ class ImportSetupCard extends StatelessWidget {
   final ImportPreview? preview;
   final ImportSourcePlan plan;
   final VoidCallback onPickFile;
+  final VoidCallback onPasteJson;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
 
@@ -2000,13 +2108,26 @@ class ImportSetupCard extends StatelessWidget {
             trailing: StatusPill(text: plan.status.label),
           ),
           const SizedBox(height: 10),
-          FilledButton.icon(
-            key: const ValueKey('choose-import-file-button'),
-            onPressed: onPickFile,
-            icon: const Icon(Icons.upload_file_rounded),
-            label: Text(
-              fileName == null ? 'Upload file' : 'Choose another file',
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  key: const ValueKey('choose-import-file-button'),
+                  onPressed: onPickFile,
+                  icon: const Icon(Icons.upload_file_rounded),
+                  label: Text(
+                    fileName == null ? 'Upload file' : 'Choose another file',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton.filledTonal(
+                key: const ValueKey('paste-import-json-button'),
+                tooltip: 'Paste JSON',
+                onPressed: onPasteJson,
+                icon: const Icon(Icons.content_paste_rounded),
+              ),
+            ],
           ),
           if (fileName != null) ...[
             const SizedBox(height: 10),
@@ -2102,7 +2223,7 @@ class ImportFileSummary extends StatelessWidget {
     final detected = guess?.source;
     final label = detected == null
         ? 'Choose service'
-        : '${detected.label} (${((guess?.confidence ?? 0) * 100).round()}%)';
+        : '${detected.label} detected';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -2223,6 +2344,9 @@ class ImportProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedStatus = status?.toLowerCase() ?? '';
+    final isQueued = normalizedStatus.contains('queued');
+
     return SpCard(
       outlined: true,
       child: Column(
@@ -2237,8 +2361,10 @@ class ImportProgressCard extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
-                const Icon(
-                  Icons.check_circle_rounded,
+                Icon(
+                  isQueued
+                      ? Icons.schedule_rounded
+                      : Icons.check_circle_rounded,
                   size: 18,
                   color: _spGold,
                 ),
@@ -2944,7 +3070,10 @@ class SpDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
               child: Row(
                 children: [
-                  const SpAvatar(size: 52, color: _spPurple),
+                  SpAvatar(
+                    size: 52,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -3109,7 +3238,11 @@ class DashboardSystemHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
-            const SpAvatar(size: 24, color: _spPurple, label: 'PH'),
+            SpAvatar(
+              size: 24,
+              color: Theme.of(context).colorScheme.primary,
+              label: 'PH',
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -3248,7 +3381,11 @@ class SystemListEntry extends StatelessWidget {
     return SpCard(
       child: Row(
         children: [
-          const SpAvatar(size: 52, color: _spPurple, label: 'PH'),
+          SpAvatar(
+            size: 52,
+            color: Theme.of(context).colorScheme.primary,
+            label: 'PH',
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -3298,7 +3435,7 @@ class CurrentFrontEntry extends StatelessWidget {
             width: 4,
             height: 56,
             decoration: BoxDecoration(
-              color: _spPurple,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -3792,12 +3929,37 @@ class SpSettingsRow extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) {
-      return content;
-    }
-
-    return InkWell(onTap: onTap, child: content);
+    return InkWell(
+      onTap:
+          onTap ??
+          () =>
+              showPlannedFeaturePopup(context, title: title, detail: subtitle),
+      child: content,
+    );
   }
+}
+
+Future<void> showPlannedFeaturePopup(
+  BuildContext context, {
+  required String title,
+  required String detail,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(title),
+      content: Text(
+        '$detail\n\nThis part is not built yet. It is planned for a later pre-alpha build.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
 }
 
 class SpSwitchRow extends StatelessWidget {
