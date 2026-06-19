@@ -46,6 +46,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Configure Android signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_KEYSTORE_PASSWORD}" || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
+            echo "Android signing secrets are not configured." >&2
+            exit 1
+          fi
+          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > android/app/pluris-haven-upload.jks
+          {
+            echo "storeFile=pluris-haven-upload.jks"
+            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "keyAlias=${ANDROID_KEY_ALIAS}"
+            echo "keyPassword=${ANDROID_KEY_PASSWORD}"
+          } > android/key.properties
+
       - name: Verify formatting
         run: dart format --set-exit-if-changed lib test
 
@@ -58,14 +78,14 @@ jobs:
       - name: Build dev APK
         run: >
           flutter --no-color build apk --debug
-          --build-name 0.0.1
+          --build-name "0.0.1-pre-alpha.dev.${GITHUB_RUN_NUMBER}"
           --build-number "${GITHUB_RUN_NUMBER}"
 
       - name: Resolve dev version
         id: version
         shell: bash
         run: |
-          version="0.0.1-dev.${GITHUB_RUN_NUMBER}"
+          version="0.0.1-pre-alpha.dev.${GITHUB_RUN_NUMBER}"
           build="${GITHUB_RUN_NUMBER}"
           tag="mobile-v${version}+${build}"
 
@@ -88,9 +108,9 @@ jobs:
           } > ../release/mobile-dev/BUILD.txt
           (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
           cat > ../release/mobile-dev/NOTES.md <<EOF
-          Dev build ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }} from ${GITHUB_SHA}.
+          Pre-alpha debug build ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }} from ${GITHUB_SHA}.
 
-          This APK is debug-signed. It is for local testing, not Play Store distribution.
+          This APK is dev-signed and debuggable. It is for Obtainium/local testing, not Play Store distribution.
           EOF
 
       - name: Upload dev artifact
@@ -127,7 +147,7 @@ jobs:
               release/mobile-dev/BUILD.txt \
               release/mobile-dev/SHA256SUMS.txt \
               --target "${GITHUB_SHA}" \
-              --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+              --title "Pluris Haven Mobile pre-alpha debug ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
               --notes-file release/mobile-dev/NOTES.md \
               --prerelease \
               --latest=false
