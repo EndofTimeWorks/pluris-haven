@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../debug/debug_log.dart';
 import '../import/import_sources.dart';
 import 'app_database.dart';
 import 'supported_language.dart';
@@ -1317,6 +1318,9 @@ SELECT
   }) async {
     final now = DateTime.now().toUtc();
     final jobId = 'job-${now.microsecondsSinceEpoch}';
+    appDebugLog(
+      'Queue import job id=$jobId source=${source.name} file=${fileName ?? '(none)'} strategy=${strategy.name}',
+    );
     await database
         .into(database.backgroundJobs)
         .insert(
@@ -1344,10 +1348,16 @@ SELECT
       database.backgroundJobs,
     )..where((job) => job.id.equals(jobId))).getSingleOrNull();
     if (job == null || job.status == 'done') {
+      appDebugLog(
+        'Skip background job id=$jobId status=${job?.status ?? 'missing'}',
+      );
       return true;
     }
 
     final now = DateTime.now().toUtc();
+    appDebugLog(
+      'Run background job id=$jobId type=${job.type} source=${job.source}',
+    );
     await (database.update(
       database.backgroundJobs,
     )..where((job) => job.id.equals(jobId))).write(
@@ -1385,6 +1395,7 @@ SELECT
       }
 
       final finished = DateTime.now().toUtc();
+      appDebugLog('Background job complete id=$jobId');
       await (database.update(
         database.backgroundJobs,
       )..where((job) => job.id.equals(jobId))).write(
@@ -1395,14 +1406,20 @@ SELECT
         ),
       );
       return true;
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Background job failed id=$jobId',
+        error: error,
+        stackTrace: stackTrace,
+      );
       final failed = DateTime.now().toUtc();
+      final errorText = _debugErrorText(error, stackTrace);
       await (database.update(
         database.backgroundJobs,
       )..where((job) => job.id.equals(jobId))).write(
         BackgroundJobsCompanion(
           status: const Value('failed'),
-          error: Value(error.toString()),
+          error: Value(errorText),
           updatedAt: Value(failed),
           finishedAt: Value(failed),
         ),
@@ -1443,6 +1460,20 @@ SELECT
     final rawPayloads = _jsonObjectList(decoded['raw_payloads']);
     final notificationEvents = _jsonObjectList(decoded['notification_events']);
     final preferences = _jsonObjectList(decoded['preferences']);
+    final cleanupCount = _sanitizeArchiveReferences(
+      groups: groups,
+      members: members,
+      notes: notes,
+      messages: messages,
+      fronts: fronts,
+      frontMembers: frontMembers,
+    );
+    appDebugLog(
+      'Import archive source=${source.name} file=${fileName ?? '(none)'} '
+      'members=${members.length} groups=${groups.length} notes=${notes.length} '
+      'messages=${messages.length} reminders=${reminders.length} fronts=${fronts.length} '
+      'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
+    );
     final localAvatarRefs = await _localizeImportAvatars(
       members: members,
       avatarAssets: avatarAssets,
@@ -1531,6 +1562,74 @@ SELECT
         await _importPayload(payload, importRecordId, source, strategy, now);
       }
     });
+  }
+
+  int _sanitizeArchiveReferences({
+    required List<Map<String, Object?>> groups,
+    required List<Map<String, Object?>> members,
+    required List<Map<String, Object?>> notes,
+    required List<Map<String, Object?>> messages,
+    required List<Map<String, Object?>> fronts,
+    required List<Map<String, Object?>> frontMembers,
+  }) {
+    final groupIds = {
+      for (final group in groups) _stringValue(group['id']),
+    }.whereType<String>().toSet();
+    final memberIds = {
+      for (final member in members) _stringValue(member['id']),
+    }.whereType<String>().toSet();
+    final frontIds = {
+      for (final front in fronts) _stringValue(front['id']),
+    }.whereType<String>().toSet();
+    var cleanupCount = 0;
+
+    for (final group in groups) {
+      final parentId = _stringValue(group['parent_group_id']);
+      if (parentId != null && !groupIds.contains(parentId)) {
+        group['parent_group_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    for (final member in members) {
+      final groupId = _stringValue(member['folder_id']);
+      if (groupId != null && !groupIds.contains(groupId)) {
+        member['folder_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    for (final note in notes) {
+      final memberId = _stringValue(note['member_id']);
+      if (memberId != null && !memberIds.contains(memberId)) {
+        note['member_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    for (final message in messages) {
+      final memberId = _stringValue(message['member_id']);
+      if (memberId != null && !memberIds.contains(memberId)) {
+        message['member_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    frontMembers.removeWhere((link) {
+      final sessionId = _stringValue(link['session_id']);
+      final memberId = _stringValue(link['member_id']);
+      final keep =
+          sessionId != null &&
+          memberId != null &&
+          frontIds.contains(sessionId) &&
+          memberIds.contains(memberId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    return cleanupCount;
   }
 
   Future<Map<String, String?>> _localizeImportAvatars({
@@ -1908,6 +2007,18 @@ SELECT
   String? _nullIfBlank(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  String _debugErrorText(Object error, StackTrace stackTrace) {
+    var text = error.toString();
+    assert(() {
+      final stack = stackTrace.toString().trim();
+      if (stack.isNotEmpty) {
+        text = '$text\n\nDebug stack:\n$stack';
+      }
+      return true;
+    }());
+    return text;
   }
 
   List<Map<String, Object?>> _jsonObjectList(Object? value) {

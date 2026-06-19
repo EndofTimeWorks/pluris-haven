@@ -164,6 +164,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final member = _mapValue(items[index]);
       if (member == null) {
+        warnings.add('Skipped member #${index + 1}: expected an object.');
         continue;
       }
       final record = _memberRecord(member, index);
@@ -204,8 +205,10 @@ class _ExternalArchiveNormalizer {
     ]);
     final groupId = groupExternalId == null
         ? _groupIdsByExternalId['member:$externalId']
-        : _groupIdsByExternalId[groupExternalId] ??
-              _stableId('group', groupExternalId);
+        : _groupIdsByExternalId[groupExternalId];
+    if (groupExternalId != null && groupId == null) {
+      warnings.add('Member "$name" ignored missing group "$groupExternalId".');
+    }
 
     return {
       'id': id,
@@ -243,10 +246,27 @@ class _ExternalArchiveNormalizer {
 
   List<Map<String, Object?>> _normalizeGroups() {
     final items = _firstList(decoded, const ['groups', 'folders']);
+    for (final item in items) {
+      final group = _mapValue(item);
+      if (group == null) {
+        continue;
+      }
+      final externalId =
+          _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
+          _firstString(group, const ['name', 'displayName', 'title']);
+      if (externalId != null) {
+        _groupIdsByExternalId.putIfAbsent(
+          externalId,
+          () => _stableId('group', externalId),
+        );
+      }
+    }
+
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final group = _mapValue(items[index]);
       if (group == null) {
+        warnings.add('Skipped group #${index + 1}: expected an object.');
         continue;
       }
       final record = _groupRecord(group, index);
@@ -309,7 +329,8 @@ class _ExternalArchiveNormalizer {
     final externalId =
         _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
         _slug(name);
-    final id = _stableId('group', externalId);
+    final id =
+        _groupIdsByExternalId[externalId] ?? _stableId('group', externalId);
     _groupIdsByExternalId[externalId] = id;
 
     final parentId = _firstString(group, const [
@@ -319,9 +340,16 @@ class _ExternalArchiveNormalizer {
       'parent',
     ]);
 
+    final parentGroupId = parentId == null
+        ? null
+        : _groupIdsByExternalId[parentId];
+    if (parentId != null && parentGroupId == null) {
+      warnings.add('Group "$name" ignored missing parent "$parentId".');
+    }
+
     return {
       'id': id,
-      'parent_group_id': parentId == null ? null : _stableId('group', parentId),
+      'parent_group_id': parentGroupId,
       'name': name,
       'color_hex': _normalizeColor(
         _firstString(group, const ['color', 'colour', 'colorHex', 'color_hex']),
@@ -339,6 +367,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
       if (note == null) {
+        warnings.add('Skipped note #${index + 1}: expected an object.');
         continue;
       }
       final record = _noteRecord(note, index);
@@ -403,6 +432,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final message = _mapValue(items[index]);
       if (message == null) {
+        warnings.add('Skipped message #${index + 1}: expected an object.');
         continue;
       }
       final record = _messageRecord(message, index);
@@ -469,6 +499,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final reminder = _mapValue(items[index]);
       if (reminder == null) {
+        warnings.add('Skipped reminder #${index + 1}: expected an object.');
         continue;
       }
       final record = _reminderRecord(reminder, index);
@@ -502,6 +533,9 @@ class _ExternalArchiveNormalizer {
         title.isEmpty ||
         schedule == null ||
         schedule.isEmpty) {
+      warnings.add(
+        'Skipped reminder #${index + 1}: missing title or schedule.',
+      );
       return null;
     }
 
@@ -538,6 +572,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final front = _mapValue(items[index]);
       if (front == null) {
+        warnings.add('Skipped front #${index + 1}: expected an object.');
         continue;
       }
 
@@ -558,34 +593,52 @@ class _ExternalArchiveNormalizer {
           _firstString(front, const ['_id', 'id', 'uuid', 'uid']) ??
           'front-$index-$start';
       final id = _stableId('front', externalId);
+      final memberIds = _frontMemberIds(front);
+      final label =
+          _frontLabel(front) ??
+          (source == ImportSource.pluralKitFile && memberIds.isEmpty
+              ? 'No fronters'
+              : null);
+      if (memberIds.isEmpty && (label == null || label.trim().isEmpty)) {
+        warnings.add(
+          'Skipped front #${index + 1}: no member ids or custom label.',
+        );
+        continue;
+      }
+
+      final endedAt = _dateString(front, const [
+        'ended_at',
+        'endedAt',
+        'end',
+        'endTime',
+      ]);
+      final normalizedTimes = _normalizeFrontTimes(
+        start: start,
+        end: endedAt,
+        index: index,
+      );
+
       sessions.add({
         'id': id,
-        'label': _firstString(front, const [
-          'label',
-          'custom',
-          'name',
-          'status',
-          'customStatus',
-          'custom_status',
-          'comment',
-        ]),
-        'started_at': start,
-        'ended_at': _dateString(front, const [
-          'ended_at',
-          'endedAt',
-          'end',
-          'endTime',
-        ]),
+        'label': label,
+        'started_at': normalizedTimes.start,
+        'ended_at': normalizedTimes.end,
         'created_at':
-            _dateString(front, const ['created_at', 'createdAt']) ?? start,
+            _dateString(front, const ['created_at', 'createdAt']) ??
+            normalizedTimes.start,
         'updated_at':
-            _dateString(front, const ['updated_at', 'updatedAt']) ?? start,
+            _dateString(front, const ['updated_at', 'updatedAt']) ??
+            normalizedTimes.start,
       });
 
-      for (final memberExternalId in _frontMemberIds(front)) {
-        final memberId =
-            _memberIdsByExternalId[memberExternalId] ??
-            _stableId('member', memberExternalId);
+      for (final memberExternalId in memberIds) {
+        final memberId = _memberIdsByExternalId[memberExternalId];
+        if (memberId == null) {
+          warnings.add(
+            'Front #${index + 1} ignored missing member "$memberExternalId".',
+          );
+          continue;
+        }
         links.add({'session_id': id, 'member_id': memberId});
       }
     }
@@ -644,7 +697,46 @@ class _ExternalArchiveNormalizer {
     if (external == null) {
       return null;
     }
-    return _memberIdsByExternalId[external] ?? _stableId('member', external);
+    final memberId = _memberIdsByExternalId[external];
+    if (memberId == null) {
+      warnings.add('Ignored missing member reference "$external".');
+    }
+    return memberId;
+  }
+
+  String? _frontLabel(Map<String, Object?> front) {
+    final custom = front['custom'];
+    if (custom is bool) {
+      return custom ? 'Custom front' : null;
+    }
+    return _firstString(front, const [
+      'label',
+      'custom',
+      'name',
+      'status',
+      'customStatus',
+      'custom_status',
+      'comment',
+    ]);
+  }
+
+  ({String start, String? end}) _normalizeFrontTimes({
+    required String start,
+    required String? end,
+    required int index,
+  }) {
+    if (end == null) {
+      return (start: start, end: null);
+    }
+    final startedAt = DateTime.tryParse(start);
+    final endedAt = DateTime.tryParse(end);
+    if (startedAt != null && endedAt != null && endedAt.isBefore(startedAt)) {
+      warnings.add(
+        'Front #${index + 1} ended before it started; swapped start and end.',
+      );
+      return (start: endedAt.toUtc().toIso8601String(), end: start);
+    }
+    return (start: start, end: end);
   }
 
   void _fillMissingFrontEnds(List<Map<String, Object?>> sessions) {
