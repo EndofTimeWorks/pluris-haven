@@ -17,6 +17,12 @@ It creates one prerelease from the checked-in `mobile/pubspec.yaml` version:
 Use this APK for normal phone/emulator testing between releases. It is
 debuggable and uses the configured Android signing key.
 
+The Android package ID is `works.endoftime.plurishaven`. Android only updates an
+installed app when the downloaded APK has the same package ID and a newer build
+number. If an older pre-alpha was installed as `support.plurishaven`, uninstall
+that old build and install the new one once. Obtainium should then track future
+`works.endoftime.plurishaven` builds normally.
+
 Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
