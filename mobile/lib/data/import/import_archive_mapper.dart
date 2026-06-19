@@ -340,11 +340,14 @@ class _ExternalArchiveNormalizer {
       'parent',
     ]);
 
-    final parentGroupId = parentId == null
+    final normalizedParentId = parentId == 'root' ? null : parentId;
+    final parentGroupId = normalizedParentId == null
         ? null
-        : _groupIdsByExternalId[parentId];
-    if (parentId != null && parentGroupId == null) {
-      warnings.add('Group "$name" ignored missing parent "$parentId".');
+        : _groupIdsByExternalId[normalizedParentId];
+    if (normalizedParentId != null && parentGroupId == null) {
+      warnings.add(
+        'Group "$name" ignored missing parent "$normalizedParentId".',
+      );
     }
 
     return {
@@ -375,7 +378,6 @@ class _ExternalArchiveNormalizer {
         records.add(record);
       }
     }
-    records.addAll(_normalizeCustomDefinitionsAsNotes());
     return records;
   }
 
@@ -652,6 +654,10 @@ class _ExternalArchiveNormalizer {
         front['members'] ??
         front['memberIds'] ??
         front['member_ids'] ??
+        front['memberIdsList'] ??
+        front['membersIds'] ??
+        front['members_ids'] ??
+        front['memberIDs'] ??
         front['fronters'] ??
         front['member'];
     if (value is! List) {
@@ -705,9 +711,16 @@ class _ExternalArchiveNormalizer {
   }
 
   String? _frontLabel(Map<String, Object?> front) {
+    final explicit = _firstString(front, const [
+      'label',
+      'name',
+      'status',
+      'customStatus',
+      'comment',
+    ]);
     final custom = front['custom'];
     if (custom is bool) {
-      return custom ? 'Custom front' : null;
+      return custom ? explicit ?? 'Custom front' : null;
     }
     return _firstString(front, const [
       'label',
@@ -780,94 +793,6 @@ class _ExternalArchiveNormalizer {
       if (channel != null) 'Source: $channel',
     ];
     return parts.join('\n');
-  }
-
-  List<Map<String, Object?>> _normalizeCustomDefinitionsAsNotes() {
-    final records = <Map<String, Object?>>[];
-    final fields = _firstList(decoded, const [
-      'customFields',
-      'custom_fields',
-      'fields',
-    ]);
-    if (fields.isNotEmpty) {
-      records.add({
-        'id': _stableId('note', 'custom-fields-index'),
-        'member_id': null,
-        'title': 'Imported custom fields',
-        'body': const JsonEncoder.withIndent('  ').convert(fields),
-        'created_at': importedAt.toIso8601String(),
-        'updated_at': importedAt.toIso8601String(),
-      });
-    }
-
-    final customFronts = _firstList(decoded, const [
-      'customFronts',
-      'custom_fronts',
-      'frontStatuses',
-      'FrontStatuses',
-    ]);
-    if (customFronts.isNotEmpty) {
-      records.add({
-        'id': _stableId('note', 'custom-fronts-index'),
-        'member_id': null,
-        'title': 'Imported custom fronts',
-        'body': const JsonEncoder.withIndent('  ').convert(customFronts),
-        'created_at': importedAt.toIso8601String(),
-        'updated_at': importedAt.toIso8601String(),
-      });
-    }
-
-    for (final userValue in _firstList(decoded, const ['users'])) {
-      final user = _mapValue(userValue);
-      final userFields = user == null ? null : _mapValue(user['fields']);
-      if (userFields == null || userFields.isEmpty) {
-        continue;
-      }
-      final updatedAt =
-          _dateString(user!, const ['lastOperationTime']) ??
-          importedAt.toIso8601String();
-      records.add({
-        'id': _stableId('note', 'system-custom-field-values'),
-        'member_id': null,
-        'title': 'Imported system custom field values',
-        'body': const JsonEncoder.withIndent('  ').convert(userFields),
-        'created_at': updatedAt,
-        'updated_at': updatedAt,
-      });
-    }
-
-    for (final memberValue in _firstList(decoded, const ['members'])) {
-      final member = _mapValue(memberValue);
-      final info = member == null ? null : _mapValue(member['info']);
-      if (member == null || info == null || info.isEmpty) {
-        continue;
-      }
-      final externalId = _firstString(member, const [
-        '_id',
-        'id',
-        'uuid',
-        'memberId',
-        'uid',
-      ]);
-      if (externalId == null) {
-        continue;
-      }
-      final updatedAt =
-          _dateString(member, const ['lastOperationTime']) ??
-          importedAt.toIso8601String();
-      records.add({
-        'id': _stableId('note', 'member-custom-field-values-$externalId'),
-        'member_id':
-            _memberIdsByExternalId[externalId] ??
-            _stableId('member', externalId),
-        'title': 'Imported custom field values',
-        'body': const JsonEncoder.withIndent('  ').convert(info),
-        'created_at': updatedAt,
-        'updated_at': updatedAt,
-      });
-    }
-
-    return records;
   }
 
   List<Map<String, Object?>> _normalizeRawPayloads() {

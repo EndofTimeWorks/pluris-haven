@@ -203,6 +203,75 @@ class ReminderDraft {
   final bool enabled;
 }
 
+enum PollKind {
+  singleChoice('single_choice', 'Single choice'),
+  multipleChoice('multiple_choice', 'Multiple choice');
+
+  const PollKind(this.storageValue, this.label);
+
+  final String storageValue;
+  final String label;
+
+  static PollKind fromStorage(String? value) {
+    return PollKind.values.firstWhere(
+      (kind) => kind.storageValue == value,
+      orElse: () => PollKind.singleChoice,
+    );
+  }
+}
+
+class PollOptionSummary {
+  const PollOptionSummary({
+    required this.id,
+    required this.body,
+    required this.position,
+    required this.selected,
+  });
+
+  final String id;
+  final String body;
+  final int position;
+  final bool selected;
+}
+
+class PollSummary {
+  const PollSummary({
+    required this.id,
+    required this.question,
+    this.description,
+    required this.kind,
+    required this.closed,
+    required this.options,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String question;
+  final String? description;
+  final PollKind kind;
+  final bool closed;
+  final List<PollOptionSummary> options;
+  final DateTime updatedAt;
+
+  int get selectedCount => options.where((option) => option.selected).length;
+
+  String get statusLabel => closed ? 'closed' : 'open';
+}
+
+class PollDraft {
+  const PollDraft({
+    required this.question,
+    this.description,
+    required this.kind,
+    required this.options,
+  });
+
+  final String question;
+  final String? description;
+  final PollKind kind;
+  final List<String> options;
+}
+
 class NotificationEventSummary {
   const NotificationEventSummary({
     required this.id,
@@ -378,6 +447,8 @@ abstract interface class HavenRepository {
 
   Stream<List<ReminderSummary>> watchReminders();
 
+  Stream<List<PollSummary>> watchPolls();
+
   Stream<List<NotificationEventSummary>> watchNotificationEvents();
 
   Stream<List<FrontHistoryEntry>> watchFrontHistory();
@@ -429,6 +500,14 @@ abstract interface class HavenRepository {
   Future<void> saveReminder(ReminderDraft draft);
 
   Future<void> deleteReminder(String reminderId);
+
+  Future<void> savePoll(PollDraft draft);
+
+  Future<void> togglePollOption(String pollId, String optionId);
+
+  Future<void> closePoll(String pollId);
+
+  Future<void> deletePoll(String pollId);
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
@@ -643,6 +722,59 @@ class LocalHavenRepository implements HavenRepository {
   }
 
   @override
+  Stream<List<PollSummary>> watchPolls() {
+    final query = database.select(database.polls)
+      ..where((poll) => poll.systemId.equals(localSystemId))
+      ..orderBy([
+        (poll) =>
+            OrderingTerm(expression: poll.updatedAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().asyncMap(_pollSummaries);
+  }
+
+  Future<List<PollSummary>> _pollSummaries(List<Poll> rows) async {
+    final summaries = <PollSummary>[];
+    for (final row in rows) {
+      final options =
+          await (database.select(database.pollOptions)
+                ..where((option) => option.pollId.equals(row.id))
+                ..orderBy([
+                  (option) => OrderingTerm(
+                    expression: option.position,
+                    mode: OrderingMode.asc,
+                  ),
+                ]))
+              .get();
+      final votes = await (database.select(
+        database.pollVotes,
+      )..where((vote) => vote.pollId.equals(row.id))).get();
+      final selectedOptionIds = votes.map((vote) => vote.optionId).toSet();
+
+      summaries.add(
+        PollSummary(
+          id: row.id,
+          question: row.question,
+          description: row.description,
+          kind: PollKind.fromStorage(row.kind),
+          closed: row.closed,
+          updatedAt: row.updatedAt,
+          options: [
+            for (final option in options)
+              PollOptionSummary(
+                id: option.id,
+                body: option.body,
+                position: option.position,
+                selected: selectedOptionIds.contains(option.id),
+              ),
+          ],
+        ),
+      );
+    }
+    return summaries;
+  }
+
+  @override
   Stream<List<NotificationEventSummary>> watchNotificationEvents() {
     final query = database.select(database.notificationEvents)
       ..where((event) => event.systemId.equals(localSystemId))
@@ -677,17 +809,53 @@ class LocalHavenRepository implements HavenRepository {
         ),
       ]);
 
-    return query.watch().map(
-      (rows) => [
-        for (final row in rows)
-          FrontHistoryEntry(
-            id: row.id,
-            label: _frontLabel(row.label),
-            startedAt: row.startedAt,
-            endedAt: row.endedAt,
-          ),
-      ],
-    );
+    return query.watch().asyncMap(_frontHistoryEntries);
+  }
+
+  Future<List<FrontHistoryEntry>> _frontHistoryEntries(
+    List<FrontSession> rows,
+  ) async {
+    final entries = <FrontHistoryEntry>[];
+    for (final row in rows) {
+      entries.add(
+        FrontHistoryEntry(
+          id: row.id,
+          label: await _frontHistoryLabel(row),
+          startedAt: row.startedAt,
+          endedAt: row.endedAt,
+        ),
+      );
+    }
+    return entries;
+  }
+
+  Future<String> _frontHistoryLabel(FrontSession row) async {
+    final explicit = row.label?.trim();
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
+    }
+
+    final links = await (database.select(
+      database.frontSessionMembers,
+    )..where((link) => link.sessionId.equals(row.id))).get();
+    if (links.isEmpty) {
+      return 'Unknown front';
+    }
+
+    final memberIds = links.map((link) => link.memberId).toSet().toList();
+    final members = await (database.select(
+      database.members,
+    )..where((member) => member.id.isIn(memberIds))).get();
+    final namesById = {
+      for (final member in members) member.id: member.displayName.trim(),
+    };
+    final names = [
+      for (final link in links)
+        if ((namesById[link.memberId] ?? '').isNotEmpty)
+          namesById[link.memberId]!,
+    ];
+
+    return names.isEmpty ? 'Unknown front' : names.join(', ');
   }
 
   Future<HomeSnapshot> loadHomeSnapshot() async {
@@ -742,11 +910,6 @@ SELECT
       frontHistoryCount: data['front_history_count'] as int,
       currentFrontLabel: data['current_front_label'] as String?,
     );
-  }
-
-  String _frontLabel(String? label) {
-    final trimmed = label?.trim();
-    return trimmed == null || trimmed.isEmpty ? 'Unknown front' : trimmed;
   }
 
   AppCustomization _mapCustomizationRows(List<AppPreference> rows) {
@@ -1155,6 +1318,144 @@ SELECT
   }
 
   @override
+  Future<void> savePoll(PollDraft draft) async {
+    final question = draft.question.trim();
+    final options = _cleanPollOptions(draft.options);
+    if (question.isEmpty || options.length < 2) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    final pollId = 'poll-${now.microsecondsSinceEpoch}';
+    await database.transaction(() async {
+      await database
+          .into(database.polls)
+          .insert(
+            PollsCompanion.insert(
+              id: pollId,
+              systemId: localSystemId,
+              question: question,
+              description: Value(_nullIfBlank(draft.description)),
+              kind: Value(draft.kind.storageValue),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      await database.batch((batch) {
+        batch.insertAll(database.pollOptions, [
+          for (var index = 0; index < options.length; index++)
+            PollOptionsCompanion.insert(
+              id: '$pollId-option-$index',
+              pollId: pollId,
+              body: options[index],
+              position: index,
+            ),
+        ]);
+      });
+    });
+  }
+
+  @override
+  Future<void> togglePollOption(String pollId, String optionId) async {
+    final poll =
+        await (database.select(database.polls)..where(
+              (poll) =>
+                  poll.systemId.equals(localSystemId) & poll.id.equals(pollId),
+            ))
+            .getSingleOrNull();
+    if (poll == null || poll.closed) {
+      return;
+    }
+
+    final option =
+        await (database.select(database.pollOptions)..where(
+              (option) =>
+                  option.pollId.equals(pollId) & option.id.equals(optionId),
+            ))
+            .getSingleOrNull();
+    if (option == null) {
+      return;
+    }
+
+    final existing =
+        await (database.select(database.pollVotes)..where(
+              (vote) =>
+                  vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
+            ))
+            .getSingleOrNull();
+    final now = DateTime.now().toUtc();
+
+    await database.transaction(() async {
+      if (PollKind.fromStorage(poll.kind) == PollKind.singleChoice) {
+        await (database.delete(
+          database.pollVotes,
+        )..where((vote) => vote.pollId.equals(pollId))).go();
+        if (existing == null) {
+          await database
+              .into(database.pollVotes)
+              .insert(
+                PollVotesCompanion.insert(
+                  pollId: pollId,
+                  optionId: optionId,
+                  createdAt: now,
+                ),
+              );
+        }
+      } else if (existing == null) {
+        await database
+            .into(database.pollVotes)
+            .insert(
+              PollVotesCompanion.insert(
+                pollId: pollId,
+                optionId: optionId,
+                createdAt: now,
+              ),
+            );
+      } else {
+        await (database.delete(database.pollVotes)..where(
+              (vote) =>
+                  vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
+            ))
+            .go();
+      }
+
+      await (database.update(database.polls)
+            ..where((poll) => poll.id.equals(pollId)))
+          .write(PollsCompanion(updatedAt: Value(now)));
+    });
+  }
+
+  @override
+  Future<void> closePoll(String pollId) {
+    final now = DateTime.now().toUtc();
+    return (database.update(database.polls)..where(
+          (poll) =>
+              poll.systemId.equals(localSystemId) & poll.id.equals(pollId),
+        ))
+        .write(
+          PollsCompanion(closed: const Value(true), updatedAt: Value(now)),
+        );
+  }
+
+  @override
+  Future<void> deletePoll(String pollId) {
+    return database.transaction(() async {
+      await (database.delete(
+        database.pollVotes,
+      )..where((vote) => vote.pollId.equals(pollId))).go();
+      await (database.delete(
+        database.pollOptions,
+      )..where((option) => option.pollId.equals(pollId))).go();
+      await (database.delete(database.polls)..where(
+            (poll) =>
+                poll.systemId.equals(localSystemId) & poll.id.equals(pollId),
+          ))
+          .go();
+    });
+  }
+
+  @override
   Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
     final title = draft.title.trim();
     final body = draft.body.trim();
@@ -1188,6 +1489,22 @@ SELECT
       ids.add(trimmed);
     }
     return ids.isEmpty ? _emptyShortcutIdsValue : ids.join(',');
+  }
+
+  List<String> _cleanPollOptions(List<String> options) {
+    final seen = <String>{};
+    final cleaned = <String>[];
+    for (final option in options) {
+      final trimmed = option.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+      final key = trimmed.toLowerCase();
+      if (seen.add(key)) {
+        cleaned.add(trimmed);
+      }
+    }
+    return cleaned;
   }
 
   Future<void> _writePreference(String key, String value) {
@@ -1257,6 +1574,12 @@ SELECT
     final reminders = await (database.select(
       database.reminders,
     )..where((reminder) => reminder.systemId.equals(localSystemId))).get();
+    final polls = await (database.select(
+      database.polls,
+    )..where((poll) => poll.systemId.equals(localSystemId))).get();
+    final pollIds = polls.map((poll) => poll.id).toSet();
+    final pollOptions = await database.select(database.pollOptions).get();
+    final pollVotes = await database.select(database.pollVotes).get();
     final fronts = await (database.select(
       database.frontSessions,
     )..where((front) => front.systemId.equals(localSystemId))).get();
@@ -1286,6 +1609,15 @@ SELECT
       'messages': [for (final message in messages) _messageToJson(message)],
       'reminders': [
         for (final reminder in reminders) _reminderToJson(reminder),
+      ],
+      'polls': [for (final poll in polls) _pollToJson(poll)],
+      'poll_options': [
+        for (final option in pollOptions)
+          if (pollIds.contains(option.pollId)) _pollOptionToJson(option),
+      ],
+      'poll_votes': [
+        for (final vote in pollVotes)
+          if (pollIds.contains(vote.pollId)) _pollVoteToJson(vote),
       ],
       'fronts': [for (final front in fronts) _frontToJson(front)],
       'front_members': [
@@ -1454,6 +1786,9 @@ SELECT
     final notes = _jsonObjectList(decoded['notes']);
     final messages = _jsonObjectList(decoded['messages']);
     final reminders = _jsonObjectList(decoded['reminders']);
+    final polls = _jsonObjectList(decoded['polls']);
+    final pollOptions = _jsonObjectList(decoded['poll_options']);
+    final pollVotes = _jsonObjectList(decoded['poll_votes']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
     final avatarAssets = _jsonObjectList(decoded['avatar_assets']);
@@ -1465,6 +1800,9 @@ SELECT
       members: members,
       notes: notes,
       messages: messages,
+      polls: polls,
+      pollOptions: pollOptions,
+      pollVotes: pollVotes,
       fronts: fronts,
       frontMembers: frontMembers,
     );
@@ -1472,6 +1810,7 @@ SELECT
       'Import archive source=${source.name} file=${fileName ?? '(none)'} '
       'members=${members.length} groups=${groups.length} notes=${notes.length} '
       'messages=${messages.length} reminders=${reminders.length} fronts=${fronts.length} '
+      'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
       'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
     );
     final localAvatarRefs = await _localizeImportAvatars(
@@ -1517,6 +1856,15 @@ SELECT
       for (final reminder in reminders) {
         await _importReminder(reminder, strategy, now);
       }
+      for (final poll in polls) {
+        await _importPoll(poll, strategy, now);
+      }
+      for (final option in pollOptions) {
+        await _importPollOption(option, strategy);
+      }
+      for (final vote in pollVotes) {
+        await _importPollVote(vote);
+      }
       for (final front in fronts) {
         await _importFront(front, strategy, now);
       }
@@ -1546,6 +1894,9 @@ SELECT
                   'notes': notes.length,
                   'messages': messages.length,
                   'reminders': reminders.length,
+                  'polls': polls.length,
+                  'poll_options': pollOptions.length,
+                  'poll_votes': pollVotes.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
                   'avatar_assets': avatarAssets.length,
@@ -1569,6 +1920,9 @@ SELECT
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> notes,
     required List<Map<String, Object?>> messages,
+    required List<Map<String, Object?>> polls,
+    required List<Map<String, Object?>> pollOptions,
+    required List<Map<String, Object?>> pollVotes,
     required List<Map<String, Object?>> fronts,
     required List<Map<String, Object?>> frontMembers,
   }) {
@@ -1577,6 +1931,12 @@ SELECT
     }.whereType<String>().toSet();
     final memberIds = {
       for (final member in members) _stringValue(member['id']),
+    }.whereType<String>().toSet();
+    final pollIds = {
+      for (final poll in polls) _stringValue(poll['id']),
+    }.whereType<String>().toSet();
+    final pollOptionIds = {
+      for (final option in pollOptions) _stringValue(option['id']),
     }.whereType<String>().toSet();
     final frontIds = {
       for (final front in fronts) _stringValue(front['id']),
@@ -1614,6 +1974,29 @@ SELECT
         cleanupCount++;
       }
     }
+
+    pollOptions.removeWhere((option) {
+      final pollId = _stringValue(option['poll_id']);
+      final keep = pollId != null && pollIds.contains(pollId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    pollVotes.removeWhere((vote) {
+      final pollId = _stringValue(vote['poll_id']);
+      final optionId = _stringValue(vote['option_id']);
+      final keep =
+          pollId != null &&
+          optionId != null &&
+          pollIds.contains(pollId) &&
+          pollOptionIds.contains(optionId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
 
     frontMembers.removeWhere((link) {
       final sessionId = _stringValue(link['session_id']);
@@ -1893,6 +2276,57 @@ SELECT
     return _insertArchiveRow(database.reminders, companion, strategy);
   }
 
+  Future<void> _importPoll(
+    Map<String, Object?> poll,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(poll, 'id');
+    final question = _requiredString(poll, 'question');
+    final companion = PollsCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      question: question,
+      description: Value(_stringValue(poll['description'])),
+      kind: Value(
+        PollKind.fromStorage(_stringValue(poll['kind'])).storageValue,
+      ),
+      closed: Value(poll['closed'] == true),
+      createdAt: _dateValue(poll['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(poll['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.polls, companion, strategy);
+  }
+
+  Future<void> _importPollOption(
+    Map<String, Object?> option,
+    ImportConflictStrategy strategy,
+  ) {
+    final id = _requiredString(option, 'id');
+    final companion = PollOptionsCompanion.insert(
+      id: id,
+      pollId: _requiredString(option, 'poll_id'),
+      body: _requiredString(option, 'body'),
+      position: _intValue(option['position']) ?? 0,
+    );
+    return _insertArchiveRow(database.pollOptions, companion, strategy);
+  }
+
+  Future<void> _importPollVote(Map<String, Object?> vote) {
+    return database
+        .into(database.pollVotes)
+        .insert(
+          PollVotesCompanion.insert(
+            pollId: _requiredString(vote, 'poll_id'),
+            optionId: _requiredString(vote, 'option_id'),
+            createdAt: _dateValue(vote['created_at']) ?? DateTime.now().toUtc(),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
   Future<void> _importFront(
     Map<String, Object?> front,
     ImportConflictStrategy strategy,
@@ -2023,7 +2457,7 @@ SELECT
 
   List<Map<String, Object?>> _jsonObjectList(Object? value) {
     if (value == null) {
-      return const [];
+      return <Map<String, Object?>>[];
     }
     if (value is! List) {
       throw const FormatException('Expected an archive list.');
@@ -2048,6 +2482,17 @@ SELECT
   }
 
   String? _stringValue(Object? value) => value is String ? value : null;
+
+  int? _intValue(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    final text = _stringValue(value);
+    return text == null ? null : int.tryParse(text);
+  }
 
   DateTime? _dateValue(Object? value) {
     final text = _stringValue(value);
@@ -2116,6 +2561,29 @@ SELECT
     'enabled': reminder.enabled,
     'created_at': reminder.createdAt.toIso8601String(),
     'updated_at': reminder.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _pollToJson(Poll poll) => {
+    'id': poll.id,
+    'question': poll.question,
+    'description': poll.description,
+    'kind': poll.kind,
+    'closed': poll.closed,
+    'created_at': poll.createdAt.toIso8601String(),
+    'updated_at': poll.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _pollOptionToJson(PollOption option) => {
+    'id': option.id,
+    'poll_id': option.pollId,
+    'body': option.body,
+    'position': option.position,
+  };
+
+  Map<String, Object?> _pollVoteToJson(PollVote vote) => {
+    'poll_id': vote.pollId,
+    'option_id': vote.optionId,
+    'created_at': vote.createdAt.toIso8601String(),
   };
 
   Map<String, Object?> _frontToJson(FrontSession front) => {

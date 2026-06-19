@@ -3045,6 +3045,1100 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
   }
 }
 
+class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PollsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _questionMeta = const VerificationMeta(
+    'question',
+  );
+  @override
+  late final GeneratedColumn<String> question = GeneratedColumn<String>(
+    'question',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('single_choice'),
+  );
+  static const VerificationMeta _closedMeta = const VerificationMeta('closed');
+  @override
+  late final GeneratedColumn<bool> closed = GeneratedColumn<bool>(
+    'closed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("closed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    systemId,
+    question,
+    description,
+    kind,
+    closed,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'polls';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Poll> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('question')) {
+      context.handle(
+        _questionMeta,
+        question.isAcceptableOrUnknown(data['question']!, _questionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questionMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('closed')) {
+      context.handle(
+        _closedMeta,
+        closed.isAcceptableOrUnknown(data['closed']!, _closedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Poll map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Poll(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      question: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      closed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}closed'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PollsTable createAlias(String alias) {
+    return $PollsTable(attachedDatabase, alias);
+  }
+}
+
+class Poll extends DataClass implements Insertable<Poll> {
+  final String id;
+  final String systemId;
+  final String question;
+  final String? description;
+  final String kind;
+  final bool closed;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const Poll({
+    required this.id,
+    required this.systemId,
+    required this.question,
+    this.description,
+    required this.kind,
+    required this.closed,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['system_id'] = Variable<String>(systemId);
+    map['question'] = Variable<String>(question);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['closed'] = Variable<bool>(closed);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PollsCompanion toCompanion(bool nullToAbsent) {
+    return PollsCompanion(
+      id: Value(id),
+      systemId: Value(systemId),
+      question: Value(question),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      kind: Value(kind),
+      closed: Value(closed),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Poll.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Poll(
+      id: serializer.fromJson<String>(json['id']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      question: serializer.fromJson<String>(json['question']),
+      description: serializer.fromJson<String?>(json['description']),
+      kind: serializer.fromJson<String>(json['kind']),
+      closed: serializer.fromJson<bool>(json['closed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'systemId': serializer.toJson<String>(systemId),
+      'question': serializer.toJson<String>(question),
+      'description': serializer.toJson<String?>(description),
+      'kind': serializer.toJson<String>(kind),
+      'closed': serializer.toJson<bool>(closed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Poll copyWith({
+    String? id,
+    String? systemId,
+    String? question,
+    Value<String?> description = const Value.absent(),
+    String? kind,
+    bool? closed,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => Poll(
+    id: id ?? this.id,
+    systemId: systemId ?? this.systemId,
+    question: question ?? this.question,
+    description: description.present ? description.value : this.description,
+    kind: kind ?? this.kind,
+    closed: closed ?? this.closed,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Poll copyWithCompanion(PollsCompanion data) {
+    return Poll(
+      id: data.id.present ? data.id.value : this.id,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      question: data.question.present ? data.question.value : this.question,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      closed: data.closed.present ? data.closed.value : this.closed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Poll(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('question: $question, ')
+          ..write('description: $description, ')
+          ..write('kind: $kind, ')
+          ..write('closed: $closed, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    question,
+    description,
+    kind,
+    closed,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Poll &&
+          other.id == this.id &&
+          other.systemId == this.systemId &&
+          other.question == this.question &&
+          other.description == this.description &&
+          other.kind == this.kind &&
+          other.closed == this.closed &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PollsCompanion extends UpdateCompanion<Poll> {
+  final Value<String> id;
+  final Value<String> systemId;
+  final Value<String> question;
+  final Value<String?> description;
+  final Value<String> kind;
+  final Value<bool> closed;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PollsCompanion({
+    this.id = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.question = const Value.absent(),
+    this.description = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.closed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PollsCompanion.insert({
+    required String id,
+    required String systemId,
+    required String question,
+    this.description = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.closed = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       systemId = Value(systemId),
+       question = Value(question),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<Poll> custom({
+    Expression<String>? id,
+    Expression<String>? systemId,
+    Expression<String>? question,
+    Expression<String>? description,
+    Expression<String>? kind,
+    Expression<bool>? closed,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (systemId != null) 'system_id': systemId,
+      if (question != null) 'question': question,
+      if (description != null) 'description': description,
+      if (kind != null) 'kind': kind,
+      if (closed != null) 'closed': closed,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PollsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? systemId,
+    Value<String>? question,
+    Value<String?>? description,
+    Value<String>? kind,
+    Value<bool>? closed,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PollsCompanion(
+      id: id ?? this.id,
+      systemId: systemId ?? this.systemId,
+      question: question ?? this.question,
+      description: description ?? this.description,
+      kind: kind ?? this.kind,
+      closed: closed ?? this.closed,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (question.present) {
+      map['question'] = Variable<String>(question.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (closed.present) {
+      map['closed'] = Variable<bool>(closed.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollsCompanion(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('question: $question, ')
+          ..write('description: $description, ')
+          ..write('kind: $kind, ')
+          ..write('closed: $closed, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PollOptionsTable extends PollOptions
+    with TableInfo<$PollOptionsTable, PollOption> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PollOptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pollIdMeta = const VerificationMeta('pollId');
+  @override
+  late final GeneratedColumn<String> pollId = GeneratedColumn<String>(
+    'poll_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES polls (id)',
+    ),
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, pollId, body, position];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'poll_options';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PollOption> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('poll_id')) {
+      context.handle(
+        _pollIdMeta,
+        pollId.isAcceptableOrUnknown(data['poll_id']!, _pollIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pollIdMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PollOption map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PollOption(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      pollId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poll_id'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+    );
+  }
+
+  @override
+  $PollOptionsTable createAlias(String alias) {
+    return $PollOptionsTable(attachedDatabase, alias);
+  }
+}
+
+class PollOption extends DataClass implements Insertable<PollOption> {
+  final String id;
+  final String pollId;
+  final String body;
+  final int position;
+  const PollOption({
+    required this.id,
+    required this.pollId,
+    required this.body,
+    required this.position,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['poll_id'] = Variable<String>(pollId);
+    map['body'] = Variable<String>(body);
+    map['position'] = Variable<int>(position);
+    return map;
+  }
+
+  PollOptionsCompanion toCompanion(bool nullToAbsent) {
+    return PollOptionsCompanion(
+      id: Value(id),
+      pollId: Value(pollId),
+      body: Value(body),
+      position: Value(position),
+    );
+  }
+
+  factory PollOption.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PollOption(
+      id: serializer.fromJson<String>(json['id']),
+      pollId: serializer.fromJson<String>(json['pollId']),
+      body: serializer.fromJson<String>(json['body']),
+      position: serializer.fromJson<int>(json['position']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'pollId': serializer.toJson<String>(pollId),
+      'body': serializer.toJson<String>(body),
+      'position': serializer.toJson<int>(position),
+    };
+  }
+
+  PollOption copyWith({
+    String? id,
+    String? pollId,
+    String? body,
+    int? position,
+  }) => PollOption(
+    id: id ?? this.id,
+    pollId: pollId ?? this.pollId,
+    body: body ?? this.body,
+    position: position ?? this.position,
+  );
+  PollOption copyWithCompanion(PollOptionsCompanion data) {
+    return PollOption(
+      id: data.id.present ? data.id.value : this.id,
+      pollId: data.pollId.present ? data.pollId.value : this.pollId,
+      body: data.body.present ? data.body.value : this.body,
+      position: data.position.present ? data.position.value : this.position,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollOption(')
+          ..write('id: $id, ')
+          ..write('pollId: $pollId, ')
+          ..write('body: $body, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, pollId, body, position);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PollOption &&
+          other.id == this.id &&
+          other.pollId == this.pollId &&
+          other.body == this.body &&
+          other.position == this.position);
+}
+
+class PollOptionsCompanion extends UpdateCompanion<PollOption> {
+  final Value<String> id;
+  final Value<String> pollId;
+  final Value<String> body;
+  final Value<int> position;
+  final Value<int> rowid;
+  const PollOptionsCompanion({
+    this.id = const Value.absent(),
+    this.pollId = const Value.absent(),
+    this.body = const Value.absent(),
+    this.position = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PollOptionsCompanion.insert({
+    required String id,
+    required String pollId,
+    required String body,
+    required int position,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       pollId = Value(pollId),
+       body = Value(body),
+       position = Value(position);
+  static Insertable<PollOption> custom({
+    Expression<String>? id,
+    Expression<String>? pollId,
+    Expression<String>? body,
+    Expression<int>? position,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pollId != null) 'poll_id': pollId,
+      if (body != null) 'body': body,
+      if (position != null) 'position': position,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PollOptionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? pollId,
+    Value<String>? body,
+    Value<int>? position,
+    Value<int>? rowid,
+  }) {
+    return PollOptionsCompanion(
+      id: id ?? this.id,
+      pollId: pollId ?? this.pollId,
+      body: body ?? this.body,
+      position: position ?? this.position,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (pollId.present) {
+      map['poll_id'] = Variable<String>(pollId.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollOptionsCompanion(')
+          ..write('id: $id, ')
+          ..write('pollId: $pollId, ')
+          ..write('body: $body, ')
+          ..write('position: $position, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PollVotesTable extends PollVotes
+    with TableInfo<$PollVotesTable, PollVote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PollVotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pollIdMeta = const VerificationMeta('pollId');
+  @override
+  late final GeneratedColumn<String> pollId = GeneratedColumn<String>(
+    'poll_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES polls (id)',
+    ),
+  );
+  static const VerificationMeta _optionIdMeta = const VerificationMeta(
+    'optionId',
+  );
+  @override
+  late final GeneratedColumn<String> optionId = GeneratedColumn<String>(
+    'option_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES poll_options (id)',
+    ),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pollId, optionId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'poll_votes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PollVote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('poll_id')) {
+      context.handle(
+        _pollIdMeta,
+        pollId.isAcceptableOrUnknown(data['poll_id']!, _pollIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pollIdMeta);
+    }
+    if (data.containsKey('option_id')) {
+      context.handle(
+        _optionIdMeta,
+        optionId.isAcceptableOrUnknown(data['option_id']!, _optionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_optionIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pollId, optionId};
+  @override
+  PollVote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PollVote(
+      pollId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poll_id'],
+      )!,
+      optionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}option_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PollVotesTable createAlias(String alias) {
+    return $PollVotesTable(attachedDatabase, alias);
+  }
+}
+
+class PollVote extends DataClass implements Insertable<PollVote> {
+  final String pollId;
+  final String optionId;
+  final DateTime createdAt;
+  const PollVote({
+    required this.pollId,
+    required this.optionId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['poll_id'] = Variable<String>(pollId);
+    map['option_id'] = Variable<String>(optionId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PollVotesCompanion toCompanion(bool nullToAbsent) {
+    return PollVotesCompanion(
+      pollId: Value(pollId),
+      optionId: Value(optionId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PollVote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PollVote(
+      pollId: serializer.fromJson<String>(json['pollId']),
+      optionId: serializer.fromJson<String>(json['optionId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pollId': serializer.toJson<String>(pollId),
+      'optionId': serializer.toJson<String>(optionId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PollVote copyWith({String? pollId, String? optionId, DateTime? createdAt}) =>
+      PollVote(
+        pollId: pollId ?? this.pollId,
+        optionId: optionId ?? this.optionId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  PollVote copyWithCompanion(PollVotesCompanion data) {
+    return PollVote(
+      pollId: data.pollId.present ? data.pollId.value : this.pollId,
+      optionId: data.optionId.present ? data.optionId.value : this.optionId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollVote(')
+          ..write('pollId: $pollId, ')
+          ..write('optionId: $optionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pollId, optionId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PollVote &&
+          other.pollId == this.pollId &&
+          other.optionId == this.optionId &&
+          other.createdAt == this.createdAt);
+}
+
+class PollVotesCompanion extends UpdateCompanion<PollVote> {
+  final Value<String> pollId;
+  final Value<String> optionId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PollVotesCompanion({
+    this.pollId = const Value.absent(),
+    this.optionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PollVotesCompanion.insert({
+    required String pollId,
+    required String optionId,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : pollId = Value(pollId),
+       optionId = Value(optionId),
+       createdAt = Value(createdAt);
+  static Insertable<PollVote> custom({
+    Expression<String>? pollId,
+    Expression<String>? optionId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pollId != null) 'poll_id': pollId,
+      if (optionId != null) 'option_id': optionId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PollVotesCompanion copyWith({
+    Value<String>? pollId,
+    Value<String>? optionId,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PollVotesCompanion(
+      pollId: pollId ?? this.pollId,
+      optionId: optionId ?? this.optionId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pollId.present) {
+      map['poll_id'] = Variable<String>(pollId.value);
+    }
+    if (optionId.present) {
+      map['option_id'] = Variable<String>(optionId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollVotesCompanion(')
+          ..write('pollId: $pollId, ')
+          ..write('optionId: $optionId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $FrontSessionsTable extends FrontSessions
     with TableInfo<$FrontSessionsTable, FrontSession> {
   @override
@@ -6075,6 +7169,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotesTable notes = $NotesTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
+  late final $PollsTable polls = $PollsTable(this);
+  late final $PollOptionsTable pollOptions = $PollOptionsTable(this);
+  late final $PollVotesTable pollVotes = $PollVotesTable(this);
   late final $FrontSessionsTable frontSessions = $FrontSessionsTable(this);
   late final $FrontSessionMembersTable frontSessionMembers =
       $FrontSessionMembersTable(this);
@@ -6095,6 +7192,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     notes,
     messages,
     reminders,
+    polls,
+    pollOptions,
+    pollVotes,
     frontSessions,
     frontSessionMembers,
     importRecords,
@@ -6218,6 +7318,25 @@ final class $$PluralSystemsTableReferences
     ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_remindersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PollsTable, List<Poll>> _pollsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.polls,
+    aliasName: 'plural_systems__id__polls__system_id',
+  );
+
+  $$PollsTableProcessedTableManager get pollsRefs {
+    final manager = $$PollsTableTableManager(
+      $_db,
+      $_db.polls,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pollsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6462,6 +7581,31 @@ class $$PluralSystemsTableFilterComposer
           }) => $$RemindersTableFilterComposer(
             $db: $db,
             $table: $db.reminders,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pollsRefs(
+    Expression<bool> Function($$PollsTableFilterComposer f) f,
+  ) {
+    final $$PollsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableFilterComposer(
+            $db: $db,
+            $table: $db.polls,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6773,6 +7917,31 @@ class $$PluralSystemsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> pollsRefs<T extends Object>(
+    Expression<T> Function($$PollsTableAnnotationComposer a) f,
+  ) {
+    final $$PollsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> frontSessionsRefs<T extends Object>(
     Expression<T> Function($$FrontSessionsTableAnnotationComposer a) f,
   ) {
@@ -6919,6 +8088,7 @@ class $$PluralSystemsTableTableManager
             bool notesRefs,
             bool messagesRefs,
             bool remindersRefs,
+            bool pollsRefs,
             bool frontSessionsRefs,
             bool importRecordsRefs,
             bool importPayloadsRefs,
@@ -6980,6 +8150,7 @@ class $$PluralSystemsTableTableManager
                 notesRefs = false,
                 messagesRefs = false,
                 remindersRefs = false,
+                pollsRefs = false,
                 frontSessionsRefs = false,
                 importRecordsRefs = false,
                 importPayloadsRefs = false,
@@ -6994,6 +8165,7 @@ class $$PluralSystemsTableTableManager
                     if (notesRefs) db.notes,
                     if (messagesRefs) db.messages,
                     if (remindersRefs) db.reminders,
+                    if (pollsRefs) db.polls,
                     if (frontSessionsRefs) db.frontSessions,
                     if (importRecordsRefs) db.importRecords,
                     if (importPayloadsRefs) db.importPayloads,
@@ -7102,6 +8274,27 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).remindersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (pollsRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          Poll
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._pollsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.systemId == item.id,
@@ -7239,6 +8432,7 @@ typedef $$PluralSystemsTableProcessedTableManager =
         bool notesRefs,
         bool messagesRefs,
         bool remindersRefs,
+        bool pollsRefs,
         bool frontSessionsRefs,
         bool importRecordsRefs,
         bool importPayloadsRefs,
@@ -9282,6 +10476,1321 @@ typedef $$RemindersTableProcessedTableManager =
       (Reminder, $$RemindersTableReferences),
       Reminder,
       PrefetchHooks Function({bool systemId})
+    >;
+typedef $$PollsTableCreateCompanionBuilder =
+    PollsCompanion Function({
+      required String id,
+      required String systemId,
+      required String question,
+      Value<String?> description,
+      Value<String> kind,
+      Value<bool> closed,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PollsTableUpdateCompanionBuilder =
+    PollsCompanion Function({
+      Value<String> id,
+      Value<String> systemId,
+      Value<String> question,
+      Value<String?> description,
+      Value<String> kind,
+      Value<bool> closed,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$PollsTableReferences
+    extends BaseReferences<_$AppDatabase, $PollsTable, Poll> {
+  $$PollsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) =>
+      db.pluralSystems.createAlias('polls__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PollOptionsTable, List<PollOption>>
+  _pollOptionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollOptions,
+    aliasName: 'polls__id__poll_options__poll_id',
+  );
+
+  $$PollOptionsTableProcessedTableManager get pollOptionsRefs {
+    final manager = $$PollOptionsTableTableManager(
+      $_db,
+      $_db.pollOptions,
+    ).filter((f) => f.pollId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pollOptionsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PollVotesTable, List<PollVote>>
+  _pollVotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollVotes,
+    aliasName: 'polls__id__poll_votes__poll_id',
+  );
+
+  $$PollVotesTableProcessedTableManager get pollVotesRefs {
+    final manager = $$PollVotesTableTableManager(
+      $_db,
+      $_db.pollVotes,
+    ).filter((f) => f.pollId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pollVotesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PollsTableFilterComposer extends Composer<_$AppDatabase, $PollsTable> {
+  $$PollsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get closed => $composableBuilder(
+    column: $table.closed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> pollOptionsRefs(
+    Expression<bool> Function($$PollOptionsTableFilterComposer f) f,
+  ) {
+    final $$PollOptionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableFilterComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pollVotesRefs(
+    Expression<bool> Function($$PollVotesTableFilterComposer f) f,
+  ) {
+    final $$PollVotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVotes,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVotesTableFilterComposer(
+            $db: $db,
+            $table: $db.pollVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PollsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PollsTable> {
+  $$PollsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get closed => $composableBuilder(
+    column: $table.closed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PollsTable> {
+  $$PollsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get question =>
+      $composableBuilder(column: $table.question, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<bool> get closed =>
+      $composableBuilder(column: $table.closed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> pollOptionsRefs<T extends Object>(
+    Expression<T> Function($$PollOptionsTableAnnotationComposer a) f,
+  ) {
+    final $$PollOptionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> pollVotesRefs<T extends Object>(
+    Expression<T> Function($$PollVotesTableAnnotationComposer a) f,
+  ) {
+    final $$PollVotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVotes,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PollsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PollsTable,
+          Poll,
+          $$PollsTableFilterComposer,
+          $$PollsTableOrderingComposer,
+          $$PollsTableAnnotationComposer,
+          $$PollsTableCreateCompanionBuilder,
+          $$PollsTableUpdateCompanionBuilder,
+          (Poll, $$PollsTableReferences),
+          Poll,
+          PrefetchHooks Function({
+            bool systemId,
+            bool pollOptionsRefs,
+            bool pollVotesRefs,
+          })
+        > {
+  $$PollsTableTableManager(_$AppDatabase db, $PollsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PollsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PollsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PollsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String> question = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<bool> closed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PollsCompanion(
+                id: id,
+                systemId: systemId,
+                question: question,
+                description: description,
+                kind: kind,
+                closed: closed,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String systemId,
+                required String question,
+                Value<String?> description = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<bool> closed = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PollsCompanion.insert(
+                id: id,
+                systemId: systemId,
+                question: question,
+                description: description,
+                kind: kind,
+                closed: closed,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$PollsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                systemId = false,
+                pollOptionsRefs = false,
+                pollVotesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (pollOptionsRefs) db.pollOptions,
+                    if (pollVotesRefs) db.pollVotes,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.systemId,
+                                    referencedTable: $$PollsTableReferences
+                                        ._systemIdTable(db),
+                                    referencedColumn: $$PollsTableReferences
+                                        ._systemIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (pollOptionsRefs)
+                        await $_getPrefetchedData<
+                          Poll,
+                          $PollsTable,
+                          PollOption
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PollsTableReferences
+                              ._pollOptionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PollsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollOptionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.pollId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (pollVotesRefs)
+                        await $_getPrefetchedData<Poll, $PollsTable, PollVote>(
+                          currentTable: table,
+                          referencedTable: $$PollsTableReferences
+                              ._pollVotesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PollsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollVotesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.pollId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PollsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PollsTable,
+      Poll,
+      $$PollsTableFilterComposer,
+      $$PollsTableOrderingComposer,
+      $$PollsTableAnnotationComposer,
+      $$PollsTableCreateCompanionBuilder,
+      $$PollsTableUpdateCompanionBuilder,
+      (Poll, $$PollsTableReferences),
+      Poll,
+      PrefetchHooks Function({
+        bool systemId,
+        bool pollOptionsRefs,
+        bool pollVotesRefs,
+      })
+    >;
+typedef $$PollOptionsTableCreateCompanionBuilder =
+    PollOptionsCompanion Function({
+      required String id,
+      required String pollId,
+      required String body,
+      required int position,
+      Value<int> rowid,
+    });
+typedef $$PollOptionsTableUpdateCompanionBuilder =
+    PollOptionsCompanion Function({
+      Value<String> id,
+      Value<String> pollId,
+      Value<String> body,
+      Value<int> position,
+      Value<int> rowid,
+    });
+
+final class $$PollOptionsTableReferences
+    extends BaseReferences<_$AppDatabase, $PollOptionsTable, PollOption> {
+  $$PollOptionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PollsTable _pollIdTable(_$AppDatabase db) =>
+      db.polls.createAlias('poll_options__poll_id__polls__id');
+
+  $$PollsTableProcessedTableManager get pollId {
+    final $_column = $_itemColumn<String>('poll_id')!;
+
+    final manager = $$PollsTableTableManager(
+      $_db,
+      $_db.polls,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pollIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PollVotesTable, List<PollVote>>
+  _pollVotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollVotes,
+    aliasName: 'poll_options__id__poll_votes__option_id',
+  );
+
+  $$PollVotesTableProcessedTableManager get pollVotesRefs {
+    final manager = $$PollVotesTableTableManager(
+      $_db,
+      $_db.pollVotes,
+    ).filter((f) => f.optionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pollVotesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PollOptionsTableFilterComposer
+    extends Composer<_$AppDatabase, $PollOptionsTable> {
+  $$PollOptionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PollsTableFilterComposer get pollId {
+    final $$PollsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableFilterComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> pollVotesRefs(
+    Expression<bool> Function($$PollVotesTableFilterComposer f) f,
+  ) {
+    final $$PollVotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVotes,
+      getReferencedColumn: (t) => t.optionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVotesTableFilterComposer(
+            $db: $db,
+            $table: $db.pollVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PollOptionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PollOptionsTable> {
+  $$PollOptionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PollsTableOrderingComposer get pollId {
+    final $$PollsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableOrderingComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollOptionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PollOptionsTable> {
+  $$PollOptionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  $$PollsTableAnnotationComposer get pollId {
+    final $$PollsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> pollVotesRefs<T extends Object>(
+    Expression<T> Function($$PollVotesTableAnnotationComposer a) f,
+  ) {
+    final $$PollVotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVotes,
+      getReferencedColumn: (t) => t.optionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PollOptionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PollOptionsTable,
+          PollOption,
+          $$PollOptionsTableFilterComposer,
+          $$PollOptionsTableOrderingComposer,
+          $$PollOptionsTableAnnotationComposer,
+          $$PollOptionsTableCreateCompanionBuilder,
+          $$PollOptionsTableUpdateCompanionBuilder,
+          (PollOption, $$PollOptionsTableReferences),
+          PollOption,
+          PrefetchHooks Function({bool pollId, bool pollVotesRefs})
+        > {
+  $$PollOptionsTableTableManager(_$AppDatabase db, $PollOptionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PollOptionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PollOptionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PollOptionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> pollId = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PollOptionsCompanion(
+                id: id,
+                pollId: pollId,
+                body: body,
+                position: position,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String pollId,
+                required String body,
+                required int position,
+                Value<int> rowid = const Value.absent(),
+              }) => PollOptionsCompanion.insert(
+                id: id,
+                pollId: pollId,
+                body: body,
+                position: position,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PollOptionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({pollId = false, pollVotesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (pollVotesRefs) db.pollVotes],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (pollId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.pollId,
+                                referencedTable: $$PollOptionsTableReferences
+                                    ._pollIdTable(db),
+                                referencedColumn: $$PollOptionsTableReferences
+                                    ._pollIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (pollVotesRefs)
+                    await $_getPrefetchedData<
+                      PollOption,
+                      $PollOptionsTable,
+                      PollVote
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PollOptionsTableReferences
+                          ._pollVotesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$PollOptionsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).pollVotesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.optionId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PollOptionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PollOptionsTable,
+      PollOption,
+      $$PollOptionsTableFilterComposer,
+      $$PollOptionsTableOrderingComposer,
+      $$PollOptionsTableAnnotationComposer,
+      $$PollOptionsTableCreateCompanionBuilder,
+      $$PollOptionsTableUpdateCompanionBuilder,
+      (PollOption, $$PollOptionsTableReferences),
+      PollOption,
+      PrefetchHooks Function({bool pollId, bool pollVotesRefs})
+    >;
+typedef $$PollVotesTableCreateCompanionBuilder =
+    PollVotesCompanion Function({
+      required String pollId,
+      required String optionId,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$PollVotesTableUpdateCompanionBuilder =
+    PollVotesCompanion Function({
+      Value<String> pollId,
+      Value<String> optionId,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$PollVotesTableReferences
+    extends BaseReferences<_$AppDatabase, $PollVotesTable, PollVote> {
+  $$PollVotesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PollsTable _pollIdTable(_$AppDatabase db) =>
+      db.polls.createAlias('poll_votes__poll_id__polls__id');
+
+  $$PollsTableProcessedTableManager get pollId {
+    final $_column = $_itemColumn<String>('poll_id')!;
+
+    final manager = $$PollsTableTableManager(
+      $_db,
+      $_db.polls,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pollIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PollOptionsTable _optionIdTable(_$AppDatabase db) =>
+      db.pollOptions.createAlias('poll_votes__option_id__poll_options__id');
+
+  $$PollOptionsTableProcessedTableManager get optionId {
+    final $_column = $_itemColumn<String>('option_id')!;
+
+    final manager = $$PollOptionsTableTableManager(
+      $_db,
+      $_db.pollOptions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_optionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PollVotesTableFilterComposer
+    extends Composer<_$AppDatabase, $PollVotesTable> {
+  $$PollVotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PollsTableFilterComposer get pollId {
+    final $$PollsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableFilterComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableFilterComposer get optionId {
+    final $$PollOptionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableFilterComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollVotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PollVotesTable> {
+  $$PollVotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PollsTableOrderingComposer get pollId {
+    final $$PollsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableOrderingComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableOrderingComposer get optionId {
+    final $$PollOptionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollVotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PollVotesTable> {
+  $$PollVotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$PollsTableAnnotationComposer get pollId {
+    final $$PollsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableAnnotationComposer get optionId {
+    final $$PollOptionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollVotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PollVotesTable,
+          PollVote,
+          $$PollVotesTableFilterComposer,
+          $$PollVotesTableOrderingComposer,
+          $$PollVotesTableAnnotationComposer,
+          $$PollVotesTableCreateCompanionBuilder,
+          $$PollVotesTableUpdateCompanionBuilder,
+          (PollVote, $$PollVotesTableReferences),
+          PollVote,
+          PrefetchHooks Function({bool pollId, bool optionId})
+        > {
+  $$PollVotesTableTableManager(_$AppDatabase db, $PollVotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PollVotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PollVotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PollVotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> pollId = const Value.absent(),
+                Value<String> optionId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PollVotesCompanion(
+                pollId: pollId,
+                optionId: optionId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pollId,
+                required String optionId,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PollVotesCompanion.insert(
+                pollId: pollId,
+                optionId: optionId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PollVotesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({pollId = false, optionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (pollId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.pollId,
+                                referencedTable: $$PollVotesTableReferences
+                                    ._pollIdTable(db),
+                                referencedColumn: $$PollVotesTableReferences
+                                    ._pollIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (optionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.optionId,
+                                referencedTable: $$PollVotesTableReferences
+                                    ._optionIdTable(db),
+                                referencedColumn: $$PollVotesTableReferences
+                                    ._optionIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PollVotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PollVotesTable,
+      PollVote,
+      $$PollVotesTableFilterComposer,
+      $$PollVotesTableOrderingComposer,
+      $$PollVotesTableAnnotationComposer,
+      $$PollVotesTableCreateCompanionBuilder,
+      $$PollVotesTableUpdateCompanionBuilder,
+      (PollVote, $$PollVotesTableReferences),
+      PollVote,
+      PrefetchHooks Function({bool pollId, bool optionId})
     >;
 typedef $$FrontSessionsTableCreateCompanionBuilder =
     FrontSessionsCompanion Function({
@@ -12024,6 +14533,12 @@ class $AppDatabaseManager {
       $$MessagesTableTableManager(_db, _db.messages);
   $$RemindersTableTableManager get reminders =>
       $$RemindersTableTableManager(_db, _db.reminders);
+  $$PollsTableTableManager get polls =>
+      $$PollsTableTableManager(_db, _db.polls);
+  $$PollOptionsTableTableManager get pollOptions =>
+      $$PollOptionsTableTableManager(_db, _db.pollOptions);
+  $$PollVotesTableTableManager get pollVotes =>
+      $$PollVotesTableTableManager(_db, _db.pollVotes);
   $$FrontSessionsTableTableManager get frontSessions =>
       $$FrontSessionsTableTableManager(_db, _db.frontSessions);
   $$FrontSessionMembersTableTableManager get frontSessionMembers =>
