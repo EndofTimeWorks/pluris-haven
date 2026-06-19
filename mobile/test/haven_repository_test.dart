@@ -356,4 +356,42 @@ void main() {
     expect(reExported, contains('"raw_payloads"'));
     expect(reExported, contains('"collection": "members"'));
   });
+
+  test('runs queued import jobs from the local database', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    final normalized = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'simply-plural.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [{"id": "m1", "name": "Iris", "pronouns": "she/they"}]
+}
+''',
+    );
+
+    final jobId = await repository.enqueueImportArchiveJob(
+      normalized.archiveJson,
+      strategy: ImportConflictStrategy.skip,
+      source: ImportSource.simplyPlural,
+      fileName: 'simply-plural.json',
+    );
+
+    var jobs = await repository.watchBackgroundJobs().first;
+    expect(jobs.single.id, jobId);
+    expect(jobs.single.status, 'queued');
+
+    expect(await repository.runBackgroundJob(jobId), isTrue);
+
+    jobs = await repository.watchBackgroundJobs().first;
+    expect(jobs.single.status, 'done');
+
+    final members = await repository.watchMembers().first;
+    expect(members.single.displayName, 'Iris');
+  });
 }
