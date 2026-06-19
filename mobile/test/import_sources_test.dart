@@ -146,6 +146,9 @@ void main() {
     expect(decoded, isNotNull);
     expect(decoded!.displayName, contains('export.json'));
     expect(decoded.text, contains('"Iris"'));
+    expect(decoded.avatarAssets, hasLength(1));
+    expect(decoded.avatarAssets.single.id, 'avatar-1');
+    expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
   test('previews invalid archive as not applyable', () {
@@ -305,6 +308,9 @@ void main() {
   "customFields": [
     {"_id": "field1", "name": "Age", "type": "text"}
   ],
+  "customFronts": [
+    {"_id": "cf1", "name": "Asleep", "color": "7B61FF"}
+  ],
   "boardMessages": [
     {
       "_id": "b1",
@@ -363,7 +369,8 @@ void main() {
       expect(archive.counts['reminders'], 1);
       expect(archive.counts['fronts'], 1);
       expect(archive.counts['front_members'], 1);
-      expect(archive.counts['raw_payloads'], 10);
+      expect(archive.counts['avatar_assets'], 0);
+      expect(archive.counts['raw_payloads'], 11);
       expect(
         archive.archiveJson,
         contains('"avatar_url": "sp-avatar:avatar-1"'),
@@ -376,10 +383,40 @@ void main() {
         archive.archiveJson,
         contains('"title": "Imported custom fields"'),
       );
+      expect(
+        archive.archiveJson,
+        contains('"title": "Imported custom fronts"'),
+      );
       expect(archive.archiveJson, contains('"collection": "privacyBuckets"'));
       expect(archive.archiveJson, contains('"body": "Board\\nCheck supplies"'));
     },
   );
+
+  test('embeds zipped Simply Plural avatar bytes in normalized archive', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [{"_id": "m1", "name": "Iris", "avatarUuid": "avatar-1"}]
+}
+''',
+      avatarAssets: [
+        ImportAvatarAsset(
+          id: 'avatar-1',
+          name: 'avatars/avatar-1.png',
+          mimeType: 'image/png',
+          bytes: Uint8List.fromList([1, 2, 3, 4]),
+        ),
+      ],
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    expect(decoded['avatar_assets'], hasLength(1));
+    expect(archive.counts['avatar_assets'], 1);
+    expect(archive.archiveJson, contains('"bytes_base64": "AQIDBA=="'));
+  });
 
   test('normalizes PluralKit export switches into front intervals', () {
     final archive = normalizeImportTextToLocalArchive(
@@ -412,6 +449,44 @@ void main() {
       contains('"ended_at": "2026-01-01T11:00:00.000Z"'),
     );
     expect(archive.archiveJson, contains('"color_hex": "#3366ff"'));
+  });
+
+  test('uses Simply Plural document IDs instead of shared account UID', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "member-a", "uid": "system-account", "name": "Iris"},
+    {"_id": "member-b", "uid": "system-account", "name": "River"}
+  ],
+  "frontHistory": [
+    {
+      "_id": "front-a",
+      "uid": "system-account",
+      "member": "member-b",
+      "startTime": 1767225600000
+    }
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['members'], 2);
+    expect(
+      archive.archiveJson,
+      contains('"id": "simplyplural_file-member-member-a"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"member_id": "simplyplural_file-member-member-b"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"session_id": "simplyplural_file-front-front-a"'),
+    );
   });
 
   test('normalizes Tupperbox tuppers as members', () {

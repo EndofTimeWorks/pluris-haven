@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
+import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
@@ -393,5 +395,42 @@ void main() {
 
     final members = await repository.watchMembers().first;
     expect(members.single.displayName, 'Iris');
+  });
+
+  test('stores imported avatar assets locally', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [{"_id": "m1", "name": "Iris", "avatarUuid": "avatar-1"}]
+}
+''',
+      avatarAssets: [
+        ImportAvatarAsset(
+          id: 'avatar-1',
+          name: 'avatars/avatar-1.png',
+          mimeType: 'image/png',
+          bytes: Uint8List.fromList([1, 2, 3, 4]),
+        ),
+      ],
+    );
+
+    await repository.importLocalArchiveJson(
+      archive.archiveJson,
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+    );
+
+    final rows = await database.select(database.members).get();
+    expect(rows.single.avatarUrl, startsWith('local-avatar:'));
+    expect(rows.single.avatarUrl, endsWith('.png'));
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'import_file_decoder.dart';
 import 'import_sources.dart';
 
 class NormalizedImportArchive {
@@ -22,6 +23,7 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   required ImportSource source,
   required String fileName,
   required String text,
+  List<ImportAvatarAsset> avatarAssets = const [],
   DateTime? importedAt,
 }) {
   final decoded = jsonDecode(text);
@@ -49,6 +51,7 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   final normalizer = _ExternalArchiveNormalizer(
     source: source,
     decoded: decoded,
+    avatarAssets: avatarAssets,
     importedAt: importedAt ?? DateTime.now().toUtc(),
   )..normalize();
 
@@ -66,11 +69,13 @@ class _ExternalArchiveNormalizer {
   _ExternalArchiveNormalizer({
     required this.source,
     required this.decoded,
+    required this.avatarAssets,
     required this.importedAt,
   });
 
   final ImportSource source;
   final Map<String, Object?> decoded;
+  final List<ImportAvatarAsset> avatarAssets;
   final DateTime importedAt;
   final warnings = <String>[];
   final _memberIdsByExternalId = <String, String>{};
@@ -116,11 +121,22 @@ class _ExternalArchiveNormalizer {
     'reminders': reminders,
     'fronts': fronts,
     'front_members': frontMembers,
+    'avatar_assets': _avatarAssetsToJson(),
     'raw_payloads': rawPayloads,
     'import_records': const [],
     'notification_events': const [],
     'preferences': const [],
   };
+
+  List<Map<String, Object?>> _avatarAssetsToJson() => [
+    for (final asset in avatarAssets)
+      {
+        'id': asset.id,
+        'name': asset.name,
+        'mime_type': asset.mimeType,
+        'bytes_base64': base64Encode(asset.bytes),
+      },
+  ];
 
   String _systemName() {
     final users = _firstList(decoded, const ['users']);
@@ -173,7 +189,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final externalId =
-        _firstString(member, const ['id', 'uuid', 'uid', '_id', 'memberId']) ??
+        _firstString(member, const ['_id', 'id', 'uuid', 'memberId', 'uid']) ??
         _slug(name);
     final id = _stableId('member', externalId);
     _memberIdsByExternalId[externalId] = id;
@@ -248,7 +264,7 @@ class _ExternalArchiveNormalizer {
         continue;
       }
       final groupExternalId =
-          _firstString(group, const ['id', 'uuid', 'uid', '_id', 'folderId']) ??
+          _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
           _firstString(group, const ['name', 'displayName', 'title']);
       if (groupExternalId == null) {
         continue;
@@ -265,11 +281,11 @@ class _ExternalArchiveNormalizer {
             ? member
             : member is Map<String, Object?>
             ? _firstString(member, const [
+                '_id',
                 'id',
                 'uuid',
-                'uid',
-                '_id',
                 'memberId',
+                'uid',
               ])
             : null;
         if (memberExternalId != null) {
@@ -291,7 +307,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final externalId =
-        _firstString(group, const ['id', 'uuid', 'uid', '_id', 'folderId']) ??
+        _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
         _slug(name);
     final id = _stableId('group', externalId);
     _groupIdsByExternalId[externalId] = id;
@@ -330,7 +346,7 @@ class _ExternalArchiveNormalizer {
         records.add(record);
       }
     }
-    records.addAll(_normalizeCustomFieldsAsNotes());
+    records.addAll(_normalizeCustomDefinitionsAsNotes());
     return records;
   }
 
@@ -352,7 +368,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final externalId =
-        _firstString(note, const ['id', 'uuid', 'uid', '_id']) ??
+        _firstString(note, const ['_id', 'id', 'uuid', 'uid']) ??
         '${title ?? 'note'}-$index';
     final memberId = _memberRef(note);
 
@@ -414,7 +430,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final externalId =
-        _firstString(message, const ['id', 'uuid', 'uid', '_id']) ??
+        _firstString(message, const ['_id', 'id', 'uuid', 'uid']) ??
         'message-$index';
     return {
       'id': _stableId('message', externalId),
@@ -490,7 +506,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final externalId =
-        _firstString(reminder, const ['id', 'uuid', 'uid', '_id']) ??
+        _firstString(reminder, const ['_id', 'id', 'uuid', 'uid']) ??
         'reminder-$index';
     return {
       'id': _stableId('reminder', externalId),
@@ -539,7 +555,7 @@ class _ExternalArchiveNormalizer {
       }
 
       final externalId =
-          _firstString(front, const ['id', 'uuid', 'uid', '_id']) ??
+          _firstString(front, const ['_id', 'id', 'uuid', 'uid']) ??
           'front-$index-$start';
       final id = _stableId('front', externalId);
       sessions.add({
@@ -599,11 +615,11 @@ class _ExternalArchiveNormalizer {
         ids.add(item);
       } else if (item is Map<String, Object?>) {
         final id = _firstString(item, const [
+          '_id',
           'id',
           'uuid',
-          'uid',
-          '_id',
           'memberId',
+          'uid',
         ]);
         if (id != null) {
           ids.add(id);
@@ -674,15 +690,36 @@ class _ExternalArchiveNormalizer {
     return parts.join('\n');
   }
 
-  List<Map<String, Object?>> _normalizeCustomFieldsAsNotes() {
+  List<Map<String, Object?>> _normalizeCustomDefinitionsAsNotes() {
     final records = <Map<String, Object?>>[];
-    final fields = _firstList(decoded, const ['customFields']);
+    final fields = _firstList(decoded, const [
+      'customFields',
+      'custom_fields',
+      'fields',
+    ]);
     if (fields.isNotEmpty) {
       records.add({
         'id': _stableId('note', 'custom-fields-index'),
         'member_id': null,
         'title': 'Imported custom fields',
         'body': const JsonEncoder.withIndent('  ').convert(fields),
+        'created_at': importedAt.toIso8601String(),
+        'updated_at': importedAt.toIso8601String(),
+      });
+    }
+
+    final customFronts = _firstList(decoded, const [
+      'customFronts',
+      'custom_fronts',
+      'frontStatuses',
+      'FrontStatuses',
+    ]);
+    if (customFronts.isNotEmpty) {
+      records.add({
+        'id': _stableId('note', 'custom-fronts-index'),
+        'member_id': null,
+        'title': 'Imported custom fronts',
+        'body': const JsonEncoder.withIndent('  ').convert(customFronts),
         'created_at': importedAt.toIso8601String(),
         'updated_at': importedAt.toIso8601String(),
       });
@@ -714,11 +751,11 @@ class _ExternalArchiveNormalizer {
         continue;
       }
       final externalId = _firstString(member, const [
+        '_id',
         'id',
         'uuid',
-        'uid',
-        '_id',
         'memberId',
+        'uid',
       ]);
       if (externalId == null) {
         continue;
@@ -773,6 +810,7 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'reminders': _listCount(archive['reminders']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),
+  'avatar_assets': _listCount(archive['avatar_assets']),
   'raw_payloads': _listCount(archive['raw_payloads']),
 };
 
