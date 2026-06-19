@@ -1,0 +1,4 @@
+storeFile=pluris-haven-upload.jks
+storePassword=replace-with-keystore-password
+keyAlias=replace-with-key-alias
+keyPassword=replace-with-key-password
