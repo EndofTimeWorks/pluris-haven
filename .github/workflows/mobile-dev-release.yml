@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
           if [[ "${version}" != *"-pre-alpha.dev."* ]]; then
-            echo "Dev builds must use a pre-alpha dev version, for example 0.0.1-pre-alpha.dev.16+16." >&2
+            echo "Dev builds must use a pre-alpha dev version, for example 0.0.1-pre-alpha.dev.N+N." >&2
             exit 1
           fi
           if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
