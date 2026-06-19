@@ -292,6 +292,7 @@ class AppCustomization {
   const AppCustomization({
     required this.themeMode,
     required this.accentColor,
+    required this.customAccentHex,
     required this.compactDashboard,
     required this.showDashboardSubtitles,
     required this.dashboardShortcutIds,
@@ -300,14 +301,23 @@ class AppCustomization {
 
   final HavenThemeMode themeMode;
   final HavenAccentColor accentColor;
+  final String? customAccentHex;
   final bool compactDashboard;
   final bool showDashboardSubtitles;
   final List<String> dashboardShortcutIds;
   final String languageCode;
 
+  int get effectiveAccentArgb =>
+      _argbFromHex(customAccentHex) ?? accentColor.argb;
+
+  String get accentLabel => customAccentHex == null
+      ? accentColor.label
+      : 'Custom ${customAccentHex!.toUpperCase()}';
+
   static AppCustomization get defaults => AppCustomization(
     themeMode: HavenThemeMode.dark,
     accentColor: HavenAccentColor.purple,
+    customAccentHex: null,
     compactDashboard: false,
     showDashboardSubtitles: true,
     dashboardShortcutIds: defaultDashboardShortcutIds,
@@ -317,6 +327,7 @@ class AppCustomization {
   AppCustomization copyWith({
     HavenThemeMode? themeMode,
     HavenAccentColor? accentColor,
+    Object? customAccentHex = _unchanged,
     bool? compactDashboard,
     bool? showDashboardSubtitles,
     List<String>? dashboardShortcutIds,
@@ -325,6 +336,9 @@ class AppCustomization {
     return AppCustomization(
       themeMode: themeMode ?? this.themeMode,
       accentColor: accentColor ?? this.accentColor,
+      customAccentHex: identical(customAccentHex, _unchanged)
+          ? this.customAccentHex
+          : customAccentHex as String?,
       compactDashboard: compactDashboard ?? this.compactDashboard,
       showDashboardSubtitles:
           showDashboardSubtitles ?? this.showDashboardSubtitles,
@@ -337,6 +351,8 @@ class AppCustomization {
 
   SupportedLanguage get language => supportedLanguageForCode(languageCode);
 }
+
+const Object _unchanged = Object();
 
 const defaultDashboardShortcutIds = [
   'members',
@@ -373,6 +389,8 @@ abstract interface class HavenRepository {
 
   Future<void> setAccentColor(HavenAccentColor color);
 
+  Future<void> setCustomAccentColor(String? colorHex);
+
   Future<void> setCompactDashboard(bool compact);
 
   Future<void> setShowDashboardSubtitles(bool show);
@@ -389,7 +407,13 @@ abstract interface class HavenRepository {
 
   Future<void> saveMember(MemberDraft draft);
 
+  Future<void> updateMember(String memberId, MemberDraft draft);
+
   Future<void> archiveMember(String memberId);
+
+  Future<void> restoreMember(String memberId);
+
+  Future<void> deleteMember(String memberId);
 
   Future<void> setFrontMembers(List<String> memberIds);
 
@@ -397,9 +421,13 @@ abstract interface class HavenRepository {
 
   Future<void> saveNote(NoteDraft draft);
 
+  Future<void> deleteNote(String noteId);
+
   Future<void> saveMessage(MessageDraft draft);
 
   Future<void> saveReminder(ReminderDraft draft);
+
+  Future<void> deleteReminder(String reminderId);
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
@@ -726,6 +754,7 @@ SELECT
     return AppCustomization(
       themeMode: HavenThemeMode.fromStorage(values[_themeModeKey]),
       accentColor: HavenAccentColor.fromStorage(values[_accentColorKey]),
+      customAccentHex: _normalizeHexColor(values[_customAccentHexKey]),
       compactDashboard: _readBool(values[_compactDashboardKey]),
       showDashboardSubtitles: _readBool(
         values[_showDashboardSubtitlesKey],
@@ -745,11 +774,19 @@ SELECT
   }
 
   List<String> _readShortcutIds(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null) {
       return defaultDashboardShortcutIds;
     }
 
-    final ids = value
+    final stored = value.trim();
+    if (stored == _emptyShortcutIdsValue) {
+      return const [];
+    }
+    if (stored.isEmpty) {
+      return defaultDashboardShortcutIds;
+    }
+
+    final ids = stored
         .split(',')
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
@@ -772,8 +809,17 @@ SELECT
   }
 
   @override
-  Future<void> setAccentColor(HavenAccentColor color) {
-    return _writePreference(_accentColorKey, color.storageValue);
+  Future<void> setAccentColor(HavenAccentColor color) async {
+    await _writePreference(_accentColorKey, color.storageValue);
+    await _writePreference(_customAccentHexKey, '');
+  }
+
+  @override
+  Future<void> setCustomAccentColor(String? colorHex) {
+    return _writePreference(
+      _customAccentHexKey,
+      _normalizeHexColor(colorHex) ?? '',
+    );
   }
 
   @override
@@ -886,6 +932,58 @@ SELECT
   }
 
   @override
+  Future<void> updateMember(String memberId, MemberDraft draft) async {
+    final displayName = draft.displayName.trim();
+    if (displayName.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await (database.update(database.members)..where(
+          (member) =>
+              member.systemId.equals(localSystemId) &
+              member.id.equals(memberId),
+        ))
+        .write(
+          MembersCompanion(
+            displayName: Value(displayName),
+            pronouns: Value(_nullIfBlank(draft.pronouns)),
+            colorHex: Value(_nullIfBlank(draft.colorHex)),
+            description: Value(_nullIfBlank(draft.description)),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  @override
+  Future<void> restoreMember(String memberId) async {
+    final now = DateTime.now().toUtc();
+    await (database.update(database.members)..where(
+          (member) =>
+              member.systemId.equals(localSystemId) &
+              member.id.equals(memberId),
+        ))
+        .write(
+          MembersCompanion(archived: const Value(false), updatedAt: Value(now)),
+        );
+  }
+
+  @override
+  Future<void> deleteMember(String memberId) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.frontSessionMembers,
+      )..where((frontMember) => frontMember.memberId.equals(memberId))).go();
+      await (database.delete(database.members)..where(
+            (member) =>
+                member.systemId.equals(localSystemId) &
+                member.id.equals(memberId),
+          ))
+          .go();
+    });
+  }
+
+  @override
   Future<void> setFrontMembers(List<String> memberIds) async {
     final ids = memberIds
         .map((id) => id.trim())
@@ -990,6 +1088,15 @@ SELECT
   }
 
   @override
+  Future<void> deleteNote(String noteId) {
+    return (database.delete(database.notes)..where(
+          (note) =>
+              note.systemId.equals(localSystemId) & note.id.equals(noteId),
+        ))
+        .go();
+  }
+
+  @override
   Future<void> saveMessage(MessageDraft draft) async {
     final body = draft.body.trim();
     if (body.isEmpty) {
@@ -1037,6 +1144,16 @@ SELECT
   }
 
   @override
+  Future<void> deleteReminder(String reminderId) {
+    return (database.delete(database.reminders)..where(
+          (reminder) =>
+              reminder.systemId.equals(localSystemId) &
+              reminder.id.equals(reminderId),
+        ))
+        .go();
+  }
+
+  @override
   Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
     final title = draft.title.trim();
     final body = draft.body.trim();
@@ -1069,7 +1186,7 @@ SELECT
       }
       ids.add(trimmed);
     }
-    return ids.join(',');
+    return ids.isEmpty ? _emptyShortcutIdsValue : ids.join(',');
   }
 
   Future<void> _writePreference(String key, String value) {
@@ -1997,9 +2114,30 @@ String _safeFilePart(String value) {
   return cleaned.isEmpty ? 'avatar' : cleaned;
 }
 
+String? _normalizeHexColor(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final trimmed = value.trim().replaceFirst('#', '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(trimmed)) {
+    return null;
+  }
+  return '#${trimmed.toUpperCase()}';
+}
+
+int? _argbFromHex(String? value) {
+  final normalized = _normalizeHexColor(value);
+  if (normalized == null) {
+    return null;
+  }
+  return int.parse('FF${normalized.substring(1)}', radix: 16);
+}
+
 const _themeModeKey = 'theme_mode';
 const _accentColorKey = 'accent_color';
+const _customAccentHexKey = 'custom_accent_hex';
 const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
+const _emptyShortcutIdsValue = '__empty__';
 const _languageCodeKey = 'language_code';

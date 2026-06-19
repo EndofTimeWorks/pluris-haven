@@ -122,6 +122,75 @@ void main() {
     expect(repository._snapshot.frontHistoryCount, 1);
   });
 
+  testWidgets('archives restores edits and deletes members', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Members').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add member'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Iris',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Archive'));
+    await tester.pumpAndSettle();
+    await tester.pump();
+
+    expect(find.text('Iris'), findsOneWidget);
+    expect(find.text('no pronouns - archived'), findsOneWidget);
+    expect(repository._snapshot.memberCount, 0);
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restore'));
+    await tester.pumpAndSettle();
+
+    expect(repository._snapshot.memberCount, 1);
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Iris edited',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iris edited'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iris edited'), findsNothing);
+    expect(find.text('No members saved locally'), findsOneWidget);
+  });
+
   testWidgets('adds a local group from the groups section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -225,6 +294,15 @@ void main() {
     expect(find.text('Grounding'), findsOneWidget);
     expect(find.text('Drink water and check meds.'), findsOneWidget);
     expect(repository._snapshot.noteCount, 1);
+
+    await tester.tap(find.byTooltip('Delete note'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Grounding'), findsNothing);
+    expect(find.text('No notes yet'), findsOneWidget);
+    expect(repository._snapshot.noteCount, 0);
   });
 
   testWidgets('adds a local message from the chat section', (tester) async {
@@ -291,9 +369,19 @@ void main() {
       find.byKey(const ValueKey('reminder-title-field')),
       'Medication',
     );
+    await tester.tap(
+      find.byKey(const ValueKey('reminder-schedule-kind-field')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Weekly').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reminder-weekday-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Friday').last);
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const ValueKey('reminder-schedule-field')),
-      'Daily',
+      find.byKey(const ValueKey('reminder-time-field')),
+      '08:30',
     );
     await tester.enterText(
       find.byKey(const ValueKey('reminder-body-field')),
@@ -303,8 +391,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Medication'), findsOneWidget);
-    expect(find.text('Daily'), findsOneWidget);
+    expect(find.text('Weekly on Friday at 08:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Delete reminder'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Medication'), findsNothing);
+    expect(find.text('No reminders yet'), findsOneWidget);
   });
 
   testWidgets('updates customization from the app options page', (
@@ -420,6 +516,76 @@ void main() {
     expect(find.text('needs network'), findsOneWidget);
   });
 
+  testWidgets('back from import page returns to dashboard', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import setup'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Currently fronting'), findsOneWidget);
+    expect(find.text('Import setup'), findsNothing);
+  });
+
+  testWidgets('back from paste JSON sheet closes the sheet safely', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paste JSON'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Paste JSON'), findsNothing);
+    expect(find.text('Import setup'), findsOneWidget);
+  });
+
   testWidgets('builds a local archive from import export', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1;
@@ -480,7 +646,7 @@ class FakeHavenRepository implements HavenRepository {
     );
     _membersController = StreamController<List<MemberSummary>>.broadcast(
       sync: true,
-      onListen: () => _membersController.add(_visibleMembers),
+      onListen: () => _membersController.add(_members),
     );
     _groupsController = StreamController<List<GroupSummary>>.broadcast(
       sync: true,
@@ -604,7 +770,16 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setAccentColor(HavenAccentColor color) async {
-    _customization = _customization.copyWith(accentColor: color);
+    _customization = _customization.copyWith(
+      accentColor: color,
+      customAccentHex: null,
+    );
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setCustomAccentColor(String? colorHex) async {
+    _customization = _customization.copyWith(customAccentHex: colorHex);
     _customizationController.add(_customization);
   }
 
@@ -707,6 +882,61 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> updateMember(String memberId, MemberDraft draft) async {
+    final displayName = draft.displayName.trim();
+    if (displayName.isEmpty) {
+      return;
+    }
+
+    _members = [
+      for (final member in _members)
+        if (member.id == memberId)
+          MemberSummary(
+            id: member.id,
+            displayName: displayName,
+            pronouns: _nullIfBlank(draft.pronouns),
+            colorHex: _nullIfBlank(draft.colorHex),
+            description: _nullIfBlank(draft.description),
+            archived: member.archived,
+          )
+        else
+          member,
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
+
+  @override
+  Future<void> restoreMember(String memberId) async {
+    _members = [
+      for (final member in _members)
+        if (member.id == memberId)
+          MemberSummary(
+            id: member.id,
+            displayName: member.displayName,
+            pronouns: member.pronouns,
+            colorHex: member.colorHex,
+            description: member.description,
+            archived: false,
+          )
+        else
+          member,
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
+
+  @override
+  Future<void> deleteMember(String memberId) async {
+    _members = [
+      for (final member in _members)
+        if (member.id != memberId) member,
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
+
+  @override
   Future<void> setFrontMembers(List<String> memberIds) async {
     final ids = memberIds.toSet();
     final selected = _visibleMembers
@@ -771,6 +1001,16 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> deleteNote(String noteId) async {
+    _notes = [
+      for (final note in _notes)
+        if (note.id != noteId) note,
+    ];
+    _notesController.add(_notes);
+    _emitSnapshot(noteCount: _notes.length);
+  }
+
+  @override
   Future<void> saveMessage(MessageDraft draft) async {
     final body = draft.body.trim();
     if (body.isEmpty) {
@@ -807,6 +1047,15 @@ class FakeHavenRepository implements HavenRepository {
         updatedAt: DateTime(2026),
       ),
       ..._reminders,
+    ];
+    _remindersController.add(_reminders);
+  }
+
+  @override
+  Future<void> deleteReminder(String reminderId) async {
+    _reminders = [
+      for (final reminder in _reminders)
+        if (reminder.id != reminderId) reminder,
     ];
     _remindersController.add(_reminders);
   }
