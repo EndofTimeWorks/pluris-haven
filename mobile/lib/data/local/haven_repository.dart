@@ -65,6 +65,7 @@ class MemberSummary {
     this.pronouns,
     this.colorHex,
     this.description,
+    this.avatarUrl,
     this.archived = false,
     this.isCustomFront = false,
   });
@@ -74,6 +75,7 @@ class MemberSummary {
   final String? pronouns;
   final String? colorHex;
   final String? description;
+  final String? avatarUrl;
   final bool archived;
   final bool isCustomFront;
 }
@@ -652,6 +654,7 @@ class LocalHavenRepository implements HavenRepository {
             pronouns: row.pronouns,
             colorHex: row.colorHex,
             description: row.description,
+            avatarUrl: row.avatarUrl,
             archived: row.archived,
             isCustomFront: row.isCustomFront,
           ),
