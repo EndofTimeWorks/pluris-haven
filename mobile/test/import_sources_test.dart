@@ -173,13 +173,16 @@ void main() {
       text: '''
 {
   "system": {"name": "EndofTimee"},
-  "folders": [{"id": "g1", "name": "Main"}],
+  "folders": [
+    {"id": "g1", "name": "Main", "parent": "root"},
+    {"id": "g2", "name": "Nested", "parent": "g1"}
+  ],
   "members": [
     {
       "id": "m1",
       "name": "Iris",
       "pronouns": "she/they",
-      "folderId": "g1",
+      "folderId": "g2",
       "pluralKitId": "pk-member"
     }
   ],
@@ -188,7 +191,7 @@ void main() {
       "id": "f1",
       "startedAt": "2026-01-01T12:00:00Z",
       "endedAt": "2026-01-01T13:00:00Z",
-      "members": ["m1"]
+      "member_ids": ["m1"]
     }
   ],
   "notes": [{"id": "n1", "title": "Grounding", "body": "Drink water"}],
@@ -198,12 +201,20 @@ void main() {
     );
 
     expect(archive.counts['members'], 1);
-    expect(archive.counts['groups'], 1);
+    expect(archive.counts['groups'], 2);
     expect(archive.counts['fronts'], 1);
     expect(archive.counts['front_members'], 1);
     expect(archive.counts['notes'], 1);
     expect(archive.counts['messages'], 1);
     expect(archive.archiveJson, contains('"display_name": "Iris"'));
+    expect(
+      archive.archiveJson,
+      contains('"parent_group_id": "simplyplural_file-group-g1"'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('"folder_id": "simplyplural_file-group-g2"'),
+    );
     expect(archive.archiveJson, contains('"source": "simplyplural_file"'));
   });
 
@@ -483,12 +494,14 @@ void main() {
       );
       expect(
         archive.archiveJson,
-        contains('"title": "Imported custom fields"'),
+        isNot(contains('"title": "Imported custom fields"')),
       );
       expect(
         archive.archiveJson,
-        contains('"title": "Imported custom fronts"'),
+        isNot(contains('"title": "Imported custom fronts"')),
       );
+      expect(archive.archiveJson, contains('"collection": "customFields"'));
+      expect(archive.archiveJson, contains('"collection": "customFronts"'));
       expect(archive.archiveJson, contains('"collection": "privacyBuckets"'));
       expect(archive.archiveJson, contains('"body": "Board\\nCheck supplies"'));
     },
