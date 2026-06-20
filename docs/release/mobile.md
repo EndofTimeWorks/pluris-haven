@@ -8,8 +8,8 @@ There are two build tracks.
 
 It creates one prerelease from the checked-in `mobile/pubspec.yaml` version:
 
-- pubspec version: `0.0.1-pre-alpha.dev.17+17`
-- tag: `mobile-v0.0.1-pre-alpha.dev.17+17`
+- pubspec version: `0.1.0-pre-alpha.dev.1+18`
+- tag: `mobile-v0.1.0-pre-alpha.dev.1+18`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -27,12 +27,16 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.0.1-pre-alpha.dev.18+18
+version: 0.1.0-pre-alpha.dev.2+19
 ```
 
 The `.dev.N` part is the SemVer prerelease ordering. The `+N` part is Android's
 numeric build number. SemVer ignores `+build` metadata for precedence, so do not
 only change the number after `+`.
+
+`0.1.0-pre-alpha.dev.1+18` marks the first broader pre-alpha line: local schema
+v8, imports, avatars, archive handling, local crypto plumbing, member ordering,
+and the alpha repository services are all present enough to test together.
 
 Do not reuse a published version. The workflow fails if the matching tag already
 exists.
@@ -60,16 +64,16 @@ Meaning:
 Examples:
 
 ```text
-mobile-v0.0.1-pre-alpha.dev.17+17
-mobile-v0.0.1-pre-alpha.dev.18+18
+mobile-v0.1.0-pre-alpha.dev.1+18
+mobile-v0.1.0-pre-alpha.dev.2+19
 mobile-v0.0.1-pre-alpha.1+1
-mobile-v0.0.1-alpha.1+2
-mobile-v0.0.1+3
+mobile-v0.1.0-alpha.1+20
+mobile-v0.1.0+21
 ```
 
-Use `0.0.x-pre-alpha.*` while the app is still rough and importer-heavy. Do not
-tag `1.0.0` until the mobile app, imports, sync, and backups are actually
-stable.
+Use `0.x.y-pre-alpha.*` while the app is still rough and importer-heavy. Bump
+the minor version when a visible chunk of the alpha surface lands. Do not tag
+`1.0.0` until the mobile app, imports, sync, and backups are actually stable.
 
 ## Release Assets
 
