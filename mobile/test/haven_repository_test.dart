@@ -422,6 +422,73 @@ void main() {
     expect(reExported, contains('"collection": "members"'));
   });
 
+  test(
+    're-imports Simply Plural front history without foreign key failures',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final repository = LocalHavenRepository(database);
+      await repository.ensureLocalSystem();
+
+      final normalized = normalizeImportTextToLocalArchive(
+        source: ImportSource.simplyPlural,
+        fileName: 'simply-plural.json',
+        importedAt: DateTime.utc(2026),
+        text: '''
+{
+  "users": [{"_id": "owner1", "username": "Imported system"}],
+  "members": [{"_id": "m1", "name": "Iris"}],
+  "frontStatuses": [{"_id": "cf1", "name": "Asleep"}],
+  "frontHistory": [
+    {
+      "_id": "f1",
+      "member": "m1",
+      "custom": false,
+      "startTime": 1767225600000,
+      "endTime": 1767229200000
+    },
+    {
+      "_id": "f2",
+      "member": "cf1",
+      "custom": true,
+      "customStatus": "Asleep",
+      "startTime": 1767232800000,
+      "endTime": 1767236400000
+    }
+  ],
+  "securityLogs": [{"_id": "log1", "kind": "login"}]
+}
+''',
+      );
+
+      await repository.importLocalArchiveJson(
+        normalized.archiveJson,
+        source: ImportSource.simplyPlural,
+        fileName: 'simply-plural.json',
+      );
+      await repository.importLocalArchiveJson(
+        normalized.archiveJson,
+        source: ImportSource.simplyPlural,
+        fileName: 'simply-plural.json',
+      );
+
+      final members = await repository
+          .watchMembers(includeArchived: true)
+          .first;
+      final fronts = await repository.watchFrontHistory().first;
+      final payloads = await database.select(database.importPayloads).get();
+
+      expect(members.map((member) => member.displayName), contains('Iris'));
+      expect(members.map((member) => member.displayName), contains('Asleep'));
+      expect(fronts, hasLength(2));
+      expect(
+        payloads.map((payload) => payload.collection),
+        contains('securityLogs'),
+      );
+    },
+  );
+
   test('runs queued import jobs from the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
