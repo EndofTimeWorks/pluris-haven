@@ -42,10 +42,8 @@ class Members extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get avatarUrl => text().nullable()();
   TextColumn get pluralKitId => text().nullable()();
-  TextColumn get frameShape =>
-      text().withDefault(const Constant('circle'))();
-  TextColumn get lexoRank =>
-      text().withDefault(const Constant('0|zzzzzz'))();
+  TextColumn get frameShape => text().withDefault(const Constant('circle'))();
+  TextColumn get lexoRank => text().withDefault(const Constant('0|zzzzzz'))();
   BoolColumn get isCustomFront =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
@@ -74,8 +72,7 @@ class Messages extends Table {
   TextColumn get systemId => text().references(PluralSystems, #id)();
   TextColumn get memberId => text().nullable()();
   TextColumn get body => text()();
-  TextColumn get boardKind =>
-      text().withDefault(const Constant('system'))();
+  TextColumn get boardKind => text().withDefault(const Constant('system'))();
   TextColumn get boardMemberId => text().nullable()();
   TextColumn get parentMessageId => text().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -286,8 +283,7 @@ class JournalEntries extends Table {
   TextColumn get memberId => text().nullable().references(Members, #id)();
   TextColumn get title => text().nullable()();
   TextColumn get body => text()();
-  TextColumn get visibility =>
-      text().withDefault(const Constant('system'))();
+  TextColumn get visibility => text().withDefault(const Constant('system'))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -337,8 +333,7 @@ class PendingActions extends Table {
   TextColumn get targetId => text()();
   TextColumn get targetLabel => text().nullable()();
   DateTimeColumn get finalizeAfter => dateTime()();
-  TextColumn get status =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
   DateTimeColumn get cancelledAt => dateTime().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
