@@ -632,6 +632,45 @@ void main() {
     );
   });
 
+  test('normalizes Simply Plural polls into local archive records', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-polls.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "polls": [
+    {
+      "_id": "poll1",
+      "question": "Dinner?",
+      "description": "Pick what works.",
+      "multiple": true,
+      "options": [
+        {"_id": "soup", "text": "Soup", "votes": 2},
+        {"_id": "rice", "text": "Rice"}
+      ],
+      "votes": [
+        {"optionId": "rice", "createdAt": 1767225600000}
+      ],
+      "createdAt": 1767222000000,
+      "updatedAt": 1767225600000
+    }
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['polls'], 1);
+    expect(archive.counts['poll_options'], 2);
+    expect(archive.counts['poll_votes'], 2);
+    expect(archive.counts['raw_payloads'], 1);
+    expect(archive.archiveJson, contains('"question": "Dinner?"'));
+    expect(archive.archiveJson, contains('"kind": "multiple_choice"'));
+    expect(archive.archiveJson, contains('"body": "Soup"'));
+    expect(archive.archiveJson, contains('"body": "Rice"'));
+    expect(archive.archiveJson, contains('"collection": "polls"'));
+  });
+
   test('normalizes PluralKit export switches into front intervals', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.pluralKitFile,
