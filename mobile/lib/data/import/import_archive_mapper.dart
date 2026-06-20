@@ -81,6 +81,7 @@ class _ExternalArchiveNormalizer {
   final _memberIdsByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
+  final _pollOptionIdsByExternalId = <String, String>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -91,6 +92,9 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> fronts;
   late final List<Map<String, Object?>> frontMembers;
   late final List<Map<String, Object?>> reminders;
+  late final List<Map<String, Object?>> polls;
+  late final List<Map<String, Object?>> pollOptions;
+  late final List<Map<String, Object?>> pollVotes;
   late final List<Map<String, Object?>> rawPayloads;
 
   void normalize() {
@@ -102,6 +106,10 @@ class _ExternalArchiveNormalizer {
     notes = _normalizeNotes();
     messages = _normalizeMessages();
     reminders = _normalizeReminders();
+    final pollData = _normalizePolls();
+    polls = pollData.polls;
+    pollOptions = pollData.pollOptions;
+    pollVotes = pollData.pollVotes;
     final frontData = _normalizeFronts();
     fronts = frontData.fronts;
     frontMembers = frontData.frontMembers;
@@ -126,6 +134,9 @@ class _ExternalArchiveNormalizer {
     'notes': notes,
     'messages': messages,
     'reminders': reminders,
+    'polls': polls,
+    'poll_options': pollOptions,
+    'poll_votes': pollVotes,
     'fronts': fronts,
     'front_members': frontMembers,
     'avatar_assets': _avatarAssetsToJson(),
@@ -709,6 +720,236 @@ class _ExternalArchiveNormalizer {
     };
   }
 
+  _PollData _normalizePolls() {
+    final items = _firstList(decoded, const ['polls', 'pollList', 'votes']);
+    final pollRecords = <Map<String, Object?>>[];
+    final optionRecords = <Map<String, Object?>>[];
+    final voteRecords = <Map<String, Object?>>[];
+    final voteKeys = <String>{};
+
+    for (var index = 0; index < items.length; index++) {
+      final poll = _mapValue(items[index]);
+      if (poll == null) {
+        warnings.add('Skipped poll #${index + 1}: expected an object.');
+        continue;
+      }
+
+      final question = _firstString(poll, const [
+        'question',
+        'prompt',
+        'title',
+        'name',
+        'body',
+      ])?.trim();
+      if (question == null || question.isEmpty) {
+        warnings.add('Skipped poll #${index + 1}: missing question.');
+        continue;
+      }
+
+      final externalId =
+          _firstString(poll, const ['_id', 'id', 'uuid', 'pollId', 'uid']) ??
+          _slug(question);
+      final id = _stableId('poll', externalId);
+      final options = _pollOptionRecords(poll, id, externalId);
+      if (options.length < 2) {
+        warnings.add(
+          'Skipped poll "$question": fewer than two usable options.',
+        );
+        continue;
+      }
+
+      pollRecords.add({
+        'id': id,
+        'question': question,
+        'description': _firstString(poll, const [
+          'description',
+          'desc',
+          'details',
+          'note',
+        ]),
+        'kind': _pollKind(poll),
+        'closed':
+            _boolValue(poll['closed']) ??
+            _boolValue(poll['ended']) ??
+            _dateString(poll, const ['closedAt', 'endedAt']) != null,
+        'created_at':
+            _dateString(poll, const ['created_at', 'createdAt', 'date']) ??
+            importedAt.toIso8601String(),
+        'updated_at':
+            _dateString(poll, const [
+              'updated_at',
+              'updatedAt',
+              'lastOperationTime',
+              'date',
+            ]) ??
+            importedAt.toIso8601String(),
+      });
+      optionRecords.addAll(options);
+      voteRecords.addAll(_pollVoteRecords(poll, id, externalId, voteKeys));
+    }
+
+    return _PollData(pollRecords, optionRecords, voteRecords);
+  }
+
+  List<Map<String, Object?>> _pollOptionRecords(
+    Map<String, Object?> poll,
+    String pollId,
+    String pollExternalId,
+  ) {
+    final rawOptions =
+        poll['options'] ?? poll['choices'] ?? poll['answers'] ?? poll['items'];
+    final values = switch (rawOptions) {
+      final List list => list,
+      final Map map => map.values.toList(growable: false),
+      _ => const <Object?>[],
+    };
+
+    final records = <Map<String, Object?>>[];
+    for (var index = 0; index < values.length; index++) {
+      final value = values[index];
+      final body = switch (value) {
+        final String text => text.trim(),
+        final num number => number.toString(),
+        final Map<String, Object?> option => _firstString(option, const [
+          'body',
+          'text',
+          'label',
+          'name',
+          'title',
+          'option',
+          'value',
+        ])?.trim(),
+        _ => null,
+      };
+      if (body == null || body.isEmpty) {
+        continue;
+      }
+
+      final optionExternalId = value is Map<String, Object?>
+          ? _firstString(value, const ['_id', 'id', 'uuid', 'optionId'])
+          : null;
+      final stableExternalId = optionExternalId ?? '$pollExternalId-$index';
+      final id = _stableId('poll-option', stableExternalId);
+      _pollOptionIdsByExternalId[stableExternalId] = id;
+      if (optionExternalId != null) {
+        _pollOptionIdsByExternalId[optionExternalId] = id;
+      }
+
+      records.add({
+        'id': id,
+        'poll_id': pollId,
+        'body': body,
+        'position':
+            _intValue(
+              value is Map<String, Object?>
+                  ? value['position'] ?? value['order']
+                  : null,
+            ) ??
+            index,
+      });
+    }
+    return records;
+  }
+
+  List<Map<String, Object?>> _pollVoteRecords(
+    Map<String, Object?> poll,
+    String pollId,
+    String pollExternalId,
+    Set<String> voteKeys,
+  ) {
+    final records = <Map<String, Object?>>[];
+    void addVote(String? externalOptionId, Object? createdAt) {
+      if (externalOptionId == null) {
+        return;
+      }
+      final optionId =
+          _pollOptionIdsByExternalId[externalOptionId] ??
+          _pollOptionIdsByExternalId['$pollExternalId-$externalOptionId'];
+      if (optionId == null) {
+        return;
+      }
+      final key = '$pollId/$optionId';
+      if (!voteKeys.add(key)) {
+        return;
+      }
+      records.add({
+        'poll_id': pollId,
+        'option_id': optionId,
+        'created_at':
+            _parseDateValue(createdAt)?.toUtc().toIso8601String() ??
+            importedAt.toIso8601String(),
+      });
+    }
+
+    final rawOptions =
+        poll['options'] ?? poll['choices'] ?? poll['answers'] ?? poll['items'];
+    final optionValues = switch (rawOptions) {
+      final List list => list,
+      final Map map => map.values.toList(growable: false),
+      _ => const <Object?>[],
+    };
+    for (var index = 0; index < optionValues.length; index++) {
+      final option = _mapValue(optionValues[index]);
+      if (option == null) {
+        continue;
+      }
+      final selected =
+          _boolValue(option['selected']) ??
+          _boolValue(option['voted']) ??
+          ((_intValue(option['votes']) ?? _intValue(option['voteCount']) ?? 0) >
+              0);
+      if (selected) {
+        addVote(
+          _firstString(option, const ['_id', 'id', 'uuid', 'optionId']) ??
+              '$pollExternalId-$index',
+          option['votedAt'] ?? option['updatedAt'] ?? poll['updatedAt'],
+        );
+      }
+    }
+
+    final rawVotes = poll['votes'] ?? poll['responses'] ?? poll['results'];
+    final voteValues = switch (rawVotes) {
+      final List list => list,
+      final Map map => map.values.toList(growable: false),
+      _ => const <Object?>[],
+    };
+    for (final vote in voteValues) {
+      if (vote is String || vote is num) {
+        addVote(vote.toString(), poll['updatedAt']);
+      } else if (vote is Map<String, Object?>) {
+        addVote(
+          _firstString(vote, const [
+            'option_id',
+            'optionId',
+            'option',
+            'choice',
+            'choiceId',
+            'answer',
+          ]),
+          vote['created_at'] ?? vote['createdAt'] ?? vote['date'],
+        );
+      }
+    }
+    return records;
+  }
+
+  String _pollKind(Map<String, Object?> poll) {
+    final multi =
+        _boolValue(poll['multiple']) ??
+        _boolValue(poll['multiChoice']) ??
+        _boolValue(poll['allowMultiple']) ??
+        _boolValue(poll['multipleChoice']);
+    if (multi == true) {
+      return 'multiple_choice';
+    }
+    final raw = _firstString(poll, const ['kind', 'type', 'mode']);
+    final normalized = raw?.trim().toLowerCase().replaceAll('-', '_');
+    return switch (normalized) {
+      'multiple' || 'multi' || 'multiple_choice' => 'multiple_choice',
+      _ => 'single_choice',
+    };
+  }
+
   _FrontData _normalizeFronts() {
     final items = _firstList(decoded, const [
       'frontHistory',
@@ -990,6 +1231,14 @@ class _FrontData {
   final List<Map<String, Object?>> frontMembers;
 }
 
+class _PollData {
+  const _PollData(this.polls, this.pollOptions, this.pollVotes);
+
+  final List<Map<String, Object?>> polls;
+  final List<Map<String, Object?>> pollOptions;
+  final List<Map<String, Object?>> pollVotes;
+}
+
 Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'members': _listCount(archive['members']),
   'groups': _listCount(archive['groups']),
@@ -998,6 +1247,9 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'notes': _listCount(archive['notes']),
   'messages': _listCount(archive['messages']),
   'reminders': _listCount(archive['reminders']),
+  'polls': _listCount(archive['polls']),
+  'poll_options': _listCount(archive['poll_options']),
+  'poll_votes': _listCount(archive['poll_votes']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),
   'avatar_assets': _listCount(archive['avatar_assets']),
@@ -1130,6 +1382,25 @@ int? _intValue(Object? value) {
   }
   if (value is String) {
     return int.tryParse(value.trim());
+  }
+  return null;
+}
+
+bool? _boolValue(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true' || normalized == 'yes' || normalized == '1') {
+      return true;
+    }
+    if (normalized == 'false' || normalized == 'no' || normalized == '0') {
+      return false;
+    }
   }
   return null;
 }
