@@ -2420,8 +2420,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
           plan: plan,
           onPickFile: _pickImportFile,
           onPasteJson: _pasteImportJson,
+          onPreview: _refreshImportPreview,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
+          canPreview: _fileText != null,
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
           const SizedBox(height: 12),
@@ -2484,10 +2486,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _importStatus = 'Reading ${file.name}...';
     });
-    final decoded = decodeImportFileBytes(
-      fileName: file.name,
-      bytes: file.bytes,
-    );
+    final bytes = await _pickedFileBytes(file);
+    final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
     _setImportText(
       displayName: decoded?.displayName ?? file.name,
       fileSize: file.size,
@@ -2528,7 +2528,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
         : previewImportText(
             fileName: displayName,
             text: text,
-            selectedSource: guess.source,
+            selectedSource: guess.source ?? _source,
+            avatarAssets: avatarAssets,
           );
 
     setState(() {
@@ -2552,17 +2553,22 @@ class _ImportExportPageState extends State<ImportExportPage> {
     final fileName = _fileName;
     final text = _fileText;
 
+    final preview = fileName == null || text == null
+        ? null
+        : previewImportText(
+            fileName: fileName,
+            text: text,
+            selectedSource: source,
+            avatarAssets: _fileAvatarAssets,
+          );
+
     setState(() {
       _source = source;
-      _preview = fileName == null || text == null
-          ? null
-          : previewImportText(
-              fileName: fileName,
-              text: text,
-              selectedSource: source,
-            );
+      _preview = preview;
+      _importStatus = preview == null
+          ? _importStatus
+          : 'Preview ready: ${_countSummary(preview.counts)}.';
     });
-    final preview = _preview;
     if (preview != null) {
       appDebugLog(
         'Import preview source=${preview.source.name} file=${preview.fileName} '
@@ -2570,6 +2576,49 @@ class _ImportExportPageState extends State<ImportExportPage> {
         'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
       );
     }
+  }
+
+  Future<Uint8List?> _pickedFileBytes(PlatformFile file) async {
+    final bytes = file.bytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return bytes;
+    }
+    final path = file.path;
+    if (path == null || path.trim().isEmpty) {
+      return bytes;
+    }
+    try {
+      return await File(path).readAsBytes();
+    } on Object catch (error) {
+      appDebugLog('Import file read failed path=$path error=$error');
+      return bytes;
+    }
+  }
+
+  void _refreshImportPreview() {
+    final fileName = _fileName;
+    final text = _fileText;
+    if (fileName == null || text == null) {
+      setState(() {
+        _importStatus = 'Choose or paste a file before previewing.';
+      });
+      return;
+    }
+    final preview = previewImportText(
+      fileName: fileName,
+      text: text,
+      selectedSource: _source,
+      avatarAssets: _fileAvatarAssets,
+    );
+    setState(() {
+      _preview = preview;
+      _importStatus = 'Preview ready: ${_countSummary(preview.counts)}.';
+    });
+    appDebugLog(
+      'Import preview refreshed source=${preview.source.name} file=$fileName '
+      'canApply=${preview.canApply} counts=${preview.counts} '
+      'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
+    );
   }
 
   Future<void> _applyImportFile() async {
@@ -2834,8 +2883,10 @@ class ImportSetupCard extends StatelessWidget {
     required this.plan,
     required this.onPickFile,
     required this.onPasteJson,
+    required this.onPreview,
     required this.onSourceChanged,
     required this.onStrategyChanged,
+    required this.canPreview,
   });
 
   final ImportSource source;
@@ -2845,8 +2896,10 @@ class ImportSetupCard extends StatelessWidget {
   final ImportFileGuess? guess;
   final ImportPreview? preview;
   final ImportSourcePlan plan;
+  final bool canPreview;
   final VoidCallback onPickFile;
   final VoidCallback onPasteJson;
+  final VoidCallback onPreview;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
 
@@ -2947,11 +3000,9 @@ class ImportSetupCard extends StatelessWidget {
           ImportMetaRow(label: 'Dedupe', value: source.dedupeLabel),
           const SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed: null,
+            onPressed: canPreview ? onPreview : null,
             icon: const Icon(Icons.fact_check_rounded),
-            label: Text(
-              preview == null ? 'Preview import' : 'Preview ready - write next',
-            ),
+            label: Text(preview == null ? 'Preview import' : 'Refresh preview'),
           ),
         ],
       ),
