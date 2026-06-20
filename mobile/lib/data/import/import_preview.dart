@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'import_archive_mapper.dart';
+import 'import_file_decoder.dart';
 import 'import_plan.dart';
 import 'import_sources.dart';
 
@@ -45,6 +46,7 @@ ImportPreview previewImportText({
   required String fileName,
   required String text,
   ImportSource? selectedSource,
+  List<ImportAvatarAsset> avatarAssets = const [],
 }) {
   final guess = guessImportSourceFromFile(
     fileName: fileName,
@@ -89,8 +91,16 @@ ImportPreview previewImportText({
 
   return switch (source) {
     ImportSource.plurisHavenArchive => _previewPlurisArchive(fileName, decoded),
-    ImportSource.simplyPlural => _previewSimplyPlural(fileName, decoded),
-    ImportSource.pluralKitFile => _previewPluralKit(fileName, decoded),
+    ImportSource.simplyPlural => _previewSimplyPlural(
+      fileName,
+      decoded,
+      avatarAssets: avatarAssets,
+    ),
+    ImportSource.pluralKitFile => _previewPluralKit(
+      fileName,
+      decoded,
+      avatarAssets: avatarAssets,
+    ),
     ImportSource.pluralKitLive => ImportPreview(
       source: source,
       fileName: fileName,
@@ -108,11 +118,13 @@ ImportPreview previewImportText({
       source: source,
       fileName: fileName,
       decoded: decoded,
+      avatarAssets: avatarAssets,
     ),
     ImportSource.pluralSpace => _previewLooseSource(
       source: source,
       fileName: fileName,
       decoded: decoded,
+      avatarAssets: avatarAssets,
     ),
     ImportSource.prism => ImportPreview(
       source: source,
@@ -193,20 +205,27 @@ ImportPreview _previewPlurisArchive(
 
 ImportPreview _previewSimplyPlural(
   String fileName,
-  Map<String, Object?> decoded,
-) {
+  Map<String, Object?> decoded, {
+  List<ImportAvatarAsset> avatarAssets = const [],
+}) {
   return _previewNormalizedSource(
     source: ImportSource.simplyPlural,
     fileName: fileName,
     decoded: decoded,
+    avatarAssets: avatarAssets,
   );
 }
 
-ImportPreview _previewPluralKit(String fileName, Map<String, Object?> decoded) {
+ImportPreview _previewPluralKit(
+  String fileName,
+  Map<String, Object?> decoded, {
+  List<ImportAvatarAsset> avatarAssets = const [],
+}) {
   return _previewNormalizedSource(
     source: ImportSource.pluralKitFile,
     fileName: fileName,
     decoded: decoded,
+    avatarAssets: avatarAssets,
   );
 }
 
@@ -214,11 +233,13 @@ ImportPreview _previewLooseSource({
   required ImportSource source,
   required String fileName,
   required Map<String, Object?> decoded,
+  List<ImportAvatarAsset> avatarAssets = const [],
 }) {
   return _previewNormalizedSource(
     source: source,
     fileName: fileName,
     decoded: decoded,
+    avatarAssets: avatarAssets,
   );
 }
 
@@ -226,6 +247,7 @@ ImportPreview _previewNormalizedSource({
   required ImportSource source,
   required String fileName,
   required Map<String, Object?> decoded,
+  List<ImportAvatarAsset> avatarAssets = const [],
 }) {
   NormalizedImportArchive normalized;
   try {
@@ -233,6 +255,7 @@ ImportPreview _previewNormalizedSource({
       source: source,
       fileName: fileName,
       text: jsonEncode(decoded),
+      avatarAssets: avatarAssets,
     );
   } on FormatException catch (error) {
     return ImportPreview(

@@ -649,6 +649,57 @@ void main() {
     expect(find.text('Import setup'), findsOneWidget);
   });
 
+  testWidgets('pasted JSON creates an import preview', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'members': [
+          {'_id': 'sp-member-1', 'name': 'Iris'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    expect(find.textContaining('1 members'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Import archive'), 240);
+    expect(find.text('Import archive'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Refresh preview'), -240);
+    await tester.tap(find.text('Refresh preview'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+  });
+
   testWidgets('builds a local archive from import export', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1;
