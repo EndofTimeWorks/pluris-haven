@@ -929,7 +929,28 @@ class _ExternalArchiveNormalizer {
     }
 
     final uuid = _firstString(object, const ['avatarUuid', 'avatar_uuid']);
-    return uuid == null ? null : 'sp-avatar:$uuid';
+    if (uuid == null) {
+      return null;
+    }
+    if (avatarAssets.any((asset) => asset.id == uuid)) {
+      return 'sp-avatar:$uuid';
+    }
+    final owner =
+        _firstString(object, const ['uid', 'owner', 'ownerId']) ??
+        _simplyPluralOwnerId();
+    if (owner == null) {
+      return 'sp-avatar:$uuid';
+    }
+    return 'https://serve.apparyllis.com/avatars/$owner/$uuid';
+  }
+
+  String? _simplyPluralOwnerId() {
+    final users = _firstList(decoded, const ['users']);
+    final user = users.isEmpty ? null : _mapValue(users.first);
+    if (user == null) {
+      return null;
+    }
+    return _firstString(user, const ['uid', '_id', 'id']);
   }
 
   String _messageBody(Map<String, Object?> message, String body) {
@@ -1080,11 +1101,22 @@ String? _normalizeColor(String? value) {
   if (value == null) {
     return null;
   }
-  final trimmed = value.trim();
+  var trimmed = value.trim();
   if (trimmed.isEmpty) {
     return null;
   }
-  return trimmed.startsWith('#') ? trimmed : '#$trimmed';
+  if (trimmed.startsWith('#')) {
+    trimmed = trimmed.substring(1);
+  }
+  if (trimmed.length == 3) {
+    trimmed = trimmed.split('').map((char) => '$char$char').join();
+  } else if (trimmed.length == 8) {
+    trimmed = trimmed.substring(2);
+  }
+  if (trimmed.length != 6 || !RegExp(r'^[0-9a-fA-F]+$').hasMatch(trimmed)) {
+    return null;
+  }
+  return '#${trimmed.toLowerCase()}';
 }
 
 int? _intValue(Object? value) {
