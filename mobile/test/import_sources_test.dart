@@ -514,7 +514,9 @@ void main() {
       expect(archive.counts['raw_payloads'], 11);
       expect(
         archive.archiveJson,
-        contains('"avatar_url": "sp-avatar:avatar-1"'),
+        contains(
+          '"avatar_url": "https://serve.apparyllis.com/avatars/system-user/avatar-1"',
+        ),
       );
       expect(
         archive.archiveJson,
@@ -563,6 +565,71 @@ void main() {
     expect(decoded['avatar_assets'], hasLength(1));
     expect(archive.counts['avatar_assets'], 1);
     expect(archive.archiveJson, contains('"bytes_base64": "AQIDBA=="'));
+  });
+
+  test('preserves unmapped Simply Plural collections as raw payloads', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-full.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "users": [{"_id": "system-user", "username": "SP System"}],
+  "members": [{"_id": "m1", "name": "Iris"}],
+  "securityLogs": [{"_id": "log1", "action": "login"}],
+  "friends": [{"_id": "friend1", "name": "Trusted"}],
+  "tokens": [{"_id": "token1", "name": "Bot"}],
+  "usage": [{"_id": "usage1", "kind": "daily"}],
+  "socketNotifications": [],
+  "verifiedKeys": []
+}
+''',
+    );
+
+    expect(archive.counts['raw_payloads'], 6);
+    expect(archive.archiveJson, contains('"collection": "securityLogs"'));
+    expect(archive.archiveJson, contains('"collection": "friends"'));
+    expect(archive.archiveJson, contains('"collection": "tokens"'));
+    expect(archive.archiveJson, contains('"collection": "usage"'));
+    expect(
+      archive.archiveJson,
+      isNot(contains('"collection": "verifiedKeys"')),
+    );
+  });
+
+  test('normalizes Simply Plural colors and avatar UUID fallbacks', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-avatar.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "users": [{"_id": "owner1", "username": "SP System"}],
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "color": "#ff0088ff",
+      "avatarUuid": "avatar-1"
+    }
+  ],
+  "frontStatuses": [
+    {"_id": "cf1", "name": "Asleep", "color": "7B61FF", "avatarUuid": "avatar-2"}
+  ]
+}
+''',
+    );
+
+    expect(archive.archiveJson, contains('"color_hex": "#0088ff"'));
+    expect(archive.archiveJson, contains('"color_hex": "#7b61ff"'));
+    expect(
+      archive.archiveJson,
+      contains('https://serve.apparyllis.com/avatars/owner1/avatar-1'),
+    );
+    expect(
+      archive.archiveJson,
+      contains('https://serve.apparyllis.com/avatars/owner1/avatar-2'),
+    );
   });
 
   test('normalizes PluralKit export switches into front intervals', () {
