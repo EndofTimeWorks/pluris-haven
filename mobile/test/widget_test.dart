@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
+import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/main.dart';
 
@@ -74,7 +75,7 @@ void main() {
     expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
   });
 
-  testWidgets('opens an familiar section from the dashboard', (tester) async {
+  testWidgets('opens a familiar section from the dashboard', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
         systemName: 'Local system',
@@ -1392,6 +1393,87 @@ class FakeHavenRepository implements HavenRepository {
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
   }) async {}
+
+  @override
+  Stream<List<Tag>> watchTags() => Stream.value(const []);
+
+  @override
+  Future<void> saveTag(Tag tag) async {}
+
+  @override
+  Future<void> deleteTag(String tagId) async {}
+
+  @override
+  Stream<List<Tag>> watchTagsForMember(String memberId) =>
+      Stream.value(const []);
+
+  @override
+  Future<void> setMemberTags(String memberId, List<String> tagIds) async {}
+
+  @override
+  Stream<List<JournalEntry>> watchJournals({String? memberId}) =>
+      Stream.value(const []);
+
+  @override
+  Future<void> saveJournal(JournalEntry entry) async {}
+
+  @override
+  Future<void> deleteJournal(String entryId) async {}
+
+  @override
+  Stream<List<ContentRevision>> watchRevisions(
+    String targetType,
+    String targetId,
+  ) => Stream.value(const []);
+
+  @override
+  Future<void> pinRevision(String revisionId) async {}
+
+  @override
+  Future<void> unpinRevision(String revisionId) async {}
+
+  @override
+  Future<void> restoreRevision(
+    String revisionId,
+    String targetType,
+    String targetId,
+  ) async {}
+
+  @override
+  Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<List<PollVoteEvent>> watchPollVoteEvents(String pollId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<List<NamedFront>> watchNamedFronts() => Stream.value(const []);
+
+  @override
+  Future<void> saveNamedFront(NamedFront front, List<String> memberIds) async {}
+
+  @override
+  Future<void> applyNamedFront(String namedFrontId) async {}
+
+  @override
+  Future<void> deleteNamedFront(String namedFrontId) async {}
+
+  @override
+  Stream<List<PendingAction>> watchPendingActions() => Stream.value(const []);
+
+  @override
+  Future<void> cancelPendingAction(String actionId) async {}
+
+  @override
+  Future<void> finalizePendingActions() async {}
+
+  @override
+  Future<void> reorderMember(
+    String memberId,
+    String? prevRank,
+    String? nextRank,
+  ) async {}
 
   List<MemberSummary> get _visibleMembers =>
       _members.where((member) => !member.archived).toList(growable: false);

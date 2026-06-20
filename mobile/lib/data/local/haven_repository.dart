@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
 import '../import/import_sources.dart';
+import '../ordering/lexorank.dart';
+import '../security/haven_crypto.dart';
 import 'app_database.dart';
 import 'supported_language.dart';
 
@@ -68,6 +70,9 @@ class MemberSummary {
     this.avatarUrl,
     this.archived = false,
     this.isCustomFront = false,
+    this.frameShape = 'circle',
+    this.lexoRank = '0|zzzzzz',
+    this.folderId,
   });
 
   final String id;
@@ -78,6 +83,9 @@ class MemberSummary {
   final String? avatarUrl;
   final bool archived;
   final bool isCustomFront;
+  final String frameShape;
+  final String lexoRank;
+  final String? folderId;
 }
 
 class MemberDraft {
@@ -574,12 +582,120 @@ abstract interface class HavenRepository {
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
   });
+
+  // v8: Tags
+
+  Stream<List<Tag>> watchTags();
+
+  Future<void> saveTag(Tag tag);
+
+  Future<void> deleteTag(String tagId);
+
+  Stream<List<Tag>> watchTagsForMember(String memberId);
+
+  Future<void> setMemberTags(String memberId, List<String> tagIds);
+
+  // v8: Journals
+
+  Stream<List<JournalEntry>> watchJournals({String? memberId});
+
+  Future<void> saveJournal(JournalEntry entry);
+
+  Future<void> deleteJournal(String entryId);
+
+  // v8: Content revisions
+
+  Stream<List<ContentRevision>> watchRevisions(
+    String targetType,
+    String targetId,
+  );
+
+  Future<void> pinRevision(String revisionId);
+
+  Future<void> unpinRevision(String revisionId);
+
+  Future<void> restoreRevision(
+    String revisionId,
+    String targetType,
+    String targetId,
+  );
+
+  // v8: Front audit events
+
+  Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId);
+
+  // v8: Poll vote events
+
+  Stream<List<PollVoteEvent>> watchPollVoteEvents(String pollId);
+
+  // v8: Named fronts
+
+  Stream<List<NamedFront>> watchNamedFronts();
+
+  Future<void> saveNamedFront(NamedFront front, List<String> memberIds);
+
+  Future<void> applyNamedFront(String namedFrontId);
+
+  Future<void> deleteNamedFront(String namedFrontId);
+
+  // v8: Pending actions
+
+  Stream<List<PendingAction>> watchPendingActions();
+
+  Future<void> cancelPendingAction(String actionId);
+
+  Future<void> finalizePendingActions();
+
+  // v8: Lexorank reordering
+
+  Future<void> reorderMember(
+    String memberId,
+    String? prevRank,
+    String? nextRank,
+  );
 }
 
 class LocalHavenRepository implements HavenRepository {
-  LocalHavenRepository(this.database);
+  LocalHavenRepository(this.database, {HavenCrypto? crypto}) : _crypto = crypto;
 
   final AppDatabase database;
+  final HavenCrypto? _crypto;
+
+  /// Decrypts [ciphertext] using the configured [HavenCrypto], or returns
+  /// [ciphertext] unchanged if no crypto is configured (plaintext dev mode).
+  Future<String?> _decrypt(String? ciphertext) async {
+    final crypto = _crypto;
+    if (crypto == null || ciphertext == null) return ciphertext;
+    try {
+      return await crypto.decrypt(ciphertext);
+    } on Object {
+      return ciphertext;
+    }
+  }
+
+  /// Encrypts [plaintext] using the configured [HavenCrypto], or returns
+  /// [plaintext] unchanged if no crypto is configured (plaintext dev mode).
+  Future<String?> _encrypt(String? plaintext) async {
+    final crypto = _crypto;
+    if (crypto == null || plaintext == null) return plaintext;
+    try {
+      return await crypto.encrypt(plaintext);
+    } on Object {
+      return plaintext;
+    }
+  }
+
+  /// Computes a blind index for [plaintext] if crypto is configured.
+  /// Returns null if no crypto is configured.
+  Future<String?> _blindIndex(String plaintext) async {
+    final crypto = _crypto;
+    if (crypto == null) return null;
+    try {
+      return await crypto.blindIndex(plaintext);
+    } on Object {
+      return null;
+    }
+  }
 
   Future<void> ensureLocalSystem() async {
     final now = DateTime.now().toUtc();
@@ -634,10 +750,8 @@ class LocalHavenRepository implements HavenRepository {
   Stream<List<MemberSummary>> watchMembers({bool includeArchived = false}) {
     final query = database.select(database.members)
       ..orderBy([
-        (member) => OrderingTerm(
-          expression: member.displayName,
-          mode: OrderingMode.asc,
-        ),
+        (member) =>
+            OrderingTerm(expression: member.lexoRank, mode: OrderingMode.asc),
       ]);
 
     query.where((member) => member.systemId.equals(localSystemId));
@@ -645,21 +759,28 @@ class LocalHavenRepository implements HavenRepository {
       query.where((member) => member.archived.equals(false));
     }
 
-    return query.watch().map(
-      (rows) => [
-        for (final row in rows)
+    return query.watch().asyncMap((rows) async {
+      final summaries = <MemberSummary>[];
+      for (final row in rows) {
+        final displayName = await _decrypt(row.displayName);
+        summaries.add(
           MemberSummary(
             id: row.id,
-            displayName: row.displayName,
+            displayName: displayName ?? row.displayName,
             pronouns: row.pronouns,
             colorHex: row.colorHex,
             description: row.description,
             avatarUrl: row.avatarUrl,
             archived: row.archived,
             isCustomFront: row.isCustomFront,
+            frameShape: row.frameShape,
+            lexoRank: row.lexoRank,
+            folderId: row.folderId,
           ),
-      ],
-    );
+        );
+      }
+      return summaries;
+    });
   }
 
   @override
@@ -1156,13 +1277,16 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final encryptedName = await _encrypt(displayName);
+    final nameHash = await _blindIndex(displayName);
     await database
         .into(database.members)
         .insert(
           MembersCompanion.insert(
             id: 'member-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
-            displayName: displayName,
+            displayName: encryptedName ?? displayName,
+            displayNameHash: Value(nameHash),
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
@@ -1193,6 +1317,8 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final encryptedName = await _encrypt(displayName);
+    final nameHash = await _blindIndex(displayName);
     await (database.update(database.members)..where(
           (member) =>
               member.systemId.equals(localSystemId) &
@@ -1200,7 +1326,8 @@ SELECT
         ))
         .write(
           MembersCompanion(
-            displayName: Value(displayName),
+            displayName: Value(encryptedName ?? displayName),
+            displayNameHash: Value(nameHash),
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
@@ -2606,6 +2733,392 @@ SELECT
     return database
         .into(table)
         .insert(companion, mode: InsertMode.insertOrIgnore);
+  }
+
+  // v8: Tags
+
+  @override
+  Stream<List<Tag>> watchTags() {
+    final query = database.select(database.tags)
+      ..where((t) => t.systemId.equals(localSystemId))
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+      ]);
+    return query.watch();
+  }
+
+  @override
+  Future<void> saveTag(Tag tag) async {
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.tags)
+        .insertOnConflictUpdate(
+          TagsCompanion.insert(
+            id: tag.id,
+            systemId: localSystemId,
+            name: tag.name,
+            colorHex: Value(tag.colorHex),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteTag(String tagId) async {
+    await (database.delete(
+      database.memberTags,
+    )..where((mt) => mt.tagId.equals(tagId))).go();
+    await (database.delete(
+      database.tags,
+    )..where((t) => t.id.equals(tagId))).go();
+  }
+
+  @override
+  Stream<List<Tag>> watchTagsForMember(String memberId) {
+    final query =
+        database.select(database.memberTags).join([
+            innerJoin(
+              database.tags,
+              database.memberTags.tagId.equalsExp(database.tags.id),
+            ),
+          ])
+          ..where(database.memberTags.memberId.equals(memberId))
+          ..orderBy([
+            OrderingTerm(
+              expression: database.tags.name,
+              mode: OrderingMode.asc,
+            ),
+          ]);
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final tagRow = row.readTable(database.tags);
+        return Tag(
+          id: tagRow.id,
+          systemId: tagRow.systemId,
+          name: tagRow.name,
+          colorHex: tagRow.colorHex,
+          createdAt: tagRow.createdAt,
+          updatedAt: tagRow.updatedAt,
+        );
+      }).toList();
+    });
+  }
+
+  @override
+  Future<void> setMemberTags(String memberId, List<String> tagIds) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.memberTags,
+      )..where((mt) => mt.memberId.equals(memberId))).go();
+      for (final tagId in tagIds) {
+        await database
+            .into(database.memberTags)
+            .insert(
+              MemberTagsCompanion.insert(tagId: tagId, memberId: memberId),
+              mode: InsertMode.insertOrIgnore,
+            );
+      }
+    });
+  }
+
+  // v8: Journals
+
+  @override
+  Stream<List<JournalEntry>> watchJournals({String? memberId}) {
+    final query = database.select(database.journalEntries)
+      ..where((j) => j.systemId.equals(localSystemId));
+    if (memberId != null) {
+      query.where((j) => j.memberId.equals(memberId));
+    }
+    query.orderBy([
+      (j) => OrderingTerm(expression: j.createdAt, mode: OrderingMode.desc),
+    ]);
+    return query.watch();
+  }
+
+  @override
+  Future<void> saveJournal(JournalEntry entry) async {
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.journalEntries)
+        .insertOnConflictUpdate(
+          JournalEntriesCompanion.insert(
+            id: entry.id,
+            systemId: localSystemId,
+            memberId: Value(entry.memberId),
+            title: Value(entry.title),
+            body: entry.body,
+            createdAt: entry.createdAt,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteJournal(String entryId) async {
+    await (database.delete(
+      database.journalEntries,
+    )..where((j) => j.id.equals(entryId))).go();
+  }
+
+  // v8: Content revisions
+
+  @override
+  Stream<List<ContentRevision>> watchRevisions(
+    String targetType,
+    String targetId,
+  ) {
+    final query = database.select(database.contentRevisions)
+      ..where(
+        (r) => r.targetType.equals(targetType) & r.targetId.equals(targetId),
+      )
+      ..orderBy([
+        (r) => OrderingTerm(expression: r.createdAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
+  @override
+  Future<void> pinRevision(String revisionId) async {
+    await (database.update(
+      database.contentRevisions,
+    )..where((r) => r.id.equals(revisionId))).write(
+      ContentRevisionsCompanion(pinnedAt: Value(DateTime.now().toUtc())),
+    );
+  }
+
+  @override
+  Future<void> unpinRevision(String revisionId) async {
+    await (database.update(database.contentRevisions)
+          ..where((r) => r.id.equals(revisionId)))
+        .write(const ContentRevisionsCompanion(pinnedAt: Value(null)));
+  }
+
+  @override
+  Future<void> restoreRevision(
+    String revisionId,
+    String targetType,
+    String targetId,
+  ) async {
+    final revision = await (database.select(
+      database.contentRevisions,
+    )..where((r) => r.id.equals(revisionId))).getSingleOrNull();
+    if (revision == null) return;
+
+    final now = DateTime.now().toUtc();
+
+    switch (targetType) {
+      case 'member_bio':
+        await (database.update(
+          database.members,
+        )..where((m) => m.id.equals(targetId))).write(
+          MembersCompanion(
+            description: Value(revision.body),
+            updatedAt: Value(now),
+          ),
+        );
+      case 'note':
+        await (database.update(
+          database.notes,
+        )..where((n) => n.id.equals(targetId))).write(
+          NotesCompanion(
+            title: Value(revision.title ?? ''),
+            body: Value(revision.body),
+            updatedAt: Value(now),
+          ),
+        );
+      case 'journal':
+        await (database.update(
+          database.journalEntries,
+        )..where((j) => j.id.equals(targetId))).write(
+          JournalEntriesCompanion(
+            title: Value(revision.title),
+            body: Value(revision.body),
+            updatedAt: Value(now),
+          ),
+        );
+      case 'message':
+        await (database.update(
+          database.messages,
+        )..where((m) => m.id.equals(targetId))).write(
+          MessagesCompanion(body: Value(revision.body), updatedAt: Value(now)),
+        );
+    }
+  }
+
+  // v8: Front audit events
+
+  @override
+  Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId) {
+    final query = database.select(database.frontAuditEvents)
+      ..where((e) => e.frontId.equals(frontSessionId))
+      ..orderBy([
+        (e) => OrderingTerm(expression: e.createdAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
+  // v8: Poll vote events
+
+  @override
+  Stream<List<PollVoteEvent>> watchPollVoteEvents(String pollId) {
+    final query = database.select(database.pollVoteEvents)
+      ..where((e) => e.pollId.equals(pollId))
+      ..orderBy([
+        (e) => OrderingTerm(expression: e.createdAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
+  // v8: Named fronts
+
+  @override
+  Stream<List<NamedFront>> watchNamedFronts() {
+    final query = database.select(database.namedFronts)
+      ..where((nf) => nf.systemId.equals(localSystemId))
+      ..orderBy([
+        (nf) => OrderingTerm(expression: nf.name, mode: OrderingMode.asc),
+      ]);
+    return query.watch();
+  }
+
+  @override
+  Future<void> saveNamedFront(NamedFront front, List<String> memberIds) async {
+    final now = DateTime.now().toUtc();
+    await database.transaction(() async {
+      await database
+          .into(database.namedFronts)
+          .insertOnConflictUpdate(
+            NamedFrontsCompanion.insert(
+              id: front.id,
+              systemId: localSystemId,
+              name: front.name,
+              customLabel: Value(front.customLabel),
+              createdAt: front.createdAt,
+              updatedAt: now,
+            ),
+          );
+      await (database.delete(
+        database.namedFrontMembers,
+      )..where((nfm) => nfm.namedFrontId.equals(front.id))).go();
+      for (final memberId in memberIds) {
+        await database
+            .into(database.namedFrontMembers)
+            .insert(
+              NamedFrontMembersCompanion.insert(
+                namedFrontId: front.id,
+                memberId: memberId,
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      }
+    });
+  }
+
+  @override
+  Future<void> applyNamedFront(String namedFrontId) async {
+    final members = await (database.select(
+      database.namedFrontMembers,
+    )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).get();
+    await setFrontMembers(members.map((m) => m.memberId).toList());
+  }
+
+  @override
+  Future<void> deleteNamedFront(String namedFrontId) async {
+    await (database.delete(
+      database.namedFrontMembers,
+    )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).go();
+    await (database.delete(
+      database.namedFronts,
+    )..where((nf) => nf.id.equals(namedFrontId))).go();
+  }
+
+  // v8: Pending actions
+
+  @override
+  Stream<List<PendingAction>> watchPendingActions() {
+    final query = database.select(database.pendingActions)
+      ..where(
+        (a) => a.systemId.equals(localSystemId) & a.status.equals('pending'),
+      )
+      ..orderBy([
+        (a) =>
+            OrderingTerm(expression: a.finalizeAfter, mode: OrderingMode.asc),
+      ]);
+    return query.watch();
+  }
+
+  @override
+  Future<void> cancelPendingAction(String actionId) async {
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.pendingActions,
+    )..where((a) => a.id.equals(actionId))).write(
+      PendingActionsCompanion(
+        status: const Value('cancelled'),
+        cancelledAt: Value(now),
+      ),
+    );
+  }
+
+  @override
+  Future<void> finalizePendingActions() async {
+    final now = DateTime.now().toUtc();
+    final due =
+        await (database.select(database.pendingActions)..where(
+              (a) =>
+                  a.systemId.equals(localSystemId) &
+                  a.status.equals('pending') &
+                  a.finalizeAfter.isSmallerOrEqualValue(now),
+            ))
+            .get();
+
+    for (final action in due) {
+      switch (action.actionType) {
+        case 'member_delete':
+          await deleteMember(action.targetId);
+        case 'note_delete':
+          await deleteNote(action.targetId);
+        case 'reminder_delete':
+          await deleteReminder(action.targetId);
+        case 'poll_delete':
+          await deletePoll(action.targetId);
+        case 'journal_delete':
+          await deleteJournal(action.targetId);
+        case 'tag_delete':
+          await deleteTag(action.targetId);
+        case 'named_front_delete':
+          await deleteNamedFront(action.targetId);
+      }
+      await (database.update(
+        database.pendingActions,
+      )..where((a) => a.id.equals(action.id))).write(
+        PendingActionsCompanion(
+          status: const Value('completed'),
+          completedAt: Value(now),
+        ),
+      );
+    }
+  }
+
+  // v8: Lexorank reordering
+
+  @override
+  Future<void> reorderMember(
+    String memberId,
+    String? prevRank,
+    String? nextRank,
+  ) async {
+    final newRank = Lexorank.between(prevRank, nextRank);
+    await (database.update(
+      database.members,
+    )..where((m) => m.id.equals(memberId))).write(
+      MembersCompanion(
+        lexoRank: Value(newRank),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
   }
 
   Future<void> _endOpenFrontSessions(DateTime endedAt) {
