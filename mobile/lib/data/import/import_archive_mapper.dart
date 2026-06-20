@@ -95,6 +95,7 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> polls;
   late final List<Map<String, Object?>> pollOptions;
   late final List<Map<String, Object?>> pollVotes;
+  late final List<Map<String, Object?>> preferences;
   late final List<Map<String, Object?>> rawPayloads;
 
   void normalize() {
@@ -110,6 +111,7 @@ class _ExternalArchiveNormalizer {
     polls = pollData.polls;
     pollOptions = pollData.pollOptions;
     pollVotes = pollData.pollVotes;
+    preferences = _normalizePreferences();
     final frontData = _normalizeFronts();
     fronts = frontData.fronts;
     frontMembers = frontData.frontMembers;
@@ -143,7 +145,7 @@ class _ExternalArchiveNormalizer {
     'raw_payloads': rawPayloads,
     'import_records': const [],
     'notification_events': const [],
-    'preferences': const [],
+    'preferences': preferences,
   };
 
   List<Map<String, Object?>> _avatarAssetsToJson() => [
@@ -950,6 +952,39 @@ class _ExternalArchiveNormalizer {
     };
   }
 
+  List<Map<String, Object?>> _normalizePreferences() {
+    Map<String, Object?>? user;
+    for (final value in _firstList(decoded, const ['users'])) {
+      user = _mapValue(value);
+      if (user != null) {
+        break;
+      }
+    }
+    final settings = _mapValue(decoded['settings']);
+    final color = _normalizeColor(
+      _firstString(settings ?? const {}, const [
+            'color',
+            'accentColor',
+            'accent_color',
+          ]) ??
+          _firstString(user ?? const {}, const [
+            'color',
+            'accentColor',
+            'accent_color',
+          ]),
+    );
+    if (color == null) {
+      return const [];
+    }
+    return [
+      {
+        'key': 'custom_accent_hex',
+        'value': color,
+        'updated_at': importedAt.toIso8601String(),
+      },
+    ];
+  }
+
   _FrontData _normalizeFronts() {
     final items = _firstList(decoded, const [
       'frontHistory',
@@ -1254,6 +1289,7 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'front_members': _listCount(archive['front_members']),
   'avatar_assets': _listCount(archive['avatar_assets']),
   'raw_payloads': _listCount(archive['raw_payloads']),
+  'preferences': _listCount(archive['preferences']),
 };
 
 List<Object?> _firstList(Map<String, Object?> object, List<String> keys) {

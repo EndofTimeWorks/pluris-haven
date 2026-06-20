@@ -632,6 +632,24 @@ void main() {
     );
   });
 
+  test('normalizes Simply Plural system color into app accent preference', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-system.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "users": [{"_id": "owner1", "username": "SP System", "color": "3366FF"}],
+  "members": []
+}
+''',
+    );
+
+    expect(archive.counts['preferences'], 1);
+    expect(archive.archiveJson, contains('"key": "custom_accent_hex"'));
+    expect(archive.archiveJson, contains('"value": "#3366ff"'));
+  });
+
   test('normalizes Simply Plural polls into local archive records', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
