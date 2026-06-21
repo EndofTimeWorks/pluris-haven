@@ -3900,10 +3900,15 @@ class SpLanguageOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: selected ? _spLine : _spCard,
-        borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: selected ? _spLine : _spCard,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           title: Text(
             language.label,
             style: const TextStyle(fontWeight: FontWeight.w800),
