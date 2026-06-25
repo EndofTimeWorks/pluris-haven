@@ -119,6 +119,13 @@ void main() {
     expect(find.text('she/they'), findsOneWidget);
     expect(repository._members.single.colorHex, '#12ABEF');
 
+    await tester.enterText(find.byType(TextField).first, 'zzzz');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching members'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'iris');
+    await tester.pumpAndSettle();
+    expect(find.text('Iris'), findsOneWidget);
+
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Set front'));
@@ -350,6 +357,15 @@ void main() {
     expect(find.text('Grounding'), findsOneWidget);
     expect(find.text('Drink water and check meds.'), findsOneWidget);
     expect(repository._snapshot.noteCount, 1);
+
+    await tester.enterText(find.byType(TextField).first, 'missing');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching notes'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'water');
+    await tester.pumpAndSettle();
+    expect(find.text('Grounding'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Delete note'));
     await tester.pumpAndSettle();
@@ -746,10 +762,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Error'), findsOneWidget);
-    expect(
-      find.textContaining('FOREIGN KEY constraint failed'),
-      findsWidgets,
-    );
+    expect(find.textContaining('FOREIGN KEY constraint failed'), findsWidgets);
 
     await tester.tap(find.text('Copy full'));
     await tester.pumpAndSettle();
