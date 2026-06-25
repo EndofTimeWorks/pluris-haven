@@ -1285,6 +1285,7 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'poll_votes': _listCount(archive['poll_votes']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),
+  'avatar_refs': _avatarRefCount(archive['members']),
   'avatar_assets': _listCount(archive['avatar_assets']),
   'raw_payloads': _listCount(archive['raw_payloads']),
   'preferences': _listCount(archive['preferences']),
@@ -1473,3 +1474,17 @@ String _slug(String value) {
 }
 
 int _listCount(Object? value) => value is List ? value.length : 0;
+
+int _avatarRefCount(Object? value) {
+  if (value is! List) {
+    return 0;
+  }
+  var count = 0;
+  for (final item in value) {
+    if (item is Map<String, Object?> &&
+        _firstString(item, const ['avatar_url']) != null) {
+      count++;
+    }
+  }
+  return count;
+}

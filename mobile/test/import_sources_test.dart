@@ -623,6 +623,7 @@ void main() {
 ''',
     );
 
+    expect(archive.counts['avatar_refs'], 2);
     expect(archive.archiveJson, contains('"color_hex": "#0088ff"'));
     expect(archive.archiveJson, contains('"color_hex": "#7b61ff"'));
     expect(
