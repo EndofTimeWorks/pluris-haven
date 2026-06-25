@@ -127,6 +127,16 @@ ImportFileGuess guessImportSourceFromFile({
     );
   }
 
+  if (_hasAny(name, ['openplural', 'open-plural']) ||
+      name.endsWith('.openplural.zip') ||
+      name.endsWith('.openplural.json')) {
+    return const ImportFileGuess(
+      source: ImportSource.openPlural,
+      confidence: 0.9,
+      reason: 'filename looks like an OpenPlural export',
+    );
+  }
+
   if (text.isEmpty) {
     return const ImportFileGuess(
       source: null,
@@ -176,6 +186,18 @@ ImportFileGuess guessImportSourceFromFile({
       source: ImportSource.pluralSpace,
       confidence: 0.78,
       reason: 'file contains PluralSpace markers',
+    );
+  }
+
+  if (_hasAny(text, [
+    '"openplural_version"',
+    '"front_periods"',
+    '"front_events"',
+  ])) {
+    return const ImportFileGuess(
+      source: ImportSource.openPlural,
+      confidence: 0.9,
+      reason: 'file contains OpenPlural markers',
     );
   }
 
@@ -376,6 +398,41 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanStep(
           'Review matches',
           'Dedupe by source ID, then normalized name.',
+        ),
+      ],
+    ),
+    ImportSource.openPlural => const ImportSourcePlan(
+      source: ImportSource.openPlural,
+      status: ImportPlanStatus.next,
+      defaultConflictStrategy: ImportConflictStrategy.skip,
+      previewCounts: [
+        ImportPlanCount('members'),
+        ImportPlanCount('groups'),
+        ImportPlanCount('front periods'),
+        ImportPlanCount('front events'),
+        ImportPlanCount('custom fields'),
+        ImportPlanCount('notes'),
+      ],
+      privacyNotes: [
+        'Only OpenPlural v0.1 is accepted in this pre-alpha build.',
+        'Unknown app extensions are preserved as raw payloads until native surfaces exist.',
+      ],
+      steps: [
+        ImportPlanStep(
+          'Read envelope',
+          'Accept a bare OpenPlural JSON export or the JSON inside an OpenPlural bundle.',
+        ),
+        ImportPlanStep(
+          'Map core records',
+          'Convert systems, members, groups, custom fields, notes, and front history.',
+        ),
+        ImportPlanStep(
+          'Convert switch events',
+          'Turn OpenPlural front_events into front intervals when needed.',
+        ),
+        ImportPlanStep(
+          'Review matches',
+          'Dedupe by source IDs, PluralKit refs, then normalized names.',
         ),
       ],
     ),

@@ -126,6 +126,12 @@ ImportPreview previewImportText({
       decoded: decoded,
       avatarAssets: avatarAssets,
     ),
+    ImportSource.openPlural => _previewLooseSource(
+      source: source,
+      fileName: fileName,
+      decoded: decoded,
+      avatarAssets: avatarAssets,
+    ),
     ImportSource.prism => ImportPreview(
       source: source,
       fileName: fileName,
@@ -274,7 +280,8 @@ ImportPreview _previewNormalizedSource({
   }
 
   final foundRecords = normalized.counts.entries.any(
-    (entry) => entry.key != 'front_members' && entry.value > 0,
+    (entry) =>
+        _importablePreviewCountKeys.contains(entry.key) && entry.value > 0,
   );
 
   return ImportPreview(
@@ -308,5 +315,20 @@ ImportPreview _previewNormalizedSource({
     ],
   );
 }
+
+const _importablePreviewCountKeys = {
+  'members',
+  'groups',
+  'custom_fields',
+  'custom_field_values',
+  'notes',
+  'messages',
+  'reminders',
+  'polls',
+  'poll_options',
+  'poll_votes',
+  'fronts',
+  'preferences',
+};
 
 int _listCount(Object? value) => value is List ? value.length : 0;
