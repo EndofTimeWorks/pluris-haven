@@ -704,6 +704,59 @@ void main() {
     expect(find.text('Import setup'), findsOneWidget);
   });
 
+  testWidgets('opens failed import job details and copies full error', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    repository.seedBackgroundJob(
+      BackgroundJobSummary(
+        id: 'failed-import',
+        type: 'import_archive',
+        status: 'failed',
+        source: 'simplyPlural',
+        fileName: 'simplyplural.json',
+        error: 'SqliteException(787): FOREIGN KEY constraint failed\nline 2',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026, 1, 1, 1),
+      ),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('simplyplural.json'), 240);
+    await tester.tap(find.text('simplyplural.json'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Error'), findsOneWidget);
+    expect(
+      find.textContaining('FOREIGN KEY constraint failed'),
+      findsWidgets,
+    );
+
+    await tester.tap(find.text('Copy full'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Full error copied'), findsOneWidget);
+  });
+
   testWidgets('pasted JSON creates an import preview', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1;
@@ -902,6 +955,11 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
   late final StreamController<List<BackgroundJobSummary>>
   _backgroundJobsController;
+
+  void seedBackgroundJob(BackgroundJobSummary job) {
+    _backgroundJobs = [job, ..._backgroundJobs];
+    _backgroundJobsController.add(_backgroundJobs);
+  }
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
