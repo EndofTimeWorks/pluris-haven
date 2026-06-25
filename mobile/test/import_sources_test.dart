@@ -32,6 +32,9 @@ void main() {
     );
     expect(ImportSource.pluralKitLive.jobSource, 'pluralkit_api');
     expect(ImportSource.tupperbox.jobSource, 'tupperbox_file');
+    expect(ImportSource.tupperbox.status, ImporterStatus.next);
+    expect(ImportSource.pluralSpace.status, ImporterStatus.next);
+    expect(ImportSource.prism.status, ImporterStatus.planned);
   });
 
   test('documents the PluralKit live import shape', () {
@@ -777,5 +780,42 @@ void main() {
     expect(archive.counts['members'], 1);
     expect(archive.archiveJson, contains('"display_name": "Echo"'));
     expect(archive.archiveJson, contains('"source": "tupperbox_file"'));
+  });
+
+  test('normalizes PluralSpace roster and fronts', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.pluralSpace,
+      fileName: 'pluralspace.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "pluralspace": true,
+  "system": {"name": "River House"},
+  "groups": [
+    {"id": "g1", "name": "Main"},
+    {"id": "g2", "name": "Subsystem", "parentId": "g1"}
+  ],
+  "members": [
+    {"id": "m1", "name": "River", "pronouns": "they/them", "groupId": "g2", "color": "3366ff"}
+  ],
+  "fronts": [
+    {"id": "f1", "member_ids": ["m1"], "started_at": "2026-01-01T00:00:00Z", "ended_at": "2026-01-01T01:00:00Z"}
+  ],
+  "notes": [
+    {"id": "n1", "title": "Welcome", "body": "Imported note", "member_id": "m1"}
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['groups'], 2);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 1);
+    expect(archive.counts['notes'], 1);
+    expect(archive.archiveJson, contains('"name": "River House"'));
+    expect(archive.archiveJson, contains('"display_name": "River"'));
+    expect(archive.archiveJson, contains('"parent_group_id"'));
+    expect(archive.archiveJson, contains('"source": "pluralspace_file"'));
   });
 }
