@@ -250,6 +250,18 @@ class CustomFieldSummary {
   final int valueCount;
 }
 
+class CustomFieldDraft {
+  const CustomFieldDraft({
+    required this.name,
+    this.fieldType = 'text',
+    this.privacy,
+  });
+
+  final String name;
+  final String fieldType;
+  final String? privacy;
+}
+
 class CustomFieldValueSummary {
   const CustomFieldValueSummary({
     required this.id,
@@ -538,6 +550,8 @@ abstract interface class HavenRepository {
   Future<void> setFrontMembers(List<String> memberIds);
 
   Future<void> saveGroup(GroupDraft draft);
+
+  Future<void> saveCustomField(CustomFieldDraft draft);
 
   Future<void> saveNote(NoteDraft draft);
 
@@ -1438,6 +1452,44 @@ SELECT
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
             emoji: Value(_nullIfBlank(draft.emoji)),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> saveCustomField(CustomFieldDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    final fieldType = _allowedCustomFieldTypes.contains(draft.fieldType)
+        ? draft.fieldType
+        : 'text';
+    final now = DateTime.now().toUtc();
+    final maxPosition =
+        await (database.selectOnly(database.customFieldDefinitions)
+              ..addColumns([database.customFieldDefinitions.position.max()])
+              ..where(
+                database.customFieldDefinitions.systemId.equals(localSystemId),
+              ))
+            .map(
+              (row) => row.read(database.customFieldDefinitions.position.max()),
+            )
+            .getSingleOrNull();
+
+    await database
+        .into(database.customFieldDefinitions)
+        .insert(
+          CustomFieldDefinitionsCompanion.insert(
+            id: 'custom-field-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            name: name,
+            fieldType: Value(fieldType),
+            privacy: Value(_nullIfBlank(draft.privacy)),
+            position: Value((maxPosition ?? -1) + 1),
             createdAt: now,
             updatedAt: now,
           ),
@@ -3436,3 +3488,10 @@ const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
 const _emptyShortcutIdsValue = '__empty__';
 const _languageCodeKey = 'language_code';
+const _allowedCustomFieldTypes = {
+  'text',
+  'number',
+  'date',
+  'boolean',
+  'select',
+};
