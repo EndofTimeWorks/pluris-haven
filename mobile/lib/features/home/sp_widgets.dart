@@ -87,14 +87,23 @@ class SpPage extends StatelessWidget {
 }
 
 class SpSearchField extends StatelessWidget {
-  const SpSearchField({super.key, required this.hintText});
+  const SpSearchField({
+    super.key,
+    required this.hintText,
+    this.controller,
+    this.onChanged,
+  });
 
   final String hintText;
+  final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
-      readOnly: true,
+      controller: controller,
+      onChanged: onChanged,
+      readOnly: onChanged == null,
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: const Icon(Icons.search),
@@ -114,9 +123,16 @@ class SpSearchField extends StatelessWidget {
 }
 
 class SpFilterRow extends StatelessWidget {
-  const SpFilterRow({super.key, required this.filters});
+  const SpFilterRow({
+    super.key,
+    required this.filters,
+    this.selected,
+    this.onSelected,
+  });
 
   final List<String> filters;
+  final String? selected;
+  final ValueChanged<String>? onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +140,32 @@ class SpFilterRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final filter in filters) ...[
-            StatusPill(text: filter),
+          for (var index = 0; index < filters.length; index++) ...[
+            FilterChip(
+              label: Text(filters[index]),
+              selected: selected == null
+                  ? index == 0
+                  : selected == filters[index],
+              onSelected: onSelected == null
+                  ? null
+                  : (_) => onSelected!(filters[index]),
+            ),
             const SizedBox(width: 8),
           ],
         ],
       ),
     );
   }
+}
+
+bool _matchesQuery(String query, Iterable<String?> values) {
+  final normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return true;
+  }
+  return values.any(
+    (value) => value != null && value.toLowerCase().contains(normalized),
+  );
 }
 
 class SpSectionHeader extends StatelessWidget {
