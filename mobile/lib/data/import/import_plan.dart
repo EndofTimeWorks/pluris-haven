@@ -331,7 +331,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ),
     ImportSource.tupperbox => const ImportSourcePlan(
       source: ImportSource.tupperbox,
-      status: ImportPlanStatus.planned,
+      status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.skip,
       previewCounts: [
         ImportPlanCount('tuppers'),
@@ -356,7 +356,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ),
     ImportSource.pluralSpace => const ImportSourcePlan(
       source: ImportSource.pluralSpace,
-      status: ImportPlanStatus.planned,
+      status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.skip,
       previewCounts: [
         ImportPlanCount('members'),
