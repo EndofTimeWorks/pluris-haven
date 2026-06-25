@@ -248,7 +248,10 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   final _nameController = TextEditingController();
   final _pronounsController = TextEditingController();
   final _descriptionController = TextEditingController();
-  HavenAccentColor _color = HavenAccentColor.purple;
+  final _colorController = TextEditingController(
+    text: _hexFromAccent(HavenAccentColor.purple),
+  );
+  String? _colorError;
 
   bool get _isEditing => widget.member != null;
 
@@ -263,7 +266,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _nameController.text = member.displayName;
     _pronounsController.text = member.pronouns ?? '';
     _descriptionController.text = member.description ?? '';
-    _color = _closestAccentForHex(member.colorHex);
+    _colorController.text =
+        _normalizeUiHexColor(member.colorHex ?? '') ??
+        _hexFromAccent(HavenAccentColor.purple);
   }
 
   @override
@@ -271,6 +276,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _nameController.dispose();
     _pronounsController.dispose();
     _descriptionController.dispose();
+    _colorController.dispose();
     super.dispose();
   }
 
@@ -320,10 +326,31 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                 for (final color in HavenAccentColor.values)
                   ChoiceChip(
                     label: Text(color.label),
-                    selected: _color == color,
-                    onSelected: (_) => setState(() => _color = color),
+                    selected:
+                        _normalizeUiHexColor(_colorController.text) ==
+                        _hexFromAccent(color),
+                    onSelected: (_) => setState(() {
+                      _colorController.text = _hexFromAccent(color);
+                      _colorError = null;
+                    }),
                   ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-color-hex-field'),
+              controller: _colorController,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: 'Color hex',
+                hintText: '#7B61FF',
+                errorText: _colorError,
+              ),
+              onChanged: (_) {
+                if (_colorError != null) {
+                  setState(() => _colorError = null);
+                }
+              },
             ),
             const SizedBox(height: 14),
             FilledButton(
@@ -338,10 +365,16 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   Future<void> _save() async {
+    final colorHex = _normalizeUiHexColor(_colorController.text);
+    if (colorHex == null) {
+      setState(() => _colorError = 'Use 6 hex digits, like #7B61FF.');
+      return;
+    }
+
     final draft = MemberDraft(
       displayName: _nameController.text,
       pronouns: _pronounsController.text,
-      colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
+      colorHex: colorHex,
       description: _descriptionController.text,
     );
     final member = widget.member;
@@ -357,18 +390,5 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 }
 
-HavenAccentColor _closestAccentForHex(String? colorHex) {
-  if (colorHex == null) {
-    return HavenAccentColor.purple;
-  }
-
-  final normalized = colorHex.toUpperCase();
-  for (final color in HavenAccentColor.values) {
-    final hex = '#${color.argb.toRadixString(16).substring(2)}'.toUpperCase();
-    if (hex == normalized) {
-      return color;
-    }
-  }
-
-  return HavenAccentColor.purple;
-}
+String _hexFromAccent(HavenAccentColor color) =>
+    '#${color.argb.toRadixString(16).substring(2).toUpperCase()}';

@@ -108,11 +108,16 @@ void main() {
       find.byKey(const ValueKey('member-pronouns-field')),
       'she/they',
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('member-color-hex-field')),
+      '#12abef',
+    );
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('she/they'), findsOneWidget);
+    expect(repository._members.single.colorHex, '#12ABEF');
 
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
@@ -224,10 +229,15 @@ void main() {
       find.byKey(const ValueKey('group-emoji-field')),
       '*',
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('group-color-hex-field')),
+      '00ffaa',
+    );
     await tester.tap(find.byKey(const ValueKey('save-group-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Caretakers'), findsOneWidget);
+    expect(repository._groups.single.colorHex, '#00FFAA');
     expect(repository._snapshot.groupCount, 1);
   });
 
