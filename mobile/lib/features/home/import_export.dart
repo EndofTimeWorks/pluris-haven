@@ -879,24 +879,33 @@ class ImportJobRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      onTap: () => _showJobDetails(context),
-      leading: Icon(_icon, color: _color, size: 20),
-      title: Text(
-        job.fileName ?? job.type,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w800),
+    final title = job.fileName ?? job.type;
+    final subtitle = job.error == null
+        ? '${job.status} - ${_shortDateTime(job.updatedAt)}'
+        : '${_oneLineJobError(job.error!)} - tap for details';
+
+    return Semantics(
+      button: true,
+      label: 'Import job $title, ${job.status}. Double tap for details.',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        onTap: () => _showJobDetails(context),
+        leading: Icon(_icon, color: _color, size: 20),
+        title: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: _spMuted),
+        ),
+        trailing: StatusPill(text: job.status),
       ),
-      subtitle: Text(
-        job.error ?? '${job.status} - ${_shortDateTime(job.updatedAt)}',
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: _spMuted),
-      ),
-      trailing: StatusPill(text: job.status),
     );
   }
 
@@ -1005,17 +1014,13 @@ class _JobErrorPreview extends StatelessWidget {
             ),
             TextButton.icon(
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: preview));
+                Clipboard.setData(ClipboardData(text: error.trim()));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isTruncated ? 'Error preview copied' : 'Error copied',
-                    ),
-                  ),
+                  const SnackBar(content: Text('Full error copied')),
                 );
               },
               icon: const Icon(Icons.copy_rounded),
-              label: Text(isTruncated ? 'Copy preview' : 'Copy'),
+              label: const Text('Copy full'),
             ),
           ],
         ),
@@ -1053,6 +1058,15 @@ String _boundedJobError(String error) {
   }
   return '${trimmed.substring(0, maxLength)}\n\n'
       '...truncated ${trimmed.length - maxLength} chars';
+}
+
+String _oneLineJobError(String error) {
+  final oneLine = error.trim().replaceAll(RegExp(r'\s+'), ' ');
+  const maxLength = 96;
+  if (oneLine.length <= maxLength) {
+    return oneLine;
+  }
+  return '${oneLine.substring(0, maxLength)}...';
 }
 
 class _JobDetailLine extends StatelessWidget {
