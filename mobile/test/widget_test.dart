@@ -257,6 +257,51 @@ void main() {
     expect(find.text('Service'), findsOneWidget);
   });
 
+  testWidgets('adds a local custom field from custom fields section', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.pumpAndSettle();
+
+    expect(find.text('No custom fields yet'), findsOneWidget);
+
+    await tester.tap(find.text('Add field'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-name-field')),
+      'Favorite drink',
+    );
+    await tester.tap(find.byKey(const ValueKey('custom-field-type-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-privacy-field')),
+      'private',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-custom-field-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favorite drink'), findsOneWidget);
+    expect(find.text('select - 0 values - private'), findsOneWidget);
+  });
+
   testWidgets('adds a local note from the notes section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -744,7 +789,15 @@ void main() {
 Future<void> openDrawerSection(WidgetTester tester, String label) async {
   await tester.tap(find.byTooltip('Open navigation menu'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text(label).last);
+  final labelFinder = find.text(label);
+  if (!tester.any(labelFinder)) {
+    await tester.scrollUntilVisible(
+      labelFinder,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+  }
+  await tester.tap(labelFinder.last);
   await tester.pumpAndSettle();
 }
 
@@ -817,7 +870,7 @@ class FakeHavenRepository implements HavenRepository {
   List<NoteSummary> _notes = const [];
   List<MessageSummary> _messages = const [];
   List<ReminderSummary> _reminders = const [];
-  final List<CustomFieldSummary> _customFields = const [];
+  List<CustomFieldSummary> _customFields = const [];
   final List<CustomFieldValueSummary> _customFieldValues = const [];
   List<PollSummary> _polls = const [];
   List<NotificationEventSummary> _notificationEvents = const [];
@@ -1126,6 +1179,27 @@ class FakeHavenRepository implements HavenRepository {
     ];
     _groupsController.add(_groups);
     _emitSnapshot(groupCount: _groups.length);
+  }
+
+  @override
+  Future<void> saveCustomField(CustomFieldDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    _customFields = [
+      ..._customFields,
+      CustomFieldSummary(
+        id: 'fake-custom-field-${_customFields.length + 1}',
+        name: name,
+        fieldType: draft.fieldType,
+        privacy: _nullIfBlank(draft.privacy),
+        position: _customFields.length,
+        valueCount: 0,
+      ),
+    ];
+    _customFieldsController.add(_customFields);
   }
 
   @override
