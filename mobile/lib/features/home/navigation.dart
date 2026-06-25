@@ -133,6 +133,12 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
+              label: 'Custom Fields',
+              section: SpSection.customFields,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
               label: 'Friends',
               section: SpSection.friends,
               selected: selected,
