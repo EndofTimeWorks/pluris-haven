@@ -20,6 +20,7 @@ void main() {
         'PluralKit live',
         'Tupperbox',
         'PluralSpace',
+        'OpenPlural',
         'Prism',
       ]),
     );
@@ -34,6 +35,8 @@ void main() {
     expect(ImportSource.tupperbox.jobSource, 'tupperbox_file');
     expect(ImportSource.tupperbox.status, ImporterStatus.next);
     expect(ImportSource.pluralSpace.status, ImporterStatus.next);
+    expect(ImportSource.openPlural.status, ImporterStatus.next);
+    expect(ImportSource.openPlural.jobSource, 'openplural_file');
     expect(ImportSource.prism.status, ImporterStatus.planned);
   });
 
@@ -84,11 +87,22 @@ void main() {
       ImportSource.prism,
     );
     expect(
+      guessImportSourceFromFile(fileName: 'backup.openplural.json').source,
+      ImportSource.openPlural,
+    );
+    expect(
       guessImportSourceFromFile(
         fileName: 'export.json',
         textPreview: '{"switches":[],"members":[],"pluralkit":true}',
       ).source,
       ImportSource.pluralKitFile,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: '{"openplural_version":"0.1","front_periods":[]}',
+      ).source,
+      ImportSource.openPlural,
     );
     expect(
       guessImportSourceFromFile(
@@ -180,6 +194,33 @@ void main() {
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
+  test('extracts OpenPlural bundle JSON and image assets', () {
+    final archive = Archive()
+      ..addFile(
+        ArchiveFile.string(
+          'openplural.json',
+          jsonEncode({
+            'openplural_version': '0.1',
+            'members': [
+              {'id': 'm1', 'name': 'Iris'},
+            ],
+          }),
+        ),
+      )
+      ..addFile(ArchiveFile('assets/avatar.png', 3, [1, 2, 3]));
+
+    final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    final decoded = decodeImportFileBytes(
+      fileName: 'export.openplural.zip',
+      bytes: bytes,
+    );
+
+    expect(decoded, isNotNull);
+    expect(decoded!.displayName, contains('openplural.json'));
+    expect(decoded.text, contains('"openplural_version"'));
+    expect(decoded.avatarAssets, hasLength(1));
+  });
+
   test('previews invalid archive as not applyable', () {
     final preview = previewImportText(
       fileName: 'bad.json',
@@ -191,6 +232,21 @@ void main() {
     expect(
       preview.warningsAndErrors.map((event) => event.message),
       contains('Unsupported archive version: 99.'),
+    );
+  });
+
+  test('does not treat raw-only payload preservation as applyable', () {
+    final preview = previewImportText(
+      fileName: 'unknown.json',
+      text: '{"securityLogs":[{"id":"log1"}]}',
+      selectedSource: ImportSource.simplyPlural,
+    );
+
+    expect(preview.canApply, isFalse);
+    expect(preview.counts['raw_payloads'], 1);
+    expect(
+      preview.warningsAndErrors.map((event) => event.message),
+      contains('No importable records were recognized.'),
     );
   });
 
@@ -818,5 +874,129 @@ void main() {
     expect(archive.archiveJson, contains('"display_name": "River"'));
     expect(archive.archiveJson, contains('"parent_group_id"'));
     expect(archive.archiveJson, contains('"source": "pluralspace_file"'));
+  });
+
+  test('normalizes OpenPlural v0.1 core records', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.openPlural,
+      fileName: 'openplural.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "openplural_version": "0.1",
+  "systems": [
+    {"id": "s1", "name": "Open House", "color": "#3366ff"}
+  ],
+  "assets": [
+    {"id": "a1", "kind": "avatar", "uri": "https://example.invalid/avatar.png"}
+  ],
+  "members": [
+    {
+      "id": "m1",
+      "name": "Iris",
+      "display_name": "Iris Local",
+      "pronouns": "she/they",
+      "avatar_asset_id": "a1",
+      "source_refs": [
+        {"app": "pluralkit", "collection": "members", "id": "abcde"}
+      ]
+    },
+    {"id": "m2", "name": "River", "is_custom_front": true}
+  ],
+  "groups": [
+    {"id": "g1", "name": "Main"},
+    {"id": "g2", "name": "Nested", "parent_group_id": "g1"}
+  ],
+  "group_memberships": [
+    {"group_id": "g2", "member_id": "m1"}
+  ],
+  "custom_fields": [
+    {"id": "cf1", "name": "Role", "field_type": "text", "sort_order": 0}
+  ],
+  "custom_field_values": [
+    {"field_id": "cf1", "subject_type": "member", "subject_id": "m1", "value": "host"}
+  ],
+  "front_periods": [
+    {
+      "id": "fp1",
+      "started_at": "2026-01-01T00:00:00Z",
+      "ended_at": "2026-01-01T01:00:00Z",
+      "assignments": [{"member_id": "m1"}],
+      "status": "Focused"
+    }
+  ],
+  "front_events": [
+    {
+      "id": "e1",
+      "at": "2026-01-02T00:00:00Z",
+      "assignments": [{"member_id": "m1"}, {"member_id": "m2"}]
+    },
+    {
+      "id": "e2",
+      "at": "2026-01-03T00:00:00Z",
+      "assignments": []
+    }
+  ],
+  "notes": [
+    {
+      "id": "n1",
+      "title": "Grounding",
+      "body": "Drink water",
+      "extensions": {"sheaf": {"member_id": "m1"}}
+    }
+  ],
+  "boards": {
+    "posts": [
+      {"id": "msg1", "body": "hello", "author_member_id": "m1"}
+    ]
+  },
+  "extensions": {
+    "sheaf": {
+      "reminders": [{"id": "r1", "name": "Meds", "schedule": "daily"}],
+      "polls": [
+        {
+          "id": "p1",
+          "question": "Dinner?",
+          "options": [{"id": "o1", "text": "Soup"}, {"id": "o2", "text": "Rice"}]
+        }
+      ]
+    }
+  }
+}
+''',
+    );
+
+    expect(archive.counts['members'], 2);
+    expect(archive.counts['groups'], 2);
+    expect(archive.counts['custom_fields'], 1);
+    expect(archive.counts['custom_field_values'], 1);
+    expect(archive.counts['fronts'], 2);
+    expect(archive.counts['front_members'], 3);
+    expect(archive.counts['notes'], 1);
+    expect(archive.counts['messages'], 1);
+    expect(archive.counts['reminders'], 1);
+    expect(archive.counts['polls'], 1);
+    expect(archive.archiveJson, contains('"name": "Open House"'));
+    expect(archive.archiveJson, contains('"display_name": "Iris Local"'));
+    expect(archive.archiveJson, contains('"pluralkit_id": "abcde"'));
+    expect(
+      archive.archiveJson,
+      contains('"folder_id": "openplural_file-group-g2"'),
+    );
+    expect(archive.archiveJson, contains('"value": "host"'));
+    expect(archive.archiveJson, contains('"label": "Focused"'));
+    expect(archive.archiveJson, contains('"body": "hello"'));
+    expect(archive.archiveJson, contains('"source": "openplural_file"'));
+  });
+
+  test('rejects unsupported OpenPlural versions', () {
+    expect(
+      () => normalizeImportTextToLocalArchive(
+        source: ImportSource.openPlural,
+        fileName: 'openplural.json',
+        text: '{"openplural_version":"0.2"}',
+      ),
+      throwsFormatException,
+    );
   });
 }

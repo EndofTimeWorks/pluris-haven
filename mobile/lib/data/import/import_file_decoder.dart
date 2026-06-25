@@ -133,8 +133,14 @@ DecodedImportFile? _decodeZipImport({
 
 bool _looksLikeAvatarAsset(String lowerName, {required String zipFileName}) {
   final lowerZipName = zipFileName.toLowerCase();
+  final isOpenPluralAsset =
+      (lowerZipName.contains('openplural') ||
+          lowerZipName.contains('open-plural')) &&
+      lowerName.startsWith('assets/');
   if (!lowerName.contains('avatar') && !lowerZipName.contains('avatar')) {
-    return false;
+    if (!isOpenPluralAsset) {
+      return false;
+    }
   }
   return lowerName.endsWith('.png') ||
       lowerName.endsWith('.jpg') ||
@@ -173,8 +179,14 @@ int _jsonCandidateScore(String name, String text, int length) {
   if (lowerName.contains('export')) {
     score += 30;
   }
+  if (lowerName.endsWith('openplural.json')) {
+    score += 120;
+  }
   if (lowerName.contains('simply') || lowerName.contains('plural')) {
     score += 20;
+  }
+  if (compactText.contains('"openplural_version"')) {
+    score += 90;
   }
   if (compactText.contains('pluris_haven.local_archive')) {
     score += 80;
