@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-class GroupsPage extends StatelessWidget {
+class GroupsPage extends StatefulWidget {
   const GroupsPage({
     super.key,
     required this.snapshot,
@@ -13,17 +13,43 @@ class GroupsPage extends StatelessWidget {
   final VoidCallback onImport;
 
   @override
+  State<GroupsPage> createState() => _GroupsPageState();
+}
+
+class _GroupsPageState extends State<GroupsPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<GroupSummary>>(
-      stream: repository.watchGroups(),
+      stream: widget.repository.watchGroups(),
       initialData: const [],
       builder: (context, groupSnapshot) {
-        final groups = groupSnapshot.data ?? const <GroupSummary>[];
+        final groups = (groupSnapshot.data ?? const <GroupSummary>[])
+            .where(
+              (group) => _matchesQuery(_query, [
+                group.name,
+                group.description,
+                group.emoji,
+              ]),
+            )
+            .toList(growable: false);
         final displayGroups = _orderedGroupsForDisplay(groups);
 
         return SpPage(
           children: [
-            const SpSearchField(hintText: 'Search groups'),
+            SpSearchField(
+              hintText: 'Search groups',
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+            ),
             const SizedBox(height: 12),
             SpCard(
               child: Column(
@@ -31,14 +57,19 @@ class GroupsPage extends StatelessWidget {
                 children: [
                   SpSectionHeader(
                     title: 'Groups',
-                    trailing: StatusPill(text: '${snapshot?.groupCount ?? 0}'),
+                    trailing: StatusPill(
+                      text: '${widget.snapshot?.groupCount ?? 0}',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if (groups.isEmpty)
-                    const SpEmptyState(
-                      title: 'No groups yet',
-                      body:
-                          'Groups keep members organized without needing sync.',
+                    SpEmptyState(
+                      title: _query.trim().isEmpty
+                          ? 'No groups yet'
+                          : 'No matching groups',
+                      body: _query.trim().isEmpty
+                          ? 'Groups keep members organized without needing sync.'
+                          : 'Try another search.',
                     )
                   else
                     for (
@@ -57,8 +88,9 @@ class GroupsPage extends StatelessWidget {
                   SpActionRow(
                     primary: 'Add group',
                     secondary: 'Import',
-                    onPrimary: () => showAddGroupSheet(context, repository),
-                    onSecondary: onImport,
+                    onPrimary: () =>
+                        showAddGroupSheet(context, widget.repository),
+                    onSecondary: widget.onImport,
                   ),
                 ],
               ),

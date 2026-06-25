@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-class MembersPage extends StatelessWidget {
+class MembersPage extends StatefulWidget {
   const MembersPage({
     super.key,
     required this.snapshot,
@@ -13,18 +13,43 @@ class MembersPage extends StatelessWidget {
   final VoidCallback onImport;
 
   @override
+  State<MembersPage> createState() => _MembersPageState();
+}
+
+class _MembersPageState extends State<MembersPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  String _filter = 'All';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MemberSummary>>(
-      stream: repository.watchMembers(includeArchived: true),
+      stream: widget.repository.watchMembers(includeArchived: true),
       initialData: const [],
       builder: (context, membersSnapshot) {
-        final members = membersSnapshot.data ?? const <MemberSummary>[];
+        final members = _filteredMembers(
+          membersSnapshot.data ?? const <MemberSummary>[],
+        );
 
         return SpPage(
           children: [
-            const SpSearchField(hintText: 'Search members'),
+            SpSearchField(
+              hintText: 'Search members',
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+            ),
             const SizedBox(height: 12),
-            const SpFilterRow(filters: ['All', 'Fronting', 'Archived']),
+            SpFilterRow(
+              filters: const ['All', 'Fronting', 'Archived'],
+              selected: _filter,
+              onSelected: (filter) => setState(() => _filter = filter),
+            ),
             const SizedBox(height: 12),
             SpCard(
               child: Column(
@@ -32,18 +57,26 @@ class MembersPage extends StatelessWidget {
                 children: [
                   SpSectionHeader(
                     title: 'Members',
-                    trailing: StatusPill(text: '${snapshot?.memberCount ?? 0}'),
+                    trailing: StatusPill(
+                      text: '${widget.snapshot?.memberCount ?? 0}',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if (members.isEmpty)
-                    const SpEmptyState(
-                      title: 'No members saved locally',
-                      body:
-                          'Add members here or import a Simply Plural export.',
+                    SpEmptyState(
+                      title: _query.trim().isEmpty && _filter == 'All'
+                          ? 'No members saved locally'
+                          : 'No matching members',
+                      body: _query.trim().isEmpty && _filter == 'All'
+                          ? 'Add members here or import a Simply Plural export.'
+                          : 'Try another search or filter.',
                     )
                   else
                     for (final member in members) ...[
-                      MemberListTile(member: member, repository: repository),
+                      MemberListTile(
+                        member: member,
+                        repository: widget.repository,
+                      ),
                       if (member != members.last)
                         const Divider(height: 1, color: _spLine),
                     ],
@@ -51,8 +84,9 @@ class MembersPage extends StatelessWidget {
                   SpActionRow(
                     primary: 'Add member',
                     secondary: 'Import',
-                    onPrimary: () => showAddMemberSheet(context, repository),
-                    onSecondary: onImport,
+                    onPrimary: () =>
+                        showAddMemberSheet(context, widget.repository),
+                    onSecondary: widget.onImport,
                   ),
                 ],
               ),
@@ -61,6 +95,31 @@ class MembersPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  List<MemberSummary> _filteredMembers(List<MemberSummary> members) {
+    final frontNames = (widget.snapshot?.currentFrontLabel ?? '')
+        .split(',')
+        .map((name) => name.trim().toLowerCase())
+        .where((name) => name.isNotEmpty)
+        .toSet();
+
+    return [
+      for (final member in members)
+        if (_matchesQuery(_query, [
+              member.displayName,
+              member.pronouns,
+              member.description,
+            ]) &&
+            switch (_filter) {
+              'Archived' => member.archived,
+              'Fronting' => frontNames.contains(
+                member.displayName.toLowerCase(),
+              ),
+              _ => true,
+            })
+          member,
+    ];
   }
 }
 

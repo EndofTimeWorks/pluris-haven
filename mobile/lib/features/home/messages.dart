@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-class MessagesPage extends StatelessWidget {
+class MessagesPage extends StatefulWidget {
   const MessagesPage({
     super.key,
     required this.repository,
@@ -11,15 +11,37 @@ class MessagesPage extends StatelessWidget {
   final VoidCallback onImport;
 
   @override
+  State<MessagesPage> createState() => _MessagesPageState();
+}
+
+class _MessagesPageState extends State<MessagesPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MessageSummary>>(
-      stream: repository.watchMessages(),
+      stream: widget.repository.watchMessages(),
       initialData: const [],
       builder: (context, snapshot) {
-        final messages = snapshot.data ?? const <MessageSummary>[];
+        final messages = (snapshot.data ?? const <MessageSummary>[])
+            .where((message) => _matchesQuery(_query, [message.body]))
+            .toList(growable: false);
 
         return SpPage(
           children: [
+            SpSearchField(
+              hintText: 'Search messages',
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            const SizedBox(height: 12),
             SpCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,9 +52,13 @@ class MessagesPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   if (messages.isEmpty)
-                    const SpEmptyState(
-                      title: 'No messages yet',
-                      body: 'Leave local notes for the system here.',
+                    SpEmptyState(
+                      title: _query.trim().isEmpty
+                          ? 'No messages yet'
+                          : 'No matching messages',
+                      body: _query.trim().isEmpty
+                          ? 'Leave local notes for the system here.'
+                          : 'Try another search.',
                     )
                   else
                     for (final message in messages) ...[
@@ -44,8 +70,9 @@ class MessagesPage extends StatelessWidget {
                   SpActionRow(
                     primary: 'Add message',
                     secondary: 'Import',
-                    onPrimary: () => showAddMessageSheet(context, repository),
-                    onSecondary: onImport,
+                    onPrimary: () =>
+                        showAddMessageSheet(context, widget.repository),
+                    onSecondary: widget.onImport,
                   ),
                 ],
               ),
