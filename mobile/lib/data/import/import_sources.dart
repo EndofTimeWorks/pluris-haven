@@ -62,14 +62,14 @@ enum ImportSource {
     label: 'Tupperbox',
     subtitle: 'Tupper roster export',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.planned,
+    status: ImporterStatus.next,
     dedupeKeys: ['Tupperbox IDs', 'normalized names'],
   ),
   pluralSpace(
     label: 'PluralSpace',
     subtitle: 'PluralSpace export',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.planned,
+    status: ImporterStatus.next,
     dedupeKeys: ['PluralSpace IDs', 'normalized names'],
   ),
   prism(
