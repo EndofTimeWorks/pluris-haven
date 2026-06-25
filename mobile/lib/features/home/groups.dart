@@ -187,13 +187,17 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _emojiController = TextEditingController();
-  HavenAccentColor _color = HavenAccentColor.gold;
+  final _colorController = TextEditingController(
+    text: _hexFromAccent(HavenAccentColor.gold),
+  );
+  String? _colorError;
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
     _emojiController.dispose();
+    _colorController.dispose();
     super.dispose();
   }
 
@@ -244,10 +248,31 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                 for (final color in HavenAccentColor.values)
                   ChoiceChip(
                     label: Text(color.label),
-                    selected: _color == color,
-                    onSelected: (_) => setState(() => _color = color),
+                    selected:
+                        _normalizeUiHexColor(_colorController.text) ==
+                        _hexFromAccent(color),
+                    onSelected: (_) => setState(() {
+                      _colorController.text = _hexFromAccent(color);
+                      _colorError = null;
+                    }),
                   ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('group-color-hex-field'),
+              controller: _colorController,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: 'Color hex',
+                hintText: '#F2C75C',
+                errorText: _colorError,
+              ),
+              onChanged: (_) {
+                if (_colorError != null) {
+                  setState(() => _colorError = null);
+                }
+              },
             ),
             const SizedBox(height: 14),
             FilledButton(
@@ -262,11 +287,17 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   }
 
   Future<void> _save() async {
+    final colorHex = _normalizeUiHexColor(_colorController.text);
+    if (colorHex == null) {
+      setState(() => _colorError = 'Use 6 hex digits, like #F2C75C.');
+      return;
+    }
+
     await widget.repository.saveGroup(
       GroupDraft(
         name: _nameController.text,
         emoji: _emojiController.text,
-        colorHex: '#${_color.argb.toRadixString(16).substring(2)}',
+        colorHex: colorHex,
         description: _descriptionController.text,
       ),
     );
