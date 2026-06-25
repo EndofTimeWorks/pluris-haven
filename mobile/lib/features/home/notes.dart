@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-class NotesPage extends StatelessWidget {
+class NotesPage extends StatefulWidget {
   const NotesPage({
     super.key,
     required this.snapshot,
@@ -13,18 +13,43 @@ class NotesPage extends StatelessWidget {
   final VoidCallback onImport;
 
   @override
+  State<NotesPage> createState() => _NotesPageState();
+}
+
+class _NotesPageState extends State<NotesPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  String _filter = 'All';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<NoteSummary>>(
-      stream: repository.watchNotes(),
+      stream: widget.repository.watchNotes(),
       initialData: const [],
       builder: (context, noteSnapshot) {
-        final notes = noteSnapshot.data ?? const <NoteSummary>[];
+        final notes = _filteredNotes(
+          noteSnapshot.data ?? const <NoteSummary>[],
+        );
 
         return SpPage(
           children: [
-            const SpSearchField(hintText: 'Search notes'),
+            SpSearchField(
+              hintText: 'Search notes',
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+            ),
             const SizedBox(height: 12),
-            const SpFilterRow(filters: ['All', 'Member', 'System']),
+            SpFilterRow(
+              filters: const ['All', 'Member', 'System'],
+              selected: _filter,
+              onSelected: (filter) => setState(() => _filter = filter),
+            ),
             const SizedBox(height: 12),
             SpCard(
               child: Column(
@@ -32,18 +57,23 @@ class NotesPage extends StatelessWidget {
                 children: [
                   SpSectionHeader(
                     title: 'Notes',
-                    trailing: StatusPill(text: '${snapshot?.noteCount ?? 0}'),
+                    trailing: StatusPill(
+                      text: '${widget.snapshot?.noteCount ?? 0}',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if (notes.isEmpty)
-                    const SpEmptyState(
-                      title: 'No notes yet',
-                      body:
-                          'Local notes can be attached to members or kept general.',
+                    SpEmptyState(
+                      title: _query.trim().isEmpty && _filter == 'All'
+                          ? 'No notes yet'
+                          : 'No matching notes',
+                      body: _query.trim().isEmpty && _filter == 'All'
+                          ? 'Local notes can be attached to members or kept general.'
+                          : 'Try another search or filter.',
                     )
                   else
                     for (final note in notes) ...[
-                      NoteListTile(note: note, repository: repository),
+                      NoteListTile(note: note, repository: widget.repository),
                       if (note != notes.last)
                         const Divider(height: 1, color: _spLine),
                     ],
@@ -51,8 +81,9 @@ class NotesPage extends StatelessWidget {
                   SpActionRow(
                     primary: 'Add note',
                     secondary: 'Import',
-                    onPrimary: () => showAddNoteSheet(context, repository),
-                    onSecondary: onImport,
+                    onPrimary: () =>
+                        showAddNoteSheet(context, widget.repository),
+                    onSecondary: widget.onImport,
                   ),
                 ],
               ),
@@ -61,6 +92,19 @@ class NotesPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  List<NoteSummary> _filteredNotes(List<NoteSummary> notes) {
+    return [
+      for (final note in notes)
+        if (_matchesQuery(_query, [note.title, note.body]) &&
+            switch (_filter) {
+              'Member' => note.memberId != null,
+              'System' => note.memberId == null,
+              _ => true,
+            })
+          note,
+    ];
   }
 }
 
