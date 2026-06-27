@@ -28,6 +28,7 @@ part 'custom_fields.dart';
 part 'polls.dart';
 part 'reminders.dart';
 part 'notifications.dart';
+part 'useful_links.dart';
 part 'import_export.dart';
 part 'sync.dart';
 part 'app_options.dart';
@@ -183,16 +184,7 @@ class _HomePageState extends State<HomePage> {
           onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.usefulLinks:
-        return const OfflineFeaturePage(
-          title: 'Useful Links',
-          body:
-              'Useful SP links and local help pages can live here without accounts.',
-          rows: [
-            SpSettingsRow('Import guide', 'planned'),
-            SpSettingsRow('Local backups', 'planned'),
-            SpSettingsRow('Project links', 'local'),
-          ],
-        );
+        return UsefulLinksPage(onSelect: _selectSection);
       case SpSection.polls:
         return PollsPage(
           repository: widget.repository,
@@ -244,16 +236,7 @@ class _HomePageState extends State<HomePage> {
       case SpSection.notificationHistory:
         return NotificationHistoryPage(repository: widget.repository);
       case SpSection.howtos:
-        return const OfflineFeaturePage(
-          title: "How-to's",
-          body:
-              'Short guides for fronting, importing, backups, and sync will be kept offline.',
-          rows: [
-            SpSettingsRow('Fronting', 'planned'),
-            SpSettingsRow('Importing from SP', 'planned'),
-            SpSettingsRow('Backups', 'planned'),
-          ],
-        );
+        return HowTosPage(onSelect: _selectSection);
       case SpSection.customFields:
         return CustomFieldsPage(
           repository: widget.repository,

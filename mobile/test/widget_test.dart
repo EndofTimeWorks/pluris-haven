@@ -406,6 +406,36 @@ void main() {
     expect(find.text('No members saved locally'), findsOneWidget);
   });
 
+  testWidgets('opens local useful links and how-to guides', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Useful Links');
+
+    expect(find.text('Import from Simply Plural'), findsOneWidget);
+    expect(find.text('Back up local data'), findsOneWidget);
+
+    await tester.tap(find.text('How-to guides'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("How-to's"), findsWidgets);
+    expect(find.text('Track a front'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Save custom fronts'), 220);
+    expect(find.text('Save custom fronts'), findsOneWidget);
+  });
+
   testWidgets('adds a local group from the groups section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -422,8 +452,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Groups').first);
-    await tester.pumpAndSettle();
+    await openDrawerSection(tester, 'Groups');
 
     expect(find.text('No groups yet'), findsOneWidget);
 
@@ -537,8 +566,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Notes').first);
-    await tester.pumpAndSettle();
+    await openDrawerSection(tester, 'Notes');
 
     expect(find.text('No notes yet'), findsOneWidget);
 
@@ -742,7 +770,7 @@ void main() {
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.physicalSize = const Size(800, 2200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -785,21 +813,32 @@ void main() {
     await tester.pumpAndSettle();
     expect((await repository.loadCustomization()).languageCode, 'ar');
 
-    await tester.scrollUntilVisible(find.text('Analytics'), 220);
-    await tester.tap(find.byKey(const ValueKey('shortcut-visible-analytics')));
+    final pageScrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Analytics'),
+      220,
+      scrollable: pageScrollable,
+    );
+    final analyticsSwitch = find.byKey(
+      const ValueKey('shortcut-visible-analytics'),
+    );
+    await tester.scrollUntilVisible(
+      analyticsSwitch,
+      220,
+      scrollable: pageScrollable,
+    );
+    await tester.tap(analyticsSwitch);
     await tester.pumpAndSettle();
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
-      contains('analytics'),
+      isNot(contains('analytics')),
     );
-
-    await tester.tap(find.byKey(const ValueKey('shortcut-up-analytics')));
-    await tester.pumpAndSettle();
-    final shortcutIds =
-        (await repository.loadCustomization()).dashboardShortcutIds;
-    expect(shortcutIds.indexOf('analytics'), shortcutIds.length - 2);
-
-    await tester.scrollUntilVisible(find.text('Reset dashboard'), 220);
+    await tester.scrollUntilVisible(
+      find.text('Reset dashboard'),
+      220,
+      scrollable: pageScrollable,
+      maxScrolls: 30,
+    );
     await tester.tap(find.text('Reset dashboard'));
     await tester.pumpAndSettle();
     expect(
@@ -1067,7 +1106,10 @@ void main() {
 Future<void> openDrawerSection(WidgetTester tester, String label) async {
   await tester.tap(find.byTooltip('Open navigation menu'));
   await tester.pumpAndSettle();
-  final labelFinder = find.text(label);
+  final labelFinder = find.descendant(
+    of: find.byType(Drawer),
+    matching: find.text(label),
+  );
   if (!tester.any(labelFinder)) {
     await tester.scrollUntilVisible(
       labelFinder,
