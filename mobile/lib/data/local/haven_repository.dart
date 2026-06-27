@@ -2148,7 +2148,7 @@ SELECT
       'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
     );
     final localAvatarRefs = await _localizeImportAvatars(
-      members: members,
+      members: [...members, ...namedFronts],
       avatarAssets: avatarAssets,
     );
 
@@ -2212,7 +2212,12 @@ SELECT
         await _importFrontMember(link);
       }
       for (final namedFront in namedFronts) {
-        await _importNamedFront(namedFront, strategy, now);
+        await _importNamedFront(
+          namedFront,
+          strategy,
+          now,
+          localAvatarRefs[_requiredString(namedFront, 'id')],
+        );
       }
       for (final link in namedFrontMembers) {
         await _importNamedFrontMember(link);
@@ -2797,12 +2802,17 @@ SELECT
     Map<String, Object?> front,
     ImportConflictStrategy strategy,
     DateTime now,
+    String? localAvatarUrl,
   ) {
+    final frontId = _requiredString(front, 'id');
     final companion = NamedFrontsCompanion.insert(
-      id: _requiredString(front, 'id'),
+      id: frontId,
       systemId: localSystemId,
       name: _requiredString(front, 'name'),
       customLabel: Value(_stringValue(front['custom_label'])),
+      colorHex: Value(_stringValue(front['color_hex'])),
+      avatarUrl: Value(localAvatarUrl ?? _stringValue(front['avatar_url'])),
+      description: Value(_stringValue(front['description'])),
       createdAt: _dateValue(front['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -3149,6 +3159,9 @@ SELECT
               systemId: localSystemId,
               name: front.name,
               customLabel: Value(front.customLabel),
+              colorHex: Value(front.colorHex),
+              avatarUrl: Value(front.avatarUrl),
+              description: Value(front.description),
               createdAt: front.createdAt,
               updatedAt: now,
             ),
@@ -3482,6 +3495,9 @@ SELECT
     'id': front.id,
     'name': front.name,
     'custom_label': front.customLabel,
+    'color_hex': front.colorHex,
+    'avatar_url': front.avatarUrl,
+    'description': front.description,
     'created_at': front.createdAt.toIso8601String(),
     'updated_at': front.updatedAt.toIso8601String(),
   };
