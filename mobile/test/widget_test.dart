@@ -75,6 +75,84 @@ void main() {
     expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
   });
 
+  testWidgets('saves applies and deletes custom and named fronts', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('set front'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Asleep');
+    await tester.tap(find.byKey(const ValueKey('save-custom-front-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved fronts'), findsOneWidget);
+    expect(find.text('Asleep'), findsWidgets);
+    expect(repository._namedFronts.single.customLabel, 'Asleep');
+    expect(
+      repository._namedFrontMembers[repository._namedFronts.single.id],
+      isEmpty,
+    );
+
+    await tester.tap(find.text('River'));
+    await tester.tap(find.text('Sage'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('save-selected-named-front-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('named-front-name-field')),
+      'River + Sage',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-save-named-front-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._namedFronts.length, 2);
+    final combo = repository._namedFronts.singleWhere(
+      (front) => front.name == 'River + Sage',
+    );
+    expect(repository._namedFrontMembers[combo.id], [
+      'fake-member-1',
+      'fake-member-2',
+    ]);
+
+    await tester.tap(find.text('River + Sage'));
+    await tester.pumpAndSettle();
+    expect(repository._snapshot.currentFrontText, 'River, Sage');
+
+    await tester.tap(find.text('set front'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete saved front').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository._namedFronts.length, 1);
+  });
+
   testWidgets('opens a familiar section from the dashboard', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -946,6 +1024,10 @@ class FakeHavenRepository implements HavenRepository {
           sync: true,
           onListen: () => _backgroundJobsController.add(_backgroundJobs),
         );
+    _namedFrontsController = StreamController<List<NamedFront>>.broadcast(
+      sync: true,
+      onListen: () => _namedFrontsController.add(_namedFronts),
+    );
   }
 
   HomeSnapshot _snapshot;
@@ -961,6 +1043,8 @@ class FakeHavenRepository implements HavenRepository {
   List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
   List<BackgroundJobSummary> _backgroundJobs = const [];
+  List<NamedFront> _namedFronts = const [];
+  final Map<String, List<String>> _namedFrontMembers = {};
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
@@ -977,6 +1061,7 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<FrontHistoryEntry>> _frontHistoryController;
   late final StreamController<List<BackgroundJobSummary>>
   _backgroundJobsController;
+  late final StreamController<List<NamedFront>> _namedFrontsController;
 
   void seedBackgroundJob(BackgroundJobSummary job) {
     _backgroundJobs = [job, ..._backgroundJobs];
@@ -1672,16 +1757,49 @@ class FakeHavenRepository implements HavenRepository {
       Stream.value(const []);
 
   @override
-  Stream<List<NamedFront>> watchNamedFronts() => Stream.value(const []);
+  Stream<List<NamedFront>> watchNamedFronts() =>
+      _namedFrontsController.stream.map(List.unmodifiable);
 
   @override
-  Future<void> saveNamedFront(NamedFront front, List<String> memberIds) async {}
+  Future<void> saveNamedFront(NamedFront front, List<String> memberIds) async {
+    _namedFronts = [
+      for (final existing in _namedFronts)
+        if (existing.id != front.id) existing,
+      front,
+    ];
+    _namedFrontMembers[front.id] = List.unmodifiable(memberIds);
+    _namedFrontsController.add(_namedFronts);
+  }
 
   @override
-  Future<void> applyNamedFront(String namedFrontId) async {}
+  Future<void> applyNamedFront(String namedFrontId) async {
+    NamedFront? front;
+    for (final candidate in _namedFronts) {
+      if (candidate.id == namedFrontId) {
+        front = candidate;
+        break;
+      }
+    }
+    if (front == null) {
+      return;
+    }
+    final customLabel = front.customLabel?.trim();
+    if (customLabel != null && customLabel.isNotEmpty) {
+      await setCustomFront(customLabel);
+      return;
+    }
+    await setFrontMembers(_namedFrontMembers[namedFrontId] ?? const []);
+  }
 
   @override
-  Future<void> deleteNamedFront(String namedFrontId) async {}
+  Future<void> deleteNamedFront(String namedFrontId) async {
+    _namedFronts = [
+      for (final front in _namedFronts)
+        if (front.id != namedFrontId) front,
+    ];
+    _namedFrontMembers.remove(namedFrontId);
+    _namedFrontsController.add(_namedFronts);
+  }
 
   @override
   Stream<List<PendingAction>> watchPendingActions() => Stream.value(const []);
@@ -1777,5 +1895,6 @@ class FakeHavenRepository implements HavenRepository {
     await _notificationEventsController.close();
     await _frontHistoryController.close();
     await _backgroundJobsController.close();
+    await _namedFrontsController.close();
   }
 }
