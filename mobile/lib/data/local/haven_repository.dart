@@ -68,6 +68,7 @@ class MemberSummary {
     this.colorHex,
     this.description,
     this.avatarUrl,
+    this.pluralKitId,
     this.archived = false,
     this.isCustomFront = false,
     this.frameShape = 'circle',
@@ -81,6 +82,7 @@ class MemberSummary {
   final String? colorHex;
   final String? description;
   final String? avatarUrl;
+  final String? pluralKitId;
   final bool archived;
   final bool isCustomFront;
   final String frameShape;
@@ -94,12 +96,18 @@ class MemberDraft {
     this.pronouns,
     this.colorHex,
     this.description,
+    this.avatarUrl,
+    this.pluralKitId,
+    this.folderId,
   });
 
   final String displayName;
   final String? pronouns;
   final String? colorHex;
   final String? description;
+  final String? avatarUrl;
+  final String? pluralKitId;
+  final String? folderId;
 }
 
 class GroupSummary {
@@ -493,7 +501,10 @@ const defaultDashboardShortcutIds = [
 abstract interface class HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot();
 
-  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false});
+  Stream<List<MemberSummary>> watchMembers({
+    bool includeArchived = false,
+    bool includeCustomFronts = false,
+  });
 
   Stream<List<GroupSummary>> watchGroups();
 
@@ -761,7 +772,10 @@ class LocalHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false}) {
+  Stream<List<MemberSummary>> watchMembers({
+    bool includeArchived = false,
+    bool includeCustomFronts = false,
+  }) {
     final query = database.select(database.members)
       ..orderBy([
         (member) =>
@@ -771,6 +785,9 @@ class LocalHavenRepository implements HavenRepository {
     query.where((member) => member.systemId.equals(localSystemId));
     if (!includeArchived) {
       query.where((member) => member.archived.equals(false));
+    }
+    if (!includeCustomFronts) {
+      query.where((member) => member.isCustomFront.equals(false));
     }
 
     return query.watch().asyncMap((rows) async {
@@ -785,6 +802,7 @@ class LocalHavenRepository implements HavenRepository {
             colorHex: row.colorHex,
             description: row.description,
             avatarUrl: row.avatarUrl,
+            pluralKitId: row.pluralKitId,
             archived: row.archived,
             isCustomFront: row.isCustomFront,
             frameShape: row.frameShape,
@@ -1304,6 +1322,9 @@ SELECT
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
+            avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
+            pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
+            folderId: Value(_nullIfBlank(draft.folderId)),
             createdAt: now,
             updatedAt: now,
           ),
@@ -1345,6 +1366,9 @@ SELECT
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
+            avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
+            pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
+            folderId: Value(_nullIfBlank(draft.folderId)),
             updatedAt: Value(now),
           ),
         );
@@ -1394,6 +1418,7 @@ SELECT
               (member) =>
                   member.systemId.equals(localSystemId) &
                   member.archived.equals(false) &
+                  member.isCustomFront.equals(false) &
                   member.id.isIn(ids),
             ))
             .get();
@@ -1863,6 +1888,13 @@ SELECT
     final frontMembers = await database
         .select(database.frontSessionMembers)
         .get();
+    final namedFronts = await (database.select(
+      database.namedFronts,
+    )..where((front) => front.systemId.equals(localSystemId))).get();
+    final namedFrontIds = namedFronts.map((front) => front.id).toSet();
+    final namedFrontMembers = await database
+        .select(database.namedFrontMembers)
+        .get();
     final importRecords = await (database.select(
       database.importRecords,
     )..where((record) => record.systemId.equals(localSystemId))).get();
@@ -1907,6 +1939,14 @@ SELECT
       'front_members': [
         for (final link in frontMembers)
           if (frontIds.contains(link.sessionId)) _frontMemberToJson(link),
+      ],
+      'named_fronts': [
+        for (final front in namedFronts) _namedFrontToJson(front),
+      ],
+      'named_front_members': [
+        for (final link in namedFrontMembers)
+          if (namedFrontIds.contains(link.namedFrontId))
+            _namedFrontMemberToJson(link),
       ],
       'import_records': [
         for (final record in importRecords) _importRecordToJson(record),
@@ -2077,6 +2117,8 @@ SELECT
     final pollVotes = _jsonObjectList(decoded['poll_votes']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
+    final namedFronts = _jsonObjectList(decoded['named_fronts']);
+    final namedFrontMembers = _jsonObjectList(decoded['named_front_members']);
     final avatarAssets = _jsonObjectList(decoded['avatar_assets']);
     final rawPayloads = _jsonObjectList(decoded['raw_payloads']);
     final notificationEvents = _jsonObjectList(decoded['notification_events']);
@@ -2093,11 +2135,14 @@ SELECT
       pollVotes: pollVotes,
       fronts: fronts,
       frontMembers: frontMembers,
+      namedFronts: namedFronts,
+      namedFrontMembers: namedFrontMembers,
     );
     appDebugLog(
       'Import archive source=${source.name} file=${fileName ?? '(none)'} '
       'members=${members.length} groups=${groups.length} notes=${notes.length} '
       'messages=${messages.length} reminders=${reminders.length} fronts=${fronts.length} '
+      'namedFronts=${namedFronts.length} '
       'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
       'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
@@ -2166,6 +2211,12 @@ SELECT
       for (final link in frontMembers) {
         await _importFrontMember(link);
       }
+      for (final namedFront in namedFronts) {
+        await _importNamedFront(namedFront, strategy, now);
+      }
+      for (final link in namedFrontMembers) {
+        await _importNamedFrontMember(link);
+      }
       for (final event in notificationEvents) {
         await _importNotificationEvent(event, strategy, now);
       }
@@ -2196,6 +2247,8 @@ SELECT
                   'poll_votes': pollVotes.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
+                  'named_fronts': namedFronts.length,
+                  'named_front_members': namedFrontMembers.length,
                   'avatar_assets': avatarAssets.length,
                   'raw_payloads': rawPayloads.length,
                   'notification_events': notificationEvents.length,
@@ -2224,6 +2277,8 @@ SELECT
     required List<Map<String, Object?>> pollVotes,
     required List<Map<String, Object?>> fronts,
     required List<Map<String, Object?>> frontMembers,
+    required List<Map<String, Object?>> namedFronts,
+    required List<Map<String, Object?>> namedFrontMembers,
   }) {
     final groupIds = {
       for (final group in groups) _stringValue(group['id']),
@@ -2242,6 +2297,9 @@ SELECT
     }.whereType<String>().toSet();
     final frontIds = {
       for (final front in fronts) _stringValue(front['id']),
+    }.whereType<String>().toSet();
+    final namedFrontIds = {
+      for (final front in namedFronts) _stringValue(front['id']),
     }.whereType<String>().toSet();
     var cleanupCount = 0;
 
@@ -2320,6 +2378,20 @@ SELECT
           sessionId != null &&
           memberId != null &&
           frontIds.contains(sessionId) &&
+          memberIds.contains(memberId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    namedFrontMembers.removeWhere((link) {
+      final namedFrontId = _stringValue(link['named_front_id']);
+      final memberId = _stringValue(link['member_id']);
+      final keep =
+          namedFrontId != null &&
+          memberId != null &&
+          namedFrontIds.contains(namedFrontId) &&
           memberIds.contains(memberId);
       if (!keep) {
         cleanupCount++;
@@ -2721,6 +2793,36 @@ SELECT
         );
   }
 
+  Future<void> _importNamedFront(
+    Map<String, Object?> front,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final companion = NamedFrontsCompanion.insert(
+      id: _requiredString(front, 'id'),
+      systemId: localSystemId,
+      name: _requiredString(front, 'name'),
+      customLabel: Value(_stringValue(front['custom_label'])),
+      createdAt: _dateValue(front['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(front['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.namedFronts, companion, strategy);
+  }
+
+  Future<void> _importNamedFrontMember(Map<String, Object?> link) {
+    return database
+        .into(database.namedFrontMembers)
+        .insert(
+          NamedFrontMembersCompanion.insert(
+            namedFrontId: _requiredString(link, 'named_front_id'),
+            memberId: _requiredString(link, 'member_id'),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
   Future<void> _importNotificationEvent(
     Map<String, Object?> event,
     ImportConflictStrategy strategy,
@@ -3070,9 +3172,17 @@ SELECT
 
   @override
   Future<void> applyNamedFront(String namedFrontId) async {
+    final namedFront = await (database.select(
+      database.namedFronts,
+    )..where((front) => front.id.equals(namedFrontId))).getSingleOrNull();
     final members = await (database.select(
       database.namedFrontMembers,
     )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).get();
+    final label = _nullIfBlank(namedFront?.customLabel);
+    if (members.isEmpty && label != null) {
+      await setCustomFront(label);
+      return;
+    }
     await setFrontMembers(members.map((m) => m.memberId).toList());
   }
 
@@ -3365,6 +3475,19 @@ SELECT
 
   Map<String, Object?> _frontMemberToJson(FrontSessionMember link) => {
     'session_id': link.sessionId,
+    'member_id': link.memberId,
+  };
+
+  Map<String, Object?> _namedFrontToJson(NamedFront front) => {
+    'id': front.id,
+    'name': front.name,
+    'custom_label': front.customLabel,
+    'created_at': front.createdAt.toIso8601String(),
+    'updated_at': front.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _namedFrontMemberToJson(NamedFrontMember link) => {
+    'named_front_id': link.namedFrontId,
     'member_id': link.memberId,
   };
 

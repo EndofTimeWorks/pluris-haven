@@ -184,6 +184,8 @@ ImportPreview _previewPlurisArchive(
     'reminders': _listCount(decoded['reminders']),
     'fronts': _listCount(decoded['fronts']),
     'front_members': _listCount(decoded['front_members']),
+    'named_fronts': _listCount(decoded['named_fronts']),
+    'named_front_members': _listCount(decoded['named_front_members']),
     'import_records': _listCount(decoded['import_records']),
     'notification_events': _listCount(decoded['notification_events']),
     'preferences': _listCount(decoded['preferences']),
@@ -328,6 +330,7 @@ const _importablePreviewCountKeys = {
   'poll_options',
   'poll_votes',
   'fronts',
+  'named_fronts',
   'preferences',
 };
 

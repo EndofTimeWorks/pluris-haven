@@ -477,11 +477,20 @@ void main() {
           .watchMembers(includeArchived: true)
           .first;
       final fronts = await repository.watchFrontHistory().first;
+      final namedFronts = await repository.watchNamedFronts().first;
       final payloads = await database.select(database.importPayloads).get();
 
       expect(members.map((member) => member.displayName), contains('Iris'));
-      expect(members.map((member) => member.displayName), contains('Asleep'));
+      expect(
+        members.map((member) => member.displayName),
+        isNot(contains('Asleep')),
+      );
+      expect(namedFronts.map((front) => front.customLabel), contains('Asleep'));
       expect(fronts, hasLength(2));
+      expect(fronts.map((front) => front.label), contains('Asleep'));
+      await repository.applyNamedFront(namedFronts.single.id);
+      final home = await repository.watchHomeSnapshot().first;
+      expect(home.currentFrontLabel, 'Asleep');
       expect(
         payloads.map((payload) => payload.collection),
         contains('securityLogs'),
