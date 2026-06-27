@@ -505,7 +505,7 @@ void main() {
 ''',
       );
 
-      expect(archive.counts['members'], 2);
+      expect(archive.counts['members'], 1);
       expect(archive.counts['groups'], 1);
       expect(archive.counts['custom_fields'], 1);
       expect(archive.counts['custom_field_values'], 2);
@@ -513,6 +513,7 @@ void main() {
       expect(archive.counts['reminders'], 1);
       expect(archive.counts['fronts'], 1);
       expect(archive.counts['front_members'], 1);
+      expect(archive.counts['named_fronts'], 1);
       expect(archive.counts['avatar_assets'], 0);
       expect(archive.counts['raw_payloads'], 11);
       expect(
@@ -525,7 +526,8 @@ void main() {
         archive.archiveJson,
         contains('"folder_id": "simplyplural_file-group-g1"'),
       );
-      expect(archive.archiveJson, contains('"is_custom_front": true'));
+      expect(archive.archiveJson, isNot(contains('"is_custom_front": true')));
+      expect(archive.archiveJson, contains('"custom_label": "Asleep"'));
       expect(archive.archiveJson, contains('"name": "Age"'));
       expect(archive.archiveJson, contains('"value": "20s"'));
       expect(archive.archiveJson, contains('"value": "tea"'));
@@ -623,16 +625,17 @@ void main() {
 ''',
     );
 
-    expect(archive.counts['avatar_refs'], 2);
+    expect(archive.counts['avatar_refs'], 1);
+    expect(archive.counts['named_fronts'], 1);
     expect(archive.archiveJson, contains('"color_hex": "#0088ff"'));
-    expect(archive.archiveJson, contains('"color_hex": "#7b61ff"'));
+    expect(archive.archiveJson, contains('"custom_label": "Asleep"'));
     expect(
       archive.archiveJson,
       contains('https://serve.apparyllis.com/avatars/owner1/avatar-1'),
     );
     expect(
       archive.archiveJson,
-      contains('https://serve.apparyllis.com/avatars/owner1/avatar-2'),
+      isNot(contains('https://serve.apparyllis.com/avatars/owner1/avatar-2')),
     );
   });
 

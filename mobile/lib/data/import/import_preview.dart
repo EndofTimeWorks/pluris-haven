@@ -178,6 +178,8 @@ ImportPreview _previewPlurisArchive(
     'reminders': _listCount(decoded['reminders']),
     'fronts': _listCount(decoded['fronts']),
     'front_members': _listCount(decoded['front_members']),
+    'named_fronts': _listCount(decoded['named_fronts']),
+    'named_front_members': _listCount(decoded['named_front_members']),
     'import_records': _listCount(decoded['import_records']),
     'notification_events': _listCount(decoded['notification_events']),
     'preferences': _listCount(decoded['preferences']),
@@ -309,4 +311,19 @@ ImportPreview _previewNormalizedSource({
   );
 }
 
+const _importablePreviewCountKeys = {
+  'members',
+  'groups',
+  'custom_fields',
+  'custom_field_values',
+  'notes',
+  'messages',
+  'reminders',
+  'polls',
+  'poll_options',
+  'poll_votes',
+  'fronts',
+  'named_fronts',
+  'preferences',
+};
 int _listCount(Object? value) => value is List ? value.length : 0;

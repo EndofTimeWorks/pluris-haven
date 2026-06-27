@@ -82,6 +82,7 @@ class _ExternalArchiveNormalizer {
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
   final _pollOptionIdsByExternalId = <String, String>{};
+  final _customFrontLabelsByExternalId = <String, String>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -91,6 +92,8 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> messages;
   late final List<Map<String, Object?>> fronts;
   late final List<Map<String, Object?>> frontMembers;
+  late final List<Map<String, Object?>> namedFronts;
+  late final List<Map<String, Object?>> namedFrontMembers;
   late final List<Map<String, Object?>> reminders;
   late final List<Map<String, Object?>> polls;
   late final List<Map<String, Object?>> pollOptions;
@@ -107,6 +110,9 @@ class _ExternalArchiveNormalizer {
     notes = _normalizeNotes();
     messages = _normalizeMessages();
     reminders = _normalizeReminders();
+    final namedFrontData = _normalizeNamedFronts();
+    namedFronts = namedFrontData.namedFronts;
+    namedFrontMembers = namedFrontData.namedFrontMembers;
     final pollData = _normalizePolls();
     polls = pollData.polls;
     pollOptions = pollData.pollOptions;
@@ -141,6 +147,8 @@ class _ExternalArchiveNormalizer {
     'poll_votes': pollVotes,
     'fronts': fronts,
     'front_members': frontMembers,
+    'named_fronts': namedFronts,
+    'named_front_members': namedFrontMembers,
     'avatar_assets': _avatarAssetsToJson(),
     'raw_payloads': rawPayloads,
     'import_records': const [],
@@ -190,31 +198,6 @@ class _ExternalArchiveNormalizer {
       final record = _memberRecord(member, index);
       if (record != null) {
         records.add(record);
-      }
-    }
-    if (source == ImportSource.simplyPlural) {
-      final customFronts = _firstList(decoded, const [
-        'customFronts',
-        'custom_fronts',
-        'frontStatuses',
-        'FrontStatuses',
-      ]);
-      for (var index = 0; index < customFronts.length; index++) {
-        final customFront = _mapValue(customFronts[index]);
-        if (customFront == null) {
-          warnings.add(
-            'Skipped custom front #${index + 1}: expected an object.',
-          );
-          continue;
-        }
-        final record = _memberRecord(
-          customFront,
-          records.length,
-          isCustomFront: true,
-        );
-        if (record != null) {
-          records.add(record);
-        }
       }
     }
     return records;
@@ -292,6 +275,71 @@ class _ExternalArchiveNormalizer {
       'created_at': _dateString(member, const ['created_at', 'createdAt']),
       'updated_at': _dateString(member, const ['updated_at', 'updatedAt']),
     };
+  }
+
+  _NamedFrontData _normalizeNamedFronts() {
+    final namedFronts = <Map<String, Object?>>[];
+    final namedFrontMembers = <Map<String, Object?>>[];
+    if (source != ImportSource.simplyPlural) {
+      return const _NamedFrontData([], []);
+    }
+
+    final items = _firstList(decoded, const [
+      'customFronts',
+      'custom_fronts',
+      'frontStatuses',
+      'FrontStatuses',
+    ]);
+    for (var index = 0; index < items.length; index++) {
+      final customFront = _mapValue(items[index]);
+      if (customFront == null) {
+        warnings.add('Skipped custom front #${index + 1}: expected an object.');
+        continue;
+      }
+      final label = _firstString(customFront, const [
+        'display_name',
+        'displayName',
+        'label',
+        'name',
+        'status',
+        'customStatus',
+        'custom_status',
+      ])?.trim();
+      if (label == null || label.isEmpty) {
+        warnings.add('Skipped custom front #${index + 1}: missing label.');
+        continue;
+      }
+
+      final externalId =
+          _firstString(customFront, const ['_id', 'id', 'uuid', 'uid']) ??
+          _slug(label);
+      final id = _stableId('named-front', externalId);
+      _customFrontLabelsByExternalId[externalId] = label;
+      namedFronts.add({
+        'id': id,
+        'name': label,
+        'custom_label': label,
+        'created_at': _dateString(customFront, const [
+          'created_at',
+          'createdAt',
+        ]),
+        'updated_at': _dateString(customFront, const [
+          'updated_at',
+          'updatedAt',
+        ]),
+      });
+
+      final memberRefs = _rawMemberRefs(customFront);
+      for (final memberExternalId in memberRefs) {
+        final memberId = _memberIdsByExternalId[memberExternalId];
+        if (memberId == null) {
+          continue;
+        }
+        namedFrontMembers.add({'named_front_id': id, 'member_id': memberId});
+      }
+    }
+
+    return _NamedFrontData(namedFronts, namedFrontMembers);
   }
 
   List<Map<String, Object?>> _normalizeCustomFields() {
@@ -1074,6 +1122,13 @@ class _ExternalArchiveNormalizer {
   }
 
   List<String> _frontMemberIds(Map<String, Object?> front) {
+    return [
+      for (final id in _rawMemberRefs(front))
+        if (!_customFrontLabelsByExternalId.containsKey(id)) id,
+    ];
+  }
+
+  List<String> _rawMemberRefs(Map<String, Object?> front) {
     final value =
         front['members'] ??
         front['memberIds'] ??
@@ -1145,17 +1200,31 @@ class _ExternalArchiveNormalizer {
     ]);
     final custom = front['custom'];
     if (custom is bool) {
-      return custom ? explicit ?? 'Custom front' : null;
+      if (!custom) {
+        return _customFrontLabelFromRefs(front);
+      }
+      return explicit ?? _customFrontLabelFromRefs(front) ?? 'Custom front';
     }
-    return _firstString(front, const [
-      'label',
-      'custom',
-      'name',
-      'status',
-      'customStatus',
-      'custom_status',
-      'comment',
-    ]);
+    return _customFrontLabelFromRefs(front) ??
+        _firstString(front, const [
+          'label',
+          'custom',
+          'name',
+          'status',
+          'customStatus',
+          'custom_status',
+          'comment',
+        ]);
+  }
+
+  String? _customFrontLabelFromRefs(Map<String, Object?> front) {
+    for (final id in _rawMemberRefs(front)) {
+      final label = _customFrontLabelsByExternalId[id];
+      if (label != null) {
+        return label;
+      }
+    }
+    return null;
   }
 
   ({String start, String? end}) _normalizeFrontTimes({
@@ -1266,6 +1335,13 @@ class _FrontData {
   final List<Map<String, Object?>> frontMembers;
 }
 
+class _NamedFrontData {
+  const _NamedFrontData(this.namedFronts, this.namedFrontMembers);
+
+  final List<Map<String, Object?>> namedFronts;
+  final List<Map<String, Object?>> namedFrontMembers;
+}
+
 class _PollData {
   const _PollData(this.polls, this.pollOptions, this.pollVotes);
 
@@ -1287,6 +1363,8 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'poll_votes': _listCount(archive['poll_votes']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),
+  'named_fronts': _listCount(archive['named_fronts']),
+  'named_front_members': _listCount(archive['named_front_members']),
   'avatar_refs': _avatarRefCount(archive['members']),
   'avatar_assets': _listCount(archive['avatar_assets']),
   'raw_payloads': _listCount(archive['raw_payloads']),
