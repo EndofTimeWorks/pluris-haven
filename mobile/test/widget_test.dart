@@ -112,6 +112,9 @@ void main() {
       find.byKey(const ValueKey('member-color-hex-field')),
       '#12abef',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
 
@@ -160,6 +163,9 @@ void main() {
       find.byKey(const ValueKey('member-name-field')),
       'Iris',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
 
@@ -187,6 +193,9 @@ void main() {
     await tester.enterText(
       find.byKey(const ValueKey('member-name-field')),
       'Iris edited',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
     );
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
@@ -978,15 +987,18 @@ class FakeHavenRepository implements HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
 
   @override
-  Stream<List<MemberSummary>> watchMembers({bool includeArchived = false}) {
-    if (includeArchived) {
-      return _membersController.stream.map(List.unmodifiable);
-    }
-
-    return _membersController.stream.map(
-      (members) =>
-          List.unmodifiable(members.where((member) => !member.archived)),
-    );
+  Stream<List<MemberSummary>> watchMembers({
+    bool includeArchived = false,
+    bool includeCustomFronts = false,
+  }) {
+    return _membersController.stream.map((members) {
+      return List.unmodifiable([
+        for (final member in members)
+          if ((includeArchived || !member.archived) &&
+              (includeCustomFronts || !member.isCustomFront))
+            member,
+      ]);
+    });
   }
 
   @override
@@ -1139,6 +1151,9 @@ class FakeHavenRepository implements HavenRepository {
         pronouns: _nullIfBlank(draft.pronouns),
         colorHex: _nullIfBlank(draft.colorHex),
         description: _nullIfBlank(draft.description),
+        avatarUrl: _nullIfBlank(draft.avatarUrl),
+        pluralKitId: _nullIfBlank(draft.pluralKitId),
+        folderId: _nullIfBlank(draft.folderId),
       ),
     ];
     _emitMembers();
@@ -1181,6 +1196,9 @@ class FakeHavenRepository implements HavenRepository {
             pronouns: _nullIfBlank(draft.pronouns),
             colorHex: _nullIfBlank(draft.colorHex),
             description: _nullIfBlank(draft.description),
+            avatarUrl: _nullIfBlank(draft.avatarUrl),
+            pluralKitId: _nullIfBlank(draft.pluralKitId),
+            folderId: _nullIfBlank(draft.folderId),
             archived: member.archived,
           )
         else
@@ -1681,8 +1699,9 @@ class FakeHavenRepository implements HavenRepository {
     String? nextRank,
   ) async {}
 
-  List<MemberSummary> get _visibleMembers =>
-      _members.where((member) => !member.archived).toList(growable: false);
+  List<MemberSummary> get _visibleMembers => _members
+      .where((member) => !member.archived && !member.isCustomFront)
+      .toList(growable: false);
 
   void _emitMembers() {
     _membersController.add(_members);

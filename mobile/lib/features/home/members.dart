@@ -307,9 +307,12 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   final _nameController = TextEditingController();
   final _pronounsController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _avatarController = TextEditingController();
+  final _pluralKitController = TextEditingController();
   final _colorController = TextEditingController(
     text: _hexFromAccent(HavenAccentColor.purple),
   );
+  String? _folderId;
   String? _colorError;
 
   bool get _isEditing => widget.member != null;
@@ -325,6 +328,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _nameController.text = member.displayName;
     _pronounsController.text = member.pronouns ?? '';
     _descriptionController.text = member.description ?? '';
+    _avatarController.text = member.avatarUrl ?? '';
+    _pluralKitController.text = member.pluralKitId ?? '';
+    _folderId = member.folderId;
     _colorController.text =
         _normalizeUiHexColor(member.colorHex ?? '') ??
         _hexFromAccent(HavenAccentColor.purple);
@@ -335,6 +341,8 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _nameController.dispose();
     _pronounsController.dispose();
     _descriptionController.dispose();
+    _avatarController.dispose();
+    _pluralKitController.dispose();
     _colorController.dispose();
     super.dispose();
   }
@@ -353,7 +361,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Member',
+              'Alter profile',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -377,6 +385,48 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-avatar-field'),
+              controller: _avatarController,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Avatar URL or local ref',
+                hintText: 'https://... or local-avatar:...',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-pluralkit-field'),
+              controller: _pluralKitController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'PluralKit ID'),
+            ),
+            const SizedBox(height: 10),
+            StreamBuilder<List<GroupSummary>>(
+              stream: widget.repository.watchGroups(),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final groups = snapshot.data ?? const <GroupSummary>[];
+                return DropdownButtonFormField<String?>(
+                  initialValue: _folderId,
+                  decoration: const InputDecoration(labelText: 'Group'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('No group'),
+                    ),
+                    for (final group in groups)
+                      DropdownMenuItem<String?>(
+                        value: group.id,
+                        child: Text(group.name),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() => _folderId = value),
+                );
+              },
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -415,7 +465,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             FilledButton(
               key: const ValueKey('save-member-button'),
               onPressed: _save,
-              child: Text(_isEditing ? 'Save changes' : 'Save member'),
+              child: Text(_isEditing ? 'Save alter' : 'Create alter'),
             ),
           ],
         ),
@@ -435,6 +485,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       pronouns: _pronounsController.text,
       colorHex: colorHex,
       description: _descriptionController.text,
+      avatarUrl: _avatarController.text,
+      pluralKitId: _pluralKitController.text,
+      folderId: _folderId,
     );
     final member = widget.member;
     if (member == null) {
