@@ -127,6 +127,12 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
+              label: 'Analytics',
+              section: SpSection.analytics,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
               label: 'Chat',
               section: SpSection.chat,
               selected: selected,
@@ -212,17 +218,36 @@ class DrawerEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSelected = selected == section;
 
-    return ListTile(
-      dense: true,
-      selected: isSelected,
-      selectedColor: _spText,
-      selectedTileColor: _spCard,
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: const Text('>', style: TextStyle(color: _spMuted)),
-      onTap: () {
-        Navigator.pop(context);
-        onSelect(section);
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      child: Material(
+        color: isSelected ? _spCard : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            Navigator.pop(context);
+            onSelect(section);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? _spText : null,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Text('>', style: TextStyle(color: _spMuted)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
