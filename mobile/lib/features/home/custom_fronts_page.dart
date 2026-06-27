@@ -194,51 +194,57 @@ class _CustomFrontRow extends StatelessWidget {
         Semantics(
           button: true,
           label: 'Custom front $title',
-          child: ListTile(
-            contentPadding: const EdgeInsetsDirectional.only(start: 14, end: 6),
-            leading: _NamedFrontAvatar(front: front),
-            title: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  colorHex == null || colorHex.isEmpty
-                      ? 'custom front'
-                      : colorHex,
-                ),
-                if (description != null && description.isNotEmpty)
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsetsDirectional.only(
+                start: 14,
+                end: 6,
+              ),
+              leading: _NamedFrontAvatar(front: front),
+              title: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    colorHex == null || colorHex.isEmpty
+                        ? 'custom front'
+                        : colorHex,
                   ),
-              ],
-            ),
-            onTap: onSet,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Set custom front',
-                  onPressed: onSet,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                ),
-                IconButton(
-                  tooltip: 'Edit custom front',
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined),
-                ),
-                IconButton(
-                  tooltip: 'Delete custom front',
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded),
-                ),
-              ],
+                  if (description != null && description.isNotEmpty)
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+              onTap: onSet,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Set custom front',
+                    onPressed: onSet,
+                    icon: const Icon(Icons.play_arrow_rounded),
+                  ),
+                  IconButton(
+                    tooltip: 'Edit custom front',
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete custom front',
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

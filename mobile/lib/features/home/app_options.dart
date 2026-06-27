@@ -308,25 +308,28 @@ class SpLanguageOption extends StatelessWidget {
           color: selected ? _spLine : _spCard,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        child: Material(
+          color: Colors.transparent,
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Text(
+              language.label,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(
+              language.code,
+              style: const TextStyle(color: _spMuted),
+            ),
+            trailing: selected
+                ? Icon(
+                    Icons.check_circle_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                : null,
+            onTap: onTap,
           ),
-          title: Text(
-            language.label,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          subtitle: Text(
-            language.code,
-            style: const TextStyle(color: _spMuted),
-          ),
-          trailing: selected
-              ? Icon(
-                  Icons.check_circle_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              : null,
-          onTap: onTap,
         ),
       ),
     );

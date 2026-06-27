@@ -381,19 +381,22 @@ class SpSwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      value: value,
-      onChanged: onChanged,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      activeThumbColor: Theme.of(context).colorScheme.primary,
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: _spMuted, fontSize: 13),
+    return Material(
+      color: Colors.transparent,
+      child: SwitchListTile(
+        value: value,
+        onChanged: onChanged,
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        activeThumbColor: Theme.of(context).colorScheme.primary,
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: _spMuted, fontSize: 13),
+        ),
       ),
     );
   }

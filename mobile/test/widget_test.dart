@@ -234,6 +234,40 @@ void main() {
     expect(repository._namedFronts, isEmpty);
   });
 
+  testWidgets('shows local analytics from front history', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.setCustomFront('Asleep');
+    await repository.clearCurrentFront();
+    await repository.setCustomFront('Away');
+    await repository.clearCurrentFront();
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Analytics');
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Total front time'), findsOneWidget);
+    expect(find.text('Sessions'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('Top fronts'), findsOneWidget);
+    expect(find.text('Asleep'), findsOneWidget);
+    expect(find.text('Away'), findsOneWidget);
+    expect(find.text('Hour of day'), findsOneWidget);
+  });
+
   testWidgets('opens a familiar section from the dashboard', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
