@@ -153,6 +153,55 @@ const dashboardShortcuts = [
     section: SpSection.polls,
     icon: Icons.how_to_vote_rounded,
   ),
+  DashboardShortcutDefinition(
+    id: 'useful-links',
+    title: 'Useful Links',
+    subtitle: 'help and links',
+    section: SpSection.usefulLinks,
+    icon: Icons.star_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'privacy-buckets',
+    title: 'Privacy Buckets',
+    subtitle: 'local visibility',
+    section: SpSection.privacyBuckets,
+    icon: Icons.privacy_tip_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'tokens',
+    title: 'Tokens',
+    subtitle: 'sync later',
+    section: SpSection.tokens,
+    icon: Icons.verified_user_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'user-report',
+    title: 'User Report',
+    subtitle: 'diagnostics',
+    section: SpSection.userReport,
+    icon: Icons.picture_as_pdf_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'notification-history',
+    title: 'Notification History',
+    subtitle: 'local log',
+    section: SpSection.notificationHistory,
+    icon: Icons.notifications_active_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'howtos',
+    title: "How-to's",
+    subtitle: 'offline guides',
+    section: SpSection.howtos,
+    icon: Icons.school_rounded,
+  ),
+  DashboardShortcutDefinition(
+    id: 'account-settings',
+    title: 'Account Settings',
+    subtitle: 'local profile',
+    section: SpSection.accountSettings,
+    icon: Icons.settings_rounded,
+  ),
 ];
 
 enum DashboardCountKind { members, frontHistory, groups, notes }
