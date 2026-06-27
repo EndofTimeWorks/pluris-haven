@@ -12195,6 +12195,39 @@ class $NamedFrontsTable extends NamedFronts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _colorHexMeta = const VerificationMeta(
+    'colorHex',
+  );
+  @override
+  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
+    'color_hex',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avatarUrlMeta = const VerificationMeta(
+    'avatarUrl',
+  );
+  @override
+  late final GeneratedColumn<String> avatarUrl = GeneratedColumn<String>(
+    'avatar_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12223,6 +12256,9 @@ class $NamedFrontsTable extends NamedFronts
     systemId,
     name,
     customLabel,
+    colorHex,
+    avatarUrl,
+    description,
     createdAt,
     updatedAt,
   ];
@@ -12268,6 +12304,27 @@ class $NamedFrontsTable extends NamedFronts
         ),
       );
     }
+    if (data.containsKey('color_hex')) {
+      context.handle(
+        _colorHexMeta,
+        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('avatar_url')) {
+      context.handle(
+        _avatarUrlMeta,
+        avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -12309,6 +12366,18 @@ class $NamedFrontsTable extends NamedFronts
         DriftSqlType.string,
         data['${effectivePrefix}custom_label'],
       ),
+      colorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_hex'],
+      ),
+      avatarUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar_url'],
+      ),
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -12331,6 +12400,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
   final String systemId;
   final String name;
   final String? customLabel;
+  final String? colorHex;
+  final String? avatarUrl;
+  final String? description;
   final DateTime createdAt;
   final DateTime updatedAt;
   const NamedFront({
@@ -12338,6 +12410,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
     required this.systemId,
     required this.name,
     this.customLabel,
+    this.colorHex,
+    this.avatarUrl,
+    this.description,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -12349,6 +12424,15 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || customLabel != null) {
       map['custom_label'] = Variable<String>(customLabel);
+    }
+    if (!nullToAbsent || colorHex != null) {
+      map['color_hex'] = Variable<String>(colorHex);
+    }
+    if (!nullToAbsent || avatarUrl != null) {
+      map['avatar_url'] = Variable<String>(avatarUrl);
+    }
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -12363,6 +12447,15 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
       customLabel: customLabel == null && nullToAbsent
           ? const Value.absent()
           : Value(customLabel),
+      colorHex: colorHex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorHex),
+      avatarUrl: avatarUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatarUrl),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -12378,6 +12471,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
       systemId: serializer.fromJson<String>(json['systemId']),
       name: serializer.fromJson<String>(json['name']),
       customLabel: serializer.fromJson<String?>(json['customLabel']),
+      colorHex: serializer.fromJson<String?>(json['colorHex']),
+      avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),
+      description: serializer.fromJson<String?>(json['description']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -12390,6 +12486,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
       'systemId': serializer.toJson<String>(systemId),
       'name': serializer.toJson<String>(name),
       'customLabel': serializer.toJson<String?>(customLabel),
+      'colorHex': serializer.toJson<String?>(colorHex),
+      'avatarUrl': serializer.toJson<String?>(avatarUrl),
+      'description': serializer.toJson<String?>(description),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -12400,6 +12499,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
     String? systemId,
     String? name,
     Value<String?> customLabel = const Value.absent(),
+    Value<String?> colorHex = const Value.absent(),
+    Value<String?> avatarUrl = const Value.absent(),
+    Value<String?> description = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => NamedFront(
@@ -12407,6 +12509,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
     systemId: systemId ?? this.systemId,
     name: name ?? this.name,
     customLabel: customLabel.present ? customLabel.value : this.customLabel,
+    colorHex: colorHex.present ? colorHex.value : this.colorHex,
+    avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,
+    description: description.present ? description.value : this.description,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -12418,6 +12523,11 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
       customLabel: data.customLabel.present
           ? data.customLabel.value
           : this.customLabel,
+      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -12430,6 +12540,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
           ..write('systemId: $systemId, ')
           ..write('name: $name, ')
           ..write('customLabel: $customLabel, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -12437,8 +12550,17 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, systemId, name, customLabel, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    name,
+    customLabel,
+    colorHex,
+    avatarUrl,
+    description,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12447,6 +12569,9 @@ class NamedFront extends DataClass implements Insertable<NamedFront> {
           other.systemId == this.systemId &&
           other.name == this.name &&
           other.customLabel == this.customLabel &&
+          other.colorHex == this.colorHex &&
+          other.avatarUrl == this.avatarUrl &&
+          other.description == this.description &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -12456,6 +12581,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
   final Value<String> systemId;
   final Value<String> name;
   final Value<String?> customLabel;
+  final Value<String?> colorHex;
+  final Value<String?> avatarUrl;
+  final Value<String?> description;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -12464,6 +12592,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
     this.systemId = const Value.absent(),
     this.name = const Value.absent(),
     this.customLabel = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.description = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -12473,6 +12604,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
     required String systemId,
     required String name,
     this.customLabel = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.description = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -12486,6 +12620,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
     Expression<String>? systemId,
     Expression<String>? name,
     Expression<String>? customLabel,
+    Expression<String>? colorHex,
+    Expression<String>? avatarUrl,
+    Expression<String>? description,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -12495,6 +12632,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
       if (systemId != null) 'system_id': systemId,
       if (name != null) 'name': name,
       if (customLabel != null) 'custom_label': customLabel,
+      if (colorHex != null) 'color_hex': colorHex,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (description != null) 'description': description,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -12506,6 +12646,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
     Value<String>? systemId,
     Value<String>? name,
     Value<String?>? customLabel,
+    Value<String?>? colorHex,
+    Value<String?>? avatarUrl,
+    Value<String?>? description,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -12515,6 +12658,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
       systemId: systemId ?? this.systemId,
       name: name ?? this.name,
       customLabel: customLabel ?? this.customLabel,
+      colorHex: colorHex ?? this.colorHex,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -12536,6 +12682,15 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
     if (customLabel.present) {
       map['custom_label'] = Variable<String>(customLabel.value);
     }
+    if (colorHex.present) {
+      map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (avatarUrl.present) {
+      map['avatar_url'] = Variable<String>(avatarUrl.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -12555,6 +12710,9 @@ class NamedFrontsCompanion extends UpdateCompanion<NamedFront> {
           ..write('systemId: $systemId, ')
           ..write('name: $name, ')
           ..write('customLabel: $customLabel, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -25354,6 +25512,9 @@ typedef $$NamedFrontsTableCreateCompanionBuilder =
       required String systemId,
       required String name,
       Value<String?> customLabel,
+      Value<String?> colorHex,
+      Value<String?> avatarUrl,
+      Value<String?> description,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -25364,6 +25525,9 @@ typedef $$NamedFrontsTableUpdateCompanionBuilder =
       Value<String> systemId,
       Value<String> name,
       Value<String?> customLabel,
+      Value<String?> colorHex,
+      Value<String?> avatarUrl,
+      Value<String?> description,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -25434,6 +25598,21 @@ class $$NamedFrontsTableFilterComposer
 
   ColumnFilters<String> get customLabel => $composableBuilder(
     column: $table.customLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatarUrl => $composableBuilder(
+    column: $table.avatarUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25520,6 +25699,21 @@ class $$NamedFrontsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avatarUrl => $composableBuilder(
+    column: $table.avatarUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -25571,6 +25765,17 @@ class $$NamedFrontsTableAnnotationComposer
 
   GeneratedColumn<String> get customLabel => $composableBuilder(
     column: $table.customLabel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colorHex =>
+      $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<String> get avatarUrl =>
+      $composableBuilder(column: $table.avatarUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => column,
   );
 
@@ -25662,6 +25867,9 @@ class $$NamedFrontsTableTableManager
                 Value<String> systemId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> customLabel = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> description = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -25670,6 +25878,9 @@ class $$NamedFrontsTableTableManager
                 systemId: systemId,
                 name: name,
                 customLabel: customLabel,
+                colorHex: colorHex,
+                avatarUrl: avatarUrl,
+                description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -25680,6 +25891,9 @@ class $$NamedFrontsTableTableManager
                 required String systemId,
                 required String name,
                 Value<String?> customLabel = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> description = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -25688,6 +25902,9 @@ class $$NamedFrontsTableTableManager
                 systemId: systemId,
                 name: name,
                 customLabel: customLabel,
+                colorHex: colorHex,
+                avatarUrl: avatarUrl,
+                description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

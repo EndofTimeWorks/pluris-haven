@@ -56,7 +56,10 @@ void main() {
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'blurry co-con');
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-label-field')),
+      'blurry co-con',
+    );
     await tester.tap(find.text('Set'));
     await tester.pumpAndSettle();
 
@@ -102,7 +105,10 @@ void main() {
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, 'Asleep');
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-label-field')),
+      'Asleep',
+    );
     await tester.tap(find.byKey(const ValueKey('save-custom-front-button')));
     await tester.pumpAndSettle();
 

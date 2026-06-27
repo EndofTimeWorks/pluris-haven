@@ -319,6 +319,21 @@ class _ExternalArchiveNormalizer {
         'id': id,
         'name': label,
         'custom_label': label,
+        'color_hex': _normalizeColor(
+          _firstString(customFront, const [
+            'color',
+            'colour',
+            'colorHex',
+            'color_hex',
+          ]),
+        ),
+        'avatar_url': _avatarReference(customFront),
+        'description': _firstString(customFront, const [
+          'description',
+          'desc',
+          'message',
+          'note',
+        ]),
         'created_at': _dateString(customFront, const [
           'created_at',
           'createdAt',
@@ -1365,7 +1380,9 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'front_members': _listCount(archive['front_members']),
   'named_fronts': _listCount(archive['named_fronts']),
   'named_front_members': _listCount(archive['named_front_members']),
-  'avatar_refs': _avatarRefCount(archive['members']),
+  'avatar_refs':
+      _avatarRefCount(archive['members']) +
+      _avatarRefCount(archive['named_fronts']),
   'avatar_assets': _listCount(archive['avatar_assets']),
   'raw_payloads': _listCount(archive['raw_payloads']),
   'preferences': _listCount(archive['preferences']),
