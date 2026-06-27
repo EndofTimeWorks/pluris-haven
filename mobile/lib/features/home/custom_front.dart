@@ -92,6 +92,47 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
             const SizedBox(height: 16),
             const Divider(color: _spLine),
             const SizedBox(height: 12),
+            StreamBuilder<List<NamedFront>>(
+              stream: widget.repository.watchNamedFronts(),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final customFronts = [
+                  for (final front in snapshot.data ?? const <NamedFront>[])
+                    if (front.customLabel?.trim().isNotEmpty == true) front,
+                ];
+                if (customFronts.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Saved custom fronts',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final front in customFronts)
+                          ActionChip(
+                            label: Text(front.customLabel ?? front.name),
+                            onPressed: () => _applyNamedFront(front.id),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(color: _spLine),
+                    const SizedBox(height: 12),
+                  ],
+                );
+              },
+            ),
             const Text(
               'Custom front',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
@@ -141,6 +182,13 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<void> _setMemberFront() async {
     await widget.repository.setFrontMembers(_selectedMemberIds.toList());
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _applyNamedFront(String namedFrontId) async {
+    await widget.repository.applyNamedFront(namedFrontId);
     if (mounted) {
       Navigator.pop(context);
     }
