@@ -491,6 +491,7 @@ const Object _unchanged = Object();
 const defaultDashboardShortcutIds = [
   'members',
   'front-history',
+  'custom-fronts',
   'groups',
   'notes',
   'import-export',
