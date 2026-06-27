@@ -34,6 +34,7 @@ part 'about.dart';
 part 'navigation.dart';
 part 'dashboard_widgets.dart';
 part 'custom_front.dart';
+part 'custom_fronts_page.dart';
 part 'sp_widgets.dart';
 
 const _spSurface = Color(0xFF232532);
@@ -48,6 +49,7 @@ enum SpSection {
   dashboard('Dashboard'),
   members('Members'),
   frontHistory('Front History'),
+  customFronts('Custom Fronts'),
   groups('Groups'),
   notes('Notes'),
   analytics('Analytics'),
@@ -158,6 +160,8 @@ class _HomePageState extends State<HomePage> {
         );
       case SpSection.frontHistory:
         return FrontHistoryPage(snapshot: home, repository: widget.repository);
+      case SpSection.customFronts:
+        return CustomFrontsPage(repository: widget.repository);
       case SpSection.groups:
         return GroupsPage(
           snapshot: home,

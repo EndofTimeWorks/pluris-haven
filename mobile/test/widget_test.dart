@@ -159,6 +159,81 @@ void main() {
     expect(repository._namedFronts.length, 1);
   });
 
+  testWidgets('manages custom fronts as saved front states', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Custom Fronts').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('add-custom-front-page-button')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-name-field')),
+      'Asleep',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-color-field')),
+      '#ABCDEF',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-description-field')),
+      'Resting',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-front-page-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._namedFronts.single.customLabel, 'Asleep');
+    expect(repository._namedFronts.single.colorHex, '#ABCDEF');
+    expect(
+      repository._namedFrontMembers[repository._namedFronts.single.id],
+      isEmpty,
+    );
+    expect(find.text('Asleep'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Edit custom front'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-name-field')),
+      'Away',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-front-page-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._namedFronts.single.customLabel, 'Away');
+    expect(find.text('Away'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Set custom front'));
+    await tester.pumpAndSettle();
+    expect(repository._snapshot.currentFrontText, 'Away');
+
+    await tester.tap(find.byTooltip('Delete custom front'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository._namedFronts, isEmpty);
+  });
+
   testWidgets('opens a familiar section from the dashboard', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(

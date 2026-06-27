@@ -70,6 +70,13 @@ const dashboardShortcuts = [
     countKind: DashboardCountKind.frontHistory,
   ),
   DashboardShortcutDefinition(
+    id: 'custom-fronts',
+    title: 'Custom Fronts',
+    subtitle: 'saved states',
+    section: SpSection.customFronts,
+    icon: Icons.label_rounded,
+  ),
+  DashboardShortcutDefinition(
     id: 'groups',
     title: 'Groups',
     section: SpSection.groups,
