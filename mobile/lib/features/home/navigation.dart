@@ -157,8 +157,38 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
+              label: 'Useful Links',
+              section: SpSection.usefulLinks,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
               label: 'Privacy buckets',
               section: SpSection.privacyBuckets,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Tokens',
+              section: SpSection.tokens,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'User Report',
+              section: SpSection.userReport,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Notification History',
+              section: SpSection.notificationHistory,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: "How-to's",
+              section: SpSection.howtos,
               selected: selected,
               onSelect: onSelect,
             ),
@@ -184,6 +214,12 @@ class SpDrawer extends StatelessWidget {
             DrawerEntry(
               label: 'App options',
               section: SpSection.appOptions,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
+              label: 'Account Settings',
+              section: SpSection.accountSettings,
               selected: selected,
               onSelect: onSelect,
             ),
