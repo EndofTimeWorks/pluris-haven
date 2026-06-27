@@ -11,11 +11,13 @@ class CustomFrontSheet extends StatefulWidget {
 
 class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _controller = TextEditingController();
+  final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
 
   @override
   void dispose() {
     _controller.dispose();
+    _saveNameController.dispose();
     super.dispose();
   }
 
@@ -85,6 +87,14 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                             : 'Set co-front',
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      key: const ValueKey('save-selected-named-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : _showSaveSelectedFrontSheet,
+                      child: const Text('Save selected as named front'),
+                    ),
                   ],
                 );
               },
@@ -96,11 +106,8 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               stream: widget.repository.watchNamedFronts(),
               initialData: const [],
               builder: (context, snapshot) {
-                final customFronts = [
-                  for (final front in snapshot.data ?? const <NamedFront>[])
-                    if (front.customLabel?.trim().isNotEmpty == true) front,
-                ];
-                if (customFronts.isEmpty) {
+                final namedFronts = snapshot.data ?? const <NamedFront>[];
+                if (namedFronts.isEmpty) {
                   return const SizedBox.shrink();
                 }
 
@@ -108,24 +115,66 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Saved custom fronts',
+                      'Saved fronts',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final front in customFronts)
-                          ActionChip(
-                            label: Text(front.customLabel ?? front.name),
-                            onPressed: () => _applyNamedFront(front.id),
+                    for (final front in namedFronts)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: _spCard,
+                          borderRadius: BorderRadius.circular(14),
+                          clipBehavior: Clip.antiAlias,
+                          child: ListTile(
+                            contentPadding: const EdgeInsetsDirectional.only(
+                              start: 12,
+                              end: 6,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 16,
+                              backgroundColor:
+                                  front.customLabel?.trim().isNotEmpty == true
+                                  ? _spGold.withValues(alpha: 0.22)
+                                  : _spPurple.withValues(alpha: 0.22),
+                              child: Icon(
+                                front.customLabel?.trim().isNotEmpty == true
+                                    ? Icons.label_outline
+                                    : Icons.group_outlined,
+                                size: 18,
+                                color:
+                                    front.customLabel?.trim().isNotEmpty == true
+                                    ? _spGold
+                                    : _spPurple,
+                              ),
+                            ),
+                            title: Text(
+                              front.customLabel?.trim().isNotEmpty == true
+                                  ? front.customLabel!.trim()
+                                  : front.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            subtitle: Text(
+                              front.customLabel?.trim().isNotEmpty == true
+                                  ? 'custom front'
+                                  : 'named combination',
+                            ),
+                            onTap: () => _applyNamedFront(front.id),
+                            trailing: IconButton(
+                              tooltip: 'Delete saved front',
+                              onPressed: () => _deleteNamedFront(front),
+                              icon: const Icon(Icons.delete_outline),
+                            ),
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     const Divider(color: _spLine),
                     const SizedBox(height: 12),
@@ -151,6 +200,14 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                   child: FilledButton(
                     onPressed: () => _setFront(_controller.text),
                     child: const Text('Set'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const ValueKey('save-custom-front-button'),
+                    onPressed: () => _saveCustomFront(_controller.text),
+                    child: const Text('Save'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -192,5 +249,124 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _showSaveSelectedFrontSheet() async {
+    final name = await _askForFrontName(
+      title: 'Save named front',
+      label: 'Name',
+      initialValue: _selectedMemberIds.length <= 1 ? 'Fronting' : 'Co-front',
+    );
+    if (name == null) {
+      return;
+    }
+
+    await _saveNamedFront(name: name, memberIds: _selectedMemberIds.toList());
+  }
+
+  Future<void> _saveCustomFront(String label) async {
+    final normalized = label.trim();
+    if (normalized.isEmpty) {
+      return;
+    }
+    await _saveNamedFront(
+      name: normalized,
+      customLabel: normalized,
+      memberIds: const [],
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Saved "$normalized"')));
+    }
+  }
+
+  Future<void> _saveNamedFront({
+    required String name,
+    String? customLabel,
+    required List<String> memberIds,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await widget.repository.saveNamedFront(
+      NamedFront(
+        id: 'named-front-${now.microsecondsSinceEpoch}',
+        systemId: localSystemId,
+        name: name,
+        customLabel: customLabel,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      memberIds,
+    );
+  }
+
+  Future<void> _deleteNamedFront(NamedFront front) async {
+    await confirmDelete(
+      context,
+      title: 'Delete saved front?',
+      body: 'This only removes the shortcut. Front history stays untouched.',
+      onDelete: () => widget.repository.deleteNamedFront(front.id),
+    );
+  }
+
+  Future<String?> _askForFrontName({
+    required String title,
+    required String label,
+    required String initialValue,
+  }) async {
+    _saveNameController.text = initialValue;
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _spCard,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            18,
+            18,
+            18 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('named-front-name-field'),
+                controller: _saveNameController,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(labelText: label),
+                onSubmitted: (value) {
+                  final trimmed = value.trim();
+                  if (trimmed.isNotEmpty) {
+                    Navigator.pop(context, trimmed);
+                  }
+                },
+              ),
+              const SizedBox(height: 14),
+              FilledButton(
+                key: const ValueKey('confirm-save-named-front-button'),
+                onPressed: () {
+                  final trimmed = _saveNameController.text.trim();
+                  if (trimmed.isNotEmpty) {
+                    Navigator.pop(context, trimmed);
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
