@@ -134,12 +134,6 @@ jobs:
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > ../release/mobile-dev/BUILD.txt
           (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
-          cat > ../release/mobile-dev/NOTES.md <<EOF
-          Pre-alpha debug build ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }} from ${GITHUB_SHA}.
-
-          This APK is dev-signed and debuggable. It is for Obtainium/local testing, not Play Store distribution.
-          EOF
-
       - name: Upload dev artifact
         uses: actions/upload-artifact@v7
         with:
@@ -160,12 +154,20 @@ jobs:
           git tag "${tag}" "${GITHUB_SHA}"
           git push origin "refs/tags/${tag}"
 
+          notes="$(cat <<EOF
+          Pre-alpha debug build ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }} from ${GITHUB_SHA}.
+
+          This APK is dev-signed and debuggable. It is for Obtainium/local testing, not Play Store distribution.
+          EOF
+          )"
+
           gh release create "${tag}" \
             release/mobile-dev/pluris-haven-dev.apk \
             release/mobile-dev/BUILD.txt \
             release/mobile-dev/SHA256SUMS.txt \
             --target "${GITHUB_SHA}" \
             --title "Pluris Haven Mobile pre-alpha debug ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
-            --notes-file release/mobile-dev/NOTES.md \
+            --notes "${notes}" \
+            --generate-notes \
             --prerelease \
             --latest=false
