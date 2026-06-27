@@ -23,6 +23,7 @@ part 'front_history.dart';
 part 'groups.dart';
 part 'notes.dart';
 part 'messages.dart';
+part 'analytics.dart';
 part 'custom_fields.dart';
 part 'polls.dart';
 part 'reminders.dart';
@@ -175,16 +176,7 @@ class _HomePageState extends State<HomePage> {
           onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.analytics:
-        return const OfflineFeaturePage(
-          title: 'Analytics',
-          body:
-              'Local front and member analytics will be calculated from the device archive.',
-          rows: [
-            SpSettingsRow('Front time', 'not enough data'),
-            SpSettingsRow('Member activity', 'empty'),
-            SpSettingsRow('Trends', 'local only'),
-          ],
-        );
+        return AnalyticsPage(repository: widget.repository);
       case SpSection.chat:
         return MessagesPage(
           repository: widget.repository,
