@@ -347,6 +347,9 @@ class NamedFronts extends Table {
   TextColumn get systemId => text().references(PluralSystems, #id)();
   TextColumn get name => text()();
   TextColumn get customLabel => text().nullable()();
+  TextColumn get colorHex => text().nullable()();
+  TextColumn get avatarUrl => text().nullable()();
+  TextColumn get description => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -397,7 +400,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -460,6 +463,11 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(pendingActions);
         await migrator.createTable(namedFronts);
         await migrator.createTable(namedFrontMembers);
+      }
+      if (from < 9) {
+        await migrator.addColumn(namedFronts, namedFronts.colorHex);
+        await migrator.addColumn(namedFronts, namedFronts.avatarUrl);
+        await migrator.addColumn(namedFronts, namedFronts.description);
       }
     },
     beforeOpen: (details) async {

@@ -11,12 +11,14 @@ class CustomFrontSheet extends StatefulWidget {
 
 class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _controller = TextEditingController();
+  final _customFrontColorController = TextEditingController(text: '#F2C75C');
   final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
 
   @override
   void dispose() {
     _controller.dispose();
+    _customFrontColorController.dispose();
     _saveNameController.dispose();
     super.dispose();
   }
@@ -134,23 +136,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                               start: 12,
                               end: 6,
                             ),
-                            leading: CircleAvatar(
-                              radius: 16,
-                              backgroundColor:
-                                  front.customLabel?.trim().isNotEmpty == true
-                                  ? _spGold.withValues(alpha: 0.22)
-                                  : _spPurple.withValues(alpha: 0.22),
-                              child: Icon(
-                                front.customLabel?.trim().isNotEmpty == true
-                                    ? Icons.label_outline
-                                    : Icons.group_outlined,
-                                size: 18,
-                                color:
-                                    front.customLabel?.trim().isNotEmpty == true
-                                    ? _spGold
-                                    : _spPurple,
-                              ),
-                            ),
+                            leading: _NamedFrontAvatar(front: front),
                             title: Text(
                               front.customLabel?.trim().isNotEmpty == true
                                   ? front.customLabel!.trim()
@@ -161,16 +147,38 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            subtitle: Text(
-                              front.customLabel?.trim().isNotEmpty == true
-                                  ? 'custom front'
-                                  : 'named combination',
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  front.customLabel?.trim().isNotEmpty == true
+                                      ? 'custom front'
+                                      : 'named combination',
+                                ),
+                                if (front.description?.trim().isNotEmpty ==
+                                    true)
+                                  Text(
+                                    front.description!.trim(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
                             ),
                             onTap: () => _applyNamedFront(front.id),
-                            trailing: IconButton(
-                              tooltip: 'Delete saved front',
-                              onPressed: () => _deleteNamedFront(front),
-                              icon: const Icon(Icons.delete_outline),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Set saved front',
+                                  onPressed: () => _applyNamedFront(front.id),
+                                  icon: const Icon(Icons.play_arrow_rounded),
+                                ),
+                                IconButton(
+                                  tooltip: 'Delete saved front',
+                                  onPressed: () => _deleteNamedFront(front),
+                                  icon: const Icon(Icons.delete_outline),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -188,10 +196,42 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
             ),
             const SizedBox(height: 10),
             TextField(
+              key: const ValueKey('custom-front-label-field'),
               controller: _controller,
-              textInputAction: TextInputAction.done,
-              onSubmitted: _setFront,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('custom-front-color-hex-field'),
+              controller: _customFrontColorController,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _setFront(_controller.text),
+              decoration: InputDecoration(
+                labelText: 'Color',
+                hintText: '#F2C75C',
+                prefixIcon: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _customFrontColorController,
+                  builder: (context, value, child) {
+                    final color = _colorFromHex(
+                      _normalizeUiHexColor(value.text),
+                      fallback: _spGold,
+                    );
+                    return Center(
+                      widthFactor: 1,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _spLine),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 14),
             Row(
@@ -269,9 +309,17 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (normalized.isEmpty) {
       return;
     }
+    final colorHex = _normalizeUiHexColor(_customFrontColorController.text);
+    if (colorHex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use 6 hex digits, like #F2C75C.')),
+      );
+      return;
+    }
     await _saveNamedFront(
       name: normalized,
       customLabel: normalized,
+      colorHex: colorHex,
       memberIds: const [],
     );
     if (mounted) {
@@ -284,6 +332,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   Future<void> _saveNamedFront({
     required String name,
     String? customLabel,
+    String? colorHex,
+    String? avatarUrl,
+    String? description,
     required List<String> memberIds,
   }) async {
     final now = DateTime.now().toUtc();
@@ -293,6 +344,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
         systemId: localSystemId,
         name: name,
         customLabel: customLabel,
+        colorHex: colorHex,
+        avatarUrl: avatarUrl,
+        description: description,
         createdAt: now,
         updatedAt: now,
       ),
@@ -368,5 +422,51 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
         ),
       ),
     );
+  }
+}
+
+class _NamedFrontAvatar extends StatelessWidget {
+  const _NamedFrontAvatar({required this.front});
+
+  final NamedFront front;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorFromHex(
+      front.colorHex,
+      fallback: front.customLabel?.trim().isNotEmpty == true
+          ? _spGold
+          : _spPurple,
+    );
+    final label = front.customLabel?.trim().isNotEmpty == true
+        ? front.customLabel!.trim()
+        : front.name;
+    final avatarUrl = front.avatarUrl;
+
+    if (avatarUrl == null || avatarUrl.trim().isEmpty) {
+      return SpAvatar(size: 34, color: color, label: _initialFor(label));
+    }
+    if (avatarUrl.startsWith('local-avatar:')) {
+      return FutureBuilder<File?>(
+        future: _localAvatarFile(avatarUrl),
+        builder: (context, snapshot) {
+          return SpAvatar(
+            size: 34,
+            color: color,
+            label: _initialFor(label),
+            image: snapshot.data == null ? null : FileImage(snapshot.data!),
+          );
+        },
+      );
+    }
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return SpAvatar(
+        size: 34,
+        color: color,
+        label: _initialFor(label),
+        image: NetworkImage(avatarUrl),
+      );
+    }
+    return SpAvatar(size: 34, color: color, label: _initialFor(label));
   }
 }
