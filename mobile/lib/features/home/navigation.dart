@@ -109,6 +109,12 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
+              label: 'Custom Fronts',
+              section: SpSection.customFronts,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
               label: 'Groups',
               section: SpSection.groups,
               selected: selected,
