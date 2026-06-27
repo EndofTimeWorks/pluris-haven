@@ -887,24 +887,27 @@ class ImportJobRow extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Import job $title, ${job.status}. Double tap for details.',
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        dense: true,
-        onTap: () => _showJobDetails(context),
-        leading: Icon(_icon, color: _color, size: 20),
-        title: Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          onTap: () => _showJobDetails(context),
+          leading: Icon(_icon, color: _color, size: 20),
+          title: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: _spMuted),
+          ),
+          trailing: StatusPill(text: job.status),
         ),
-        subtitle: Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: _spMuted),
-        ),
-        trailing: StatusPill(text: job.status),
       ),
     );
   }
