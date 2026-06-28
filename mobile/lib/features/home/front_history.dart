@@ -87,9 +87,21 @@ class FrontHistoryTile extends StatelessWidget {
         entry.label,
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      subtitle: Text(
-        _frontTimingLabel(entry),
-        style: const TextStyle(color: _spMuted),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _frontTimingLabel(entry),
+            style: const TextStyle(color: _spMuted),
+          ),
+          if ((entry.statusNote ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              entry.statusNote!.trim(),
+              style: const TextStyle(color: _spText),
+            ),
+          ],
+        ],
       ),
     );
   }

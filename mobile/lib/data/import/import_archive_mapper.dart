@@ -1177,6 +1177,7 @@ class _ExternalArchiveNormalizer {
       sessions.add({
         'id': id,
         'label': label,
+        'status_note': _frontStatusNote(front),
         'started_at': normalizedTimes.start,
         'ended_at': normalizedTimes.end,
         'created_at':
@@ -1305,6 +1306,31 @@ class _ExternalArchiveNormalizer {
           'custom_status',
           'comment',
         ]);
+  }
+
+  String? _frontStatusNote(Map<String, Object?> front) {
+    final note = _firstString(front, const [
+      'status_note',
+      'statusNote',
+      'frontStatus',
+      'customStatus',
+      'custom_status',
+      'comment',
+      'note',
+    ])?.trim();
+    if (note == null || note.isEmpty) {
+      return null;
+    }
+
+    // In SP, `customStatus` does double duty: for custom-front rows it is the
+    // displayed non-member front label; for member rows it is the per-front
+    // status note. Do not duplicate custom-front labels as notes.
+    final custom = front['custom'];
+    if (_customFrontLabelFromRefs(front) == note ||
+        (custom == true && _frontLabel(front) == note)) {
+      return null;
+    }
+    return note;
   }
 
   String? _customFrontLabelFromRefs(Map<String, Object?> front) {

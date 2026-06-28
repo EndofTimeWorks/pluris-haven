@@ -6182,6 +6182,17 @@ class $FrontSessionsTable extends FrontSessions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _statusNoteMeta = const VerificationMeta(
+    'statusNote',
+  );
+  @override
+  late final GeneratedColumn<String> statusNote = GeneratedColumn<String>(
+    'status_note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
   );
@@ -6231,6 +6242,7 @@ class $FrontSessionsTable extends FrontSessions
     id,
     systemId,
     label,
+    statusNote,
     startedAt,
     endedAt,
     createdAt,
@@ -6265,6 +6277,12 @@ class $FrontSessionsTable extends FrontSessions
       context.handle(
         _labelMeta,
         label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('status_note')) {
+      context.handle(
+        _statusNoteMeta,
+        statusNote.isAcceptableOrUnknown(data['status_note']!, _statusNoteMeta),
       );
     }
     if (data.containsKey('started_at')) {
@@ -6318,6 +6336,10 @@ class $FrontSessionsTable extends FrontSessions
         DriftSqlType.string,
         data['${effectivePrefix}label'],
       ),
+      statusNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status_note'],
+      ),
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -6347,6 +6369,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
   final String id;
   final String systemId;
   final String? label;
+  final String? statusNote;
   final DateTime startedAt;
   final DateTime? endedAt;
   final DateTime createdAt;
@@ -6355,6 +6378,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
     required this.id,
     required this.systemId,
     this.label,
+    this.statusNote,
     required this.startedAt,
     this.endedAt,
     required this.createdAt,
@@ -6367,6 +6391,9 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
     map['system_id'] = Variable<String>(systemId);
     if (!nullToAbsent || label != null) {
       map['label'] = Variable<String>(label);
+    }
+    if (!nullToAbsent || statusNote != null) {
+      map['status_note'] = Variable<String>(statusNote);
     }
     map['started_at'] = Variable<DateTime>(startedAt);
     if (!nullToAbsent || endedAt != null) {
@@ -6384,6 +6411,9 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
       label: label == null && nullToAbsent
           ? const Value.absent()
           : Value(label),
+      statusNote: statusNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusNote),
       startedAt: Value(startedAt),
       endedAt: endedAt == null && nullToAbsent
           ? const Value.absent()
@@ -6402,6 +6432,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
       id: serializer.fromJson<String>(json['id']),
       systemId: serializer.fromJson<String>(json['systemId']),
       label: serializer.fromJson<String?>(json['label']),
+      statusNote: serializer.fromJson<String?>(json['statusNote']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -6415,6 +6446,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
       'id': serializer.toJson<String>(id),
       'systemId': serializer.toJson<String>(systemId),
       'label': serializer.toJson<String?>(label),
+      'statusNote': serializer.toJson<String?>(statusNote),
       'startedAt': serializer.toJson<DateTime>(startedAt),
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -6426,6 +6458,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
     String? id,
     String? systemId,
     Value<String?> label = const Value.absent(),
+    Value<String?> statusNote = const Value.absent(),
     DateTime? startedAt,
     Value<DateTime?> endedAt = const Value.absent(),
     DateTime? createdAt,
@@ -6434,6 +6467,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
     id: id ?? this.id,
     systemId: systemId ?? this.systemId,
     label: label.present ? label.value : this.label,
+    statusNote: statusNote.present ? statusNote.value : this.statusNote,
     startedAt: startedAt ?? this.startedAt,
     endedAt: endedAt.present ? endedAt.value : this.endedAt,
     createdAt: createdAt ?? this.createdAt,
@@ -6444,6 +6478,9 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
       id: data.id.present ? data.id.value : this.id,
       systemId: data.systemId.present ? data.systemId.value : this.systemId,
       label: data.label.present ? data.label.value : this.label,
+      statusNote: data.statusNote.present
+          ? data.statusNote.value
+          : this.statusNote,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -6457,6 +6494,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('label: $label, ')
+          ..write('statusNote: $statusNote, ')
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -6470,6 +6508,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
     id,
     systemId,
     label,
+    statusNote,
     startedAt,
     endedAt,
     createdAt,
@@ -6482,6 +6521,7 @@ class FrontSession extends DataClass implements Insertable<FrontSession> {
           other.id == this.id &&
           other.systemId == this.systemId &&
           other.label == this.label &&
+          other.statusNote == this.statusNote &&
           other.startedAt == this.startedAt &&
           other.endedAt == this.endedAt &&
           other.createdAt == this.createdAt &&
@@ -6492,6 +6532,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
   final Value<String> id;
   final Value<String> systemId;
   final Value<String?> label;
+  final Value<String?> statusNote;
   final Value<DateTime> startedAt;
   final Value<DateTime?> endedAt;
   final Value<DateTime> createdAt;
@@ -6501,6 +6542,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
     this.id = const Value.absent(),
     this.systemId = const Value.absent(),
     this.label = const Value.absent(),
+    this.statusNote = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.endedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -6511,6 +6553,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
     required String id,
     required String systemId,
     this.label = const Value.absent(),
+    this.statusNote = const Value.absent(),
     required DateTime startedAt,
     this.endedAt = const Value.absent(),
     required DateTime createdAt,
@@ -6525,6 +6568,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
     Expression<String>? id,
     Expression<String>? systemId,
     Expression<String>? label,
+    Expression<String>? statusNote,
     Expression<DateTime>? startedAt,
     Expression<DateTime>? endedAt,
     Expression<DateTime>? createdAt,
@@ -6535,6 +6579,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
       if (id != null) 'id': id,
       if (systemId != null) 'system_id': systemId,
       if (label != null) 'label': label,
+      if (statusNote != null) 'status_note': statusNote,
       if (startedAt != null) 'started_at': startedAt,
       if (endedAt != null) 'ended_at': endedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -6547,6 +6592,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
     Value<String>? id,
     Value<String>? systemId,
     Value<String?>? label,
+    Value<String?>? statusNote,
     Value<DateTime>? startedAt,
     Value<DateTime?>? endedAt,
     Value<DateTime>? createdAt,
@@ -6557,6 +6603,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
       id: id ?? this.id,
       systemId: systemId ?? this.systemId,
       label: label ?? this.label,
+      statusNote: statusNote ?? this.statusNote,
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -6576,6 +6623,9 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
     }
     if (label.present) {
       map['label'] = Variable<String>(label.value);
+    }
+    if (statusNote.present) {
+      map['status_note'] = Variable<String>(statusNote.value);
     }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
@@ -6601,6 +6651,7 @@ class FrontSessionsCompanion extends UpdateCompanion<FrontSession> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('label: $label, ')
+          ..write('statusNote: $statusNote, ')
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -20036,6 +20087,7 @@ typedef $$FrontSessionsTableCreateCompanionBuilder =
       required String id,
       required String systemId,
       Value<String?> label,
+      Value<String?> statusNote,
       required DateTime startedAt,
       Value<DateTime?> endedAt,
       required DateTime createdAt,
@@ -20047,6 +20099,7 @@ typedef $$FrontSessionsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> systemId,
       Value<String?> label,
+      Value<String?> statusNote,
       Value<DateTime> startedAt,
       Value<DateTime?> endedAt,
       Value<DateTime> createdAt,
@@ -20141,6 +20194,11 @@ class $$FrontSessionsTableFilterComposer
 
   ColumnFilters<String> get label => $composableBuilder(
     column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get statusNote => $composableBuilder(
+    column: $table.statusNote,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20257,6 +20315,11 @@ class $$FrontSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get statusNote => $composableBuilder(
+    column: $table.statusNote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
     column: $table.startedAt,
     builder: (column) => ColumnOrderings(column),
@@ -20315,6 +20378,11 @@ class $$FrontSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get statusNote => $composableBuilder(
+    column: $table.statusNote,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
@@ -20438,6 +20506,7 @@ class $$FrontSessionsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> systemId = const Value.absent(),
                 Value<String?> label = const Value.absent(),
+                Value<String?> statusNote = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
                 Value<DateTime?> endedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -20447,6 +20516,7 @@ class $$FrontSessionsTableTableManager
                 id: id,
                 systemId: systemId,
                 label: label,
+                statusNote: statusNote,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 createdAt: createdAt,
@@ -20458,6 +20528,7 @@ class $$FrontSessionsTableTableManager
                 required String id,
                 required String systemId,
                 Value<String?> label = const Value.absent(),
+                Value<String?> statusNote = const Value.absent(),
                 required DateTime startedAt,
                 Value<DateTime?> endedAt = const Value.absent(),
                 required DateTime createdAt,
@@ -20467,6 +20538,7 @@ class $$FrontSessionsTableTableManager
                 id: id,
                 systemId: systemId,
                 label: label,
+                statusNote: statusNote,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 createdAt: createdAt,
