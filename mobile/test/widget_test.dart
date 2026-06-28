@@ -436,6 +436,38 @@ void main() {
     expect(find.text('Save custom fronts'), findsOneWidget);
   });
 
+  testWidgets('opens local account and privacy status pages', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 2,
+        groupCount: 1,
+        noteCount: 3,
+        frontHistoryCount: 4,
+        currentFrontLabel: 'River',
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Account Settings');
+    expect(find.text('Cloud account'), findsOneWidget);
+    expect(find.text('Field encryption'), findsOneWidget);
+
+    await openDrawerSection(tester, 'Privacy buckets');
+    expect(find.text('Private'), findsOneWidget);
+    expect(find.text('Custom fields privacy'), findsOneWidget);
+
+    await openDrawerSection(tester, 'Tokens');
+    expect(find.text('PluralKit live import'), findsOneWidget);
+
+    await openDrawerSection(tester, 'User Report');
+    expect(find.text('User Report'), findsWidgets);
+    expect(find.widgetWithText(FilledButton, 'Copy report'), findsOneWidget);
+  });
+
   testWidgets('adds a local group from the groups section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
