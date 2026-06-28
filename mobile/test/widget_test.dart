@@ -78,6 +78,55 @@ void main() {
     expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
   });
 
+  testWidgets('edits and deletes front history entries', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.setCustomFront('blurry co-con');
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('blurry co-con').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('front-status-note-field')),
+      'felt blurry after lunch',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-front-status-note-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('felt blurry after lunch'), findsOneWidget);
+    expect(
+      repository._frontHistory.single.statusNote,
+      'felt blurry after lunch',
+    );
+
+    await tester.tap(find.text('blurry co-con').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete entry'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository._frontHistory, isEmpty);
+    expect(find.text('No front history yet'), findsOneWidget);
+  });
+
   testWidgets('saves applies and deletes custom and named fronts', (
     tester,
   ) async {
@@ -1685,6 +1734,45 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> updateFrontStatusNote(String frontId, String? statusNote) async {
+    final normalized = _nullIfBlank(statusNote);
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        if (entry.id == frontId)
+          FrontHistoryEntry(
+            id: entry.id,
+            label: entry.label,
+            statusNote: normalized,
+            startedAt: entry.startedAt,
+            endedAt: entry.endedAt,
+          )
+        else
+          entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
+  }
+
+  @override
+  Future<void> deleteFrontSession(String frontId) async {
+    final deletedActive = _frontHistory.any(
+      (entry) => entry.id == frontId && entry.isActive,
+    );
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        if (entry.id != frontId) entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
+    if (deletedActive) {
+      _currentFrontMemberIds = const [];
+      _emitCurrentFrontMembers();
+    }
+    _emitSnapshot(
+      frontHistoryCount: _frontHistory.length,
+      clearCurrentFront: deletedActive,
+    );
+  }
+
+  @override
   Future<void> saveGroup(GroupDraft draft) async {
     final name = draft.name.trim();
     if (name.isEmpty) {
@@ -2248,6 +2336,7 @@ class FakeHavenRepository implements HavenRepository {
             ? FrontHistoryEntry(
                 id: entry.id,
                 label: entry.label,
+                statusNote: entry.statusNote,
                 startedAt: entry.startedAt,
                 endedAt: ended,
               )
