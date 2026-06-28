@@ -553,6 +553,57 @@ void main() {
     expect(repository._snapshot.groupCount, 1);
   });
 
+  testWidgets('edits and deletes nested groups locally', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveGroup(
+      const GroupDraft(name: 'Gate crew', parentGroupId: 'fake-group-1'),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Groups');
+    expect(find.text('Caretakers'), findsOneWidget);
+    expect(find.text('Gate crew'), findsOneWidget);
+
+    await tester.tap(find.text('Gate crew'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      'Gatekeepers',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-group-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gatekeepers'), findsOneWidget);
+    expect(repository._groups.last.name, 'Gatekeepers');
+    expect(repository._groups.last.parentGroupId, 'fake-group-1');
+
+    await tester.tap(find.byTooltip('Group actions').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Caretakers'), findsNothing);
+    expect(find.text('Gatekeepers'), findsOneWidget);
+    expect(repository._groups.single.parentGroupId, isNull);
+    expect(repository._snapshot.groupCount, 1);
+  });
+
   testWidgets('routes section import actions to import setup', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1594,6 +1645,49 @@ class FakeHavenRepository implements HavenRepository {
         description: _nullIfBlank(draft.description),
         emoji: _nullIfBlank(draft.emoji),
       ),
+    ];
+    _groupsController.add(_groups);
+    _emitSnapshot(groupCount: _groups.length);
+  }
+
+  @override
+  Future<void> updateGroup(String groupId, GroupDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+    _groups = [
+      for (final group in _groups)
+        if (group.id == groupId)
+          GroupSummary(
+            id: group.id,
+            name: name,
+            parentGroupId: _nullIfBlank(draft.parentGroupId),
+            colorHex: _nullIfBlank(draft.colorHex),
+            description: _nullIfBlank(draft.description),
+            emoji: _nullIfBlank(draft.emoji),
+          )
+        else
+          group,
+    ];
+    _groupsController.add(_groups);
+  }
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    _groups = [
+      for (final group in _groups)
+        if (group.id != groupId)
+          GroupSummary(
+            id: group.id,
+            name: group.name,
+            parentGroupId: group.parentGroupId == groupId
+                ? null
+                : group.parentGroupId,
+            colorHex: group.colorHex,
+            description: group.description,
+            emoji: group.emoji,
+          ),
     ];
     _groupsController.add(_groups);
     _emitSnapshot(groupCount: _groups.length);
