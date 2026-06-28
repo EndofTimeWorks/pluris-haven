@@ -183,6 +183,11 @@ void main() {
     await tester.tap(find.text('River + Sage'));
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
+    expect(
+      find.bySemanticsLabel('River is currently fronting'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Sage is currently fronting'), findsOneWidget);
 
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
@@ -1295,6 +1300,12 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _membersController.add(_members),
     );
+    _currentFrontMembersController =
+        StreamController<List<MemberSummary>>.broadcast(
+          sync: true,
+          onListen: () =>
+              _currentFrontMembersController.add(_currentFrontMembers()),
+        );
     _groupsController = StreamController<List<GroupSummary>>.broadcast(
       sync: true,
       onListen: () => _groupsController.add(_groups),
@@ -1361,10 +1372,13 @@ class FakeHavenRepository implements HavenRepository {
   List<FrontHistoryEntry> _frontHistory = const [];
   List<BackgroundJobSummary> _backgroundJobs = const [];
   List<NamedFront> _namedFronts = const [];
+  List<String> _currentFrontMemberIds = const [];
   final Map<String, List<String>> _namedFrontMembers = {};
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
+  late final StreamController<List<MemberSummary>>
+  _currentFrontMembersController;
   late final StreamController<List<GroupSummary>> _groupsController;
   late final StreamController<List<NoteSummary>> _notesController;
   late final StreamController<List<MessageSummary>> _messagesController;
@@ -1401,6 +1415,11 @@ class FakeHavenRepository implements HavenRepository {
             member,
       ]);
     });
+  }
+
+  @override
+  Stream<List<MemberSummary>> watchCurrentFrontMembers() {
+    return _currentFrontMembersController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -1660,6 +1679,8 @@ class FakeHavenRepository implements HavenRepository {
           .map((member) => member.displayName)
           .join(', '),
     );
+    _currentFrontMemberIds = [for (final member in selected) member.id];
+    _emitCurrentFrontMembers();
     _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
   }
 
@@ -1944,6 +1965,8 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setCustomFront(String label) async {
+    _currentFrontMemberIds = const [];
+    _emitCurrentFrontMembers();
     _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
       currentFrontLabel: label,
@@ -1954,6 +1977,8 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> clearCurrentFront() async {
     _endOpenFrontHistory();
+    _currentFrontMemberIds = const [];
+    _emitCurrentFrontMembers();
     _emitSnapshot(clearCurrentFront: true);
   }
 
@@ -2186,6 +2211,19 @@ class FakeHavenRepository implements HavenRepository {
 
   void _emitMembers() {
     _membersController.add(_members);
+    _emitCurrentFrontMembers();
+  }
+
+  List<MemberSummary> _currentFrontMembers() {
+    final ids = _currentFrontMemberIds.toSet();
+    return [
+      for (final member in _visibleMembers)
+        if (ids.contains(member.id)) member,
+    ];
+  }
+
+  void _emitCurrentFrontMembers() {
+    _currentFrontMembersController.add(_currentFrontMembers());
   }
 
   void _addFrontHistoryEntry(String label) {
@@ -2248,6 +2286,7 @@ class FakeHavenRepository implements HavenRepository {
     await _controller.close();
     await _customizationController.close();
     await _membersController.close();
+    await _currentFrontMembersController.close();
     await _groupsController.close();
     await _notesController.close();
     await _messagesController.close();

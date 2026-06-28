@@ -239,6 +239,43 @@ class CurrentFrontEntry extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+                StreamBuilder<List<MemberSummary>>(
+                  stream: repository.watchCurrentFrontMembers(),
+                  initialData: const [],
+                  builder: (context, snapshot) {
+                    final members = snapshot.data ?? const <MemberSummary>[];
+                    if (members.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          for (final member in members.take(4))
+                            Tooltip(
+                              message: member.displayName,
+                              child: Semantics(
+                                container: true,
+                                excludeSemantics: true,
+                                label:
+                                    '${member.displayName} is currently fronting',
+                                child: MemberAvatar(
+                                  member: member,
+                                  color: _colorFromHex(member.colorHex),
+                                  label: _initialFor(member.displayName),
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          if (members.length > 4)
+                            StatusPill(text: '+${members.length - 4}'),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
