@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-class FrontHistoryPage extends StatelessWidget {
+class FrontHistoryPage extends StatefulWidget {
   const FrontHistoryPage({
     super.key,
     required this.snapshot,
@@ -11,18 +11,48 @@ class FrontHistoryPage extends StatelessWidget {
   final HavenRepository repository;
 
   @override
+  State<FrontHistoryPage> createState() => _FrontHistoryPageState();
+}
+
+class _FrontHistoryPageState extends State<FrontHistoryPage> {
+  final _searchController = TextEditingController();
+  String _filter = 'All';
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<FrontHistoryEntry>>(
-      stream: repository.watchFrontHistory(),
+      stream: widget.repository.watchFrontHistory(),
       initialData: const [],
       builder: (context, historySnapshot) {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
+        final filteredEntries = entries.where(_matchesEntry).toList();
 
         return SpPage(
           children: [
-            CurrentFrontEntry(snapshot: snapshot, repository: repository),
+            CurrentFrontEntry(
+              snapshot: widget.snapshot,
+              repository: widget.repository,
+            ),
             const SizedBox(height: 12),
-            const SpFilterRow(filters: ['Today', 'Week', 'Month', 'All']),
+            SpSearchField(
+              key: const ValueKey('front-history-search-field'),
+              hintText: 'Search front history',
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            const SizedBox(height: 12),
+            SpFilterRow(
+              filters: const ['All', 'Today', 'Week', 'Month'],
+              selected: _filter,
+              onSelected: (value) => setState(() => _filter = value),
+            ),
             const SizedBox(height: 12),
             SpCard(
               child: Column(
@@ -31,7 +61,7 @@ class FrontHistoryPage extends StatelessWidget {
                   SpSectionHeader(
                     title: 'Front history',
                     trailing: StatusPill(
-                      text: '${snapshot?.frontHistoryCount ?? 0} entries',
+                      text: '${filteredEntries.length}/${entries.length}',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -40,24 +70,39 @@ class FrontHistoryPage extends StatelessWidget {
                       title: 'No front history yet',
                       body: 'Set a front or import an archive to fill this in.',
                     )
+                  else if (filteredEntries.isEmpty)
+                    const SpEmptyState(
+                      title: 'No matching fronts',
+                      body: 'Try a wider date range or a shorter search.',
+                    )
                   else
-                    for (final entry in entries) ...[
-                      FrontHistoryTile(entry: entry, repository: repository),
-                      if (entry != entries.last)
+                    for (final entry in filteredEntries) ...[
+                      FrontHistoryTile(
+                        entry: entry,
+                        repository: widget.repository,
+                      ),
+                      if (entry != filteredEntries.last)
                         const Divider(height: 1, color: _spLine),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
                     primary: 'Add entry',
-                    secondary: 'Filter',
+                    secondary: 'Reset',
                     onPrimary: () => showModalBottomSheet<void>(
                       context: context,
                       isScrollControlled: true,
                       showDragHandle: true,
                       backgroundColor: _spSurface,
                       builder: (context) =>
-                          CustomFrontSheet(repository: repository),
+                          CustomFrontSheet(repository: widget.repository),
                     ),
+                    onSecondary: () {
+                      _searchController.clear();
+                      setState(() {
+                        _query = '';
+                        _filter = 'All';
+                      });
+                    },
                   ),
                 ],
               ),
@@ -66,6 +111,34 @@ class FrontHistoryPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  bool _matchesEntry(FrontHistoryEntry entry) {
+    if (!_matchesFrontDateFilter(entry)) {
+      return false;
+    }
+    return _matchesQuery(_query, [
+      entry.label,
+      entry.statusNote,
+      _frontTimingLabel(entry),
+    ]);
+  }
+
+  bool _matchesFrontDateFilter(FrontHistoryEntry entry) {
+    if (_filter == 'All') {
+      return true;
+    }
+
+    final now = DateTime.now();
+    final local = entry.startedAt.toLocal();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = switch (_filter) {
+      'Today' => today,
+      'Week' => today.subtract(const Duration(days: 7)),
+      'Month' => DateTime(now.year, now.month - 1, now.day),
+      _ => DateTime.fromMillisecondsSinceEpoch(0),
+    };
+    return !local.isBefore(start);
   }
 }
 
