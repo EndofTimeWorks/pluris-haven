@@ -576,6 +576,10 @@ abstract interface class HavenRepository {
 
   Future<void> saveGroup(GroupDraft draft);
 
+  Future<void> updateGroup(String groupId, GroupDraft draft);
+
+  Future<void> deleteGroup(String groupId);
+
   Future<void> saveCustomField(CustomFieldDraft draft);
 
   Future<void> saveNote(NoteDraft draft);
@@ -1495,6 +1499,89 @@ SELECT
             updatedAt: now,
           ),
         );
+  }
+
+  @override
+  Future<void> updateGroup(String groupId, GroupDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    final parentId = _nullIfBlank(draft.parentGroupId);
+    if (parentId == groupId ||
+        await _wouldCreateGroupCycle(groupId, parentId)) {
+      return;
+    }
+
+    await (database.update(database.systemGroups)..where(
+          (group) =>
+              group.id.equals(groupId) & group.systemId.equals(localSystemId),
+        ))
+        .write(
+          SystemGroupsCompanion(
+            parentGroupId: Value(parentId),
+            name: Value(name),
+            colorHex: Value(_nullIfBlank(draft.colorHex)),
+            description: Value(_nullIfBlank(draft.description)),
+            emoji: Value(_nullIfBlank(draft.emoji)),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  Future<bool> _wouldCreateGroupCycle(String groupId, String? parentId) async {
+    var cursor = parentId;
+    final seen = <String>{};
+    while (cursor != null && cursor.isNotEmpty) {
+      if (cursor == groupId || !seen.add(cursor)) {
+        return true;
+      }
+      final parent =
+          await (database.select(database.systemGroups)
+                ..where(
+                  (group) =>
+                      group.id.equals(cursor!) &
+                      group.systemId.equals(localSystemId),
+                )
+                ..limit(1))
+              .getSingleOrNull();
+      cursor = parent?.parentGroupId;
+    }
+    return false;
+  }
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    await database.transaction(() async {
+      await (database.update(database.systemGroups)..where(
+            (group) =>
+                group.parentGroupId.equals(groupId) &
+                group.systemId.equals(localSystemId),
+          ))
+          .write(
+            SystemGroupsCompanion(
+              parentGroupId: const Value(null),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+      await (database.update(database.members)..where(
+            (member) =>
+                member.folderId.equals(groupId) &
+                member.systemId.equals(localSystemId),
+          ))
+          .write(
+            MembersCompanion(
+              folderId: const Value(null),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+      await (database.delete(database.systemGroups)..where(
+            (group) =>
+                group.id.equals(groupId) & group.systemId.equals(localSystemId),
+          ))
+          .go();
+    });
   }
 
   @override
