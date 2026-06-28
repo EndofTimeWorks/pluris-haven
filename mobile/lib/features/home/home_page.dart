@@ -29,6 +29,7 @@ part 'polls.dart';
 part 'reminders.dart';
 part 'notifications.dart';
 part 'useful_links.dart';
+part 'status_pages.dart';
 part 'import_export.dart';
 part 'sync.dart';
 part 'app_options.dart';
@@ -203,36 +204,11 @@ class _HomePageState extends State<HomePage> {
       case SpSection.reminders:
         return RemindersPage(repository: widget.repository);
       case SpSection.privacyBuckets:
-        return const OfflineFeaturePage(
-          title: 'Privacy buckets',
-          body:
-              'SP privacy buckets map cleanly to local sharing profiles later.',
-          rows: [
-            SpSettingsRow('Private', 'device only'),
-            SpSettingsRow('Trusted', 'not synced'),
-            SpSettingsRow('Public', 'off'),
-          ],
-        );
+        return LocalPrivacyPage(onSelect: _selectSection);
       case SpSection.tokens:
-        return const OfflineFeaturePage(
-          title: 'Tokens',
-          body: 'API tokens are hidden until account sync exists.',
-          rows: [
-            SpSettingsRow('Local token store', 'empty'),
-            SpSettingsRow('API tokens', 'disabled'),
-            SpSettingsRow('Import tokens', 'not supported'),
-          ],
-        );
+        return LocalTokensPage(onSelect: _selectSection);
       case SpSection.userReport:
-        return const OfflineFeaturePage(
-          title: 'User Report',
-          body: 'Reports can be generated from local app logs later.',
-          rows: [
-            SpSettingsRow('Diagnostics', 'off'),
-            SpSettingsRow('Export report', 'not generated'),
-            SpSettingsRow('Privacy', 'device only'),
-          ],
-        );
+        return UserReportPage(snapshot: home, onSelect: _selectSection);
       case SpSection.notificationHistory:
         return NotificationHistoryPage(repository: widget.repository);
       case SpSection.howtos:
@@ -243,16 +219,7 @@ class _HomePageState extends State<HomePage> {
           onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.accountSettings:
-        return const OfflineFeaturePage(
-          title: 'Account Settings',
-          body:
-              'There is no required cloud account. Local profile settings live here.',
-          rows: [
-            SpSettingsRow('Local profile', 'saved on device'),
-            SpSettingsRow('Security', 'device storage'),
-            SpSettingsRow('Connected accounts', 'none'),
-          ],
-        );
+        return AccountSettingsPage(snapshot: home, onSelect: _selectSection);
       case SpSection.importExport:
         return ImportExportPage(repository: widget.repository);
       case SpSection.sync:
