@@ -610,6 +610,8 @@ abstract interface class HavenRepository {
 
   Future<void> saveReminder(ReminderDraft draft);
 
+  Future<void> setReminderEnabled(String reminderId, bool enabled);
+
   Future<void> deleteReminder(String reminderId);
 
   Future<void> savePoll(PollDraft draft);
@@ -1824,6 +1826,21 @@ SELECT
             enabled: Value(draft.enabled),
             createdAt: now,
             updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> setReminderEnabled(String reminderId, bool enabled) async {
+    await (database.update(database.reminders)..where(
+          (reminder) =>
+              reminder.systemId.equals(localSystemId) &
+              reminder.id.equals(reminderId),
+        ))
+        .write(
+          RemindersCompanion(
+            enabled: Value(enabled),
+            updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
   }
