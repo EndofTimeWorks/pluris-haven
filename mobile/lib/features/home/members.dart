@@ -142,7 +142,7 @@ class MemberListTile extends StatelessWidget {
         leading: MemberAvatar(
           member: member,
           color: _memberColor(member),
-          label: _initial,
+          label: _memberAvatarLabel(member),
         ),
         title: Text(
           member.displayName,
@@ -186,15 +186,17 @@ class MemberListTile extends StatelessWidget {
     );
   }
 
-  String get _initial {
-    return _initialFor(member.displayName);
-  }
-
   String get _subtitle {
     final pronouns = member.pronouns?.isNotEmpty == true
         ? member.pronouns!
         : 'no pronouns';
-    return member.archived ? '$pronouns - archived' : pronouns;
+    final privacy = member.privacy?.trim();
+    final parts = [
+      pronouns,
+      if (privacy != null && privacy.isNotEmpty) privacy,
+      if (member.archived) 'archived',
+    ];
+    return parts.join(' - ');
   }
 
   Color _memberColor(MemberSummary member) {
@@ -250,7 +252,7 @@ class MemberProfileSheet extends StatelessWidget {
                 MemberAvatar(
                   member: member,
                   color: color,
-                  label: _initialFor(member.displayName),
+                  label: _memberAvatarLabel(member),
                   size: 72,
                 ),
                 const SizedBox(width: 14),
@@ -280,6 +282,8 @@ class MemberProfileSheet extends StatelessWidget {
                           ),
                           if (member.colorHex?.trim().isNotEmpty == true)
                             StatusPill(text: member.colorHex!.toUpperCase()),
+                          if (member.emoji?.trim().isNotEmpty == true)
+                            StatusPill(text: member.emoji!.trim()),
                         ],
                       ),
                     ],
@@ -306,6 +310,21 @@ class MemberProfileSheet extends StatelessWidget {
                 SpSettingsRow(
                   'Pronouns',
                   _memberPronouns(member),
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'Birthday',
+                  _emptyLabel(member.birthday),
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'Emoji',
+                  _emptyLabel(member.emoji),
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'Privacy',
+                  _emptyLabel(member.privacy),
                   interactive: false,
                 ),
                 SpSettingsRow(
@@ -464,6 +483,18 @@ String _memberPronouns(MemberSummary member) {
   return pronouns == null || pronouns.isEmpty ? 'no pronouns' : pronouns;
 }
 
+String _emptyLabel(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? 'not set' : trimmed;
+}
+
+String _memberAvatarLabel(MemberSummary member) {
+  final emoji = member.emoji?.trim();
+  return emoji == null || emoji.isEmpty
+      ? _initialFor(member.displayName)
+      : emoji;
+}
+
 class MemberAvatar extends StatelessWidget {
   const MemberAvatar({
     super.key,
@@ -574,6 +605,9 @@ class AddMemberSheet extends StatefulWidget {
 class _AddMemberSheetState extends State<AddMemberSheet> {
   final _nameController = TextEditingController();
   final _pronounsController = TextEditingController();
+  final _birthdayController = TextEditingController();
+  final _emojiController = TextEditingController();
+  final _privacyController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _avatarController = TextEditingController();
   final _pluralKitController = TextEditingController();
@@ -595,6 +629,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
     _nameController.text = member.displayName;
     _pronounsController.text = member.pronouns ?? '';
+    _birthdayController.text = member.birthday ?? '';
+    _emojiController.text = member.emoji ?? '';
+    _privacyController.text = member.privacy ?? '';
     _descriptionController.text = member.description ?? '';
     _avatarController.text = member.avatarUrl ?? '';
     _pluralKitController.text = member.pluralKitId ?? '';
@@ -608,6 +645,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   void dispose() {
     _nameController.dispose();
     _pronounsController.dispose();
+    _birthdayController.dispose();
+    _emojiController.dispose();
+    _privacyController.dispose();
     _descriptionController.dispose();
     _avatarController.dispose();
     _pluralKitController.dispose();
@@ -646,6 +686,33 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _pronounsController,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Pronouns'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-birthday-field'),
+              controller: _birthdayController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Birthday',
+                hintText: 'YYYY-MM-DD, MM-DD, or free text',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-emoji-field'),
+              controller: _emojiController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Emoji'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('member-privacy-field'),
+              controller: _privacyController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Privacy',
+                hintText: 'private, friends, public, or bucket name',
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -752,6 +819,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       displayName: _nameController.text,
       pronouns: _pronounsController.text,
       colorHex: colorHex,
+      birthday: _birthdayController.text,
+      emoji: _emojiController.text,
+      privacy: _privacyController.text,
       description: _descriptionController.text,
       avatarUrl: _avatarController.text,
       pluralKitId: _pluralKitController.text,

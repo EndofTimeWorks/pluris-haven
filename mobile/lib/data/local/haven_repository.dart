@@ -66,6 +66,9 @@ class MemberSummary {
     required this.displayName,
     this.pronouns,
     this.colorHex,
+    this.birthday,
+    this.emoji,
+    this.privacy,
     this.description,
     this.avatarUrl,
     this.pluralKitId,
@@ -80,6 +83,9 @@ class MemberSummary {
   final String displayName;
   final String? pronouns;
   final String? colorHex;
+  final String? birthday;
+  final String? emoji;
+  final String? privacy;
   final String? description;
   final String? avatarUrl;
   final String? pluralKitId;
@@ -95,6 +101,9 @@ class MemberDraft {
     required this.displayName,
     this.pronouns,
     this.colorHex,
+    this.birthday,
+    this.emoji,
+    this.privacy,
     this.description,
     this.avatarUrl,
     this.pluralKitId,
@@ -104,6 +113,9 @@ class MemberDraft {
   final String displayName;
   final String? pronouns;
   final String? colorHex;
+  final String? birthday;
+  final String? emoji;
+  final String? privacy;
   final String? description;
   final String? avatarUrl;
   final String? pluralKitId;
@@ -826,6 +838,9 @@ class LocalHavenRepository implements HavenRepository {
             displayName: displayName ?? row.displayName,
             pronouns: row.pronouns,
             colorHex: row.colorHex,
+            birthday: row.birthday,
+            emoji: row.emoji,
+            privacy: row.privacy,
             description: row.description,
             avatarUrl: row.avatarUrl,
             pluralKitId: row.pluralKitId,
@@ -891,6 +906,9 @@ class LocalHavenRepository implements HavenRepository {
             displayName: displayName ?? row.displayName,
             pronouns: row.pronouns,
             colorHex: row.colorHex,
+            birthday: row.birthday,
+            emoji: row.emoji,
+            privacy: row.privacy,
             description: row.description,
             avatarUrl: row.avatarUrl,
             pluralKitId: row.pluralKitId,
@@ -1413,6 +1431,9 @@ SELECT
             displayNameHash: Value(nameHash),
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
+            birthday: Value(_nullIfBlank(draft.birthday)),
+            emoji: Value(_nullIfBlank(draft.emoji)),
+            privacy: Value(_nullIfBlank(draft.privacy)),
             description: Value(_nullIfBlank(draft.description)),
             avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
             pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
@@ -1457,6 +1478,9 @@ SELECT
             displayNameHash: Value(nameHash),
             pronouns: Value(_nullIfBlank(draft.pronouns)),
             colorHex: Value(_nullIfBlank(draft.colorHex)),
+            birthday: Value(_nullIfBlank(draft.birthday)),
+            emoji: Value(_nullIfBlank(draft.emoji)),
+            privacy: Value(_nullIfBlank(draft.privacy)),
             description: Value(_nullIfBlank(draft.description)),
             avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
             pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
@@ -2793,6 +2817,9 @@ SELECT
       displayName: displayName,
       pronouns: Value(_stringValue(member['pronouns'])),
       colorHex: Value(_stringValue(member['color_hex'])),
+      birthday: Value(_stringValue(member['birthday'])),
+      emoji: Value(_stringValue(member['emoji'])),
+      privacy: Value(_stringValue(member['privacy'])),
       folderId: Value(_stringValue(member['folder_id'])),
       description: Value(_stringValue(member['description'])),
       avatarUrl: Value(localAvatarUrl ?? _stringValue(member['avatar_url'])),
@@ -3590,6 +3617,9 @@ SELECT
     'display_name': member.displayName,
     'pronouns': member.pronouns,
     'color_hex': member.colorHex,
+    'birthday': member.birthday,
+    'emoji': member.emoji,
+    'privacy': member.privacy,
     'folder_id': member.folderId,
     'description': member.description,
     'avatar_url': member.avatarUrl,

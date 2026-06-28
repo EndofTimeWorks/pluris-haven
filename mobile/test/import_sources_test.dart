@@ -532,6 +532,9 @@ void main() {
       "_id": "m1",
       "name": "Iris",
       "avatarUuid": "avatar-1",
+      "birthday": "02-03",
+      "emoji": "*",
+      "privacy": "trusted",
       "info": {"field1": "20s"},
       "lastOperationTime": 1767225600000
     }
@@ -625,6 +628,9 @@ void main() {
       expect(archive.archiveJson, isNot(contains('"is_custom_front": true')));
       expect(archive.archiveJson, contains('"custom_label": "Asleep"'));
       expect(archive.archiveJson, contains('"color_hex": "#7b61ff"'));
+      expect(archive.archiveJson, contains('"birthday": "02-03"'));
+      expect(archive.archiveJson, contains('"emoji": "*"'));
+      expect(archive.archiveJson, contains('"privacy": "trusted"'));
       expect(archive.archiveJson, contains('"name": "Age"'));
       expect(archive.archiveJson, contains('"value": "20s"'));
       expect(archive.archiveJson, contains('"value": "tea"'));

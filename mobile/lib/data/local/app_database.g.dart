@@ -958,6 +958,37 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _birthdayMeta = const VerificationMeta(
+    'birthday',
+  );
+  @override
+  late final GeneratedColumn<String> birthday = GeneratedColumn<String>(
+    'birthday',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+    'emoji',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _privacyMeta = const VerificationMeta(
+    'privacy',
+  );
+  @override
+  late final GeneratedColumn<String> privacy = GeneratedColumn<String>(
+    'privacy',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _folderIdMeta = const VerificationMeta(
     'folderId',
   );
@@ -1086,6 +1117,9 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     displayNameHash,
     pronouns,
     colorHex,
+    birthday,
+    emoji,
+    privacy,
     folderId,
     description,
     avatarUrl,
@@ -1152,6 +1186,24 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
       context.handle(
         _colorHexMeta,
         colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('birthday')) {
+      context.handle(
+        _birthdayMeta,
+        birthday.isAcceptableOrUnknown(data['birthday']!, _birthdayMeta),
+      );
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+        _emojiMeta,
+        emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
+      );
+    }
+    if (data.containsKey('privacy')) {
+      context.handle(
+        _privacyMeta,
+        privacy.isAcceptableOrUnknown(data['privacy']!, _privacyMeta),
       );
     }
     if (data.containsKey('folder_id')) {
@@ -1260,6 +1312,18 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.string,
         data['${effectivePrefix}color_hex'],
       ),
+      birthday: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}birthday'],
+      ),
+      emoji: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}emoji'],
+      ),
+      privacy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privacy'],
+      ),
       folderId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}folder_id'],
@@ -1316,6 +1380,9 @@ class Member extends DataClass implements Insertable<Member> {
   final String? displayNameHash;
   final String? pronouns;
   final String? colorHex;
+  final String? birthday;
+  final String? emoji;
+  final String? privacy;
   final String? folderId;
   final String? description;
   final String? avatarUrl;
@@ -1333,6 +1400,9 @@ class Member extends DataClass implements Insertable<Member> {
     this.displayNameHash,
     this.pronouns,
     this.colorHex,
+    this.birthday,
+    this.emoji,
+    this.privacy,
     this.folderId,
     this.description,
     this.avatarUrl,
@@ -1358,6 +1428,15 @@ class Member extends DataClass implements Insertable<Member> {
     }
     if (!nullToAbsent || colorHex != null) {
       map['color_hex'] = Variable<String>(colorHex);
+    }
+    if (!nullToAbsent || birthday != null) {
+      map['birthday'] = Variable<String>(birthday);
+    }
+    if (!nullToAbsent || emoji != null) {
+      map['emoji'] = Variable<String>(emoji);
+    }
+    if (!nullToAbsent || privacy != null) {
+      map['privacy'] = Variable<String>(privacy);
     }
     if (!nullToAbsent || folderId != null) {
       map['folder_id'] = Variable<String>(folderId);
@@ -1394,6 +1473,15 @@ class Member extends DataClass implements Insertable<Member> {
       colorHex: colorHex == null && nullToAbsent
           ? const Value.absent()
           : Value(colorHex),
+      birthday: birthday == null && nullToAbsent
+          ? const Value.absent()
+          : Value(birthday),
+      emoji: emoji == null && nullToAbsent
+          ? const Value.absent()
+          : Value(emoji),
+      privacy: privacy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(privacy),
       folderId: folderId == null && nullToAbsent
           ? const Value.absent()
           : Value(folderId),
@@ -1427,6 +1515,9 @@ class Member extends DataClass implements Insertable<Member> {
       displayNameHash: serializer.fromJson<String?>(json['displayNameHash']),
       pronouns: serializer.fromJson<String?>(json['pronouns']),
       colorHex: serializer.fromJson<String?>(json['colorHex']),
+      birthday: serializer.fromJson<String?>(json['birthday']),
+      emoji: serializer.fromJson<String?>(json['emoji']),
+      privacy: serializer.fromJson<String?>(json['privacy']),
       folderId: serializer.fromJson<String?>(json['folderId']),
       description: serializer.fromJson<String?>(json['description']),
       avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),
@@ -1449,6 +1540,9 @@ class Member extends DataClass implements Insertable<Member> {
       'displayNameHash': serializer.toJson<String?>(displayNameHash),
       'pronouns': serializer.toJson<String?>(pronouns),
       'colorHex': serializer.toJson<String?>(colorHex),
+      'birthday': serializer.toJson<String?>(birthday),
+      'emoji': serializer.toJson<String?>(emoji),
+      'privacy': serializer.toJson<String?>(privacy),
       'folderId': serializer.toJson<String?>(folderId),
       'description': serializer.toJson<String?>(description),
       'avatarUrl': serializer.toJson<String?>(avatarUrl),
@@ -1469,6 +1563,9 @@ class Member extends DataClass implements Insertable<Member> {
     Value<String?> displayNameHash = const Value.absent(),
     Value<String?> pronouns = const Value.absent(),
     Value<String?> colorHex = const Value.absent(),
+    Value<String?> birthday = const Value.absent(),
+    Value<String?> emoji = const Value.absent(),
+    Value<String?> privacy = const Value.absent(),
     Value<String?> folderId = const Value.absent(),
     Value<String?> description = const Value.absent(),
     Value<String?> avatarUrl = const Value.absent(),
@@ -1488,6 +1585,9 @@ class Member extends DataClass implements Insertable<Member> {
         : this.displayNameHash,
     pronouns: pronouns.present ? pronouns.value : this.pronouns,
     colorHex: colorHex.present ? colorHex.value : this.colorHex,
+    birthday: birthday.present ? birthday.value : this.birthday,
+    emoji: emoji.present ? emoji.value : this.emoji,
+    privacy: privacy.present ? privacy.value : this.privacy,
     folderId: folderId.present ? folderId.value : this.folderId,
     description: description.present ? description.value : this.description,
     avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,
@@ -1511,6 +1611,9 @@ class Member extends DataClass implements Insertable<Member> {
           : this.displayNameHash,
       pronouns: data.pronouns.present ? data.pronouns.value : this.pronouns,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      birthday: data.birthday.present ? data.birthday.value : this.birthday,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      privacy: data.privacy.present ? data.privacy.value : this.privacy,
       folderId: data.folderId.present ? data.folderId.value : this.folderId,
       description: data.description.present
           ? data.description.value
@@ -1541,6 +1644,9 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('displayNameHash: $displayNameHash, ')
           ..write('pronouns: $pronouns, ')
           ..write('colorHex: $colorHex, ')
+          ..write('birthday: $birthday, ')
+          ..write('emoji: $emoji, ')
+          ..write('privacy: $privacy, ')
           ..write('folderId: $folderId, ')
           ..write('description: $description, ')
           ..write('avatarUrl: $avatarUrl, ')
@@ -1563,6 +1669,9 @@ class Member extends DataClass implements Insertable<Member> {
     displayNameHash,
     pronouns,
     colorHex,
+    birthday,
+    emoji,
+    privacy,
     folderId,
     description,
     avatarUrl,
@@ -1584,6 +1693,9 @@ class Member extends DataClass implements Insertable<Member> {
           other.displayNameHash == this.displayNameHash &&
           other.pronouns == this.pronouns &&
           other.colorHex == this.colorHex &&
+          other.birthday == this.birthday &&
+          other.emoji == this.emoji &&
+          other.privacy == this.privacy &&
           other.folderId == this.folderId &&
           other.description == this.description &&
           other.avatarUrl == this.avatarUrl &&
@@ -1603,6 +1715,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<String?> displayNameHash;
   final Value<String?> pronouns;
   final Value<String?> colorHex;
+  final Value<String?> birthday;
+  final Value<String?> emoji;
+  final Value<String?> privacy;
   final Value<String?> folderId;
   final Value<String?> description;
   final Value<String?> avatarUrl;
@@ -1621,6 +1736,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.displayNameHash = const Value.absent(),
     this.pronouns = const Value.absent(),
     this.colorHex = const Value.absent(),
+    this.birthday = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.privacy = const Value.absent(),
     this.folderId = const Value.absent(),
     this.description = const Value.absent(),
     this.avatarUrl = const Value.absent(),
@@ -1640,6 +1758,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.displayNameHash = const Value.absent(),
     this.pronouns = const Value.absent(),
     this.colorHex = const Value.absent(),
+    this.birthday = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.privacy = const Value.absent(),
     this.folderId = const Value.absent(),
     this.description = const Value.absent(),
     this.avatarUrl = const Value.absent(),
@@ -1663,6 +1784,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<String>? displayNameHash,
     Expression<String>? pronouns,
     Expression<String>? colorHex,
+    Expression<String>? birthday,
+    Expression<String>? emoji,
+    Expression<String>? privacy,
     Expression<String>? folderId,
     Expression<String>? description,
     Expression<String>? avatarUrl,
@@ -1682,6 +1806,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (displayNameHash != null) 'display_name_hash': displayNameHash,
       if (pronouns != null) 'pronouns': pronouns,
       if (colorHex != null) 'color_hex': colorHex,
+      if (birthday != null) 'birthday': birthday,
+      if (emoji != null) 'emoji': emoji,
+      if (privacy != null) 'privacy': privacy,
       if (folderId != null) 'folder_id': folderId,
       if (description != null) 'description': description,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
@@ -1703,6 +1830,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<String?>? displayNameHash,
     Value<String?>? pronouns,
     Value<String?>? colorHex,
+    Value<String?>? birthday,
+    Value<String?>? emoji,
+    Value<String?>? privacy,
     Value<String?>? folderId,
     Value<String?>? description,
     Value<String?>? avatarUrl,
@@ -1722,6 +1852,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
       displayNameHash: displayNameHash ?? this.displayNameHash,
       pronouns: pronouns ?? this.pronouns,
       colorHex: colorHex ?? this.colorHex,
+      birthday: birthday ?? this.birthday,
+      emoji: emoji ?? this.emoji,
+      privacy: privacy ?? this.privacy,
       folderId: folderId ?? this.folderId,
       description: description ?? this.description,
       avatarUrl: avatarUrl ?? this.avatarUrl,
@@ -1756,6 +1889,15 @@ class MembersCompanion extends UpdateCompanion<Member> {
     }
     if (colorHex.present) {
       map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (birthday.present) {
+      map['birthday'] = Variable<String>(birthday.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (privacy.present) {
+      map['privacy'] = Variable<String>(privacy.value);
     }
     if (folderId.present) {
       map['folder_id'] = Variable<String>(folderId.value);
@@ -1802,6 +1944,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('displayNameHash: $displayNameHash, ')
           ..write('pronouns: $pronouns, ')
           ..write('colorHex: $colorHex, ')
+          ..write('birthday: $birthday, ')
+          ..write('emoji: $emoji, ')
+          ..write('privacy: $privacy, ')
           ..write('folderId: $folderId, ')
           ..write('description: $description, ')
           ..write('avatarUrl: $avatarUrl, ')
@@ -15192,6 +15337,9 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<String?> displayNameHash,
       Value<String?> pronouns,
       Value<String?> colorHex,
+      Value<String?> birthday,
+      Value<String?> emoji,
+      Value<String?> privacy,
       Value<String?> folderId,
       Value<String?> description,
       Value<String?> avatarUrl,
@@ -15212,6 +15360,9 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<String?> displayNameHash,
       Value<String?> pronouns,
       Value<String?> colorHex,
+      Value<String?> birthday,
+      Value<String?> emoji,
+      Value<String?> privacy,
       Value<String?> folderId,
       Value<String?> description,
       Value<String?> avatarUrl,
@@ -15380,6 +15531,21 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<String> get colorHex => $composableBuilder(
     column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get birthday => $composableBuilder(
+    column: $table.birthday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get privacy => $composableBuilder(
+    column: $table.privacy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15616,6 +15782,21 @@ class $$MembersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get birthday => $composableBuilder(
+    column: $table.birthday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get privacy => $composableBuilder(
+    column: $table.privacy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get folderId => $composableBuilder(
     column: $table.folderId,
     builder: (column) => ColumnOrderings(column),
@@ -15717,6 +15898,15 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<String> get colorHex =>
       $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<String> get birthday =>
+      $composableBuilder(column: $table.birthday, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<String> get privacy =>
+      $composableBuilder(column: $table.privacy, builder: (column) => column);
 
   GeneratedColumn<String> get folderId =>
       $composableBuilder(column: $table.folderId, builder: (column) => column);
@@ -15949,6 +16139,9 @@ class $$MembersTableTableManager
                 Value<String?> displayNameHash = const Value.absent(),
                 Value<String?> pronouns = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
+                Value<String?> birthday = const Value.absent(),
+                Value<String?> emoji = const Value.absent(),
+                Value<String?> privacy = const Value.absent(),
                 Value<String?> folderId = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> avatarUrl = const Value.absent(),
@@ -15967,6 +16160,9 @@ class $$MembersTableTableManager
                 displayNameHash: displayNameHash,
                 pronouns: pronouns,
                 colorHex: colorHex,
+                birthday: birthday,
+                emoji: emoji,
+                privacy: privacy,
                 folderId: folderId,
                 description: description,
                 avatarUrl: avatarUrl,
@@ -15987,6 +16183,9 @@ class $$MembersTableTableManager
                 Value<String?> displayNameHash = const Value.absent(),
                 Value<String?> pronouns = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
+                Value<String?> birthday = const Value.absent(),
+                Value<String?> emoji = const Value.absent(),
+                Value<String?> privacy = const Value.absent(),
                 Value<String?> folderId = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> avatarUrl = const Value.absent(),
@@ -16005,6 +16204,9 @@ class $$MembersTableTableManager
                 displayNameHash: displayNameHash,
                 pronouns: pronouns,
                 colorHex: colorHex,
+                birthday: birthday,
+                emoji: emoji,
+                privacy: privacy,
                 folderId: folderId,
                 description: description,
                 avatarUrl: avatarUrl,
