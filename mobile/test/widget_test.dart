@@ -109,6 +109,9 @@ void main() {
       find.byKey(const ValueKey('custom-front-label-field')),
       'Asleep',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-custom-front-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-custom-front-button')));
     await tester.pumpAndSettle();
 
@@ -119,6 +122,37 @@ void main() {
       repository._namedFrontMembers[repository._namedFronts.single.id],
       isEmpty,
     );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('saved-front-search-field')),
+      'asle',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Asleep'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const ValueKey('saved-front-search-field')),
+      'missing',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No matching saved fronts'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('saved-front-search-field')),
+      '',
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('front-member-search-field')),
+      'riv',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('River'), findsOneWidget);
+    expect(find.text('Sage'), findsNothing);
+    await tester.enterText(
+      find.byKey(const ValueKey('front-member-search-field')),
+      '',
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('River'));
     await tester.tap(find.text('Sage'));
@@ -145,6 +179,7 @@ void main() {
       'fake-member-2',
     ]);
 
+    await tester.ensureVisible(find.text('River + Sage'));
     await tester.tap(find.text('River + Sage'));
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
