@@ -406,6 +406,48 @@ void main() {
     expect(find.text('No members saved locally'), findsOneWidget);
   });
 
+  testWidgets('opens member profile details and actions', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'River',
+        pronouns: 'they/them',
+        colorHex: '#62D6B8',
+        description: 'Protector and organizer.',
+        avatarUrl: 'local-avatar:river.png',
+        pluralKitId: 'abcde',
+      ),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('River'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Protector and organizer.'), findsOneWidget);
+    expect(find.text('they/them'), findsWidgets);
+    expect(find.text('abcde'), findsOneWidget);
+    expect(find.text('#62D6B8'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Set front'));
+    await tester.pumpAndSettle();
+
+    expect(repository._snapshot.currentFrontText, 'River');
+  });
+
   testWidgets('opens local useful links and how-to guides', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1445,6 +1487,9 @@ class FakeHavenRepository implements HavenRepository {
             pronouns: member.pronouns,
             colorHex: member.colorHex,
             description: member.description,
+            avatarUrl: member.avatarUrl,
+            pluralKitId: member.pluralKitId,
+            folderId: member.folderId,
             archived: true,
           )
         else

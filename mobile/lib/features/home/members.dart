@@ -135,49 +135,53 @@ class MemberListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: MemberAvatar(
-        member: member,
-        color: _memberColor(member),
-        label: _initial,
-      ),
-      title: Text(
-        member.displayName,
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text(_subtitle, style: const TextStyle(color: _spMuted)),
-      trailing: PopupMenuButton<String>(
-        tooltip: 'Member actions',
-        onSelected: (value) {
-          if (value == 'front') {
-            repository.setFrontMembers([member.id]);
-          } else if (value == 'edit') {
-            showMemberSheet(context, repository, member: member);
-          } else if (value == 'archive') {
-            repository.archiveMember(member.id);
-          } else if (value == 'restore') {
-            repository.restoreMember(member.id);
-          } else if (value == 'delete') {
-            confirmDelete(
-              context,
-              title: 'Delete member?',
-              body:
-                  '${member.displayName} will be permanently removed from this local system.',
-              onDelete: () => repository.deleteMember(member.id),
-            );
-          }
-        },
-        itemBuilder: (context) => [
-          if (!member.archived)
-            const PopupMenuItem(value: 'front', child: Text('Set front')),
-          const PopupMenuItem(value: 'edit', child: Text('Edit')),
-          if (member.archived)
-            const PopupMenuItem(value: 'restore', child: Text('Restore'))
-          else
-            const PopupMenuItem(value: 'archive', child: Text('Archive')),
-          const PopupMenuItem(value: 'delete', child: Text('Delete')),
-        ],
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: MemberAvatar(
+          member: member,
+          color: _memberColor(member),
+          label: _initial,
+        ),
+        title: Text(
+          member.displayName,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(_subtitle, style: const TextStyle(color: _spMuted)),
+        onTap: () => showMemberProfileSheet(context, repository, member),
+        trailing: PopupMenuButton<String>(
+          tooltip: 'Member actions',
+          onSelected: (value) {
+            if (value == 'front') {
+              repository.setFrontMembers([member.id]);
+            } else if (value == 'edit') {
+              showMemberSheet(context, repository, member: member);
+            } else if (value == 'archive') {
+              repository.archiveMember(member.id);
+            } else if (value == 'restore') {
+              repository.restoreMember(member.id);
+            } else if (value == 'delete') {
+              confirmDelete(
+                context,
+                title: 'Delete member?',
+                body:
+                    '${member.displayName} will be permanently removed from this local system.',
+                onDelete: () => repository.deleteMember(member.id),
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            if (!member.archived)
+              const PopupMenuItem(value: 'front', child: Text('Set front')),
+            const PopupMenuItem(value: 'edit', child: Text('Edit')),
+            if (member.archived)
+              const PopupMenuItem(value: 'restore', child: Text('Restore'))
+            else
+              const PopupMenuItem(value: 'archive', child: Text('Archive')),
+            const PopupMenuItem(value: 'delete', child: Text('Delete')),
+          ],
+        ),
       ),
     );
   }
@@ -198,23 +202,208 @@ class MemberListTile extends StatelessWidget {
   }
 }
 
+void showMemberProfileSheet(
+  BuildContext context,
+  HavenRepository repository,
+  MemberSummary member,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        MemberProfileSheet(repository: repository, member: member),
+  );
+}
+
+class MemberProfileSheet extends StatelessWidget {
+  const MemberProfileSheet({
+    super.key,
+    required this.repository,
+    required this.member,
+  });
+
+  final HavenRepository repository;
+  final MemberSummary member;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorFromHex(member.colorHex);
+    final description = member.description?.trim();
+    final pluralKitId = member.pluralKitId?.trim();
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MemberAvatar(
+                  member: member,
+                  color: color,
+                  label: _initialFor(member.displayName),
+                  size: 72,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.displayName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _memberPronouns(member),
+                        style: const TextStyle(color: _spMuted, fontSize: 15),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          StatusPill(
+                            text: member.archived ? 'archived' : 'active',
+                          ),
+                          if (member.colorHex?.trim().isNotEmpty == true)
+                            StatusPill(text: member.colorHex!.toUpperCase()),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (description != null && description.isNotEmpty)
+              SpCard(
+                child: Text(description, style: const TextStyle(height: 1.4)),
+              )
+            else
+              const SpCard(
+                child: Text(
+                  'No description yet.',
+                  style: TextStyle(color: _spMuted),
+                ),
+              ),
+            const SizedBox(height: 12),
+            SpSettingsGroup(
+              title: 'Profile',
+              rows: [
+                SpSettingsRow(
+                  'Pronouns',
+                  _memberPronouns(member),
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'PluralKit ID',
+                  pluralKitId == null || pluralKitId.isEmpty
+                      ? 'not linked'
+                      : pluralKitId,
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'Group',
+                  member.folderId == null ? 'none' : member.folderId!,
+                  interactive: false,
+                ),
+                SpSettingsRow(
+                  'Avatar',
+                  member.avatarUrl?.trim().isNotEmpty == true
+                      ? member.avatarUrl!
+                      : 'default',
+                  interactive: false,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (!member.archived)
+                  FilledButton.icon(
+                    onPressed: () async {
+                      await repository.setFrontMembers([member.id]);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.radio_button_checked_rounded),
+                    label: const Text('Set front'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    showMemberSheet(context, repository, member: member);
+                  },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    if (member.archived) {
+                      await repository.restoreMember(member.id);
+                    } else {
+                      await repository.archiveMember(member.id);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: Icon(
+                    member.archived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                  ),
+                  label: Text(member.archived ? 'Restore' : 'Archive'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _memberPronouns(MemberSummary member) {
+  final pronouns = member.pronouns?.trim();
+  return pronouns == null || pronouns.isEmpty ? 'no pronouns' : pronouns;
+}
+
 class MemberAvatar extends StatelessWidget {
   const MemberAvatar({
     super.key,
     required this.member,
     required this.color,
     required this.label,
+    this.size = 42,
   });
 
   final MemberSummary member;
   final Color color;
   final String label;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final avatarUrl = member.avatarUrl;
     if (avatarUrl == null || avatarUrl.trim().isEmpty) {
-      return SpAvatar(size: 42, color: color, label: label);
+      return SpAvatar(size: size, color: color, label: label);
     }
     if (avatarUrl.startsWith('local-avatar:')) {
       return FutureBuilder<File?>(
@@ -222,7 +411,7 @@ class MemberAvatar extends StatelessWidget {
         builder: (context, snapshot) {
           final file = snapshot.data;
           return SpAvatar(
-            size: 42,
+            size: size,
             color: color,
             label: label,
             image: file == null ? null : FileImage(file),
@@ -232,13 +421,13 @@ class MemberAvatar extends StatelessWidget {
     }
     if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
       return SpAvatar(
-        size: 42,
+        size: size,
         color: color,
         label: label,
         image: NetworkImage(avatarUrl),
       );
     }
-    return SpAvatar(size: 42, color: color, label: label);
+    return SpAvatar(size: size, color: color, label: label);
   }
 }
 
