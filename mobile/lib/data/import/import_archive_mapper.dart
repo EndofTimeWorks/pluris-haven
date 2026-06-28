@@ -343,10 +343,12 @@ class _ExternalArchiveNormalizer {
         'created_at': _dateString(customFront, const [
           'created_at',
           'createdAt',
+          'lastOperationTime',
         ]),
         'updated_at': _dateString(customFront, const [
           'updated_at',
           'updatedAt',
+          'lastOperationTime',
         ]),
       });
 
@@ -1178,10 +1180,18 @@ class _ExternalArchiveNormalizer {
         'started_at': normalizedTimes.start,
         'ended_at': normalizedTimes.end,
         'created_at':
-            _dateString(front, const ['created_at', 'createdAt']) ??
+            _dateString(front, const [
+              'created_at',
+              'createdAt',
+              'lastOperationTime',
+            ]) ??
             normalizedTimes.start,
         'updated_at':
-            _dateString(front, const ['updated_at', 'updatedAt']) ??
+            _dateString(front, const [
+              'updated_at',
+              'updatedAt',
+              'lastOperationTime',
+            ]) ??
             normalizedTimes.start,
       });
 
