@@ -578,6 +578,10 @@ abstract interface class HavenRepository {
 
   Future<void> setFrontMembers(List<String> memberIds);
 
+  Future<void> updateFrontStatusNote(String frontId, String? statusNote);
+
+  Future<void> deleteFrontSession(String frontId);
+
   Future<void> saveGroup(GroupDraft draft);
 
   Future<void> updateGroup(String groupId, GroupDraft draft);
@@ -1543,6 +1547,34 @@ SELECT
             ),
         ]);
       });
+    });
+  }
+
+  @override
+  Future<void> updateFrontStatusNote(String frontId, String? statusNote) {
+    return (database.update(database.frontSessions)..where(
+          (front) =>
+              front.systemId.equals(localSystemId) & front.id.equals(frontId),
+        ))
+        .write(
+          FrontSessionsCompanion(
+            statusNote: Value(_nullIfBlank(statusNote)),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteFrontSession(String frontId) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.frontSessionMembers,
+      )..where((link) => link.sessionId.equals(frontId))).go();
+      await (database.delete(database.frontSessions)..where(
+            (front) =>
+                front.systemId.equals(localSystemId) & front.id.equals(frontId),
+          ))
+          .go();
     });
   }
 
