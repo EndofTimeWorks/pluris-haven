@@ -329,6 +329,10 @@ class MemberProfileSheet extends StatelessWidget {
                 ),
               ],
             ),
+            MemberCustomFieldsSection(
+              repository: repository,
+              memberId: member.id,
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -377,6 +381,81 @@ class MemberProfileSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class MemberCustomFieldsSection extends StatelessWidget {
+  const MemberCustomFieldsSection({
+    super.key,
+    required this.repository,
+    required this.memberId,
+  });
+
+  final HavenRepository repository;
+  final String memberId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<CustomFieldSummary>>(
+      stream: repository.watchCustomFields(),
+      initialData: const [],
+      builder: (context, fieldsSnapshot) {
+        final fields = fieldsSnapshot.data ?? const <CustomFieldSummary>[];
+        final fieldsById = {for (final field in fields) field.id: field};
+        return StreamBuilder<List<CustomFieldValueSummary>>(
+          stream: repository.watchCustomFieldValues(),
+          initialData: const [],
+          builder: (context, valuesSnapshot) {
+            final values =
+                (valuesSnapshot.data ?? const <CustomFieldValueSummary>[])
+                    .where((value) => value.memberId == memberId)
+                    .toList(growable: false)
+                  ..sort((a, b) {
+                    final left = fieldsById[a.fieldId]?.position ?? 999999;
+                    final right = fieldsById[b.fieldId]?.position ?? 999999;
+                    if (left != right) {
+                      return left.compareTo(right);
+                    }
+                    final leftName = fieldsById[a.fieldId]?.name ?? a.fieldId;
+                    final rightName = fieldsById[b.fieldId]?.name ?? b.fieldId;
+                    return leftName.toLowerCase().compareTo(
+                      rightName.toLowerCase(),
+                    );
+                  });
+
+            if (values.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: SpSettingsGroup(
+                title: 'Data',
+                rows: [
+                  for (final value in values)
+                    SpSettingsRow(
+                      fieldsById[value.fieldId]?.name ?? 'Unknown field',
+                      value.value.trim().isEmpty ? 'empty' : value.value,
+                      trailing: _customFieldPrivacyPill(
+                        fieldsById[value.fieldId],
+                      ),
+                      interactive: false,
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _customFieldPrivacyPill(CustomFieldSummary? field) {
+    final privacy = field?.privacy?.trim();
+    if (privacy == null || privacy.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return StatusPill(text: privacy);
   }
 }
 
