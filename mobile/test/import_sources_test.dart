@@ -470,6 +470,55 @@ void main() {
     );
   });
 
+  test('imports Simply Plural front statuses without creating alters', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-front-statuses.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris"}
+  ],
+  "frontStatuses": [
+    {
+      "_id": "status-safe",
+      "name": "01: SAFE: Safe",
+      "color": "#0299b8",
+      "desc": "body feels ok",
+      "lastOperationTime": 1737432000000
+    }
+  ],
+  "frontHistory": [
+    {
+      "_id": "front-status-row",
+      "custom": true,
+      "member": "status-safe",
+      "startTime": 1737432000000,
+      "endTime": 1737435600000,
+      "lastOperationTime": 1737435600000
+    }
+  ]
+}
+''',
+    );
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['named_fronts'], 1);
+    expect(archive.counts['named_front_members'], 0);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 0);
+    expect(archive.archiveJson, contains('"display_name": "Iris"'));
+    expect(archive.archiveJson, isNot(contains('"display_name": "01: SAFE')));
+    expect(archive.archiveJson, contains('"custom_label": "01: SAFE: Safe"'));
+    expect(archive.archiveJson, contains('"label": "01: SAFE: Safe"'));
+    expect(archive.archiveJson, contains('"color_hex": "#0299b8"'));
+    expect(
+      archive.archiveJson,
+      contains('"updated_at": "2025-01-21T05:00:00.000Z"'),
+    );
+  });
+
   test(
     'normalizes richer Simply Plural export collections without data loss',
     () {
