@@ -520,6 +520,8 @@ abstract interface class HavenRepository {
     bool includeCustomFronts = false,
   });
 
+  Stream<List<MemberSummary>> watchCurrentFrontMembers();
+
   Stream<List<GroupSummary>> watchGroups();
 
   Stream<List<NoteSummary>> watchNotes();
@@ -811,6 +813,71 @@ class LocalHavenRepository implements HavenRepository {
     return query.watch().asyncMap((rows) async {
       final summaries = <MemberSummary>[];
       for (final row in rows) {
+        final displayName = await _decrypt(row.displayName);
+        summaries.add(
+          MemberSummary(
+            id: row.id,
+            displayName: displayName ?? row.displayName,
+            pronouns: row.pronouns,
+            colorHex: row.colorHex,
+            description: row.description,
+            avatarUrl: row.avatarUrl,
+            pluralKitId: row.pluralKitId,
+            archived: row.archived,
+            isCustomFront: row.isCustomFront,
+            frameShape: row.frameShape,
+            lexoRank: row.lexoRank,
+            folderId: row.folderId,
+          ),
+        );
+      }
+      return summaries;
+    });
+  }
+
+  @override
+  Stream<List<MemberSummary>> watchCurrentFrontMembers() {
+    final query = database.select(database.frontSessions)
+      ..where(
+        (front) =>
+            front.systemId.equals(localSystemId) & front.endedAt.isNull(),
+      )
+      ..orderBy([
+        (front) =>
+            OrderingTerm(expression: front.startedAt, mode: OrderingMode.desc),
+      ])
+      ..limit(1);
+
+    return query.watch().asyncMap((sessions) async {
+      if (sessions.isEmpty) {
+        return const <MemberSummary>[];
+      }
+
+      final links = await (database.select(
+        database.frontSessionMembers,
+      )..where((link) => link.sessionId.equals(sessions.first.id))).get();
+      if (links.isEmpty) {
+        return const <MemberSummary>[];
+      }
+
+      final memberIds = links.map((link) => link.memberId).toSet().toList();
+      final members =
+          await (database.select(database.members)..where(
+                (member) =>
+                    member.systemId.equals(localSystemId) &
+                    member.archived.equals(false) &
+                    member.isCustomFront.equals(false) &
+                    member.id.isIn(memberIds),
+              ))
+              .get();
+      final byId = {for (final member in members) member.id: member};
+
+      final summaries = <MemberSummary>[];
+      for (final link in links) {
+        final row = byId[link.memberId];
+        if (row == null) {
+          continue;
+        }
         final displayName = await _decrypt(row.displayName);
         summaries.add(
           MemberSummary(
