@@ -778,6 +778,38 @@ void main() {
 
     expect(find.text('Favorite drink'), findsOneWidget);
     expect(find.text('select - 0 values - private'), findsOneWidget);
+
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    final field = repository._customFields.single;
+    repository._customFields = [
+      CustomFieldSummary(
+        id: field.id,
+        name: field.name,
+        fieldType: field.fieldType,
+        privacy: field.privacy,
+        position: field.position,
+        valueCount: 1,
+      ),
+    ];
+    repository._customFieldValues = [
+      CustomFieldValueSummary(
+        id: 'fake-custom-field-value-1',
+        fieldId: field.id,
+        memberId: repository._members.single.id,
+        value: 'coffee',
+      ),
+    ];
+    repository._customFieldsController.add(repository._customFields);
+    repository._customFieldValuesController.add(repository._customFieldValues);
+    await tester.pumpAndSettle();
+
+    expect(find.text('select - 1 values - private'), findsOneWidget);
+
+    await tester.tap(find.text('Favorite drink'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iris'), findsOneWidget);
+    expect(find.text('coffee'), findsOneWidget);
   });
 
   testWidgets('adds a local note from the notes section', (tester) async {
@@ -1431,7 +1463,7 @@ class FakeHavenRepository implements HavenRepository {
   List<MessageSummary> _messages = const [];
   List<ReminderSummary> _reminders = const [];
   List<CustomFieldSummary> _customFields = const [];
-  final List<CustomFieldValueSummary> _customFieldValues = const [];
+  List<CustomFieldValueSummary> _customFieldValues = const [];
   List<PollSummary> _polls = const [];
   List<NotificationEventSummary> _notificationEvents = const [];
   List<FrontHistoryEntry> _frontHistory = const [];
