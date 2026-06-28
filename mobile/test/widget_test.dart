@@ -1011,6 +1011,19 @@ void main() {
     expect(find.text('Medication'), findsOneWidget);
     expect(find.text('Weekly on Friday at 08:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
+    expect(find.text('on'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(repository._reminders.single.enabled, isFalse);
+    expect(find.text('off'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(repository._reminders.single.enabled, isTrue);
+    expect(find.text('on'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Delete reminder'));
     await tester.pumpAndSettle();
@@ -2044,6 +2057,25 @@ class FakeHavenRepository implements HavenRepository {
         updatedAt: DateTime(2026),
       ),
       ..._reminders,
+    ];
+    _remindersController.add(_reminders);
+  }
+
+  @override
+  Future<void> setReminderEnabled(String reminderId, bool enabled) async {
+    _reminders = [
+      for (final reminder in _reminders)
+        if (reminder.id == reminderId)
+          ReminderSummary(
+            id: reminder.id,
+            title: reminder.title,
+            body: reminder.body,
+            scheduleText: reminder.scheduleText,
+            enabled: enabled,
+            updatedAt: DateTime(2026),
+          )
+        else
+          reminder,
     ];
     _remindersController.add(_reminders);
   }

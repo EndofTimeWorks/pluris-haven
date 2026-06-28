@@ -100,6 +100,11 @@ class ReminderTile extends StatelessWidget {
           Column(
             children: [
               StatusPill(text: reminder.enabled ? 'on' : 'off'),
+              Switch(
+                value: reminder.enabled,
+                onChanged: (enabled) =>
+                    repository.setReminderEnabled(reminder.id, enabled),
+              ),
               IconButton(
                 tooltip: 'Delete reminder',
                 onPressed: () => confirmDelete(

@@ -213,6 +213,10 @@ void main() {
     expect(messages.single.body, 'Remember to check in.');
     expect(reminders.single.title, 'Medication');
     expect(reminders.single.scheduleText, 'Daily');
+    expect(reminders.single.enabled, isTrue);
+    await repository.setReminderEnabled(reminders.single.id, false);
+    final disabledReminders = await repository.watchReminders().first;
+    expect(disabledReminders.single.enabled, isFalse);
     expect(events.single.kind, 'front');
     expect(events.single.title, 'Front changed');
   });
