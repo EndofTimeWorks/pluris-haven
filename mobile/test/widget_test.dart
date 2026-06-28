@@ -812,6 +812,54 @@ void main() {
     expect(find.text('coffee'), findsOneWidget);
   });
 
+  testWidgets('shows custom field values on member profiles', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'fake-custom-field-1',
+        name: 'Favorite drink',
+        fieldType: 'text',
+        privacy: 'private',
+        position: 0,
+        valueCount: 1,
+      ),
+    ];
+    repository._customFieldValues = [
+      CustomFieldValueSummary(
+        id: 'fake-custom-field-value-1',
+        fieldId: 'fake-custom-field-1',
+        memberId: repository._members.single.id,
+        value: 'coffee',
+      ),
+    ];
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Members');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Iris'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Data'), findsOneWidget);
+    expect(find.text('Favorite drink'), findsOneWidget);
+    expect(find.text('coffee'), findsOneWidget);
+    expect(find.text('private'), findsOneWidget);
+  });
+
   testWidgets('adds a local note from the notes section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
