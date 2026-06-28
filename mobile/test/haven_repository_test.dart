@@ -445,6 +445,7 @@ void main() {
       "_id": "f1",
       "member": "m1",
       "custom": false,
+      "customStatus": "blurry",
       "startTime": 1767225600000,
       "endTime": 1767229200000
     },
@@ -488,9 +489,22 @@ void main() {
       expect(namedFronts.map((front) => front.customLabel), contains('Asleep'));
       expect(fronts, hasLength(2));
       expect(fronts.map((front) => front.label), contains('Asleep'));
+      expect(
+        fronts.singleWhere((front) => front.label == 'Iris').statusNote,
+        'blurry',
+      );
       await repository.applyNamedFront(namedFronts.single.id);
       final home = await repository.watchHomeSnapshot().first;
       expect(home.currentFrontLabel, 'Asleep');
+      final exported =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      final exportedFronts = (exported['fronts'] as List)
+          .cast<Map<String, dynamic>>();
+      expect(
+        exportedFronts.any((front) => front['status_note'] == 'blurry'),
+        isTrue,
+      );
       expect(
         payloads.map((payload) => payload.collection),
         contains('securityLogs'),
