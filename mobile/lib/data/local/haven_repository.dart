@@ -372,12 +372,14 @@ class FrontHistoryEntry {
   const FrontHistoryEntry({
     required this.id,
     required this.label,
+    this.statusNote,
     required this.startedAt,
     this.endedAt,
   });
 
   final String id;
   final String label;
+  final String? statusNote;
   final DateTime startedAt;
   final DateTime? endedAt;
 
@@ -1149,6 +1151,7 @@ class LocalHavenRepository implements HavenRepository {
         FrontHistoryEntry(
           id: row.id,
           label: await _frontHistoryLabel(row),
+          statusNote: row.statusNote,
           startedAt: row.startedAt,
           endedAt: row.endedAt,
         ),
@@ -2944,6 +2947,7 @@ SELECT
       id: id,
       systemId: localSystemId,
       label: Value(_stringValue(front['label'])),
+      statusNote: Value(_stringValue(front['status_note'])),
       startedAt: _dateValue(front['started_at']) ?? now,
       endedAt: Value(_dateValue(front['ended_at'])),
       createdAt: _dateValue(front['created_at']) ?? now,
@@ -3648,6 +3652,7 @@ SELECT
   Map<String, Object?> _frontToJson(FrontSession front) => {
     'id': front.id,
     'label': front.label,
+    'status_note': front.statusNote,
     'started_at': front.startedAt.toIso8601String(),
     'ended_at': front.endedAt?.toIso8601String(),
     'created_at': front.createdAt.toIso8601String(),
