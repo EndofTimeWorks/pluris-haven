@@ -94,13 +94,22 @@ void main() {
     await repository.ensureLocalSystem();
 
     await repository.saveMember(
-      const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
+      const MemberDraft(
+        displayName: 'Iris',
+        pronouns: 'she/they',
+        birthday: '02-03',
+        emoji: 'I',
+        privacy: 'trusted',
+      ),
     );
 
     var members = await repository.watchMembers().first;
     expect(members, hasLength(1));
     expect(members.single.displayName, 'Iris');
     expect(members.single.pronouns, 'she/they');
+    expect(members.single.birthday, '02-03');
+    expect(members.single.emoji, 'I');
+    expect(members.single.privacy, 'trusted');
 
     var snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.memberCount, 1);
