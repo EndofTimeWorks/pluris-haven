@@ -260,6 +260,19 @@ class _ExternalArchiveNormalizer {
           'color_hex',
         ]),
       ),
+      'birthday': _firstString(member, const [
+        'birthday',
+        'birthdate',
+        'birth_date',
+        'birthDay',
+      ]),
+      'emoji': _firstString(member, const ['emoji', 'proxyTag', 'proxy_tag']),
+      'privacy': _firstString(member, const [
+        'privacy',
+        'private',
+        'privacyBucket',
+        'privacy_bucket',
+      ]),
       'folder_id': groupId,
       'description': _firstString(member, const [
         'description',
