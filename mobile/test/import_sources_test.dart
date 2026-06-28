@@ -414,6 +414,53 @@ void main() {
     );
   });
 
+  test(
+    'keeps Simply Plural front status notes separate from custom fronts',
+    () {
+      final archive = normalizeImportTextToLocalArchive(
+        source: ImportSource.simplyPlural,
+        fileName: 'sp-front-status-notes.json',
+        importedAt: DateTime.utc(2026),
+        text: '''
+{
+  "members": [{"_id": "m1", "name": "Iris"}],
+  "frontStatuses": [{"_id": "cf1", "name": "Asleep"}],
+  "frontHistory": [
+    {
+      "_id": "member-front",
+      "member": "m1",
+      "custom": false,
+      "customStatus": "blurry",
+      "startTime": 1767225600000
+    },
+    {
+      "_id": "custom-front",
+      "member": "cf1",
+      "custom": true,
+      "customStatus": "Asleep",
+      "startTime": 1767229200000
+    }
+  ]
+}
+''',
+      );
+
+      final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+      final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+      final memberFront = fronts.singleWhere(
+        (front) => front['status_note'] == 'blurry',
+      );
+      final customFront = fronts.singleWhere(
+        (front) => front['label'] == 'Asleep',
+      );
+
+      expect(memberFront['label'], isNull);
+      expect(memberFront['status_note'], 'blurry');
+      expect(customFront['label'], 'Asleep');
+      expect(customFront['status_note'], isNull);
+    },
+  );
+
   test('imports Simply Plural front statuses without creating alters', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

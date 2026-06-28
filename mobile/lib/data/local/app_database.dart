@@ -175,6 +175,7 @@ class FrontSessions extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
   TextColumn get label => text().nullable()();
+  TextColumn get statusNote => text().nullable()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get endedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -400,7 +401,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -468,6 +469,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(namedFronts, namedFronts.colorHex);
         await migrator.addColumn(namedFronts, namedFronts.avatarUrl);
         await migrator.addColumn(namedFronts, namedFronts.description);
+      }
+      if (from < 10) {
+        await migrator.addColumn(frontSessions, frontSessions.statusNote);
       }
     },
     beforeOpen: (details) async {
