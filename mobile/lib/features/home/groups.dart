@@ -80,6 +80,8 @@ class _GroupsPageState extends State<GroupsPage> {
                       GroupListTile(
                         group: displayGroups[index].group,
                         depth: displayGroups[index].depth,
+                        allGroups: groups,
+                        repository: widget.repository,
                       ),
                       if (index != displayGroups.length - 1)
                         const Divider(height: 1, color: _spLine),
@@ -146,9 +148,17 @@ List<_DisplayGroup> _orderedGroupsForDisplay(List<GroupSummary> groups) {
 }
 
 class GroupListTile extends StatelessWidget {
-  const GroupListTile({super.key, required this.group, this.depth = 0});
+  const GroupListTile({
+    super.key,
+    required this.group,
+    required this.allGroups,
+    required this.repository,
+    this.depth = 0,
+  });
 
   final GroupSummary group;
+  final List<GroupSummary> allGroups;
+  final HavenRepository repository;
   final int depth;
 
   @override
@@ -160,35 +170,61 @@ class GroupListTile extends StatelessWidget {
           : '${group.name}, nested group level $depth',
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: depth * 18.0),
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (depth > 0) ...[
-                const Icon(
-                  Icons.subdirectory_arrow_right_rounded,
-                  color: _spMuted,
-                  size: 18,
+        child: Material(
+          color: Colors.transparent,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (depth > 0) ...[
+                  const Icon(
+                    Icons.subdirectory_arrow_right_rounded,
+                    color: _spMuted,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                SpAvatar(
+                  size: 42,
+                  color: _colorFromHex(group.colorHex, fallback: _spGold),
+                  label: group.emoji?.trim().isNotEmpty == true
+                      ? group.emoji!.trim()
+                      : _initialFor(group.name),
                 ),
-                const SizedBox(width: 8),
               ],
-              SpAvatar(
-                size: 42,
-                color: _colorFromHex(group.colorHex, fallback: _spGold),
-                label: group.emoji?.trim().isNotEmpty == true
-                    ? group.emoji!.trim()
-                    : _initialFor(group.name),
-              ),
-            ],
-          ),
-          title: Text(
-            group.name,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          subtitle: Text(
-            hasDescription ? group.description!.trim() : 'no description',
-            style: const TextStyle(color: _spMuted),
+            ),
+            title: Text(
+              group.name,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(
+              hasDescription ? group.description!.trim() : 'no description',
+              style: const TextStyle(color: _spMuted),
+            ),
+            onTap: () =>
+                showEditGroupSheet(context, repository, group, allGroups),
+            trailing: PopupMenuButton<String>(
+              tooltip: 'Group actions',
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    showEditGroupSheet(context, repository, group, allGroups);
+                  case 'delete':
+                    confirmDelete(
+                      context,
+                      title: 'Delete group?',
+                      body:
+                          'Members stay saved. Child groups move up one level.',
+                      onDelete: () => repository.deleteGroup(group.id),
+                    );
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit')),
+                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+            ),
           ),
         ),
       ),
@@ -206,10 +242,36 @@ void showAddGroupSheet(BuildContext context, HavenRepository repository) {
   );
 }
 
+void showEditGroupSheet(
+  BuildContext context,
+  HavenRepository repository,
+  GroupSummary group,
+  List<GroupSummary> allGroups,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => AddGroupSheet(
+      repository: repository,
+      group: group,
+      initialGroups: allGroups,
+    ),
+  );
+}
+
 class AddGroupSheet extends StatefulWidget {
-  const AddGroupSheet({super.key, required this.repository});
+  const AddGroupSheet({
+    super.key,
+    required this.repository,
+    this.group,
+    this.initialGroups = const [],
+  });
 
   final HavenRepository repository;
+  final GroupSummary? group;
+  final List<GroupSummary> initialGroups;
 
   @override
   State<AddGroupSheet> createState() => _AddGroupSheetState();
@@ -223,6 +285,26 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     text: _hexFromAccent(HavenAccentColor.gold),
   );
   String? _colorError;
+  String? _parentGroupId;
+
+  bool get _isEditing => widget.group != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final group = widget.group;
+    if (group != null) {
+      _nameController.text = group.name;
+      _descriptionController.text = group.description ?? '';
+      _emojiController.text = group.emoji ?? '';
+      final groupColor = group.colorHex == null
+          ? null
+          : _normalizeUiHexColor(group.colorHex!);
+      _colorController.text =
+          groupColor ?? _hexFromAccent(HavenAccentColor.gold);
+      _parentGroupId = group.parentGroupId;
+    }
+  }
 
   @override
   void dispose() {
@@ -235,86 +317,120 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          0,
-          18,
-          18 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Add group',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+    return StreamBuilder<List<GroupSummary>>(
+      stream: widget.repository.watchGroups(),
+      initialData: widget.initialGroups,
+      builder: (context, snapshot) {
+        final allGroups = snapshot.data ?? widget.initialGroups;
+        final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
+        if (_parentGroupId != null &&
+            !parentOptions.any((group) => group.id == _parentGroupId)) {
+          _parentGroupId = null;
+        }
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              0,
+              18,
+              18 + MediaQuery.viewInsetsOf(context).bottom,
             ),
-            const SizedBox(height: 14),
-            TextField(
-              key: const ValueKey('group-name-field'),
-              controller: _nameController,
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('group-emoji-field'),
-              controller: _emojiController,
-              maxLength: 4,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Emoji'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _descriptionController,
-              minLines: 2,
-              maxLines: 4,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final color in HavenAccentColor.values)
-                  ChoiceChip(
-                    label: Text(color.label),
-                    selected:
-                        _normalizeUiHexColor(_colorController.text) ==
-                        _hexFromAccent(color),
-                    onSelected: (_) => setState(() {
-                      _colorController.text = _hexFromAccent(color);
-                      _colorError = null;
-                    }),
+                Text(
+                  _isEditing ? 'Edit group' : 'Add group',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                   ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  key: const ValueKey('group-name-field'),
+                  controller: _nameController,
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  key: const ValueKey('group-emoji-field'),
+                  controller: _emojiController,
+                  maxLength: 4,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'Emoji'),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String?>(
+                  key: const ValueKey('group-parent-field'),
+                  initialValue: _parentGroupId,
+                  decoration: const InputDecoration(labelText: 'Parent group'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('No parent'),
+                    ),
+                    for (final option in parentOptions)
+                      DropdownMenuItem<String?>(
+                        value: option.id,
+                        child: Text(option.name),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() => _parentGroupId = value),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _descriptionController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final color in HavenAccentColor.values)
+                      ChoiceChip(
+                        label: Text(color.label),
+                        selected:
+                            _normalizeUiHexColor(_colorController.text) ==
+                            _hexFromAccent(color),
+                        onSelected: (_) => setState(() {
+                          _colorController.text = _hexFromAccent(color);
+                          _colorError = null;
+                        }),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  key: const ValueKey('group-color-hex-field'),
+                  controller: _colorController,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    labelText: 'Color hex',
+                    hintText: '#F2C75C',
+                    errorText: _colorError,
+                  ),
+                  onChanged: (_) {
+                    if (_colorError != null) {
+                      setState(() => _colorError = null);
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  key: const ValueKey('save-group-button'),
+                  onPressed: _save,
+                  child: Text(_isEditing ? 'Save changes' : 'Save group'),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('group-color-hex-field'),
-              controller: _colorController,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: 'Color hex',
-                hintText: '#F2C75C',
-                errorText: _colorError,
-              ),
-              onChanged: (_) {
-                if (_colorError != null) {
-                  setState(() => _colorError = null);
-                }
-              },
-            ),
-            const SizedBox(height: 14),
-            FilledButton(
-              key: const ValueKey('save-group-button'),
-              onPressed: _save,
-              child: const Text('Save group'),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -325,17 +441,54 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       return;
     }
 
-    await widget.repository.saveGroup(
-      GroupDraft(
-        name: _nameController.text,
-        emoji: _emojiController.text,
-        colorHex: colorHex,
-        description: _descriptionController.text,
-      ),
+    final draft = GroupDraft(
+      name: _nameController.text,
+      parentGroupId: _parentGroupId,
+      emoji: _emojiController.text,
+      colorHex: colorHex,
+      description: _descriptionController.text,
     );
+    final group = widget.group;
+    if (group == null) {
+      await widget.repository.saveGroup(draft);
+    } else {
+      await widget.repository.updateGroup(group.id, draft);
+    }
 
     if (mounted) {
       Navigator.pop(context);
     }
   }
+}
+
+List<GroupSummary> _parentOptionsFor(
+  List<GroupSummary> groups,
+  String? currentGroupId,
+) {
+  if (currentGroupId == null) {
+    return [...groups]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  final childrenByParent = <String, List<GroupSummary>>{};
+  for (final group in groups) {
+    final parentId = group.parentGroupId;
+    if (parentId != null) {
+      childrenByParent.putIfAbsent(parentId, () => <GroupSummary>[]).add(group);
+    }
+  }
+  final blocked = <String>{currentGroupId};
+  void collectChildren(String groupId) {
+    for (final child in childrenByParent[groupId] ?? const <GroupSummary>[]) {
+      if (blocked.add(child.id)) {
+        collectChildren(child.id);
+      }
+    }
+  }
+
+  collectChildren(currentGroupId);
+  return [
+    for (final group in groups)
+      if (!blocked.contains(group.id)) group,
+  ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 }
