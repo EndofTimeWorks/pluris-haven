@@ -38,6 +38,9 @@ class Members extends Table {
   TextColumn get displayNameHash => text().nullable()();
   TextColumn get pronouns => text().nullable()();
   TextColumn get colorHex => text().nullable()();
+  TextColumn get birthday => text().nullable()();
+  TextColumn get emoji => text().nullable()();
+  TextColumn get privacy => text().nullable()();
   TextColumn get folderId => text().nullable()();
   TextColumn get description => text().nullable()();
   TextColumn get avatarUrl => text().nullable()();
@@ -401,7 +404,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -472,6 +475,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 10) {
         await migrator.addColumn(frontSessions, frontSessions.statusNote);
+      }
+      if (from < 11) {
+        await migrator.addColumn(members, members.birthday);
+        await migrator.addColumn(members, members.emoji);
+        await migrator.addColumn(members, members.privacy);
       }
     },
     beforeOpen: (details) async {

@@ -529,6 +529,9 @@ void main() {
         displayName: 'River',
         pronouns: 'they/them',
         colorHex: '#62D6B8',
+        birthday: '02-03',
+        emoji: 'R',
+        privacy: 'trusted',
         description: 'Protector and organizer.',
         avatarUrl: 'local-avatar:river.png',
         pluralKitId: 'abcde',
@@ -544,9 +547,12 @@ void main() {
 
     expect(find.text('Protector and organizer.'), findsOneWidget);
     expect(find.text('they/them'), findsWidgets);
+    expect(find.text('02-03'), findsOneWidget);
+    expect(find.text('trusted'), findsWidgets);
     expect(find.text('abcde'), findsOneWidget);
     expect(find.text('#62D6B8'), findsOneWidget);
 
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Set front'));
     await tester.tap(find.widgetWithText(FilledButton, 'Set front'));
     await tester.pumpAndSettle();
 
@@ -1716,6 +1722,9 @@ class FakeHavenRepository implements HavenRepository {
         displayName: displayName,
         pronouns: _nullIfBlank(draft.pronouns),
         colorHex: _nullIfBlank(draft.colorHex),
+        birthday: _nullIfBlank(draft.birthday),
+        emoji: _nullIfBlank(draft.emoji),
+        privacy: _nullIfBlank(draft.privacy),
         description: _nullIfBlank(draft.description),
         avatarUrl: _nullIfBlank(draft.avatarUrl),
         pluralKitId: _nullIfBlank(draft.pluralKitId),
@@ -1736,6 +1745,9 @@ class FakeHavenRepository implements HavenRepository {
             displayName: member.displayName,
             pronouns: member.pronouns,
             colorHex: member.colorHex,
+            birthday: member.birthday,
+            emoji: member.emoji,
+            privacy: member.privacy,
             description: member.description,
             avatarUrl: member.avatarUrl,
             pluralKitId: member.pluralKitId,
@@ -1764,6 +1776,9 @@ class FakeHavenRepository implements HavenRepository {
             displayName: displayName,
             pronouns: _nullIfBlank(draft.pronouns),
             colorHex: _nullIfBlank(draft.colorHex),
+            birthday: _nullIfBlank(draft.birthday),
+            emoji: _nullIfBlank(draft.emoji),
+            privacy: _nullIfBlank(draft.privacy),
             description: _nullIfBlank(draft.description),
             avatarUrl: _nullIfBlank(draft.avatarUrl),
             pluralKitId: _nullIfBlank(draft.pluralKitId),
@@ -1787,7 +1802,13 @@ class FakeHavenRepository implements HavenRepository {
             displayName: member.displayName,
             pronouns: member.pronouns,
             colorHex: member.colorHex,
+            birthday: member.birthday,
+            emoji: member.emoji,
+            privacy: member.privacy,
             description: member.description,
+            avatarUrl: member.avatarUrl,
+            pluralKitId: member.pluralKitId,
+            folderId: member.folderId,
             archived: false,
           )
         else
