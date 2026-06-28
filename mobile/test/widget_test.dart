@@ -116,6 +116,22 @@ void main() {
       'felt blurry after lunch',
     );
 
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-search-field')),
+      'lunch',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('felt blurry after lunch'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-search-field')),
+      'no match',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No matching fronts'), findsOneWidget);
+
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete entry'));
