@@ -12,13 +12,19 @@ class CustomFrontSheet extends StatefulWidget {
 class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _controller = TextEditingController();
   final _customFrontColorController = TextEditingController(text: '#F2C75C');
+  final _memberSearchController = TextEditingController();
+  final _savedFrontSearchController = TextEditingController();
   final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
+  String _memberQuery = '';
+  String _savedFrontQuery = '';
 
   @override
   void dispose() {
     _controller.dispose();
     _customFrontColorController.dispose();
+    _memberSearchController.dispose();
+    _savedFrontSearchController.dispose();
     _saveNameController.dispose();
     super.dispose();
   }
@@ -47,6 +53,21 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               initialData: const [],
               builder: (context, snapshot) {
                 final members = snapshot.data ?? const <MemberSummary>[];
+                final visibleMembers = [
+                  for (final member in members)
+                    if (_matchesQuery(_memberQuery, [
+                      member.displayName,
+                      member.pronouns,
+                      member.description,
+                      member.pluralKitId,
+                    ]))
+                      member,
+                ];
+                final selectedNames = [
+                  for (final member in members)
+                    if (_selectedMemberIds.contains(member.id))
+                      member.displayName,
+                ];
                 if (members.isEmpty) {
                   return const SpEmptyState(
                     title: 'No members yet',
@@ -57,24 +78,64 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    SpSearchField(
+                      key: const ValueKey('front-member-search-field'),
+                      hintText: 'Search members',
+                      controller: _memberSearchController,
+                      onChanged: (value) =>
+                          setState(() => _memberQuery = value),
+                    ),
+                    if (selectedNames.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Selected: ${selectedNames.join(', ')}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _spMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    if (visibleMembers.isEmpty)
+                      const SpEmptyState(
+                        title: 'No matching members',
+                        body: 'Try a different name, pronoun, or PK ID.',
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final member in visibleMembers)
+                            FilterChip(
+                              label: Text(member.displayName),
+                              selected: _selectedMemberIds.contains(member.id),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedMemberIds.add(member.id);
+                                  } else {
+                                    _selectedMemberIds.remove(member.id);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        for (final member in members)
-                          FilterChip(
-                            label: Text(member.displayName),
-                            selected: _selectedMemberIds.contains(member.id),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedMemberIds.add(member.id);
-                                } else {
-                                  _selectedMemberIds.remove(member.id);
-                                }
-                              });
-                            },
-                          ),
+                        ActionChip(
+                          avatar: const Icon(Icons.clear_all_rounded),
+                          label: const Text('Clear selection'),
+                          onPressed: _selectedMemberIds.isEmpty
+                              ? null
+                              : () => setState(_selectedMemberIds.clear),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -108,8 +169,18 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               stream: widget.repository.watchNamedFronts(),
               initialData: const [],
               builder: (context, snapshot) {
-                final namedFronts = snapshot.data ?? const <NamedFront>[];
-                if (namedFronts.isEmpty) {
+                final allNamedFronts = snapshot.data ?? const <NamedFront>[];
+                final namedFronts = [
+                  for (final front in allNamedFronts)
+                    if (_matchesQuery(_savedFrontQuery, [
+                      front.name,
+                      front.customLabel,
+                      front.description,
+                      front.colorHex,
+                    ]))
+                      front,
+                ];
+                if (allNamedFronts.isEmpty) {
                   return const SizedBox.shrink();
                 }
 
@@ -124,6 +195,19 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    SpSearchField(
+                      key: const ValueKey('saved-front-search-field'),
+                      hintText: 'Search saved fronts',
+                      controller: _savedFrontSearchController,
+                      onChanged: (value) =>
+                          setState(() => _savedFrontQuery = value),
+                    ),
+                    const SizedBox(height: 10),
+                    if (namedFronts.isEmpty)
+                      const SpEmptyState(
+                        title: 'No matching saved fronts',
+                        body: 'Try another saved front name or status.',
+                      ),
                     for (final front in namedFronts)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
