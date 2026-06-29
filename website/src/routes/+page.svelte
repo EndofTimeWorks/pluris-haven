@@ -2,143 +2,118 @@
 	<title>Pluris Haven</title>
 	<meta
 		name="description"
-		content="Offline-first app for plural systems. Import from Simply Plural, keep data local, and sync only when you choose."
+		content="Pluris Haven is a pre-alpha, offline-first app for plural systems."
 	/>
 </svelte:head>
 
 <script lang="ts">
-	const workingNow = [
-		'Android pre-alpha builds',
-		'Local members, groups, custom fronts, notes, polls, reminders, and front history',
-		'Simply Plural and PluralKit file import work in progress',
-		'Local backup and restore',
-		'Custom colors and dashboard settings'
+	const current = [
+		['Build', 'Android pre-alpha'],
+		['Storage', 'local device database'],
+		['Import', 'Simply Plural and PluralKit file work is active'],
+		['Sync', 'not on by default; server work comes later']
 	];
 
-	const roadmap = [
-		['Now', 'Fix import edge cases, SP-style fronting, avatars, and editing flows.'],
-		['Alpha', 'Finish accessibility pass, stronger import logs, and stable local backups.'],
-		['Beta', 'Web UI, optional sync, friends/trust rules, and push notifications.'],
-		['Later', 'iOS, watch apps, public API, and self-host server tooling.']
+	const works = [
+		'Members, archived members, groups, custom fronts',
+		'Front history, current front, status notes',
+		'Notes, messages, polls, reminders',
+		'Custom fields and imported custom field values',
+		'Local import/export and backup restore'
+	];
+
+	const rough = [
+		'SP-style co-fronting still needs to behave closer to independent front entries',
+		'Import details need clearer counts, skips, and per-row errors',
+		'Avatars and large archives need more testing',
+		'Accessibility needs a full TalkBack/VoiceOver pass'
 	];
 </script>
 
 <main>
-	<nav class="topbar" aria-label="Main navigation">
-		<a class="brand" href="/">
+	<header class="site-head">
+		<a class="brand" href="/" aria-label="Pluris Haven home">
 			<span class="mark" aria-hidden="true">PH</span>
 			<span>Pluris Haven</span>
 		</a>
-		<div class="navlinks">
+		<nav aria-label="Main navigation">
 			<a href="/download">Download</a>
 			<a href="/docs">Docs</a>
 			<a href="/privacy">Privacy</a>
 			<a href="/app">Web app</a>
-		</div>
-	</nav>
+		</nav>
+	</header>
 
-	<section class="hero">
-		<div class="hero-copy">
-			<p class="eyebrow">Pre-alpha / offline first</p>
-			<h1>A local-first home for plural system tools.</h1>
+	<section class="intro">
+		<div>
+			<p class="label">Pre-alpha</p>
+			<h1>Offline-first plural system app.</h1>
 			<p class="lede">
-				Track members, fronts, notes, groups, and imports without needing an account.
-				Sync and sharing will stay optional.
+				Android first. No account required for local use. Built around importing from
+				Simply Plural, keeping data on-device, and adding sync only when it is ready.
 			</p>
 			<div class="actions">
-				<a class="button primary" href="/download">Get Android build</a>
-				<a class="button" href="https://github.com/EndofTimeWorks/pluris-haven">Source</a>
+				<a class="button primary" href="/download">Download Android build</a>
+				<a class="button" href="https://github.com/EndofTimeWorks/pluris-haven">GitHub</a>
 			</div>
 		</div>
 
-		<div class="phone-preview" aria-label="App preview">
-			<div class="phone-bar">
-				<span></span>
-				<span></span>
-				<span></span>
-			</div>
-			<div class="screen-title">
-				<div>
-					<strong>Pluris Haven</strong>
-					<small>saved on device</small>
-				</div>
-				<span class="status">pre-alpha</span>
-			</div>
-			<div class="front-card">
-				<span class="accent"></span>
-				<div>
-					<small>Currently fronting</small>
-					<strong>None</strong>
-				</div>
-			</div>
-			<div class="grid">
-				<span>Members</span>
-				<span>Front history</span>
-				<span>Groups</span>
-				<span>Notes</span>
-				<span>Import / export</span>
-				<span>Sync</span>
-			</div>
-		</div>
+		<aside class="status-panel" aria-label="Current project status">
+			<h2>Current state</h2>
+			<dl>
+				{#each current as [term, detail]}
+					<div>
+						<dt>{term}</dt>
+						<dd>{detail}</dd>
+					</div>
+				{/each}
+			</dl>
+		</aside>
 	</section>
 
-	<section class="band">
+	<section class="split">
 		<div>
-			<p class="eyebrow">Current build</p>
-			<h2>Useful, but not finished.</h2>
+			<h2>Works now</h2>
+			<ul>
+				{#each works as item}
+					<li>{item}</li>
+				{/each}
+			</ul>
 		</div>
-		<ul class="check-list">
-			{#each workingNow as item}
-				<li>{item}</li>
-			{/each}
-		</ul>
+		<div>
+			<h2>Still rough</h2>
+			<ul>
+				{#each rough as item}
+					<li>{item}</li>
+				{/each}
+			</ul>
+		</div>
 	</section>
 
-	<section class="columns">
-		<article>
-			<h2>Import first</h2>
+	<section class="notes">
+		<div>
+			<h2>Why it exists</h2>
 			<p>
-				The goal is simple: bring Simply Plural data over cleanly, keep avatar files
-				local, preserve front history, and make bad imports explain themselves.
+				Pluris Haven is meant to be a practical replacement path for people who need
+				their data available without depending on someone else’s hosted app.
 			</p>
-		</article>
-		<article>
-			<h2>Private by default</h2>
-			<p>
-				No account is needed for local use. Online features should explain what leaves
-				the device before they connect.
-			</p>
-		</article>
-		<article>
-			<h2>Web UI later</h2>
-			<p>
-				The site is built in SvelteKit so it can grow into a web app without throwing
-				away the public site.
-			</p>
-		</article>
-	</section>
-
-	<section class="roadmap">
-		<div class="section-head">
-			<p class="eyebrow">Roadmap</p>
-			<h2>What happens next</h2>
 		</div>
-		<div class="timeline">
-			{#each roadmap as [label, text]}
-				<div class="step">
-					<strong>{label}</strong>
-					<p>{text}</p>
-				</div>
-			{/each}
+		<div>
+			<h2>What the site is for</h2>
+			<p>
+				This site hosts downloads, basic docs, privacy notes, and eventually the web UI.
+				The web UI will live at <a href="/app">/app</a> once the shared data model is
+				stable enough.
+			</p>
 		</div>
 	</section>
 
 	<footer>
 		<span>pluris.endoftime.works</span>
 		<div>
-			<a href="/privacy">Privacy</a>
-			<a href="/docs">Docs</a>
+			<a href="https://github.com/EndofTimeWorks/pluris-haven/releases">Releases</a>
 			<a href="https://github.com/EndofTimeWorks/pluris-haven/issues">Issues</a>
+			<a href="/privacy">Privacy</a>
 		</div>
 	</footer>
 </main>
@@ -153,90 +128,85 @@
 		background: #151820;
 		color: #f4f0ff;
 		font-family:
-			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+			ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
 			sans-serif;
 	}
 
 	:global(a) {
 		color: inherit;
-		text-decoration: none;
 	}
 
 	main {
+		width: 100%;
 		min-height: 100vh;
-		background:
-			linear-gradient(180deg, rgba(39, 42, 55, 0.96), #151820 34rem),
-			#151820;
+		padding: 0;
 	}
 
-	.topbar,
-	.hero,
-	.band,
-	.columns,
-	.roadmap,
-	footer {
-		width: min(1120px, calc(100% - 32px));
-		margin: 0 auto;
-	}
-
-	.topbar {
+	.site-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 20px;
-		padding: 22px 0;
+		gap: 18px;
+		border-bottom: 1px solid #303442;
+		padding: 24px clamp(18px, 4vw, 72px) 18px;
 	}
 
 	.brand,
-	.navlinks {
+	nav,
+	.actions,
+	footer div {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
 
 	.brand {
+		text-decoration: none;
 		font-weight: 800;
 	}
 
 	.mark {
 		display: grid;
-		width: 36px;
-		height: 36px;
+		width: 34px;
+		height: 34px;
 		place-items: center;
-		border-radius: 11px;
-		background: #6750f0;
-		font-size: 0.78rem;
-	}
-
-	.navlinks {
-		color: #d6d0e4;
-		font-size: 0.92rem;
-	}
-
-	.navlinks a {
-		padding: 8px 10px;
 		border-radius: 9px;
+		background: #6750f0;
+		font-size: 0.75rem;
 	}
 
-	.navlinks a:hover,
-	.navlinks a:focus-visible {
-		background: #303442;
+	nav {
+		flex-wrap: wrap;
+		color: #c8c2d4;
+		font-size: 0.94rem;
 	}
 
-	.hero {
+	nav a,
+	footer a {
+		text-decoration: none;
+	}
+
+	nav a:hover,
+	footer a:hover,
+	.notes a:hover {
+		text-decoration: underline;
+	}
+
+	.intro {
 		display: grid;
-		grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.75fr);
-		align-items: center;
-		gap: 54px;
-		padding: 76px 0 84px;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+		gap: clamp(24px, 5vw, 72px);
+		align-items: start;
+		padding: clamp(34px, 7vw, 90px) clamp(18px, 4vw, 72px)
+			clamp(28px, 5vw, 60px);
 	}
 
-	.eyebrow {
-		margin: 0 0 10px;
+	.label {
+		margin: 0 0 12px;
 		color: #f0ca63;
-		font-size: 0.78rem;
+		font-size: 0.8rem;
 		font-weight: 900;
-		letter-spacing: 0.14em;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
 	}
 
@@ -247,49 +217,47 @@
 	}
 
 	h1 {
-		max-width: 760px;
-		margin-bottom: 18px;
-		font-size: clamp(2.7rem, 8vw, 5.9rem);
-		line-height: 0.95;
+		margin-bottom: 14px;
+		font-size: clamp(2.7rem, 5vw, 4.8rem);
+		line-height: 1;
 		letter-spacing: 0;
 	}
 
 	h2 {
 		margin-bottom: 12px;
-		font-size: clamp(1.45rem, 3vw, 2.4rem);
-		line-height: 1.05;
+		font-size: 1.15rem;
 	}
 
 	.lede,
-	article p,
-	.step p {
+	.notes p,
+	li,
+	dd {
 		color: #c9c4d4;
-		line-height: 1.65;
+		line-height: 1.6;
 	}
 
 	.lede {
-		max-width: 620px;
+		max-width: 760px;
+		margin-bottom: 0;
 		font-size: 1.08rem;
 	}
 
 	.actions {
-		display: flex;
 		flex-wrap: wrap;
-		gap: 12px;
-		margin-top: 28px;
+		margin-top: 24px;
 	}
 
 	.button {
 		display: inline-flex;
-		min-height: 46px;
+		min-height: 43px;
 		align-items: center;
 		justify-content: center;
 		border: 1px solid #464a5c;
-		border-radius: 10px;
-		padding: 0 18px;
+		border-radius: 8px;
+		padding: 0 15px;
 		background: #242832;
-		color: #f4f0ff;
 		font-weight: 800;
+		text-decoration: none;
 	}
 
 	.button.primary {
@@ -297,207 +265,90 @@
 		background: #6750f0;
 	}
 
-	.phone-preview {
-		position: relative;
-		border: 1px solid #44485a;
-		border-radius: 34px;
-		padding: 18px;
-		background: #1e222d;
-		box-shadow: 0 34px 80px rgba(0, 0, 0, 0.34);
+	.status-panel,
+	.split > div,
+	.notes > div {
+		border: 1px solid #34394a;
+		border-radius: 8px;
+		background: #202430;
 	}
 
-	.phone-bar {
-		display: flex;
-		justify-content: space-between;
-		padding: 4px 6px 18px;
-		color: #cbc5d5;
+	.status-panel {
+		padding: 22px;
 	}
 
-	.phone-bar span {
-		width: 42px;
-		height: 6px;
-		border-radius: 99px;
-		background: #3a3f50;
-	}
-
-	.screen-title,
-	.front-card {
-		border: 1px solid #3b4052;
-		border-radius: 18px;
-		background: #272b38;
-	}
-
-	.screen-title {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 18px;
-		padding: 18px;
-	}
-
-	small {
-		display: block;
-		color: #b8b1c3;
-	}
-
-	.status {
-		border-radius: 999px;
-		padding: 6px 9px;
-		background: #3b3020;
-		color: #f0ca63;
-		font-size: 0.78rem;
-		font-weight: 900;
-	}
-
-	.front-card {
-		display: flex;
-		gap: 14px;
-		margin-top: 12px;
-		padding: 18px;
-	}
-
-	.accent {
-		width: 5px;
-		border-radius: 99px;
-		background: #8068ff;
-	}
-
-	.front-card strong {
-		display: block;
-		margin-top: 4px;
-		font-size: 1.65rem;
-	}
-
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-		margin-top: 12px;
-	}
-
-	.grid span {
-		display: grid;
-		min-height: 74px;
-		place-items: center;
-		border-radius: 16px;
-		background: #2b3040;
-		color: #e8e2f0;
-		font-weight: 800;
-		text-align: center;
-	}
-
-	.band,
-	.columns,
-	.roadmap {
-		padding: 54px 0;
-		border-top: 1px solid #303442;
-	}
-
-	.band {
-		display: grid;
-		grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
-		gap: 40px;
-	}
-
-	.check-list {
+	dl {
 		display: grid;
 		gap: 12px;
 		margin: 0;
-		padding: 0;
-		list-style: none;
 	}
 
-	.check-list li {
-		border: 1px solid #3a3f50;
-		border-radius: 12px;
-		padding: 13px 15px;
-		background: #222631;
-		color: #e5dfef;
+	dl div {
+		border-top: 1px solid #34394a;
+		padding-top: 12px;
 	}
 
-	.columns {
+	dt {
+		margin-bottom: 3px;
+		color: #f4f0ff;
+		font-weight: 800;
+	}
+
+	dd {
+		margin: 0;
+	}
+
+	.split,
+	.notes {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 16px;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+		gap: 18px;
+		border-top: 1px solid #303442;
+		padding: 28px clamp(18px, 4vw, 72px);
 	}
 
-	article {
-		border: 1px solid #3a3f50;
-		border-radius: 18px;
+	.split > div,
+	.notes > div {
 		padding: 22px;
-		background: #222631;
 	}
 
-	article h2 {
-		font-size: 1.2rem;
+	ul {
+		margin: 0;
+		padding-left: 20px;
 	}
 
-	article p,
-	.step p {
+	li + li {
+		margin-top: 7px;
+	}
+
+	.notes p {
 		margin-bottom: 0;
 	}
 
-	.section-head {
-		margin-bottom: 22px;
-	}
-
-	.timeline {
-		display: grid;
-		gap: 12px;
-	}
-
-	.step {
-		display: grid;
-		grid-template-columns: 92px minmax(0, 1fr);
-		gap: 18px;
-		border-left: 4px solid #6750f0;
-		padding: 16px 18px;
-		background: #222631;
-	}
-
-	.step strong {
-		color: #f0ca63;
+	.notes a {
+		color: #d7cdfd;
+		font-weight: 700;
 	}
 
 	footer {
 		display: flex;
 		justify-content: space-between;
-		gap: 20px;
-		padding: 34px 0 46px;
-		color: #9e97aa;
+		gap: 18px;
+		border-top: 1px solid #303442;
+		padding: 22px clamp(18px, 4vw, 72px) 40px;
+		color: #aaa4b5;
+		font-size: 0.9rem;
 	}
 
-	footer div {
-		display: flex;
-		gap: 16px;
-	}
-
-	@media (max-width: 780px) {
-		.topbar {
+	@media (max-width: 760px) {
+		.site-head,
+		footer {
 			align-items: flex-start;
 			flex-direction: column;
 		}
 
-		.navlinks {
-			flex-wrap: wrap;
-		}
-
-		.hero,
-		.band,
-		.columns {
-			grid-template-columns: 1fr;
-		}
-
-		.hero {
-			padding-top: 38px;
-		}
-
-		.phone-preview {
-			border-radius: 24px;
-		}
-
-		footer {
-			flex-direction: column;
+		.intro {
+			padding-top: 34px;
 		}
 	}
 </style>
