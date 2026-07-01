@@ -26,6 +26,28 @@
 	</section>
 
 	<section>
+		<h2>Useful docs</h2>
+		<div class="cards">
+			<a class="card" href="/download">
+				<strong>Download and build</strong>
+				<span>Install from GitHub, set up Obtainium, or build the Android APK locally.</span>
+			</a>
+			<a class="card" href="/changelog">
+				<strong>Changelog</strong>
+				<span>What changed in the current pre-alpha line and what is still rough.</span>
+			</a>
+			<a class="card" href="/privacy">
+				<strong>Privacy</strong>
+				<span>Local-first expectations, sync boundaries, and minors safety notes.</span>
+			</a>
+			<a class="card" href="/support">
+				<strong>Support</strong>
+				<span>Where to report bugs, request features, or support the project.</span>
+			</a>
+		</div>
+	</section>
+
+	<section>
 		<h2>Self-hosted site deploy</h2>
 		<p>
 			The public site is static. On a pull-only host, pull the repo, build, and serve

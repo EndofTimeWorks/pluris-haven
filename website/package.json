@@ -3,7 +3,7 @@
 	"private": true,
 	"version": "0.0.1",
 	"description": "Pluris Haven website.",
-	"repository": "https://github.com/System-End/pluris-haven",
+	"repository": "https://github.com/EndofTimeWorks/pluris-haven",
 	"license": "SEE LICENSE IN ../../LICENSE",
 	"type": "module",
 	"scripts": {
