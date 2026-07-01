@@ -1238,13 +1238,18 @@ class _ExternalArchiveNormalizer {
       'comment',
     ]);
     final custom = front['custom'];
+    final missingLabel = _missingFrontReferenceLabel(front);
     if (custom is bool) {
       if (!custom) {
-        return _customFrontLabelFromRefs(front);
+        return _customFrontLabelFromRefs(front) ?? missingLabel;
       }
-      return explicit ?? _customFrontLabelFromRefs(front) ?? 'Custom front';
+      return explicit ??
+          _customFrontLabelFromRefs(front) ??
+          missingLabel ??
+          'Custom front';
     }
     return _customFrontLabelFromRefs(front) ??
+        missingLabel ??
         _firstString(front, const [
           'label',
           'custom',
@@ -1254,6 +1259,27 @@ class _ExternalArchiveNormalizer {
           'custom_status',
           'comment',
         ]);
+  }
+
+  String? _missingFrontReferenceLabel(Map<String, Object?> front) {
+    final refs = _rawMemberRefs(front);
+    if (refs.isEmpty) {
+      return null;
+    }
+    if (refs.any(
+      (id) =>
+          _memberIdsByExternalId.containsKey(id) ||
+          _customFrontLabelsByExternalId.containsKey(id),
+    )) {
+      return null;
+    }
+    if (front['custom'] == true) {
+      return 'Deleted custom front';
+    }
+    if (front['custom'] == false) {
+      return 'Deleted member';
+    }
+    return null;
   }
 
   String? _frontStatusNote(Map<String, Object?> front) {
