@@ -39,6 +39,8 @@
 		<nav aria-label="Main navigation">
 			<a href="/download">Download</a>
 			<a href="/docs">Docs</a>
+			<a href="/changelog">Changelog</a>
+			<a href="/support">Support</a>
 			<a href="/privacy">Privacy</a>
 			<a href="/app">Web app</a>
 		</nav>
@@ -113,6 +115,7 @@
 		<div>
 			<a href="https://github.com/EndofTimeWorks/pluris-haven/releases">Releases</a>
 			<a href="https://github.com/EndofTimeWorks/pluris-haven/issues">Issues</a>
+			<a href="/terms">Terms</a>
 			<a href="/privacy">Privacy</a>
 		</div>
 	</footer>

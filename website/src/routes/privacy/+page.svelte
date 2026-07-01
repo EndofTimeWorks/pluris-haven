@@ -37,6 +37,19 @@
 			opt-in features. Local use should keep working without them.
 		</p>
 	</section>
+
+	<section>
+		<h2>Before hosted accounts</h2>
+		<p>
+			The hosted version needs a written policy for account age, consent, deletion,
+			export, abuse handling, and public sharing before signups open. Until then,
+			this page is a project commitment, not a final legal policy.
+		</p>
+		<div class="actions">
+			<a class="button" href="/terms">Read terms draft</a>
+			<a class="button" href="/support">Report a concern</a>
+		</div>
+	</section>
 </main>
 
 <style>
