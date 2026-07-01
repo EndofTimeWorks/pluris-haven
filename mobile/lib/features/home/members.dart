@@ -420,7 +420,6 @@ class MemberCustomFieldsSection extends StatelessWidget {
       initialData: const [],
       builder: (context, fieldsSnapshot) {
         final fields = fieldsSnapshot.data ?? const <CustomFieldSummary>[];
-        final fieldsById = {for (final field in fields) field.id: field};
         return StreamBuilder<List<CustomFieldValueSummary>>(
           stream: repository.watchCustomFieldValues(),
           initialData: const [],
@@ -428,21 +427,12 @@ class MemberCustomFieldsSection extends StatelessWidget {
             final values =
                 (valuesSnapshot.data ?? const <CustomFieldValueSummary>[])
                     .where((value) => value.memberId == memberId)
-                    .toList(growable: false)
-                  ..sort((a, b) {
-                    final left = fieldsById[a.fieldId]?.position ?? 999999;
-                    final right = fieldsById[b.fieldId]?.position ?? 999999;
-                    if (left != right) {
-                      return left.compareTo(right);
-                    }
-                    final leftName = fieldsById[a.fieldId]?.name ?? a.fieldId;
-                    final rightName = fieldsById[b.fieldId]?.name ?? b.fieldId;
-                    return leftName.toLowerCase().compareTo(
-                      rightName.toLowerCase(),
-                    );
-                  });
+                    .toList(growable: false);
+            final valuesByField = {
+              for (final value in values) value.fieldId: value,
+            };
 
-            if (values.isEmpty) {
+            if (fields.isEmpty) {
               return const SizedBox.shrink();
             }
 
@@ -451,14 +441,25 @@ class MemberCustomFieldsSection extends StatelessWidget {
               child: SpSettingsGroup(
                 title: 'Data',
                 rows: [
-                  for (final value in values)
-                    SpSettingsRow(
-                      fieldsById[value.fieldId]?.name ?? 'Unknown field',
-                      value.value.trim().isEmpty ? 'empty' : value.value,
-                      trailing: _customFieldPrivacyPill(
-                        fieldsById[value.fieldId],
-                      ),
-                      interactive: false,
+                  for (final field in fields)
+                    Builder(
+                      builder: (context) {
+                        final value = valuesByField[field.id];
+                        return SpSettingsRow(
+                          field.name,
+                          value == null || value.value.trim().isEmpty
+                              ? 'not set'
+                              : value.value,
+                          trailing: _customFieldPrivacyPill(field),
+                          onTap: () => showCustomFieldValueSheet(
+                            context,
+                            repository: repository,
+                            field: field,
+                            value: value,
+                            memberId: memberId,
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -475,6 +476,146 @@ class MemberCustomFieldsSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return StatusPill(text: privacy);
+  }
+}
+
+void showCustomFieldValueSheet(
+  BuildContext context, {
+  required HavenRepository repository,
+  required CustomFieldSummary field,
+  required CustomFieldValueSummary? value,
+  required String memberId,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => CustomFieldValueSheet(
+      repository: repository,
+      field: field,
+      value: value,
+      memberId: memberId,
+    ),
+  );
+}
+
+class CustomFieldValueSheet extends StatefulWidget {
+  const CustomFieldValueSheet({
+    super.key,
+    required this.repository,
+    required this.field,
+    required this.value,
+    required this.memberId,
+  });
+
+  final HavenRepository repository;
+  final CustomFieldSummary field;
+  final CustomFieldValueSummary? value;
+  final String memberId;
+
+  @override
+  State<CustomFieldValueSheet> createState() => _CustomFieldValueSheetState();
+}
+
+class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
+  late final TextEditingController _valueController;
+
+  @override
+  void initState() {
+    super.initState();
+    _valueController = TextEditingController(text: widget.value?.value ?? '');
+  }
+
+  @override
+  void dispose() {
+    _valueController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final privacy = widget.field.privacy?.trim();
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.field.name,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              [
+                widget.field.fieldType,
+                if (privacy != null && privacy.isNotEmpty) privacy,
+              ].join(' - '),
+              style: const TextStyle(color: _spMuted),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('custom-field-value-field'),
+              controller: _valueController,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 5,
+              textInputAction: TextInputAction.newline,
+              decoration: const InputDecoration(
+                labelText: 'Value',
+                hintText: 'Leave blank to clear',
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  key: const ValueKey('save-custom-field-value-button'),
+                  onPressed: _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Save value'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _clear,
+                  icon: const Icon(Icons.backspace_outlined),
+                  label: const Text('Clear'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    await widget.repository.setCustomFieldValue(
+      fieldId: widget.field.id,
+      memberId: widget.memberId,
+      value: _valueController.text,
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _clear() async {
+    await widget.repository.setCustomFieldValue(
+      fieldId: widget.field.id,
+      memberId: widget.memberId,
+      value: '',
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 

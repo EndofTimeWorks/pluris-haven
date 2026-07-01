@@ -606,6 +606,12 @@ abstract interface class HavenRepository {
 
   Future<void> deleteCustomField(String fieldId);
 
+  Future<void> setCustomFieldValue({
+    required String fieldId,
+    required String? memberId,
+    required String value,
+  });
+
   Future<void> saveNote(NoteDraft draft);
 
   Future<void> deleteNote(String noteId);
@@ -1790,6 +1796,57 @@ SELECT
           ))
           .go();
     });
+  }
+
+  @override
+  Future<void> setCustomFieldValue({
+    required String fieldId,
+    required String? memberId,
+    required String value,
+  }) async {
+    final trimmed = value.trim();
+    final ownerId = _nullIfBlank(memberId);
+    final existing =
+        await (database.select(database.customFieldValues)..where(
+              (row) =>
+                  row.fieldId.equals(fieldId) &
+                  (ownerId == null
+                      ? row.memberId.isNull()
+                      : row.memberId.equals(ownerId)),
+            ))
+            .getSingleOrNull();
+
+    if (trimmed.isEmpty) {
+      if (existing != null) {
+        await (database.delete(
+          database.customFieldValues,
+        )..where((row) => row.id.equals(existing.id))).go();
+      }
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    if (existing == null) {
+      await database
+          .into(database.customFieldValues)
+          .insert(
+            CustomFieldValuesCompanion.insert(
+              id: 'custom-field-value-${now.microsecondsSinceEpoch}',
+              fieldId: fieldId,
+              memberId: Value(ownerId),
+              value: trimmed,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      return;
+    }
+
+    await (database.update(
+      database.customFieldValues,
+    )..where((row) => row.id.equals(existing.id))).write(
+      CustomFieldValuesCompanion(value: Value(trimmed), updatedAt: Value(now)),
+    );
   }
 
   @override
