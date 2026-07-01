@@ -602,6 +602,10 @@ abstract interface class HavenRepository {
 
   Future<void> saveCustomField(CustomFieldDraft draft);
 
+  Future<void> updateCustomField(String fieldId, CustomFieldDraft draft);
+
+  Future<void> deleteCustomField(String fieldId);
+
   Future<void> saveNote(NoteDraft draft);
 
   Future<void> deleteNote(String noteId);
@@ -1748,6 +1752,44 @@ SELECT
             updatedAt: now,
           ),
         );
+  }
+
+  @override
+  Future<void> updateCustomField(String fieldId, CustomFieldDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    final fieldType = _allowedCustomFieldTypes.contains(draft.fieldType)
+        ? draft.fieldType
+        : 'text';
+    await (database.update(database.customFieldDefinitions)..where(
+          (field) =>
+              field.id.equals(fieldId) & field.systemId.equals(localSystemId),
+        ))
+        .write(
+          CustomFieldDefinitionsCompanion(
+            name: Value(name),
+            fieldType: Value(fieldType),
+            privacy: Value(_nullIfBlank(draft.privacy)),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteCustomField(String fieldId) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.customFieldValues,
+      )..where((value) => value.fieldId.equals(fieldId))).go();
+      await (database.delete(database.customFieldDefinitions)..where(
+            (field) =>
+                field.id.equals(fieldId) & field.systemId.equals(localSystemId),
+          ))
+          .go();
+    });
   }
 
   @override
