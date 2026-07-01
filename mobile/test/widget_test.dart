@@ -785,6 +785,21 @@ void main() {
     expect(find.text('Favorite drink'), findsOneWidget);
     expect(find.text('select - 0 values - private'), findsOneWidget);
 
+    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-name-field')),
+      'Comfort drink',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-custom-field-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Comfort drink'), findsOneWidget);
+    expect(find.text('Favorite drink'), findsNothing);
+
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
     final field = repository._customFields.single;
     repository._customFields = [
@@ -811,11 +826,23 @@ void main() {
 
     expect(find.text('select - 1 values - private'), findsOneWidget);
 
-    await tester.tap(find.text('Favorite drink'));
+    await tester.tap(find.text('Comfort drink'));
     await tester.pumpAndSettle();
 
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('coffee'), findsOneWidget);
+
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No custom fields yet'), findsOneWidget);
+    expect(repository._customFieldValues, isEmpty);
   });
 
   testWidgets('shows custom field values on member profiles', (tester) async {
@@ -1986,6 +2013,44 @@ class FakeHavenRepository implements HavenRepository {
       ),
     ];
     _customFieldsController.add(_customFields);
+  }
+
+  @override
+  Future<void> updateCustomField(String fieldId, CustomFieldDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    _customFields = [
+      for (final field in _customFields)
+        if (field.id == fieldId)
+          CustomFieldSummary(
+            id: field.id,
+            name: name,
+            fieldType: draft.fieldType,
+            privacy: _nullIfBlank(draft.privacy),
+            position: field.position,
+            valueCount: field.valueCount,
+          )
+        else
+          field,
+    ];
+    _customFieldsController.add(_customFields);
+  }
+
+  @override
+  Future<void> deleteCustomField(String fieldId) async {
+    _customFields = [
+      for (final field in _customFields)
+        if (field.id != fieldId) field,
+    ];
+    _customFieldValues = [
+      for (final value in _customFieldValues)
+        if (value.fieldId != fieldId) value,
+    ];
+    _customFieldsController.add(_customFields);
+    _customFieldValuesController.add(_customFieldValues);
   }
 
   @override
