@@ -566,6 +566,64 @@ void main() {
     );
   });
 
+  test('labels Simply Plural fronts that reference deleted records', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-deleted-front-refs.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris"}
+  ],
+  "frontStatuses": [
+    {"_id": "status-safe", "name": "Safe"}
+  ],
+  "frontHistory": [
+    {
+      "_id": "member-front",
+      "custom": false,
+      "member": "m1",
+      "startTime": 1767225600000
+    },
+    {
+      "_id": "status-front",
+      "custom": true,
+      "member": "status-safe",
+      "startTime": 1767229200000
+    },
+    {
+      "_id": "deleted-status-front",
+      "custom": true,
+      "member": "deleted-status",
+      "startTime": 1767232800000
+    },
+    {
+      "_id": "deleted-member-front",
+      "custom": false,
+      "member": "deleted-member",
+      "startTime": 1767236400000
+    }
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['named_fronts'], 1);
+    expect(archive.counts['fronts'], 4);
+    expect(archive.counts['front_members'], 1);
+    expect(fronts.map((front) => front['label']), contains('Safe'));
+    expect(
+      fronts.map((front) => front['label']),
+      contains('Deleted custom front'),
+    );
+    expect(fronts.map((front) => front['label']), contains('Deleted member'));
+  });
+
   test(
     'normalizes richer Simply Plural export collections without data loss',
     () {
