@@ -891,6 +891,31 @@ void main() {
     expect(find.text('Favorite drink'), findsOneWidget);
     expect(find.text('coffee'), findsOneWidget);
     expect(find.text('private'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Favorite drink'));
+    await tester.tap(find.text('Favorite drink'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-value-field')),
+      'tea',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('tea'), findsOneWidget);
+    expect(find.text('coffee'), findsNothing);
+
+    await tester.ensureVisible(find.text('Favorite drink'));
+    await tester.tap(find.text('Favorite drink'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('not set'), findsWidgets);
+    expect(find.text('tea'), findsNothing);
+    expect(repository._customFieldValues, isEmpty);
   });
 
   testWidgets('adds a local note from the notes section', (tester) async {
@@ -2048,6 +2073,68 @@ class FakeHavenRepository implements HavenRepository {
     _customFieldValues = [
       for (final value in _customFieldValues)
         if (value.fieldId != fieldId) value,
+    ];
+    _customFieldsController.add(_customFields);
+    _customFieldValuesController.add(_customFieldValues);
+  }
+
+  @override
+  Future<void> setCustomFieldValue({
+    required String fieldId,
+    required String? memberId,
+    required String value,
+  }) async {
+    final trimmed = value.trim();
+    final ownerId = _nullIfBlank(memberId);
+    final existingIndex = _customFieldValues.indexWhere(
+      (fieldValue) =>
+          fieldValue.fieldId == fieldId && fieldValue.memberId == ownerId,
+    );
+
+    if (trimmed.isEmpty) {
+      if (existingIndex != -1) {
+        _customFieldValues = [
+          for (var index = 0; index < _customFieldValues.length; index++)
+            if (index != existingIndex) _customFieldValues[index],
+        ];
+      }
+    } else if (existingIndex == -1) {
+      _customFieldValues = [
+        ..._customFieldValues,
+        CustomFieldValueSummary(
+          id: 'fake-custom-field-value-${_customFieldValues.length + 1}',
+          fieldId: fieldId,
+          memberId: ownerId,
+          value: trimmed,
+        ),
+      ];
+    } else {
+      _customFieldValues = [
+        for (var index = 0; index < _customFieldValues.length; index++)
+          if (index == existingIndex)
+            CustomFieldValueSummary(
+              id: _customFieldValues[index].id,
+              fieldId: fieldId,
+              memberId: ownerId,
+              value: trimmed,
+            )
+          else
+            _customFieldValues[index],
+      ];
+    }
+
+    _customFields = [
+      for (final field in _customFields)
+        CustomFieldSummary(
+          id: field.id,
+          name: field.name,
+          fieldType: field.fieldType,
+          privacy: field.privacy,
+          position: field.position,
+          valueCount: _customFieldValues
+              .where((value) => value.fieldId == field.id)
+              .length,
+        ),
     ];
     _customFieldsController.add(_customFields);
     _customFieldValuesController.add(_customFieldValues);
