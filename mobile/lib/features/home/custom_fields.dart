@@ -65,6 +65,7 @@ class CustomFieldsPage extends StatelessWidget {
                               index++
                             ) ...[
                               CustomFieldTile(
+                                repository: repository,
                                 field: fields[index],
                                 values: values
                                     .where(
@@ -102,11 +103,13 @@ class CustomFieldsPage extends StatelessWidget {
 class CustomFieldTile extends StatelessWidget {
   const CustomFieldTile({
     super.key,
+    required this.repository,
     required this.field,
     required this.values,
     required this.members,
   });
 
+  final HavenRepository repository;
   final CustomFieldSummary field;
   final List<CustomFieldValueSummary> values;
   final List<MemberSummary> members;
@@ -137,7 +140,26 @@ class CustomFieldTile extends StatelessWidget {
           ].join(' - '),
           style: const TextStyle(color: _spMuted),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: PopupMenuButton<String>(
+          tooltip: 'Custom field actions',
+          onSelected: (value) {
+            if (value == 'edit') {
+              showCustomFieldSheet(context, repository, field: field);
+            } else if (value == 'delete') {
+              confirmDelete(
+                context,
+                title: 'Delete custom field?',
+                body:
+                    'This removes "${field.name}" and ${field.valueCount} saved values from this device.',
+                onDelete: () => repository.deleteCustomField(field.id),
+              );
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'edit', child: Text('Edit')),
+            PopupMenuItem(value: 'delete', child: Text('Delete')),
+          ],
+        ),
       ),
     );
   }
@@ -231,19 +253,29 @@ void showCustomFieldDetailSheet(
 }
 
 void showAddCustomFieldSheet(BuildContext context, HavenRepository repository) {
+  showCustomFieldSheet(context, repository);
+}
+
+void showCustomFieldSheet(
+  BuildContext context,
+  HavenRepository repository, {
+  CustomFieldSummary? field,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) => AddCustomFieldSheet(repository: repository),
+    builder: (context) =>
+        AddCustomFieldSheet(repository: repository, field: field),
   );
 }
 
 class AddCustomFieldSheet extends StatefulWidget {
-  const AddCustomFieldSheet({super.key, required this.repository});
+  const AddCustomFieldSheet({super.key, required this.repository, this.field});
 
   final HavenRepository repository;
+  final CustomFieldSummary? field;
 
   @override
   State<AddCustomFieldSheet> createState() => _AddCustomFieldSheetState();
@@ -253,6 +285,19 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   final _nameController = TextEditingController();
   final _privacyController = TextEditingController();
   String _fieldType = 'text';
+  bool get _isEditing => widget.field != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final field = widget.field;
+    if (field == null) {
+      return;
+    }
+    _nameController.text = field.name;
+    _privacyController.text = field.privacy ?? '';
+    _fieldType = field.fieldType;
+  }
 
   @override
   void dispose() {
@@ -276,8 +321,15 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Add custom field',
+              'Custom field',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _isEditing
+                  ? 'Edit the field definition. Existing values stay attached.'
+                  : 'Create a field that can hold member or system data.',
+              style: const TextStyle(color: _spMuted, height: 1.35),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -319,8 +371,8 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
             FilledButton.icon(
               key: const ValueKey('save-custom-field-button'),
               onPressed: _save,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Save field'),
+              icon: Icon(_isEditing ? Icons.save_outlined : Icons.add_rounded),
+              label: Text(_isEditing ? 'Save field' : 'Create field'),
             ),
           ],
         ),
@@ -329,13 +381,17 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   }
 
   Future<void> _save() async {
-    await widget.repository.saveCustomField(
-      CustomFieldDraft(
-        name: _nameController.text,
-        fieldType: _fieldType,
-        privacy: _privacyController.text,
-      ),
+    final draft = CustomFieldDraft(
+      name: _nameController.text,
+      fieldType: _fieldType,
+      privacy: _privacyController.text,
     );
+    final field = widget.field;
+    if (field == null) {
+      await widget.repository.saveCustomField(draft);
+    } else {
+      await widget.repository.updateCustomField(field.id, draft);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
