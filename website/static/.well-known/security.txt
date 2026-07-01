@@ -1,0 +1,3 @@
+Contact: https://github.com/EndofTimeWorks/pluris-haven/issues
+Preferred-Languages: en
+Canonical: https://pluris.endoftime.works/.well-known/security.txt
