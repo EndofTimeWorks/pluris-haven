@@ -23,6 +23,15 @@
 			<li>Can connect to an optional sync server later.</li>
 		</ul>
 	</section>
+
+	<section>
+		<h2>Why this is empty</h2>
+		<p>
+			A fake login screen would make the project look further along than it is. The
+			first web build should open real local data, import real archives, and share
+			code with the mobile data model.
+		</p>
+	</section>
 </main>
 
 <style>
