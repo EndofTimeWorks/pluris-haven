@@ -511,24 +511,11 @@ const Object _unchanged = Object();
 const defaultDashboardShortcutIds = [
   'members',
   'front-history',
-  'analytics',
-  'chat',
-  'polls',
-  'friends',
-  'useful-links',
-  'custom-fronts',
-  'reminders',
-  'privacy-buckets',
-  'tokens',
-  'user-report',
-  'notification-history',
-  'howtos',
-  'custom-fields',
-  'account-settings',
   'groups',
   'notes',
   'import-export',
-  'sync',
+  'analytics',
+  'reminders',
   'customize',
 ];
 
@@ -659,7 +646,7 @@ abstract interface class HavenRepository {
 
   Future<void> importLocalArchiveJson(
     String archiveJson, {
-    ImportConflictStrategy strategy = ImportConflictStrategy.skip,
+    ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
   });
@@ -2590,7 +2577,7 @@ SELECT
   @override
   Future<void> importLocalArchiveJson(
     String archiveJson, {
-    ImportConflictStrategy strategy = ImportConflictStrategy.skip,
+    ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
   }) async {
