@@ -164,10 +164,16 @@ class GroupListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasDescription = group.description?.trim().isNotEmpty == true;
+    final countLabel = group.memberCount == 1
+        ? '1 member'
+        : '${group.memberCount} members';
+    final subtitle = hasDescription
+        ? '${group.description!.trim()} - $countLabel'
+        : countLabel;
     return Semantics(
       label: depth == 0
-          ? group.name
-          : '${group.name}, nested group level $depth',
+          ? '${group.name}, $countLabel'
+          : '${group.name}, nested group level $depth, $countLabel',
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: depth * 18.0),
         child: Material(
@@ -198,10 +204,7 @@ class GroupListTile extends StatelessWidget {
               group.name,
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
-            subtitle: Text(
-              hasDescription ? group.description!.trim() : 'no description',
-              style: const TextStyle(color: _spMuted),
-            ),
+            subtitle: Text(subtitle, style: const TextStyle(color: _spMuted)),
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(
