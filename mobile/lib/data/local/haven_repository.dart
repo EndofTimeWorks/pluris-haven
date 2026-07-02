@@ -1431,13 +1431,14 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final memberId = 'member-${now.microsecondsSinceEpoch}';
     final encryptedName = await _encrypt(displayName);
     final nameHash = await _blindIndex(displayName);
     await database
         .into(database.members)
         .insert(
           MembersCompanion.insert(
-            id: 'member-${now.microsecondsSinceEpoch}',
+            id: memberId,
             systemId: localSystemId,
             displayName: encryptedName ?? displayName,
             displayNameHash: Value(nameHash),
@@ -1454,6 +1455,11 @@ SELECT
             updatedAt: now,
           ),
         );
+    await _syncPrimaryGroupMembership(
+      memberId: memberId,
+      oldGroupId: null,
+      newGroupId: _nullIfBlank(draft.folderId),
+    );
   }
 
   @override
@@ -1477,6 +1483,13 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final existing =
+        await (database.select(database.members)..where(
+              (member) =>
+                  member.systemId.equals(localSystemId) &
+                  member.id.equals(memberId),
+            ))
+            .getSingleOrNull();
     final encryptedName = await _encrypt(displayName);
     final nameHash = await _blindIndex(displayName);
     await (database.update(database.members)..where(
@@ -1500,6 +1513,36 @@ SELECT
             updatedAt: Value(now),
           ),
         );
+    await _syncPrimaryGroupMembership(
+      memberId: memberId,
+      oldGroupId: existing?.folderId,
+      newGroupId: _nullIfBlank(draft.folderId),
+    );
+  }
+
+  Future<void> _syncPrimaryGroupMembership({
+    required String memberId,
+    required String? oldGroupId,
+    required String? newGroupId,
+  }) async {
+    if (oldGroupId != null && oldGroupId != newGroupId) {
+      await (database.delete(database.groupMembers)..where(
+            (link) =>
+                link.memberId.equals(memberId) &
+                link.groupId.equals(oldGroupId),
+          ))
+          .go();
+    }
+
+    if (newGroupId == null) {
+      return;
+    }
+    await database
+        .into(database.groupMembers)
+        .insert(
+          GroupMembersCompanion.insert(groupId: newGroupId, memberId: memberId),
+          mode: InsertMode.insertOrIgnore,
+        );
   }
 
   @override
@@ -1521,6 +1564,9 @@ SELECT
       await (database.delete(
         database.frontSessionMembers,
       )..where((frontMember) => frontMember.memberId.equals(memberId))).go();
+      await (database.delete(
+        database.groupMembers,
+      )..where((groupMember) => groupMember.memberId.equals(memberId))).go();
       await (database.delete(database.members)..where(
             (member) =>
                 member.systemId.equals(localSystemId) &
@@ -1714,6 +1760,9 @@ SELECT
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
+      await (database.delete(
+        database.groupMembers,
+      )..where((link) => link.groupId.equals(groupId))).go();
       await (database.delete(database.systemGroups)..where(
             (group) =>
                 group.id.equals(groupId) & group.systemId.equals(localSystemId),
@@ -2202,6 +2251,8 @@ SELECT
     final groups = await (database.select(
       database.systemGroups,
     )..where((group) => group.systemId.equals(localSystemId))).get();
+    final groupIds = groups.map((group) => group.id).toSet();
+    final groupMembers = await database.select(database.groupMembers).get();
     final notes = await (database.select(
       database.notes,
     )..where((note) => note.systemId.equals(localSystemId))).get();
@@ -2256,6 +2307,10 @@ SELECT
       'system': systems.isEmpty ? null : _systemToJson(systems.single),
       'members': [for (final member in members) _memberToJson(member)],
       'groups': [for (final group in groups) _groupToJson(group)],
+      'group_members': [
+        for (final link in groupMembers)
+          if (groupIds.contains(link.groupId)) _groupMemberToJson(link),
+      ],
       'notes': [for (final note in notes) _noteToJson(note)],
       'messages': [for (final message in messages) _messageToJson(message)],
       'reminders': [
@@ -2450,6 +2505,7 @@ SELECT
     final now = DateTime.now().toUtc();
     final members = _jsonObjectList(decoded['members']);
     final groups = _jsonObjectList(decoded['groups']);
+    final groupMembers = _jsonObjectList(decoded['group_members']);
     final notes = _jsonObjectList(decoded['notes']);
     final messages = _jsonObjectList(decoded['messages']);
     final reminders = _jsonObjectList(decoded['reminders']);
@@ -2468,6 +2524,7 @@ SELECT
     final preferences = _jsonObjectList(decoded['preferences']);
     final cleanupCount = _sanitizeArchiveReferences(
       groups: groups,
+      groupMembers: groupMembers,
       members: members,
       notes: notes,
       messages: messages,
@@ -2488,7 +2545,8 @@ SELECT
       'namedFronts=${namedFronts.length} '
       'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
-      'frontMembers=${frontMembers.length} cleanup=$cleanupCount',
+      'frontMembers=${frontMembers.length} groupMembers=${groupMembers.length} '
+      'cleanup=$cleanupCount',
     );
     final localAvatarRefs = await _localizeImportAvatars(
       members: [...members, ...namedFronts],
@@ -2517,12 +2575,18 @@ SELECT
         await _importGroup(group, strategy, now);
       }
       for (final member in members) {
-        await _importMember(
-          member,
-          strategy,
-          now,
-          localAvatarRefs[_requiredString(member, 'id')],
-        );
+        final memberId = _requiredString(member, 'id');
+        await _importMember(member, strategy, now, localAvatarRefs[memberId]);
+        final folderId = _stringValue(member['folder_id']);
+        if (folderId != null) {
+          await _importGroupMember({
+            'group_id': folderId,
+            'member_id': memberId,
+          });
+        }
+      }
+      for (final link in groupMembers) {
+        await _importGroupMember(link);
       }
       for (final note in notes) {
         await _importNote(note, strategy, now);
@@ -2585,6 +2649,7 @@ SELECT
                 jsonEncode({
                   'members': members.length,
                   'groups': groups.length,
+                  'group_members': groupMembers.length,
                   'notes': notes.length,
                   'messages': messages.length,
                   'reminders': reminders.length,
@@ -2615,6 +2680,7 @@ SELECT
 
   int _sanitizeArchiveReferences({
     required List<Map<String, Object?>> groups,
+    required List<Map<String, Object?>> groupMembers,
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> notes,
     required List<Map<String, Object?>> messages,
@@ -2666,6 +2732,20 @@ SELECT
         cleanupCount++;
       }
     }
+
+    groupMembers.removeWhere((link) {
+      final groupId = _stringValue(link['group_id']);
+      final memberId = _stringValue(link['member_id']);
+      final keep =
+          groupId != null &&
+          memberId != null &&
+          groupIds.contains(groupId) &&
+          memberIds.contains(memberId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
 
     for (final note in notes) {
       final memberId = _stringValue(note['member_id']);
@@ -2948,6 +3028,18 @@ SELECT
           : (_dateValue(member['updated_at']) ?? now),
     );
     return _insertArchiveRow(database.members, companion, strategy);
+  }
+
+  Future<void> _importGroupMember(Map<String, Object?> link) {
+    return database
+        .into(database.groupMembers)
+        .insert(
+          GroupMembersCompanion.insert(
+            groupId: _requiredString(link, 'group_id'),
+            memberId: _requiredString(link, 'member_id'),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
   }
 
   Future<void> _importNote(
@@ -3755,6 +3847,11 @@ SELECT
     'emoji': group.emoji,
     'created_at': group.createdAt.toIso8601String(),
     'updated_at': group.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _groupMemberToJson(GroupMember link) => {
+    'group_id': link.groupId,
+    'member_id': link.memberId,
   };
 
   Map<String, Object?> _noteToJson(Note note) => {
