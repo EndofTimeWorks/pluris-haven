@@ -524,6 +524,8 @@ void main() {
     );
     addTearDown(repository.close);
 
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveGroup(const GroupDraft(name: 'Subsystem A'));
     await repository.saveMember(
       const MemberDraft(
         displayName: 'River',
@@ -535,6 +537,8 @@ void main() {
         description: 'Protector and organizer.',
         avatarUrl: 'local-avatar:river.png',
         pluralKitId: 'abcde',
+        folderId: 'fake-group-1',
+        groupIds: ['fake-group-1', 'fake-group-2'],
       ),
     );
 
@@ -551,12 +555,59 @@ void main() {
     expect(find.text('trusted'), findsWidgets);
     expect(find.text('abcde'), findsOneWidget);
     expect(find.text('#62D6B8'), findsOneWidget);
+    expect(find.text('Caretakers, Subsystem A'), findsOneWidget);
 
     await tester.ensureVisible(find.widgetWithText(FilledButton, 'Set front'));
     await tester.tap(find.widgetWithText(FilledButton, 'Set front'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
+  });
+
+  testWidgets('assigns multiple groups from the member editor', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveGroup(const GroupDraft(name: 'Subsystem A'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('Add member'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Iris',
+    );
+    await tester.ensureVisible(find.widgetWithText(FilterChip, 'Caretakers'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Caretakers'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilterChip, 'Subsystem A'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Subsystem A'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._members.single.folderId, 'fake-group-1');
+    expect(repository._members.single.groupIds, [
+      'fake-group-1',
+      'fake-group-2',
+    ]);
   });
 
   testWidgets('opens local useful links and how-to guides', (tester) async {
@@ -1812,6 +1863,9 @@ class FakeHavenRepository implements HavenRepository {
       return;
     }
 
+    final groupIds = _normalizedFakeGroupIds(draft);
+    final folderId =
+        _nullIfBlank(draft.folderId) ?? _firstFakeGroupId(groupIds);
     _members = [
       ..._members,
       MemberSummary(
@@ -1825,7 +1879,8 @@ class FakeHavenRepository implements HavenRepository {
         description: _nullIfBlank(draft.description),
         avatarUrl: _nullIfBlank(draft.avatarUrl),
         pluralKitId: _nullIfBlank(draft.pluralKitId),
-        folderId: _nullIfBlank(draft.folderId),
+        folderId: folderId,
+        groupIds: groupIds.toList(growable: false),
       ),
     ];
     _emitMembers();
@@ -1850,6 +1905,7 @@ class FakeHavenRepository implements HavenRepository {
             avatarUrl: member.avatarUrl,
             pluralKitId: member.pluralKitId,
             folderId: member.folderId,
+            groupIds: member.groupIds,
             archived: true,
           )
         else
@@ -1867,6 +1923,13 @@ class FakeHavenRepository implements HavenRepository {
       return;
     }
 
+    final preserveGroups = draft.groupIds == null && draft.folderId == null;
+    final groupIds = preserveGroups
+        ? <String>{}
+        : _normalizedFakeGroupIds(draft);
+    final folderId = preserveGroups
+        ? null
+        : _nullIfBlank(draft.folderId) ?? _firstFakeGroupId(groupIds);
     _members = [
       for (final member in _members)
         if (member.id == memberId)
@@ -1881,7 +1944,10 @@ class FakeHavenRepository implements HavenRepository {
             description: _nullIfBlank(draft.description),
             avatarUrl: _nullIfBlank(draft.avatarUrl),
             pluralKitId: _nullIfBlank(draft.pluralKitId),
-            folderId: _nullIfBlank(draft.folderId),
+            folderId: preserveGroups ? member.folderId : folderId,
+            groupIds: preserveGroups
+                ? member.groupIds
+                : groupIds.toList(growable: false),
             archived: member.archived,
           )
         else
@@ -1909,6 +1975,7 @@ class FakeHavenRepository implements HavenRepository {
             avatarUrl: member.avatarUrl,
             pluralKitId: member.pluralKitId,
             folderId: member.folderId,
+            groupIds: member.groupIds,
             archived: false,
           )
         else
@@ -2644,14 +2711,35 @@ class FakeHavenRepository implements HavenRepository {
     _groupsController.add(_groupsWithCounts());
   }
 
+  Set<String> _normalizedFakeGroupIds(MemberDraft draft) {
+    final ids = <String>{};
+    for (final groupId in draft.groupIds ?? const <String>[]) {
+      final normalized = _nullIfBlank(groupId);
+      if (normalized != null) {
+        ids.add(normalized);
+      }
+    }
+    final folderId = _nullIfBlank(draft.folderId);
+    if (folderId != null) {
+      ids.add(folderId);
+    }
+    return ids;
+  }
+
+  String? _firstFakeGroupId(Set<String> groupIds) {
+    return groupIds.isEmpty ? null : groupIds.first;
+  }
+
   List<GroupSummary> _groupsWithCounts() {
     final counts = <String, int>{};
     for (final member in _members) {
-      final groupId = member.folderId;
-      if (groupId == null) {
-        continue;
+      final ids = <String>{...member.groupIds};
+      if (ids.isEmpty && member.folderId != null) {
+        ids.add(member.folderId!);
       }
-      counts[groupId] = (counts[groupId] ?? 0) + 1;
+      for (final groupId in ids) {
+        counts[groupId] = (counts[groupId] ?? 0) + 1;
+      }
     }
     return [
       for (final group in _groups)
