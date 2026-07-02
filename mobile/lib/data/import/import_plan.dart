@@ -221,7 +221,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.plurisHavenArchive => const ImportSourcePlan(
       source: ImportSource.plurisHavenArchive,
       status: ImportPlanStatus.ready,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -258,7 +258,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.simplyPlural => const ImportSourcePlan(
       source: ImportSource.simplyPlural,
       status: ImportPlanStatus.next,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -292,7 +292,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.pluralKitFile => const ImportSourcePlan(
       source: ImportSource.pluralKitFile,
       status: ImportPlanStatus.next,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -322,7 +322,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.pluralKitLive => const ImportSourcePlan(
       source: ImportSource.pluralKitLive,
       status: ImportPlanStatus.ready,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -354,7 +354,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.tupperbox => const ImportSourcePlan(
       source: ImportSource.tupperbox,
       status: ImportPlanStatus.next,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('tuppers'),
         ImportPlanCount('avatars'),
@@ -379,7 +379,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.pluralSpace => const ImportSourcePlan(
       source: ImportSource.pluralSpace,
       status: ImportPlanStatus.next,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -404,7 +404,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.openPlural => const ImportSourcePlan(
       source: ImportSource.openPlural,
       status: ImportPlanStatus.next,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
@@ -439,7 +439,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ImportSource.prism => const ImportSourcePlan(
       source: ImportSource.prism,
       status: ImportPlanStatus.planned,
-      defaultConflictStrategy: ImportConflictStrategy.skip,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
         ImportPlanCount('fronts'),
