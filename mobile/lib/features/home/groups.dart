@@ -447,8 +447,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                     'Subsystem members can overlap with the main group.',
                   ),
                   value: _isSubsystem,
-                  onChanged: (value) =>
-                      setState(() => _isSubsystem = value),
+                  onChanged: (value) => setState(() => _isSubsystem = value),
                 ),
                 const SizedBox(height: 14),
                 FilledButton(
