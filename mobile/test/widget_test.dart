@@ -800,6 +800,26 @@ void main() {
     expect(find.text('Comfort drink'), findsOneWidget);
     expect(find.text('Favorite drink'), findsNothing);
 
+    await tester.tap(find.text('Comfort drink'));
+    await tester.pumpAndSettle();
+    expect(find.text('System'), findsOneWidget);
+    expect(find.text('not set'), findsWidgets);
+
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-value-field')),
+      'shared profile data',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('select - 1 values - private'), findsOneWidget);
+
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
     final field = repository._customFields.single;
     repository._customFields = [
@@ -809,10 +829,11 @@ void main() {
         fieldType: field.fieldType,
         privacy: field.privacy,
         position: field.position,
-        valueCount: 1,
+        valueCount: 2,
       ),
     ];
     repository._customFieldValues = [
+      ...repository._customFieldValues,
       CustomFieldValueSummary(
         id: 'fake-custom-field-value-1',
         fieldId: field.id,
@@ -824,11 +845,13 @@ void main() {
     repository._customFieldValuesController.add(repository._customFieldValues);
     await tester.pumpAndSettle();
 
-    expect(find.text('select - 1 values - private'), findsOneWidget);
+    expect(find.text('select - 2 values - private'), findsOneWidget);
 
     await tester.tap(find.text('Comfort drink'));
     await tester.pumpAndSettle();
 
+    expect(find.text('System'), findsOneWidget);
+    expect(find.text('shared profile data'), findsOneWidget);
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('coffee'), findsOneWidget);
 
