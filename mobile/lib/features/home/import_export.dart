@@ -11,7 +11,7 @@ class ImportExportPage extends StatefulWidget {
 
 class _ImportExportPageState extends State<ImportExportPage> {
   ImportSource _source = ImportSource.simplyPlural;
-  ImportConflictStrategy _strategy = ImportConflictStrategy.skip;
+  ImportConflictStrategy _strategy = ImportConflictStrategy.prompt;
   String? _fileName;
   int? _fileSize;
   String? _fileText;
