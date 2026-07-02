@@ -86,6 +86,7 @@ class _ExternalArchiveNormalizer {
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
+  late final List<Map<String, Object?>> groupMembers;
   late final List<Map<String, Object?>> customFields;
   late final List<Map<String, Object?>> customFieldValues;
   late final List<Map<String, Object?>> notes;
@@ -105,6 +106,7 @@ class _ExternalArchiveNormalizer {
     groups = _normalizeGroups();
     _indexGroupMembers();
     members = _normalizeMembers();
+    groupMembers = _normalizeGroupMembers();
     customFields = _normalizeCustomFields();
     customFieldValues = _normalizeCustomFieldValues();
     notes = _normalizeNotes();
@@ -137,6 +139,7 @@ class _ExternalArchiveNormalizer {
     },
     'members': members,
     'groups': groups,
+    'group_members': groupMembers,
     'custom_fields': customFields,
     'custom_field_values': customFieldValues,
     'notes': notes,
@@ -552,6 +555,73 @@ class _ExternalArchiveNormalizer {
         }
       }
     }
+  }
+
+  List<Map<String, Object?>> _normalizeGroupMembers() {
+    final links = <Map<String, Object?>>[];
+    final seen = <String>{};
+
+    for (final groupValue in _firstList(decoded, const ['groups', 'folders'])) {
+      final group = _mapValue(groupValue);
+      if (group == null) {
+        continue;
+      }
+      final groupExternalId =
+          _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
+          _firstString(group, const ['name', 'displayName', 'title']);
+      if (groupExternalId == null) {
+        continue;
+      }
+      final groupId = _groupIdsByExternalId[groupExternalId];
+      if (groupId == null) {
+        continue;
+      }
+      final members = group['members'];
+      if (members is! List) {
+        continue;
+      }
+      for (final member in members) {
+        final memberExternalId = member is String
+            ? member
+            : member is Map<String, Object?>
+            ? _firstString(member, const [
+                '_id',
+                'id',
+                'uuid',
+                'memberId',
+                'uid',
+              ])
+            : null;
+        if (memberExternalId == null) {
+          continue;
+        }
+        final memberId = _memberIdsByExternalId[memberExternalId];
+        if (memberId == null) {
+          warnings.add(
+            'Group "$groupExternalId" ignored missing member "$memberExternalId".',
+          );
+          continue;
+        }
+        final key = '$groupId::$memberId';
+        if (seen.add(key)) {
+          links.add({'group_id': groupId, 'member_id': memberId});
+        }
+      }
+    }
+
+    for (final member in members) {
+      final groupId = _firstString(member, const ['folder_id']);
+      final memberId = _firstString(member, const ['id']);
+      if (groupId == null || memberId == null) {
+        continue;
+      }
+      final key = '$groupId::$memberId';
+      if (seen.add(key)) {
+        links.add({'group_id': groupId, 'member_id': memberId});
+      }
+    }
+
+    return links;
   }
 
   Map<String, Object?>? _groupRecord(Map<String, Object?> group, int index) {
@@ -1444,6 +1514,7 @@ class _PollData {
 Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'members': _listCount(archive['members']),
   'groups': _listCount(archive['groups']),
+  'group_members': _listCount(archive['group_members']),
   'custom_fields': _listCount(archive['custom_fields']),
   'custom_field_values': _listCount(archive['custom_field_values']),
   'notes': _listCount(archive['notes']),

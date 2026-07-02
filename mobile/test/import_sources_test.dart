@@ -664,6 +664,7 @@ void main() {
 
       expect(archive.counts['members'], 1);
       expect(archive.counts['groups'], 1);
+      expect(archive.counts['group_members'], 1);
       expect(archive.counts['custom_fields'], 1);
       expect(archive.counts['custom_field_values'], 2);
       expect(archive.counts['messages'], 3);
@@ -682,6 +683,10 @@ void main() {
       expect(
         archive.archiveJson,
         contains('"folder_id": "simplyplural_file-group-g1"'),
+      );
+      expect(
+        archive.archiveJson,
+        contains('"group_id": "simplyplural_file-group-g1"'),
       );
       expect(archive.archiveJson, isNot(contains('"is_custom_front": true')));
       expect(archive.archiveJson, contains('"custom_label": "Asleep"'));
@@ -1009,6 +1014,7 @@ void main() {
 
     expect(archive.counts['members'], 1);
     expect(archive.counts['groups'], 2);
+    expect(archive.counts['group_members'], 1);
     expect(archive.counts['fronts'], 1);
     expect(archive.counts['front_members'], 1);
     expect(archive.counts['notes'], 1);
