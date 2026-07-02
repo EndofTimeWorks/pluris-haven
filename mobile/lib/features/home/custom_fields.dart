@@ -123,6 +123,7 @@ class CustomFieldTile extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
         onTap: () => showCustomFieldDetailSheet(
           context,
+          repository: repository,
           field: field,
           values: values,
           members: members,
@@ -167,6 +168,7 @@ class CustomFieldTile extends StatelessWidget {
 
 void showCustomFieldDetailSheet(
   BuildContext context, {
+  required HavenRepository repository,
   required CustomFieldSummary field,
   required List<CustomFieldValueSummary> values,
   required List<MemberSummary> members,
@@ -174,6 +176,33 @@ void showCustomFieldDetailSheet(
   final namesById = {
     for (final member in members) member.id: member.displayName,
   };
+  CustomFieldValueSummary? systemValue;
+  for (final value in values) {
+    if (value.memberId == null) {
+      systemValue = value;
+      break;
+    }
+  }
+  final memberValues = values
+      .where((value) => value.memberId != null)
+      .toList(growable: false);
+
+  void openValueEditor(CustomFieldValueSummary? value, String? memberId) {
+    Navigator.pop(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+      showCustomFieldValueSheet(
+        context,
+        repository: repository,
+        field: field,
+        value: value,
+        memberId: memberId,
+      );
+    });
+  }
+
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -212,24 +241,43 @@ void showCustomFieldDetailSheet(
               ],
             ),
             const SizedBox(height: 16),
-            if (values.isEmpty)
+            ListTile(
+              key: const ValueKey('custom-field-system-value-row'),
+              contentPadding: EdgeInsets.zero,
+              leading: const SpIconBubble(icon: Icons.home_work_rounded),
+              title: const Text(
+                'System',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                systemValue == null || systemValue.value.trim().isEmpty
+                    ? 'not set'
+                    : systemValue.value,
+                style: const TextStyle(color: _spMuted),
+              ),
+              trailing: const Icon(Icons.edit_rounded, size: 18),
+              onTap: () => openValueEditor(systemValue, null),
+            ),
+            if (memberValues.isNotEmpty)
+              const Divider(height: 1, color: _spLine),
+            if (memberValues.isEmpty)
               const SpEmptyState(
-                title: 'No values yet',
-                body: 'Imported member values for this field will show here.',
+                title: 'No member values yet',
+                body:
+                    'Imported per-alter values for this field will show here.',
               )
             else
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 360),
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: values.length,
+                  itemCount: memberValues.length,
                   separatorBuilder: (context, index) =>
                       const Divider(height: 1, color: _spLine),
                   itemBuilder: (context, index) {
-                    final value = values[index];
-                    final owner = value.memberId == null
-                        ? 'System'
-                        : namesById[value.memberId] ?? 'Unknown member';
+                    final value = memberValues[index];
+                    final memberId = value.memberId;
+                    final owner = namesById[memberId] ?? 'Unknown member';
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const SpIconBubble(icon: Icons.person_rounded),
@@ -241,6 +289,8 @@ void showCustomFieldDetailSheet(
                         value.value,
                         style: const TextStyle(color: _spMuted),
                       ),
+                      trailing: const Icon(Icons.edit_rounded, size: 18),
+                      onTap: () => openValueEditor(value, memberId),
                     );
                   },
                 ),
