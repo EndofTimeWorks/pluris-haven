@@ -19,6 +19,7 @@ enum ImporterStatus {
 }
 
 enum ImportConflictStrategy {
+  prompt('prompt', 'Ask for each match'),
   create('create', 'Create new records'),
   skip('skip', 'Skip existing matches'),
   update('update', 'Update existing matches');
