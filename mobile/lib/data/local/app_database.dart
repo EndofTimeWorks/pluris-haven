@@ -57,6 +57,14 @@ class Members extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class GroupMembers extends Table {
+  TextColumn get groupId => text().references(SystemGroups, #id)();
+  TextColumn get memberId => text().references(Members, #id)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId, memberId};
+}
+
 class Notes extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -374,6 +382,7 @@ class NamedFrontMembers extends Table {
     PluralSystems,
     SystemGroups,
     Members,
+    GroupMembers,
     Notes,
     Messages,
     Reminders,
@@ -404,7 +413,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -480,6 +489,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(members, members.birthday);
         await migrator.addColumn(members, members.emoji);
         await migrator.addColumn(members, members.privacy);
+      }
+      if (from < 12) {
+        await migrator.createTable(groupMembers);
       }
     },
     beforeOpen: (details) async {

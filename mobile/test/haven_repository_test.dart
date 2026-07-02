@@ -345,9 +345,20 @@ void main() {
       ),
     );
     final member = (await source.watchMembers().first).single;
+    final group = (await source.watchGroups().first).single;
+    await source.updateMember(
+      member.id,
+      MemberDraft(
+        displayName: member.displayName,
+        pronouns: member.pronouns,
+        folderId: group.id,
+      ),
+    );
     await source.setFrontMembers([member.id]);
 
     final archive = await source.buildLocalArchiveJson();
+    final sourceArchive = jsonDecode(archive) as Map<String, dynamic>;
+    expect(sourceArchive['group_members'], hasLength(1));
     await sourceDatabase.close();
 
     final targetDatabase = AppDatabase(NativeDatabase.memory());
@@ -371,6 +382,10 @@ void main() {
     expect(polls.single.options, hasLength(2));
     expect(await target.watchNotificationEvents().first, hasLength(1));
     expect(await target.watchFrontHistory().first, hasLength(1));
+    final targetArchive =
+        jsonDecode(await target.buildLocalArchiveJson())
+            as Map<String, dynamic>;
+    expect(targetArchive['group_members'], hasLength(1));
 
     final snapshot = await target.loadHomeSnapshot();
     expect(snapshot.memberCount, 1);
