@@ -484,7 +484,7 @@ void showCustomFieldValueSheet(
   required HavenRepository repository,
   required CustomFieldSummary field,
   required CustomFieldValueSummary? value,
-  required String memberId,
+  required String? memberId,
 }) {
   showModalBottomSheet<void>(
     context: context,
@@ -512,7 +512,7 @@ class CustomFieldValueSheet extends StatefulWidget {
   final HavenRepository repository;
   final CustomFieldSummary field;
   final CustomFieldValueSummary? value;
-  final String memberId;
+  final String? memberId;
 
   @override
   State<CustomFieldValueSheet> createState() => _CustomFieldValueSheetState();
