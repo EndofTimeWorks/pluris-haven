@@ -373,7 +373,9 @@ void main() {
     );
 
     expect(await target.watchMembers().first, hasLength(1));
-    expect(await target.watchGroups().first, hasLength(1));
+    final importedGroups = await target.watchGroups().first;
+    expect(importedGroups, hasLength(1));
+    expect(importedGroups.single.memberCount, 1);
     expect(await target.watchNotes().first, hasLength(1));
     expect(await target.watchMessages().first, hasLength(1));
     expect(await target.watchReminders().first, hasLength(1));
