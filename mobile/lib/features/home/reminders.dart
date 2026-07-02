@@ -296,16 +296,37 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   Future<void> _save() async {
+    final title = _titleController.text.trim();
+    final body = _bodyController.text.trim();
     await widget.repository.saveReminder(
       ReminderDraft(
-        title: _titleController.text,
-        body: _bodyController.text,
+        title: title,
+        body: body,
         scheduleText: _scheduleText,
       ),
     );
     if (mounted) {
+      final time = _parseTime(_timeController.text.trim());
+      if (time != null && _scheduleKind != ReminderScheduleKind.afterFront) {
+        NotificationService.instance.scheduleReminderNotification(
+          id: title.hashCode,
+          title: title,
+          body: body.isEmpty ? null : body,
+          time: time,
+        );
+      }
       Navigator.pop(context);
     }
+  }
+
+  TimeOfDay? _parseTime(String text) {
+    final parts = text.split(':');
+    if (parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   String get _scheduleText {
