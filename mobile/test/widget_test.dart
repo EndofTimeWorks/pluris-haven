@@ -1403,7 +1403,15 @@ void main() {
     await tester.ensureVisible(find.text('Import / Export'));
     await tester.tap(find.text('Import / Export'));
     await tester.pumpAndSettle();
+    final pageScrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('simplyplural.json'),
+      240,
+      scrollable: pageScrollable,
+      maxScrolls: 30,
+    );
     await tester.ensureVisible(find.text('simplyplural.json'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('simplyplural.json'));
     await tester.pumpAndSettle();
 
