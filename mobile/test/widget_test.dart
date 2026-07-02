@@ -280,7 +280,9 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Custom Fronts').first);
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Custom Fronts'));
     await tester.pumpAndSettle();
 
     await tester.tap(
