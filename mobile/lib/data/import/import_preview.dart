@@ -179,6 +179,7 @@ ImportPreview _previewPlurisArchive(
   final counts = {
     'members': _listCount(decoded['members']),
     'groups': _listCount(decoded['groups']),
+    'group_members': _listCount(decoded['group_members']),
     'notes': _listCount(decoded['notes']),
     'messages': _listCount(decoded['messages']),
     'reminders': _listCount(decoded['reminders']),
@@ -321,6 +322,7 @@ ImportPreview _previewNormalizedSource({
 const _importablePreviewCountKeys = {
   'members',
   'groups',
+  'group_members',
   'custom_fields',
   'custom_field_values',
   'notes',
