@@ -77,6 +77,7 @@ class MemberSummary {
     this.frameShape = 'circle',
     this.lexoRank = '0|zzzzzz',
     this.folderId,
+    this.groupIds = const [],
   });
 
   final String id;
@@ -94,6 +95,7 @@ class MemberSummary {
   final String frameShape;
   final String lexoRank;
   final String? folderId;
+  final List<String> groupIds;
 }
 
 class MemberDraft {
@@ -108,6 +110,7 @@ class MemberDraft {
     this.avatarUrl,
     this.pluralKitId,
     this.folderId,
+    this.groupIds,
   });
 
   final String displayName;
@@ -120,6 +123,7 @@ class MemberDraft {
   final String? avatarUrl;
   final String? pluralKitId;
   final String? folderId;
+  final List<String>? groupIds;
 }
 
 class GroupSummary {
@@ -828,46 +832,88 @@ class LocalHavenRepository implements HavenRepository {
     bool includeArchived = false,
     bool includeCustomFronts = false,
   }) {
-    final query = database.select(database.members)
-      ..orderBy([
-        (member) =>
-            OrderingTerm(expression: member.lexoRank, mode: OrderingMode.asc),
-      ]);
-
-    query.where((member) => member.systemId.equals(localSystemId));
+    final where = <String>['m.system_id = ?'];
     if (!includeArchived) {
-      query.where((member) => member.archived.equals(false));
+      where.add('m.archived = 0');
     }
     if (!includeCustomFronts) {
-      query.where((member) => member.isCustomFront.equals(false));
+      where.add('m.is_custom_front = 0');
     }
 
-    return query.watch().asyncMap((rows) async {
-      final summaries = <MemberSummary>[];
-      for (final row in rows) {
-        final displayName = await _decrypt(row.displayName);
-        summaries.add(
-          MemberSummary(
-            id: row.id,
-            displayName: displayName ?? row.displayName,
-            pronouns: row.pronouns,
-            colorHex: row.colorHex,
-            birthday: row.birthday,
-            emoji: row.emoji,
-            privacy: row.privacy,
-            description: row.description,
-            avatarUrl: row.avatarUrl,
-            pluralKitId: row.pluralKitId,
-            archived: row.archived,
-            isCustomFront: row.isCustomFront,
-            frameShape: row.frameShape,
-            lexoRank: row.lexoRank,
-            folderId: row.folderId,
-          ),
-        );
-      }
-      return summaries;
-    });
+    return database
+        .customSelect(
+          '''
+SELECT
+  m.id,
+  m.display_name,
+  m.pronouns,
+  m.color_hex,
+  m.birthday,
+  m.emoji,
+  m.privacy,
+  m.description,
+  m.avatar_url,
+  m.plural_kit_id,
+  m.archived,
+  m.is_custom_front,
+  m.frame_shape,
+  m.lexo_rank,
+  m.folder_id,
+  GROUP_CONCAT(gm.group_id) AS group_ids
+FROM members m
+LEFT JOIN group_members gm ON gm.member_id = m.id
+WHERE ${where.join(' AND ')}
+GROUP BY
+  m.id,
+  m.display_name,
+  m.pronouns,
+  m.color_hex,
+  m.birthday,
+  m.emoji,
+  m.privacy,
+  m.description,
+  m.avatar_url,
+  m.plural_kit_id,
+  m.archived,
+  m.is_custom_front,
+  m.frame_shape,
+  m.lexo_rank,
+  m.folder_id
+ORDER BY m.lexo_rank ASC
+          ''',
+          variables: [Variable<String>(localSystemId)],
+          readsFrom: {database.members, database.groupMembers},
+        )
+        .watch()
+        .asyncMap((rows) async {
+          final summaries = <MemberSummary>[];
+          for (final row in rows) {
+            final data = row.data;
+            final storedName = data['display_name'] as String;
+            final displayName = await _decrypt(storedName);
+            summaries.add(
+              MemberSummary(
+                id: data['id'] as String,
+                displayName: displayName ?? storedName,
+                pronouns: data['pronouns'] as String?,
+                colorHex: data['color_hex'] as String?,
+                birthday: data['birthday'] as String?,
+                emoji: data['emoji'] as String?,
+                privacy: data['privacy'] as String?,
+                description: data['description'] as String?,
+                avatarUrl: data['avatar_url'] as String?,
+                pluralKitId: data['plural_kit_id'] as String?,
+                archived: _readSqlBool(data['archived']),
+                isCustomFront: _readSqlBool(data['is_custom_front']),
+                frameShape: data['frame_shape'] as String,
+                lexoRank: data['lexo_rank'] as String,
+                folderId: data['folder_id'] as String?,
+                groupIds: _splitJoinedIds(data['group_ids']),
+              ),
+            );
+          }
+          return summaries;
+        });
   }
 
   @override
@@ -1295,6 +1341,21 @@ SELECT
     );
   }
 
+  bool _readSqlBool(Object? value) {
+    return value == true || value == 1;
+  }
+
+  List<String> _splitJoinedIds(Object? value) {
+    if (value is! String || value.trim().isEmpty) {
+      return const [];
+    }
+    return value
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+
   AppCustomization _mapCustomizationRows(List<AppPreference> rows) {
     final values = {for (final row in rows) row.key: row.value};
 
@@ -1450,6 +1511,8 @@ SELECT
 
     final now = DateTime.now().toUtc();
     final memberId = 'member-${now.microsecondsSinceEpoch}';
+    final groupIds = _normalizedMemberGroupIds(draft);
+    final folderId = _nullIfBlank(draft.folderId) ?? _firstOrNull(groupIds);
     final encryptedName = await _encrypt(displayName);
     final nameHash = await _blindIndex(displayName);
     await database
@@ -1468,16 +1531,12 @@ SELECT
             description: Value(_nullIfBlank(draft.description)),
             avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
             pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
-            folderId: Value(_nullIfBlank(draft.folderId)),
+            folderId: Value(folderId),
             createdAt: now,
             updatedAt: now,
           ),
         );
-    await _syncPrimaryGroupMembership(
-      memberId: memberId,
-      oldGroupId: null,
-      newGroupId: _nullIfBlank(draft.folderId),
-    );
+    await _replaceGroupMemberships(memberId: memberId, groupIds: groupIds);
   }
 
   @override
@@ -1508,6 +1567,14 @@ SELECT
                   member.id.equals(memberId),
             ))
             .getSingleOrNull();
+    final requestedFolderId = _nullIfBlank(draft.folderId);
+    final preserveGroups = draft.groupIds == null && requestedFolderId == null;
+    final groupIds = preserveGroups
+        ? await _memberGroupIds(memberId)
+        : _normalizedMemberGroupIds(draft);
+    final folderId = preserveGroups
+        ? existing?.folderId
+        : requestedFolderId ?? _firstOrNull(groupIds);
     final encryptedName = await _encrypt(displayName);
     final nameHash = await _blindIndex(displayName);
     await (database.update(database.members)..where(
@@ -1527,40 +1594,60 @@ SELECT
             description: Value(_nullIfBlank(draft.description)),
             avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
             pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
-            folderId: Value(_nullIfBlank(draft.folderId)),
+            folderId: Value(folderId),
             updatedAt: Value(now),
           ),
         );
-    await _syncPrimaryGroupMembership(
-      memberId: memberId,
-      oldGroupId: existing?.folderId,
-      newGroupId: _nullIfBlank(draft.folderId),
-    );
+    await _replaceGroupMemberships(memberId: memberId, groupIds: groupIds);
   }
 
-  Future<void> _syncPrimaryGroupMembership({
-    required String memberId,
-    required String? oldGroupId,
-    required String? newGroupId,
-  }) async {
-    if (oldGroupId != null && oldGroupId != newGroupId) {
-      await (database.delete(database.groupMembers)..where(
-            (link) =>
-                link.memberId.equals(memberId) &
-                link.groupId.equals(oldGroupId),
-          ))
-          .go();
+  Set<String> _normalizedMemberGroupIds(MemberDraft draft) {
+    final ids = <String>{};
+    for (final groupId in draft.groupIds ?? const <String>[]) {
+      final normalized = _nullIfBlank(groupId);
+      if (normalized != null) {
+        ids.add(normalized);
+      }
     }
+    final primaryGroupId = _nullIfBlank(draft.folderId);
+    if (primaryGroupId != null) {
+      ids.add(primaryGroupId);
+    }
+    return ids;
+  }
 
-    if (newGroupId == null) {
-      return;
-    }
-    await database
-        .into(database.groupMembers)
-        .insert(
-          GroupMembersCompanion.insert(groupId: newGroupId, memberId: memberId),
-          mode: InsertMode.insertOrIgnore,
-        );
+  Future<Set<String>> _memberGroupIds(String memberId) async {
+    final links = await (database.select(
+      database.groupMembers,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    return {for (final link in links) link.groupId};
+  }
+
+  Future<void> _replaceGroupMemberships({
+    required String memberId,
+    required Set<String> groupIds,
+  }) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.groupMembers,
+      )..where((link) => link.memberId.equals(memberId))).go();
+
+      for (final groupId in groupIds) {
+        await database
+            .into(database.groupMembers)
+            .insert(
+              GroupMembersCompanion.insert(
+                groupId: groupId,
+                memberId: memberId,
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      }
+    });
+  }
+
+  String? _firstOrNull(Set<String> values) {
+    return values.isEmpty ? null : values.first;
   }
 
   @override
