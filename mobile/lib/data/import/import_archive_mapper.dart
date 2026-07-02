@@ -1419,6 +1419,11 @@ class _ExternalArchiveNormalizer {
       '${source.jobSource}-$kind-${_slug(externalId)}';
 
   String? _avatarReference(Map<String, Object?> object) {
+    final uuid = _firstString(object, const ['avatarUuid', 'avatar_uuid']);
+    if (uuid != null && avatarAssets.any((asset) => asset.id == uuid)) {
+      return 'sp-avatar:$uuid';
+    }
+
     final url = _firstString(object, const [
       'avatar_url',
       'avatarUrl',
@@ -1430,12 +1435,8 @@ class _ExternalArchiveNormalizer {
       return url;
     }
 
-    final uuid = _firstString(object, const ['avatarUuid', 'avatar_uuid']);
     if (uuid == null) {
       return null;
-    }
-    if (avatarAssets.any((asset) => asset.id == uuid)) {
-      return 'sp-avatar:$uuid';
     }
     final owner =
         _firstString(object, const ['uid', 'owner', 'ownerId']) ??
