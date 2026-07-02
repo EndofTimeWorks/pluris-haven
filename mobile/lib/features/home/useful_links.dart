@@ -159,6 +159,66 @@ class HowTosPage extends StatelessWidget {
           actionLabel: 'Open export',
           onAction: () => onSelect(SpSection.importExport),
         ),
+        const SizedBox(height: 10),
+        HowToCard(
+          title: 'Use custom fields',
+          steps: [
+            'Open Custom Fields.',
+            'Add a field like "age", "role", or "species".',
+            'Set values per member from their profile.',
+            'Fields import from Simply Plural automatically.',
+          ],
+          actionLabel: 'Open custom fields',
+          onAction: () => onSelect(SpSection.customFields),
+        ),
+        const SizedBox(height: 10),
+        HowToCard(
+          title: 'Set reminders',
+          steps: [
+            'Open Reminders.',
+            'Pick a daily, weekly, or monthly schedule.',
+            'Notifications will fire at the set time.',
+            'Turn any reminder off without deleting it.',
+          ],
+          actionLabel: 'Open reminders',
+          onAction: () => onSelect(SpSection.reminders),
+        ),
+        const SizedBox(height: 10),
+        HowToCard(
+          title: 'Vote on system decisions',
+          steps: [
+            'Open Polls and create a new poll.',
+            'Add options and choose single or multiple choice.',
+            'Share the poll with members in the same space.',
+            'Results stay on this device until you delete them.',
+          ],
+          actionLabel: 'Open polls',
+          onAction: () => onSelect(SpSection.polls),
+        ),
+        const SizedBox(height: 10),
+        HowToCard(
+          title: 'Import from other apps',
+          steps: [
+            'Export JSON from PluralKit, Tupperbox, PluralSpace, or OpenPlural.',
+            'Open Import / Export and upload the file.',
+            'Select the matching service from the dropdown.',
+            'Preview the records, then import into local storage.',
+          ],
+          actionLabel: 'Open import',
+          onAction: () => onSelect(SpSection.importExport),
+        ),
+        const SizedBox(height: 10),
+        HowToCard(
+          title: 'Use subsystems',
+          steps: [
+            'Open Groups and add or edit a group.',
+            'Turn on "Subgroup / subsystem".',
+            'Members in subsystems can also be in the main group.',
+            'The layers icon shows which groups are subsystems.',
+          ],
+          actionLabel: 'Open groups',
+          onAction: () => onSelect(SpSection.groups),
+        ),
       ],
     );
   }
