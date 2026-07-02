@@ -24,6 +24,7 @@ class SystemGroups extends Table {
   TextColumn get colorHex => text().nullable()();
   TextColumn get description => text().nullable()();
   TextColumn get emoji => text().nullable()();
+  BoolColumn get isSubsystem => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -413,7 +414,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -492,6 +493,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 12) {
         await migrator.createTable(groupMembers);
+      }
+      if (from < 13) {
+        await migrator.addColumn(systemGroups, systemGroups.isSubsystem);
       }
     },
     beforeOpen: (details) async {

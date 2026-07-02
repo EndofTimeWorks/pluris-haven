@@ -200,9 +200,24 @@ class GroupListTile extends StatelessWidget {
                 ),
               ],
             ),
-            title: Text(
-              group.name,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    group.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (group.isSubsystem) ...[
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.layers_outlined,
+                    size: 16,
+                    color: _spGold.withValues(alpha: 0.7),
+                  ),
+                ],
+              ],
             ),
             subtitle: Text(subtitle, style: const TextStyle(color: _spMuted)),
             onTap: () =>
@@ -289,6 +304,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   );
   String? _colorError;
   String? _parentGroupId;
+  bool _isSubsystem = false;
 
   bool get _isEditing => widget.group != null;
 
@@ -306,6 +322,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       _colorController.text =
           groupColor ?? _hexFromAccent(HavenAccentColor.gold);
       _parentGroupId = group.parentGroupId;
+      _isSubsystem = group.isSubsystem;
     }
   }
 
@@ -423,6 +440,16 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                     }
                   },
                 ),
+                SwitchListTile(
+                  key: const ValueKey('group-subsystem-toggle'),
+                  title: const Text('Subgroup / subsystem'),
+                  subtitle: const Text(
+                    'Subsystem members can overlap with the main group.',
+                  ),
+                  value: _isSubsystem,
+                  onChanged: (value) =>
+                      setState(() => _isSubsystem = value),
+                ),
                 const SizedBox(height: 14),
                 FilledButton(
                   key: const ValueKey('save-group-button'),
@@ -450,6 +477,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       emoji: _emojiController.text,
       colorHex: colorHex,
       description: _descriptionController.text,
+      isSubsystem: _isSubsystem,
     );
     final group = widget.group;
     if (group == null) {

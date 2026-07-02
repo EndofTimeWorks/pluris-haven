@@ -135,6 +135,7 @@ class GroupSummary {
     this.description,
     this.emoji,
     this.memberCount = 0,
+    this.isSubsystem = false,
   });
 
   final String id;
@@ -144,6 +145,7 @@ class GroupSummary {
   final String? description;
   final String? emoji;
   final int memberCount;
+  final bool isSubsystem;
 }
 
 class GroupDraft {
@@ -153,6 +155,7 @@ class GroupDraft {
     this.colorHex,
     this.description,
     this.emoji,
+    this.isSubsystem = false,
   });
 
   final String name;
@@ -160,6 +163,7 @@ class GroupDraft {
   final String? colorHex;
   final String? description;
   final String? emoji;
+  final bool isSubsystem;
 }
 
 class NoteSummary {
@@ -1031,11 +1035,12 @@ SELECT
   g.color_hex,
   g.description,
   g.emoji,
+  g.is_subsystem,
   COUNT(gm.member_id) AS member_count
 FROM system_groups g
 LEFT JOIN group_members gm ON gm.group_id = g.id
 WHERE g.system_id = ?
-GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji
+GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g.is_subsystem
 ORDER BY LOWER(g.name) ASC
           ''',
           variables: [Variable<String>(localSystemId)],
@@ -1052,6 +1057,7 @@ ORDER BY LOWER(g.name) ASC
                 colorHex: row.data['color_hex'] as String?,
                 description: row.data['description'] as String?,
                 emoji: row.data['emoji'] as String?,
+                isSubsystem: (row.data['is_subsystem'] as int?) == 1,
                 memberCount: row.data['member_count'] as int,
               ),
           ],
@@ -1771,6 +1777,7 @@ SELECT
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
             emoji: Value(_nullIfBlank(draft.emoji)),
+            isSubsystem: Value(draft.isSubsystem),
             createdAt: now,
             updatedAt: now,
           ),
@@ -1801,6 +1808,7 @@ SELECT
             colorHex: Value(_nullIfBlank(draft.colorHex)),
             description: Value(_nullIfBlank(draft.description)),
             emoji: Value(_nullIfBlank(draft.emoji)),
+            isSubsystem: Value(draft.isSubsystem),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
