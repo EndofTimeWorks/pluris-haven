@@ -738,6 +738,7 @@ void main() {
 
     expect(find.text('Import setup'), findsOneWidget);
     expect(find.text('Upload file'), findsOneWidget);
+    expect(find.text('Attach avatars'), findsOneWidget);
     expect(find.text('Service'), findsOneWidget);
   });
 
@@ -1368,7 +1369,7 @@ void main() {
   testWidgets('opens failed import job details and copies full error', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -1402,7 +1403,7 @@ void main() {
     await tester.ensureVisible(find.text('Import / Export'));
     await tester.tap(find.text('Import / Export'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('simplyplural.json'), 240);
+    await tester.ensureVisible(find.text('simplyplural.json'));
     await tester.tap(find.text('simplyplural.json'));
     await tester.pumpAndSettle();
 
