@@ -391,6 +391,21 @@ class $SystemGroupsTable extends SystemGroups
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isSubsystemMeta = const VerificationMeta(
+    'isSubsystem',
+  );
+  @override
+  late final GeneratedColumn<bool> isSubsystem = GeneratedColumn<bool>(
+    'is_subsystem',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_subsystem" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -422,6 +437,7 @@ class $SystemGroupsTable extends SystemGroups
     colorHex,
     description,
     emoji,
+    isSubsystem,
     createdAt,
     updatedAt,
   ];
@@ -488,6 +504,15 @@ class $SystemGroupsTable extends SystemGroups
         emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
       );
     }
+    if (data.containsKey('is_subsystem')) {
+      context.handle(
+        _isSubsystemMeta,
+        isSubsystem.isAcceptableOrUnknown(
+          data['is_subsystem']!,
+          _isSubsystemMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -541,6 +566,10 @@ class $SystemGroupsTable extends SystemGroups
         DriftSqlType.string,
         data['${effectivePrefix}emoji'],
       ),
+      isSubsystem: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_subsystem'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -566,6 +595,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
   final String? colorHex;
   final String? description;
   final String? emoji;
+  final bool isSubsystem;
   final DateTime createdAt;
   final DateTime updatedAt;
   const SystemGroup({
@@ -576,6 +606,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
     this.colorHex,
     this.description,
     this.emoji,
+    required this.isSubsystem,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -597,6 +628,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
     if (!nullToAbsent || emoji != null) {
       map['emoji'] = Variable<String>(emoji);
     }
+    map['is_subsystem'] = Variable<bool>(isSubsystem);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -619,6 +651,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
       emoji: emoji == null && nullToAbsent
           ? const Value.absent()
           : Value(emoji),
+      isSubsystem: Value(isSubsystem),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -637,6 +670,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
       colorHex: serializer.fromJson<String?>(json['colorHex']),
       description: serializer.fromJson<String?>(json['description']),
       emoji: serializer.fromJson<String?>(json['emoji']),
+      isSubsystem: serializer.fromJson<bool>(json['isSubsystem']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -652,6 +686,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
       'colorHex': serializer.toJson<String?>(colorHex),
       'description': serializer.toJson<String?>(description),
       'emoji': serializer.toJson<String?>(emoji),
+      'isSubsystem': serializer.toJson<bool>(isSubsystem),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -665,6 +700,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
     Value<String?> colorHex = const Value.absent(),
     Value<String?> description = const Value.absent(),
     Value<String?> emoji = const Value.absent(),
+    bool? isSubsystem,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => SystemGroup(
@@ -677,6 +713,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
     colorHex: colorHex.present ? colorHex.value : this.colorHex,
     description: description.present ? description.value : this.description,
     emoji: emoji.present ? emoji.value : this.emoji,
+    isSubsystem: isSubsystem ?? this.isSubsystem,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -693,6 +730,9 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
           ? data.description.value
           : this.description,
       emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      isSubsystem: data.isSubsystem.present
+          ? data.isSubsystem.value
+          : this.isSubsystem,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -708,6 +748,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
           ..write('colorHex: $colorHex, ')
           ..write('description: $description, ')
           ..write('emoji: $emoji, ')
+          ..write('isSubsystem: $isSubsystem, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -723,6 +764,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
     colorHex,
     description,
     emoji,
+    isSubsystem,
     createdAt,
     updatedAt,
   );
@@ -737,6 +779,7 @@ class SystemGroup extends DataClass implements Insertable<SystemGroup> {
           other.colorHex == this.colorHex &&
           other.description == this.description &&
           other.emoji == this.emoji &&
+          other.isSubsystem == this.isSubsystem &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -749,6 +792,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
   final Value<String?> colorHex;
   final Value<String?> description;
   final Value<String?> emoji;
+  final Value<bool> isSubsystem;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -760,6 +804,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
     this.colorHex = const Value.absent(),
     this.description = const Value.absent(),
     this.emoji = const Value.absent(),
+    this.isSubsystem = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -772,6 +817,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
     this.colorHex = const Value.absent(),
     this.description = const Value.absent(),
     this.emoji = const Value.absent(),
+    this.isSubsystem = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -788,6 +834,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
     Expression<String>? colorHex,
     Expression<String>? description,
     Expression<String>? emoji,
+    Expression<bool>? isSubsystem,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -800,6 +847,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
       if (colorHex != null) 'color_hex': colorHex,
       if (description != null) 'description': description,
       if (emoji != null) 'emoji': emoji,
+      if (isSubsystem != null) 'is_subsystem': isSubsystem,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -814,6 +862,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
     Value<String?>? colorHex,
     Value<String?>? description,
     Value<String?>? emoji,
+    Value<bool>? isSubsystem,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -826,6 +875,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
       colorHex: colorHex ?? this.colorHex,
       description: description ?? this.description,
       emoji: emoji ?? this.emoji,
+      isSubsystem: isSubsystem ?? this.isSubsystem,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -856,6 +906,9 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
     if (emoji.present) {
       map['emoji'] = Variable<String>(emoji.value);
     }
+    if (isSubsystem.present) {
+      map['is_subsystem'] = Variable<bool>(isSubsystem.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -878,6 +931,7 @@ class SystemGroupsCompanion extends UpdateCompanion<SystemGroup> {
           ..write('colorHex: $colorHex, ')
           ..write('description: $description, ')
           ..write('emoji: $emoji, ')
+          ..write('isSubsystem: $isSubsystem, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -15165,6 +15219,7 @@ typedef $$SystemGroupsTableCreateCompanionBuilder =
       Value<String?> colorHex,
       Value<String?> description,
       Value<String?> emoji,
+      Value<bool> isSubsystem,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -15178,6 +15233,7 @@ typedef $$SystemGroupsTableUpdateCompanionBuilder =
       Value<String?> colorHex,
       Value<String?> description,
       Value<String?> emoji,
+      Value<bool> isSubsystem,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -15260,6 +15316,11 @@ class $$SystemGroupsTableFilterComposer
 
   ColumnFilters<String> get emoji => $composableBuilder(
     column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSubsystem => $composableBuilder(
+    column: $table.isSubsystem,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15361,6 +15422,11 @@ class $$SystemGroupsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isSubsystem => $composableBuilder(
+    column: $table.isSubsystem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -15425,6 +15491,11 @@ class $$SystemGroupsTableAnnotationComposer
 
   GeneratedColumn<String> get emoji =>
       $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSubsystem => $composableBuilder(
+    column: $table.isSubsystem,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -15516,6 +15587,7 @@ class $$SystemGroupsTableTableManager
                 Value<String?> colorHex = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> emoji = const Value.absent(),
+                Value<bool> isSubsystem = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -15527,6 +15599,7 @@ class $$SystemGroupsTableTableManager
                 colorHex: colorHex,
                 description: description,
                 emoji: emoji,
+                isSubsystem: isSubsystem,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -15540,6 +15613,7 @@ class $$SystemGroupsTableTableManager
                 Value<String?> colorHex = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> emoji = const Value.absent(),
+                Value<bool> isSubsystem = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -15551,6 +15625,7 @@ class $$SystemGroupsTableTableManager
                 colorHex: colorHex,
                 description: description,
                 emoji: emoji,
+                isSubsystem: isSubsystem,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

@@ -709,6 +709,7 @@ void main() {
       find.byKey(const ValueKey('group-color-hex-field')),
       '00ffaa',
     );
+    await tester.ensureVisible(find.byKey(const ValueKey('save-group-button')));
     await tester.tap(find.byKey(const ValueKey('save-group-button')));
     await tester.pumpAndSettle();
 
@@ -748,6 +749,7 @@ void main() {
       find.byKey(const ValueKey('group-name-field')),
       'Gatekeepers',
     );
+    await tester.ensureVisible(find.byKey(const ValueKey('save-group-button')));
     await tester.tap(find.byKey(const ValueKey('save-group-button')));
     await tester.pumpAndSettle();
 
