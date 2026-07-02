@@ -299,11 +299,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
     await widget.repository.saveReminder(
-      ReminderDraft(
-        title: title,
-        body: body,
-        scheduleText: _scheduleText,
-      ),
+      ReminderDraft(title: title, body: body, scheduleText: _scheduleText),
     );
     if (mounted) {
       final time = _parseTime(_timeController.text.trim());

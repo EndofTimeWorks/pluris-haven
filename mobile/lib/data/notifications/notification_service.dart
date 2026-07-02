@@ -28,8 +28,10 @@ class NotificationService {
 
   Future<bool> _requestPermission() async {
     if (_plugin == null) return false;
-    final android = _plugin!.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin!
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android == null) return true;
     final granted = await android.requestNotificationsPermission();
     return granted ?? false;
