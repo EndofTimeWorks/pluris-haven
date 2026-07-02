@@ -5,6 +5,7 @@ import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
+import 'data/notifications/notification_service.dart';
 import 'debug/debug_log.dart';
 import 'features/home/home_page.dart';
 
@@ -12,6 +13,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   appDebugLog('App startup');
   await initializeBackgroundTasks();
+  await NotificationService.instance.initialize();
 
   final database = AppDatabase();
   final repository = LocalHavenRepository(database);
