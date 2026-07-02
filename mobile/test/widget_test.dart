@@ -1556,7 +1556,7 @@ class FakeHavenRepository implements HavenRepository {
         );
     _groupsController = StreamController<List<GroupSummary>>.broadcast(
       sync: true,
-      onListen: () => _groupsController.add(_groups),
+      onListen: () => _emitGroups(),
     );
     _notesController = StreamController<List<NoteSummary>>.broadcast(
       sync: true,
@@ -1829,6 +1829,7 @@ class FakeHavenRepository implements HavenRepository {
       ),
     ];
     _emitMembers();
+    _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
 
@@ -1855,6 +1856,7 @@ class FakeHavenRepository implements HavenRepository {
           member,
     ];
     _emitMembers();
+    _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
 
@@ -1886,6 +1888,7 @@ class FakeHavenRepository implements HavenRepository {
           member,
     ];
     _emitMembers();
+    _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
 
@@ -1912,6 +1915,7 @@ class FakeHavenRepository implements HavenRepository {
           member,
     ];
     _emitMembers();
+    _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
 
@@ -1922,6 +1926,7 @@ class FakeHavenRepository implements HavenRepository {
         if (member.id != memberId) member,
     ];
     _emitMembers();
+    _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
 
@@ -2004,7 +2009,7 @@ class FakeHavenRepository implements HavenRepository {
         emoji: _nullIfBlank(draft.emoji),
       ),
     ];
-    _groupsController.add(_groups);
+    _emitGroups();
     _emitSnapshot(groupCount: _groups.length);
   }
 
@@ -2028,7 +2033,7 @@ class FakeHavenRepository implements HavenRepository {
         else
           group,
     ];
-    _groupsController.add(_groups);
+    _emitGroups();
   }
 
   @override
@@ -2047,7 +2052,7 @@ class FakeHavenRepository implements HavenRepository {
             emoji: group.emoji,
           ),
     ];
-    _groupsController.add(_groups);
+    _emitGroups();
     _emitSnapshot(groupCount: _groups.length);
   }
 
@@ -2633,6 +2638,33 @@ class FakeHavenRepository implements HavenRepository {
   void _emitMembers() {
     _membersController.add(_members);
     _emitCurrentFrontMembers();
+  }
+
+  void _emitGroups() {
+    _groupsController.add(_groupsWithCounts());
+  }
+
+  List<GroupSummary> _groupsWithCounts() {
+    final counts = <String, int>{};
+    for (final member in _members) {
+      final groupId = member.folderId;
+      if (groupId == null) {
+        continue;
+      }
+      counts[groupId] = (counts[groupId] ?? 0) + 1;
+    }
+    return [
+      for (final group in _groups)
+        GroupSummary(
+          id: group.id,
+          name: group.name,
+          parentGroupId: group.parentGroupId,
+          colorHex: group.colorHex,
+          description: group.description,
+          emoji: group.emoji,
+          memberCount: counts[group.id] ?? 0,
+        ),
+    ];
   }
 
   List<MemberSummary> _currentFrontMembers() {

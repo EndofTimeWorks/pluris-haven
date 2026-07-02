@@ -130,6 +130,7 @@ class GroupSummary {
     this.colorHex,
     this.description,
     this.emoji,
+    this.memberCount = 0,
   });
 
   final String id;
@@ -138,6 +139,7 @@ class GroupSummary {
   final String? colorHex;
   final String? description;
   final String? emoji;
+  final int memberCount;
 }
 
 class GroupDraft {
@@ -986,25 +988,41 @@ class LocalHavenRepository implements HavenRepository {
 
   @override
   Stream<List<GroupSummary>> watchGroups() {
-    final query = database.select(database.systemGroups)
-      ..where((group) => group.systemId.equals(localSystemId))
-      ..orderBy([
-        (group) => OrderingTerm(expression: group.name, mode: OrderingMode.asc),
-      ]);
-
-    return query.watch().map(
-      (rows) => [
-        for (final row in rows)
-          GroupSummary(
-            id: row.id,
-            name: row.name,
-            parentGroupId: row.parentGroupId,
-            colorHex: row.colorHex,
-            description: row.description,
-            emoji: row.emoji,
-          ),
-      ],
-    );
+    return database
+        .customSelect(
+          '''
+SELECT
+  g.id,
+  g.parent_group_id,
+  g.name,
+  g.color_hex,
+  g.description,
+  g.emoji,
+  COUNT(gm.member_id) AS member_count
+FROM system_groups g
+LEFT JOIN group_members gm ON gm.group_id = g.id
+WHERE g.system_id = ?
+GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji
+ORDER BY LOWER(g.name) ASC
+          ''',
+          variables: [Variable<String>(localSystemId)],
+          readsFrom: {database.systemGroups, database.groupMembers},
+        )
+        .watch()
+        .map(
+          (rows) => [
+            for (final row in rows)
+              GroupSummary(
+                id: row.data['id'] as String,
+                name: row.data['name'] as String,
+                parentGroupId: row.data['parent_group_id'] as String?,
+                colorHex: row.data['color_hex'] as String?,
+                description: row.data['description'] as String?,
+                emoji: row.data['emoji'] as String?,
+                memberCount: row.data['member_count'] as int,
+              ),
+          ],
+        );
   }
 
   @override
