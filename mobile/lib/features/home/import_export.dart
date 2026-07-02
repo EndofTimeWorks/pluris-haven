@@ -57,11 +57,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
           preview: _preview,
           plan: plan,
           onPickFile: _pickImportFile,
+          onPickAvatars: _pickAvatarBundle,
           onPasteJson: _pasteImportJson,
           onPreview: _refreshImportPreview,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
           canPreview: _fileText != null,
+          avatarAssetCount: _fileAvatarAssets.length,
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
           const SizedBox(height: 12),
@@ -147,6 +149,66 @@ class _ImportExportPageState extends State<ImportExportPage> {
       text: pasted,
       avatarAssets: const [],
       unreadableStatus: 'Could not read the pasted JSON.',
+    );
+  }
+
+  Future<void> _pickAvatarBundle() async {
+    setState(() {
+      _isPickingImport = true;
+      _importStatus = 'Waiting for avatar ZIP...';
+    });
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Choose avatar ZIP',
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty || !mounted) {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = 'No avatar file selected.';
+        });
+      }
+      return;
+    }
+
+    final file = result.files.single;
+    setState(() {
+      _importStatus = 'Reading avatars from ${file.name}...';
+    });
+    final bytes = await _pickedFileBytes(file);
+    final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
+    final avatars = decoded?.avatarAssets ?? const <ImportAvatarAsset>[];
+    if (avatars.isEmpty) {
+      setState(() {
+        _isPickingImport = false;
+        _importStatus = 'No avatar images found in ${file.name}.';
+      });
+      return;
+    }
+
+    final mergedAvatars = _mergeAvatarAssets(_fileAvatarAssets, avatars);
+    final preview = _fileName == null || _fileText == null
+        ? null
+        : previewImportText(
+            fileName: _fileName!,
+            text: _fileText!,
+            selectedSource: _source,
+            avatarAssets: mergedAvatars,
+          );
+
+    setState(() {
+      _fileAvatarAssets = mergedAvatars;
+      _preview = preview;
+      _isPickingImport = false;
+      _importStatus =
+          'Attached ${avatars.length} avatars from ${file.name}. '
+          '${_fileText == null ? 'Choose the JSON export next.' : 'Refresh or import when ready.'}';
+    });
+    appDebugLog(
+      'Attached avatar bundle file=${file.name} added=${avatars.length} '
+      'total=${mergedAvatars.length}',
     );
   }
 
@@ -340,6 +402,19 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 }
 
+List<ImportAvatarAsset> _mergeAvatarAssets(
+  List<ImportAvatarAsset> existing,
+  List<ImportAvatarAsset> incoming,
+) {
+  final byId = <String, ImportAvatarAsset>{
+    for (final asset in existing) asset.id: asset,
+  };
+  for (final asset in incoming) {
+    byId[asset.id] = asset;
+  }
+  return byId.values.toList(growable: false);
+}
+
 void showLocalArchiveSheet(BuildContext context, HavenRepository repository) {
   showModalBottomSheet<void>(
     context: context,
@@ -520,11 +595,13 @@ class ImportSetupCard extends StatelessWidget {
     required this.preview,
     required this.plan,
     required this.onPickFile,
+    required this.onPickAvatars,
     required this.onPasteJson,
     required this.onPreview,
     required this.onSourceChanged,
     required this.onStrategyChanged,
     required this.canPreview,
+    required this.avatarAssetCount,
   });
 
   final ImportSource source;
@@ -535,7 +612,9 @@ class ImportSetupCard extends StatelessWidget {
   final ImportPreview? preview;
   final ImportSourcePlan plan;
   final bool canPreview;
+  final int avatarAssetCount;
   final VoidCallback onPickFile;
+  final VoidCallback onPickAvatars;
   final VoidCallback onPasteJson;
   final VoidCallback onPreview;
   final ValueChanged<ImportSource> onSourceChanged;
@@ -581,6 +660,17 @@ class ImportSetupCard extends StatelessWidget {
               guess: guess,
             ),
           ],
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            key: const ValueKey('attach-avatar-zip-button'),
+            onPressed: onPickAvatars,
+            icon: const Icon(Icons.image_rounded),
+            label: Text(
+              avatarAssetCount == 0
+                  ? 'Attach avatars'
+                  : '$avatarAssetCount avatars attached',
+            ),
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<ImportSource>(
             key: const ValueKey('import-source-dropdown'),
