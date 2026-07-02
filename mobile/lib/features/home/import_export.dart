@@ -351,9 +351,19 @@ class _ImportExportPageState extends State<ImportExportPage> {
         });
       }
 
+      var effectiveStrategy = _strategy;
+      if (effectiveStrategy == ImportConflictStrategy.prompt) {
+        final override = await _promptForConflicts(normalized.archiveJson);
+        if (override == null) {
+          // no conflicts - proceed
+        } else {
+          effectiveStrategy = override;
+        }
+      }
+
       final jobId = await widget.repository.enqueueImportArchiveJob(
         normalized.archiveJson,
-        strategy: _strategy,
+        strategy: effectiveStrategy,
         fileName: _fileName,
         source: _source,
       );
@@ -392,6 +402,76 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
   }
 
+  Future<ImportConflictStrategy?> _promptForConflicts(
+    String archiveJson,
+  ) async {
+    final decoded = jsonDecode(archiveJson);
+    if (decoded is! Map<String, Object?>) return ImportConflictStrategy.skip;
+
+    final importMembers = _jsonObjectList(decoded['members']);
+    final importGroups = _jsonObjectList(decoded['groups']);
+
+    final existingMembers = await widget.repository.watchMembers().first;
+    final existingGroups = await widget.repository.watchGroups().first;
+
+    final memberConflicts = <Map<String, Object?>>[];
+    final groupConflicts = <Map<String, Object?>>[];
+
+    if (importMembers.isNotEmpty && existingMembers.isNotEmpty) {
+      final dedupe = MemberDedupeIndex([
+        for (final member in existingMembers)
+          ExistingMemberIdentity(
+            localId: member.id,
+            displayName: member.displayName,
+            pluralKitId: member.pluralKitId,
+          ),
+      ]);
+      for (final candidate in importMembers) {
+        final resolution = dedupe.resolve(
+          ImportMemberCandidate(
+            source: _source,
+            displayName: _stringValue(candidate['display_name']) ?? '',
+            pluralKitId: _stringValue(candidate['pluralkit_id']),
+          ),
+          strategy: ImportConflictStrategy.prompt,
+        );
+        if (resolution.disposition == ImportDedupeDisposition.skipped) {
+          memberConflicts.add(candidate);
+        }
+      }
+    }
+
+    if (importGroups.isNotEmpty && existingGroups.isNotEmpty) {
+      final existingNames = existingGroups
+          .map((g) => g.name.trim().toLowerCase())
+          .toSet();
+      for (final candidate in importGroups) {
+        final name = _stringValue(candidate['name'])?.trim().toLowerCase();
+        if (name != null && existingNames.contains(name)) {
+          groupConflicts.add(candidate);
+        }
+      }
+    }
+
+    if (memberConflicts.isEmpty && groupConflicts.isEmpty) {
+      return null;
+    }
+
+    if (!mounted) return null;
+
+    final result = await showDialog<ImportConflictStrategy>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _ConflictPromptDialog(
+        memberCount: memberConflicts.length,
+        groupCount: groupConflicts.length,
+        sourceLabel: _source.label,
+      ),
+    );
+
+    return result;
+  }
+
   String _countSummary(Map<String, int> counts) {
     final visible = counts.entries
         .where((entry) => entry.value > 0)
@@ -399,6 +479,70 @@ class _ImportExportPageState extends State<ImportExportPage> {
         .join(', ');
 
     return visible.isEmpty ? 'no records found' : visible;
+  }
+}
+
+String? _stringValue(Object? value) {
+  if (value is String) return value;
+  if (value is num || value is bool) return value.toString();
+  return null;
+}
+
+List<Map<String, Object?>> _jsonObjectList(Object? value) {
+  if (value is List) {
+    return [
+      for (final item in value)
+        if (item is Map<String, Object?>) item,
+    ];
+  }
+  return const [];
+}
+
+class _ConflictPromptDialog extends StatelessWidget {
+  const _ConflictPromptDialog({
+    required this.memberCount,
+    required this.groupCount,
+    required this.sourceLabel,
+  });
+
+  final int memberCount;
+  final int groupCount;
+  final String sourceLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+    if (memberCount > 0) {
+      parts.add('$memberCount ${memberCount == 1 ? 'member' : 'members'}');
+    }
+    if (groupCount > 0) {
+      parts.add('$groupCount ${groupCount == 1 ? 'group' : 'groups'}');
+    }
+
+    return AlertDialog(
+      title: const Text('Conflicts found'),
+      content: Text(
+        '${parts.join(' and ')} from this $sourceLabel import already '
+        'exist in your local data.\n\n'
+        'How should Pluris Haven handle them?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, ImportConflictStrategy.skip),
+          child: const Text('Skip matches'),
+        ),
+        TextButton(
+          onPressed: () =>
+              Navigator.pop(context, ImportConflictStrategy.create),
+          child: const Text('Create duplicates'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, ImportConflictStrategy.update),
+          child: const Text('Update existing'),
+        ),
+      ],
+    );
   }
 }
 
