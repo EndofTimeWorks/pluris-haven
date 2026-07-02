@@ -789,6 +789,39 @@ void main() {
     expect(archive.archiveJson, contains('"bytes_base64": "AQIDBA=="'));
   });
 
+  test('prefers attached Simply Plural avatar bytes over remote URLs', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "avatarUrl": "https://serve.apparyllis.com/avatars/owner/avatar-1",
+      "avatarUuid": "avatar-1"
+    }
+  ]
+}
+''',
+      avatarAssets: [
+        ImportAvatarAsset(
+          id: 'avatar-1',
+          name: 'avatar-1.png',
+          mimeType: 'image/png',
+          bytes: Uint8List.fromList([1, 2, 3, 4]),
+        ),
+      ],
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+    expect(members.single['avatar_url'], 'sp-avatar:avatar-1');
+    expect(jsonEncode(members.single), isNot(contains('serve.apparyllis.com')));
+  });
+
   test('preserves unmapped Simply Plural collections as raw payloads', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
