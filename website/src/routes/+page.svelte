@@ -10,7 +10,7 @@
 	const current = [
 		['Build', 'Android pre-alpha'],
 		['Storage', 'local device database'],
-		['Import', 'Simply Plural and PluralKit file work is active'],
+		['Import', 'Simply Plural, PluralKit, Tupperbox, PluralSpace, Prism'],
 		['Sync', 'not on by default; server work comes later']
 	];
 
@@ -28,6 +28,8 @@
 		'Avatars and large archives need more testing',
 		'Accessibility needs a full TalkBack/VoiceOver pass'
 	];
+
+	const previewTiles = ['Members', 'Front history', 'Custom fronts', 'Groups', 'Notes', 'Import / export'];
 </script>
 
 <main>
@@ -47,7 +49,7 @@
 	</header>
 
 	<section class="intro">
-		<div>
+		<div class="intro-copy">
 			<p class="label">Pre-alpha</p>
 			<h1>Offline-first plural system app.</h1>
 			<p class="lede">
@@ -60,17 +62,37 @@
 			</div>
 		</div>
 
-		<aside class="status-panel" aria-label="Current project status">
-			<h2>Current state</h2>
-			<dl>
-				{#each current as [term, detail]}
-					<div>
-						<dt>{term}</dt>
-						<dd>{detail}</dd>
-					</div>
+		<aside class="app-preview" aria-label="Preview of the Pluris Haven mobile dashboard">
+			<div class="phone-status" aria-hidden="true">
+				<span>8:32</span>
+				<span>87%</span>
+			</div>
+			<div class="app-card header-card">
+				<div>
+					<strong>Pluris Haven</strong>
+					<span>saved on device</span>
+				</div>
+				<b>pre-alpha</b>
+			</div>
+			<div class="app-card front-card">
+				<span>Currently fronting</span>
+				<strong>None</strong>
+			</div>
+			<div class="tile-grid">
+				{#each previewTiles as tile}
+					<div>{tile}</div>
 				{/each}
-			</dl>
+			</div>
 		</aside>
+	</section>
+
+	<section class="status-strip" aria-label="Current project status">
+		{#each current as [term, detail]}
+			<div>
+				<span>{term}</span>
+				<strong>{detail}</strong>
+			</div>
+		{/each}
 	</section>
 
 	<section class="split">
@@ -233,8 +255,7 @@
 
 	.lede,
 	.notes p,
-	li,
-	dd {
+	li {
 		color: #c9c4d4;
 		line-height: 1.6;
 	}
@@ -268,37 +289,11 @@
 		background: #6750f0;
 	}
 
-	.status-panel,
 	.split > div,
 	.notes > div {
 		border: 1px solid #34394a;
 		border-radius: 8px;
 		background: #202430;
-	}
-
-	.status-panel {
-		padding: 22px;
-	}
-
-	dl {
-		display: grid;
-		gap: 12px;
-		margin: 0;
-	}
-
-	dl div {
-		border-top: 1px solid #34394a;
-		padding-top: 12px;
-	}
-
-	dt {
-		margin-bottom: 3px;
-		color: #f4f0ff;
-		font-weight: 800;
-	}
-
-	dd {
-		margin: 0;
 	}
 
 	.split,
@@ -331,6 +326,107 @@
 	.notes a {
 		color: #d7cdfd;
 		font-weight: 700;
+	}
+
+	.app-preview {
+		display: grid;
+		gap: 10px;
+		border: 1px solid #303442;
+		border-radius: 24px;
+		max-width: 370px;
+		padding: 18px 16px 16px;
+		background: #1a1e2a;
+		font-size: 0.92rem;
+	}
+
+	.phone-status {
+		display: flex;
+		justify-content: space-between;
+		padding: 0 4px;
+		color: #aaa4b5;
+		font-size: 0.78rem;
+		font-weight: 700;
+	}
+
+	.app-card {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border: 1px solid #34394a;
+		border-radius: 12px;
+		padding: 12px 14px;
+		background: #202430;
+	}
+
+	.app-card div {
+		display: grid;
+		gap: 2px;
+	}
+
+	.app-card span {
+		color: #c9c4d4;
+		font-size: 0.8rem;
+	}
+
+	.header-card b {
+		border-radius: 5px;
+		padding: 2px 8px;
+		background: #2e3343;
+		color: #f0ca63;
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.front-card strong {
+		font-size: 1.1rem;
+	}
+
+	.tile-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+	}
+
+	.tile-grid div {
+		border: 1px solid #34394a;
+		border-radius: 10px;
+		padding: 12px 6px;
+		background: #202430;
+		color: #c9c4d4;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-align: center;
+	}
+
+	.status-strip {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+		gap: 14px;
+		border-top: 1px solid #303442;
+		padding: 24px clamp(18px, 4vw, 72px);
+	}
+
+	.status-strip div {
+		border: 1px solid #34394a;
+		border-radius: 8px;
+		padding: 14px 16px;
+		background: #202430;
+	}
+
+	.status-strip span {
+		display: block;
+		color: #c9c4d4;
+		font-size: 0.78rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.status-strip strong {
+		margin-top: 4px;
+		font-size: 1.05rem;
 	}
 
 	footer {
