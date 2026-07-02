@@ -161,6 +161,48 @@ void main() {
     expect(snapshot.groupCount, 1);
   });
 
+  test('stores members in multiple groups', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveGroup(const GroupDraft(name: 'Subsystem A'));
+    final groups = await repository.watchGroups().first;
+
+    await repository.saveMember(
+      MemberDraft(
+        displayName: 'Iris',
+        folderId: groups.first.id,
+        groupIds: [for (final group in groups) group.id],
+      ),
+    );
+
+    final members = await repository.watchMembers().first;
+    expect(members.single.groupIds.toSet(), {
+      for (final group in groups) group.id,
+    });
+
+    final groupsWithCounts = await repository.watchGroups().first;
+    expect([for (final group in groupsWithCounts) group.memberCount], [1, 1]);
+
+    await repository.updateMember(
+      members.single.id,
+      const MemberDraft(displayName: 'Iris', groupIds: []),
+    );
+
+    expect((await repository.watchMembers().first).single.groupIds, isEmpty);
+    expect(
+      [
+        for (final group in await repository.watchGroups().first)
+          group.memberCount,
+      ],
+      [0, 0],
+    );
+  });
+
   test('stores notes in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

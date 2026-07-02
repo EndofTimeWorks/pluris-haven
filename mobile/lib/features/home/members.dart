@@ -304,49 +304,58 @@ class MemberProfileSheet extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 12),
-            SpSettingsGroup(
-              title: 'Profile',
-              rows: [
-                SpSettingsRow(
-                  'Pronouns',
-                  _memberPronouns(member),
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'Birthday',
-                  _emptyLabel(member.birthday),
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'Emoji',
-                  _emptyLabel(member.emoji),
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'Privacy',
-                  _emptyLabel(member.privacy),
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'PluralKit ID',
-                  pluralKitId == null || pluralKitId.isEmpty
-                      ? 'not linked'
-                      : pluralKitId,
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'Group',
-                  member.folderId == null ? 'none' : member.folderId!,
-                  interactive: false,
-                ),
-                SpSettingsRow(
-                  'Avatar',
-                  member.avatarUrl?.trim().isNotEmpty == true
-                      ? member.avatarUrl!
-                      : 'default',
-                  interactive: false,
-                ),
-              ],
+            StreamBuilder<List<GroupSummary>>(
+              stream: repository.watchGroups(),
+              initialData: const [],
+              builder: (context, groupsSnapshot) {
+                return SpSettingsGroup(
+                  title: 'Profile',
+                  rows: [
+                    SpSettingsRow(
+                      'Pronouns',
+                      _memberPronouns(member),
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'Birthday',
+                      _emptyLabel(member.birthday),
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'Emoji',
+                      _emptyLabel(member.emoji),
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'Privacy',
+                      _emptyLabel(member.privacy),
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'PluralKit ID',
+                      pluralKitId == null || pluralKitId.isEmpty
+                          ? 'not linked'
+                          : pluralKitId,
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'Groups',
+                      _memberGroupLabel(
+                        member,
+                        groupsSnapshot.data ?? const <GroupSummary>[],
+                      ),
+                      interactive: false,
+                    ),
+                    SpSettingsRow(
+                      'Avatar',
+                      member.avatarUrl?.trim().isNotEmpty == true
+                          ? member.avatarUrl!
+                          : 'default',
+                      interactive: false,
+                    ),
+                  ],
+                );
+              },
             ),
             MemberCustomFieldsSection(
               repository: repository,
@@ -629,6 +638,19 @@ String _emptyLabel(String? value) {
   return trimmed == null || trimmed.isEmpty ? 'not set' : trimmed;
 }
 
+String _memberGroupLabel(MemberSummary member, List<GroupSummary> groups) {
+  final namesById = {for (final group in groups) group.id: group.name};
+  final ids = <String>{
+    ...member.groupIds,
+    if (member.groupIds.isEmpty && member.folderId != null) member.folderId!,
+  };
+  if (ids.isEmpty) {
+    return 'none';
+  }
+
+  return [for (final id in ids) namesById[id] ?? id].join(', ');
+}
+
 String _memberAvatarLabel(MemberSummary member) {
   final emoji = member.emoji?.trim();
   return emoji == null || emoji.isEmpty
@@ -756,6 +778,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     text: _hexFromAccent(HavenAccentColor.purple),
   );
   String? _folderId;
+  final Set<String> _groupIds = {};
   String? _colorError;
 
   bool get _isEditing => widget.member != null;
@@ -777,6 +800,12 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _avatarController.text = member.avatarUrl ?? '';
     _pluralKitController.text = member.pluralKitId ?? '';
     _folderId = member.folderId;
+    _groupIds
+      ..clear()
+      ..addAll(member.groupIds);
+    if (_folderId != null) {
+      _groupIds.add(_folderId!);
+    }
     _colorController.text =
         _normalizeUiHexColor(member.colorHex ?? '') ??
         _hexFromAccent(HavenAccentColor.purple);
@@ -886,21 +915,72 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               initialData: const [],
               builder: (context, snapshot) {
                 final groups = snapshot.data ?? const <GroupSummary>[];
-                return DropdownButtonFormField<String?>(
-                  initialValue: _folderId,
-                  decoration: const InputDecoration(labelText: 'Group'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('No group'),
-                    ),
-                    for (final group in groups)
-                      DropdownMenuItem<String?>(
-                        value: group.id,
-                        child: Text(group.name),
+                final groupIds = groups.map((group) => group.id).toSet();
+                if (groups.isNotEmpty &&
+                    _folderId != null &&
+                    !groupIds.contains(_folderId)) {
+                  _folderId = null;
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String?>(
+                      initialValue: _folderId,
+                      decoration: const InputDecoration(
+                        labelText: 'Primary group',
                       ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('No primary group'),
+                        ),
+                        for (final group in groups)
+                          DropdownMenuItem<String?>(
+                            value: group.id,
+                            child: Text(group.name),
+                          ),
+                      ],
+                      onChanged: (value) => setState(() {
+                        _folderId = value;
+                        if (value != null) {
+                          _groupIds.add(value);
+                        }
+                      }),
+                    ),
+                    if (groups.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Member groups',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final group in groups)
+                            FilterChip(
+                              label: Text(group.name),
+                              selected: _groupIds.contains(group.id),
+                              onSelected: (selected) => setState(() {
+                                if (selected) {
+                                  _groupIds.add(group.id);
+                                  _folderId ??= group.id;
+                                } else {
+                                  _groupIds.remove(group.id);
+                                  if (_folderId == group.id) {
+                                    _folderId = _groupIds.isEmpty
+                                        ? null
+                                        : _groupIds.first;
+                                  }
+                                }
+                              }),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
-                  onChanged: (value) => setState(() => _folderId = value),
                 );
               },
             ),
@@ -967,6 +1047,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       avatarUrl: _avatarController.text,
       pluralKitId: _pluralKitController.text,
       folderId: _folderId,
+      groupIds: _groupIds.toList(growable: false),
     );
     final member = widget.member;
     if (member == null) {
