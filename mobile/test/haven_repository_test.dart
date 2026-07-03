@@ -218,6 +218,16 @@ void main() {
     expect(notes, hasLength(1));
     expect(notes.single.title, 'Grounding');
     expect(notes.single.body, 'Drink water and check meds.');
+    await repository.updateNote(
+      notes.single.id,
+      const NoteDraft(
+        title: 'Grounding edited',
+        body: 'Drink water and check meds before bed.',
+      ),
+    );
+    final updatedNotes = await repository.watchNotes().first;
+    expect(updatedNotes.single.title, 'Grounding edited');
+    expect(updatedNotes.single.body, 'Drink water and check meds before bed.');
 
     final snapshot = await repository.loadHomeSnapshot();
     expect(snapshot.noteCount, 1);
