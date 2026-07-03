@@ -81,8 +81,7 @@ class _NotesPageState extends State<NotesPage> {
                   SpActionRow(
                     primary: 'Add note',
                     secondary: 'Import',
-                    onPrimary: () =>
-                        showAddNoteSheet(context, widget.repository),
+                    onPrimary: () => showNoteSheet(context, widget.repository),
                     onSecondary: widget.onImport,
                   ),
                 ],
@@ -118,55 +117,77 @@ class NoteListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final body = note.body.trim();
 
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const SpIconBubble(icon: Icons.sticky_note_2_outlined),
-      title: Text(
-        note.title,
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text(
-        body.isEmpty ? 'empty note' : body,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: _spMuted),
-      ),
-      trailing: IconButton(
-        tooltip: 'Delete note',
-        onPressed: () => confirmDelete(
-          context,
-          title: 'Delete note?',
-          body: 'This note will be permanently removed.',
-          onDelete: () => repository.deleteNote(note.id),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const SpIconBubble(icon: Icons.sticky_note_2_outlined),
+        title: Text(
+          note.title,
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        icon: const Icon(Icons.delete_outline_rounded),
+        subtitle: Text(
+          body.isEmpty ? 'empty note' : body,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: _spMuted),
+        ),
+        trailing: IconButton(
+          tooltip: 'Delete note',
+          onPressed: () => confirmDelete(
+            context,
+            title: 'Delete note?',
+            body: 'This note will be permanently removed.',
+            onDelete: () => repository.deleteNote(note.id),
+          ),
+          icon: const Icon(Icons.delete_outline_rounded),
+        ),
+        onTap: () => showNoteSheet(context, repository, note: note),
       ),
     );
   }
 }
 
-void showAddNoteSheet(BuildContext context, HavenRepository repository) {
+void showNoteSheet(
+  BuildContext context,
+  HavenRepository repository, {
+  NoteSummary? note,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) => AddNoteSheet(repository: repository),
+    builder: (context) => NoteSheet(repository: repository, note: note),
   );
 }
 
-class AddNoteSheet extends StatefulWidget {
-  const AddNoteSheet({super.key, required this.repository});
+class NoteSheet extends StatefulWidget {
+  const NoteSheet({super.key, required this.repository, this.note});
 
   final HavenRepository repository;
+  final NoteSummary? note;
 
   @override
-  State<AddNoteSheet> createState() => _AddNoteSheetState();
+  State<NoteSheet> createState() => _NoteSheetState();
 }
 
-class _AddNoteSheetState extends State<AddNoteSheet> {
+class _NoteSheetState extends State<NoteSheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+
+  bool get _isEditing => widget.note != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final note = widget.note;
+    if (note == null) {
+      return;
+    }
+    _titleController.text = note.title;
+    _bodyController.text = note.body;
+  }
 
   @override
   void dispose() {
@@ -188,9 +209,9 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Add note',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              _isEditing ? 'Edit note' : 'Add note',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -221,9 +242,16 @@ class _AddNoteSheetState extends State<AddNoteSheet> {
   }
 
   Future<void> _save() async {
-    await widget.repository.saveNote(
-      NoteDraft(title: _titleController.text, body: _bodyController.text),
+    final draft = NoteDraft(
+      title: _titleController.text,
+      body: _bodyController.text,
     );
+    final note = widget.note;
+    if (note == null) {
+      await widget.repository.saveNote(draft);
+    } else {
+      await widget.repository.updateNote(note.id, draft);
+    }
 
     if (mounted) {
       Navigator.pop(context);
