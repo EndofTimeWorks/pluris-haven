@@ -780,6 +780,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   String? _folderId;
   final Set<String> _groupIds = {};
   String? _colorError;
+  String? _avatarMessage;
 
   bool get _isEditing => widget.member != null;
 
@@ -788,6 +789,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     super.initState();
     final member = widget.member;
     if (member == null) {
+      _attachAvatarPreviewListeners();
       return;
     }
 
@@ -809,10 +811,19 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _colorController.text =
         _normalizeUiHexColor(member.colorHex ?? '') ??
         _hexFromAccent(HavenAccentColor.purple);
+    _attachAvatarPreviewListeners();
   }
 
   @override
   void dispose() {
+    for (final controller in [
+      _nameController,
+      _emojiController,
+      _avatarController,
+      _colorController,
+    ]) {
+      controller.removeListener(_refreshAvatarPreview);
+    }
     _nameController.dispose();
     _pronounsController.dispose();
     _birthdayController.dispose();
@@ -823,6 +834,23 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     _pluralKitController.dispose();
     _colorController.dispose();
     super.dispose();
+  }
+
+  void _refreshAvatarPreview() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _attachAvatarPreviewListeners() {
+    for (final controller in [
+      _nameController,
+      _emojiController,
+      _avatarController,
+      _colorController,
+    ]) {
+      controller.addListener(_refreshAvatarPreview);
+    }
   }
 
   @override
@@ -902,6 +930,61 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                 hintText: 'https://... or local-avatar:...',
               ),
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                MemberAvatar(
+                  member: MemberSummary(
+                    id: 'member-editor-preview',
+                    displayName: _nameController.text.trim().isEmpty
+                        ? 'Preview'
+                        : _nameController.text,
+                    colorHex: _normalizeUiHexColor(_colorController.text),
+                    emoji: _emojiController.text,
+                    avatarUrl: _nullIfBlank(_avatarController.text),
+                  ),
+                  color: _colorFromHex(
+                    _normalizeUiHexColor(_colorController.text),
+                  ),
+                  label: _emojiController.text.trim().isEmpty
+                      ? _initialFor(
+                          _nameController.text.trim().isEmpty
+                              ? 'Preview'
+                              : _nameController.text,
+                        )
+                      : _emojiController.text.trim(),
+                  size: 52,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        key: const ValueKey('pick-member-avatar-button'),
+                        onPressed: _chooseAvatar,
+                        icon: const Icon(Icons.image_outlined),
+                        label: const Text('Choose image'),
+                      ),
+                      OutlinedButton.icon(
+                        key: const ValueKey('clear-member-avatar-button'),
+                        onPressed: _clearAvatar,
+                        icon: const Icon(Icons.close_rounded),
+                        label: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_avatarMessage != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _avatarMessage!,
+                style: const TextStyle(color: _spMuted, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('member-pluralkit-field'),
@@ -1060,7 +1143,103 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       Navigator.pop(context);
     }
   }
+
+  Future<void> _chooseAvatar() async {
+    setState(() => _avatarMessage = 'Opening image picker...');
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+      dialogTitle: 'Choose member avatar',
+    );
+    final files = result?.files ?? const <PlatformFile>[];
+    final file = files.isEmpty ? null : files.first;
+    if (file == null) {
+      if (mounted) {
+        setState(() => _avatarMessage = 'No image selected.');
+      }
+      return;
+    }
+
+    try {
+      final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+      if (bytes == null || bytes.isEmpty) {
+        throw const FormatException('Selected image was empty.');
+      }
+      final ref = await _storeManualAvatar(file.name, bytes);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _avatarController.text = ref;
+        _avatarMessage = 'Avatar saved on device.';
+      });
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _avatarMessage = 'Could not save avatar: $error');
+      }
+    }
+  }
+
+  void _clearAvatar() {
+    setState(() {
+      _avatarController.clear();
+      _avatarMessage = 'Avatar cleared.';
+    });
+  }
 }
 
 String _hexFromAccent(HavenAccentColor color) =>
     '#${color.argb.toRadixString(16).substring(2).toUpperCase()}';
+
+Future<List<int>?> _readPickedFileBytes(String? path) async {
+  if (path == null || path.trim().isEmpty) {
+    return null;
+  }
+  return File(path).readAsBytes();
+}
+
+Future<String> _storeManualAvatar(String sourceName, List<int> bytes) async {
+  Directory base;
+  try {
+    base = await getApplicationDocumentsDirectory();
+  } on Object {
+    base = Directory('${Directory.systemTemp.path}/pluris-haven-test');
+  }
+  final avatars = Directory('${base.path}/avatars');
+  if (!await avatars.exists()) {
+    await avatars.create(recursive: true);
+  }
+  final extension = _manualAvatarExtension(sourceName);
+  final stem = _manualAvatarStem(sourceName);
+  final fileName =
+      'manual_${DateTime.now().toUtc().microsecondsSinceEpoch}_$stem.$extension';
+  await File('${avatars.path}/$fileName').writeAsBytes(bytes, flush: true);
+  return 'local-avatar:$fileName';
+}
+
+String _manualAvatarExtension(String sourceName) {
+  final lower = sourceName.toLowerCase();
+  final dot = lower.lastIndexOf('.');
+  if (dot == -1 || dot == lower.length - 1) {
+    return 'png';
+  }
+  final extension = lower
+      .substring(dot + 1)
+      .replaceAll(RegExp(r'[^a-z0-9]'), '');
+  return switch (extension) {
+    'jpg' || 'jpeg' || 'png' || 'webp' || 'gif' => extension,
+    _ => 'png',
+  };
+}
+
+String _manualAvatarStem(String sourceName) {
+  final dot = sourceName.lastIndexOf('.');
+  final raw = dot <= 0 ? sourceName : sourceName.substring(0, dot);
+  final cleaned = raw
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  return cleaned.isEmpty ? 'avatar' : cleaned;
+}
