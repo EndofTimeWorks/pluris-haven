@@ -13,7 +13,8 @@ import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/import/member_dedupe.dart';
-import '../../data/local/app_database.dart' show NamedFront, Tag, localSystemId;
+import '../../data/local/app_database.dart'
+    show JournalEntry, NamedFront, Tag, localSystemId;
 import '../../data/notifications/notification_service.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
@@ -24,6 +25,7 @@ part 'members.dart';
 part 'front_history.dart';
 part 'groups.dart';
 part 'notes.dart';
+part 'journals.dart';
 part 'messages.dart';
 part 'analytics.dart';
 part 'custom_fields.dart';
@@ -57,6 +59,7 @@ enum SpSection {
   customFronts('Custom Fronts'),
   groups('Groups'),
   notes('Notes'),
+  journals('Journals'),
   analytics('Analytics'),
   chat('Chat'),
   polls('Polls'),
@@ -179,6 +182,8 @@ class _HomePageState extends State<HomePage> {
           repository: widget.repository,
           onImport: () => _selectSection(SpSection.importExport),
         );
+      case SpSection.journals:
+        return JournalsPage(repository: widget.repository);
       case SpSection.analytics:
         return AnalyticsPage(repository: widget.repository);
       case SpSection.chat:

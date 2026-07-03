@@ -127,6 +127,12 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
+              label: 'Journals',
+              section: SpSection.journals,
+              selected: selected,
+              onSelect: onSelect,
+            ),
+            DrawerEntry(
               label: 'Analytics',
               section: SpSection.analytics,
               selected: selected,
