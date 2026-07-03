@@ -171,14 +171,14 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Initialize CodeQL for compiled language
         if: matrix.build-mode == 'manual'
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
           build-mode: manual
 
       - name: Build ${{ matrix.build-name }}

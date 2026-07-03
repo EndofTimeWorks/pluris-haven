@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -55,6 +57,9 @@ jobs:
         id: version
         shell: bash
         run: |
+          set -euo pipefail
+
+          semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$'
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             semver="${GITHUB_REF_NAME#mobile-v}"
             version="${semver%%+*}"
@@ -78,7 +83,7 @@ jobs:
             prerelease="${{ inputs.prerelease }}"
           fi
 
-          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$ ]]; then
+          if [[ ! "${version}" =~ ${semver_regex} ]]; then
             echo "Invalid version: ${version}" >&2
             exit 1
           fi
@@ -145,6 +150,8 @@ jobs:
       - name: Collect release artifacts
         shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p ../release/mobile
           cp build/app/outputs/flutter-apk/app-release.apk \
             "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-universal.apk"
@@ -153,7 +160,15 @@ jobs:
             abi="${abi%-release.apk}"
             cp "${apk}" "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-${abi}.apk"
           done
-          (cd ../release/mobile && sha256sum *.apk > SHA256SUMS.txt)
+          {
+            echo "version=${{ steps.version.outputs.version }}"
+            echo "build=${{ steps.version.outputs.build }}"
+            echo "tag=${{ steps.version.outputs.tag }}"
+            echo "commit=${GITHUB_SHA}"
+            echo "run=${GITHUB_RUN_NUMBER}"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > ../release/mobile/BUILD.txt
+          (cd ../release/mobile && sha256sum *.apk BUILD.txt > SHA256SUMS.txt)
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v7
@@ -168,17 +183,30 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           prerelease_flag=()
+          latest_flag=()
           if [[ "${{ steps.version.outputs.prerelease }}" == "true" ]]; then
             prerelease_flag=(--prerelease)
+            latest_flag=(--latest=false)
+          else
+            prerelease_flag=(--prerelease=false)
+            latest_flag=(--latest)
           fi
 
           if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            gh release edit "${{ steps.version.outputs.tag }}" \
+              --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+              "${prerelease_flag[@]}" \
+              "${latest_flag[@]}"
             gh release upload "${{ steps.version.outputs.tag }}" release/mobile/* --clobber
           else
             gh release create "${{ steps.version.outputs.tag }}" \
               release/mobile/* \
               --title "Pluris Haven Mobile ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
               --generate-notes \
+              --verify-tag \
+              "${latest_flag[@]}" \
               "${prerelease_flag[@]}"
           fi
