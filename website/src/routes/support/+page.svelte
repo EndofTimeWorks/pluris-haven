@@ -45,6 +45,9 @@
 			Monero:
 			<code>85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ</code>
 		</p>
+		<p class="muted">
+			Structured metadata: <a href="/funding.json"><code>funding.json</code></a>.
+		</p>
 	</section>
 </main>
 

@@ -21,6 +21,7 @@
 			<li>The app is unfinished and may contain bugs.</li>
 			<li>Keep your own backups before importing or editing important data.</li>
 			<li>Do not use pre-alpha builds as your only copy of critical records.</li>
+			<li>Do not treat the app as medical advice, crisis support, or professional care.</li>
 			<li>Report security or privacy problems through GitHub or the support page.</li>
 		</ul>
 	</section>

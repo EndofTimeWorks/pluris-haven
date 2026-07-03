@@ -36,6 +36,10 @@
 				<strong>Changelog</strong>
 				<span>What changed in the current pre-alpha line and what is still rough.</span>
 			</a>
+			<a class="card" href="/distribution">
+				<strong>Distribution</strong>
+				<span>GitHub Releases, Obtainium, package ids, and future iOS notes.</span>
+			</a>
 			<a class="card" href="/privacy">
 				<strong>Privacy</strong>
 				<span>Local-first expectations, sync boundaries, and minors safety notes.</span>

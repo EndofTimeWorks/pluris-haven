@@ -25,6 +25,7 @@ other network features are opt-in.
 
 - `docs/product-goals.md` - product scope and milestone order
 - `docs/release/mobile.md` - mobile dev builds and releases
+- `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 - `sp-replacement-schema.md` - local data model notes
 
 ## CI
@@ -64,6 +65,9 @@ Local data stays local by default. Any online connection must say:
 - who can read it
 - how to disconnect
 - what remains after disconnecting
+
+Pluris Haven is a personal tracking and journaling tool. It is not medical
+care, medical advice, crisis support, or a replacement for professional help.
 
 ## License
 
