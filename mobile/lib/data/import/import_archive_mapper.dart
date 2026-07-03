@@ -948,6 +948,7 @@ class _ExternalArchiveNormalizer {
       );
       return null;
     }
+    final structuredSchedule = _structuredReminderSchedule(reminder, schedule);
 
     final externalId =
         _firstString(reminder, const ['_id', 'id', 'uuid', 'uid']) ??
@@ -963,10 +964,63 @@ class _ExternalArchiveNormalizer {
         'event',
       ]),
       'schedule_text': schedule,
+      'schedule_kind': structuredSchedule.kind,
+      'schedule_time': structuredSchedule.time,
+      'schedule_dow_mask': structuredSchedule.dowMask,
+      'schedule_dom': structuredSchedule.dom,
       'enabled': reminder['enabled'] != false,
       'created_at': _dateString(reminder, const ['created_at', 'createdAt']),
       'updated_at': _dateString(reminder, const ['updated_at', 'updatedAt']),
     };
+  }
+
+  _ReminderScheduleFields _structuredReminderSchedule(
+    Map<String, Object?> reminder,
+    String schedule,
+  ) {
+    final explicitKind = _firstString(reminder, const [
+      'schedule_kind',
+      'scheduleKind',
+      'kind',
+      'frequency',
+    ])?.toLowerCase();
+    final scheduleLower = schedule.toLowerCase();
+    final kind = switch (explicitKind) {
+      'daily' => 'daily',
+      'weekly' => 'weekly',
+      'monthly' => 'monthly',
+      'after_front' ||
+      'after-front' ||
+      'fronting' ||
+      'member_front' => 'after_front',
+      _ when scheduleLower.startsWith('daily') => 'daily',
+      _ when scheduleLower.startsWith('weekly') => 'weekly',
+      _ when scheduleLower.startsWith('monthly') => 'monthly',
+      _ when scheduleLower.startsWith('after') => 'after_front',
+      _ => null,
+    };
+    final time =
+        _firstString(reminder, const ['schedule_time', 'scheduleTime']) ??
+        _timeFromScheduleText(schedule);
+    final weekday =
+        _intValue(reminder['weekday']) ??
+        _intValue(reminder['dayOfWeek']) ??
+        _weekdayFromScheduleText(schedule);
+    final dom =
+        _intValue(reminder['schedule_dom']) ??
+        _intValue(reminder['scheduleDom']) ??
+        _intValue(reminder['dayOfMonth']) ??
+        _monthDayFromScheduleText(schedule);
+
+    return _ReminderScheduleFields(
+      kind: kind,
+      time: time,
+      dowMask: kind == 'weekly' && weekday != null
+          ? 1 << (weekday.clamp(1, 7) - 1)
+          : _intValue(reminder['schedule_dow_mask']) ??
+                _intValue(reminder['scheduleDowMask']),
+      dom: kind == 'monthly' && dom != null ? dom.clamp(1, 31) : null,
+    );
   }
 
   _PollData _normalizePolls() {
@@ -1614,6 +1668,20 @@ class _NamedFrontData {
   final List<Map<String, Object?>> namedFrontMembers;
 }
 
+class _ReminderScheduleFields {
+  const _ReminderScheduleFields({
+    required this.kind,
+    required this.time,
+    required this.dowMask,
+    required this.dom,
+  });
+
+  final String? kind;
+  final String? time;
+  final int? dowMask;
+  final int? dom;
+}
+
 class _PollData {
   const _PollData(this.polls, this.pollOptions, this.pollVotes);
 
@@ -1793,6 +1861,35 @@ bool? _boolValue(Object? value) {
     }
   }
   return null;
+}
+
+String? _timeFromScheduleText(String text) {
+  final match = RegExp(r'\bat\s+(\d{1,2}:\d{2})\b').firstMatch(text);
+  return match?.group(1);
+}
+
+int? _weekdayFromScheduleText(String text) {
+  final lower = text.toLowerCase();
+  final weekdays = <String, int>{
+    'monday': DateTime.monday,
+    'tuesday': DateTime.tuesday,
+    'wednesday': DateTime.wednesday,
+    'thursday': DateTime.thursday,
+    'friday': DateTime.friday,
+    'saturday': DateTime.saturday,
+    'sunday': DateTime.sunday,
+  };
+  for (final entry in weekdays.entries) {
+    if (lower.contains(entry.key)) return entry.value;
+  }
+  return null;
+}
+
+int? _monthDayFromScheduleText(String text) {
+  final match = RegExp(r'\bday\s+(\d{1,2})\b').firstMatch(text);
+  final value = int.tryParse(match?.group(1) ?? '');
+  if (value == null || value < 1 || value > 31) return null;
+  return value;
 }
 
 String _customFieldType(Object? value) {

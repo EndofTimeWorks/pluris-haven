@@ -1293,6 +1293,9 @@ void main() {
     expect(find.text('Weekly on Friday at 08:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
     expect(find.text('on'), findsOneWidget);
+    expect(repository._reminders.single.scheduleKind, 'weekly');
+    expect(repository._reminders.single.scheduleTime, '08:30');
+    expect(repository._reminders.single.scheduleDowMask, 1 << 4);
 
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
@@ -2548,25 +2551,31 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> saveReminder(ReminderDraft draft) async {
+  Future<String?> saveReminder(ReminderDraft draft) async {
     final title = draft.title.trim();
     final schedule = draft.scheduleText.trim();
     if (title.isEmpty || schedule.isEmpty) {
-      return;
+      return null;
     }
 
+    final id = 'fake-reminder-${_reminders.length + 1}';
     _reminders = [
       ReminderSummary(
-        id: 'fake-reminder-${_reminders.length + 1}',
+        id: id,
         title: title,
         body: _nullIfBlank(draft.body),
         scheduleText: schedule,
+        scheduleKind: draft.scheduleKind,
+        scheduleTime: draft.scheduleTime,
+        scheduleDowMask: draft.scheduleDowMask,
+        scheduleDom: draft.scheduleDom,
         enabled: draft.enabled,
         updatedAt: DateTime(2026),
       ),
       ..._reminders,
     ];
     _remindersController.add(_reminders);
+    return id;
   }
 
   @override
@@ -2579,6 +2588,10 @@ class FakeHavenRepository implements HavenRepository {
             title: reminder.title,
             body: reminder.body,
             scheduleText: reminder.scheduleText,
+            scheduleKind: reminder.scheduleKind,
+            scheduleTime: reminder.scheduleTime,
+            scheduleDowMask: reminder.scheduleDowMask,
+            scheduleDom: reminder.scheduleDom,
             enabled: enabled,
             updatedAt: DateTime(2026),
           )
