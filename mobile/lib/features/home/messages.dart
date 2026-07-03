@@ -62,7 +62,10 @@ class _MessagesPageState extends State<MessagesPage> {
                     )
                   else
                     for (final message in messages) ...[
-                      MessageTile(message: message),
+                      MessageTile(
+                        message: message,
+                        repository: widget.repository,
+                      ),
                       if (message != messages.last)
                         const Divider(height: 1, color: _spLine),
                     ],
@@ -71,7 +74,7 @@ class _MessagesPageState extends State<MessagesPage> {
                     primary: 'Add message',
                     secondary: 'Import',
                     onPrimary: () =>
-                        showAddMessageSheet(context, widget.repository),
+                        showMessageSheet(context, widget.repository),
                     onSecondary: widget.onImport,
                   ),
                 ],
@@ -85,50 +88,83 @@ class _MessagesPageState extends State<MessagesPage> {
 }
 
 class MessageTile extends StatelessWidget {
-  const MessageTile({super.key, required this.message});
+  const MessageTile({
+    super.key,
+    required this.message,
+    required this.repository,
+  });
 
   final MessageSummary message;
+  final HavenRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(message.body, style: const TextStyle(height: 1.35)),
-          const SizedBox(height: 4),
-          Text(
-            _shortDateTime(message.createdAt),
-            style: const TextStyle(color: _spMuted, fontSize: 12),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const SpIconBubble(icon: Icons.forum_outlined),
+        title: Text(
+          message.body,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(height: 1.35),
+        ),
+        subtitle: Text(
+          _shortDateTime(message.createdAt),
+          style: const TextStyle(color: _spMuted, fontSize: 12),
+        ),
+        trailing: IconButton(
+          tooltip: 'Delete message',
+          onPressed: () => confirmDelete(
+            context,
+            title: 'Delete message?',
+            body: 'This message will be hidden from the local board.',
+            onDelete: () => repository.deleteMessage(message.id),
           ),
-        ],
+          icon: const Icon(Icons.delete_outline_rounded),
+        ),
+        onTap: () => showMessageSheet(context, repository, message: message),
       ),
     );
   }
 }
 
-void showAddMessageSheet(BuildContext context, HavenRepository repository) {
+void showMessageSheet(
+  BuildContext context,
+  HavenRepository repository, {
+  MessageSummary? message,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) => AddMessageSheet(repository: repository),
+    builder: (context) =>
+        MessageSheet(repository: repository, message: message),
   );
 }
 
-class AddMessageSheet extends StatefulWidget {
-  const AddMessageSheet({super.key, required this.repository});
+class MessageSheet extends StatefulWidget {
+  const MessageSheet({super.key, required this.repository, this.message});
 
   final HavenRepository repository;
+  final MessageSummary? message;
 
   @override
-  State<AddMessageSheet> createState() => _AddMessageSheetState();
+  State<MessageSheet> createState() => _MessageSheetState();
 }
 
-class _AddMessageSheetState extends State<AddMessageSheet> {
+class _MessageSheetState extends State<MessageSheet> {
   final _bodyController = TextEditingController();
+
+  bool get _isEditing => widget.message != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _bodyController.text = widget.message?.body ?? '';
+  }
 
   @override
   void dispose() {
@@ -150,9 +186,9 @@ class _AddMessageSheetState extends State<AddMessageSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Add message',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              _isEditing ? 'Edit message' : 'Add message',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -166,7 +202,7 @@ class _AddMessageSheetState extends State<AddMessageSheet> {
             FilledButton(
               key: const ValueKey('save-message-button'),
               onPressed: _save,
-              child: const Text('Save'),
+              child: Text(_isEditing ? 'Save message' : 'Save'),
             ),
           ],
         ),
@@ -175,9 +211,13 @@ class _AddMessageSheetState extends State<AddMessageSheet> {
   }
 
   Future<void> _save() async {
-    await widget.repository.saveMessage(
-      MessageDraft(body: _bodyController.text),
-    );
+    final draft = MessageDraft(body: _bodyController.text);
+    final message = widget.message;
+    if (message == null) {
+      await widget.repository.saveMessage(draft);
+    } else {
+      await widget.repository.updateMessage(message.id, draft);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
