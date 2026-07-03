@@ -91,6 +91,13 @@ const dashboardShortcuts = [
     countKind: DashboardCountKind.notes,
   ),
   DashboardShortcutDefinition(
+    id: 'journals',
+    title: 'Journals',
+    subtitle: 'long entries',
+    section: SpSection.journals,
+    icon: Icons.menu_book_rounded,
+  ),
+  DashboardShortcutDefinition(
     id: 'import-export',
     title: 'Import / Export',
     subtitle: 'local archive',
