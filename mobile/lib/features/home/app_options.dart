@@ -185,6 +185,42 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
               ],
             ),
             const SizedBox(height: 14),
+            SpCard(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  AccentSwatch(
+                    color: Color(widget.customization.effectiveAccentArgb),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Current color',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 3),
+                        SelectableText(
+                          _currentHex,
+                          key: const ValueKey('current-accent-hex'),
+                          style: const TextStyle(color: _spMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('copy-accent-hex-button'),
+                    tooltip: 'Copy hex color',
+                    onPressed: () =>
+                        Clipboard.setData(ClipboardData(text: _currentHex)),
+                    icon: const Icon(Icons.copy_rounded),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             TextField(
               key: const ValueKey('custom-accent-hex-field'),
               controller: _controller,
@@ -201,10 +237,26 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
               icon: const Icon(Icons.palette_rounded),
               label: const Text('Use custom color'),
             ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('clear-custom-accent-button'),
+              onPressed: widget.customization.customAccentHex == null
+                  ? null
+                  : _clearCustom,
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: Text(
+                'Use ${widget.customization.accentColor.label} preset',
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String get _currentHex {
+    final argb = widget.customization.effectiveAccentArgb;
+    return '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
   }
 
   Future<void> _save() async {
@@ -215,6 +267,13 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
       return;
     }
     await widget.repository.setCustomAccentColor(normalized);
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _clearCustom() async {
+    await widget.repository.setCustomAccentColor(null);
     if (mounted) {
       Navigator.pop(context);
     }

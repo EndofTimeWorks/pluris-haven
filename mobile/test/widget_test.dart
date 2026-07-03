@@ -1370,6 +1370,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Light'), findsOneWidget);
 
+    await tester.tap(find.text('Accent color'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('current-accent-hex')), findsOneWidget);
+    expect(find.text('#7B61FF'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-accent-hex-field')),
+      '12abef',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-custom-accent-button')));
+    await tester.pumpAndSettle();
+    expect((await repository.loadCustomization()).customAccentHex, '#12ABEF');
+
+    await tester.tap(find.text('Accent color'));
+    await tester.pumpAndSettle();
+    expect(find.text('#12ABEF'), findsWidgets);
+    await tester.tap(find.byKey(const ValueKey('copy-accent-hex-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('clear-custom-accent-button')));
+    await tester.pumpAndSettle();
+    expect((await repository.loadCustomization()).customAccentHex, isNull);
+
     await tester.tap(find.text('Compact dashboard'));
     await tester.pumpAndSettle();
     expect((await repository.loadCustomization()).compactDashboard, isTrue);
