@@ -1100,6 +1100,72 @@ void main() {
     expect(repository._snapshot.noteCount, 0);
   });
 
+  testWidgets('creates edits searches and deletes journal entries', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Journals');
+    expect(find.text('No journal entries yet'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-title-field')),
+      'Long day',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-body-field')),
+      'Lots happened after switching.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Long day'), findsOneWidget);
+    expect(repository._journals.single.body, 'Lots happened after switching.');
+
+    await tester.enterText(find.byType(TextField).first, 'switching');
+    await tester.pumpAndSettle();
+    expect(find.text('Long day'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'missing');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching journals'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Long day'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-title-field')),
+      'Long day edited',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Long day edited'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Delete journal entry'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository._journals, isEmpty);
+    expect(find.text('No journal entries yet'), findsOneWidget);
+  });
+
   testWidgets('adds a local message from the chat section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1631,6 +1697,8 @@ Future<void> openDrawerSection(WidgetTester tester, String label) async {
       scrollable: find.byType(Scrollable).last,
     );
   }
+  await tester.ensureVisible(labelFinder.last);
+  await tester.pumpAndSettle();
   await tester.tap(labelFinder.last);
   await tester.pumpAndSettle();
 }
@@ -1714,6 +1782,10 @@ class FakeHavenRepository implements HavenRepository {
           sync: true,
           onListen: () => _memberTagsController.add(_memberTagIds),
         );
+    _journalsController = StreamController<List<JournalEntry>>.broadcast(
+      sync: true,
+      onListen: () => _journalsController.add(_journals),
+    );
   }
 
   HomeSnapshot _snapshot;
@@ -1731,6 +1803,7 @@ class FakeHavenRepository implements HavenRepository {
   List<BackgroundJobSummary> _backgroundJobs = const [];
   List<NamedFront> _namedFronts = const [];
   List<Tag> _tags = const [];
+  List<JournalEntry> _journals = const [];
   List<String> _currentFrontMemberIds = const [];
   final Map<String, List<String>> _namedFrontMembers = {};
   Map<String, List<String>> _memberTagIds = const {};
@@ -1755,6 +1828,7 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<NamedFront>> _namedFrontsController;
   late final StreamController<List<Tag>> _tagsController;
   late final StreamController<Map<String, List<String>>> _memberTagsController;
+  late final StreamController<List<JournalEntry>> _journalsController;
 
   void seedBackgroundJob(BackgroundJobSummary job) {
     _backgroundJobs = [job, ..._backgroundJobs];
@@ -2696,14 +2770,33 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<JournalEntry>> watchJournals({String? memberId}) =>
-      Stream.value(const []);
+  Stream<List<JournalEntry>> watchJournals({String? memberId}) {
+    return _journalsController.stream.map((journals) {
+      return List.unmodifiable([
+        for (final journal in journals)
+          if (memberId == null || journal.memberId == memberId) journal,
+      ]);
+    });
+  }
 
   @override
-  Future<void> saveJournal(JournalEntry entry) async {}
+  Future<void> saveJournal(JournalEntry entry) async {
+    _journals = [
+      entry,
+      for (final journal in _journals)
+        if (journal.id != entry.id) journal,
+    ]..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    _journalsController.add(_journals);
+  }
 
   @override
-  Future<void> deleteJournal(String entryId) async {}
+  Future<void> deleteJournal(String entryId) async {
+    _journals = [
+      for (final journal in _journals)
+        if (journal.id != entryId) journal,
+    ];
+    _journalsController.add(_journals);
+  }
 
   @override
   Stream<List<ContentRevision>> watchRevisions(
@@ -2937,5 +3030,6 @@ class FakeHavenRepository implements HavenRepository {
     await _namedFrontsController.close();
     await _tagsController.close();
     await _memberTagsController.close();
+    await _journalsController.close();
   }
 }
