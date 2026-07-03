@@ -198,6 +198,10 @@ class _ExternalArchiveNormalizer {
         warnings.add('Skipped member #${index + 1}: expected an object.');
         continue;
       }
+      if (source == ImportSource.simplyPlural &&
+          _isSimplyPluralCustomFrontRecord(member)) {
+        continue;
+      }
       final record = _memberRecord(member, index);
       if (record != null) {
         records.add(record);
@@ -300,12 +304,8 @@ class _ExternalArchiveNormalizer {
       return const _NamedFrontData([], []);
     }
 
-    final items = _firstList(decoded, const [
-      'customFronts',
-      'custom_fronts',
-      'frontStatuses',
-      'FrontStatuses',
-    ]);
+    final items = _simplyPluralCustomFrontItems();
+    final seenExternalIds = <String>{};
     for (var index = 0; index < items.length; index++) {
       final customFront = _mapValue(items[index]);
       if (customFront == null) {
@@ -329,6 +329,9 @@ class _ExternalArchiveNormalizer {
       final externalId =
           _firstString(customFront, const ['_id', 'id', 'uuid', 'uid']) ??
           _slug(label);
+      if (!seenExternalIds.add(externalId)) {
+        continue;
+      }
       final id = _stableId('named-front', externalId);
       _customFrontLabelsByExternalId[externalId] = label;
       namedFronts.add({
@@ -373,6 +376,37 @@ class _ExternalArchiveNormalizer {
     }
 
     return _NamedFrontData(namedFronts, namedFrontMembers);
+  }
+
+  List<Object?> _simplyPluralCustomFrontItems() {
+    final explicit = _combinedLists(decoded, const [
+      'customFronts',
+      'custom_fronts',
+      'frontStatuses',
+      'FrontStatuses',
+    ]);
+    final memberLike = <Map<String, Object?>>[];
+    for (final value in _firstList(decoded, const [
+      'members',
+      'membersList',
+      'profiles',
+    ])) {
+      final object = _mapValue(value);
+      if (object != null && _isSimplyPluralCustomFrontRecord(object)) {
+        memberLike.add(object);
+      }
+    }
+    return [...explicit, ...memberLike];
+  }
+
+  bool _isSimplyPluralCustomFrontRecord(Map<String, Object?> object) {
+    return object['is_custom_front'] == true ||
+        object['isCustomFront'] == true ||
+        object['custom_front'] == true ||
+        object['customFront'] == true ||
+        object['front_status'] == true ||
+        object['frontStatus'] == true ||
+        object['custom'] == true;
   }
 
   List<Map<String, Object?>> _normalizeCustomFields() {
@@ -1248,33 +1282,45 @@ class _ExternalArchiveNormalizer {
         front['memberIDs'] ??
         front['fronters'] ??
         front['member'];
-    if (value is! List) {
-      final single = _firstString(front, const [
-        'member',
-        'memberId',
-        'member_id',
-      ]);
-      return single == null ? const [] : [single];
+    final refs = _memberRefsFromValue(value);
+    if (refs.isNotEmpty) {
+      return refs;
     }
 
-    final ids = <String>[];
-    for (final item in value) {
-      if (item is String) {
-        ids.add(item);
-      } else if (item is Map<String, Object?>) {
-        final id = _firstString(item, const [
-          '_id',
-          'id',
-          'uuid',
-          'memberId',
-          'uid',
-        ]);
-        if (id != null) {
-          ids.add(id);
-        }
-      }
+    final single = _firstString(front, const ['memberId', 'member_id']);
+    return single == null ? const [] : [single];
+  }
+
+  List<String> _memberRefsFromValue(Object? value) {
+    if (value is String && value.trim().isNotEmpty) {
+      return [value.trim()];
     }
-    return ids;
+    if (value is num) {
+      return [value.toString()];
+    }
+    if (value is List) {
+      return [for (final item in value) ..._memberRefsFromValue(item)];
+    }
+    final object = _mapValue(value);
+    if (object == null) {
+      return const [];
+    }
+    final id = _firstString(object, const [
+      '_id',
+      'id',
+      'uuid',
+      'memberId',
+      'member_id',
+      'uid',
+      'pkId',
+      'pk_id',
+    ]);
+    if (id != null) {
+      return [id];
+    }
+    return _memberRefsFromValue(
+      object['member'] ?? object['members'] ?? object['fronters'],
+    );
   }
 
   String? _memberRef(Map<String, Object?> object) {

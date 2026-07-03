@@ -510,6 +510,97 @@ void main() {
     );
   });
 
+  test('moves Simply Plural member-shaped custom fronts out of alters', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-member-shaped-custom-fronts.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris"},
+    {
+      "_id": "cf-asleep",
+      "name": "Asleep",
+      "custom": true,
+      "color": "7B61FF",
+      "desc": "system state"
+    }
+  ],
+  "frontHistory": [
+    {
+      "_id": "front-custom",
+      "custom": true,
+      "member": "cf-asleep",
+      "startTime": 1767225600000
+    }
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+    final namedFronts = (decoded['named_fronts'] as List)
+        .cast<Map<String, dynamic>>();
+    final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['named_fronts'], 1);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 0);
+    expect(members.single['display_name'], 'Iris');
+    expect(namedFronts.single['custom_label'], 'Asleep');
+    expect(namedFronts.single['description'], 'system state');
+    expect(fronts.single['label'], 'Asleep');
+    expect(archive.archiveJson, isNot(contains('"display_name": "Asleep"')));
+  });
+
+  test('normalizes object-shaped front member references', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-object-front-refs.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris"},
+    {"_id": "m2", "name": "River"}
+  ],
+  "frontHistory": [
+    {
+      "_id": "front-object",
+      "custom": false,
+      "member": {"_id": "m1"},
+      "startTime": 1767225600000
+    },
+    {
+      "_id": "front-list",
+      "custom": false,
+      "members": [{"id": "m1"}, {"memberId": "m2"}],
+      "startTime": 1767229200000
+    }
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final links = (decoded['front_members'] as List)
+        .cast<Map<String, dynamic>>();
+
+    expect(archive.counts['members'], 2);
+    expect(archive.counts['fronts'], 2);
+    expect(archive.counts['front_members'], 3);
+    expect(
+      links.map((link) => link['member_id']),
+      containsAll([
+        'simplyplural_file-member-m1',
+        'simplyplural_file-member-m2',
+      ]),
+    );
+  });
+
   test('labels Simply Plural fronts that reference deleted records', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
