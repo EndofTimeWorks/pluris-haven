@@ -11,7 +11,7 @@
 		['Build', 'Android pre-alpha'],
 		['Storage', 'local device database'],
 		['Import', 'Simply Plural, PluralKit, Tupperbox, PluralSpace, OpenPlural, Prism'],
-		['Sync', 'not on by default; server work comes later']
+		['Sync', 'optional; server work comes later']
 	];
 
 	const works = [
@@ -42,6 +42,7 @@
 			<a href="/download">Download</a>
 			<a href="/docs">Docs</a>
 			<a href="/changelog">Changelog</a>
+			<a href="/distribution">Distribution</a>
 			<a href="/support">Support</a>
 			<a href="/privacy">Privacy</a>
 			<a href="/app">Web app</a>

@@ -15,6 +15,16 @@
 	</section>
 
 	<section>
+		<h2>Health-adjacent data</h2>
+		<p>
+			Plural system tools often hold notes about identity, safety, symptoms,
+			relationships, and daily life. Pluris Haven is for personal tracking and
+			journaling. It is not medical care, medical advice, crisis support, or a
+			replacement for professional help.
+		</p>
+	</section>
+
+	<section>
 		<h2>Minors</h2>
 		<p>
 			Plural system tools can hold sensitive identity, journal, health-adjacent, and

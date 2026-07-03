@@ -13,7 +13,7 @@
 			need a fresh import after larger data model changes.
 		</p>
 		<ul class="data-list">
-			<li><span>Current version</span><strong>0.1.0-pre-alpha.dev.5+23</strong></li>
+			<li><span>Current version</span><strong>0.2.0-pre-alpha.1.dev.1+25</strong></li>
 			<li><span>Package id</span><strong>works.endoftime.plurishaven</strong></li>
 			<li><span>Release channel</span><strong>GitHub prereleases</strong></li>
 		</ul>
@@ -30,7 +30,8 @@
 		<ol>
 			<li>Add <code>https://github.com/EndofTimeWorks/pluris-haven</code>.</li>
 			<li>Enable prereleases.</li>
-			<li>Use the APK asset from the latest mobile pre-alpha/dev release.</li>
+			<li>Use the APK asset named <code>pluris-haven-dev.apk</code>.</li>
+			<li>Sort releases by date.</li>
 			<li>
 				If Android says the package differs, check that the installed app uses
 				<code>works.endoftime.plurishaven</code>. Older experimental builds used a
@@ -48,6 +49,14 @@ flutter build apk --debug</code></pre>
 			Debug builds are larger than release builds because they include debug symbols
 			and runtime checks. Use them for testing import logs and crashes, not normal
 			daily use.
+		</p>
+	</section>
+
+	<section>
+		<h2>Not medical care</h2>
+		<p>
+			Pluris Haven is a personal tracking and journaling tool. It is not medical
+			advice, crisis support, or a replacement for professional help.
 		</p>
 	</section>
 </main>
