@@ -61,6 +61,36 @@ class AppOptionsPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        SpSettingsGroup(
+          title: 'Accessibility',
+          rows: [
+            SpSwitchRow(
+              title: 'Reduced motion',
+              subtitle: 'request simpler, slower-moving UI',
+              value: customization.reducedMotion,
+              onChanged: repository.setReducedMotion,
+            ),
+            SpSwitchRow(
+              title: 'High contrast',
+              subtitle: 'stronger text and clearer borders',
+              value: customization.highContrast,
+              onChanged: repository.setHighContrast,
+            ),
+            SpSwitchRow(
+              title: 'Larger app text',
+              subtitle: 'increase Pluris Haven text sizing',
+              value: customization.largeText,
+              onChanged: repository.setLargeText,
+            ),
+            SpSwitchRow(
+              title: 'Compact lists',
+              subtitle: 'denser controls and repeated rows',
+              value: customization.compactLists,
+              onChanged: repository.setCompactLists,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         DashboardShortcutManager(
           customization: customization,
           repository: repository,
@@ -71,7 +101,6 @@ class AppOptionsPage extends StatelessWidget {
           rows: [
             SpSettingsRow('Security', 'device storage'),
             SpSettingsRow('Sync', 'off by default'),
-            SpSettingsRow('Accessibility', 'default sizing'),
           ],
         ),
       ],

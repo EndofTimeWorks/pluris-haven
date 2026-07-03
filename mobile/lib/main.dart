@@ -49,6 +49,22 @@ class PlurisHavenApp extends StatelessWidget {
           themeMode: _themeMode(customization.themeMode),
           theme: _buildTheme(customization, Brightness.light),
           darkTheme: _buildTheme(customization, Brightness.dark),
+          builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                accessibleNavigation:
+                    customization.reducedMotion ||
+                    mediaQuery.accessibleNavigation,
+                disableAnimations:
+                    customization.reducedMotion || mediaQuery.disableAnimations,
+                textScaler: customization.largeText
+                    ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
+                    : mediaQuery.textScaler,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: HomePage(repository: repository),
         );
       },
@@ -74,17 +90,25 @@ class PlurisHavenApp extends StatelessWidget {
   ThemeData _buildTheme(AppCustomization customization, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final accent = Color(customization.effectiveAccentArgb);
-    final surface = isDark ? const Color(0xFF232532) : const Color(0xFFF7F4FC);
-    final background = isDark
-        ? const Color(0xFF171922)
-        : const Color(0xFFF1EFF7);
-    final card = isDark ? const Color(0xFF2B2E3D) : Colors.white;
-    final onSurface = isDark
-        ? const Color(0xFFECEAF2)
-        : const Color(0xFF252334);
-    final muted = isDark ? const Color(0xFFC4C0CE) : const Color(0xFF605C70);
-    final outline = isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3);
-
+    final highContrast = customization.highContrast;
+    final surface = highContrast
+        ? (isDark ? const Color(0xFF11131A) : Colors.white)
+        : (isDark ? const Color(0xFF232532) : const Color(0xFFF7F4FC));
+    final background = highContrast
+        ? (isDark ? Colors.black : const Color(0xFFF8F8FC))
+        : (isDark ? const Color(0xFF171922) : const Color(0xFFF1EFF7));
+    final card = highContrast
+        ? (isDark ? const Color(0xFF1E2230) : Colors.white)
+        : (isDark ? const Color(0xFF2B2E3D) : Colors.white);
+    final onSurface = highContrast
+        ? (isDark ? Colors.white : const Color(0xFF11111A))
+        : (isDark ? const Color(0xFFECEAF2) : const Color(0xFF252334));
+    final muted = highContrast
+        ? (isDark ? const Color(0xFFE1DDF0) : const Color(0xFF3B3748))
+        : (isDark ? const Color(0xFFC4C0CE) : const Color(0xFF605C70));
+    final outline = highContrast
+        ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
+        : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme(
@@ -110,6 +134,9 @@ class PlurisHavenApp extends StatelessWidget {
         surfaceTint: accent,
       ),
       scaffoldBackgroundColor: background,
+      visualDensity: customization.compactLists
+          ? VisualDensity.compact
+          : VisualDensity.standard,
       appBarTheme: AppBarTheme(
         backgroundColor: surface,
         foregroundColor: onSurface,

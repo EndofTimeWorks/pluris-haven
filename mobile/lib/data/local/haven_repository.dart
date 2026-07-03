@@ -469,6 +469,10 @@ class AppCustomization {
     required this.customAccentHex,
     required this.compactDashboard,
     required this.showDashboardSubtitles,
+    required this.reducedMotion,
+    required this.highContrast,
+    required this.largeText,
+    required this.compactLists,
     required this.dashboardShortcutIds,
     required this.languageCode,
   });
@@ -478,6 +482,10 @@ class AppCustomization {
   final String? customAccentHex;
   final bool compactDashboard;
   final bool showDashboardSubtitles;
+  final bool reducedMotion;
+  final bool highContrast;
+  final bool largeText;
+  final bool compactLists;
   final List<String> dashboardShortcutIds;
   final String languageCode;
 
@@ -494,6 +502,10 @@ class AppCustomization {
     customAccentHex: null,
     compactDashboard: false,
     showDashboardSubtitles: true,
+    reducedMotion: false,
+    highContrast: false,
+    largeText: false,
+    compactLists: false,
     dashboardShortcutIds: defaultDashboardShortcutIds,
     languageCode: systemLanguageCode,
   );
@@ -504,6 +516,10 @@ class AppCustomization {
     Object? customAccentHex = _unchanged,
     bool? compactDashboard,
     bool? showDashboardSubtitles,
+    bool? reducedMotion,
+    bool? highContrast,
+    bool? largeText,
+    bool? compactLists,
     List<String>? dashboardShortcutIds,
     String? languageCode,
   }) {
@@ -516,6 +532,10 @@ class AppCustomization {
       compactDashboard: compactDashboard ?? this.compactDashboard,
       showDashboardSubtitles:
           showDashboardSubtitles ?? this.showDashboardSubtitles,
+      reducedMotion: reducedMotion ?? this.reducedMotion,
+      highContrast: highContrast ?? this.highContrast,
+      largeText: largeText ?? this.largeText,
+      compactLists: compactLists ?? this.compactLists,
       dashboardShortcutIds: List.unmodifiable(
         dashboardShortcutIds ?? this.dashboardShortcutIds,
       ),
@@ -581,6 +601,14 @@ abstract interface class HavenRepository {
   Future<void> setCompactDashboard(bool compact);
 
   Future<void> setShowDashboardSubtitles(bool show);
+
+  Future<void> setReducedMotion(bool reduced);
+
+  Future<void> setHighContrast(bool highContrast);
+
+  Future<void> setLargeText(bool largeText);
+
+  Future<void> setCompactLists(bool compact);
 
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
 
@@ -1388,6 +1416,10 @@ SELECT
         values[_showDashboardSubtitlesKey],
         defaultValue: true,
       ),
+      reducedMotion: _readBool(values[_reducedMotionKey]),
+      highContrast: _readBool(values[_highContrastKey]),
+      largeText: _readBool(values[_largeTextKey]),
+      compactLists: _readBool(values[_compactListsKey]),
       dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
       languageCode: _readLanguageCode(values[_languageCodeKey]),
     );
@@ -1458,6 +1490,26 @@ SELECT
   @override
   Future<void> setShowDashboardSubtitles(bool show) {
     return _writePreference(_showDashboardSubtitlesKey, show.toString());
+  }
+
+  @override
+  Future<void> setReducedMotion(bool reduced) {
+    return _writePreference(_reducedMotionKey, reduced.toString());
+  }
+
+  @override
+  Future<void> setHighContrast(bool highContrast) {
+    return _writePreference(_highContrastKey, highContrast.toString());
+  }
+
+  @override
+  Future<void> setLargeText(bool largeText) {
+    return _writePreference(_largeTextKey, largeText.toString());
+  }
+
+  @override
+  Future<void> setCompactLists(bool compact) {
+    return _writePreference(_compactListsKey, compact.toString());
   }
 
   @override
@@ -4277,6 +4329,10 @@ const _accentColorKey = 'accent_color';
 const _customAccentHexKey = 'custom_accent_hex';
 const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
+const _reducedMotionKey = 'reduced_motion';
+const _highContrastKey = 'high_contrast';
+const _largeTextKey = 'large_text';
+const _compactListsKey = 'compact_lists';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
 const _emptyShortcutIdsValue = '__empty__';
 const _languageCodeKey = 'language_code';
