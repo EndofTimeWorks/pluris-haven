@@ -21,25 +21,6 @@ on:
       build_number:
         description: "Optional Android build number. Defaults to current build + 1."
         required: false
-      artifact:
-        description: "APK type. auto = debug for dev, release otherwise."
-        required: true
-        default: auto
-        type: choice
-        options:
-          - auto
-          - debug
-          - release
-      draft:
-        description: "Create the GitHub release as a draft"
-        required: true
-        type: boolean
-        default: true
-      prerelease:
-        description: "Mark the GitHub release as a prerelease"
-        required: true
-        type: boolean
-        default: true
 
 permissions:
   contents: write
@@ -50,7 +31,7 @@ concurrency:
 
 jobs:
   prepare:
-    name: Bump, build, tag, and draft release
+    name: Bump version and tag release
     runs-on: ubuntu-latest
 
     steps:
@@ -59,19 +40,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.41.6"
-          channel: stable
-          cache: true
-
       - name: Resolve next mobile version
         id: version
         shell: bash
@@ -79,7 +47,6 @@ jobs:
           RELEASE_TYPE: ${{ inputs.release_type }}
           CUSTOM_VERSION: ${{ inputs.custom_version }}
           BUILD_NUMBER: ${{ inputs.build_number }}
-          ARTIFACT: ${{ inputs.artifact }}
         run: |
           set -euo pipefail
 
@@ -87,6 +54,8 @@ jobs:
             echo "Prepare releases from main only." >&2
             exit 1
           fi
+
+          semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$'
 
           version_line="$(awk '/^version:/ {print $2}' mobile/pubspec.yaml)"
           current_version="${version_line%%+*}"
@@ -110,32 +79,40 @@ jobs:
 
           case "${RELEASE_TYPE}" in
             dev)
-              if [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.dev\.([0-9]+)$ ]]; then
-                next_version="${BASH_REMATCH[1]}-pre-alpha.dev.$((BASH_REMATCH[2] + 1))"
+              if [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.([0-9]+)\.dev\.([0-9]+)$ ]]; then
+                next_version="${BASH_REMATCH[1]}-pre-alpha.${BASH_REMATCH[2]}.dev.$((BASH_REMATCH[3] + 1))"
+              elif [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.dev\.([0-9]+)$ ]]; then
+                next_version="${BASH_REMATCH[1]}-pre-alpha.0.dev.$((BASH_REMATCH[2] + 1))"
+              elif [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.([0-9]+)$ ]]; then
+                next_version="${BASH_REMATCH[1]}-pre-alpha.${BASH_REMATCH[2]}.dev.1"
               else
-                next_version="${base}-pre-alpha.dev.1"
+                next_version="${base}-pre-alpha.0.dev.1"
               fi
-              default_artifact="debug"
+              publish_tag=false
               ;;
             pre-alpha)
-              if [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.([0-9]+)$ ]]; then
+              if [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.([0-9]+)\.dev\.[0-9]+$ ]]; then
+                next_version="${BASH_REMATCH[1]}-pre-alpha.$((BASH_REMATCH[2] + 1))"
+              elif [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.dev\.[0-9]+$ ]]; then
+                next_version="${BASH_REMATCH[1]}-pre-alpha.1"
+              elif [[ "${current_version}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-pre-alpha\.([0-9]+)$ ]]; then
                 next_version="${BASH_REMATCH[1]}-pre-alpha.$((BASH_REMATCH[2] + 1))"
               else
                 next_version="${base}-pre-alpha.1"
               fi
-              default_artifact="release"
+              publish_tag=true
               ;;
             patch)
               next_version="${major}.${minor}.$((patch + 1))"
-              default_artifact="release"
+              publish_tag=true
               ;;
             minor)
               next_version="${major}.$((minor + 1)).0"
-              default_artifact="release"
+              publish_tag=true
               ;;
             major)
               next_version="$((major + 1)).0.0"
-              default_artifact="release"
+              publish_tag=true
               ;;
             custom)
               if [[ -z "${CUSTOM_VERSION}" ]]; then
@@ -143,7 +120,7 @@ jobs:
                 exit 1
               fi
               next_version="${CUSTOM_VERSION}"
-              default_artifact="release"
+              publish_tag=true
               ;;
             *)
               echo "Unknown release_type: ${RELEASE_TYPE}" >&2
@@ -151,19 +128,13 @@ jobs:
               ;;
           esac
 
-          if [[ "${ARTIFACT}" == "auto" ]]; then
-            artifact="${default_artifact}"
-          else
-            artifact="${ARTIFACT}"
-          fi
-
           if [[ -n "${BUILD_NUMBER}" ]]; then
             next_build="${BUILD_NUMBER}"
           else
             next_build="$((current_build + 1))"
           fi
 
-          if [[ ! "${next_version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$ ]]; then
+          if [[ ! "${next_version}" =~ ${semver_regex} ]]; then
             echo "Invalid SemVer version: ${next_version}" >&2
             exit 1
           fi
@@ -186,61 +157,7 @@ jobs:
           echo "build=${next_build}" >> "${GITHUB_OUTPUT}"
           echo "version_with_build=${version_with_build}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
-          echo "artifact=${artifact}" >> "${GITHUB_OUTPUT}"
-
-      - name: Install dependencies
-        run: flutter pub get
-        working-directory: mobile
-
-      - name: Configure Android signing
-        shell: bash
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ARTIFACT: ${{ steps.version.outputs.artifact }}
-        run: |
-          set -euo pipefail
-
-          have_signing=false
-          if [[ -n "${ANDROID_KEYSTORE_BASE64}" && -n "${ANDROID_KEYSTORE_PASSWORD}" && -n "${ANDROID_KEY_ALIAS}" && -n "${ANDROID_KEY_PASSWORD}" ]]; then
-            have_signing=true
-          fi
-
-          if [[ "${ARTIFACT}" == "release" && "${have_signing}" != "true" ]]; then
-            echo "Release builds require Android signing secrets." >&2
-            exit 1
-          fi
-          if [[ "${have_signing}" != "true" ]]; then
-            echo "Android signing secrets not configured; debug build will use the debug key."
-            exit 0
-          fi
-
-          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > mobile/android/app/pluris-haven-upload.jks
-          if ! keytool -list -keystore mobile/android/app/pluris-haven-upload.jks -storepass "${ANDROID_KEYSTORE_PASSWORD}" -alias "${ANDROID_KEY_ALIAS}" >/dev/null 2>&1; then
-            echo "Android signing key alias was not found in the uploaded keystore." >&2
-            echo "Set ANDROID_KEY_ALIAS to the alias used with keytool -genkeypair, usually pluris-haven-upload." >&2
-            exit 1
-          fi
-          {
-            echo "storeFile=pluris-haven-upload.jks"
-            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"
-            echo "keyAlias=${ANDROID_KEY_ALIAS}"
-            echo "keyPassword=${ANDROID_KEY_PASSWORD}"
-          } > mobile/android/key.properties
-
-      - name: Verify formatting
-        run: dart format --set-exit-if-changed lib test
-        working-directory: mobile
-
-      - name: Analyze
-        run: flutter --no-color analyze
-        working-directory: mobile
-
-      - name: Test
-        run: flutter --no-color test
-        working-directory: mobile
+          echo "publish_tag=${publish_tag}" >> "${GITHUB_OUTPUT}"
 
       - name: Commit version bump
         shell: bash
@@ -249,92 +166,29 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add mobile/pubspec.yaml
-          git commit -m "chore(release): mobile v${{ steps.version.outputs.version_with_build }} [skip ci]"
+          git commit -m "chore(release): mobile v${{ steps.version.outputs.version_with_build }}"
 
-      - name: Build debug APK
-        if: steps.version.outputs.artifact == 'debug'
-        run: >
-          flutter --no-color build apk --debug
-          --build-name "${{ steps.version.outputs.version }}"
-          --build-number "${{ steps.version.outputs.build }}"
-        working-directory: mobile
+      - name: Push version commit
+        run: git push origin HEAD:main
 
-      - name: Build release APKs
-        if: steps.version.outputs.artifact == 'release'
+      - name: Push release tag
+        if: steps.version.outputs.publish_tag == 'true'
         run: |
-          flutter --no-color build apk --release \
-            --build-name "${{ steps.version.outputs.version }}" \
-            --build-number "${{ steps.version.outputs.build }}"
-          flutter --no-color build apk --release --split-per-abi \
-            --build-name "${{ steps.version.outputs.version }}" \
-            --build-number "${{ steps.version.outputs.build }}"
-        working-directory: mobile
-
-      - name: Collect APKs
-        shell: bash
-        run: |
-          set -euo pipefail
-          out="release/mobile-prepared"
-          mkdir -p "${out}"
-
-          if [[ "${{ steps.version.outputs.artifact }}" == "debug" ]]; then
-            cp mobile/build/app/outputs/flutter-apk/app-debug.apk \
-              "${out}/pluris-haven-${{ steps.version.outputs.version_with_build }}-debug.apk"
-          else
-            cp mobile/build/app/outputs/flutter-apk/app-release.apk \
-              "${out}/pluris-haven-${{ steps.version.outputs.version_with_build }}-universal.apk"
-            for apk in mobile/build/app/outputs/flutter-apk/app-*-release.apk; do
-              abi="${apk#mobile/build/app/outputs/flutter-apk/app-}"
-              abi="${abi%-release.apk}"
-              cp "${apk}" "${out}/pluris-haven-${{ steps.version.outputs.version_with_build }}-${abi}.apk"
-            done
-          fi
-
-          {
-            echo "version=${{ steps.version.outputs.version }}"
-            echo "build=${{ steps.version.outputs.build }}"
-            echo "artifact=${{ steps.version.outputs.artifact }}"
-            echo "tag=${{ steps.version.outputs.tag }}"
-            echo "commit=$(git rev-parse HEAD)"
-            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } > "${out}/BUILD.txt"
-          (cd "${out}" && sha256sum *.apk BUILD.txt > SHA256SUMS.txt)
-
-      - name: Push commit and tag
-        shell: bash
-        run: |
-          set -euo pipefail
           tag="${{ steps.version.outputs.tag }}"
           git tag "${tag}"
-          git push origin HEAD:main
           git push origin "refs/tags/${tag}"
 
-      - name: Create GitHub release
+      - name: Write summary
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
-
-          release_args=()
-          if [[ "${{ inputs.draft }}" == "true" ]]; then
-            release_args+=(--draft)
-          fi
-          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
-            release_args+=(--prerelease --latest=false)
-          fi
-
-          notes="$(cat <<EOF
-          Mobile ${{ steps.version.outputs.artifact }} build ${{ steps.version.outputs.version_with_build }}.
-
-          Built by the manual prepare workflow from $(git rev-parse HEAD).
-          EOF
-          )"
-
-          gh release create "${{ steps.version.outputs.tag }}" \
-            release/mobile-prepared/* \
-            --target "$(git rev-parse HEAD)" \
-            --title "Pluris Haven Mobile ${{ steps.version.outputs.version_with_build }}" \
-            --notes "${notes}" \
-            --generate-notes \
-            "${release_args[@]}"
+          {
+            echo "## Mobile release prepared"
+            echo
+            echo "- Version: \`${{ steps.version.outputs.version_with_build }}\`"
+            if [[ "${{ steps.version.outputs.publish_tag }}" == "true" ]]; then
+              echo "- Tag: \`${{ steps.version.outputs.tag }}\`"
+              echo "- Next step: \`mobile-release.yml\` will build APKs from the tag."
+            else
+              echo "- Dev prerelease: \`mobile-dev-release.yml\` will build the debug APK from the pushed version commit."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"

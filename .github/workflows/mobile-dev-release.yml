@@ -30,13 +30,61 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve dev version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$'
+          version_line="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
+          version="${version_line%%+*}"
+          build="${version_line##*+}"
+          tag="mobile-v${version_line}"
+
+          if [[ -z "${version_line}" || "${version_line}" == "${version}" ]]; then
+            echo "mobile/pubspec.yaml must contain a SemVer version with +build metadata." >&2
+            exit 1
+          fi
+          if [[ ! "${version}" =~ ${semver_regex} ]]; then
+            echo "Invalid SemVer version: ${version}" >&2
+            exit 1
+          fi
+          if [[ ! "${build}" =~ ^[0-9]+$ ]]; then
+            echo "Invalid Android build number: ${build}" >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "build=${build}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-pre-alpha(\.[0-9]+)?\.dev\.[0-9]+$ ]]; then
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo "## Dev APK skipped"
+              echo
+              echo "Version \`${version_line}\` is not a pre-alpha dev version, so this push is left for the tag-based release workflow."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Release tag ${tag} already exists. Bump mobile/pubspec.yaml before publishing another dev release." >&2
+            exit 1
+          fi
+
+          echo "should_publish=true" >> "${GITHUB_OUTPUT}"
+
       - name: Set up Java
+        if: steps.version.outputs.should_publish == 'true'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Flutter
+        if: steps.version.outputs.should_publish == 'true'
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.6"
@@ -44,15 +92,18 @@ jobs:
           cache: true
 
       - name: Cache Flutter pub
+        if: steps.version.outputs.should_publish == 'true'
         uses: actions/cache@v4
         with:
           path: /opt/hostedtoolcache/flutter
           key: flutter-${{ runner.os }}-${{ hashFiles('mobile/pubspec.lock') }}
 
       - name: Install dependencies
+        if: steps.version.outputs.should_publish == 'true'
         run: flutter pub get
 
       - name: Configure Android signing
+        if: steps.version.outputs.should_publish == 'true'
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -78,55 +129,26 @@ jobs:
           } > android/key.properties
 
       - name: Verify formatting
+        if: steps.version.outputs.should_publish == 'true'
         run: dart format --set-exit-if-changed lib test
 
       - name: Analyze
+        if: steps.version.outputs.should_publish == 'true'
         run: flutter --no-color analyze
 
       - name: Test
+        if: steps.version.outputs.should_publish == 'true'
         run: flutter --no-color test
 
-      - name: Resolve dev version
-        id: version
-        shell: bash
-        run: |
-          version_line="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
-          version="${version_line%%+*}"
-          build="${version_line##*+}"
-          tag="mobile-v${version_line}"
-
-          if [[ -z "${version_line}" || "${version_line}" == "${version}" ]]; then
-            echo "mobile/pubspec.yaml must contain a SemVer version with +build metadata." >&2
-            exit 1
-          fi
-          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$ ]]; then
-            echo "Invalid SemVer version: ${version}" >&2
-            exit 1
-          fi
-          if [[ ! "${build}" =~ ^[0-9]+$ ]]; then
-            echo "Invalid Android build number: ${build}" >&2
-            exit 1
-          fi
-          if [[ "${version}" != *"-pre-alpha.dev."* ]]; then
-            echo "Dev builds must use a pre-alpha dev version, for example 0.0.1-pre-alpha.dev.N+N." >&2
-            exit 1
-          fi
-          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
-            echo "Release tag ${tag} already exists. Bump mobile/pubspec.yaml before publishing another dev release." >&2
-            exit 1
-          fi
-
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-          echo "build=${build}" >> "${GITHUB_OUTPUT}"
-          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
-
       - name: Build dev APK
+        if: steps.version.outputs.should_publish == 'true'
         run: >
           flutter --no-color build apk --debug
           --build-name "${{ steps.version.outputs.version }}"
           --build-number "${{ steps.version.outputs.build }}"
 
       - name: Collect dev build
+        if: steps.version.outputs.should_publish == 'true'
         shell: bash
         run: |
           mkdir -p ../release/mobile-dev
@@ -141,6 +163,7 @@ jobs:
           } > ../release/mobile-dev/BUILD.txt
           (cd ../release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
       - name: Upload dev artifact
+        if: steps.version.outputs.should_publish == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: pluris-haven-dev-apk
@@ -148,6 +171,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish dev prerelease
+        if: steps.version.outputs.should_publish == 'true'
         shell: bash
         working-directory: .
         env:
