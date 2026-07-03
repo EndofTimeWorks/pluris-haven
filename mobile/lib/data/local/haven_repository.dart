@@ -517,6 +517,7 @@ const defaultDashboardShortcutIds = [
   'front-history',
   'groups',
   'notes',
+  'journals',
   'import-export',
   'analytics',
   'reminders',
