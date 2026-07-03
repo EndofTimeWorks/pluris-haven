@@ -128,17 +128,66 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   codeql:
-    name: CodeQL analysis
-    runs-on: ubuntu-latest
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ${{ matrix.os }}
     permissions:
+      contents: read
       security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            os: ubuntu-latest
+          - language: java-kotlin
+            os: ubuntu-latest
+            build-name: Android app for CodeQL
+            build-mode: manual
+            build-command: flutter build apk --debug
+          - language: swift
+            os: macos-latest
+            build-name: iOS app for CodeQL
+            build-mode: manual
+            build-command: flutter build ios --debug --no-codesign
 
     steps:
       - uses: actions/checkout@v6
 
-      - uses: github/codeql-action/init@v3
+      - uses: actions/setup-java@v5
+        if: matrix.language == 'java-kotlin'
         with:
-          languages: javascript-typescript
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        if: matrix.build-mode == 'manual'
+        with:
+          flutter-version: "3.41.6"
+          channel: stable
+          cache: true
+
+      - name: Initialize CodeQL
+        if: matrix.build-mode != 'manual'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
           queries: security-extended
 
+      - name: Initialize CodeQL for compiled language
+        if: matrix.build-mode == 'manual'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          build-mode: manual
+
+      - name: Build ${{ matrix.build-name }}
+        if: matrix.build-mode == 'manual'
+        run: |
+          flutter pub get
+          ${{ matrix.build-command }}
+        working-directory: mobile
+
       - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
