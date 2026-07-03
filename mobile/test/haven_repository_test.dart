@@ -253,6 +253,15 @@ void main() {
     final events = await repository.watchNotificationEvents().first;
 
     expect(messages.single.body, 'Remember to check in.');
+    await repository.updateMessage(
+      messages.single.id,
+      const MessageDraft(body: 'Remember to check in after dinner.'),
+    );
+    final updatedMessages = await repository.watchMessages().first;
+    expect(updatedMessages.single.body, 'Remember to check in after dinner.');
+    await repository.deleteMessage(updatedMessages.single.id);
+    expect(await repository.watchMessages().first, isEmpty);
+
     expect(reminders.single.title, 'Medication');
     expect(reminders.single.scheduleText, 'Daily');
     expect(reminders.single.enabled, isTrue);

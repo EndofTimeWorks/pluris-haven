@@ -1198,6 +1198,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check in after dinner.'), findsOneWidget);
+
+    await tester.tap(find.text('Check in after dinner.'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('message-body-field')),
+      'Check in after dinner. Bring water.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-message-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Check in after dinner. Bring water.'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Delete message'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository._messages, isEmpty);
+    expect(find.text('No messages yet'), findsOneWidget);
   });
 
   testWidgets('adds a local reminder from the reminders section', (
@@ -2449,6 +2468,38 @@ class FakeHavenRepository implements HavenRepository {
         createdAt: DateTime(2026),
       ),
       ..._messages,
+    ];
+    _messagesController.add(_messages);
+  }
+
+  @override
+  Future<void> updateMessage(String messageId, MessageDraft draft) async {
+    final body = draft.body.trim();
+    if (body.isEmpty) {
+      return;
+    }
+
+    _messages = [
+      for (final message in _messages)
+        if (message.id == messageId)
+          MessageSummary(
+            id: message.id,
+            body: body,
+            memberId: _nullIfBlank(draft.memberId),
+            createdAt: message.createdAt,
+            archived: message.archived,
+          )
+        else
+          message,
+    ];
+    _messagesController.add(_messages);
+  }
+
+  @override
+  Future<void> deleteMessage(String messageId) async {
+    _messages = [
+      for (final message in _messages)
+        if (message.id != messageId) message,
     ];
     _messagesController.add(_messages);
   }

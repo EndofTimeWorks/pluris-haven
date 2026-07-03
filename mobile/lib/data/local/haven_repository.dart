@@ -616,6 +616,10 @@ abstract interface class HavenRepository {
 
   Future<void> saveMessage(MessageDraft draft);
 
+  Future<void> updateMessage(String messageId, MessageDraft draft);
+
+  Future<void> deleteMessage(String messageId);
+
   Future<void> saveReminder(ReminderDraft draft);
 
   Future<void> setReminderEnabled(String reminderId, bool enabled);
@@ -2050,6 +2054,47 @@ SELECT
             body: body,
             createdAt: now,
             updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> updateMessage(String messageId, MessageDraft draft) async {
+    final body = draft.body.trim();
+    if (body.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await (database.update(database.messages)..where(
+          (message) =>
+              message.systemId.equals(localSystemId) &
+              message.id.equals(messageId),
+        ))
+        .write(
+          MessagesCompanion(
+            memberId: Value(_nullIfBlank(draft.memberId)),
+            body: Value(body),
+            archived: const Value(false),
+            deletedAt: const Value(null),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteMessage(String messageId) async {
+    final now = DateTime.now().toUtc();
+    await (database.update(database.messages)..where(
+          (message) =>
+              message.systemId.equals(localSystemId) &
+              message.id.equals(messageId),
+        ))
+        .write(
+          MessagesCompanion(
+            archived: const Value(true),
+            deletedAt: Value(now),
+            updatedAt: Value(now),
           ),
         );
   }
