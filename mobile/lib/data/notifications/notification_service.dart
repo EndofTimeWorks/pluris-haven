@@ -37,27 +37,41 @@ class NotificationService {
     return granted ?? false;
   }
 
+  int reminderNotificationId(String reminderId) {
+    var hash = 0;
+    for (final codeUnit in reminderId.codeUnits) {
+      hash = (hash * 31 + codeUnit) & 0x7fffffff;
+    }
+    return hash == 0 ? 1 : hash;
+  }
+
   Future<void> scheduleReminderNotification({
-    required int id,
+    required String reminderId,
     required String title,
     String? body,
     required TimeOfDay time,
+    DateTimeComponents repeat = DateTimeComponents.time,
+    int? weekday,
+    int? monthDay,
   }) async {
     if (_plugin == null) return;
     await _requestPermission();
 
+    final id = reminderNotificationId(reminderId);
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    );
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
+    final scheduledDate = switch (repeat) {
+      DateTimeComponents.dayOfWeekAndTime => _nextWeeklyDate(
+        now,
+        time,
+        weekday ?? now.weekday,
+      ),
+      DateTimeComponents.dayOfMonthAndTime => _nextMonthlyDate(
+        now,
+        time,
+        monthDay ?? now.day,
+      ),
+      _ => _nextDailyDate(now, time),
+    };
 
     const androidDetails = AndroidNotificationDetails(
       'reminders',
@@ -80,8 +94,12 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
+      matchDateTimeComponents: repeat,
     );
+  }
+
+  Future<void> cancelReminderNotification(String reminderId) {
+    return cancelNotification(reminderNotificationId(reminderId));
   }
 
   Future<void> cancelNotification(int id) async {
@@ -90,5 +108,69 @@ class NotificationService {
 
   Future<void> cancelAll() async {
     await _plugin?.cancelAll();
+  }
+
+  tz.TZDateTime _nextDailyDate(tz.TZDateTime now, TimeOfDay time) {
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  tz.TZDateTime _nextWeeklyDate(
+    tz.TZDateTime now,
+    TimeOfDay time,
+    int weekday,
+  ) {
+    final safeWeekday = weekday.clamp(DateTime.monday, DateTime.sunday);
+    var daysUntil = safeWeekday - now.weekday;
+    if (daysUntil < 0) {
+      daysUntil += DateTime.daysPerWeek;
+    }
+    var candidate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    ).add(Duration(days: daysUntil));
+    if (!candidate.isAfter(now)) {
+      candidate = candidate.add(const Duration(days: DateTime.daysPerWeek));
+    }
+    return candidate;
+  }
+
+  tz.TZDateTime _nextMonthlyDate(
+    tz.TZDateTime now,
+    TimeOfDay time,
+    int monthDay,
+  ) {
+    tz.TZDateTime candidateFor(int year, int month) {
+      final day = monthDay.clamp(1, _daysInMonth(year, month));
+      return tz.TZDateTime(tz.local, year, month, day, time.hour, time.minute);
+    }
+
+    var candidate = candidateFor(now.year, now.month);
+    if (!candidate.isAfter(now)) {
+      final nextMonth = now.month == DateTime.december ? 1 : now.month + 1;
+      final nextYear = now.month == DateTime.december ? now.year + 1 : now.year;
+      candidate = candidateFor(nextYear, nextMonth);
+    }
+    return candidate;
+  }
+
+  int _daysInMonth(int year, int month) {
+    final nextMonth = month == DateTime.december ? 1 : month + 1;
+    final nextYear = month == DateTime.december ? year + 1 : year;
+    return DateTime(nextYear, nextMonth, 0).day;
   }
 }
