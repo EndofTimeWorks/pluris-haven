@@ -6,10 +6,11 @@ There are two build tracks.
 
 `Mobile Dev Release` runs on `main` when `mobile/**` changes.
 
-It creates one prerelease from the checked-in `mobile/pubspec.yaml` version:
+It creates one prerelease from the checked-in `mobile/pubspec.yaml` version when
+that version is a dev prerelease:
 
-- pubspec version: `0.1.0-pre-alpha.dev.1+18`
-- tag: `mobile-v0.1.0-pre-alpha.dev.1+18`
+- pubspec version: `0.2.0-pre-alpha.1.dev.1+25`
+- tag: `mobile-v0.2.0-pre-alpha.1.dev.1+25`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -27,16 +28,18 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.1.0-pre-alpha.dev.2+19
+version: 0.2.0-pre-alpha.1.dev.2+26
 ```
 
-The `.dev.N` part is the SemVer prerelease ordering. The `+N` part is Android's
-numeric build number. SemVer ignores `+build` metadata for precedence, so do not
-only change the number after `+`.
+The `0.2.0` part is the pre-1.0 feature line. The `pre-alpha.1` part is the
+current prerelease milestone. The `.dev.N` part is for automatic debug builds on
+`main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
+metadata for precedence, so do not only change the number after `+`.
 
-`0.1.0-pre-alpha.dev.1+18` marks the first broader pre-alpha line: local schema
-v8, imports, avatars, archive handling, local crypto plumbing, member ordering,
-and the alpha repository services are all present enough to test together.
+`0.2.0-pre-alpha.1.dev.1+25` marks the second broader pre-alpha line: local
+schema v8, imports, avatars, archive handling, local crypto plumbing, member
+ordering, custom fronts, tags, journals, and the alpha repository services are
+all present enough to test together.
 
 Do not reuse a published version. The workflow fails if the matching tag already
 exists.
@@ -47,33 +50,35 @@ the newest prerelease should be the update target.
 
 ## Versioned Releases
 
-`Mobile Release` runs from version tags or manual workflow dispatch.
+`Mobile Release` runs from version tags or manual workflow dispatch. Use this
+for deliberate releases. Drop the `.dev.N` part when cutting one of these.
 
 Tag format:
 
 ```sh
-git tag mobile-v0.0.1-pre-alpha.1+1
+git tag mobile-v0.2.0-pre-alpha.1+25
 ```
 
 Meaning:
 
-- `0.0.1-pre-alpha.1` is the GitHub release version.
-- `0.0.1-pre-alpha.1` is passed to Flutter as `--build-name`.
-- `1` is passed to Flutter as `--build-number`.
+- `0.2.0-pre-alpha.1` is the GitHub release version.
+- `0.2.0-pre-alpha.1` is passed to Flutter as `--build-name`.
+- `25` is passed to Flutter as `--build-number`.
 
 Examples:
 
 ```text
 mobile-v0.1.0-pre-alpha.dev.1+18
-mobile-v0.1.0-pre-alpha.dev.2+19
-mobile-v0.0.1-pre-alpha.1+1
+mobile-v0.2.0-pre-alpha.1.dev.1+25
+mobile-v0.2.0-pre-alpha.1+25
 mobile-v0.1.0-alpha.1+20
 mobile-v0.1.0+21
 ```
 
 Use `0.x.y-pre-alpha.*` while the app is still rough and importer-heavy. Bump
-the minor version when a visible chunk of the alpha surface lands. Do not tag
-`1.0.0` until the mobile app, imports, sync, and backups are actually stable.
+the minor version when a visible chunk of the alpha surface lands. Bump the
+patch number for fixes on that same feature line. Do not tag `1.0.0` until the
+mobile app, imports, sync, and backups are actually stable.
 
 ## Release Assets
 
