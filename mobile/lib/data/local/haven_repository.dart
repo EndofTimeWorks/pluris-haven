@@ -219,6 +219,10 @@ class ReminderSummary {
     required this.title,
     this.body,
     required this.scheduleText,
+    this.scheduleKind,
+    this.scheduleTime,
+    this.scheduleDowMask,
+    this.scheduleDom,
     required this.enabled,
     required this.updatedAt,
   });
@@ -227,6 +231,10 @@ class ReminderSummary {
   final String title;
   final String? body;
   final String scheduleText;
+  final String? scheduleKind;
+  final String? scheduleTime;
+  final int? scheduleDowMask;
+  final int? scheduleDom;
   final bool enabled;
   final DateTime updatedAt;
 }
@@ -236,12 +244,20 @@ class ReminderDraft {
     required this.title,
     this.body,
     required this.scheduleText,
+    this.scheduleKind,
+    this.scheduleTime,
+    this.scheduleDowMask,
+    this.scheduleDom,
     this.enabled = true,
   });
 
   final String title;
   final String? body;
   final String scheduleText;
+  final String? scheduleKind;
+  final String? scheduleTime;
+  final int? scheduleDowMask;
+  final int? scheduleDom;
   final bool enabled;
 }
 
@@ -622,7 +638,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteMessage(String messageId);
 
-  Future<void> saveReminder(ReminderDraft draft);
+  Future<String?> saveReminder(ReminderDraft draft);
 
   Future<void> setReminderEnabled(String reminderId, bool enabled);
 
@@ -1142,6 +1158,10 @@ ORDER BY LOWER(g.name) ASC
             title: row.title,
             body: row.body,
             scheduleText: row.scheduleText,
+            scheduleKind: row.scheduleKind,
+            scheduleTime: row.scheduleTime,
+            scheduleDowMask: row.scheduleDowMask,
+            scheduleDom: row.scheduleDom,
             enabled: row.enabled,
             updatedAt: row.updatedAt,
           ),
@@ -2125,28 +2145,34 @@ SELECT
   }
 
   @override
-  Future<void> saveReminder(ReminderDraft draft) async {
+  Future<String?> saveReminder(ReminderDraft draft) async {
     final title = draft.title.trim();
     final scheduleText = draft.scheduleText.trim();
     if (title.isEmpty || scheduleText.isEmpty) {
-      return;
+      return null;
     }
 
     final now = DateTime.now().toUtc();
+    final id = 'reminder-${now.microsecondsSinceEpoch}';
     await database
         .into(database.reminders)
         .insert(
           RemindersCompanion.insert(
-            id: 'reminder-${now.microsecondsSinceEpoch}',
+            id: id,
             systemId: localSystemId,
             title: title,
             body: Value(_nullIfBlank(draft.body)),
             scheduleText: scheduleText,
+            scheduleKind: Value(_nullIfBlank(draft.scheduleKind)),
+            scheduleTime: Value(_nullIfBlank(draft.scheduleTime)),
+            scheduleDowMask: Value(draft.scheduleDowMask),
+            scheduleDom: Value(draft.scheduleDom),
             enabled: Value(draft.enabled),
             createdAt: now,
             updatedAt: now,
           ),
         );
+    return id;
   }
 
   @override
@@ -3269,6 +3295,10 @@ SELECT
       title: title,
       body: Value(_stringValue(reminder['body'])),
       scheduleText: scheduleText,
+      scheduleKind: Value(_stringValue(reminder['schedule_kind'])),
+      scheduleTime: Value(_stringValue(reminder['schedule_time'])),
+      scheduleDowMask: Value(_intValue(reminder['schedule_dow_mask'])),
+      scheduleDom: Value(_intValue(reminder['schedule_dom'])),
       enabled: Value(reminder['enabled'] != false),
       createdAt: _dateValue(reminder['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -4048,6 +4078,10 @@ SELECT
     'title': reminder.title,
     'body': reminder.body,
     'schedule_text': reminder.scheduleText,
+    'schedule_kind': reminder.scheduleKind,
+    'schedule_time': reminder.scheduleTime,
+    'schedule_dow_mask': reminder.scheduleDowMask,
+    'schedule_dom': reminder.scheduleDom,
     'enabled': reminder.enabled,
     'created_at': reminder.createdAt.toIso8601String(),
     'updated_at': reminder.updatedAt.toIso8601String(),
