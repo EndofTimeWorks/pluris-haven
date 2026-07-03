@@ -1481,6 +1481,69 @@ void main() {
     );
   });
 
+  testWidgets('updates accessibility preferences from app options', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Customize'));
+    await tester.tap(find.text('Customize'));
+    await tester.pumpAndSettle();
+
+    final pageScrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Reduced motion'),
+      220,
+      scrollable: pageScrollable,
+    );
+    await tester.tap(find.text('Reduced motion'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('High contrast'),
+      220,
+      scrollable: pageScrollable,
+    );
+    await tester.tap(find.text('High contrast'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Larger app text'),
+      220,
+      scrollable: pageScrollable,
+    );
+    await tester.tap(find.text('Larger app text'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Compact lists'),
+      220,
+      scrollable: pageScrollable,
+    );
+    await tester.tap(find.text('Compact lists'));
+    await tester.pumpAndSettle();
+
+    final customization = await repository.loadCustomization();
+    expect(customization.reducedMotion, isTrue);
+    expect(customization.highContrast, isTrue);
+    expect(customization.largeText, isTrue);
+    expect(customization.compactLists, isTrue);
+  });
+
   testWidgets('shows upload-first import setup and PluralKit live fields', (
     tester,
   ) async {
@@ -2007,6 +2070,30 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> setShowDashboardSubtitles(bool show) async {
     _customization = _customization.copyWith(showDashboardSubtitles: show);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setReducedMotion(bool reduced) async {
+    _customization = _customization.copyWith(reducedMotion: reduced);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setHighContrast(bool highContrast) async {
+    _customization = _customization.copyWith(highContrast: highContrast);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setLargeText(bool largeText) async {
+    _customization = _customization.copyWith(largeText: largeText);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setCompactLists(bool compact) async {
+    _customization = _customization.copyWith(compactLists: compact);
     _customizationController.add(_customization);
   }
 
