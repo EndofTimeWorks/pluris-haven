@@ -566,6 +566,52 @@ void main() {
     expect(repository._snapshot.currentFrontText, 'River');
   });
 
+  testWidgets('creates and assigns tags from a member profile', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('River'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Member tags'));
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-tag-name-field')),
+      'Protector',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('member-tag-color-field')),
+      '#80ffaa',
+    );
+    await tester.tap(find.byKey(const ValueKey('create-member-tag-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-member-tags-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Protector'), findsOneWidget);
+    expect(repository._tags.single.colorHex, '#80FFAA');
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+  });
+
   testWidgets('assigns multiple groups from the member editor', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1659,6 +1705,15 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _namedFrontsController.add(_namedFronts),
     );
+    _tagsController = StreamController<List<Tag>>.broadcast(
+      sync: true,
+      onListen: () => _tagsController.add(_tags),
+    );
+    _memberTagsController =
+        StreamController<Map<String, List<String>>>.broadcast(
+          sync: true,
+          onListen: () => _memberTagsController.add(_memberTagIds),
+        );
   }
 
   HomeSnapshot _snapshot;
@@ -1675,8 +1730,10 @@ class FakeHavenRepository implements HavenRepository {
   List<FrontHistoryEntry> _frontHistory = const [];
   List<BackgroundJobSummary> _backgroundJobs = const [];
   List<NamedFront> _namedFronts = const [];
+  List<Tag> _tags = const [];
   List<String> _currentFrontMemberIds = const [];
   final Map<String, List<String>> _namedFrontMembers = {};
+  Map<String, List<String>> _memberTagIds = const {};
   late final StreamController<HomeSnapshot> _controller;
   late final StreamController<AppCustomization> _customizationController;
   late final StreamController<List<MemberSummary>> _membersController;
@@ -1696,6 +1753,8 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<BackgroundJobSummary>>
   _backgroundJobsController;
   late final StreamController<List<NamedFront>> _namedFrontsController;
+  late final StreamController<List<Tag>> _tagsController;
+  late final StreamController<Map<String, List<String>>> _memberTagsController;
 
   void seedBackgroundJob(BackgroundJobSummary job) {
     _backgroundJobs = [job, ..._backgroundJobs];
@@ -2589,20 +2648,52 @@ class FakeHavenRepository implements HavenRepository {
   }) async {}
 
   @override
-  Stream<List<Tag>> watchTags() => Stream.value(const []);
+  Stream<List<Tag>> watchTags() =>
+      _tagsController.stream.map((tags) => List.unmodifiable(tags));
 
   @override
-  Future<void> saveTag(Tag tag) async {}
+  Future<void> saveTag(Tag tag) async {
+    _tags = [
+      for (final existing in _tags)
+        if (existing.id != tag.id) existing,
+      tag,
+    ]..sort((left, right) => left.name.compareTo(right.name));
+    _tagsController.add(_tags);
+  }
 
   @override
-  Future<void> deleteTag(String tagId) async {}
+  Future<void> deleteTag(String tagId) async {
+    _tags = [
+      for (final tag in _tags)
+        if (tag.id != tagId) tag,
+    ];
+    _memberTagIds = {
+      for (final entry in _memberTagIds.entries)
+        entry.key: [
+          for (final id in entry.value)
+            if (id != tagId) id,
+        ],
+    };
+    _tagsController.add(_tags);
+    _memberTagsController.add(_memberTagIds);
+  }
 
   @override
-  Stream<List<Tag>> watchTagsForMember(String memberId) =>
-      Stream.value(const []);
+  Stream<List<Tag>> watchTagsForMember(String memberId) {
+    return _memberTagsController.stream.map((assignments) {
+      final ids = assignments[memberId]?.toSet() ?? const <String>{};
+      return List.unmodifiable([
+        for (final tag in _tags)
+          if (ids.contains(tag.id)) tag,
+      ]);
+    });
+  }
 
   @override
-  Future<void> setMemberTags(String memberId, List<String> tagIds) async {}
+  Future<void> setMemberTags(String memberId, List<String> tagIds) async {
+    _memberTagIds = {..._memberTagIds, memberId: tagIds};
+    _memberTagsController.add(_memberTagIds);
+  }
 
   @override
   Stream<List<JournalEntry>> watchJournals({String? memberId}) =>
@@ -2844,5 +2935,7 @@ class FakeHavenRepository implements HavenRepository {
     await _frontHistoryController.close();
     await _backgroundJobsController.close();
     await _namedFrontsController.close();
+    await _tagsController.close();
+    await _memberTagsController.close();
   }
 }
