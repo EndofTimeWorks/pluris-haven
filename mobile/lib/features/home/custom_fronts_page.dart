@@ -270,6 +270,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   late final TextEditingController _colorController;
   late final TextEditingController _avatarController;
   late final TextEditingController _descriptionController;
+  String? _avatarMessage;
 
   @override
   void initState() {
@@ -285,10 +286,18 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
     _descriptionController = TextEditingController(
       text: front?.description ?? '',
     );
+    _attachPreviewListeners();
   }
 
   @override
   void dispose() {
+    for (final controller in [
+      _nameController,
+      _colorController,
+      _avatarController,
+    ]) {
+      controller.removeListener(_refreshPreview);
+    }
     _nameController.dispose();
     _colorController.dispose();
     _avatarController.dispose();
@@ -299,6 +308,13 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final editing = widget.front != null;
+    final previewName = _nameController.text.trim().isEmpty
+        ? 'Custom front'
+        : _nameController.text.trim();
+    final previewColor = _colorFromHex(
+      _normalizeUiHexColor(_colorController.text),
+      fallback: _spGold,
+    );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -317,30 +333,21 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _colorController,
-              builder: (context, value, child) {
-                final color = _colorFromHex(
-                  _normalizeUiHexColor(value.text),
-                  fallback: _spGold,
-                );
-                return Row(
-                  children: [
-                    SpAvatar(
-                      size: 42,
-                      color: color,
-                      label: _initialFor(_nameController.text),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Custom fronts can be used from the front picker without changing member counts.',
-                        style: TextStyle(color: _spMuted, height: 1.35),
-                      ),
-                    ),
-                  ],
-                );
-              },
+            Row(
+              children: [
+                _CustomFrontAvatarPreview(
+                  avatarUrl: _nullIfBlank(_avatarController.text),
+                  color: previewColor,
+                  label: _initialFor(previewName),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Custom fronts can be used from the front picker without changing member counts.',
+                    style: TextStyle(color: _spMuted, height: 1.35),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
             TextField(
@@ -390,6 +397,32 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
                 labelText: 'Avatar URL or imported local reference',
               ),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  key: const ValueKey('pick-custom-front-avatar-button'),
+                  onPressed: _chooseAvatar,
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Choose image'),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('clear-custom-front-avatar-button'),
+                  onPressed: _clearAvatar,
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Clear'),
+                ),
+              ],
+            ),
+            if (_avatarMessage != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _avatarMessage!,
+                style: const TextStyle(color: _spMuted, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('custom-front-page-description-field'),
@@ -443,6 +476,108 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _chooseAvatar() async {
+    setState(() => _avatarMessage = 'Opening image picker...');
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+      dialogTitle: 'Choose custom front avatar',
+    );
+    final files = result?.files ?? const <PlatformFile>[];
+    final file = files.isEmpty ? null : files.first;
+    if (file == null) {
+      if (mounted) {
+        setState(() => _avatarMessage = 'No image selected.');
+      }
+      return;
+    }
+
+    try {
+      final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+      if (bytes == null || bytes.isEmpty) {
+        throw const FormatException('Selected image was empty.');
+      }
+      final ref = await _storeManualAvatar(file.name, bytes);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _avatarController.text = ref;
+        _avatarMessage = 'Avatar saved on device.';
+      });
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _avatarMessage = 'Could not save avatar: $error');
+      }
+    }
+  }
+
+  void _clearAvatar() {
+    setState(() {
+      _avatarController.clear();
+      _avatarMessage = 'Avatar cleared.';
+    });
+  }
+
+  void _refreshPreview() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _attachPreviewListeners() {
+    for (final controller in [
+      _nameController,
+      _colorController,
+      _avatarController,
+    ]) {
+      controller.addListener(_refreshPreview);
+    }
+  }
+}
+
+class _CustomFrontAvatarPreview extends StatelessWidget {
+  const _CustomFrontAvatarPreview({
+    required this.avatarUrl,
+    required this.color,
+    required this.label,
+  });
+
+  final String? avatarUrl;
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = avatarUrl?.trim();
+    if (ref == null || ref.isEmpty) {
+      return SpAvatar(size: 42, color: color, label: label);
+    }
+    if (ref.startsWith('local-avatar:')) {
+      return FutureBuilder<File?>(
+        future: _localAvatarFile(ref),
+        builder: (context, snapshot) {
+          return SpAvatar(
+            size: 42,
+            color: color,
+            label: label,
+            image: snapshot.data == null ? null : FileImage(snapshot.data!),
+          );
+        },
+      );
+    }
+    if (ref.startsWith('http://') || ref.startsWith('https://')) {
+      return SpAvatar(
+        size: 42,
+        color: color,
+        label: label,
+        image: NetworkImage(ref),
+      );
+    }
+    return SpAvatar(size: 42, color: color, label: label);
   }
 }
 
