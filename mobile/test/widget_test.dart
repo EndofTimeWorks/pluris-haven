@@ -1090,6 +1090,25 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '');
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Grounding'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('note-title-field')),
+      'Grounding edited',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('note-body-field')),
+      'Drink water and check meds before bed.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Grounding edited'), findsOneWidget);
+    expect(
+      repository._notes.single.body,
+      'Drink water and check meds before bed.',
+    );
+
     await tester.tap(find.byTooltip('Delete note'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
@@ -2441,6 +2460,30 @@ class FakeHavenRepository implements HavenRepository {
     ];
     _notesController.add(_notes);
     _emitSnapshot(noteCount: _notes.length);
+  }
+
+  @override
+  Future<void> updateNote(String noteId, NoteDraft draft) async {
+    final title = draft.title.trim();
+    final body = draft.body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    _notes = [
+      for (final note in _notes)
+        if (note.id == noteId)
+          NoteSummary(
+            id: note.id,
+            title: title.isEmpty ? 'Untitled note' : title,
+            body: body,
+            memberId: _nullIfBlank(draft.memberId),
+            updatedAt: DateTime(2026, 1, 2),
+          )
+        else
+          note,
+    ];
+    _notesController.add(_notes);
   }
 
   @override

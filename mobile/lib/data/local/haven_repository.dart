@@ -612,6 +612,8 @@ abstract interface class HavenRepository {
 
   Future<void> saveNote(NoteDraft draft);
 
+  Future<void> updateNote(String noteId, NoteDraft draft);
+
   Future<void> deleteNote(String noteId);
 
   Future<void> saveMessage(MessageDraft draft);
@@ -2023,6 +2025,29 @@ SELECT
             body: body,
             createdAt: now,
             updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> updateNote(String noteId, NoteDraft draft) async {
+    final title = draft.title.trim();
+    final body = draft.body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    await (database.update(database.notes)..where(
+          (note) =>
+              note.systemId.equals(localSystemId) & note.id.equals(noteId),
+        ))
+        .write(
+          NotesCompanion(
+            memberId: Value(_nullIfBlank(draft.memberId)),
+            title: Value(title.isEmpty ? 'Untitled note' : title),
+            body: Value(body),
+            updatedAt: Value(now),
           ),
         );
   }
