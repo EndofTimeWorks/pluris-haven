@@ -357,6 +357,7 @@ class MemberProfileSheet extends StatelessWidget {
                 );
               },
             ),
+            MemberTagsSection(repository: repository, memberId: member.id),
             MemberCustomFieldsSection(
               repository: repository,
               memberId: member.id,
@@ -408,6 +409,304 @@ class MemberProfileSheet extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class MemberTagsSection extends StatelessWidget {
+  const MemberTagsSection({
+    super.key,
+    required this.repository,
+    required this.memberId,
+  });
+
+  final HavenRepository repository;
+  final String memberId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Tag>>(
+      stream: repository.watchTagsForMember(memberId),
+      initialData: const [],
+      builder: (context, snapshot) {
+        final tags = snapshot.data ?? const <Tag>[];
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: SpSettingsGroup(
+            title: 'Tags',
+            rows: [
+              SpSettingsRow(
+                'Member tags',
+                _tagSummary(tags),
+                trailing: const Icon(Icons.sell_outlined, color: _spMuted),
+                onTap: () => showMemberTagsSheet(
+                  context,
+                  repository: repository,
+                  memberId: memberId,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _tagSummary(List<Tag> tags) {
+  if (tags.isEmpty) {
+    return 'none';
+  }
+  return tags.map((tag) => tag.name).join(', ');
+}
+
+void showMemberTagsSheet(
+  BuildContext context, {
+  required HavenRepository repository,
+  required String memberId,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        MemberTagsSheet(repository: repository, memberId: memberId),
+  );
+}
+
+class MemberTagsSheet extends StatefulWidget {
+  const MemberTagsSheet({
+    super.key,
+    required this.repository,
+    required this.memberId,
+  });
+
+  final HavenRepository repository;
+  final String memberId;
+
+  @override
+  State<MemberTagsSheet> createState() => _MemberTagsSheetState();
+}
+
+class _MemberTagsSheetState extends State<MemberTagsSheet> {
+  final _nameController = TextEditingController();
+  final _colorController = TextEditingController(text: '#F2C75C');
+  final Set<String> _selectedTagIds = {};
+  bool _seeded = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _colorController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: StreamBuilder<List<Tag>>(
+          stream: widget.repository.watchTags(),
+          initialData: const [],
+          builder: (context, allTagsSnapshot) {
+            final allTags = allTagsSnapshot.data ?? const <Tag>[];
+            return StreamBuilder<List<Tag>>(
+              stream: widget.repository.watchTagsForMember(widget.memberId),
+              initialData: const [],
+              builder: (context, memberTagsSnapshot) {
+                final memberTags = memberTagsSnapshot.data ?? const <Tag>[];
+                if (!_seeded) {
+                  _selectedTagIds
+                    ..clear()
+                    ..addAll(memberTags.map((tag) => tag.id));
+                  _seeded = true;
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Member tags',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.',
+                      style: TextStyle(color: _spMuted, height: 1.35),
+                    ),
+                    const SizedBox(height: 14),
+                    if (allTags.isEmpty)
+                      const Text(
+                        'No tags yet.',
+                        style: TextStyle(color: _spMuted),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final tag in allTags)
+                            FilterChip(
+                              avatar: _TagDot(tag: tag),
+                              label: Text(tag.name),
+                              selected: _selectedTagIds.contains(tag.id),
+                              onSelected: (selected) => setState(() {
+                                if (selected) {
+                                  _selectedTagIds.add(tag.id);
+                                } else {
+                                  _selectedTagIds.remove(tag.id);
+                                }
+                              }),
+                              onDeleted: () => _deleteTag(tag),
+                              deleteIcon: const Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      key: const ValueKey('member-tag-name-field'),
+                      controller: _nameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(labelText: 'New tag'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      key: const ValueKey('member-tag-color-field'),
+                      controller: _colorController,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: 'Tag color',
+                        hintText: '#F2C75C',
+                        errorText: _error,
+                        prefixIcon: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: _colorFromHex(
+                                _normalizeUiHexColor(_colorController.text),
+                                fallback: _spGold,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: _spLine),
+                            ),
+                          ),
+                        ),
+                      ),
+                      onChanged: (_) {
+                        if (_error != null) {
+                          setState(() => _error = null);
+                        } else {
+                          setState(() {});
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          key: const ValueKey('create-member-tag-button'),
+                          onPressed: _createTag,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('Create tag'),
+                        ),
+                        FilledButton.icon(
+                          key: const ValueKey('save-member-tags-button'),
+                          onPressed: _save,
+                          icon: const Icon(Icons.save_outlined),
+                          label: const Text('Save tags'),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createTag() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Name the tag first.');
+      return;
+    }
+    final colorHex = _normalizeUiHexColor(_colorController.text);
+    if (colorHex == null) {
+      setState(() => _error = 'Use 6 hex digits, like #F2C75C.');
+      return;
+    }
+    final now = DateTime.now().toUtc();
+    final tag = Tag(
+      id: 'tag-${now.microsecondsSinceEpoch}',
+      systemId: localSystemId,
+      name: name,
+      colorHex: colorHex,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await widget.repository.saveTag(tag);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectedTagIds.add(tag.id);
+      _nameController.clear();
+      _error = null;
+    });
+  }
+
+  Future<void> _deleteTag(Tag tag) async {
+    await widget.repository.deleteTag(tag.id);
+    if (mounted) {
+      setState(() => _selectedTagIds.remove(tag.id));
+    }
+  }
+
+  Future<void> _save() async {
+    await widget.repository.setMemberTags(
+      widget.memberId,
+      _selectedTagIds.toList(growable: false),
+    );
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+}
+
+class _TagDot extends StatelessWidget {
+  const _TagDot({required this.tag});
+
+  final Tag tag;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _colorFromHex(tag.colorHex, fallback: _spGold),
+        shape: BoxShape.circle,
+      ),
+      child: const SizedBox(width: 12, height: 12),
     );
   }
 }

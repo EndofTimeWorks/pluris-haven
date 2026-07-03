@@ -13,7 +13,7 @@ import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/import/member_dedupe.dart';
-import '../../data/local/app_database.dart' show NamedFront, localSystemId;
+import '../../data/local/app_database.dart' show NamedFront, Tag, localSystemId;
 import '../../data/notifications/notification_service.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
