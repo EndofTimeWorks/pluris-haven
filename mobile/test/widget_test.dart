@@ -1785,6 +1785,23 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
     expect(find.textContaining('1 members'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('restore-rehearsal-button')),
+      240,
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('restore-rehearsal-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('restore-rehearsal-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Restore rehearsal passed'), findsOneWidget);
+    expect(
+      find.textContaining('Nothing was written to your app data'),
+      findsOneWidget,
+    );
+    expect(find.text('members: 1'), findsWidgets);
     await tester.scrollUntilVisible(find.text('Import archive'), 240);
     expect(find.text('Import archive'), findsOneWidget);
 
@@ -2918,6 +2935,48 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<RestoreRehearsalSummary> rehearseLocalArchiveRestore(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
+    String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
+  }) async {
+    final decoded = jsonDecode(archiveJson);
+    final archive = decoded is Map<String, Object?> ? decoded : const {};
+    int countList(String key) =>
+        archive[key] is List ? (archive[key] as List<Object?>).length : 0;
+
+    return RestoreRehearsalSummary(
+      canRestore: true,
+      fileName: fileName,
+      counts: {
+        'members': countList('members'),
+        'custom_fronts': 0,
+        'groups': countList('groups'),
+        'group_members': countList('group_members'),
+        'notes': countList('notes'),
+        'messages': countList('messages'),
+        'reminders': countList('reminders'),
+        'custom_fields': countList('custom_fields'),
+        'custom_field_values': countList('custom_field_values'),
+        'polls': countList('polls'),
+        'poll_options': countList('poll_options'),
+        'poll_votes': countList('poll_votes'),
+        'fronts': countList('fronts'),
+        'front_members': countList('front_members'),
+        'named_fronts': countList('named_fronts'),
+        'named_front_members': countList('named_front_members'),
+        'import_records': 1,
+        'raw_payloads': countList('raw_payloads'),
+        'notification_events': countList('notification_events'),
+        'preferences': countList('preferences'),
+      },
+      checkedAt: DateTime(2026),
+      elapsed: const Duration(milliseconds: 17),
+    );
+  }
+
+  @override
   Future<String> enqueueImportArchiveJob(
     String archiveJson, {
     required ImportConflictStrategy strategy,
@@ -2968,6 +3027,7 @@ class FakeHavenRepository implements HavenRepository {
     ImportConflictStrategy strategy = ImportConflictStrategy.skip,
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
+    bool localizeAvatars = true,
   }) async {}
 
   @override

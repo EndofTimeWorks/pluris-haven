@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
@@ -58,6 +59,30 @@ class BackgroundJobSummary {
   final DateTime updatedAt;
 
   bool get isActive => status == 'queued' || status == 'running';
+}
+
+class RestoreRehearsalSummary {
+  const RestoreRehearsalSummary({
+    required this.canRestore,
+    required this.fileName,
+    required this.counts,
+    required this.checkedAt,
+    required this.elapsed,
+    this.error,
+  });
+
+  final bool canRestore;
+  final String? fileName;
+  final Map<String, int> counts;
+  final DateTime checkedAt;
+  final Duration elapsed;
+  final String? error;
+
+  int get totalRecords =>
+      counts.values.fold(0, (total, count) => total + count);
+
+  Iterable<MapEntry<String, int>> get visibleCounts =>
+      counts.entries.where((entry) => entry.value > 0);
 }
 
 class MemberSummary {
@@ -688,6 +713,13 @@ abstract interface class HavenRepository {
 
   Future<String> buildLocalArchiveJson();
 
+  Future<RestoreRehearsalSummary> rehearseLocalArchiveRestore(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
+    String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
+  });
+
   Stream<List<BackgroundJobSummary>> watchBackgroundJobs();
 
   Future<String> enqueueImportArchiveJob(
@@ -704,6 +736,7 @@ abstract interface class HavenRepository {
     ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
+    bool localizeAvatars = true,
   });
 
   // v8: Tags
@@ -2729,6 +2762,127 @@ SELECT
   }
 
   @override
+  Future<RestoreRehearsalSummary> rehearseLocalArchiveRestore(
+    String archiveJson, {
+    ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
+    String? fileName,
+    ImportSource source = ImportSource.plurisHavenArchive,
+  }) async {
+    final startedAt = DateTime.now().toUtc();
+    final previousMultipleDatabaseWarning =
+        driftRuntimeOptions.dontWarnAboutMultipleDatabases;
+    late final AppDatabase rehearsalDatabase;
+    try {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+      rehearsalDatabase = AppDatabase(NativeDatabase.memory());
+    } finally {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases =
+          previousMultipleDatabaseWarning;
+    }
+    try {
+      final rehearsalRepository = LocalHavenRepository(rehearsalDatabase);
+      await rehearsalRepository.ensureLocalSystem();
+      await rehearsalRepository.importLocalArchiveJson(
+        archiveJson,
+        strategy: strategy,
+        fileName: fileName,
+        source: source,
+        localizeAvatars: false,
+      );
+      final counts = await _rehearsalCounts(rehearsalDatabase);
+      final checkedAt = DateTime.now().toUtc();
+      appDebugLog(
+        'Restore rehearsal passed source=${source.name} '
+        'file=${fileName ?? '(none)'} counts=$counts',
+      );
+      return RestoreRehearsalSummary(
+        canRestore: true,
+        fileName: fileName,
+        counts: counts,
+        checkedAt: checkedAt,
+        elapsed: checkedAt.difference(startedAt),
+      );
+    } on Object catch (error, stackTrace) {
+      final checkedAt = DateTime.now().toUtc();
+      appDebugLog(
+        'Restore rehearsal failed source=${source.name} '
+        'file=${fileName ?? '(none)'}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return RestoreRehearsalSummary(
+        canRestore: false,
+        fileName: fileName,
+        counts: const {},
+        checkedAt: checkedAt,
+        elapsed: checkedAt.difference(startedAt),
+        error: error.toString(),
+      );
+    } finally {
+      await rehearsalDatabase.close();
+    }
+  }
+
+  Future<Map<String, int>> _rehearsalCounts(AppDatabase database) async {
+    final members = await database.select(database.members).get();
+    final groups = await database.select(database.systemGroups).get();
+    final groupMembers = await database.select(database.groupMembers).get();
+    final notes = await database.select(database.notes).get();
+    final messages = await database.select(database.messages).get();
+    final reminders = await database.select(database.reminders).get();
+    final customFields = await database
+        .select(database.customFieldDefinitions)
+        .get();
+    final customFieldValues = await database
+        .select(database.customFieldValues)
+        .get();
+    final polls = await database.select(database.polls).get();
+    final pollOptions = await database.select(database.pollOptions).get();
+    final pollVotes = await database.select(database.pollVotes).get();
+    final fronts = await database.select(database.frontSessions).get();
+    final frontMembers = await database
+        .select(database.frontSessionMembers)
+        .get();
+    final namedFronts = await database.select(database.namedFronts).get();
+    final namedFrontMembers = await database
+        .select(database.namedFrontMembers)
+        .get();
+    final importRecords = await database.select(database.importRecords).get();
+    final rawPayloads = await database.select(database.importPayloads).get();
+    final notificationEvents = await database
+        .select(database.notificationEvents)
+        .get();
+    final preferences = await database.select(database.appPreferences).get();
+
+    final customFrontCount = members
+        .where((member) => member.isCustomFront)
+        .length;
+
+    return {
+      'members': members.length - customFrontCount,
+      'custom_fronts': customFrontCount,
+      'groups': groups.length,
+      'group_members': groupMembers.length,
+      'notes': notes.length,
+      'messages': messages.length,
+      'reminders': reminders.length,
+      'custom_fields': customFields.length,
+      'custom_field_values': customFieldValues.length,
+      'polls': polls.length,
+      'poll_options': pollOptions.length,
+      'poll_votes': pollVotes.length,
+      'fronts': fronts.length,
+      'front_members': frontMembers.length,
+      'named_fronts': namedFronts.length,
+      'named_front_members': namedFrontMembers.length,
+      'import_records': importRecords.length,
+      'raw_payloads': rawPayloads.length,
+      'notification_events': notificationEvents.length,
+      'preferences': preferences.length,
+    };
+  }
+
+  @override
   Future<String> enqueueImportArchiveJob(
     String archiveJson, {
     required ImportConflictStrategy strategy,
@@ -2853,6 +3007,7 @@ SELECT
     ImportConflictStrategy strategy = ImportConflictStrategy.prompt,
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
+    bool localizeAvatars = true,
   }) async {
     final decoded = jsonDecode(archiveJson);
     if (decoded is! Map<String, Object?>) {
@@ -2913,10 +3068,12 @@ SELECT
       'frontMembers=${frontMembers.length} groupMembers=${groupMembers.length} '
       'cleanup=$cleanupCount',
     );
-    final localAvatarRefs = await _localizeImportAvatars(
-      members: [...members, ...namedFronts],
-      avatarAssets: avatarAssets,
-    );
+    final localAvatarRefs = localizeAvatars
+        ? await _localizeImportAvatars(
+            members: [...members, ...namedFronts],
+            avatarAssets: avatarAssets,
+          )
+        : const <String, String>{};
 
     await database.transaction(() async {
       final system = decoded['system'];
