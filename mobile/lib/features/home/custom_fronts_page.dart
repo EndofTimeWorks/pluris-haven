@@ -115,7 +115,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                           ),
                         ],
                       ),
-                      onTap: () => _applyFront(front),
+                      onTap: null,
                     ),
                 ],
               ),
@@ -224,7 +224,7 @@ class _CustomFrontRow extends StatelessWidget {
                     ),
                 ],
               ),
-              onTap: onSet,
+              onTap: onEdit,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
