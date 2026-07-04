@@ -248,7 +248,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                                   ),
                               ],
                             ),
-                            onTap: () => _applyNamedFront(front.id),
+                            onTap: null,
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

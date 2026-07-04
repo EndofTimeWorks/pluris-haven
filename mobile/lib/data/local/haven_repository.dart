@@ -851,7 +851,7 @@ class LocalHavenRepository implements HavenRepository {
           },
         )
         .watchSingle()
-        .map(_mapHomeSnapshot);
+        .asyncMap(_mapHomeSnapshot);
   }
 
   @override
@@ -967,36 +967,40 @@ ORDER BY m.lexo_rank ASC
       )
       ..orderBy([
         (front) =>
-            OrderingTerm(expression: front.startedAt, mode: OrderingMode.desc),
-      ])
-      ..limit(1);
+            OrderingTerm(expression: front.startedAt, mode: OrderingMode.asc),
+      ]);
 
     return query.watch().asyncMap((sessions) async {
       if (sessions.isEmpty) {
         return const <MemberSummary>[];
       }
 
+      final sessionIds = sessions.map((session) => session.id).toList();
       final links = await (database.select(
         database.frontSessionMembers,
-      )..where((link) => link.sessionId.equals(sessions.first.id))).get();
+      )..where((link) => link.sessionId.isIn(sessionIds))).get();
       if (links.isEmpty) {
         return const <MemberSummary>[];
       }
 
-      final memberIds = links.map((link) => link.memberId).toSet().toList();
+      final memberIds = links.map((link) => link.memberId).toSet();
       final members =
           await (database.select(database.members)..where(
                 (member) =>
                     member.systemId.equals(localSystemId) &
                     member.archived.equals(false) &
                     member.isCustomFront.equals(false) &
-                    member.id.isIn(memberIds),
+                    member.id.isIn(memberIds.toList()),
               ))
               .get();
       final byId = {for (final member in members) member.id: member};
 
       final summaries = <MemberSummary>[];
+      final seen = <String>{};
       for (final link in links) {
+        if (!seen.add(link.memberId)) {
+          continue;
+        }
         final row = byId[link.memberId];
         if (row == null) {
           continue;
@@ -1363,20 +1367,13 @@ SELECT
   (SELECT COUNT(*) FROM members WHERE system_id = ? AND archived = 0 AND is_custom_front = 0) AS member_count,
   (SELECT COUNT(*) FROM system_groups WHERE system_id = ?) AS group_count,
   (SELECT COUNT(*) FROM notes WHERE system_id = ?) AS note_count,
-  (SELECT COUNT(*) FROM front_sessions WHERE system_id = ?) AS front_history_count,
-  (
-    SELECT label
-    FROM front_sessions
-    WHERE system_id = ? AND ended_at IS NULL
-    ORDER BY started_at DESC
-    LIMIT 1
-  ) AS current_front_label
+  (SELECT COUNT(*) FROM front_sessions WHERE system_id = ?) AS front_history_count
           ''';
 
   List<Variable<String>> get _homeSnapshotVariables =>
-      List.filled(6, Variable<String>(localSystemId));
+      List.filled(5, Variable<String>(localSystemId));
 
-  HomeSnapshot _mapHomeSnapshot(QueryRow row) {
+  Future<HomeSnapshot> _mapHomeSnapshot(QueryRow row) async {
     final data = row.data;
 
     return HomeSnapshot(
@@ -1385,8 +1382,75 @@ SELECT
       groupCount: data['group_count'] as int,
       noteCount: data['note_count'] as int,
       frontHistoryCount: data['front_history_count'] as int,
-      currentFrontLabel: data['current_front_label'] as String?,
+      currentFrontLabel: await _currentFrontLabel(),
     );
+  }
+
+  Future<String?> _currentFrontLabel() async {
+    final sessions =
+        await (database.select(database.frontSessions)
+              ..where(
+                (front) =>
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              )
+              ..orderBy([
+                (front) => OrderingTerm(
+                  expression: front.startedAt,
+                  mode: OrderingMode.asc,
+                ),
+              ]))
+            .get();
+    if (sessions.isEmpty) {
+      return null;
+    }
+
+    final labels = <String>[];
+    for (final session in sessions) {
+      final explicit = session.label?.trim();
+      if (explicit != null && explicit.isNotEmpty) {
+        labels.add(explicit);
+        continue;
+      }
+
+      final links = await (database.select(
+        database.frontSessionMembers,
+      )..where((link) => link.sessionId.equals(session.id))).get();
+      if (links.isEmpty) {
+        continue;
+      }
+
+      final members =
+          await (database.select(database.members)..where(
+                (member) => member.id.isIn(
+                  links.map((link) => link.memberId).toSet().toList(),
+                ),
+              ))
+              .get();
+      final namesById = <String, String>{};
+      for (final member in members) {
+        final displayName = await _decrypt(member.displayName);
+        final name = (displayName ?? member.displayName).trim();
+        if (name.isNotEmpty) {
+          namesById[member.id] = name;
+        }
+      }
+      for (final link in links) {
+        final name = namesById[link.memberId];
+        if (name != null && name.isNotEmpty) {
+          labels.add(name);
+        }
+      }
+    }
+
+    final uniqueLabels = <String>[];
+    final seen = <String>{};
+    for (final label in labels) {
+      if (seen.add(label.toLowerCase())) {
+        uniqueLabels.add(label);
+      }
+    }
+    return uniqueLabels.isEmpty ? null : uniqueLabels.join(', ');
   }
 
   bool _readSqlBool(Object? value) {
@@ -1778,34 +1842,76 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
-    final label = members.map((member) => member.displayName).join(', ');
 
     await database.transaction(() async {
-      await _endOpenFrontSessions(now);
-      final sessionId = 'front-${now.microsecondsSinceEpoch}';
+      final openSessions =
+          await (database.select(database.frontSessions)..where(
+                (front) =>
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              ))
+              .get();
+      final openSessionIds = openSessions.map((session) => session.id).toList();
+      final openLinks = openSessionIds.isEmpty
+          ? const <FrontSessionMember>[]
+          : await (database.select(
+              database.frontSessionMembers,
+            )..where((link) => link.sessionId.isIn(openSessionIds))).get();
 
-      await database
-          .into(database.frontSessions)
-          .insert(
-            FrontSessionsCompanion.insert(
-              id: sessionId,
-              systemId: localSystemId,
-              label: Value(label),
-              startedAt: now,
-              createdAt: now,
-              updatedAt: now,
-            ),
-          );
+      final sessionsByMember = <String, Set<String>>{};
+      for (final link in openLinks) {
+        sessionsByMember
+            .putIfAbsent(link.memberId, () => <String>{})
+            .add(link.sessionId);
+      }
+      final desiredIds = members.map((member) => member.id).toSet();
+      final sessionsToClose = <String>{};
+      for (final entry in sessionsByMember.entries) {
+        if (!desiredIds.contains(entry.key)) {
+          sessionsToClose.addAll(entry.value);
+        }
+      }
 
-      await database.batch((batch) {
-        batch.insertAll(database.frontSessionMembers, [
-          for (final member in members)
-            FrontSessionMembersCompanion.insert(
-              sessionId: sessionId,
-              memberId: member.id,
-            ),
-        ]);
-      });
+      for (final sessionId in sessionsToClose) {
+        await _endFrontSession(sessionId, now);
+      }
+
+      final remainingActiveMemberIds = <String>{};
+      for (final entry in sessionsByMember.entries) {
+        if (entry.value.any(
+          (sessionId) => !sessionsToClose.contains(sessionId),
+        )) {
+          remainingActiveMemberIds.add(entry.key);
+        }
+      }
+
+      var offset = 0;
+      for (final member in members) {
+        if (remainingActiveMemberIds.contains(member.id)) {
+          continue;
+        }
+        final startedAt = now.add(Duration(microseconds: offset++));
+        final sessionId = 'front-${startedAt.microsecondsSinceEpoch}';
+        await database
+            .into(database.frontSessions)
+            .insert(
+              FrontSessionsCompanion.insert(
+                id: sessionId,
+                systemId: localSystemId,
+                startedAt: startedAt,
+                createdAt: startedAt,
+                updatedAt: startedAt,
+              ),
+            );
+        await database
+            .into(database.frontSessionMembers)
+            .insert(
+              FrontSessionMembersCompanion.insert(
+                sessionId: sessionId,
+                memberId: member.id,
+              ),
+            );
+      }
     });
   }
 
@@ -2466,7 +2572,17 @@ SELECT
     final now = DateTime.now().toUtc();
 
     await database.transaction(() async {
-      await _endOpenFrontSessions(now);
+      final existing =
+          await (database.select(database.frontSessions)..where(
+                (front) =>
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull() &
+                    front.label.equals(trimmed),
+              ))
+              .getSingleOrNull();
+      if (existing != null) {
+        return;
+      }
 
       await database
           .into(database.frontSessions)
@@ -2967,8 +3083,12 @@ SELECT
     var cleanupCount = 0;
 
     for (final group in groups) {
+      final groupId = _stringValue(group['id']);
       final parentId = _stringValue(group['parent_group_id']);
-      if (parentId != null && !groupIds.contains(parentId)) {
+      if (parentId != null &&
+          (parentId == groupId ||
+              !groupIds.contains(parentId) ||
+              _groupParentChainHasCycle(groupId, parentId, groups))) {
         group['parent_group_id'] = null;
         cleanupCount++;
       }
@@ -3999,6 +4119,49 @@ SELECT
             updatedAt: Value(endedAt),
           ),
         );
+  }
+
+  Future<void> _endFrontSession(String sessionId, DateTime endedAt) {
+    return (database.update(database.frontSessions)..where(
+          (session) =>
+              session.systemId.equals(localSystemId) &
+              session.id.equals(sessionId) &
+              session.endedAt.isNull(),
+        ))
+        .write(
+          FrontSessionsCompanion(
+            endedAt: Value(endedAt),
+            updatedAt: Value(endedAt),
+          ),
+        );
+  }
+
+  bool _groupParentChainHasCycle(
+    String? groupId,
+    String parentId,
+    List<Map<String, Object?>> groups,
+  ) {
+    if (groupId == null) {
+      return false;
+    }
+
+    final parentByGroupId = <String, String?>{
+      for (final group in groups)
+        if (_stringValue(group['id']) != null)
+          _stringValue(group['id'])!: _stringValue(group['parent_group_id']),
+    };
+    final seen = <String>{groupId};
+    var cursor = parentId;
+    while (true) {
+      if (!seen.add(cursor)) {
+        return true;
+      }
+      final next = parentByGroupId[cursor];
+      if (next == null || next.isEmpty) {
+        return false;
+      }
+      cursor = next;
+    }
   }
 
   String? _nullIfBlank(String? value) {
