@@ -18,8 +18,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
   List<ImportAvatarAsset> _fileAvatarAssets = const [];
   ImportFileGuess? _guess;
   ImportPreview? _preview;
+  RestoreRehearsalSummary? _restoreRehearsal;
   bool _isPickingImport = false;
   bool _isApplyingImport = false;
+  bool _isRehearsingRestore = false;
   String? _importStatus;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
@@ -79,7 +81,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ImportPreviewCard(
             preview: _preview!,
             onApply: _isApplyingImport ? null : _applyImportFile,
+            onRehearse: _isRehearsingRestore ? null : _runRestoreRehearsal,
             isImporting: _isApplyingImport,
+            isRehearsing: _isRehearsingRestore,
+            rehearsal: _restoreRehearsal,
           ),
         ],
         const SizedBox(height: 12),
@@ -239,6 +244,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _fileAvatarAssets = avatarAssets;
       _guess = guess;
       _preview = preview;
+      _restoreRehearsal = null;
       if (guess.source != null) {
         _source = guess.source!;
       }
@@ -265,6 +271,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _source = source;
       _preview = preview;
+      _restoreRehearsal = null;
       _importStatus = preview == null
           ? _importStatus
           : 'Preview ready: ${_countSummary(preview.counts)}.';
@@ -312,6 +319,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
     setState(() {
       _preview = preview;
+      _restoreRehearsal = null;
       _importStatus = 'Preview ready: ${_countSummary(preview.counts)}.';
     });
     appDebugLog(
@@ -319,6 +327,61 @@ class _ImportExportPageState extends State<ImportExportPage> {
       'canApply=${preview.canApply} counts=${preview.counts} '
       'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
     );
+  }
+
+  Future<void> _runRestoreRehearsal() async {
+    final text = _fileText;
+    final fileName = _fileName ?? 'import.json';
+    if (text == null) {
+      setState(() {
+        _importStatus = 'Choose or paste a file before rehearsing restore.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isRehearsingRestore = true;
+      _restoreRehearsal = null;
+      _importStatus = 'Rehearsing restore in a temporary local database...';
+    });
+
+    try {
+      final normalized = normalizeImportTextToLocalArchive(
+        source: _source,
+        fileName: fileName,
+        text: text,
+        avatarAssets: _fileAvatarAssets,
+      );
+      final summary = await widget.repository.rehearseLocalArchiveRestore(
+        normalized.archiveJson,
+        strategy: _strategy,
+        fileName: _fileName,
+        source: _source,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isRehearsingRestore = false;
+        _restoreRehearsal = summary;
+        _importStatus = summary.canRestore
+            ? 'Restore rehearsal passed: ${_countSummary(summary.counts)}.'
+            : 'Restore rehearsal failed. Nothing was imported.';
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isRehearsingRestore = false;
+        _restoreRehearsal = RestoreRehearsalSummary(
+          canRestore: false,
+          fileName: _fileName,
+          counts: const {},
+          checkedAt: DateTime.now().toUtc(),
+          elapsed: Duration.zero,
+          error: error.toString(),
+        );
+        _importStatus = 'Restore rehearsal failed. Nothing was imported.';
+      });
+    }
   }
 
   Future<void> _applyImportFile() async {
@@ -933,12 +996,18 @@ class ImportPreviewCard extends StatelessWidget {
     super.key,
     required this.preview,
     this.onApply,
+    this.onRehearse,
     this.isImporting = false,
+    this.isRehearsing = false,
+    this.rehearsal,
   });
 
   final ImportPreview preview;
   final Future<void> Function()? onApply;
+  final Future<void> Function()? onRehearse;
   final bool isImporting;
+  final bool isRehearsing;
+  final RestoreRehearsalSummary? rehearsal;
 
   @override
   Widget build(BuildContext context) {
@@ -989,19 +1058,113 @@ class ImportPreviewCard extends StatelessWidget {
             ],
           ],
           const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed: preview.canApply && onApply != null
-                ? () async => onApply!()
-                : null,
-            icon: isImporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.restore_rounded),
-            label: Text(isImporting ? 'Importing...' : 'Import archive'),
+          if (rehearsal != null) ...[
+            RestoreRehearsalResult(summary: rehearsal!),
+            const SizedBox(height: 12),
+          ],
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                key: const ValueKey('restore-rehearsal-button'),
+                onPressed: preview.canApply && onRehearse != null
+                    ? () async => onRehearse!()
+                    : null,
+                icon: isRehearsing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.fact_check_rounded),
+                label: Text(
+                  isRehearsing ? 'Rehearsing...' : 'Run restore rehearsal',
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: preview.canApply && onApply != null
+                    ? () async => onApply!()
+                    : null,
+                icon: isImporting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restore_rounded),
+                label: Text(isImporting ? 'Importing...' : 'Import archive'),
+              ),
+            ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class RestoreRehearsalResult extends StatelessWidget {
+  const RestoreRehearsalResult({super.key, required this.summary});
+
+  final RestoreRehearsalSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleCounts = summary.visibleCounts.toList(growable: false);
+    final title = summary.canRestore
+        ? 'Restore rehearsal passed'
+        : 'Restore rehearsal failed';
+    final body = summary.canRestore
+        ? 'Imported into a temporary local database. Nothing was written to your app data.'
+        : summary.error ?? 'The archive could not be restored safely.';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _spSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: summary.canRestore
+              ? _spGold.withValues(alpha: 0.65)
+              : Theme.of(context).colorScheme.error,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                summary.canRestore
+                    ? Icons.verified_rounded
+                    : Icons.error_outline_rounded,
+                color: summary.canRestore
+                    ? _spGold
+                    : Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              StatusPill(text: '${summary.elapsed.inMilliseconds}ms'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+          if (visibleCounts.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final entry in visibleCounts)
+                  StatusPill(text: '${entry.key}: ${entry.value}'),
+              ],
+            ),
+          ],
         ],
       ),
     );

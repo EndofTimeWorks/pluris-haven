@@ -464,6 +464,59 @@ void main() {
     expect(importRecords.single.fileName, 'backup.json');
   });
 
+  test('rehearses a restore without changing the current database', () async {
+    final sourceDatabase = AppDatabase(NativeDatabase.memory());
+    final source = LocalHavenRepository(sourceDatabase);
+    await source.ensureLocalSystem();
+    await source.saveMember(
+      const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
+    );
+    await source.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await source.saveNote(
+      const NoteDraft(title: 'Grounding', body: 'Drink water.'),
+    );
+    final archive = await source.buildLocalArchiveJson();
+    await sourceDatabase.close();
+
+    final targetDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(targetDatabase.close);
+    final target = LocalHavenRepository(targetDatabase);
+    await target.ensureLocalSystem();
+
+    final rehearsal = await target.rehearseLocalArchiveRestore(
+      archive,
+      strategy: ImportConflictStrategy.update,
+      fileName: 'backup.json',
+    );
+
+    expect(rehearsal.canRestore, isTrue);
+    expect(rehearsal.error, isNull);
+    expect(rehearsal.counts['members'], 1);
+    expect(rehearsal.counts['groups'], 1);
+    expect(rehearsal.counts['notes'], 1);
+    expect(rehearsal.counts['import_records'], 1);
+    expect(await target.watchMembers().first, isEmpty);
+    expect(await target.watchGroups().first, isEmpty);
+    expect(await target.watchNotes().first, isEmpty);
+  });
+
+  test('reports restore rehearsal failures without throwing', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    final rehearsal = await repository.rehearseLocalArchiveRestore(
+      '{"format":"wrong"}',
+      fileName: 'broken.json',
+    );
+
+    expect(rehearsal.canRestore, isFalse);
+    expect(rehearsal.error, contains('Unsupported archive format'));
+    expect(await repository.watchMembers().first, isEmpty);
+  });
+
   test('imports normalized external archives', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
