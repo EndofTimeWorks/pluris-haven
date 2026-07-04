@@ -245,7 +245,7 @@ void main() {
     ]);
 
     await tester.ensureVisible(find.text('River + Sage'));
-    await tester.tap(find.text('River + Sage'));
+    await tester.tap(find.byTooltip('Set saved front').last);
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
     expect(
