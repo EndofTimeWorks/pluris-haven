@@ -1055,6 +1055,9 @@ void main() {
       ),
     );
     addTearDown(repository.close);
+    await repository.saveMember(
+      const MemberDraft(displayName: 'River', colorHex: '#AA66CC'),
+    );
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -1070,6 +1073,10 @@ void main() {
       find.byKey(const ValueKey('note-title-field')),
       'Grounding',
     );
+    await tester.tap(find.byKey(const ValueKey('note-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('River').last);
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('note-body-field')),
       'Drink water and check meds.',
@@ -1078,13 +1085,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Grounding'), findsOneWidget);
-    expect(find.text('Drink water and check meds.'), findsOneWidget);
+    expect(find.textContaining('River note'), findsOneWidget);
+    expect(find.textContaining('Drink water and check meds.'), findsOneWidget);
+    expect(repository._notes.single.memberId, 'fake-member-1');
     expect(repository._snapshot.noteCount, 1);
 
     await tester.enterText(find.byType(TextField).first, 'missing');
     await tester.pumpAndSettle();
     expect(find.text('No matching notes'), findsOneWidget);
     await tester.enterText(find.byType(TextField).first, 'water');
+    await tester.pumpAndSettle();
+    expect(find.text('Grounding'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'river');
     await tester.pumpAndSettle();
     expect(find.text('Grounding'), findsOneWidget);
     await tester.enterText(find.byType(TextField).first, '');
@@ -1108,6 +1120,7 @@ void main() {
       repository._notes.single.body,
       'Drink water and check meds before bed.',
     );
+    expect(repository._notes.single.memberId, 'fake-member-1');
 
     await tester.tap(find.byTooltip('Delete note'));
     await tester.pumpAndSettle();
@@ -1197,6 +1210,9 @@ void main() {
       ),
     );
     addTearDown(repository.close);
+    await repository.saveMember(
+      const MemberDraft(displayName: 'Sage', colorHex: '#66CCAA'),
+    );
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -1209,6 +1225,10 @@ void main() {
     await tester.tap(find.text('Add message'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const ValueKey('message-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sage').last);
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('message-body-field')),
       'Check in after dinner.',
@@ -1217,6 +1237,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check in after dinner.'), findsOneWidget);
+    expect(find.textContaining('Sage -'), findsOneWidget);
+    expect(repository._messages.single.memberId, 'fake-member-1');
+
+    await tester.enterText(find.byType(TextField).first, 'sage');
+    await tester.pumpAndSettle();
+    expect(find.text('Check in after dinner.'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Check in after dinner.'));
     await tester.pumpAndSettle();
@@ -1228,6 +1256,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check in after dinner. Bring water.'), findsOneWidget);
+    expect(repository._messages.single.memberId, 'fake-member-1');
 
     await tester.tap(find.byTooltip('Delete message'));
     await tester.pumpAndSettle();
@@ -1967,15 +1996,20 @@ class FakeHavenRepository implements HavenRepository {
   Stream<List<MemberSummary>> watchMembers({
     bool includeArchived = false,
     bool includeCustomFronts = false,
-  }) {
-    return _membersController.stream.map((members) {
-      return List.unmodifiable([
+  }) async* {
+    List<MemberSummary> filtered(List<MemberSummary> members) {
+      return [
         for (final member in members)
           if ((includeArchived || !member.archived) &&
               (includeCustomFronts || !member.isCustomFront))
             member,
-      ]);
-    });
+      ];
+    }
+
+    yield List.unmodifiable(filtered(_members));
+    await for (final members in _membersController.stream) {
+      yield List.unmodifiable(filtered(members));
+    }
   }
 
   @override
