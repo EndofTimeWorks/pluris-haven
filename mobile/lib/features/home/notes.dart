@@ -33,70 +33,96 @@ class _NotesPageState extends State<NotesPage> {
       stream: widget.repository.watchNotes(),
       initialData: const [],
       builder: (context, noteSnapshot) {
-        final notes = _filteredNotes(
-          noteSnapshot.data ?? const <NoteSummary>[],
-        );
+        return StreamBuilder<List<MemberSummary>>(
+          stream: widget.repository.watchMembers(includeArchived: true),
+          initialData: const [],
+          builder: (context, memberSnapshot) {
+            final memberNamesById = {
+              for (final member
+                  in memberSnapshot.data ?? const <MemberSummary>[])
+                member.id: member.displayName,
+            };
+            final notes = _filteredNotes(
+              noteSnapshot.data ?? const <NoteSummary>[],
+              memberNamesById,
+            );
 
-        return SpPage(
-          children: [
-            SpSearchField(
-              hintText: 'Search notes',
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            const SizedBox(height: 12),
-            SpFilterRow(
-              filters: const ['All', 'Member', 'System'],
-              selected: _filter,
-              onSelected: (filter) => setState(() => _filter = filter),
-            ),
-            const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SpSectionHeader(
-                    title: 'Notes',
-                    trailing: StatusPill(
-                      text: '${widget.snapshot?.noteCount ?? 0}',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (notes.isEmpty)
-                    SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'All'
-                          ? 'No notes yet'
-                          : 'No matching notes',
-                      body: _query.trim().isEmpty && _filter == 'All'
-                          ? 'Local notes can be attached to members or kept general.'
-                          : 'Try another search or filter.',
-                    )
-                  else
-                    for (final note in notes) ...[
-                      NoteListTile(note: note, repository: widget.repository),
-                      if (note != notes.last)
-                        const Divider(height: 1, color: _spLine),
+            return SpPage(
+              children: [
+                SpSearchField(
+                  hintText: 'Search notes',
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+                const SizedBox(height: 12),
+                SpFilterRow(
+                  filters: const ['All', 'Member', 'System'],
+                  selected: _filter,
+                  onSelected: (filter) => setState(() => _filter = filter),
+                ),
+                const SizedBox(height: 12),
+                SpCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SpSectionHeader(
+                        title: 'Notes',
+                        trailing: StatusPill(
+                          text: '${widget.snapshot?.noteCount ?? 0}',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (notes.isEmpty)
+                        SpEmptyState(
+                          title: _query.trim().isEmpty && _filter == 'All'
+                              ? 'No notes yet'
+                              : 'No matching notes',
+                          body: _query.trim().isEmpty && _filter == 'All'
+                              ? 'Local notes can be attached to members or kept general.'
+                              : 'Try another search or filter.',
+                        )
+                      else
+                        for (final note in notes) ...[
+                          NoteListTile(
+                            note: note,
+                            repository: widget.repository,
+                            memberName: note.memberId == null
+                                ? null
+                                : memberNamesById[note.memberId],
+                          ),
+                          if (note != notes.last)
+                            const Divider(height: 1, color: _spLine),
+                        ],
+                      const SizedBox(height: 14),
+                      SpActionRow(
+                        primary: 'Add note',
+                        secondary: 'Import',
+                        onPrimary: () =>
+                            showNoteSheet(context, widget.repository),
+                        onSecondary: widget.onImport,
+                      ),
                     ],
-                  const SizedBox(height: 14),
-                  SpActionRow(
-                    primary: 'Add note',
-                    secondary: 'Import',
-                    onPrimary: () => showNoteSheet(context, widget.repository),
-                    onSecondary: widget.onImport,
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  List<NoteSummary> _filteredNotes(List<NoteSummary> notes) {
+  List<NoteSummary> _filteredNotes(
+    List<NoteSummary> notes,
+    Map<String, String> memberNamesById,
+  ) {
     return [
       for (final note in notes)
-        if (_matchesQuery(_query, [note.title, note.body]) &&
+        if (_matchesQuery(_query, [
+              note.title,
+              note.body,
+              _noteMemberLabel(note, memberNamesById[note.memberId]),
+            ]) &&
             switch (_filter) {
               'Member' => note.memberId != null,
               'System' => note.memberId == null,
@@ -108,14 +134,21 @@ class _NotesPageState extends State<NotesPage> {
 }
 
 class NoteListTile extends StatelessWidget {
-  const NoteListTile({super.key, required this.note, required this.repository});
+  const NoteListTile({
+    super.key,
+    required this.note,
+    required this.repository,
+    this.memberName,
+  });
 
   final NoteSummary note;
   final HavenRepository repository;
+  final String? memberName;
 
   @override
   Widget build(BuildContext context) {
     final body = note.body.trim();
+    final ownerLabel = _noteMemberLabel(note, memberName);
 
     return Material(
       color: Colors.transparent,
@@ -127,8 +160,8 @@ class NoteListTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         subtitle: Text(
-          body.isEmpty ? 'empty note' : body,
-          maxLines: 2,
+          body.isEmpty ? ownerLabel : '$ownerLabel\n$body',
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: _spMuted),
         ),
@@ -146,6 +179,14 @@ class NoteListTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _noteMemberLabel(NoteSummary note, String? memberName) {
+  if (note.memberId == null) {
+    return 'System note';
+  }
+  final name = memberName?.trim();
+  return name == null || name.isEmpty ? 'Unknown member note' : '$name note';
 }
 
 void showNoteSheet(
@@ -173,8 +214,11 @@ class NoteSheet extends StatefulWidget {
 }
 
 class _NoteSheetState extends State<NoteSheet> {
+  static const _systemNoteValue = '__system_note__';
+
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+  String? _memberId;
 
   bool get _isEditing => widget.note != null;
 
@@ -187,6 +231,7 @@ class _NoteSheetState extends State<NoteSheet> {
     }
     _titleController.text = note.title;
     _bodyController.text = note.body;
+    _memberId = note.memberId;
   }
 
   @override
@@ -222,6 +267,38 @@ class _NoteSheetState extends State<NoteSheet> {
               decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: 10),
+            StreamBuilder<List<MemberSummary>>(
+              stream: widget.repository.watchMembers(includeArchived: true),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                final value = _memberId == null
+                    ? _systemNoteValue
+                    : members.any((member) => member.id == _memberId)
+                    ? _memberId!
+                    : _systemNoteValue;
+                return DropdownButtonFormField<String>(
+                  key: const ValueKey('note-member-field'),
+                  initialValue: value,
+                  decoration: const InputDecoration(labelText: 'For'),
+                  items: [
+                    const DropdownMenuItem(
+                      value: _systemNoteValue,
+                      child: Text('System note'),
+                    ),
+                    for (final member in members)
+                      DropdownMenuItem(
+                        value: member.id,
+                        child: Text(member.displayName),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _memberId = value == _systemNoteValue ? null : value;
+                  }),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
             TextField(
               key: const ValueKey('note-body-field'),
               controller: _bodyController,
@@ -245,6 +322,7 @@ class _NoteSheetState extends State<NoteSheet> {
     final draft = NoteDraft(
       title: _titleController.text,
       body: _bodyController.text,
+      memberId: _memberId,
     );
     final note = widget.note;
     if (note == null) {
