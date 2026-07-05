@@ -86,6 +86,7 @@ class _ExternalArchiveNormalizer {
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
   final _frontCommentsByExternalId = <String, List<String>>{};
+  final _clampReport = _ImportClampReport();
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -131,6 +132,7 @@ class _ExternalArchiveNormalizer {
     fronts = frontData.fronts;
     frontMembers = frontData.frontMembers;
     rawPayloads = _normalizeRawPayloads();
+    warnings.addAll(_clampReport.toWarnings());
   }
 
   Map<String, Object?> archive() => {
@@ -188,7 +190,8 @@ class _ExternalArchiveNormalizer {
         _mapValue(decoded['system']) ??
         (users.isEmpty ? null : _mapValue(users.first)) ??
         decoded;
-    return _firstString(system, const [
+    final name =
+        _firstString(system, const [
           'name',
           'systemName',
           'system_name',
@@ -196,7 +199,14 @@ class _ExternalArchiveNormalizer {
           'tag',
         ]) ??
         'Imported system';
+    return _clamp(name, _capSystemName)!;
   }
+
+  String? _clamp(String? value, _ImportTextCap cap) =>
+      _clampReport.string(value, cap);
+
+  List<T> _clampList<T>(List<T> items, _ImportTextCap cap) =>
+      _clampReport.list(items, cap);
 
   List<Map<String, Object?>> _normalizeMembers() {
     final items = switch (source) {
@@ -274,13 +284,14 @@ class _ExternalArchiveNormalizer {
       warnings.add('Skipped member #${index + 1}: missing name.');
       return null;
     }
+    final displayName = _clamp(name, _capMemberName)!;
 
     final externalId =
         _firstString(member, const ['_id', 'id', 'uuid', 'memberId', 'uid']) ??
         _slug(name);
     final id = _stableId('member', externalId);
     _memberIdsByExternalId[externalId] = id;
-    _memberNamesByExternalId[externalId] = name;
+    _memberNamesByExternalId[externalId] = displayName;
 
     final groupExternalId = _firstString(member, const [
       'folder',
@@ -299,8 +310,11 @@ class _ExternalArchiveNormalizer {
 
     return {
       'id': id,
-      'display_name': name,
-      'pronouns': _firstString(member, const ['pronouns', 'pronoun']),
+      'display_name': displayName,
+      'pronouns': _clamp(
+        _firstString(member, const ['pronouns', 'pronoun']),
+        _capMemberPronouns,
+      ),
       'color_hex': _normalizeColor(
         _firstString(member, const [
           'color',
@@ -309,13 +323,19 @@ class _ExternalArchiveNormalizer {
           'color_hex',
         ]),
       ),
-      'birthday': _firstString(member, const [
-        'birthday',
-        'birthdate',
-        'birth_date',
-        'birthDay',
-      ]),
-      'emoji': _firstString(member, const ['emoji', 'proxyTag', 'proxy_tag']),
+      'birthday': _clamp(
+        _firstString(member, const [
+          'birthday',
+          'birthdate',
+          'birth_date',
+          'birthDay',
+        ]),
+        _capMemberBirthday,
+      ),
+      'emoji': _clamp(
+        _firstString(member, const ['emoji', 'proxyTag', 'proxy_tag']),
+        _capMemberEmoji,
+      ),
       'privacy': _firstString(member, const [
         'privacy',
         'private',
@@ -323,16 +343,19 @@ class _ExternalArchiveNormalizer {
         'privacy_bucket',
       ]),
       'folder_id': groupId,
-      'description': _replaceMemberPlaceholders(
-        _firstString(member, const [
-          'description',
-          'desc',
-          'info',
-          'bio',
-          'content',
-        ]),
+      'description': _clamp(
+        _replaceMemberPlaceholders(
+          _firstString(member, const [
+            'description',
+            'desc',
+            'info',
+            'bio',
+            'content',
+          ]),
+        ),
+        _capMemberDescription,
       ),
-      'avatar_url': _avatarReference(member),
+      'avatar_url': _clamp(_avatarReference(member), _capAvatarUrl),
       'pluralkit_id': _firstString(member, const [
         'pluralkit_id',
         'pluralKitId',
@@ -375,6 +398,7 @@ class _ExternalArchiveNormalizer {
         warnings.add('Skipped custom front #${index + 1}: missing label.');
         continue;
       }
+      final name = _clamp(label, _capMemberName)!;
 
       final externalId =
           _firstString(customFront, const ['_id', 'id', 'uuid', 'uid']) ??
@@ -383,11 +407,11 @@ class _ExternalArchiveNormalizer {
         continue;
       }
       final id = _stableId('named-front', externalId);
-      _customFrontLabelsByExternalId[externalId] = label;
+      _customFrontLabelsByExternalId[externalId] = name;
       namedFronts.add({
         'id': id,
-        'name': label,
-        'custom_label': label,
+        'name': name,
+        'custom_label': name,
         'color_hex': _normalizeColor(
           _firstString(customFront, const [
             'color',
@@ -396,14 +420,17 @@ class _ExternalArchiveNormalizer {
             'color_hex',
           ]),
         ),
-        'avatar_url': _avatarReference(customFront),
-        'description': _replaceMemberPlaceholders(
-          _firstString(customFront, const [
-            'description',
-            'desc',
-            'message',
-            'note',
-          ]),
+        'avatar_url': _clamp(_avatarReference(customFront), _capAvatarUrl),
+        'description': _clamp(
+          _replaceMemberPlaceholders(
+            _firstString(customFront, const [
+              'description',
+              'desc',
+              'message',
+              'note',
+            ]),
+          ),
+          _capMemberDescription,
         ),
         'created_at': _dateString(customFront, const [
           'created_at',
@@ -483,6 +510,7 @@ class _ExternalArchiveNormalizer {
         warnings.add('Skipped custom field #${index + 1}: missing name.');
         continue;
       }
+      final clampedName = _clamp(name, _capCustomFieldName)!;
       final externalId =
           _firstString(field, const ['_id', 'id', 'uuid', 'fieldId']) ??
           _slug(name);
@@ -492,7 +520,7 @@ class _ExternalArchiveNormalizer {
       _customFieldRawTypesByExternalId[externalId] = rawType;
       records.add({
         'id': id,
-        'name': name,
+        'name': clampedName,
         'field_type': _customFieldType(rawType),
         'privacy': _firstString(field, const ['privacy', 'private', 'bucket']),
         'position':
@@ -592,7 +620,10 @@ class _ExternalArchiveNormalizer {
         normalizedType == 'timestamp') {
       return _parseDateValue(value)?.toUtc().toIso8601String() ?? textValue;
     }
-    return _replaceMemberPlaceholders(textValue) ?? textValue;
+    return _clamp(
+      _replaceMemberPlaceholders(textValue) ?? textValue,
+      _capCustomFieldValue,
+    )!;
   }
 
   List<Map<String, Object?>> _normalizeGroups() {
@@ -743,6 +774,7 @@ class _ExternalArchiveNormalizer {
       warnings.add('Skipped group #${index + 1}: missing name.');
       return null;
     }
+    final clampedName = _clamp(name, _capGroupName)!;
 
     final externalId =
         _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
@@ -771,14 +803,20 @@ class _ExternalArchiveNormalizer {
     return {
       'id': id,
       'parent_group_id': parentGroupId,
-      'name': name,
+      'name': clampedName,
       'color_hex': _normalizeColor(
         _firstString(group, const ['color', 'colour', 'colorHex', 'color_hex']),
       ),
-      'description': _replaceMemberPlaceholders(
-        _firstString(group, const ['description', 'desc']),
+      'description': _clamp(
+        _replaceMemberPlaceholders(
+          _firstString(group, const ['description', 'desc']),
+        ),
+        _capLongText,
       ),
-      'emoji': _firstString(group, const ['emoji', 'icon']),
+      'emoji': _clamp(
+        _firstString(group, const ['emoji', 'icon']),
+        _capMemberEmoji,
+      ),
       'created_at': _dateString(group, const ['created_at', 'createdAt']),
       'updated_at': _dateString(group, const ['updated_at', 'updatedAt']),
     };
@@ -826,10 +864,14 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('note', externalId),
       'member_id': memberId,
-      'title': _replaceMemberPlaceholders(
-        title == null || title.isEmpty ? 'Imported note' : title,
+      'title': _clamp(
+        _replaceMemberPlaceholders(
+          title == null || title.isEmpty ? 'Imported note' : title,
+        ),
+        _capContentTitle,
       ),
-      'body': _replaceMemberPlaceholders(body) ?? '',
+      'body':
+          _clamp(_replaceMemberPlaceholders(body) ?? '', _capLongText) ?? '',
       'created_at': _dateString(note, const [
         'created_at',
         'createdAt',
@@ -892,10 +934,14 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('journal', externalId),
       'member_id': _memberRef(journal),
-      'title': _replaceMemberPlaceholders(
-        title == null || title.isEmpty ? 'Imported journal' : title,
+      'title': _clamp(
+        _replaceMemberPlaceholders(
+          title == null || title.isEmpty ? 'Imported journal' : title,
+        ),
+        _capContentTitle,
       ),
-      'body': _replaceMemberPlaceholders(body) ?? '',
+      'body':
+          _clamp(_replaceMemberPlaceholders(body) ?? '', _capJournalBody) ?? '',
       'visibility':
           _firstString(journal, const ['visibility', 'privacy']) ?? 'system',
       'created_at': _dateString(journal, const [
@@ -962,7 +1008,12 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('message', externalId),
       'member_id': _memberRef(message),
-      'body': _replaceMemberPlaceholders(_messageBody(message, body)) ?? '',
+      'body':
+          _clamp(
+            _replaceMemberPlaceholders(_messageBody(message, body)) ?? '',
+            _capMessageBody,
+          ) ??
+          '',
       'archived': message['archived'] == true,
       'created_at': _dateString(message, const [
         'created_at',
@@ -1042,17 +1093,20 @@ class _ExternalArchiveNormalizer {
         'reminder-$index';
     return {
       'id': _stableId('reminder', externalId),
-      'title': title,
-      'body': _replaceMemberPlaceholders(
-        _firstString(reminder, const [
-          'body',
-          'text',
-          'description',
-          'message',
-          'event',
-        ]),
+      'title': _clamp(title, _capReminderTitle),
+      'body': _clamp(
+        _replaceMemberPlaceholders(
+          _firstString(reminder, const [
+            'body',
+            'text',
+            'description',
+            'message',
+            'event',
+          ]),
+        ),
+        _capReminderBody,
       ),
-      'schedule_text': schedule,
+      'schedule_text': _clamp(schedule, _capReminderSchedule),
       'schedule_kind': structuredSchedule.kind,
       'schedule_time': structuredSchedule.time,
       'schedule_dow_mask': structuredSchedule.dowMask,
@@ -1152,9 +1206,20 @@ class _ExternalArchiveNormalizer {
 
       pollRecords.add({
         'id': id,
-        'question': _replaceMemberPlaceholders(question) ?? question,
-        'description': _replaceMemberPlaceholders(
-          _firstString(poll, const ['description', 'desc', 'details', 'note']),
+        'question': _clamp(
+          _replaceMemberPlaceholders(question) ?? question,
+          _capPollQuestion,
+        ),
+        'description': _clamp(
+          _replaceMemberPlaceholders(
+            _firstString(poll, const [
+              'description',
+              'desc',
+              'details',
+              'note',
+            ]),
+          ),
+          _capPollDescription,
         ),
         'kind': _pollKind(poll),
         'closed':
@@ -1188,14 +1253,15 @@ class _ExternalArchiveNormalizer {
     final rawOptions =
         poll['options'] ?? poll['choices'] ?? poll['answers'] ?? poll['items'];
     final values = switch (rawOptions) {
-      final List list => list,
+      final List list => list.cast<Object?>(),
       final Map map => map.values.toList(growable: false),
       _ => const <Object?>[],
     };
+    final cappedValues = _clampList<Object?>(values, _capPollOptionList);
 
     final records = <Map<String, Object?>>[];
-    for (var index = 0; index < values.length; index++) {
-      final value = values[index];
+    for (var index = 0; index < cappedValues.length; index++) {
+      final value = cappedValues[index];
       final body = switch (value) {
         final String text => text.trim(),
         final num number => number.toString(),
@@ -1227,7 +1293,10 @@ class _ExternalArchiveNormalizer {
       records.add({
         'id': id,
         'poll_id': pollId,
-        'body': _replaceMemberPlaceholders(body) ?? body,
+        'body': _clamp(
+          _replaceMemberPlaceholders(body) ?? body,
+          _capPollOption,
+        ),
         'position':
             _intValue(
               value is Map<String, Object?>
@@ -1433,8 +1502,8 @@ class _ExternalArchiveNormalizer {
 
       sessions.add({
         'id': id,
-        'label': label,
-        'status_note': _frontStatusNote(front),
+        'label': _clamp(label, _capMemberName),
+        'status_note': _clamp(_frontStatusNote(front), _capFrontStatusNote),
         'started_at': normalizedTimes.start,
         'ended_at': normalizedTimes.end,
         'created_at':
@@ -1843,6 +1912,79 @@ class _PollData {
   final List<Map<String, Object?>> pollOptions;
   final List<Map<String, Object?>> pollVotes;
 }
+
+class _ImportTextCap {
+  const _ImportTextCap(this.label, this.limit);
+
+  final String label;
+  final int limit;
+}
+
+class _ImportClampReport {
+  final _stringHits = <_ImportTextCap, int>{};
+  final _listHits = <_ImportTextCap, int>{};
+
+  String? string(String? value, _ImportTextCap cap) {
+    if (value == null || value.length <= cap.limit) {
+      return value;
+    }
+    _stringHits[cap] = (_stringHits[cap] ?? 0) + 1;
+    return value.substring(0, cap.limit);
+  }
+
+  List<T> list<T>(List<T> items, _ImportTextCap cap) {
+    if (items.length <= cap.limit) {
+      return items;
+    }
+    _listHits[cap] = (_listHits[cap] ?? 0) + 1;
+    return items.take(cap.limit).toList(growable: false);
+  }
+
+  List<String> toWarnings() {
+    final warnings = <String>[];
+    final stringEntries = _stringHits.entries.toList()
+      ..sort((left, right) => left.key.label.compareTo(right.key.label));
+    final listEntries = _listHits.entries.toList()
+      ..sort((left, right) => left.key.label.compareTo(right.key.label));
+
+    for (final entry in stringEntries) {
+      final label = entry.value == 1 ? entry.key.label : '${entry.key.label}s';
+      warnings.add(
+        '${entry.value} $label will be shortened to ${entry.key.limit} characters.',
+      );
+    }
+    for (final entry in listEntries) {
+      final label = entry.value == 1 ? entry.key.label : '${entry.key.label}s';
+      warnings.add(
+        '${entry.value} $label will be trimmed to ${entry.key.limit} entries.',
+      );
+    }
+    return warnings;
+  }
+}
+
+const _capSystemName = _ImportTextCap('system name', 100);
+const _capMemberName = _ImportTextCap('member name', 100);
+const _capMemberPronouns = _ImportTextCap('member pronouns', 100);
+const _capMemberBirthday = _ImportTextCap('member birthday', 10);
+const _capMemberEmoji = _ImportTextCap('member emoji', 8);
+const _capMemberDescription = _ImportTextCap('member description', 5000);
+const _capAvatarUrl = _ImportTextCap('avatar URL', 500);
+const _capGroupName = _ImportTextCap('group name', 100);
+const _capCustomFieldName = _ImportTextCap('custom field name', 100);
+const _capCustomFieldValue = _ImportTextCap('custom field value', 5000);
+const _capContentTitle = _ImportTextCap('content title', 200);
+const _capLongText = _ImportTextCap('long text field', 5000);
+const _capJournalBody = _ImportTextCap('journal body', 20000);
+const _capMessageBody = _ImportTextCap('message body', 5000);
+const _capReminderTitle = _ImportTextCap('reminder title', 120);
+const _capReminderBody = _ImportTextCap('reminder body', 2000);
+const _capReminderSchedule = _ImportTextCap('reminder schedule', 500);
+const _capPollQuestion = _ImportTextCap('poll question', 500);
+const _capPollDescription = _ImportTextCap('poll description', 2000);
+const _capPollOption = _ImportTextCap('poll option', 200);
+const _capPollOptionList = _ImportTextCap('poll option list', 20);
+const _capFrontStatusNote = _ImportTextCap('front status note', 2000);
 
 Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'members': _listCount(archive['members']),
