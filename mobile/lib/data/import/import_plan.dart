@@ -204,8 +204,12 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanCount('members'),
         ImportPlanCount('groups'),
         ImportPlanCount('notes'),
+        ImportPlanCount('journals'),
         ImportPlanCount('messages'),
         ImportPlanCount('reminders'),
+        ImportPlanCount('tags'),
+        ImportPlanCount('custom fields'),
+        ImportPlanCount('polls'),
         ImportPlanCount('front history'),
         ImportPlanCount('notifications'),
         ImportPlanCount('preferences'),
@@ -225,7 +229,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ),
         ImportPlanStep(
           'Review contents',
-          'Show local members, groups, notes, fronts, and preferences before writing.',
+          'Show local members, groups, journals, notes, fronts, tags, polls, and preferences before writing.',
         ),
         ImportPlanStep(
           'Restore locally',
