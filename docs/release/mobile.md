@@ -9,8 +9,8 @@ There are two build tracks.
 It creates one prerelease from the checked-in `mobile/pubspec.yaml` version when
 that version is a dev prerelease:
 
-- pubspec version: `0.2.0-pre-alpha.1.dev.3+27`
-- tag: `mobile-v0.2.0-pre-alpha.1.dev.3+27`
+- pubspec version: `0.2.0-pre-alpha.1.dev.4+2002`
+- tag: `mobile-v0.2.0-pre-alpha.1.dev.4+2002`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -28,7 +28,7 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.2.0-pre-alpha.1.dev.3+27
+version: 0.2.0-pre-alpha.1.dev.4+2002
 ```
 
 The `0.2.0` part is the pre-1.0 feature line. The `pre-alpha.1` part is the
@@ -36,10 +36,14 @@ current prerelease milestone. The `.dev.N` part is for automatic debug builds on
 `main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
 metadata for precedence, so do not only change the number after `+`.
 
-`0.2.0-pre-alpha.1.dev.3+27` marks the second broader pre-alpha line: local
+`0.2.0-pre-alpha.1.dev.4+2002` marks the second broader pre-alpha line: local
 schema v8, imports, avatars, archive handling, local crypto plumbing, member
 ordering, custom fronts, tags, journals, and the alpha repository services are
 all present enough to test together.
+
+Keep the number after `+` monotonic. A prior published APK used a build code in
+the 2000 range, so later APKs must stay above that or Android and Obtainium will
+treat the download as older even when the SemVer text looks newer.
 
 Do not reuse a published version. The workflow fails if the matching tag already
 exists.
@@ -56,23 +60,23 @@ for deliberate releases. Drop the `.dev.N` part when cutting one of these.
 Tag format:
 
 ```sh
-git tag mobile-v0.2.0-pre-alpha.1+25
+git tag mobile-v0.2.0-pre-alpha.1+2003
 ```
 
 Meaning:
 
 - `0.2.0-pre-alpha.1` is the GitHub release version.
 - `0.2.0-pre-alpha.1` is passed to Flutter as `--build-name`.
-- `25` is passed to Flutter as `--build-number`.
+- `2003` is passed to Flutter as `--build-number`.
 
 Examples:
 
 ```text
 mobile-v0.1.0-pre-alpha.dev.1+18
-mobile-v0.2.0-pre-alpha.1.dev.3+27
-mobile-v0.2.0-pre-alpha.1+25
-mobile-v0.1.0-alpha.1+20
-mobile-v0.1.0+21
+mobile-v0.2.0-pre-alpha.1.dev.4+2002
+mobile-v0.2.0-pre-alpha.1+2003
+mobile-v0.2.1-pre-alpha.1+2004
+mobile-v0.3.0-alpha.1+2100
 ```
 
 Use `0.x.y-pre-alpha.*` while the app is still rough and importer-heavy. Bump
