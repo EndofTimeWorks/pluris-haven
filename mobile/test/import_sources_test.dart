@@ -803,12 +803,15 @@ void main() {
 ''',
       );
 
+      final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+      final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
       expect(archive.counts['members'], 1);
       expect(archive.counts['groups'], 1);
       expect(archive.counts['group_members'], 1);
       expect(archive.counts['custom_fields'], 1);
       expect(archive.counts['custom_field_values'], 2);
-      expect(archive.counts['messages'], 3);
+      expect(archive.counts['messages'], 2);
       expect(archive.counts['reminders'], 1);
       expect(archive.counts['fronts'], 1);
       expect(archive.counts['front_members'], 1);
@@ -850,6 +853,11 @@ void main() {
       expect(archive.archiveJson, contains('"collection": "customFronts"'));
       expect(archive.archiveJson, contains('"collection": "privacyBuckets"'));
       expect(archive.archiveJson, contains('"body": "Board\\nCheck supplies"'));
+      expect(fronts.single['status_note'], 'front note');
+      expect(
+        archive.archiveJson,
+        isNot(contains('"body": "front note\\nSource: frontHistory"')),
+      );
     },
   );
 
