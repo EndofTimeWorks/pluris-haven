@@ -194,6 +194,27 @@ void main() {
     );
   });
 
+  test('does not treat raw-only payload preservation as applyable', () {
+    final preview = previewImportText(
+      fileName: 'unknown.json',
+      text: '{"securityLogs":[{"id":"log1"}]}',
+      selectedSource: ImportSource.simplyPlural,
+    );
+
+    expect(preview.canApply, isFalse);
+    expect(preview.counts['raw_payloads'], 1);
+    expect(
+      preview.warningsAndErrors.map((event) => event.message),
+      contains('No importable records were recognized.'),
+    );
+    expect(
+      preview.warningsAndErrors.map((event) => event.message),
+      contains(
+        'Preserved 1 source collection as raw payloads. They will not show as notes, messages, or members until native screens exist.',
+      ),
+    );
+  });
+
   test('normalizes Simply Plural exports into local archive records', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
@@ -1060,11 +1081,7 @@ void main() {
   });
 
   test('preserves unmapped Simply Plural collections as raw payloads', () {
-    final archive = normalizeImportTextToLocalArchive(
-      source: ImportSource.simplyPlural,
-      fileName: 'sp-full.json',
-      importedAt: DateTime.utc(2026),
-      text: '''
+    final text = '''
 {
   "users": [{"_id": "system-user", "username": "SP System"}],
   "members": [{"_id": "m1", "name": "Iris"}],
@@ -1075,10 +1092,27 @@ void main() {
   "socketNotifications": [],
   "verifiedKeys": []
 }
-''',
+''';
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-full.json',
+      importedAt: DateTime.utc(2026),
+      text: text,
+    );
+    final preview = previewImportText(
+      fileName: 'sp-full.json',
+      text: text,
+      selectedSource: ImportSource.simplyPlural,
     );
 
     expect(archive.counts['raw_payloads'], 6);
+    expect(preview.canApply, isTrue);
+    expect(
+      preview.warningsAndErrors.map((event) => event.message),
+      contains(
+        'Preserved 6 source collections as raw payloads. They will not show as notes, messages, or members until native screens exist.',
+      ),
+    );
     expect(archive.archiveJson, contains('"collection": "securityLogs"'));
     expect(archive.archiveJson, contains('"collection": "friends"'));
     expect(archive.archiveJson, contains('"collection": "tokens"'));

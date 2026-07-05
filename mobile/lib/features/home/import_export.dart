@@ -538,11 +538,30 @@ class _ImportExportPageState extends State<ImportExportPage> {
   String _countSummary(Map<String, int> counts) {
     final visible = counts.entries
         .where((entry) => entry.value > 0)
-        .map((entry) => '${entry.value} ${entry.key}')
+        .map(
+          (entry) =>
+              '${entry.value} ${_importCountLabel(entry.key, entry.value)}',
+        )
         .join(', ');
 
     return visible.isEmpty ? 'no records found' : visible;
   }
+}
+
+String _importCountLabel(String key, int count) {
+  if (key == 'raw_payloads') {
+    return count == 1
+        ? 'preserved source collection'
+        : 'preserved source collections';
+  }
+  return key;
+}
+
+String _importCountPillLabel(String key, int count) {
+  if (key == 'raw_payloads') {
+    return 'preserved source collections: $count';
+  }
+  return '$key: $count';
 }
 
 String? _stringValue(Object? value) {
@@ -1036,7 +1055,9 @@ class ImportPreviewCard extends StatelessWidget {
             children: [
               for (final entry in preview.counts.entries)
                 if (entry.value > 0)
-                  StatusPill(text: '${entry.key}: ${entry.value}'),
+                  StatusPill(
+                    text: _importCountPillLabel(entry.key, entry.value),
+                  ),
               if (!preview.counts.values.any((count) => count > 0))
                 const StatusPill(text: 'no records found'),
             ],
