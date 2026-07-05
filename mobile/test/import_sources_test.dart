@@ -270,6 +270,56 @@ void main() {
     expect(archive.archiveJson, contains('"description": "First member"'));
   });
 
+  test('keeps external notes and journals in separate sections', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-notes-journals.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"_id": "m1", "name": "Iris"}
+  ],
+  "notes": [
+    {
+      "_id": "note1",
+      "member": "m1",
+      "title": "Member note",
+      "note": "This belongs on the Notes screen.",
+      "date": 1767225600000
+    }
+  ],
+  "journals": [
+    {
+      "_id": "journal1",
+      "member": "m1",
+      "title": "System journal",
+      "body": "This belongs in Journals.",
+      "visibility": "private",
+      "createdAt": 1767229200000
+    }
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final notes = (decoded['notes'] as List).cast<Map<String, dynamic>>();
+    final journals = (decoded['journals'] as List).cast<Map<String, dynamic>>();
+
+    expect(archive.counts['notes'], 1);
+    expect(archive.counts['journals'], 1);
+    expect(notes.single['id'], 'simplyplural_file-note-note1');
+    expect(notes.single['member_id'], 'simplyplural_file-member-m1');
+    expect(notes.single['title'], 'Member note');
+    expect(notes.single['body'], 'This belongs on the Notes screen.');
+    expect(journals.single['id'], 'simplyplural_file-journal-journal1');
+    expect(journals.single['member_id'], 'simplyplural_file-member-m1');
+    expect(journals.single['title'], 'System journal');
+    expect(journals.single['body'], 'This belongs in Journals.');
+    expect(journals.single['visibility'], 'private');
+  });
+
   test('normalizes Simply Plural epoch and Firebase timestamps', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

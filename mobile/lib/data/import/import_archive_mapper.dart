@@ -90,6 +90,7 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> customFields;
   late final List<Map<String, Object?>> customFieldValues;
   late final List<Map<String, Object?>> notes;
+  late final List<Map<String, Object?>> journals;
   late final List<Map<String, Object?>> messages;
   late final List<Map<String, Object?>> fronts;
   late final List<Map<String, Object?>> frontMembers;
@@ -110,6 +111,7 @@ class _ExternalArchiveNormalizer {
     customFields = _normalizeCustomFields();
     customFieldValues = _normalizeCustomFieldValues();
     notes = _normalizeNotes();
+    journals = _normalizeJournals();
     messages = _normalizeMessages();
     reminders = _normalizeReminders();
     final namedFrontData = _normalizeNamedFronts();
@@ -147,7 +149,7 @@ class _ExternalArchiveNormalizer {
     'reminders': reminders,
     'tags': const [],
     'member_tags': const [],
-    'journals': const [],
+    'journals': journals,
     'content_revisions': const [],
     'polls': polls,
     'poll_options': pollOptions,
@@ -714,7 +716,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeNotes() {
-    final items = _firstList(decoded, const ['notes', 'journals']);
+    final items = _firstList(decoded, const ['notes']);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
@@ -766,6 +768,74 @@ class _ExternalArchiveNormalizer {
         'updated_at',
         'updatedAt',
         'date',
+      ]),
+    };
+  }
+
+  List<Map<String, Object?>> _normalizeJournals() {
+    final items = _combinedLists(decoded, const [
+      'journals',
+      'journalEntries',
+      'journal_entries',
+    ]);
+    final records = <Map<String, Object?>>[];
+    for (var index = 0; index < items.length; index++) {
+      final journal = _mapValue(items[index]);
+      if (journal == null) {
+        warnings.add('Skipped journal #${index + 1}: expected an object.');
+        continue;
+      }
+      final record = _journalRecord(journal, index);
+      if (record != null) {
+        records.add(record);
+      }
+    }
+    return records;
+  }
+
+  Map<String, Object?>? _journalRecord(
+    Map<String, Object?> journal,
+    int index,
+  ) {
+    final body = _firstString(journal, const [
+      'body',
+      'text',
+      'content',
+      'note',
+      'entry',
+    ])?.trim();
+    final title = _firstString(journal, const [
+      'title',
+      'name',
+      'subject',
+    ])?.trim();
+    if ((body == null || body.isEmpty) && (title == null || title.isEmpty)) {
+      warnings.add('Skipped journal #${index + 1}: missing title and body.');
+      return null;
+    }
+
+    final externalId =
+        _firstString(journal, const ['_id', 'id', 'uuid', 'uid']) ??
+        '${title ?? 'journal'}-$index';
+
+    return {
+      'id': _stableId('journal', externalId),
+      'member_id': _memberRef(journal),
+      'title': title == null || title.isEmpty ? 'Imported journal' : title,
+      'body': body ?? '',
+      'visibility':
+          _firstString(journal, const ['visibility', 'privacy']) ?? 'system',
+      'created_at': _dateString(journal, const [
+        'created_at',
+        'createdAt',
+        'date',
+        'writtenAt',
+      ]),
+      'updated_at': _dateString(journal, const [
+        'updated_at',
+        'updatedAt',
+        'date',
+        'writtenAt',
       ]),
     };
   }
