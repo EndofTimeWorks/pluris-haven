@@ -157,6 +157,12 @@ class MemberListTile extends StatelessWidget {
               repository.setFrontMembers([member.id]);
             } else if (value == 'edit') {
               showMemberSheet(context, repository, member: member);
+            } else if (value == 'duplicate') {
+              showMemberSheet(
+                context,
+                repository,
+                initialDraft: _duplicateMemberDraft(member),
+              );
             } else if (value == 'archive') {
               repository.archiveMember(member.id);
             } else if (value == 'restore') {
@@ -175,6 +181,7 @@ class MemberListTile extends StatelessWidget {
             if (!member.archived)
               const PopupMenuItem(value: 'front', child: Text('Set front')),
             const PopupMenuItem(value: 'edit', child: Text('Edit')),
+            const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
             if (member.archived)
               const PopupMenuItem(value: 'restore', child: Text('Restore'))
             else
@@ -214,18 +221,23 @@ void showMemberProfileSheet(
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) =>
-        MemberProfileSheet(repository: repository, member: member),
+    builder: (sheetContext) => MemberProfileSheet(
+      hostContext: context,
+      repository: repository,
+      member: member,
+    ),
   );
 }
 
 class MemberProfileSheet extends StatelessWidget {
   const MemberProfileSheet({
     super.key,
+    required this.hostContext,
     required this.repository,
     required this.member,
   });
 
+  final BuildContext hostContext;
   final HavenRepository repository;
   final MemberSummary member;
 
@@ -385,6 +397,23 @@ class MemberProfileSheet extends StatelessWidget {
                   },
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Edit'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!hostContext.mounted) {
+                        return;
+                      }
+                      showMemberSheet(
+                        hostContext,
+                        repository,
+                        initialDraft: _duplicateMemberDraft(member),
+                      );
+                    });
+                  },
+                  icon: const Icon(Icons.content_copy_rounded),
+                  label: const Text('Duplicate'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -950,6 +979,25 @@ String _memberGroupLabel(MemberSummary member, List<GroupSummary> groups) {
   return [for (final id in ids) namesById[id] ?? id].join(', ');
 }
 
+MemberDraft _duplicateMemberDraft(MemberSummary member) {
+  return _memberDraft(member, displayName: '${member.displayName} copy');
+}
+
+MemberDraft _memberDraft(MemberSummary member, {required String displayName}) {
+  return MemberDraft(
+    displayName: displayName,
+    pronouns: member.pronouns,
+    colorHex: member.colorHex,
+    birthday: member.birthday,
+    emoji: member.emoji,
+    privacy: member.privacy,
+    description: member.description,
+    avatarUrl: member.avatarUrl,
+    folderId: member.folderId,
+    groupIds: member.groupIds,
+  );
+}
+
 String _memberAvatarLabel(MemberSummary member) {
   final emoji = member.emoji?.trim();
   return emoji == null || emoji.isEmpty
@@ -1043,22 +1091,32 @@ void showMemberSheet(
   BuildContext context,
   HavenRepository repository, {
   MemberSummary? member,
+  MemberDraft? initialDraft,
 }) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) =>
-        AddMemberSheet(repository: repository, member: member),
+    builder: (context) => AddMemberSheet(
+      repository: repository,
+      member: member,
+      initialDraft: initialDraft,
+    ),
   );
 }
 
 class AddMemberSheet extends StatefulWidget {
-  const AddMemberSheet({super.key, required this.repository, this.member});
+  const AddMemberSheet({
+    super.key,
+    required this.repository,
+    this.member,
+    this.initialDraft,
+  });
 
   final HavenRepository repository;
   final MemberSummary? member;
+  final MemberDraft? initialDraft;
 
   @override
   State<AddMemberSheet> createState() => _AddMemberSheetState();
@@ -1088,29 +1146,42 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     super.initState();
     final member = widget.member;
     if (member == null) {
+      final draft = widget.initialDraft;
+      if (draft != null) {
+        _seedFromDraft(draft);
+      }
       _attachAvatarPreviewListeners();
       return;
     }
 
-    _nameController.text = member.displayName;
-    _pronounsController.text = member.pronouns ?? '';
-    _birthdayController.text = member.birthday ?? '';
-    _emojiController.text = member.emoji ?? '';
-    _privacyController.text = member.privacy ?? '';
-    _descriptionController.text = member.description ?? '';
-    _avatarController.text = member.avatarUrl ?? '';
+    _seedFromMember(member);
+    _attachAvatarPreviewListeners();
+  }
+
+  void _seedFromMember(MemberSummary member) {
+    _seedFromDraft(_memberDraft(member, displayName: member.displayName));
     _pluralKitController.text = member.pluralKitId ?? '';
-    _folderId = member.folderId;
+  }
+
+  void _seedFromDraft(MemberDraft draft) {
+    _nameController.text = draft.displayName;
+    _pronounsController.text = draft.pronouns ?? '';
+    _birthdayController.text = draft.birthday ?? '';
+    _emojiController.text = draft.emoji ?? '';
+    _privacyController.text = draft.privacy ?? '';
+    _descriptionController.text = draft.description ?? '';
+    _avatarController.text = draft.avatarUrl ?? '';
+    _pluralKitController.text = draft.pluralKitId ?? '';
+    _folderId = draft.folderId;
     _groupIds
       ..clear()
-      ..addAll(member.groupIds);
+      ..addAll(draft.groupIds ?? const <String>[]);
     if (_folderId != null) {
       _groupIds.add(_folderId!);
     }
     _colorController.text =
-        _normalizeUiHexColor(member.colorHex ?? '') ??
+        _normalizeUiHexColor(draft.colorHex ?? '') ??
         _hexFromAccent(HavenAccentColor.purple);
-    _attachAvatarPreviewListeners();
   }
 
   @override

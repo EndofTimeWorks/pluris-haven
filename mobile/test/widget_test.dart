@@ -566,6 +566,86 @@ void main() {
     expect(repository._snapshot.currentFrontText, 'River');
   });
 
+  testWidgets('duplicates a member profile into the editor', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'River',
+        pronouns: 'they/them',
+        colorHex: '#62D6B8',
+        birthday: '02-03',
+        emoji: 'R',
+        privacy: 'trusted',
+        description: 'Protector and organizer.',
+        avatarUrl: 'local-avatar:river.png',
+        pluralKitId: 'abcde',
+        folderId: 'fake-group-1',
+        groupIds: ['fake-group-1'],
+      ),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('member-name-field')))
+          .controller!
+          .text,
+      'River copy',
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('member-pronouns-field')),
+          )
+          .controller!
+          .text,
+      'they/them',
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('member-pluralkit-field')),
+          )
+          .controller!
+          .text,
+      isEmpty,
+    );
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._members, hasLength(2));
+    final duplicate = repository._members.last;
+    expect(duplicate.displayName, 'River copy');
+    expect(duplicate.colorHex, '#62D6B8');
+    expect(duplicate.avatarUrl, 'local-avatar:river.png');
+    expect(duplicate.pluralKitId, isNull);
+    expect(duplicate.groupIds, ['fake-group-1']);
+  });
+
   testWidgets('creates and assigns tags from a member profile', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
