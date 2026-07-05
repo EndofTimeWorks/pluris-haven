@@ -85,6 +85,7 @@ class _ExternalArchiveNormalizer {
   final DateTime importedAt;
   final warnings = <String>[];
   final _memberIdsByExternalId = <String, String>{};
+  final _memberNamesByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
   final _pollOptionIdsByExternalId = <String, String>{};
@@ -113,6 +114,7 @@ class _ExternalArchiveNormalizer {
   void normalize() {
     groups = _normalizeGroups();
     _indexGroupMembers();
+    _indexMemberNames();
     members = _normalizeMembers();
     groupMembers = _normalizeGroupMembers();
     customFields = _normalizeCustomFields();
@@ -226,6 +228,40 @@ class _ExternalArchiveNormalizer {
     return records;
   }
 
+  void _indexMemberNames() {
+    final items = switch (source) {
+      ImportSource.tupperbox => _firstList(decoded, const ['tuppers']),
+      _ => _firstList(decoded, const ['members', 'membersList', 'profiles']),
+    };
+    for (final item in items) {
+      final member = _mapValue(item);
+      if (member == null) {
+        continue;
+      }
+      final name = _firstString(member, const [
+        'display_name',
+        'displayName',
+        'name',
+        'nick',
+        'nickname',
+        'tupper',
+      ])?.trim();
+      if (name == null || name.isEmpty) {
+        continue;
+      }
+      final externalId =
+          _firstString(member, const [
+            '_id',
+            'id',
+            'uuid',
+            'memberId',
+            'uid',
+          ]) ??
+          _slug(name);
+      _memberNamesByExternalId[externalId] = name;
+    }
+  }
+
   Map<String, Object?>? _memberRecord(
     Map<String, Object?> member,
     int index, {
@@ -249,6 +285,7 @@ class _ExternalArchiveNormalizer {
         _slug(name);
     final id = _stableId('member', externalId);
     _memberIdsByExternalId[externalId] = id;
+    _memberNamesByExternalId[externalId] = name;
 
     final groupExternalId = _firstString(member, const [
       'folder',
@@ -291,13 +328,15 @@ class _ExternalArchiveNormalizer {
         'privacy_bucket',
       ]),
       'folder_id': groupId,
-      'description': _firstString(member, const [
-        'description',
-        'desc',
-        'info',
-        'bio',
-        'content',
-      ]),
+      'description': _replaceMemberPlaceholders(
+        _firstString(member, const [
+          'description',
+          'desc',
+          'info',
+          'bio',
+          'content',
+        ]),
+      ),
       'avatar_url': _avatarReference(member),
       'pluralkit_id': _firstString(member, const [
         'pluralkit_id',
@@ -363,12 +402,14 @@ class _ExternalArchiveNormalizer {
           ]),
         ),
         'avatar_url': _avatarReference(customFront),
-        'description': _firstString(customFront, const [
-          'description',
-          'desc',
-          'message',
-          'note',
-        ]),
+        'description': _replaceMemberPlaceholders(
+          _firstString(customFront, const [
+            'description',
+            'desc',
+            'message',
+            'note',
+          ]),
+        ),
         'created_at': _dateString(customFront, const [
           'created_at',
           'createdAt',
@@ -517,7 +558,7 @@ class _ExternalArchiveNormalizer {
         ),
         'field_id': fieldId,
         'member_id': memberId,
-        'value': _customFieldValue(rawValue),
+        'value': _replaceMemberPlaceholders(_customFieldValue(rawValue)),
         'created_at': _dateString(row, const ['created_at', 'createdAt']),
         'updated_at': _dateString(row, const [
           'updated_at',
@@ -587,7 +628,7 @@ class _ExternalArchiveNormalizer {
         'id': _stableId('custom-field-value', '$ownerExternalId-${entry.key}'),
         'field_id': fieldId,
         'member_id': memberId,
-        'value': _customFieldValue(entry.value),
+        'value': _replaceMemberPlaceholders(_customFieldValue(entry.value)),
         'created_at': updatedAt,
         'updated_at': updatedAt,
       });
@@ -775,7 +816,9 @@ class _ExternalArchiveNormalizer {
       'color_hex': _normalizeColor(
         _firstString(group, const ['color', 'colour', 'colorHex', 'color_hex']),
       ),
-      'description': _firstString(group, const ['description', 'desc']),
+      'description': _replaceMemberPlaceholders(
+        _firstString(group, const ['description', 'desc']),
+      ),
       'emoji': _firstString(group, const ['emoji', 'icon']),
       'created_at': _dateString(group, const ['created_at', 'createdAt']),
       'updated_at': _dateString(group, const ['updated_at', 'updatedAt']),
@@ -824,8 +867,10 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('note', externalId),
       'member_id': memberId,
-      'title': title == null || title.isEmpty ? 'Imported note' : title,
-      'body': body ?? '',
+      'title': _replaceMemberPlaceholders(
+        title == null || title.isEmpty ? 'Imported note' : title,
+      ),
+      'body': _replaceMemberPlaceholders(body) ?? '',
       'created_at': _dateString(note, const [
         'created_at',
         'createdAt',
@@ -888,8 +933,10 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('journal', externalId),
       'member_id': _memberRef(journal),
-      'title': title == null || title.isEmpty ? 'Imported journal' : title,
-      'body': body ?? '',
+      'title': _replaceMemberPlaceholders(
+        title == null || title.isEmpty ? 'Imported journal' : title,
+      ),
+      'body': _replaceMemberPlaceholders(body) ?? '',
       'visibility':
           _firstString(journal, const ['visibility', 'privacy']) ?? 'system',
       'created_at': _dateString(journal, const [
@@ -956,7 +1003,7 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('message', externalId),
       'member_id': _memberRef(message),
-      'body': _messageBody(message, body),
+      'body': _replaceMemberPlaceholders(_messageBody(message, body)) ?? '',
       'archived': message['archived'] == true,
       'created_at': _dateString(message, const [
         'created_at',
@@ -1037,13 +1084,15 @@ class _ExternalArchiveNormalizer {
     return {
       'id': _stableId('reminder', externalId),
       'title': title,
-      'body': _firstString(reminder, const [
-        'body',
-        'text',
-        'description',
-        'message',
-        'event',
-      ]),
+      'body': _replaceMemberPlaceholders(
+        _firstString(reminder, const [
+          'body',
+          'text',
+          'description',
+          'message',
+          'event',
+        ]),
+      ),
       'schedule_text': schedule,
       'schedule_kind': structuredSchedule.kind,
       'schedule_time': structuredSchedule.time,
@@ -1144,13 +1193,10 @@ class _ExternalArchiveNormalizer {
 
       pollRecords.add({
         'id': id,
-        'question': question,
-        'description': _firstString(poll, const [
-          'description',
-          'desc',
-          'details',
-          'note',
-        ]),
+        'question': _replaceMemberPlaceholders(question) ?? question,
+        'description': _replaceMemberPlaceholders(
+          _firstString(poll, const ['description', 'desc', 'details', 'note']),
+        ),
         'kind': _pollKind(poll),
         'closed':
             _boolValue(poll['closed']) ??
@@ -1222,7 +1268,7 @@ class _ExternalArchiveNormalizer {
       records.add({
         'id': id,
         'poll_id': pollId,
-        'body': body,
+        'body': _replaceMemberPlaceholders(body) ?? body,
         'position':
             _intValue(
               value is Map<String, Object?>
@@ -1618,7 +1664,7 @@ class _ExternalArchiveNormalizer {
         note.isNotEmpty &&
         _customFrontLabelFromRefs(front) != note &&
         !(custom == true && _frontLabel(front) == note)) {
-      normalizedNote = note;
+      normalizedNote = _replaceMemberPlaceholders(note);
     }
 
     final externalId = _firstString(front, const ['_id', 'id', 'uuid', 'uid']);
@@ -1751,8 +1797,22 @@ class _ExternalArchiveNormalizer {
       }
       _frontCommentsByExternalId
           .putIfAbsent(frontExternalId, () => [])
-          .add(body);
+          .add(_replaceMemberPlaceholders(body) ?? body);
     }
+  }
+
+  String? _replaceMemberPlaceholders(String? value) {
+    if (value == null || !value.contains('<###@')) {
+      return value;
+    }
+    return value.replaceAllMapped(RegExp(r'<###@([^#>]+)###>'), (match) {
+      final externalId = match.group(1);
+      if (externalId == null) {
+        return match.group(0) ?? '';
+      }
+      final name = _memberNamesByExternalId[externalId];
+      return name == null ? '@$externalId' : '@$name';
+    });
   }
 
   bool _isFrontHistoryComment(Map<String, Object?> comment) {
