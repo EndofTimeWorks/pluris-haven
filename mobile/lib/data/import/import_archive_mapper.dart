@@ -88,6 +88,7 @@ class _ExternalArchiveNormalizer {
   final _memberNamesByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
+  final _customFieldRawTypesByExternalId = <String, Object?>{};
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
   final _frontCommentsByExternalId = <String, List<String>>{};
@@ -492,11 +493,13 @@ class _ExternalArchiveNormalizer {
           _firstString(field, const ['_id', 'id', 'uuid', 'fieldId']) ??
           _slug(name);
       final id = _stableId('custom-field', externalId);
+      final rawType = field['type'] ?? field['field_type'];
       _customFieldIdsByExternalId[externalId] = id;
+      _customFieldRawTypesByExternalId[externalId] = rawType;
       records.add({
         'id': id,
         'name': name,
-        'field_type': _customFieldType(field['type'] ?? field['field_type']),
+        'field_type': _customFieldType(rawType),
         'privacy': _firstString(field, const ['privacy', 'private', 'bucket']),
         'position':
             _intValue(field['order']) ?? _intValue(field['position']) ?? index,
@@ -558,7 +561,7 @@ class _ExternalArchiveNormalizer {
         ),
         'field_id': fieldId,
         'member_id': memberId,
-        'value': _replaceMemberPlaceholders(_customFieldValue(rawValue)),
+        'value': _customFieldValueForField(fieldExternalId, rawValue),
         'created_at': _dateString(row, const ['created_at', 'createdAt']),
         'updated_at': _dateString(row, const [
           'updated_at',
@@ -628,12 +631,33 @@ class _ExternalArchiveNormalizer {
         'id': _stableId('custom-field-value', '$ownerExternalId-${entry.key}'),
         'field_id': fieldId,
         'member_id': memberId,
-        'value': _replaceMemberPlaceholders(_customFieldValue(entry.value)),
+        'value': _customFieldValueForField(entry.key, entry.value),
         'created_at': updatedAt,
         'updated_at': updatedAt,
       });
     }
     return records;
+  }
+
+  String _customFieldValueForField(String fieldExternalId, Object? value) {
+    final rawType = _customFieldRawTypesByExternalId[fieldExternalId];
+    final textValue = _customFieldValue(value);
+    final normalizedType = rawType?.toString().trim().toLowerCase();
+    if (rawType == 1 || normalizedType == 'color') {
+      return _normalizeColor(textValue) ?? textValue;
+    }
+    if (rawType == 2 ||
+        rawType == 3 ||
+        rawType == 4 ||
+        rawType == 5 ||
+        rawType == 6 ||
+        rawType == 7 ||
+        normalizedType == 'date' ||
+        normalizedType == 'datetime' ||
+        normalizedType == 'timestamp') {
+      return _parseDateValue(value)?.toUtc().toIso8601String() ?? textValue;
+    }
+    return _replaceMemberPlaceholders(textValue) ?? textValue;
   }
 
   List<Map<String, Object?>> _normalizeGroups() {
