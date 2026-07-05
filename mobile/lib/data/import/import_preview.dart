@@ -292,6 +292,7 @@ ImportPreview _previewNormalizedSource({
         _importablePreviewCountKeys.contains(entry.key) && entry.value > 0,
   );
   final rawPayloadCount = normalized.counts['raw_payloads'] ?? 0;
+  final rawPayloadCollections = _rawPayloadCollections(normalized.archiveJson);
 
   return ImportPreview(
     source: source,
@@ -315,7 +316,7 @@ ImportPreview _previewNormalizedSource({
           severity: ImportPreviewSeverity.warning,
           stage: 'preserve',
           message:
-              'Preserved $rawPayloadCount source ${rawPayloadCount == 1 ? 'collection' : 'collections'} as raw payloads. They will not show as notes, messages, or members until native screens exist.',
+              'Preserved $rawPayloadCount original source ${rawPayloadCount == 1 ? 'collection' : 'collections'} as raw payloads for export/debug${_rawPayloadCollectionSummary(rawPayloadCollections)}. Mapped records still import normally; raw copies do not create notes, messages, or members.',
         ),
       for (final warning in normalized.warnings)
         ImportPreviewEvent(
@@ -354,4 +355,48 @@ const _importablePreviewCountKeys = {
   'front_audit_events',
   'preferences',
 };
+
+List<String> _rawPayloadCollections(String archiveJson) {
+  try {
+    final decoded = jsonDecode(archiveJson);
+    if (decoded is! Map<String, Object?>) {
+      return const [];
+    }
+    final rawPayloads = decoded['raw_payloads'];
+    if (rawPayloads is! List) {
+      return const [];
+    }
+    final seen = <String>{};
+    final collections = <String>[];
+    for (final payload in rawPayloads) {
+      if (payload is! Map<String, Object?>) {
+        continue;
+      }
+      final collection = payload['collection'];
+      if (collection is String && collection.trim().isNotEmpty) {
+        final normalized = collection.trim();
+        if (seen.add(normalized)) {
+          collections.add(normalized);
+        }
+      }
+    }
+    return collections;
+  } on FormatException {
+    return const [];
+  }
+}
+
+String _rawPayloadCollectionSummary(List<String> collections) {
+  if (collections.isEmpty) {
+    return '';
+  }
+  const visibleLimit = 6;
+  final visible = collections.take(visibleLimit).join(', ');
+  final hiddenCount = collections.length - visibleLimit;
+  if (hiddenCount > 0) {
+    return ': $visible, +$hiddenCount more';
+  }
+  return ': $visible';
+}
+
 int _listCount(Object? value) => value is List ? value.length : 0;
