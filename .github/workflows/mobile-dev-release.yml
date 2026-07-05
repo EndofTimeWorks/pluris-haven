@@ -94,7 +94,7 @@ jobs:
         if: steps.version.outputs.should_publish == 'true'
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.41.6"
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
