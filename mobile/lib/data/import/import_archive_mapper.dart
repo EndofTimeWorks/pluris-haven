@@ -89,6 +89,7 @@ class _ExternalArchiveNormalizer {
   final _customFieldIdsByExternalId = <String, String>{};
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
+  final _frontCommentsByExternalId = <String, List<String>>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -128,6 +129,7 @@ class _ExternalArchiveNormalizer {
     pollOptions = pollData.pollOptions;
     pollVotes = pollData.pollVotes;
     preferences = _normalizePreferences();
+    _indexFrontHistoryComments();
     final frontData = _normalizeFronts();
     fronts = frontData.fronts;
     frontMembers = frontData.frontMembers;
@@ -921,6 +923,9 @@ class _ExternalArchiveNormalizer {
         warnings.add('Skipped message #${index + 1}: expected an object.');
         continue;
       }
+      if (_isFrontHistoryComment(message)) {
+        continue;
+      }
       final record = _messageRecord(message, index);
       if (record != null) {
         records.add(record);
@@ -1603,19 +1608,25 @@ class _ExternalArchiveNormalizer {
       'comment',
       'note',
     ])?.trim();
-    if (note == null || note.isEmpty) {
-      return null;
-    }
+    String? normalizedNote;
 
     // In SP, `customStatus` does double duty: for custom-front rows it is the
     // displayed non-member front label; for member rows it is the per-front
     // status note. Do not duplicate custom-front labels as notes.
     final custom = front['custom'];
-    if (_customFrontLabelFromRefs(front) == note ||
-        (custom == true && _frontLabel(front) == note)) {
-      return null;
+    if (note != null &&
+        note.isNotEmpty &&
+        _customFrontLabelFromRefs(front) != note &&
+        !(custom == true && _frontLabel(front) == note)) {
+      normalizedNote = note;
     }
-    return note;
+
+    final externalId = _firstString(front, const ['_id', 'id', 'uuid', 'uid']);
+    final comments = externalId == null
+        ? const <String>[]
+        : _frontCommentsByExternalId[externalId] ?? const <String>[];
+    final parts = [?normalizedNote, ...comments];
+    return parts.isEmpty ? null : parts.join('\n');
   }
 
   String? _customFrontLabelFromRefs(Map<String, Object?> front) {
@@ -1711,6 +1722,54 @@ class _ExternalArchiveNormalizer {
       if (channel != null) 'Source: $channel',
     ];
     return parts.join('\n');
+  }
+
+  void _indexFrontHistoryComments() {
+    for (final value in _firstList(decoded, const ['comments'])) {
+      final comment = _mapValue(value);
+      if (comment == null || !_isFrontHistoryComment(comment)) {
+        continue;
+      }
+      final frontExternalId = _firstString(comment, const [
+        'documentId',
+        'document_id',
+        'frontId',
+        'front_id',
+        'targetId',
+        'target_id',
+      ]);
+      final body = _firstString(comment, const [
+        'body',
+        'text',
+        'content',
+        'message',
+        'comment',
+        'note',
+      ])?.trim();
+      if (frontExternalId == null || body == null || body.isEmpty) {
+        continue;
+      }
+      _frontCommentsByExternalId
+          .putIfAbsent(frontExternalId, () => [])
+          .add(body);
+    }
+  }
+
+  bool _isFrontHistoryComment(Map<String, Object?> comment) {
+    final collection = _firstString(comment, const [
+      'collection',
+      'target',
+      'targetType',
+      'target_type',
+    ]);
+    if (collection == null) {
+      return false;
+    }
+    final normalized = collection.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
+    return normalized == 'fronthistory' || normalized == 'fronts';
   }
 
   List<Map<String, Object?>> _normalizeRawPayloads() {
