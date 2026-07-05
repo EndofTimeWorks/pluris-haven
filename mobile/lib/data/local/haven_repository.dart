@@ -2646,6 +2646,7 @@ SELECT
     final members = await (database.select(
       database.members,
     )..where((member) => member.systemId.equals(localSystemId))).get();
+    final memberIds = members.map((member) => member.id).toSet();
     final groups = await (database.select(
       database.systemGroups,
     )..where((group) => group.systemId.equals(localSystemId))).get();
@@ -2654,12 +2655,26 @@ SELECT
     final notes = await (database.select(
       database.notes,
     )..where((note) => note.systemId.equals(localSystemId))).get();
+    final noteIds = notes.map((note) => note.id).toSet();
     final messages = await (database.select(
       database.messages,
     )..where((message) => message.systemId.equals(localSystemId))).get();
+    final messageIds = messages.map((message) => message.id).toSet();
     final reminders = await (database.select(
       database.reminders,
     )..where((reminder) => reminder.systemId.equals(localSystemId))).get();
+    final tags = await (database.select(
+      database.tags,
+    )..where((tag) => tag.systemId.equals(localSystemId))).get();
+    final tagIds = tags.map((tag) => tag.id).toSet();
+    final memberTags = await database.select(database.memberTags).get();
+    final journals = await (database.select(
+      database.journalEntries,
+    )..where((journal) => journal.systemId.equals(localSystemId))).get();
+    final journalIds = journals.map((journal) => journal.id).toSet();
+    final contentRevisions = await database
+        .select(database.contentRevisions)
+        .get();
     final customFields = await (database.select(
       database.customFieldDefinitions,
     )..where((field) => field.systemId.equals(localSystemId))).get();
@@ -2672,13 +2687,18 @@ SELECT
     )..where((poll) => poll.systemId.equals(localSystemId))).get();
     final pollIds = polls.map((poll) => poll.id).toSet();
     final pollOptions = await database.select(database.pollOptions).get();
+    final pollOptionIds = pollOptions.map((option) => option.id).toSet();
     final pollVotes = await database.select(database.pollVotes).get();
+    final pollVoteEvents = await database.select(database.pollVoteEvents).get();
     final fronts = await (database.select(
       database.frontSessions,
     )..where((front) => front.systemId.equals(localSystemId))).get();
     final frontIds = fronts.map((front) => front.id).toSet();
     final frontMembers = await database
         .select(database.frontSessionMembers)
+        .get();
+    final frontAuditEvents = await database
+        .select(database.frontAuditEvents)
         .get();
     final namedFronts = await (database.select(
       database.namedFronts,
@@ -2714,6 +2734,24 @@ SELECT
       'reminders': [
         for (final reminder in reminders) _reminderToJson(reminder),
       ],
+      'tags': [for (final tag in tags) _tagToJson(tag)],
+      'member_tags': [
+        for (final link in memberTags)
+          if (tagIds.contains(link.tagId) && memberIds.contains(link.memberId))
+            _memberTagToJson(link),
+      ],
+      'journals': [for (final journal in journals) _journalToJson(journal)],
+      'content_revisions': [
+        for (final revision in contentRevisions)
+          if (_revisionBelongsToArchive(
+            revision,
+            memberIds: memberIds,
+            noteIds: noteIds,
+            journalIds: journalIds,
+            messageIds: messageIds,
+          ))
+            _contentRevisionToJson(revision),
+      ],
       'custom_fields': [
         for (final field in customFields) _customFieldToJson(field),
       ],
@@ -2731,10 +2769,20 @@ SELECT
         for (final vote in pollVotes)
           if (pollIds.contains(vote.pollId)) _pollVoteToJson(vote),
       ],
+      'poll_vote_events': [
+        for (final event in pollVoteEvents)
+          if (pollIds.contains(event.pollId) &&
+              pollOptionIds.contains(event.optionId))
+            _pollVoteEventToJson(event),
+      ],
       'fronts': [for (final front in fronts) _frontToJson(front)],
       'front_members': [
         for (final link in frontMembers)
           if (frontIds.contains(link.sessionId)) _frontMemberToJson(link),
+      ],
+      'front_audit_events': [
+        for (final event in frontAuditEvents)
+          if (frontIds.contains(event.frontId)) _frontAuditEventToJson(event),
       ],
       'named_fronts': [
         for (final front in namedFronts) _namedFrontToJson(front),
@@ -2830,6 +2878,12 @@ SELECT
     final notes = await database.select(database.notes).get();
     final messages = await database.select(database.messages).get();
     final reminders = await database.select(database.reminders).get();
+    final tags = await database.select(database.tags).get();
+    final memberTags = await database.select(database.memberTags).get();
+    final journals = await database.select(database.journalEntries).get();
+    final contentRevisions = await database
+        .select(database.contentRevisions)
+        .get();
     final customFields = await database
         .select(database.customFieldDefinitions)
         .get();
@@ -2839,9 +2893,13 @@ SELECT
     final polls = await database.select(database.polls).get();
     final pollOptions = await database.select(database.pollOptions).get();
     final pollVotes = await database.select(database.pollVotes).get();
+    final pollVoteEvents = await database.select(database.pollVoteEvents).get();
     final fronts = await database.select(database.frontSessions).get();
     final frontMembers = await database
         .select(database.frontSessionMembers)
+        .get();
+    final frontAuditEvents = await database
+        .select(database.frontAuditEvents)
         .get();
     final namedFronts = await database.select(database.namedFronts).get();
     final namedFrontMembers = await database
@@ -2866,13 +2924,19 @@ SELECT
       'notes': notes.length,
       'messages': messages.length,
       'reminders': reminders.length,
+      'tags': tags.length,
+      'member_tags': memberTags.length,
+      'journals': journals.length,
+      'content_revisions': contentRevisions.length,
       'custom_fields': customFields.length,
       'custom_field_values': customFieldValues.length,
       'polls': polls.length,
       'poll_options': pollOptions.length,
       'poll_votes': pollVotes.length,
+      'poll_vote_events': pollVoteEvents.length,
       'fronts': fronts.length,
       'front_members': frontMembers.length,
+      'front_audit_events': frontAuditEvents.length,
       'named_fronts': namedFronts.length,
       'named_front_members': namedFrontMembers.length,
       'import_records': importRecords.length,
@@ -3029,13 +3093,19 @@ SELECT
     final notes = _jsonObjectList(decoded['notes']);
     final messages = _jsonObjectList(decoded['messages']);
     final reminders = _jsonObjectList(decoded['reminders']);
+    final tags = _jsonObjectList(decoded['tags']);
+    final memberTags = _jsonObjectList(decoded['member_tags']);
+    final journals = _jsonObjectList(decoded['journals']);
+    final contentRevisions = _jsonObjectList(decoded['content_revisions']);
     final customFields = _jsonObjectList(decoded['custom_fields']);
     final customFieldValues = _jsonObjectList(decoded['custom_field_values']);
     final polls = _jsonObjectList(decoded['polls']);
     final pollOptions = _jsonObjectList(decoded['poll_options']);
     final pollVotes = _jsonObjectList(decoded['poll_votes']);
+    final pollVoteEvents = _jsonObjectList(decoded['poll_vote_events']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
+    final frontAuditEvents = _jsonObjectList(decoded['front_audit_events']);
     final namedFronts = _jsonObjectList(decoded['named_fronts']);
     final namedFrontMembers = _jsonObjectList(decoded['named_front_members']);
     final avatarAssets = _jsonObjectList(decoded['avatar_assets']);
@@ -3048,13 +3118,19 @@ SELECT
       members: members,
       notes: notes,
       messages: messages,
+      tags: tags,
+      memberTags: memberTags,
+      journals: journals,
+      contentRevisions: contentRevisions,
       customFields: customFields,
       customFieldValues: customFieldValues,
       polls: polls,
       pollOptions: pollOptions,
       pollVotes: pollVotes,
+      pollVoteEvents: pollVoteEvents,
       fronts: fronts,
       frontMembers: frontMembers,
+      frontAuditEvents: frontAuditEvents,
       namedFronts: namedFronts,
       namedFrontMembers: namedFrontMembers,
     );
@@ -3063,6 +3139,9 @@ SELECT
       'members=${members.length} groups=${groups.length} notes=${notes.length} '
       'messages=${messages.length} reminders=${reminders.length} fronts=${fronts.length} '
       'namedFronts=${namedFronts.length} '
+      'tags=${tags.length} memberTags=${memberTags.length} journals=${journals.length} '
+      'contentRevisions=${contentRevisions.length} frontAuditEvents=${frontAuditEvents.length} '
+      'pollVoteEvents=${pollVoteEvents.length} '
       'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
       'frontMembers=${frontMembers.length} groupMembers=${groupMembers.length} '
@@ -3119,6 +3198,15 @@ SELECT
       for (final reminder in reminders) {
         await _importReminder(reminder, strategy, now);
       }
+      for (final tag in tags) {
+        await _importTag(tag, strategy, now);
+      }
+      for (final link in memberTags) {
+        await _importMemberTag(link);
+      }
+      for (final journal in journals) {
+        await _importJournal(journal, strategy, now);
+      }
       for (final field in customFields) {
         await _importCustomField(field, strategy, now);
       }
@@ -3134,11 +3222,17 @@ SELECT
       for (final vote in pollVotes) {
         await _importPollVote(vote);
       }
+      for (final event in pollVoteEvents) {
+        await _importPollVoteEvent(event, strategy, now);
+      }
       for (final front in fronts) {
         await _importFront(front, strategy, now);
       }
       for (final link in frontMembers) {
         await _importFrontMember(link);
+      }
+      for (final event in frontAuditEvents) {
+        await _importFrontAuditEvent(event, strategy, now);
       }
       for (final namedFront in namedFronts) {
         await _importNamedFront(
@@ -3156,6 +3250,9 @@ SELECT
       }
       for (final preference in preferences) {
         await _importPreference(preference, strategy, now);
+      }
+      for (final revision in contentRevisions) {
+        await _importContentRevision(revision, strategy, now);
       }
 
       final importRecordId = 'import-${now.microsecondsSinceEpoch}';
@@ -3175,13 +3272,19 @@ SELECT
                   'notes': notes.length,
                   'messages': messages.length,
                   'reminders': reminders.length,
+                  'tags': tags.length,
+                  'member_tags': memberTags.length,
+                  'journals': journals.length,
+                  'content_revisions': contentRevisions.length,
                   'custom_fields': customFields.length,
                   'custom_field_values': customFieldValues.length,
                   'polls': polls.length,
                   'poll_options': pollOptions.length,
                   'poll_votes': pollVotes.length,
+                  'poll_vote_events': pollVoteEvents.length,
                   'fronts': fronts.length,
                   'front_members': frontMembers.length,
+                  'front_audit_events': frontAuditEvents.length,
                   'named_fronts': namedFronts.length,
                   'named_front_members': namedFrontMembers.length,
                   'avatar_assets': avatarAssets.length,
@@ -3206,13 +3309,19 @@ SELECT
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> notes,
     required List<Map<String, Object?>> messages,
+    required List<Map<String, Object?>> tags,
+    required List<Map<String, Object?>> memberTags,
+    required List<Map<String, Object?>> journals,
+    required List<Map<String, Object?>> contentRevisions,
     required List<Map<String, Object?>> customFields,
     required List<Map<String, Object?>> customFieldValues,
     required List<Map<String, Object?>> polls,
     required List<Map<String, Object?>> pollOptions,
     required List<Map<String, Object?>> pollVotes,
+    required List<Map<String, Object?>> pollVoteEvents,
     required List<Map<String, Object?>> fronts,
     required List<Map<String, Object?>> frontMembers,
+    required List<Map<String, Object?>> frontAuditEvents,
     required List<Map<String, Object?>> namedFronts,
     required List<Map<String, Object?>> namedFrontMembers,
   }) {
@@ -3221,6 +3330,18 @@ SELECT
     }.whereType<String>().toSet();
     final memberIds = {
       for (final member in members) _stringValue(member['id']),
+    }.whereType<String>().toSet();
+    final noteIds = {
+      for (final note in notes) _stringValue(note['id']),
+    }.whereType<String>().toSet();
+    final messageIds = {
+      for (final message in messages) _stringValue(message['id']),
+    }.whereType<String>().toSet();
+    final tagIds = {
+      for (final tag in tags) _stringValue(tag['id']),
+    }.whereType<String>().toSet();
+    final journalIds = {
+      for (final journal in journals) _stringValue(journal['id']),
     }.whereType<String>().toSet();
     final customFieldIds = {
       for (final field in customFields) _stringValue(field['id']),
@@ -3289,6 +3410,48 @@ SELECT
       }
     }
 
+    memberTags.removeWhere((link) {
+      final tagId = _stringValue(link['tag_id']);
+      final memberId = _stringValue(link['member_id']);
+      final keep =
+          tagId != null &&
+          memberId != null &&
+          tagIds.contains(tagId) &&
+          memberIds.contains(memberId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    for (final journal in journals) {
+      final memberId = _stringValue(journal['member_id']);
+      if (memberId != null && !memberIds.contains(memberId)) {
+        journal['member_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    contentRevisions.removeWhere((revision) {
+      final targetType = _stringValue(revision['target_type']);
+      final targetId = _stringValue(revision['target_id']);
+      final keep =
+          targetType != null &&
+          targetId != null &&
+          _revisionTargetBelongsToArchive(
+            targetType: targetType,
+            targetId: targetId,
+            memberIds: memberIds,
+            noteIds: noteIds,
+            journalIds: journalIds,
+            messageIds: messageIds,
+          );
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
     customFieldValues.removeWhere((value) {
       final fieldId = _stringValue(value['field_id']);
       final memberId = _stringValue(value['member_id']);
@@ -3325,6 +3488,20 @@ SELECT
       return !keep;
     });
 
+    pollVoteEvents.removeWhere((event) {
+      final pollId = _stringValue(event['poll_id']);
+      final optionId = _stringValue(event['option_id']);
+      final keep =
+          pollId != null &&
+          optionId != null &&
+          pollIds.contains(pollId) &&
+          pollOptionIds.contains(optionId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
     frontMembers.removeWhere((link) {
       final sessionId = _stringValue(link['session_id']);
       final memberId = _stringValue(link['member_id']);
@@ -3333,6 +3510,15 @@ SELECT
           memberId != null &&
           frontIds.contains(sessionId) &&
           memberIds.contains(memberId);
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    frontAuditEvents.removeWhere((event) {
+      final frontId = _stringValue(event['front_id']);
+      final keep = frontId != null && frontIds.contains(frontId);
       if (!keep) {
         cleanupCount++;
       }
@@ -3354,6 +3540,40 @@ SELECT
     });
 
     return cleanupCount;
+  }
+
+  bool _revisionBelongsToArchive(
+    ContentRevision revision, {
+    required Set<String> memberIds,
+    required Set<String> noteIds,
+    required Set<String> journalIds,
+    required Set<String> messageIds,
+  }) {
+    return _revisionTargetBelongsToArchive(
+      targetType: revision.targetType,
+      targetId: revision.targetId,
+      memberIds: memberIds,
+      noteIds: noteIds,
+      journalIds: journalIds,
+      messageIds: messageIds,
+    );
+  }
+
+  bool _revisionTargetBelongsToArchive({
+    required String targetType,
+    required String targetId,
+    required Set<String> memberIds,
+    required Set<String> noteIds,
+    required Set<String> journalIds,
+    required Set<String> messageIds,
+  }) {
+    return switch (targetType) {
+      'member_bio' => memberIds.contains(targetId),
+      'note' => noteIds.contains(targetId),
+      'journal' => journalIds.contains(targetId),
+      'message' => messageIds.contains(targetId),
+      _ => false,
+    };
   }
 
   Future<Map<String, String?>> _localizeImportAvatars({
@@ -3637,6 +3857,76 @@ SELECT
     return _insertArchiveRow(database.reminders, companion, strategy);
   }
 
+  Future<void> _importTag(
+    Map<String, Object?> tag,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(tag, 'id');
+    final companion = TagsCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      name: _requiredString(tag, 'name'),
+      colorHex: Value(_stringValue(tag['color_hex'])),
+      createdAt: _dateValue(tag['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(tag['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.tags, companion, strategy);
+  }
+
+  Future<void> _importMemberTag(Map<String, Object?> link) {
+    return database
+        .into(database.memberTags)
+        .insert(
+          MemberTagsCompanion.insert(
+            tagId: _requiredString(link, 'tag_id'),
+            memberId: _requiredString(link, 'member_id'),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
+  Future<void> _importJournal(
+    Map<String, Object?> journal,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(journal, 'id');
+    final companion = JournalEntriesCompanion.insert(
+      id: id,
+      systemId: localSystemId,
+      memberId: Value(_stringValue(journal['member_id'])),
+      title: Value(_stringValue(journal['title'])),
+      body: _stringValue(journal['body']) ?? '',
+      visibility: Value(_stringValue(journal['visibility']) ?? 'system'),
+      createdAt: _dateValue(journal['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(journal['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.journalEntries, companion, strategy);
+  }
+
+  Future<void> _importContentRevision(
+    Map<String, Object?> revision,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(revision, 'id');
+    final companion = ContentRevisionsCompanion.insert(
+      id: id,
+      targetType: _requiredString(revision, 'target_type'),
+      targetId: _requiredString(revision, 'target_id'),
+      title: Value(_stringValue(revision['title'])),
+      body: _stringValue(revision['body']) ?? '',
+      pinnedAt: Value(_dateValue(revision['pinned_at'])),
+      createdAt: _dateValue(revision['created_at']) ?? now,
+    );
+    return _insertArchiveRow(database.contentRevisions, companion, strategy);
+  }
+
   Future<void> _importCustomField(
     Map<String, Object?> field,
     ImportConflictStrategy strategy,
@@ -3734,6 +4024,22 @@ SELECT
         );
   }
 
+  Future<void> _importPollVoteEvent(
+    Map<String, Object?> event,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(event, 'id');
+    final companion = PollVoteEventsCompanion.insert(
+      id: id,
+      pollId: _requiredString(event, 'poll_id'),
+      optionId: _requiredString(event, 'option_id'),
+      action: _requiredString(event, 'action'),
+      createdAt: _dateValue(event['created_at']) ?? now,
+    );
+    return _insertArchiveRow(database.pollVoteEvents, companion, strategy);
+  }
+
   Future<void> _importFront(
     Map<String, Object?> front,
     ImportConflictStrategy strategy,
@@ -3765,6 +4071,22 @@ SELECT
           ),
           mode: InsertMode.insertOrIgnore,
         );
+  }
+
+  Future<void> _importFrontAuditEvent(
+    Map<String, Object?> event,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final id = _requiredString(event, 'id');
+    final companion = FrontAuditEventsCompanion.insert(
+      id: id,
+      frontId: _requiredString(event, 'front_id'),
+      beforeSnapshot: Value(_stringValue(event['before_snapshot'])),
+      afterSnapshot: Value(_stringValue(event['after_snapshot'])),
+      createdAt: _dateValue(event['created_at']) ?? now,
+    );
+    return _insertArchiveRow(database.frontAuditEvents, companion, strategy);
   }
 
   Future<void> _importNamedFront(
@@ -4459,6 +4781,39 @@ SELECT
     'updated_at': reminder.updatedAt.toIso8601String(),
   };
 
+  Map<String, Object?> _tagToJson(Tag tag) => {
+    'id': tag.id,
+    'name': tag.name,
+    'color_hex': tag.colorHex,
+    'created_at': tag.createdAt.toIso8601String(),
+    'updated_at': tag.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _memberTagToJson(MemberTag link) => {
+    'tag_id': link.tagId,
+    'member_id': link.memberId,
+  };
+
+  Map<String, Object?> _journalToJson(JournalEntry journal) => {
+    'id': journal.id,
+    'member_id': journal.memberId,
+    'title': journal.title,
+    'body': journal.body,
+    'visibility': journal.visibility,
+    'created_at': journal.createdAt.toIso8601String(),
+    'updated_at': journal.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _contentRevisionToJson(ContentRevision revision) => {
+    'id': revision.id,
+    'target_type': revision.targetType,
+    'target_id': revision.targetId,
+    'title': revision.title,
+    'body': revision.body,
+    'pinned_at': revision.pinnedAt?.toIso8601String(),
+    'created_at': revision.createdAt.toIso8601String(),
+  };
+
   Map<String, Object?> _customFieldToJson(CustomFieldDefinition field) => {
     'id': field.id,
     'name': field.name,
@@ -4501,6 +4856,14 @@ SELECT
     'created_at': vote.createdAt.toIso8601String(),
   };
 
+  Map<String, Object?> _pollVoteEventToJson(PollVoteEvent event) => {
+    'id': event.id,
+    'poll_id': event.pollId,
+    'option_id': event.optionId,
+    'action': event.action,
+    'created_at': event.createdAt.toIso8601String(),
+  };
+
   Map<String, Object?> _frontToJson(FrontSession front) => {
     'id': front.id,
     'label': front.label,
@@ -4514,6 +4877,14 @@ SELECT
   Map<String, Object?> _frontMemberToJson(FrontSessionMember link) => {
     'session_id': link.sessionId,
     'member_id': link.memberId,
+  };
+
+  Map<String, Object?> _frontAuditEventToJson(FrontAuditEvent event) => {
+    'id': event.id,
+    'front_id': event.frontId,
+    'before_snapshot': event.beforeSnapshot,
+    'after_snapshot': event.afterSnapshot,
+    'created_at': event.createdAt.toIso8601String(),
   };
 
   Map<String, Object?> _namedFrontToJson(NamedFront front) => {
