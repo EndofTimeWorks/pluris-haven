@@ -403,6 +403,62 @@ void main() {
     expect(fronts.single['status_note'], '@River nearby\nChecked with @Iris.');
   });
 
+  test('normalizes Simply Plural custom field values by source type', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-field-types.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "info": {
+        "colorField": "FF3366",
+        "dateField": 1767225600000
+      }
+    }
+  ],
+  "customFields": [
+    {"_id": "colorField", "name": "Aura color", "type": 1},
+    {"_id": "dateField", "name": "Known since", "type": 6}
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final fields = (decoded['custom_fields'] as List)
+        .cast<Map<String, dynamic>>();
+    final values = (decoded['custom_field_values'] as List)
+        .cast<Map<String, dynamic>>();
+    final valuesByField = {
+      for (final value in values) value['field_id'] as String: value['value'],
+    };
+
+    expect(
+      fields.singleWhere(
+        (field) => field['name'] == 'Aura color',
+      )['field_type'],
+      'text',
+    );
+    expect(
+      fields.singleWhere(
+        (field) => field['name'] == 'Known since',
+      )['field_type'],
+      'date',
+    );
+    expect(
+      valuesByField['simplyplural_file-custom-field-colorfield'],
+      '#ff3366',
+    );
+    expect(
+      valuesByField['simplyplural_file-custom-field-datefield'],
+      '2026-01-01T00:00:00.000Z',
+    );
+  });
+
   test('normalizes Simply Plural epoch and Firebase timestamps', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
