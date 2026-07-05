@@ -376,6 +376,89 @@ void main() {
     expect(journals.single['visibility'], 'private');
   });
 
+  test('rewrites Simply Plural member placeholders in imported text', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-mentions.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "desc": "Usually checks in with <###@m2###>."
+    },
+    {
+      "_id": "m2",
+      "name": "River",
+      "info": {"field1": "Ask <###@m1###> first."}
+    }
+  ],
+  "customFields": [
+    {"_id": "field1", "name": "Contact"}
+  ],
+  "notes": [
+    {
+      "_id": "note1",
+      "member": "m1",
+      "title": "Plan",
+      "note": "Loop in <###@m2###>."
+    }
+  ],
+  "boardMessages": [
+    {
+      "_id": "board1",
+      "title": "Heads up",
+      "message": "For <###@m1###>."
+    }
+  ],
+  "frontHistory": [
+    {
+      "_id": "front1",
+      "member": "m1",
+      "custom": false,
+      "customStatus": "<###@m2###> nearby",
+      "startTime": 1767225600000
+    }
+  ],
+  "comments": [
+    {
+      "_id": "comment1",
+      "collection": "frontHistory",
+      "documentId": "front1",
+      "text": "Checked with <###@m1###>."
+    }
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+    final customFieldValues = (decoded['custom_field_values'] as List)
+        .cast<Map<String, dynamic>>();
+    final notes = (decoded['notes'] as List).cast<Map<String, dynamic>>();
+    final messages = (decoded['messages'] as List).cast<Map<String, dynamic>>();
+    final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
+    expect(
+      jsonEncode({
+        'members': members,
+        'custom_field_values': customFieldValues,
+        'notes': notes,
+        'messages': messages,
+        'fronts': fronts,
+      }),
+      isNot(contains('<###@')),
+    );
+    expect(members.first['description'], 'Usually checks in with @River.');
+    expect(customFieldValues.single['value'], 'Ask @Iris first.');
+    expect(notes.single['body'], 'Loop in @River.');
+    expect(messages.single['body'], contains('For @Iris.'));
+    expect(fronts.single['status_note'], '@River nearby\nChecked with @Iris.');
+  });
+
   test('normalizes Simply Plural epoch and Firebase timestamps', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
