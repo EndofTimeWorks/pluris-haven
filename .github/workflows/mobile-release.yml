@@ -91,6 +91,19 @@ jobs:
             echo "Invalid build number: ${build}" >&2
             exit 1
           fi
+          max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
+          max_tagged_build="${max_tagged_build:-0}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            if (( build < max_tagged_build )); then
+              echo "Tagged Android build number ${build} is older than the highest tagged mobile build ${max_tagged_build}." >&2
+              echo "Refusing to build an APK Android/Obtainium would treat as older." >&2
+              exit 1
+            fi
+          elif (( build <= max_tagged_build )); then
+            echo "Android build number ${build} is not newer than the highest tagged mobile build ${max_tagged_build}." >&2
+            echo "Use a larger build_number so Android/Obtainium can update existing installs." >&2
+            exit 1
+          fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "build_name=${build_name}" >> "${GITHUB_OUTPUT}"
