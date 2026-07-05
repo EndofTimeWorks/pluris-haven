@@ -251,7 +251,7 @@ void main() {
     expect(
       preview.warningsAndErrors.map((event) => event.message),
       contains(
-        'Preserved 1 source collection as raw payloads. They will not show as notes, messages, or members until native screens exist.',
+        'Preserved 1 original source collection as raw payloads for export/debug: securityLogs. Mapped records still import normally; raw copies do not create notes, messages, or members.',
       ),
     );
   });
@@ -1151,7 +1151,7 @@ void main() {
     expect(
       preview.warningsAndErrors.map((event) => event.message),
       contains(
-        'Preserved 6 source collections as raw payloads. They will not show as notes, messages, or members until native screens exist.',
+        'Preserved 6 original source collections as raw payloads for export/debug: users, members, securityLogs, friends, tokens, usage. Mapped records still import normally; raw copies do not create notes, messages, or members.',
       ),
     );
     expect(archive.archiveJson, contains('"collection": "securityLogs"'));
