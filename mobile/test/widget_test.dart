@@ -1777,6 +1777,9 @@ void main() {
         'members': [
           {'_id': 'sp-member-1', 'name': 'Iris'},
         ],
+        'securityLogs': [
+          {'_id': 'log-1', 'action': 'login'},
+        ],
       }),
     );
     await tester.tap(find.text('Preview pasted JSON'));
@@ -1785,6 +1788,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
     expect(find.textContaining('1 members'), findsOneWidget);
+    expect(find.textContaining('preserved source collection'), findsWidgets);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('restore-rehearsal-button')),
       240,

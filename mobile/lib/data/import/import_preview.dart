@@ -297,6 +297,7 @@ ImportPreview _previewNormalizedSource({
     (entry) =>
         _importablePreviewCountKeys.contains(entry.key) && entry.value > 0,
   );
+  final rawPayloadCount = normalized.counts['raw_payloads'] ?? 0;
 
   return ImportPreview(
     source: source,
@@ -314,6 +315,13 @@ ImportPreview _previewNormalizedSource({
           severity: ImportPreviewSeverity.warning,
           stage: 'normalize',
           message: 'No importable records were recognized.',
+        ),
+      if (rawPayloadCount > 0)
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: 'preserve',
+          message:
+              'Preserved $rawPayloadCount source ${rawPayloadCount == 1 ? 'collection' : 'collections'} as raw payloads. They will not show as notes, messages, or members until native screens exist.',
         ),
       for (final warning in normalized.warnings)
         ImportPreviewEvent(
