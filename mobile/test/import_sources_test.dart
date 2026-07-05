@@ -1164,6 +1164,117 @@ void main() {
     );
   });
 
+  test('warns and clamps overlong imported fields', () {
+    String repeat(String value, int count) => List.filled(count, value).join();
+
+    final longName = repeat('N', 150);
+    final longText = repeat('T', 6000);
+    final longJournal = repeat('J', 21000);
+    final text = jsonEncode({
+      'members': [
+        {
+          '_id': 'm1',
+          'name': longName,
+          'pronouns': repeat('p', 150),
+          'desc': longText,
+        },
+      ],
+      'customFields': [
+        {'_id': 'field1', 'name': repeat('f', 150), 'type': 0},
+      ],
+      'notes': [
+        {'_id': 'n1', 'title': repeat('n', 250), 'note': longText},
+      ],
+      'journals': [
+        {'_id': 'j1', 'title': repeat('j', 250), 'body': longJournal},
+      ],
+      'messages': [
+        {'_id': 'msg1', 'body': longText},
+      ],
+      'repeatedReminders': [
+        {
+          '_id': 'r1',
+          'name': repeat('r', 200),
+          'message': repeat('r', 3000),
+          'schedule': 'daily ${repeat('s', 600)}',
+        },
+      ],
+      'polls': [
+        {
+          '_id': 'poll1',
+          'question': repeat('q', 600),
+          'desc': repeat('d', 2200),
+          'options': [
+            for (var index = 0; index < 25; index++)
+              {'_id': 'opt$index', 'name': repeat('o', 300)},
+          ],
+        },
+      ],
+      'frontHistory': [
+        {
+          '_id': 'front1',
+          'startedAt': '2026-01-01T12:00:00Z',
+          'members': ['m1'],
+          'statusNote': repeat('f', 3000),
+        },
+      ],
+    });
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-long.json',
+      importedAt: DateTime.utc(2026),
+      text: text,
+    );
+    final preview = previewImportText(
+      fileName: 'sp-long.json',
+      text: text,
+      selectedSource: ImportSource.simplyPlural,
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+    final notes = (decoded['notes'] as List).cast<Map<String, dynamic>>();
+    final journals = (decoded['journals'] as List).cast<Map<String, dynamic>>();
+    final messages = (decoded['messages'] as List).cast<Map<String, dynamic>>();
+    final reminders = (decoded['reminders'] as List)
+        .cast<Map<String, dynamic>>();
+    final polls = (decoded['polls'] as List).cast<Map<String, dynamic>>();
+    final options = (decoded['poll_options'] as List)
+        .cast<Map<String, dynamic>>();
+    final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
+    expect(
+      archive.warnings,
+      contains('1 member name will be shortened to 100 characters.'),
+    );
+    expect(
+      archive.warnings,
+      contains('1 poll option list will be trimmed to 20 entries.'),
+    );
+    expect(
+      preview.warningsAndErrors.map((event) => event.message),
+      contains('1 member name will be shortened to 100 characters.'),
+    );
+    expect(members.single['display_name'], hasLength(100));
+    expect(members.single['pronouns'], hasLength(100));
+    expect(members.single['description'], hasLength(5000));
+    expect(notes.single['title'], hasLength(200));
+    expect(notes.single['body'], hasLength(5000));
+    expect(journals.single['body'], hasLength(20000));
+    expect(messages.single['body'], hasLength(5000));
+    expect(reminders.single['title'], hasLength(120));
+    expect(reminders.single['body'], hasLength(2000));
+    expect(polls.single['question'], hasLength(500));
+    expect(polls.single['description'], hasLength(2000));
+    expect(options, hasLength(20));
+    expect(
+      options.singleWhere((option) => option['position'] == 0)['body'],
+      hasLength(200),
+    );
+    expect(fronts.single['status_note'], hasLength(2000));
+    expect(preview.canApply, isTrue);
+  });
+
   test('normalizes Simply Plural colors and avatar UUID fallbacks', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
