@@ -142,6 +142,13 @@ jobs:
             echo "Invalid build number: ${next_build}" >&2
             exit 1
           fi
+          max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
+          max_tagged_build="${max_tagged_build:-0}"
+          if (( next_build <= max_tagged_build )); then
+            echo "Next Android build number ${next_build} is not newer than the highest tagged mobile build ${max_tagged_build}." >&2
+            echo "Use a larger build_number so Android/Obtainium can update existing installs." >&2
+            exit 1
+          fi
 
           version_with_build="${next_version}+${next_build}"
           tag="mobile-v${version_with_build}"
