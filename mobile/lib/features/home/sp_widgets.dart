@@ -332,12 +332,19 @@ class SpSettingsRow extends StatelessWidget {
       return content;
     }
 
-    return InkWell(
-      onTap:
-          onTap ??
-          () =>
-              showPlannedFeaturePopup(context, title: title, detail: subtitle),
-      child: content,
+    return Semantics(
+      button: true,
+      label: '$title. $subtitle',
+      child: InkWell(
+        onTap:
+            onTap ??
+            () => showPlannedFeaturePopup(
+              context,
+              title: title,
+              detail: subtitle,
+            ),
+        child: content,
+      ),
     );
   }
 }

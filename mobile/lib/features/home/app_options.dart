@@ -531,11 +531,15 @@ class DashboardShortcutRow extends StatelessWidget {
             onPressed: visible && canMoveDown ? onMoveDown : null,
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),
-          Switch(
-            key: ValueKey('shortcut-visible-${shortcut.id}'),
-            value: visible,
-            onChanged: onVisibleChanged,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
+          Semantics(
+            label: '${shortcut.title} dashboard shortcut',
+            toggled: visible,
+            child: Switch(
+              key: ValueKey('shortcut-visible-${shortcut.id}'),
+              value: visible,
+              onChanged: onVisibleChanged,
+              activeThumbColor: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ],
       ),

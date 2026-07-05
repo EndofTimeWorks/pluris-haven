@@ -106,17 +106,21 @@ class ReminderTile extends StatelessWidget {
           Column(
             children: [
               StatusPill(text: reminder.enabled ? 'on' : 'off'),
-              Switch(
-                value: reminder.enabled,
-                onChanged: (enabled) async {
-                  await repository.setReminderEnabled(reminder.id, enabled);
-                  if (enabled) {
-                    await scheduleReminderSummary(reminder.copyWithEnabled());
-                  } else {
-                    await NotificationService.instance
-                        .cancelReminderNotification(reminder.id);
-                  }
-                },
+              Semantics(
+                label: 'Reminder ${reminder.title}',
+                toggled: reminder.enabled,
+                child: Switch(
+                  value: reminder.enabled,
+                  onChanged: (enabled) async {
+                    await repository.setReminderEnabled(reminder.id, enabled);
+                    if (enabled) {
+                      await scheduleReminderSummary(reminder.copyWithEnabled());
+                    } else {
+                      await NotificationService.instance
+                          .cancelReminderNotification(reminder.id);
+                    }
+                  },
+                ),
               ),
               IconButton(
                 tooltip: 'Delete reminder',
