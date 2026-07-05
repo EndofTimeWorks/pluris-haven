@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
@@ -353,7 +354,69 @@ void main() {
       ),
     );
     final member = (await repository.watchMembers().first).single;
+    final note = (await repository.watchNotes().first).single;
+    final now = DateTime.utc(2026, 1, 2, 3, 4, 5);
+    await repository.saveTag(
+      Tag(
+        id: 'tag-grounded',
+        systemId: localSystemId,
+        name: 'Grounded',
+        colorHex: '#80FFAA',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await repository.setMemberTags(member.id, ['tag-grounded']);
+    await repository.saveJournal(
+      JournalEntry(
+        id: 'journal-1',
+        systemId: localSystemId,
+        memberId: member.id,
+        title: 'Switch notes',
+        body: 'Felt close to front.',
+        visibility: 'system',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await database
+        .into(database.contentRevisions)
+        .insert(
+          ContentRevisionsCompanion.insert(
+            id: 'revision-note-1',
+            targetType: 'note',
+            targetId: note.id,
+            title: const Value('Grounding'),
+            body: 'Drink water and breathe.',
+            pinnedAt: Value(now),
+            createdAt: now,
+          ),
+        );
     await repository.setFrontMembers([member.id]);
+    final front = (await repository.watchFrontHistory().first).single;
+    await database
+        .into(database.frontAuditEvents)
+        .insert(
+          FrontAuditEventsCompanion.insert(
+            id: 'front-audit-1',
+            frontId: front.id,
+            beforeSnapshot: const Value(null),
+            afterSnapshot: const Value('{"members":["Iris"]}'),
+            createdAt: now,
+          ),
+        );
+    final poll = (await repository.watchPolls().first).single;
+    await database
+        .into(database.pollVoteEvents)
+        .insert(
+          PollVoteEventsCompanion.insert(
+            id: 'poll-event-1',
+            pollId: poll.id,
+            optionId: poll.options.first.id,
+            action: 'select',
+            createdAt: now,
+          ),
+        );
 
     final archive =
         jsonDecode(await repository.buildLocalArchiveJson())
@@ -366,11 +429,17 @@ void main() {
     expect((archive['notes'] as List), hasLength(1));
     expect((archive['messages'] as List), hasLength(1));
     expect((archive['reminders'] as List), hasLength(1));
+    expect((archive['tags'] as List), hasLength(1));
+    expect((archive['member_tags'] as List), hasLength(1));
+    expect((archive['journals'] as List), hasLength(1));
+    expect((archive['content_revisions'] as List), hasLength(1));
     expect((archive['polls'] as List), hasLength(1));
     expect((archive['poll_options'] as List), hasLength(2));
     expect((archive['poll_votes'] as List), isA<List>());
+    expect((archive['poll_vote_events'] as List), hasLength(1));
     expect((archive['fronts'] as List), hasLength(1));
     expect((archive['front_members'] as List), hasLength(1));
+    expect((archive['front_audit_events'] as List), hasLength(1));
     expect((archive['notification_events'] as List), hasLength(1));
     expect((archive['preferences'] as List), isA<List>());
   });
@@ -407,6 +476,8 @@ void main() {
     );
     final member = (await source.watchMembers().first).single;
     final group = (await source.watchGroups().first).single;
+    final note = (await source.watchNotes().first).single;
+    final now = DateTime.utc(2026, 1, 2, 3, 4, 5);
     await source.updateMember(
       member.id,
       MemberDraft(
@@ -415,11 +486,76 @@ void main() {
         folderId: group.id,
       ),
     );
+    await source.saveTag(
+      Tag(
+        id: 'tag-grounded',
+        systemId: localSystemId,
+        name: 'Grounded',
+        colorHex: '#80FFAA',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await source.setMemberTags(member.id, ['tag-grounded']);
+    await source.saveJournal(
+      JournalEntry(
+        id: 'journal-1',
+        systemId: localSystemId,
+        memberId: member.id,
+        title: 'Switch notes',
+        body: 'Felt close to front.',
+        visibility: 'system',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await sourceDatabase
+        .into(sourceDatabase.contentRevisions)
+        .insert(
+          ContentRevisionsCompanion.insert(
+            id: 'revision-note-1',
+            targetType: 'note',
+            targetId: note.id,
+            title: const Value('Grounding'),
+            body: 'Drink water and breathe.',
+            pinnedAt: Value(now),
+            createdAt: now,
+          ),
+        );
     await source.setFrontMembers([member.id]);
+    final front = (await source.watchFrontHistory().first).single;
+    await sourceDatabase
+        .into(sourceDatabase.frontAuditEvents)
+        .insert(
+          FrontAuditEventsCompanion.insert(
+            id: 'front-audit-1',
+            frontId: front.id,
+            beforeSnapshot: const Value(null),
+            afterSnapshot: const Value('{"members":["Iris"]}'),
+            createdAt: now,
+          ),
+        );
+    final poll = (await source.watchPolls().first).single;
+    await sourceDatabase
+        .into(sourceDatabase.pollVoteEvents)
+        .insert(
+          PollVoteEventsCompanion.insert(
+            id: 'poll-event-1',
+            pollId: poll.id,
+            optionId: poll.options.first.id,
+            action: 'select',
+            createdAt: now,
+          ),
+        );
 
     final archive = await source.buildLocalArchiveJson();
     final sourceArchive = jsonDecode(archive) as Map<String, dynamic>;
     expect(sourceArchive['group_members'], hasLength(1));
+    expect(sourceArchive['member_tags'], hasLength(1));
+    expect(sourceArchive['journals'], hasLength(1));
+    expect(sourceArchive['content_revisions'], hasLength(1));
+    expect(sourceArchive['front_audit_events'], hasLength(1));
+    expect(sourceArchive['poll_vote_events'], hasLength(1));
     await sourceDatabase.close();
 
     final targetDatabase = AppDatabase(NativeDatabase.memory());
@@ -440,15 +576,41 @@ void main() {
     expect(await target.watchNotes().first, hasLength(1));
     expect(await target.watchMessages().first, hasLength(1));
     expect(await target.watchReminders().first, hasLength(1));
+    final importedMembers = await target.watchMembers().first;
+    final importedMember = importedMembers.single;
+    expect(await target.watchTags().first, hasLength(1));
+    expect(
+      (await target.watchTagsForMember(importedMember.id).first).single.name,
+      'Grounded',
+    );
+    expect(
+      await target.watchJournals(memberId: importedMember.id).first,
+      hasLength(1),
+    );
+    expect(await target.watchRevisions('note', note.id).first, hasLength(1));
     final polls = await target.watchPolls().first;
     expect(polls, hasLength(1));
     expect(polls.single.options, hasLength(2));
+    expect(
+      await target.watchPollVoteEvents(polls.single.id).first,
+      hasLength(1),
+    );
     expect(await target.watchNotificationEvents().first, hasLength(1));
-    expect(await target.watchFrontHistory().first, hasLength(1));
+    final importedFronts = await target.watchFrontHistory().first;
+    expect(importedFronts, hasLength(1));
+    expect(
+      await target.watchFrontAuditEvents(importedFronts.single.id).first,
+      hasLength(1),
+    );
     final targetArchive =
         jsonDecode(await target.buildLocalArchiveJson())
             as Map<String, dynamic>;
     expect(targetArchive['group_members'], hasLength(1));
+    expect(targetArchive['member_tags'], hasLength(1));
+    expect(targetArchive['journals'], hasLength(1));
+    expect(targetArchive['content_revisions'], hasLength(1));
+    expect(targetArchive['front_audit_events'], hasLength(1));
+    expect(targetArchive['poll_vote_events'], hasLength(1));
 
     final snapshot = await target.loadHomeSnapshot();
     expect(snapshot.memberCount, 1);
@@ -475,6 +637,31 @@ void main() {
     await source.saveNote(
       const NoteDraft(title: 'Grounding', body: 'Drink water.'),
     );
+    final member = (await source.watchMembers().first).single;
+    final now = DateTime.utc(2026, 1, 2, 3, 4, 5);
+    await source.saveTag(
+      Tag(
+        id: 'tag-grounded',
+        systemId: localSystemId,
+        name: 'Grounded',
+        colorHex: '#80FFAA',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await source.setMemberTags(member.id, ['tag-grounded']);
+    await source.saveJournal(
+      JournalEntry(
+        id: 'journal-1',
+        systemId: localSystemId,
+        memberId: member.id,
+        title: 'Switch notes',
+        body: 'Felt close to front.',
+        visibility: 'system',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
     final archive = await source.buildLocalArchiveJson();
     await sourceDatabase.close();
 
@@ -494,10 +681,15 @@ void main() {
     expect(rehearsal.counts['members'], 1);
     expect(rehearsal.counts['groups'], 1);
     expect(rehearsal.counts['notes'], 1);
+    expect(rehearsal.counts['tags'], 1);
+    expect(rehearsal.counts['member_tags'], 1);
+    expect(rehearsal.counts['journals'], 1);
     expect(rehearsal.counts['import_records'], 1);
     expect(await target.watchMembers().first, isEmpty);
     expect(await target.watchGroups().first, isEmpty);
     expect(await target.watchNotes().first, isEmpty);
+    expect(await target.watchTags().first, isEmpty);
+    expect(await target.watchJournals().first, isEmpty);
   });
 
   test('reports restore rehearsal failures without throwing', () async {

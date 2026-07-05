@@ -661,7 +661,7 @@ class LocalArchiveSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'JSON export for backup or migration. It includes local members, groups, notes, fronts, and app preferences.',
+                  'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.',
                   style: TextStyle(color: _spMuted, height: 1.35),
                 ),
                 const SizedBox(height: 14),
