@@ -444,6 +444,57 @@ void main() {
     expect((archive['preferences'] as List), isA<List>());
   });
 
+  test('documents local archive table coverage', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+
+    const archivedTables = {
+      'plural_systems': 'system',
+      'system_groups': 'groups',
+      'members': 'members',
+      'group_members': 'group_members',
+      'notes': 'notes',
+      'messages': 'messages',
+      'reminders': 'reminders',
+      'custom_field_definitions': 'custom_fields',
+      'custom_field_values': 'custom_field_values',
+      'polls': 'polls',
+      'poll_options': 'poll_options',
+      'poll_votes': 'poll_votes',
+      'front_sessions': 'fronts',
+      'front_session_members': 'front_members',
+      'import_records': 'import_records',
+      'import_payloads': 'raw_payloads',
+      'notification_events': 'notification_events',
+      'app_preferences': 'preferences',
+      'tags': 'tags',
+      'member_tags': 'member_tags',
+      'journal_entries': 'journals',
+      'content_revisions': 'content_revisions',
+      'front_audit_events': 'front_audit_events',
+      'poll_vote_events': 'poll_vote_events',
+      'named_fronts': 'named_fronts',
+      'named_front_members': 'named_front_members',
+    };
+    const intentionallyLocalOnlyTables = {'background_jobs', 'pending_actions'};
+
+    final actualTableNames = database.allTables
+        .map((table) => table.actualTableName)
+        .toSet();
+    expect({
+      ...archivedTables.keys,
+      ...intentionallyLocalOnlyTables,
+    }, actualTableNames);
+
+    final archive =
+        jsonDecode(await repository.buildLocalArchiveJson())
+            as Map<String, dynamic>;
+    expect(archive.keys, containsAll(archivedTables.values));
+  });
+
   test('imports a local archive into an empty database', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
     final source = LocalHavenRepository(sourceDatabase);
