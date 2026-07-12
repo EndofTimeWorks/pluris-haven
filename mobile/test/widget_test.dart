@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
+import 'package:pluris_haven/data/security/archive_encryption.dart';
 import 'package:pluris_haven/main.dart';
 
 void main() {
@@ -1970,6 +1971,71 @@ void main() {
     expect(find.textContaining('Preview ready'), findsOneWidget);
   });
 
+  testWidgets('pasted encrypted archive decrypts before preview', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    final encrypted = await encryptArchiveJson(
+      archiveJson: jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'members': [
+          {'id': 'member-1', 'display_name': 'Iris'},
+        ],
+      }),
+      passphrase: 'shared passphrase',
+      iterations: 1200,
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Import / Export'));
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      encrypted,
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('import-passphrase-field')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Encrypted archive loaded'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('import-passphrase-field')),
+      'shared passphrase',
+    );
+    await tester.tap(find.text('Refresh preview'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    expect(find.textContaining('1 members'), findsOneWidget);
+  });
+
   testWidgets('builds a local archive from import export', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1;
@@ -2009,6 +2075,19 @@ void main() {
     expect(find.text('Copy JSON'), findsOneWidget);
     expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
     expect(find.textContaining('Caretakers'), findsOneWidget);
+
+    Navigator.of(tester.element(find.text('Local archive'))).pop();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Encrypted export'), 240);
+    await tester.tap(find.text('Encrypted export'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Encrypted export'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('encrypted-export-passphrase-field')),
+      findsOneWidget,
+    );
+    expect(find.text('Save encrypted file'), findsOneWidget);
   });
 }
 

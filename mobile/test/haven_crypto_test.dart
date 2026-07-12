@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pluris_haven/data/security/archive_encryption.dart';
 import 'package:pluris_haven/data/security/haven_crypto.dart';
 
 void main() {
@@ -85,6 +88,62 @@ void main() {
       final second = HavenCrypto(key);
       final cipher = await first.encrypt('portable encrypted note');
       expect(await second.decrypt(cipher), equals('portable encrypted note'));
+    });
+  });
+
+  group('archive encryption', () {
+    test('encrypts and decrypts a local archive JSON payload', () async {
+      const archive =
+          '{"format":"pluris_haven.local_archive","version":1,"members":[]}';
+      final encrypted = await encryptArchiveJson(
+        archiveJson: archive,
+        passphrase: 'correct horse battery staple',
+        iterations: 1200,
+      );
+
+      expect(encrypted, isNot(contains('local_archive')));
+      expect(archiveTextLooksEncrypted(encrypted), isTrue);
+      expect(
+        await decryptArchiveJson(
+          encryptedArchiveJson: encrypted,
+          passphrase: 'correct horse battery staple',
+        ),
+        equals(archive),
+      );
+    });
+
+    test('wrong passphrase does not decrypt an archive', () async {
+      final encrypted = await encryptArchiveJson(
+        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
+        passphrase: 'right-password',
+        iterations: 1200,
+      );
+
+      expect(
+        () => decryptArchiveJson(
+          encryptedArchiveJson: encrypted,
+          passphrase: 'wrong-password',
+        ),
+        throwsA(anything),
+      );
+    });
+
+    test('tampered archive metadata is rejected before decrypting', () async {
+      final encrypted = await encryptArchiveJson(
+        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
+        passphrase: 'right-password',
+        iterations: 1200,
+      );
+      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
+      decoded['cipher'] = 'AES-GCM';
+
+      expect(
+        () => decryptArchiveJson(
+          encryptedArchiveJson: jsonEncode(decoded),
+          passphrase: 'right-password',
+        ),
+        throwsFormatException,
+      );
     });
   });
 }

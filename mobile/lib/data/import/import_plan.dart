@@ -136,6 +136,17 @@ ImportFileGuess guessImportSourceFromFile({
   }
 
   if (_hasAny(text, [
+    '"format":"pluris_haven.encrypted_archive"',
+    '"format": "pluris_haven.encrypted_archive"',
+  ])) {
+    return const ImportFileGuess(
+      source: ImportSource.plurisHavenArchive,
+      confidence: 0.98,
+      reason: 'file is an encrypted Pluris Haven archive',
+    );
+  }
+
+  if (_hasAny(text, [
     '"format":"pluris_haven.local_archive"',
     '"format": "pluris_haven.local_archive"',
   ])) {
