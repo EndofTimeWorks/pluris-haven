@@ -3065,6 +3065,34 @@ SELECT
     }
   }
 
+  Future<bool> runQueuedImportJobs() async {
+    final jobs =
+        await (database.select(database.backgroundJobs)
+              ..where(
+                (job) =>
+                    job.systemId.equals(localSystemId) &
+                    job.type.equals('import_archive') &
+                    job.status.isIn(const ['queued', 'running']),
+              )
+              ..orderBy([
+                (job) => OrderingTerm(
+                  expression: job.createdAt,
+                  mode: OrderingMode.asc,
+                ),
+              ]))
+            .get();
+    if (jobs.isEmpty) {
+      appDebugLog('No queued import jobs to run');
+      return true;
+    }
+
+    var allSucceeded = true;
+    for (final job in jobs) {
+      allSucceeded = await runBackgroundJob(job.id) && allSucceeded;
+    }
+    return allSucceeded;
+  }
+
   @override
   Future<void> importLocalArchiveJson(
     String archiveJson, {

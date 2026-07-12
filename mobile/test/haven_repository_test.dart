@@ -928,7 +928,7 @@ void main() {
     expect(jobs.single.id, jobId);
     expect(jobs.single.status, 'queued');
 
-    expect(await repository.runBackgroundJob(jobId), isTrue);
+    expect(await repository.runQueuedImportJobs(), isTrue);
 
     jobs = await repository.watchBackgroundJobs().first;
     expect(jobs.single.status, 'done');
