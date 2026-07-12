@@ -30,21 +30,23 @@ class AboutPage extends StatelessWidget {
             SpSettingsRow('Storage', 'saved on device'),
             SpSettingsRow(
               'Compatibility',
-              'Simply Plural import in progress',
+              'Simply Plural, PluralKit, OpenPlural',
               trailing: SizedBox.shrink(),
               interactive: false,
             ),
             SpSettingsRow(
               'Source',
-              'EndofTimeWorks',
-              trailing: SizedBox.shrink(),
-              interactive: false,
+              'github.com/EndofTimeWorks/pluris-haven',
+              onTap: () => launchExternalUrl(
+                context,
+                Uri.https('github.com', '/EndofTimeWorks/pluris-haven'),
+              ),
             ),
           ],
         ),
         SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Support',
+          title: 'Optional support',
           rows: [
             SpSettingsRow(
               'GitHub Sponsors',
@@ -69,13 +71,28 @@ class AboutPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Monero',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Monero',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('copy-monero-address-button'),
+                    tooltip: 'Copy Monero address',
+                    onPressed: () => _copyMoneroAddress(context),
+                    icon: const Icon(Icons.copy_rounded),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               const SelectableText(
-                '85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ',
+                _moneroAddress,
                 style: TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
               ),
             ],
@@ -84,6 +101,17 @@ class AboutPage extends StatelessWidget {
       ],
     );
   }
+}
+
+const _moneroAddress =
+    '85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ';
+
+void _copyMoneroAddress(BuildContext context) {
+  final messenger = ScaffoldMessenger.of(context);
+  Clipboard.setData(const ClipboardData(text: _moneroAddress));
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Monero address copied')),
+  );
 }
 
 Future<void> launchExternalUrl(BuildContext context, Uri url) async {

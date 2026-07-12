@@ -758,6 +758,8 @@ void main() {
 
     expect(find.text('Import from Simply Plural'), findsOneWidget);
     expect(find.text('Back up local data'), findsOneWidget);
+    expect(find.text("What's new"), findsOneWidget);
+    expect(find.text('APK releases'), findsOneWidget);
 
     await tester.tap(find.text('How-to guides'));
     await tester.pumpAndSettle();
@@ -766,6 +768,50 @@ void main() {
     expect(find.text('Track a front'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Save custom fronts'), 220);
     expect(find.text('Save custom fronts'), findsOneWidget);
+  });
+
+  testWidgets('shows clickable project and optional support details', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'About');
+
+    expect(find.text('Offline-first plural system tracker.'), findsOneWidget);
+    expect(find.text('Simply Plural, PluralKit, OpenPlural'), findsOneWidget);
+    expect(find.text('github.com/EndofTimeWorks/pluris-haven'), findsOneWidget);
+    expect(find.text('Optional support'), findsOneWidget);
+    expect(find.text('GitHub Sponsors'), findsOneWidget);
+    expect(find.text('patreon.com/EndofTimeWorks'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byTooltip('Copy Monero address'), 220);
+    expect(find.byTooltip('Copy Monero address'), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('copy-monero-address-button')),
+    );
+    await tester.pump();
+    final copyButton = find
+        .byKey(const ValueKey('copy-monero-address-button'))
+        .hitTestable();
+    expect(copyButton, findsOneWidget);
+    await tester.tap(copyButton);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Monero address copied'), findsOneWidget);
   });
 
   testWidgets('opens local account and privacy status pages', (tester) async {
@@ -1590,6 +1636,33 @@ void main() {
     );
   });
 
+  testWidgets('keeps an intentionally empty dashboard shortcut list', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.setDashboardShortcutIds(const []);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No dashboard shortcuts'), findsOneWidget);
+    expect(find.text('Open Customize to add shortcuts back.'), findsOneWidget);
+    expect(
+      (await repository.loadCustomization()).dashboardShortcutIds,
+      isEmpty,
+    );
+  });
+
   testWidgets('updates accessibility preferences from app options', (
     tester,
   ) async {
@@ -1966,7 +2039,6 @@ class FakeHavenRepository implements HavenRepository {
     );
     _customizationController = StreamController<AppCustomization>.broadcast(
       sync: true,
-      onListen: () => _customizationController.add(_customization),
     );
     _membersController = StreamController<List<MemberSummary>>.broadcast(
       sync: true,
@@ -2169,8 +2241,10 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<AppCustomization> watchCustomization() =>
-      _customizationController.stream;
+  Stream<AppCustomization> watchCustomization() async* {
+    yield _customization;
+    yield* _customizationController.stream;
+  }
 
   @override
   Future<AppCustomization> loadCustomization() async => _customization;
