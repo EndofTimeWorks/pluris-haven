@@ -13,7 +13,7 @@
 			need a fresh import after larger data model changes.
 		</p>
 		<ul class="data-list">
-			<li><span>Current version</span><strong>0.2.0-pre-alpha.1.dev.5+2003</strong></li>
+			<li><span>Current version</span><strong>0.2.0-pre-alpha.1.dev.6+2004</strong></li>
 			<li><span>Package id</span><strong>works.endoftime.plurishaven</strong></li>
 			<li><span>Release channel</span><strong>GitHub prereleases</strong></li>
 		</ul>
