@@ -23,23 +23,25 @@
 	</section>
 
 	<section>
-		<h2>0.1.0 pre-alpha</h2>
+		<h2>0.2.0 pre-alpha</h2>
 		<ul>
-			<li>Local Android app with offline storage.</li>
-			<li>Members, archived members, groups, notes, messages, polls, and reminders.</li>
-			<li>Custom fronts are stored separately from members.</li>
-			<li>Simply Plural, PluralKit import paths are under active testing.</li>
-			<li>Dashboard and theme customization are available, but still changing.</li>
+			<li>Current dev line: <code>0.2.0-pre-alpha.1.dev.4+2002</code>.</li>
+			<li>Local Android app with offline storage and a restore rehearsal before archive imports.</li>
+			<li>Members, archived members, groups, tags, custom fields, notes, journals, messages, polls, reminders, and front history.</li>
+			<li>Custom fronts are stored separately from members and do not import as alters.</li>
+			<li>Simply Plural, PluralKit, Tupperbox, and PluralSpace import paths are available for testing.</li>
+			<li>Avatar ZIPs are supported for Simply Plural imports; remote avatar links may be localized during import.</li>
+			<li>Dashboard, accessibility, language, and theme customization are available, but still changing.</li>
 		</ul>
 	</section>
 
 	<section>
 		<h2>Known rough spots</h2>
 		<ul>
-			<li>Import logs need better row-level detail for failed or skipped data.</li>
-			<li>Avatars and very large archives need more device testing.</li>
-			<li>Accessibility needs a dedicated TalkBack and keyboard navigation pass.</li>
-			<li>Sync, friends, web login, and hosted backup are not ready.</li>
+			<li>Imports are best-effort and need more large-system device testing.</li>
+			<li>Avatar downloads depend on the source service staying reachable unless an avatar ZIP is attached.</li>
+			<li>Accessibility has toggles and labels, but still needs a full TalkBack, VoiceOver, keyboard, and low-mobility pass.</li>
+			<li>Sync, friends, web login, hosted backup, iOS, and store distribution are not ready.</li>
 		</ul>
 	</section>
 </main>

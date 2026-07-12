@@ -65,6 +65,25 @@ class UsefulLinksPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
+              "What's new",
+              'pluris.endoftime.works/changelog',
+              onTap: () => launchExternalUrl(
+                context,
+                Uri.https('pluris.endoftime.works', '/changelog'),
+              ),
+            ),
+            SpSettingsRow(
+              'APK releases',
+              'github.com/EndofTimeWorks/pluris-haven/releases',
+              onTap: () => launchExternalUrl(
+                context,
+                Uri.https(
+                  'github.com',
+                  '/EndofTimeWorks/pluris-haven/releases',
+                ),
+              ),
+            ),
+            SpSettingsRow(
               'GitHub Sponsors',
               'EndofTimeWorks',
               onTap: () => launchExternalUrl(
