@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:workmanager/workmanager.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/haven_repository.dart';
 
 const importArchiveTaskName = 'pluris_haven.import_archive';
+const iosImportArchiveTaskIdentifier =
+    'works.endoftime.plurishaven.import_archive';
 const syncTaskName = 'pluris_haven.sync';
 
 @pragma('vm:entry-point')
@@ -20,6 +24,8 @@ void plurisHavenBackgroundDispatcher() {
             return false;
           }
           return repository.runBackgroundJob(jobId);
+        case iosImportArchiveTaskIdentifier:
+          return repository.runQueuedImportJobs();
         case syncTaskName:
           return true;
         default:
@@ -36,6 +42,15 @@ Future<void> initializeBackgroundTasks() {
 }
 
 Future<void> scheduleImportArchiveJob(String jobId) {
+  if (Platform.isIOS) {
+    return Workmanager().registerProcessingTask(
+      iosImportArchiveTaskIdentifier,
+      importArchiveTaskName,
+      inputData: {'job_id': jobId},
+      constraints: Constraints(networkType: NetworkType.notRequired),
+    );
+  }
+
   return Workmanager().registerOneOffTask(
     'import-$jobId',
     importArchiveTaskName,
