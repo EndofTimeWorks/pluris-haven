@@ -2005,6 +2005,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Local archive'), findsOneWidget);
+    expect(find.text('Save JSON file'), findsOneWidget);
     expect(find.text('Copy JSON'), findsOneWidget);
     expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
     expect(find.textContaining('Caretakers'), findsOneWidget);
