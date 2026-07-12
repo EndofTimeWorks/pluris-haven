@@ -22,7 +22,7 @@
 			<li>Dev APK asset: <code>pluris-haven-dev.apk</code></li>
 			<li>Dev tags: <code>mobile-v0.2.0-pre-alpha.1.dev.N+BUILD</code></li>
 			<li>Versioned tags: <code>mobile-v0.2.0-pre-alpha.1+BUILD</code></li>
-			<li>Current dev build: <code>0.2.0-pre-alpha.1.dev.4+2002</code></li>
+			<li>Current dev build: <code>0.2.0-pre-alpha.1.dev.5+2003</code></li>
 		</ul>
 		<div class="actions">
 			<a class="button primary" href="https://github.com/EndofTimeWorks/pluris-haven/releases">

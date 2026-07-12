@@ -9,8 +9,8 @@ There are two build tracks.
 It creates one prerelease from the checked-in `mobile/pubspec.yaml` version when
 that version is a dev prerelease:
 
-- pubspec version: `0.2.0-pre-alpha.1.dev.4+2002`
-- tag: `mobile-v0.2.0-pre-alpha.1.dev.4+2002`
+- pubspec version: `0.2.0-pre-alpha.1.dev.5+2003`
+- tag: `mobile-v0.2.0-pre-alpha.1.dev.5+2003`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -28,7 +28,7 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.2.0-pre-alpha.1.dev.4+2002
+version: 0.2.0-pre-alpha.1.dev.5+2003
 ```
 
 The `0.2.0` part is the pre-1.0 feature line. The `pre-alpha.1` part is the
@@ -36,7 +36,7 @@ current prerelease milestone. The `.dev.N` part is for automatic debug builds on
 `main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
 metadata for precedence, so do not only change the number after `+`.
 
-`0.2.0-pre-alpha.1.dev.4+2002` marks the second broader pre-alpha line: local
+`0.2.0-pre-alpha.1.dev.5+2003` marks the second broader pre-alpha line: local
 schema v8, imports, avatars, archive handling, local crypto plumbing, member
 ordering, custom fronts, tags, journals, and the alpha repository services are
 all present enough to test together.
@@ -73,7 +73,7 @@ Examples:
 
 ```text
 mobile-v0.1.0-pre-alpha.dev.1+18
-mobile-v0.2.0-pre-alpha.1.dev.4+2002
+mobile-v0.2.0-pre-alpha.1.dev.5+2003
 mobile-v0.2.0-pre-alpha.1+2003
 mobile-v0.2.1-pre-alpha.1+2004
 mobile-v0.3.0-alpha.1+2100
