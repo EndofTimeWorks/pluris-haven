@@ -15,9 +15,13 @@ class DashboardSystemHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
-            SpAvatar(
+            StoredAvatar(
               size: 24,
-              color: Theme.of(context).colorScheme.primary,
+              color: _colorFromHex(
+                home?.systemColorHex,
+                fallback: Theme.of(context).colorScheme.primary,
+              ),
+              avatarUrl: home?.systemAvatarUrl,
               label: 'PH',
             ),
             const SizedBox(width: 10),

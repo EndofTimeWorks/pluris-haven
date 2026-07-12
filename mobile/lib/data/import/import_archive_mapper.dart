@@ -146,12 +146,7 @@ class _ExternalArchiveNormalizer {
     'version': 1,
     'exported_at': importedAt.toIso8601String(),
     'source': source.jobSource,
-    'system': {
-      'id': 'local-system',
-      'name': _systemName(),
-      'created_at': importedAt.toIso8601String(),
-      'updated_at': importedAt.toIso8601String(),
-    },
+    'system': _systemRecord(),
     'members': members,
     'groups': groups,
     'group_members': groupMembers,
@@ -190,12 +185,8 @@ class _ExternalArchiveNormalizer {
       },
   ];
 
-  String _systemName() {
-    final users = _firstList(decoded, const ['users']);
-    final system =
-        _mapValue(decoded['system']) ??
-        (users.isEmpty ? null : _mapValue(users.first)) ??
-        decoded;
+  Map<String, Object?> _systemRecord() {
+    final system = _systemSource();
     final name =
         _firstString(system, const [
           'name',
@@ -205,7 +196,40 @@ class _ExternalArchiveNormalizer {
           'tag',
         ]) ??
         'Imported system';
-    return _clamp(name, _capSystemName)!;
+    return {
+      'id': 'local-system',
+      'name': _clamp(name, _capSystemName)!,
+      'color_hex': _normalizeColor(
+        _firstString(system, const [
+          'color',
+          'colour',
+          'colorHex',
+          'color_hex',
+        ]),
+      ),
+      'avatar_url': _clamp(_systemAvatarReference(system), _capAvatarUrl),
+      'description': _clamp(
+        _firstString(system, const ['description', 'desc', 'bio']),
+        _capMemberDescription,
+      ),
+      'created_at': importedAt.toIso8601String(),
+      'updated_at': importedAt.toIso8601String(),
+    };
+  }
+
+  Map<String, Object?> _systemSource() {
+    final users = _firstList(decoded, const ['users']);
+    return _mapValue(decoded['system']) ??
+        (users.isEmpty ? null : _mapValue(users.first)) ??
+        decoded;
+  }
+
+  String? _systemAvatarReference(Map<String, Object?> system) {
+    final ownerId = _firstString(system, const ['uid', '_id', 'id']);
+    if (ownerId != null && avatarAssets.any((asset) => asset.id == ownerId)) {
+      return 'sp-avatar:$ownerId';
+    }
+    return _avatarReference(system);
   }
 
   String? _clamp(String? value, _ImportTextCap cap) =>
