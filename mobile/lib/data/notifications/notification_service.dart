@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
+  static const frontStatusNotificationId = 1001;
 
   FlutterLocalNotificationsPlugin? _plugin;
   bool _initialized = false;
@@ -100,6 +101,51 @@ class NotificationService {
 
   Future<void> cancelReminderNotification(String reminderId) {
     return cancelNotification(reminderNotificationId(reminderId));
+  }
+
+  Future<void> showFrontStatusNotification({
+    required String? frontLabel,
+  }) async {
+    if (_plugin == null) return;
+    final label = frontLabel?.trim();
+    if (label == null || label.isEmpty) {
+      await cancelFrontStatusNotification();
+      return;
+    }
+    await _requestPermission();
+
+    const androidDetails = AndroidNotificationDetails(
+      'front_status',
+      'Front status',
+      channelDescription: 'Persistent currently-fronting status',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true,
+      autoCancel: false,
+      onlyAlertOnce: true,
+      showWhen: false,
+      silent: true,
+      category: AndroidNotificationCategory.status,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: false,
+        presentSound: false,
+      ),
+    );
+
+    await _plugin!.show(
+      frontStatusNotificationId,
+      'Currently fronting',
+      label,
+      details,
+    );
+  }
+
+  Future<void> cancelFrontStatusNotification() {
+    return cancelNotification(frontStatusNotificationId);
   }
 
   Future<void> cancelNotification(int id) async {
