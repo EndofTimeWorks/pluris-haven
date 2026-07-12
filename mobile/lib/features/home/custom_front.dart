@@ -254,7 +254,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                               children: [
                                 IconButton(
                                   tooltip: 'Set saved front',
-                                  onPressed: () => _applyNamedFront(front.id),
+                                  onPressed: () => _applyNamedFront(front),
                                   icon: const Icon(Icons.play_arrow_rounded),
                                 ),
                                 IconButton(
@@ -337,12 +337,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () async {
-                      await widget.repository.clearCurrentFront();
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
+                    onPressed: _clearFront,
                     child: const Text('Clear'),
                   ),
                 ),
@@ -356,23 +351,75 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<void> _setFront(String label) async {
     await widget.repository.setCustomFront(label);
+    await _syncFrontNotification(label.trim());
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
   Future<void> _setMemberFront() async {
+    final label = await _selectedMemberFrontLabel();
     await widget.repository.setFrontMembers(_selectedMemberIds.toList());
+    await _syncFrontNotification(label);
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
-  Future<void> _applyNamedFront(String namedFrontId) async {
-    await widget.repository.applyNamedFront(namedFrontId);
+  Future<void> _applyNamedFront(NamedFront front) async {
+    await widget.repository.applyNamedFront(front.id);
+    await _syncFrontNotification(
+      front.customLabel?.trim().isNotEmpty == true
+          ? front.customLabel!.trim()
+          : front.name,
+    );
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _clearFront() async {
+    await widget.repository.clearCurrentFront();
+    await _syncFrontNotification(null);
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<String> _selectedMemberFrontLabel() async {
+    final ids = _selectedMemberIds.toSet();
+    final members = await widget.repository.watchMembers().first;
+    final labels = [
+      for (final member in members)
+        if (ids.contains(member.id)) member.displayName,
+    ];
+    return labels.join(', ');
+  }
+
+  Future<void> _syncFrontNotification(String? label) async {
+    final frontLabel = label?.trim();
+    final hasFront = frontLabel != null && frontLabel.isNotEmpty;
+    try {
+      await NotificationService.instance.showFrontStatusNotification(
+        frontLabel: hasFront ? frontLabel : null,
+      );
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Front status notification failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    await widget.repository.recordNotificationEvent(
+      NotificationEventDraft(
+        kind: 'front',
+        title: hasFront ? 'Front changed' : 'Front cleared',
+        body: hasFront
+            ? '$frontLabel is fronting.'
+            : 'No one is marked as fronting.',
+      ),
+    );
   }
 
   Future<void> _showSaveSelectedFrontSheet() async {
