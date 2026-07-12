@@ -1,36 +1,66 @@
 <svelte:head>
 	<title>Pluris Haven Web App</title>
-	<meta name="description" content="Pluris Haven web app placeholder." />
+	<meta
+		name="description"
+		content="Current Pluris Haven web app status and browser client plan."
+	/>
 </svelte:head>
+
+<script lang="ts">
+	const blockers = [
+		'Shared import/export code between Android and browser builds',
+		'Encrypted local browser storage with clear backup and restore flows',
+		'Large Simply Plural imports tested without tab crashes or duplicate jobs',
+		'Keyboard, screen reader, and reduced-motion checks on desktop and mobile browsers'
+	];
+
+	const next = [
+		['Use the app today', '/download'],
+		['Read the changelog', '/changelog'],
+		['Check distribution notes', '/distribution']
+	];
+</script>
 
 <main>
 	<a class="back" href="/">Back to Pluris Haven</a>
 	<section>
 		<p class="eyebrow">Web UI</p>
-		<h1>Not open yet.</h1>
+		<h1>Browser app is not open yet.</h1>
 		<p>
-			The web app will live here after the mobile import and local-data model are
-			stable enough to share between clients.
+			Pluris Haven is Android-first right now. The browser client should use the same
+			local-first data model, not a fake account screen or a separate half-compatible
+			import path.
 		</p>
 	</section>
 
 	<section>
-		<h2>Planned shape</h2>
+		<h2>Before this opens</h2>
 		<ul>
-			<li>Works as a PWA.</li>
-			<li>Imports and exports without requiring login.</li>
-			<li>Uses local browser storage first.</li>
-			<li>Can connect to an optional sync server later.</li>
+			{#each blockers as blocker}
+				<li>{blocker}</li>
+			{/each}
 		</ul>
 	</section>
 
 	<section>
-		<h2>Why this is empty</h2>
+		<h2>Expected shape</h2>
 		<p>
-			A fake login screen would make the project look further along than it is. The
-			first web build should open real local data, import real archives, and share
-			code with the mobile data model.
+			The first useful web build should install as a PWA, import and export without an
+			account, keep data local by default, and connect to optional sync only after the
+			offline archive format is solid.
 		</p>
+	</section>
+
+	<section>
+		<h2>For now</h2>
+		<div class="cards">
+			{#each next as [label, href]}
+				<a class="card" {href}>
+					<strong>{label}</strong>
+					<span>Open the current public path.</span>
+				</a>
+			{/each}
+		</div>
 	</section>
 </main>
 

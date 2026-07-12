@@ -22,6 +22,7 @@
 			<li>Dev APK asset: <code>pluris-haven-dev.apk</code></li>
 			<li>Dev tags: <code>mobile-v0.2.0-pre-alpha.1.dev.N+BUILD</code></li>
 			<li>Versioned tags: <code>mobile-v0.2.0-pre-alpha.1+BUILD</code></li>
+			<li>Current dev build: <code>0.2.0-pre-alpha.1.dev.4+2002</code></li>
 		</ul>
 		<div class="actions">
 			<a class="button primary" href="https://github.com/EndofTimeWorks/pluris-haven/releases">
@@ -44,14 +45,21 @@
 			old install is from an earlier experimental package id. Uninstall it once, then
 			install the current build.
 		</p>
+		<p>
+			Build codes must stay above <code>2000</code>. Android will reject a lower
+			code even when the visible SemVer string looks newer.
+		</p>
 	</section>
 
 	<section>
 		<h2>iOS</h2>
 		<p>
-			iOS is planned, not supported yet. When it exists, SideStore/AltStore should be
-			available before relying on App Store distribution.
+			The iOS target is scaffolded with bundle id
+			<code>works.endoftime.plurishaven</code>, but signed IPA/TestFlight builds
+			still need macOS/Xcode CI validation. It is not a supported install channel
+			yet.
 		</p>
+		<p>When it is ready, SideStore/AltStore should be available before relying on App Store distribution.</p>
 	</section>
 </main>
 
