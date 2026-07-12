@@ -8,7 +8,7 @@ other network features are opt-in.
 
 ## Targets
 
-- `mobile` - Flutter app for Android now, iOS next.
+- `mobile` - Flutter app targeting Android and iOS.
 - `website` - SvelteKit site/app shell.
 - server/sync - later, once the local app and importers are solid.
 
@@ -30,7 +30,8 @@ other network features are opt-in.
 
 ## CI
 
-- `Mobile CI` checks mobile changes and uploads a debug APK artifact.
+- `Mobile CI` checks mobile changes, uploads a debug APK, and compiles an
+  unsigned iOS app on macOS.
 - `Mobile Dev Release` updates the `mobile-dev` prerelease from `main`.
 - `Mobile Release` builds tagged APK releases.
 - `Website CI` audits, checks, and builds the website.
@@ -47,6 +48,19 @@ flutter run
 ```
 
 Android Studio should open `mobile/` as the Flutter project.
+
+Reusable build targets are available from the repository root:
+
+```sh
+scripts/build-mobile.sh android-debug
+scripts/build-mobile.sh android-release
+scripts/build-mobile.sh android-split
+scripts/build-mobile.sh ios-check
+scripts/build-mobile.sh ios-debug
+```
+
+The iOS targets require macOS and Xcode. They compile without code signing and
+do not produce an installable or App Store-ready IPA.
 
 ## Website
 

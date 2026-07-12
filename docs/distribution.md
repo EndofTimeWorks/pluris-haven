@@ -26,8 +26,10 @@ build once, then install the current `works.endoftime.plurishaven` build.
 ## iOS
 
 The iOS host target exists and uses bundle id `works.endoftime.plurishaven`,
-with an Apple privacy manifest checked in. It is not a supported release channel
-yet because signed IPA/TestFlight builds still need macOS/Xcode CI validation.
+with an Apple privacy manifest checked in. CI performs an unsigned iOS compile
+on macOS and uploads the `Runner.app` bundle for inspection. It is not a
+supported release channel yet because signed IPA and TestFlight builds still
+need Apple signing credentials and physical-device validation.
 
 When the iOS client is ready, prefer a SideStore/AltStore source before assuming
 App Store availability.
