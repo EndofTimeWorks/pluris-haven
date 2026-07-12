@@ -9,6 +9,9 @@ const localSystemId = 'local-system';
 class PluralSystems extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
+  TextColumn get colorHex => text().nullable()();
+  TextColumn get avatarUrl => text().nullable()();
+  TextColumn get description => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -414,7 +417,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -496,6 +499,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 13) {
         await migrator.addColumn(systemGroups, systemGroups.isSubsystem);
+      }
+      if (from < 14) {
+        await migrator.addColumn(pluralSystems, pluralSystems.colorHex);
+        await migrator.addColumn(pluralSystems, pluralSystems.avatarUrl);
+        await migrator.addColumn(pluralSystems, pluralSystems.description);
       }
     },
     beforeOpen: (details) async {

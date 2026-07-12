@@ -511,6 +511,49 @@ class SpAvatar extends StatelessWidget {
   }
 }
 
+class StoredAvatar extends StatelessWidget {
+  const StoredAvatar({
+    super.key,
+    required this.size,
+    required this.color,
+    required this.label,
+    this.avatarUrl,
+  });
+
+  final double size;
+  final Color color;
+  final String label;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final source = avatarUrl?.trim();
+    if (source == null || source.isEmpty) {
+      return SpAvatar(size: size, color: color, label: label);
+    }
+    if (source.startsWith('local-avatar:')) {
+      return FutureBuilder<File?>(
+        future: _localAvatarFile(source),
+        builder: (context, snapshot) => SpAvatar(
+          size: size,
+          color: color,
+          label: label,
+          image: snapshot.data == null ? null : FileImage(snapshot.data!),
+        ),
+      );
+    }
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      return SpAvatar(
+        size: size,
+        color: color,
+        label: label,
+        image: NetworkImage(source),
+      );
+    }
+    return SpAvatar(size: size, color: color, label: label);
+  }
+}
+
 class AccentDot extends StatelessWidget {
   const AccentDot({super.key});
 

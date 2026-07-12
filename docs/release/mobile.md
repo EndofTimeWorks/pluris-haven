@@ -97,3 +97,19 @@ release.
 
 Release APKs use the configured Android signing key. Dev prereleases are
 debuggable and intended for testing.
+
+## Local Import Acceptance
+
+Large Simply Plural exports can exercise import, deduplication, encrypted
+backup rehearsal, and clean restore without adding the source data to Git:
+
+```sh
+cd mobile
+PLURIS_SP_EXPORT=/absolute/path/to/export.json \
+PLURIS_SP_AVATARS=/absolute/path/to/avatars.zip \
+flutter test test/local_import_acceptance_test.dart --reporter expanded
+```
+
+The test uses in-memory databases. It checks members, groups, fronts,
+front-member links, custom fronts, custom fields, attached system avatars,
+re-import stability, encryption, rehearsal, and clean restore.

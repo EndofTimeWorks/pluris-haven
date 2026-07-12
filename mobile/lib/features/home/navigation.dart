@@ -62,9 +62,14 @@ class SpDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
               child: Row(
                 children: [
-                  SpAvatar(
+                  StoredAvatar(
                     size: 52,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: _colorFromHex(
+                      home?.systemColorHex,
+                      fallback: Theme.of(context).colorScheme.primary,
+                    ),
+                    avatarUrl: home?.systemAvatarUrl,
+                    label: home?.systemName ?? 'Local system',
                   ),
                   const SizedBox(width: 14),
                   Expanded(
