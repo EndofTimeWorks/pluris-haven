@@ -292,6 +292,8 @@ ImportPreview _previewNormalizedSource({
         _importablePreviewCountKeys.contains(entry.key) && entry.value > 0,
   );
   final rawPayloadCount = normalized.counts['raw_payloads'] ?? 0;
+  final avatarRefCount = normalized.counts['avatar_refs'] ?? 0;
+  final avatarAssetCount = normalized.counts['avatar_assets'] ?? 0;
   final rawPayloadCollections = _rawPayloadCollections(normalized.archiveJson);
 
   return ImportPreview(
@@ -317,6 +319,15 @@ ImportPreview _previewNormalizedSource({
           stage: 'preserve',
           message:
               'Preserved $rawPayloadCount original source ${rawPayloadCount == 1 ? 'collection' : 'collections'} as raw payloads for export/debug${_rawPayloadCollectionSummary(rawPayloadCollections)}. Mapped records still import normally; raw copies do not create notes, messages, or members.',
+        ),
+      if (source == ImportSource.simplyPlural &&
+          avatarRefCount > 0 &&
+          avatarAssetCount == 0)
+        const ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: 'avatars',
+          message:
+              'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.',
         ),
       for (final warning in normalized.warnings)
         ImportPreviewEvent(

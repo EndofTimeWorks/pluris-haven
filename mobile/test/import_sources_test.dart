@@ -65,6 +65,12 @@ void main() {
       importPlanFor(ImportSource.plurisHavenArchive).status.label,
       'ready',
     );
+    expect(
+      importPlanFor(ImportSource.simplyPlural).privacyNotes,
+      contains(
+        'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.',
+      ),
+    );
   });
 
   test('guesses import source from file name and preview', () {
@@ -1046,6 +1052,30 @@ void main() {
     expect(archive.counts['avatar_assets'], 1);
     expect(archive.archiveJson, contains('"bytes_base64": "AQIDBA=="'));
   });
+
+  test(
+    'warns when Simply Plural preview has remote avatars without zip bytes',
+    () {
+      final preview = previewImportText(
+        fileName: 'sp-avatar.json',
+        selectedSource: ImportSource.simplyPlural,
+        text: '''
+{
+  "users": [{"_id": "owner1", "username": "SP System"}],
+  "members": [{"_id": "m1", "name": "Iris", "avatarUuid": "avatar-1"}]
+}
+''',
+      );
+
+      expect(preview.counts['avatar_refs'], 1);
+      expect(
+        preview.warningsAndErrors.map((event) => event.message),
+        contains(
+          'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.',
+        ),
+      );
+    },
+  );
 
   test('prefers attached Simply Plural avatar bytes over remote URLs', () {
     final archive = normalizeImportTextToLocalArchive(
