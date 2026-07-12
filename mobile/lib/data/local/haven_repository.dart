@@ -2725,6 +2725,11 @@ SELECT
       database.notificationEvents,
     )..where((event) => event.systemId.equals(localSystemId))).get();
     final preferences = await database.select(database.appPreferences).get();
+    final avatarAssets = await _exportLocalAvatarAssets([
+      if (systems.isNotEmpty) systems.single.avatarUrl,
+      for (final member in members) member.avatarUrl,
+      for (final front in namedFronts) front.avatarUrl,
+    ]);
 
     final archive = {
       'format': 'pluris_haven.local_archive',
@@ -2800,6 +2805,7 @@ SELECT
           if (namedFrontIds.contains(link.namedFrontId))
             _namedFrontMemberToJson(link),
       ],
+      'avatar_assets': avatarAssets,
       'import_records': [
         for (final record in importRecords) _importRecordToJson(record),
       ],
@@ -3646,8 +3652,22 @@ SELECT
     for (final member in members) {
       final memberId = _requiredString(member, 'id');
       final avatarUrl = _stringValue(member['avatar_url']);
-      if (avatarUrl == null || avatarUrl.startsWith('local-avatar:')) {
+      if (avatarUrl == null) {
         refs[memberId] = avatarUrl;
+        continue;
+      }
+
+      if (avatarUrl.startsWith('local-avatar:')) {
+        final assetId = avatarUrl.substring('local-avatar:'.length).trim();
+        final asset = assetsById[assetId];
+        refs[memberId] = asset == null
+            ? avatarUrl
+            : await _storeAvatarBytes(
+                id: asset.id,
+                sourceName: asset.name,
+                mimeType: asset.mimeType,
+                bytes: asset.bytes,
+              );
         continue;
       }
 
@@ -3674,6 +3694,54 @@ SELECT
       refs[memberId] = avatarUrl;
     }
     return refs;
+  }
+
+  Future<List<Map<String, Object?>>> _exportLocalAvatarAssets(
+    Iterable<String?> avatarUrls,
+  ) async {
+    final fileNames =
+        <String>{
+          for (final avatarUrl in avatarUrls)
+            if (avatarUrl != null && avatarUrl.startsWith('local-avatar:'))
+              avatarUrl.substring('local-avatar:'.length).trim(),
+        }..removeWhere(
+          (name) => name.isEmpty || name.contains('/') || name.contains('\\'),
+        );
+    if (fileNames.isEmpty) {
+      return const [];
+    }
+
+    final root = await _avatarRootDirectory();
+    final assets = <Map<String, Object?>>[];
+    for (final fileName in fileNames) {
+      final file = File('${root.path}/$fileName');
+      if (!await file.exists()) {
+        continue;
+      }
+      final length = await file.length();
+      if (length <= 0 || length > 10 * 1024 * 1024) {
+        continue;
+      }
+      final bytes = await file.readAsBytes();
+      assets.add({
+        'id': fileName,
+        'name': fileName,
+        'mime_type': _avatarMimeType(fileName),
+        'bytes_base64': base64Encode(bytes),
+      });
+    }
+    return assets;
+  }
+
+  String? _avatarMimeType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return null;
   }
 
   Future<String?> _downloadAndStoreAvatar(String url) async {

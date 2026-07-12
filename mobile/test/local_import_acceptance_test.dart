@@ -72,6 +72,8 @@ void main() {
       )..where((system) => system.id.equals(localSystemId))).getSingle();
       expect(importedSystem.colorHex, isNotNull);
       expect(importedSystem.avatarUrl, startsWith('local-avatar:'));
+      final importedAvatar = _testAvatarFile(importedSystem.avatarUrl!);
+      expect(await importedAvatar.exists(), isTrue);
       await _expectFrontMemberReferencesValid(database);
 
       final firstExport = await repository.buildLocalArchiveJson();
@@ -84,6 +86,10 @@ void main() {
         fileName: normalized.fileName,
       );
       final secondExport = await repository.buildLocalArchiveJson();
+      expect(
+        (_decodeArchive(secondExport)['avatar_assets'] as List),
+        isNotEmpty,
+      );
       expect(
         _archiveCollectionCounts(_decodeArchive(secondExport)),
         firstCounts,
@@ -100,6 +106,8 @@ void main() {
         passphrase: 'local-acceptance-test-passphrase',
       );
       expect(_archiveCollectionCounts(_decodeArchive(decrypted)), firstCounts);
+      await importedAvatar.delete();
+      expect(await importedAvatar.exists(), isFalse);
 
       final rehearsal = await repository.rehearseLocalArchiveRestore(
         decrypted,
@@ -120,6 +128,11 @@ void main() {
         decrypted,
         fileName: 'acceptance-backup.json',
       );
+      final restoredSystem = await (restoredDatabase.select(
+        restoredDatabase.pluralSystems,
+      )..where((system) => system.id.equals(localSystemId))).getSingle();
+      expect(restoredSystem.avatarUrl, startsWith('local-avatar:'));
+      expect(await _testAvatarFile(restoredSystem.avatarUrl!).exists(), isTrue);
       await _expectFrontMemberReferencesValid(restoredDatabase);
       final restoredExport = await restoredRepository.buildLocalArchiveJson();
       expect(
@@ -171,4 +184,11 @@ Future<void> _expectFrontMemberReferencesValid(AppDatabase database) async {
 
   expect(links.every((link) => memberIds.contains(link.memberId)), isTrue);
   expect(links.every((link) => frontIds.contains(link.sessionId)), isTrue);
+}
+
+File _testAvatarFile(String avatarUrl) {
+  final fileName = avatarUrl.substring('local-avatar:'.length);
+  return File(
+    '${Directory.systemTemp.path}/pluris-haven-test/avatars/$fileName',
+  );
 }
