@@ -99,7 +99,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
               onTap: () => showLocalArchiveSheet(context, widget.repository),
             ),
             const SpSettingsRow('Encrypted export', 'password protected'),
-            const SpSettingsRow('Backup folder', 'choose later'),
+            SpSettingsRow(
+              'Backup folder',
+              'manual save from archive sheet',
+              onTap: () => showLocalArchiveSheet(context, widget.repository),
+            ),
           ],
         ),
       ],
@@ -693,15 +697,15 @@ class LocalArchiveSheet extends StatelessWidget {
                   )
                 else ...[
                   FilledButton.icon(
+                    key: const ValueKey('save-local-archive-button'),
+                    onPressed: () => _saveArchiveJson(context, archive!),
+                    icon: const Icon(Icons.save_rounded),
+                    label: const Text('Save JSON file'),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
                     key: const ValueKey('copy-local-archive-button'),
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: archive!));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Archive copied')),
-                        );
-                      }
-                    },
+                    onPressed: () => _copyArchiveJson(context, archive!),
                     icon: const Icon(Icons.copy_rounded),
                     label: const Text('Copy JSON'),
                   ),
@@ -733,6 +737,48 @@ class LocalArchiveSheet extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _copyArchiveJson(BuildContext context, String archive) {
+    final messenger = ScaffoldMessenger.of(context);
+    Clipboard.setData(ClipboardData(text: archive));
+    messenger.showSnackBar(const SnackBar(content: Text('Archive copied')));
+  }
+
+  Future<void> _saveArchiveJson(BuildContext context, String archive) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Save Pluris Haven archive',
+        fileName: _archiveFileName(),
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        bytes: Uint8List.fromList(utf8.encode(archive)),
+      );
+      if (!messenger.mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(path == null ? 'Save canceled' : 'Archive saved'),
+        ),
+      );
+    } on Object catch (error) {
+      if (!messenger.mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not save archive: $error')),
+      );
+    }
+  }
+
+  String _archiveFileName() {
+    final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+      RegExp(r'[^0-9A-Za-z]'),
+      '-',
+    );
+    return 'pluris-haven-local-archive-$stamp.json';
   }
 }
 
