@@ -20,6 +20,8 @@ class HomeSnapshot {
     required this.noteCount,
     required this.frontHistoryCount,
     required this.currentFrontLabel,
+    this.systemColorHex,
+    this.systemAvatarUrl,
   });
 
   final String systemName;
@@ -28,6 +30,8 @@ class HomeSnapshot {
   final int noteCount;
   final int frontHistoryCount;
   final String? currentFrontLabel;
+  final String? systemColorHex;
+  final String? systemAvatarUrl;
 
   String get currentFrontText => currentFrontLabel?.trim().isNotEmpty == true
       ? currentFrontLabel!.trim()
@@ -812,15 +816,15 @@ abstract interface class HavenRepository {
 }
 
 class LocalHavenRepository implements HavenRepository {
-  LocalHavenRepository(this.database, {HavenCrypto? crypto}) : _crypto = crypto;
+  LocalHavenRepository(this.database, {this.crypto});
 
   final AppDatabase database;
-  final HavenCrypto? _crypto;
+  final HavenCrypto? crypto;
 
   /// Decrypts [ciphertext] using the configured [HavenCrypto], or returns
   /// [ciphertext] unchanged if no crypto is configured (plaintext dev mode).
   Future<String?> _decrypt(String? ciphertext) async {
-    final crypto = _crypto;
+    final crypto = this.crypto;
     if (crypto == null || ciphertext == null) return ciphertext;
     try {
       return await crypto.decrypt(ciphertext);
@@ -832,7 +836,7 @@ class LocalHavenRepository implements HavenRepository {
   /// Encrypts [plaintext] using the configured [HavenCrypto], or returns
   /// [plaintext] unchanged if no crypto is configured (plaintext dev mode).
   Future<String?> _encrypt(String? plaintext) async {
-    final crypto = _crypto;
+    final crypto = this.crypto;
     if (crypto == null || plaintext == null) return plaintext;
     try {
       return await crypto.encrypt(plaintext);
@@ -844,7 +848,7 @@ class LocalHavenRepository implements HavenRepository {
   /// Computes a blind index for [plaintext] if crypto is configured.
   /// Returns null if no crypto is configured.
   Future<String?> _blindIndex(String plaintext) async {
-    final crypto = _crypto;
+    final crypto = this.crypto;
     if (crypto == null) return null;
     try {
       return await crypto.blindIndex(plaintext);
@@ -1397,6 +1401,8 @@ ORDER BY LOWER(g.name) ASC
   String get _homeSnapshotSql => '''
 SELECT
   COALESCE((SELECT name FROM plural_systems WHERE id = ? LIMIT 1), 'Local system') AS system_name,
+  (SELECT color_hex FROM plural_systems WHERE id = ? LIMIT 1) AS system_color_hex,
+  (SELECT avatar_url FROM plural_systems WHERE id = ? LIMIT 1) AS system_avatar_url,
   (SELECT COUNT(*) FROM members WHERE system_id = ? AND archived = 0 AND is_custom_front = 0) AS member_count,
   (SELECT COUNT(*) FROM system_groups WHERE system_id = ?) AS group_count,
   (SELECT COUNT(*) FROM notes WHERE system_id = ?) AS note_count,
@@ -1404,7 +1410,7 @@ SELECT
           ''';
 
   List<Variable<String>> get _homeSnapshotVariables =>
-      List.filled(5, Variable<String>(localSystemId));
+      List.filled(7, Variable<String>(localSystemId));
 
   Future<HomeSnapshot> _mapHomeSnapshot(QueryRow row) async {
     final data = row.data;
@@ -1416,6 +1422,8 @@ SELECT
       noteCount: data['note_count'] as int,
       frontHistoryCount: data['front_history_count'] as int,
       currentFrontLabel: await _currentFrontLabel(),
+      systemColorHex: data['system_color_hex'] as String?,
+      systemAvatarUrl: data['system_avatar_url'] as String?,
     );
   }
 
@@ -3175,17 +3183,18 @@ SELECT
       'frontMembers=${frontMembers.length} groupMembers=${groupMembers.length} '
       'cleanup=$cleanupCount',
     );
+    final system = decoded['system'];
+    final systemRecord = system is Map<String, Object?> ? system : null;
     final localAvatarRefs = localizeAvatars
         ? await _localizeImportAvatars(
-            members: [...members, ...namedFronts],
+            members: [?systemRecord, ...members, ...namedFronts],
             avatarAssets: avatarAssets,
           )
         : const <String, String>{};
 
     await database.transaction(() async {
-      final system = decoded['system'];
-      if (system is Map<String, Object?>) {
-        final name = _stringValue(system['name'])?.trim();
+      if (systemRecord != null) {
+        final name = _stringValue(systemRecord['name'])?.trim();
         if (name != null && name.isNotEmpty) {
           await database
               .into(database.pluralSystems)
@@ -3193,7 +3202,13 @@ SELECT
                 PluralSystemsCompanion.insert(
                   id: localSystemId,
                   name: name,
-                  createdAt: _dateValue(system['created_at']) ?? now,
+                  colorHex: Value(_stringValue(systemRecord['color_hex'])),
+                  avatarUrl: Value(
+                    localAvatarRefs[localSystemId] ??
+                        _stringValue(systemRecord['avatar_url']),
+                  ),
+                  description: Value(_stringValue(systemRecord['description'])),
+                  createdAt: _dateValue(systemRecord['created_at']) ?? now,
                   updatedAt: now,
                 ),
               );
@@ -4739,6 +4754,9 @@ SELECT
   Map<String, Object?> _systemToJson(PluralSystem system) => {
     'id': system.id,
     'name': system.name,
+    'color_hex': system.colorHex,
+    'avatar_url': system.avatarUrl,
+    'description': system.description,
     'created_at': system.createdAt.toIso8601String(),
     'updated_at': system.updatedAt.toIso8601String(),
   };
