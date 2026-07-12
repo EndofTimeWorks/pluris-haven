@@ -67,6 +67,13 @@ void main() {
     expect(find.text('blurry co-con'), findsWidgets);
     expect(find.text('fronting'), findsOneWidget);
     expect(find.text('started 1/1 12:00 - active'), findsOneWidget);
+    expect(repository._notificationEvents, hasLength(1));
+    expect(repository._notificationEvents.first.kind, 'front');
+    expect(repository._notificationEvents.first.title, 'Front changed');
+    expect(
+      repository._notificationEvents.first.body,
+      'blurry co-con is fronting.',
+    );
 
     await tester.tap(find.text('set front'));
     await tester.pumpAndSettle();
@@ -77,6 +84,8 @@ void main() {
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);
     expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
+    expect(repository._notificationEvents, hasLength(2));
+    expect(repository._notificationEvents.first.title, 'Front cleared');
   });
 
   testWidgets('edits and deletes front history entries', (tester) async {
