@@ -25,8 +25,12 @@ build once, then install the current `works.endoftime.plurishaven` build.
 
 ## iOS
 
-iOS is not a supported release channel yet. When the iOS client exists, prefer a
-SideStore/AltStore source before assuming App Store availability.
+The iOS host target exists and uses bundle id `works.endoftime.plurishaven`,
+with an Apple privacy manifest checked in. It is not a supported release channel
+yet because signed IPA/TestFlight builds still need macOS/Xcode CI validation.
+
+When the iOS client is ready, prefer a SideStore/AltStore source before assuming
+App Store availability.
 
 ## Store Policy
 
