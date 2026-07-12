@@ -25,7 +25,7 @@
 	<section>
 		<h2>0.2.0 pre-alpha</h2>
 		<ul>
-			<li>Current dev line: <code>0.2.0-pre-alpha.1.dev.5+2003</code>.</li>
+			<li>Current dev line: <code>0.2.0-pre-alpha.1.dev.6+2004</code>.</li>
 			<li>Local Android app with offline storage and a restore rehearsal before archive imports.</li>
 			<li>Members, archived members, groups, tags, custom fields, notes, journals, messages, polls, reminders, and front history.</li>
 			<li>Custom fronts are stored separately from members and do not import as alters.</li>
