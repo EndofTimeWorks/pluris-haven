@@ -16,6 +16,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   int? _fileSize;
   String? _fileText;
   List<ImportAvatarAsset> _fileAvatarAssets = const [];
+  String _importPassphrase = '';
   ImportFileGuess? _guess;
   ImportPreview? _preview;
   RestoreRehearsalSummary? _restoreRehearsal;
@@ -25,6 +26,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
   String? _importStatus;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
+
+  bool get _needsImportPassphrase =>
+      (_fileText != null && archiveTextLooksEncrypted(_fileText!)) ||
+      _plan.requiresPassphrase;
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +63,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
           guess: _guess,
           preview: _preview,
           plan: plan,
+          needsPassphrase: _needsImportPassphrase,
           onPickFile: _pickImportFile,
           onPickAvatars: _pickAvatarBundle,
           onPasteJson: _pasteImportJson,
           onPreview: _refreshImportPreview,
+          onPassphraseChanged: (value) {
+            _importPassphrase = value;
+          },
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
           canPreview: _fileText != null,
@@ -98,7 +107,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
               'portable JSON',
               onTap: () => showLocalArchiveSheet(context, widget.repository),
             ),
-            const SpSettingsRow('Encrypted export', 'password protected'),
+            SpSettingsRow(
+              'Encrypted export',
+              'password protected file',
+              onTap: () =>
+                  showEncryptedArchiveSheet(context, widget.repository),
+            ),
             SpSettingsRow(
               'Backup folder',
               'manual save from archive sheet',
@@ -232,8 +246,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
       fileName: displayName,
       textPreview: text,
     );
+    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
     final preview = text == null
         ? null
+        : isEncrypted
+        ? _encryptedArchiveLockedPreview(displayName)
         : previewImportText(
             fileName: displayName,
             text: text,
@@ -246,14 +263,19 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _fileSize = fileSize;
       _fileText = text;
       _fileAvatarAssets = avatarAssets;
+      _importPassphrase = '';
       _guess = guess;
       _preview = preview;
       _restoreRehearsal = null;
-      if (guess.source != null) {
+      if (isEncrypted) {
+        _source = ImportSource.plurisHavenArchive;
+      } else if (guess.source != null) {
         _source = guess.source!;
       }
       _isPickingImport = false;
-      _importStatus = preview == null
+      _importStatus = isEncrypted
+          ? 'Encrypted archive loaded. Enter its passphrase, then preview.'
+          : preview == null
           ? unreadableStatus
           : 'Preview ready: ${_countSummary(preview.counts)}.';
     });
@@ -262,9 +284,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
   void _selectImportSource(ImportSource source) {
     final fileName = _fileName;
     final text = _fileText;
+    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
 
     final preview = fileName == null || text == null
         ? null
+        : isEncrypted
+        ? _encryptedArchiveLockedPreview(fileName)
         : previewImportText(
             fileName: fileName,
             text: text,
@@ -306,7 +331,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
   }
 
-  void _refreshImportPreview() {
+  Future<void> _refreshImportPreview() async {
     final fileName = _fileName;
     final text = _fileText;
     if (fileName == null || text == null) {
@@ -315,22 +340,31 @@ class _ImportExportPageState extends State<ImportExportPage> {
       });
       return;
     }
-    final preview = previewImportText(
-      fileName: fileName,
-      text: text,
-      selectedSource: _source,
-      avatarAssets: _fileAvatarAssets,
-    );
-    setState(() {
-      _preview = preview;
-      _restoreRehearsal = null;
-      _importStatus = 'Preview ready: ${_countSummary(preview.counts)}.';
-    });
-    appDebugLog(
-      'Import preview refreshed source=${preview.source.name} file=$fileName '
-      'canApply=${preview.canApply} counts=${preview.counts} '
-      'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
-    );
+    try {
+      final effectiveText = await _effectiveImportText(text);
+      final preview = previewImportText(
+        fileName: fileName,
+        text: effectiveText,
+        selectedSource: _source,
+        avatarAssets: _fileAvatarAssets,
+      );
+      setState(() {
+        _preview = preview;
+        _restoreRehearsal = null;
+        _importStatus = 'Preview ready: ${_countSummary(preview.counts)}.';
+      });
+      appDebugLog(
+        'Import preview refreshed source=${preview.source.name} file=$fileName '
+        'canApply=${preview.canApply} counts=${preview.counts} '
+        'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
+      );
+    } on Object catch (error) {
+      setState(() {
+        _preview = _encryptedArchiveFailedPreview(fileName, error);
+        _restoreRehearsal = null;
+        _importStatus = 'Could not decrypt archive. Check the passphrase.';
+      });
+    }
   }
 
   Future<void> _runRestoreRehearsal() async {
@@ -350,10 +384,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
     });
 
     try {
+      final effectiveText = await _effectiveImportText(text);
       final normalized = normalizeImportTextToLocalArchive(
         source: _source,
         fileName: fileName,
-        text: text,
+        text: effectiveText,
         avatarAssets: _fileAvatarAssets,
       );
       final summary = await widget.repository.rehearseLocalArchiveRestore(
@@ -401,10 +436,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     var importCompleted = false;
     try {
+      final effectiveText = await _effectiveImportText(text);
       final normalized = normalizeImportTextToLocalArchive(
         source: _source,
         fileName: _fileName ?? 'import.json',
-        text: text,
+        text: effectiveText,
         avatarAssets: _fileAvatarAssets,
       );
       appDebugLog(
@@ -467,6 +503,51 @@ class _ImportExportPageState extends State<ImportExportPage> {
         SnackBar(content: Text('${_source.label} import complete')),
       );
     }
+  }
+
+  Future<String> _effectiveImportText(String text) {
+    if (!archiveTextLooksEncrypted(text)) {
+      return Future.value(text);
+    }
+    if (_importPassphrase.trim().isEmpty) {
+      throw const FormatException('Enter the export passphrase first.');
+    }
+    return decryptArchiveJson(
+      encryptedArchiveJson: text,
+      passphrase: _importPassphrase,
+    );
+  }
+
+  ImportPreview _encryptedArchiveLockedPreview(String fileName) {
+    return ImportPreview(
+      source: ImportSource.plurisHavenArchive,
+      fileName: fileName,
+      counts: const {},
+      canApply: false,
+      events: const [
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: 'decrypt',
+          message: 'Enter the export passphrase, then preview the archive.',
+        ),
+      ],
+    );
+  }
+
+  ImportPreview _encryptedArchiveFailedPreview(String fileName, Object error) {
+    return ImportPreview(
+      source: ImportSource.plurisHavenArchive,
+      fileName: fileName,
+      counts: const {},
+      canApply: false,
+      events: [
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.error,
+          stage: 'decrypt',
+          message: 'Could not decrypt archive: $error',
+        ),
+      ],
+    );
   }
 
   Future<ImportConflictStrategy?> _promptForConflicts(
@@ -653,6 +734,167 @@ void showLocalArchiveSheet(BuildContext context, HavenRepository repository) {
     backgroundColor: _spSurface,
     builder: (context) => LocalArchiveSheet(repository: repository),
   );
+}
+
+void showEncryptedArchiveSheet(
+  BuildContext context,
+  HavenRepository repository,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) => EncryptedArchiveSheet(repository: repository),
+  );
+}
+
+class EncryptedArchiveSheet extends StatefulWidget {
+  const EncryptedArchiveSheet({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  State<EncryptedArchiveSheet> createState() => _EncryptedArchiveSheetState();
+}
+
+class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
+  final _passphraseController = TextEditingController();
+  final _confirmController = TextEditingController();
+  bool _isSaving = false;
+  String? _status;
+
+  @override
+  void dispose() {
+    _passphraseController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Encrypted export',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.',
+              style: TextStyle(color: _spMuted, height: 1.35),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              key: const ValueKey('encrypted-export-passphrase-field'),
+              controller: _passphraseController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Passphrase'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('encrypted-export-confirm-field'),
+              controller: _confirmController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirm passphrase',
+              ),
+            ),
+            if (_status != null) ...[
+              const SizedBox(height: 10),
+              Text(_status!, style: const TextStyle(color: _spMuted)),
+            ],
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              key: const ValueKey('save-encrypted-archive-button'),
+              onPressed: _isSaving ? null : _saveEncryptedArchive,
+              icon: _isSaving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.lock_rounded),
+              label: Text(_isSaving ? 'Encrypting...' : 'Save encrypted file'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveEncryptedArchive() async {
+    final passphrase = _passphraseController.text;
+    final confirm = _confirmController.text;
+    if (passphrase.trim().length < 8) {
+      setState(() {
+        _status = 'Use at least 8 characters.';
+      });
+      return;
+    }
+    if (passphrase != confirm) {
+      setState(() {
+        _status = 'Passphrases do not match.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _status = 'Building archive...';
+    });
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final archiveJson = await widget.repository.buildLocalArchiveJson();
+      if (!mounted) return;
+      setState(() {
+        _status = 'Encrypting archive...';
+      });
+      final encrypted = await encryptArchiveJson(
+        archiveJson: archiveJson,
+        passphrase: passphrase,
+      );
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Save encrypted Pluris Haven archive',
+        fileName: _encryptedArchiveFileName(),
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        bytes: Uint8List.fromList(utf8.encode(encrypted)),
+      );
+      if (!mounted) return;
+      final message = path == null
+          ? 'Save canceled.'
+          : 'Encrypted archive saved.';
+      setState(() {
+        _isSaving = false;
+        _status = message;
+      });
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _status = 'Could not save encrypted archive: $error';
+      });
+    }
+  }
+
+  String _encryptedArchiveFileName() {
+    final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+      RegExp(r'[^0-9A-Za-z]'),
+      '-',
+    );
+    return 'pluris-haven-encrypted-archive-$stamp.phx.json';
+  }
 }
 
 class LocalArchiveSheet extends StatelessWidget {
@@ -866,10 +1108,12 @@ class ImportSetupCard extends StatelessWidget {
     required this.guess,
     required this.preview,
     required this.plan,
+    required this.needsPassphrase,
     required this.onPickFile,
     required this.onPickAvatars,
     required this.onPasteJson,
     required this.onPreview,
+    required this.onPassphraseChanged,
     required this.onSourceChanged,
     required this.onStrategyChanged,
     required this.canPreview,
@@ -883,12 +1127,14 @@ class ImportSetupCard extends StatelessWidget {
   final ImportFileGuess? guess;
   final ImportPreview? preview;
   final ImportSourcePlan plan;
+  final bool needsPassphrase;
   final bool canPreview;
   final int avatarAssetCount;
   final VoidCallback onPickFile;
   final VoidCallback onPickAvatars;
   final VoidCallback onPasteJson;
   final VoidCallback onPreview;
+  final ValueChanged<String> onPassphraseChanged;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
 
@@ -982,13 +1228,15 @@ class ImportSetupCard extends StatelessWidget {
               ),
             ),
           ],
-          if (plan.requiresPassphrase) ...[
+          if (needsPassphrase) ...[
             const SizedBox(height: 10),
-            const TextField(
+            TextField(
+              key: const ValueKey('import-passphrase-field'),
               obscureText: true,
-              decoration: InputDecoration(
+              onChanged: onPassphraseChanged,
+              decoration: const InputDecoration(
                 labelText: 'Passphrase',
-                helperText: 'Used locally to decrypt the preview.',
+                helperText: 'Used locally to decrypt the preview and import.',
               ),
             ),
           ],
