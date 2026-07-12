@@ -273,6 +273,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       privacyNotes: [
         'Preview happens before records are saved.',
         'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.',
+        'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.',
       ],
       steps: [
         ImportPlanStep(
@@ -282,6 +283,10 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanStep(
           'Normalize fields',
           'Map members, groups, custom fields, custom fronts, and notes into local records.',
+        ),
+        ImportPlanStep(
+          'Prepare avatars',
+          'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.',
         ),
         ImportPlanStep(
           'Review matches',
