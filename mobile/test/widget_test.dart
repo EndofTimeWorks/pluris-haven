@@ -879,7 +879,7 @@ void main() {
 
     await openDrawerSection(tester, 'Account Settings');
     expect(find.text('Cloud account'), findsOneWidget);
-    expect(find.text('Field encryption'), findsOneWidget);
+    expect(find.text('Member name encryption'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Edit system profile'));
     await tester.pumpAndSettle();
