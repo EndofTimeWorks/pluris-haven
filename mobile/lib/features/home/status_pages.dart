@@ -700,16 +700,15 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
   }
 
   Future<void> _pickAvatar() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.image,
+    final result = await NativeFileDialog.pickFiles(
+      type: NativeFileType.image,
       allowMultiple: false,
-      withData: true,
       dialogTitle: 'Choose system avatar',
     );
     final file = result?.files.firstOrNull;
     if (file == null) return;
     try {
-      final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+      final bytes = await _readPickedFileBytes(file.path);
       if (bytes == null || bytes.isEmpty) {
         throw const FormatException('Selected image was empty.');
       }
