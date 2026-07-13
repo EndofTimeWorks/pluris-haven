@@ -13586,6 +13586,750 @@ class NamedFrontMembersCompanion extends UpdateCompanion<NamedFrontMember> {
   }
 }
 
+class $PrivacyBucketsTable extends PrivacyBuckets
+    with TableInfo<$PrivacyBucketsTable, PrivacyBucket> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PrivacyBucketsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorHexMeta = const VerificationMeta(
+    'colorHex',
+  );
+  @override
+  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
+    'color_hex',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    systemId,
+    name,
+    description,
+    colorHex,
+    position,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'privacy_buckets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PrivacyBucket> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color_hex')) {
+      context.handle(
+        _colorHexMeta,
+        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PrivacyBucket map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PrivacyBucket(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      colorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_hex'],
+      ),
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PrivacyBucketsTable createAlias(String alias) {
+    return $PrivacyBucketsTable(attachedDatabase, alias);
+  }
+}
+
+class PrivacyBucket extends DataClass implements Insertable<PrivacyBucket> {
+  final String id;
+  final String systemId;
+  final String name;
+  final String? description;
+  final String? colorHex;
+  final int position;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const PrivacyBucket({
+    required this.id,
+    required this.systemId,
+    required this.name,
+    this.description,
+    this.colorHex,
+    required this.position,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['system_id'] = Variable<String>(systemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || colorHex != null) {
+      map['color_hex'] = Variable<String>(colorHex);
+    }
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PrivacyBucketsCompanion toCompanion(bool nullToAbsent) {
+    return PrivacyBucketsCompanion(
+      id: Value(id),
+      systemId: Value(systemId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      colorHex: colorHex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorHex),
+      position: Value(position),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PrivacyBucket.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PrivacyBucket(
+      id: serializer.fromJson<String>(json['id']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      colorHex: serializer.fromJson<String?>(json['colorHex']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'systemId': serializer.toJson<String>(systemId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'colorHex': serializer.toJson<String?>(colorHex),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PrivacyBucket copyWith({
+    String? id,
+    String? systemId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    Value<String?> colorHex = const Value.absent(),
+    int? position,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PrivacyBucket(
+    id: id ?? this.id,
+    systemId: systemId ?? this.systemId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    colorHex: colorHex.present ? colorHex.value : this.colorHex,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PrivacyBucket copyWithCompanion(PrivacyBucketsCompanion data) {
+    return PrivacyBucket(
+      id: data.id.present ? data.id.value : this.id,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyBucket(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    name,
+    description,
+    colorHex,
+    position,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PrivacyBucket &&
+          other.id == this.id &&
+          other.systemId == this.systemId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.colorHex == this.colorHex &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PrivacyBucketsCompanion extends UpdateCompanion<PrivacyBucket> {
+  final Value<String> id;
+  final Value<String> systemId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String?> colorHex;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PrivacyBucketsCompanion({
+    this.id = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PrivacyBucketsCompanion.insert({
+    required String id,
+    required String systemId,
+    required String name,
+    this.description = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.position = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       systemId = Value(systemId),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PrivacyBucket> custom({
+    Expression<String>? id,
+    Expression<String>? systemId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<String>? colorHex,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (systemId != null) 'system_id': systemId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (colorHex != null) 'color_hex': colorHex,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PrivacyBucketsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? systemId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<String?>? colorHex,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PrivacyBucketsCompanion(
+      id: id ?? this.id,
+      systemId: systemId ?? this.systemId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      colorHex: colorHex ?? this.colorHex,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (colorHex.present) {
+      map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyBucketsCompanion(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PrivacyBucketMembersTable extends PrivacyBucketMembers
+    with TableInfo<$PrivacyBucketMembersTable, PrivacyBucketMember> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PrivacyBucketMembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bucketIdMeta = const VerificationMeta(
+    'bucketId',
+  );
+  @override
+  late final GeneratedColumn<String> bucketId = GeneratedColumn<String>(
+    'bucket_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES privacy_buckets (id)',
+    ),
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES members (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [bucketId, memberId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'privacy_bucket_members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PrivacyBucketMember> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('bucket_id')) {
+      context.handle(
+        _bucketIdMeta,
+        bucketId.isAcceptableOrUnknown(data['bucket_id']!, _bucketIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bucketIdMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memberIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {bucketId, memberId};
+  @override
+  PrivacyBucketMember map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PrivacyBucketMember(
+      bucketId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bucket_id'],
+      )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      )!,
+    );
+  }
+
+  @override
+  $PrivacyBucketMembersTable createAlias(String alias) {
+    return $PrivacyBucketMembersTable(attachedDatabase, alias);
+  }
+}
+
+class PrivacyBucketMember extends DataClass
+    implements Insertable<PrivacyBucketMember> {
+  final String bucketId;
+  final String memberId;
+  const PrivacyBucketMember({required this.bucketId, required this.memberId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['bucket_id'] = Variable<String>(bucketId);
+    map['member_id'] = Variable<String>(memberId);
+    return map;
+  }
+
+  PrivacyBucketMembersCompanion toCompanion(bool nullToAbsent) {
+    return PrivacyBucketMembersCompanion(
+      bucketId: Value(bucketId),
+      memberId: Value(memberId),
+    );
+  }
+
+  factory PrivacyBucketMember.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PrivacyBucketMember(
+      bucketId: serializer.fromJson<String>(json['bucketId']),
+      memberId: serializer.fromJson<String>(json['memberId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'bucketId': serializer.toJson<String>(bucketId),
+      'memberId': serializer.toJson<String>(memberId),
+    };
+  }
+
+  PrivacyBucketMember copyWith({String? bucketId, String? memberId}) =>
+      PrivacyBucketMember(
+        bucketId: bucketId ?? this.bucketId,
+        memberId: memberId ?? this.memberId,
+      );
+  PrivacyBucketMember copyWithCompanion(PrivacyBucketMembersCompanion data) {
+    return PrivacyBucketMember(
+      bucketId: data.bucketId.present ? data.bucketId.value : this.bucketId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyBucketMember(')
+          ..write('bucketId: $bucketId, ')
+          ..write('memberId: $memberId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(bucketId, memberId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PrivacyBucketMember &&
+          other.bucketId == this.bucketId &&
+          other.memberId == this.memberId);
+}
+
+class PrivacyBucketMembersCompanion
+    extends UpdateCompanion<PrivacyBucketMember> {
+  final Value<String> bucketId;
+  final Value<String> memberId;
+  final Value<int> rowid;
+  const PrivacyBucketMembersCompanion({
+    this.bucketId = const Value.absent(),
+    this.memberId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PrivacyBucketMembersCompanion.insert({
+    required String bucketId,
+    required String memberId,
+    this.rowid = const Value.absent(),
+  }) : bucketId = Value(bucketId),
+       memberId = Value(memberId);
+  static Insertable<PrivacyBucketMember> custom({
+    Expression<String>? bucketId,
+    Expression<String>? memberId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (bucketId != null) 'bucket_id': bucketId,
+      if (memberId != null) 'member_id': memberId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PrivacyBucketMembersCompanion copyWith({
+    Value<String>? bucketId,
+    Value<String>? memberId,
+    Value<int>? rowid,
+  }) {
+    return PrivacyBucketMembersCompanion(
+      bucketId: bucketId ?? this.bucketId,
+      memberId: memberId ?? this.memberId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (bucketId.present) {
+      map['bucket_id'] = Variable<String>(bucketId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyBucketMembersCompanion(')
+          ..write('bucketId: $bucketId, ')
+          ..write('memberId: $memberId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13626,6 +14370,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NamedFrontsTable namedFronts = $NamedFrontsTable(this);
   late final $NamedFrontMembersTable namedFrontMembers =
       $NamedFrontMembersTable(this);
+  late final $PrivacyBucketsTable privacyBuckets = $PrivacyBucketsTable(this);
+  late final $PrivacyBucketMembersTable privacyBucketMembers =
+      $PrivacyBucketMembersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13659,6 +14406,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingActions,
     namedFronts,
     namedFrontMembers,
+    privacyBuckets,
+    privacyBucketMembers,
   ];
 }
 
@@ -13991,6 +14740,24 @@ final class $$PluralSystemsTableReferences
     ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_namedFrontsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PrivacyBucketsTable, List<PrivacyBucket>>
+  _privacyBucketsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.privacyBuckets,
+    aliasName: 'plural_systems__id__privacy_buckets__system_id',
+  );
+
+  $$PrivacyBucketsTableProcessedTableManager get privacyBucketsRefs {
+    final manager = $$PrivacyBucketsTableTableManager(
+      $_db,
+      $_db.privacyBuckets,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_privacyBucketsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -14433,6 +15200,31 @@ class $$PluralSystemsTableFilterComposer
           }) => $$NamedFrontsTableFilterComposer(
             $db: $db,
             $table: $db.namedFronts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> privacyBucketsRefs(
+    Expression<bool> Function($$PrivacyBucketsTableFilterComposer f) f,
+  ) {
+    final $$PrivacyBucketsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.privacyBuckets,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketsTableFilterComposer(
+            $db: $db,
+            $table: $db.privacyBuckets,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -14921,6 +15713,31 @@ class $$PluralSystemsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> privacyBucketsRefs<T extends Object>(
+    Expression<T> Function($$PrivacyBucketsTableAnnotationComposer a) f,
+  ) {
+    final $$PrivacyBucketsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.privacyBuckets,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.privacyBuckets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PluralSystemsTableTableManager
@@ -14953,6 +15770,7 @@ class $$PluralSystemsTableTableManager
             bool journalEntriesRefs,
             bool pendingActionsRefs,
             bool namedFrontsRefs,
+            bool privacyBucketsRefs,
           })
         > {
   $$PluralSystemsTableTableManager(_$AppDatabase db, $PluralSystemsTable table)
@@ -15032,6 +15850,7 @@ class $$PluralSystemsTableTableManager
                 journalEntriesRefs = false,
                 pendingActionsRefs = false,
                 namedFrontsRefs = false,
+                privacyBucketsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -15052,6 +15871,7 @@ class $$PluralSystemsTableTableManager
                     if (journalEntriesRefs) db.journalEntries,
                     if (pendingActionsRefs) db.pendingActions,
                     if (namedFrontsRefs) db.namedFronts,
+                    if (privacyBucketsRefs) db.privacyBuckets,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -15392,6 +16212,27 @@ class $$PluralSystemsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (privacyBucketsRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          PrivacyBucket
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._privacyBucketsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).privacyBucketsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -15429,6 +16270,7 @@ typedef $$PluralSystemsTableProcessedTableManager =
         bool journalEntriesRefs,
         bool pendingActionsRefs,
         bool namedFrontsRefs,
+        bool privacyBucketsRefs,
       })
     >;
 typedef $$SystemGroupsTableCreateCompanionBuilder =
@@ -16132,6 +16974,31 @@ final class $$MembersTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $PrivacyBucketMembersTable,
+    List<PrivacyBucketMember>
+  >
+  _privacyBucketMembersRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.privacyBucketMembers,
+        aliasName: 'members__id__privacy_bucket_members__member_id',
+      );
+
+  $$PrivacyBucketMembersTableProcessedTableManager
+  get privacyBucketMembersRefs {
+    final manager = $$PrivacyBucketMembersTableTableManager(
+      $_db,
+      $_db.privacyBucketMembers,
+    ).filter((f) => f.memberId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _privacyBucketMembersRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$MembersTableFilterComposer
@@ -16397,6 +17264,31 @@ class $$MembersTableFilterComposer
           }) => $$NamedFrontMembersTableFilterComposer(
             $db: $db,
             $table: $db.namedFrontMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> privacyBucketMembersRefs(
+    Expression<bool> Function($$PrivacyBucketMembersTableFilterComposer f) f,
+  ) {
+    final $$PrivacyBucketMembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.privacyBucketMembers,
+      getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketMembersTableFilterComposer(
+            $db: $db,
+            $table: $db.privacyBucketMembers,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16780,6 +17672,32 @@ class $$MembersTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> privacyBucketMembersRefs<T extends Object>(
+    Expression<T> Function($$PrivacyBucketMembersTableAnnotationComposer a) f,
+  ) {
+    final $$PrivacyBucketMembersTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.privacyBucketMembers,
+          getReferencedColumn: (t) => t.memberId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PrivacyBucketMembersTableAnnotationComposer(
+                $db: $db,
+                $table: $db.privacyBucketMembers,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$MembersTableTableManager
@@ -16803,6 +17721,7 @@ class $$MembersTableTableManager
             bool memberTagsRefs,
             bool journalEntriesRefs,
             bool namedFrontMembersRefs,
+            bool privacyBucketMembersRefs,
           })
         > {
   $$MembersTableTableManager(_$AppDatabase db, $MembersTable table)
@@ -16921,6 +17840,7 @@ class $$MembersTableTableManager
                 memberTagsRefs = false,
                 journalEntriesRefs = false,
                 namedFrontMembersRefs = false,
+                privacyBucketMembersRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -16931,6 +17851,7 @@ class $$MembersTableTableManager
                     if (memberTagsRefs) db.memberTags,
                     if (journalEntriesRefs) db.journalEntries,
                     if (namedFrontMembersRefs) db.namedFrontMembers,
+                    if (privacyBucketMembersRefs) db.privacyBucketMembers,
                   ],
                   addJoins:
                       <
@@ -17092,6 +18013,27 @@ class $$MembersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (privacyBucketMembersRefs)
+                        await $_getPrefetchedData<
+                          Member,
+                          $MembersTable,
+                          PrivacyBucketMember
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MembersTableReferences
+                              ._privacyBucketMembersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MembersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).privacyBucketMembersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.memberId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -17120,6 +18062,7 @@ typedef $$MembersTableProcessedTableManager =
         bool memberTagsRefs,
         bool journalEntriesRefs,
         bool namedFrontMembersRefs,
+        bool privacyBucketMembersRefs,
       })
     >;
 typedef $$GroupMembersTableCreateCompanionBuilder =
@@ -27697,6 +28640,860 @@ typedef $$NamedFrontMembersTableProcessedTableManager =
       NamedFrontMember,
       PrefetchHooks Function({bool namedFrontId, bool memberId})
     >;
+typedef $$PrivacyBucketsTableCreateCompanionBuilder =
+    PrivacyBucketsCompanion Function({
+      required String id,
+      required String systemId,
+      required String name,
+      Value<String?> description,
+      Value<String?> colorHex,
+      Value<int> position,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PrivacyBucketsTableUpdateCompanionBuilder =
+    PrivacyBucketsCompanion Function({
+      Value<String> id,
+      Value<String> systemId,
+      Value<String> name,
+      Value<String?> description,
+      Value<String?> colorHex,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$PrivacyBucketsTableReferences
+    extends BaseReferences<_$AppDatabase, $PrivacyBucketsTable, PrivacyBucket> {
+  $$PrivacyBucketsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) => db
+      .pluralSystems
+      .createAlias('privacy_buckets__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PrivacyBucketMembersTable,
+    List<PrivacyBucketMember>
+  >
+  _privacyBucketMembersRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.privacyBucketMembers,
+        aliasName: 'privacy_buckets__id__privacy_bucket_members__bucket_id',
+      );
+
+  $$PrivacyBucketMembersTableProcessedTableManager
+  get privacyBucketMembersRefs {
+    final manager = $$PrivacyBucketMembersTableTableManager(
+      $_db,
+      $_db.privacyBucketMembers,
+    ).filter((f) => f.bucketId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _privacyBucketMembersRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PrivacyBucketsTableFilterComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketsTable> {
+  $$PrivacyBucketsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> privacyBucketMembersRefs(
+    Expression<bool> Function($$PrivacyBucketMembersTableFilterComposer f) f,
+  ) {
+    final $$PrivacyBucketMembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.privacyBucketMembers,
+      getReferencedColumn: (t) => t.bucketId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketMembersTableFilterComposer(
+            $db: $db,
+            $table: $db.privacyBucketMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PrivacyBucketsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketsTable> {
+  $$PrivacyBucketsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PrivacyBucketsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketsTable> {
+  $$PrivacyBucketsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colorHex =>
+      $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> privacyBucketMembersRefs<T extends Object>(
+    Expression<T> Function($$PrivacyBucketMembersTableAnnotationComposer a) f,
+  ) {
+    final $$PrivacyBucketMembersTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.privacyBucketMembers,
+          getReferencedColumn: (t) => t.bucketId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PrivacyBucketMembersTableAnnotationComposer(
+                $db: $db,
+                $table: $db.privacyBucketMembers,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PrivacyBucketsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PrivacyBucketsTable,
+          PrivacyBucket,
+          $$PrivacyBucketsTableFilterComposer,
+          $$PrivacyBucketsTableOrderingComposer,
+          $$PrivacyBucketsTableAnnotationComposer,
+          $$PrivacyBucketsTableCreateCompanionBuilder,
+          $$PrivacyBucketsTableUpdateCompanionBuilder,
+          (PrivacyBucket, $$PrivacyBucketsTableReferences),
+          PrivacyBucket,
+          PrefetchHooks Function({bool systemId, bool privacyBucketMembersRefs})
+        > {
+  $$PrivacyBucketsTableTableManager(
+    _$AppDatabase db,
+    $PrivacyBucketsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PrivacyBucketsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PrivacyBucketsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PrivacyBucketsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivacyBucketsCompanion(
+                id: id,
+                systemId: systemId,
+                name: name,
+                description: description,
+                colorHex: colorHex,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String systemId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PrivacyBucketsCompanion.insert(
+                id: id,
+                systemId: systemId,
+                name: name,
+                description: description,
+                colorHex: colorHex,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PrivacyBucketsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({systemId = false, privacyBucketMembersRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (privacyBucketMembersRefs) db.privacyBucketMembers,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.systemId,
+                                    referencedTable:
+                                        $$PrivacyBucketsTableReferences
+                                            ._systemIdTable(db),
+                                    referencedColumn:
+                                        $$PrivacyBucketsTableReferences
+                                            ._systemIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (privacyBucketMembersRefs)
+                        await $_getPrefetchedData<
+                          PrivacyBucket,
+                          $PrivacyBucketsTable,
+                          PrivacyBucketMember
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PrivacyBucketsTableReferences
+                              ._privacyBucketMembersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PrivacyBucketsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).privacyBucketMembersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bucketId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PrivacyBucketsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PrivacyBucketsTable,
+      PrivacyBucket,
+      $$PrivacyBucketsTableFilterComposer,
+      $$PrivacyBucketsTableOrderingComposer,
+      $$PrivacyBucketsTableAnnotationComposer,
+      $$PrivacyBucketsTableCreateCompanionBuilder,
+      $$PrivacyBucketsTableUpdateCompanionBuilder,
+      (PrivacyBucket, $$PrivacyBucketsTableReferences),
+      PrivacyBucket,
+      PrefetchHooks Function({bool systemId, bool privacyBucketMembersRefs})
+    >;
+typedef $$PrivacyBucketMembersTableCreateCompanionBuilder =
+    PrivacyBucketMembersCompanion Function({
+      required String bucketId,
+      required String memberId,
+      Value<int> rowid,
+    });
+typedef $$PrivacyBucketMembersTableUpdateCompanionBuilder =
+    PrivacyBucketMembersCompanion Function({
+      Value<String> bucketId,
+      Value<String> memberId,
+      Value<int> rowid,
+    });
+
+final class $$PrivacyBucketMembersTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PrivacyBucketMembersTable,
+          PrivacyBucketMember
+        > {
+  $$PrivacyBucketMembersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PrivacyBucketsTable _bucketIdTable(_$AppDatabase db) => db
+      .privacyBuckets
+      .createAlias('privacy_bucket_members__bucket_id__privacy_buckets__id');
+
+  $$PrivacyBucketsTableProcessedTableManager get bucketId {
+    final $_column = $_itemColumn<String>('bucket_id')!;
+
+    final manager = $$PrivacyBucketsTableTableManager(
+      $_db,
+      $_db.privacyBuckets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bucketIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MembersTable _memberIdTable(_$AppDatabase db) =>
+      db.members.createAlias('privacy_bucket_members__member_id__members__id');
+
+  $$MembersTableProcessedTableManager get memberId {
+    final $_column = $_itemColumn<String>('member_id')!;
+
+    final manager = $$MembersTableTableManager(
+      $_db,
+      $_db.members,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_memberIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PrivacyBucketMembersTableFilterComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketMembersTable> {
+  $$PrivacyBucketMembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$PrivacyBucketsTableFilterComposer get bucketId {
+    final $$PrivacyBucketsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bucketId,
+      referencedTable: $db.privacyBuckets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketsTableFilterComposer(
+            $db: $db,
+            $table: $db.privacyBuckets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableFilterComposer get memberId {
+    final $$MembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableFilterComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PrivacyBucketMembersTableOrderingComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketMembersTable> {
+  $$PrivacyBucketMembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$PrivacyBucketsTableOrderingComposer get bucketId {
+    final $$PrivacyBucketsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bucketId,
+      referencedTable: $db.privacyBuckets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketsTableOrderingComposer(
+            $db: $db,
+            $table: $db.privacyBuckets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableOrderingComposer get memberId {
+    final $$MembersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableOrderingComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PrivacyBucketMembersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PrivacyBucketMembersTable> {
+  $$PrivacyBucketMembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$PrivacyBucketsTableAnnotationComposer get bucketId {
+    final $$PrivacyBucketsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bucketId,
+      referencedTable: $db.privacyBuckets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PrivacyBucketsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.privacyBuckets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableAnnotationComposer get memberId {
+    final $$MembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PrivacyBucketMembersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PrivacyBucketMembersTable,
+          PrivacyBucketMember,
+          $$PrivacyBucketMembersTableFilterComposer,
+          $$PrivacyBucketMembersTableOrderingComposer,
+          $$PrivacyBucketMembersTableAnnotationComposer,
+          $$PrivacyBucketMembersTableCreateCompanionBuilder,
+          $$PrivacyBucketMembersTableUpdateCompanionBuilder,
+          (PrivacyBucketMember, $$PrivacyBucketMembersTableReferences),
+          PrivacyBucketMember,
+          PrefetchHooks Function({bool bucketId, bool memberId})
+        > {
+  $$PrivacyBucketMembersTableTableManager(
+    _$AppDatabase db,
+    $PrivacyBucketMembersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PrivacyBucketMembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PrivacyBucketMembersTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PrivacyBucketMembersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> bucketId = const Value.absent(),
+                Value<String> memberId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivacyBucketMembersCompanion(
+                bucketId: bucketId,
+                memberId: memberId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String bucketId,
+                required String memberId,
+                Value<int> rowid = const Value.absent(),
+              }) => PrivacyBucketMembersCompanion.insert(
+                bucketId: bucketId,
+                memberId: memberId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PrivacyBucketMembersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bucketId = false, memberId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bucketId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bucketId,
+                                referencedTable:
+                                    $$PrivacyBucketMembersTableReferences
+                                        ._bucketIdTable(db),
+                                referencedColumn:
+                                    $$PrivacyBucketMembersTableReferences
+                                        ._bucketIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (memberId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.memberId,
+                                referencedTable:
+                                    $$PrivacyBucketMembersTableReferences
+                                        ._memberIdTable(db),
+                                referencedColumn:
+                                    $$PrivacyBucketMembersTableReferences
+                                        ._memberIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PrivacyBucketMembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PrivacyBucketMembersTable,
+      PrivacyBucketMember,
+      $$PrivacyBucketMembersTableFilterComposer,
+      $$PrivacyBucketMembersTableOrderingComposer,
+      $$PrivacyBucketMembersTableAnnotationComposer,
+      $$PrivacyBucketMembersTableCreateCompanionBuilder,
+      $$PrivacyBucketMembersTableUpdateCompanionBuilder,
+      (PrivacyBucketMember, $$PrivacyBucketMembersTableReferences),
+      PrivacyBucketMember,
+      PrefetchHooks Function({bool bucketId, bool memberId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -27759,4 +29556,8 @@ class $AppDatabaseManager {
       $$NamedFrontsTableTableManager(_db, _db.namedFronts);
   $$NamedFrontMembersTableTableManager get namedFrontMembers =>
       $$NamedFrontMembersTableTableManager(_db, _db.namedFrontMembers);
+  $$PrivacyBucketsTableTableManager get privacyBuckets =>
+      $$PrivacyBucketsTableTableManager(_db, _db.privacyBuckets);
+  $$PrivacyBucketMembersTableTableManager get privacyBucketMembers =>
+      $$PrivacyBucketMembersTableTableManager(_db, _db.privacyBucketMembers);
 }

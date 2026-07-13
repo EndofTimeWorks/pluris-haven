@@ -868,8 +868,20 @@ void main() {
     expect(find.text('A local system profile.'), findsOneWidget);
 
     await openDrawerSection(tester, 'Privacy buckets');
-    expect(find.text('Private'), findsOneWidget);
+    expect(find.text('No privacy buckets'), findsOneWidget);
     expect(find.text('Custom fields privacy'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('add-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('privacy-bucket-name-field')),
+      'Trusted',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-privacy-bucket-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Trusted'), findsOneWidget);
 
     await openDrawerSection(tester, 'Tokens');
     expect(find.text('PluralKit live import'), findsOneWidget);
@@ -2166,6 +2178,11 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _emitGroups(),
     );
+    _privacyBucketsController =
+        StreamController<List<PrivacyBucketSummary>>.broadcast(
+          sync: true,
+          onListen: () => _privacyBucketsController.add(_privacyBuckets),
+        );
     _notesController = StreamController<List<NoteSummary>>.broadcast(
       sync: true,
       onListen: () => _notesController.add(_notes),
@@ -2231,6 +2248,7 @@ class FakeHavenRepository implements HavenRepository {
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
   List<GroupSummary> _groups = const [];
+  List<PrivacyBucketSummary> _privacyBuckets = const [];
   List<NoteSummary> _notes = const [];
   List<MessageSummary> _messages = const [];
   List<ReminderSummary> _reminders = const [];
@@ -2252,6 +2270,8 @@ class FakeHavenRepository implements HavenRepository {
   late final StreamController<List<MemberSummary>>
   _currentFrontMembersController;
   late final StreamController<List<GroupSummary>> _groupsController;
+  late final StreamController<List<PrivacyBucketSummary>>
+  _privacyBucketsController;
   late final StreamController<List<NoteSummary>> _notesController;
   late final StreamController<List<MessageSummary>> _messagesController;
   late final StreamController<List<ReminderSummary>> _remindersController;
@@ -2305,6 +2325,11 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<GroupSummary>> watchGroups() {
     return _groupsController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets() {
+    return _privacyBucketsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -2750,6 +2775,49 @@ class FakeHavenRepository implements HavenRepository {
     ];
     _emitGroups();
     _emitSnapshot(groupCount: _groups.length);
+  }
+
+  @override
+  Future<void> savePrivacyBucket(PrivacyBucketDraft draft) async {
+    final bucket = PrivacyBucketSummary(
+      id: 'privacy-bucket-${_privacyBuckets.length + 1}',
+      name: draft.name.trim(),
+      description: draft.description,
+      colorHex: draft.colorHex,
+      memberIds: List.unmodifiable(draft.memberIds),
+    );
+    _privacyBuckets = [..._privacyBuckets, bucket];
+    _privacyBucketsController.add(_privacyBuckets);
+  }
+
+  @override
+  Future<void> updatePrivacyBucket(
+    String bucketId,
+    PrivacyBucketDraft draft,
+  ) async {
+    _privacyBuckets = [
+      for (final bucket in _privacyBuckets)
+        if (bucket.id == bucketId)
+          PrivacyBucketSummary(
+            id: bucketId,
+            name: draft.name.trim(),
+            description: draft.description,
+            colorHex: draft.colorHex,
+            memberIds: List.unmodifiable(draft.memberIds),
+          )
+        else
+          bucket,
+    ];
+    _privacyBucketsController.add(_privacyBuckets);
+  }
+
+  @override
+  Future<void> deletePrivacyBucket(String bucketId) async {
+    _privacyBuckets = [
+      for (final bucket in _privacyBuckets)
+        if (bucket.id != bucketId) bucket,
+    ];
+    _privacyBucketsController.add(_privacyBuckets);
   }
 
   @override
@@ -3619,6 +3687,7 @@ class FakeHavenRepository implements HavenRepository {
     await _membersController.close();
     await _currentFrontMembersController.close();
     await _groupsController.close();
+    await _privacyBucketsController.close();
     await _notesController.close();
     await _messagesController.close();
     await _remindersController.close();

@@ -381,6 +381,28 @@ class NamedFrontMembers extends Table {
   Set<Column<Object>> get primaryKey => {namedFrontId, memberId};
 }
 
+class PrivacyBuckets extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get colorHex => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class PrivacyBucketMembers extends Table {
+  TextColumn get bucketId => text().references(PrivacyBuckets, #id)();
+  TextColumn get memberId => text().references(Members, #id)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {bucketId, memberId};
+}
+
 @DriftDatabase(
   tables: [
     PluralSystems,
@@ -411,13 +433,15 @@ class NamedFrontMembers extends Table {
     PendingActions,
     NamedFronts,
     NamedFrontMembers,
+    PrivacyBuckets,
+    PrivacyBucketMembers,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -504,6 +528,10 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(pluralSystems, pluralSystems.colorHex);
         await migrator.addColumn(pluralSystems, pluralSystems.avatarUrl);
         await migrator.addColumn(pluralSystems, pluralSystems.description);
+      }
+      if (from < 15) {
+        await migrator.createTable(privacyBuckets);
+        await migrator.createTable(privacyBucketMembers);
       }
     },
     beforeOpen: (details) async {

@@ -217,7 +217,10 @@ class _HomePageState extends State<HomePage> {
               _selectSection(SpSection.notificationHistory),
         );
       case SpSection.privacyBuckets:
-        return LocalPrivacyPage(onSelect: _selectSection);
+        return LocalPrivacyPage(
+          repository: widget.repository,
+          onSelect: _selectSection,
+        );
       case SpSection.tokens:
         return LocalTokensPage(onSelect: _selectSection);
       case SpSection.userReport:

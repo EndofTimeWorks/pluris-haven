@@ -137,6 +137,43 @@ void main() {
     expect(snapshot.memberCount, 0);
   });
 
+  test('stores edits assigns and deletes privacy buckets', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    final member = (await repository.watchMembers().first).single;
+
+    await repository.savePrivacyBucket(
+      PrivacyBucketDraft(
+        name: 'Trusted',
+        description: 'People we trust',
+        colorHex: '#12AB34',
+        memberIds: [member.id],
+      ),
+    );
+    var buckets = await repository.watchPrivacyBuckets().first;
+    expect(buckets, hasLength(1));
+    expect(buckets.single.memberIds, [member.id]);
+
+    await repository.updatePrivacyBucket(
+      buckets.single.id,
+      const PrivacyBucketDraft(name: 'Close friends', colorHex: '#ABCDEF'),
+    );
+    buckets = await repository.watchPrivacyBuckets().first;
+    expect(buckets.single.name, 'Close friends');
+    expect(buckets.single.memberIds, isEmpty);
+
+    final archive =
+        jsonDecode(await repository.buildLocalArchiveJson())
+            as Map<String, Object?>;
+    expect(archive['privacy_buckets'], isA<List<Object?>>());
+
+    await repository.deletePrivacyBucket(buckets.single.id);
+    expect(await repository.watchPrivacyBuckets().first, isEmpty);
+  });
+
   test('stores groups in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -478,6 +515,8 @@ void main() {
       'poll_vote_events': 'poll_vote_events',
       'named_fronts': 'named_fronts',
       'named_front_members': 'named_front_members',
+      'privacy_buckets': 'privacy_buckets',
+      'privacy_bucket_members': 'privacy_bucket_members',
     };
     const intentionallyLocalOnlyTables = {'background_jobs', 'pending_actions'};
 
