@@ -1400,6 +1400,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sage').last);
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('message-board-kind-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Member board').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('message-board-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sage').last);
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('message-body-field')),
       'Check in after dinner.',
@@ -1410,6 +1418,8 @@ void main() {
     expect(find.text('Check in after dinner.'), findsOneWidget);
     expect(find.textContaining('Sage -'), findsOneWidget);
     expect(repository._messages.single.memberId, 'fake-member-1');
+    expect(repository._messages.single.boardKind, 'member');
+    expect(repository._messages.single.boardMemberId, 'fake-member-1');
 
     await tester.enterText(find.byType(TextField).first, 'sage');
     await tester.pumpAndSettle();
@@ -1429,7 +1439,9 @@ void main() {
     expect(find.text('Check in after dinner. Bring water.'), findsOneWidget);
     expect(repository._messages.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Delete message'));
+    await tester.tap(find.byTooltip('Message actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -3009,6 +3021,9 @@ class FakeHavenRepository implements HavenRepository {
         id: 'fake-message-${_messages.length + 1}',
         body: body,
         memberId: _nullIfBlank(draft.memberId),
+        boardKind: draft.boardKind,
+        boardMemberId: draft.boardMemberId,
+        parentMessageId: draft.parentMessageId,
         createdAt: DateTime(2026),
       ),
       ..._messages,
@@ -3030,6 +3045,9 @@ class FakeHavenRepository implements HavenRepository {
             id: message.id,
             body: body,
             memberId: _nullIfBlank(draft.memberId),
+            boardKind: draft.boardKind,
+            boardMemberId: draft.boardMemberId,
+            parentMessageId: draft.parentMessageId,
             createdAt: message.createdAt,
             archived: message.archived,
           )
