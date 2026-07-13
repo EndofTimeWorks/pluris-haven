@@ -67,6 +67,36 @@ class BackgroundJobSummary {
   bool get isActive => status == 'queued' || status == 'running';
 }
 
+class PrivacyBucketSummary {
+  const PrivacyBucketSummary({
+    required this.id,
+    required this.name,
+    this.description,
+    this.colorHex,
+    this.memberIds = const [],
+  });
+
+  final String id;
+  final String name;
+  final String? description;
+  final String? colorHex;
+  final List<String> memberIds;
+}
+
+class PrivacyBucketDraft {
+  const PrivacyBucketDraft({
+    required this.name,
+    this.description,
+    this.colorHex,
+    this.memberIds = const [],
+  });
+
+  final String name;
+  final String? description;
+  final String? colorHex;
+  final List<String> memberIds;
+}
+
 class RestoreRehearsalSummary {
   const RestoreRehearsalSummary({
     required this.canRestore,
@@ -637,6 +667,8 @@ abstract interface class HavenRepository {
 
   Stream<List<NotificationEventSummary>> watchNotificationEvents();
 
+  Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets();
+
   Stream<List<FrontHistoryEntry>> watchFrontHistory();
 
   Stream<AppCustomization> watchCustomization();
@@ -734,6 +766,12 @@ abstract interface class HavenRepository {
   Future<void> closePoll(String pollId);
 
   Future<void> deletePoll(String pollId);
+
+  Future<void> savePrivacyBucket(PrivacyBucketDraft draft);
+
+  Future<void> updatePrivacyBucket(String bucketId, PrivacyBucketDraft draft);
+
+  Future<void> deletePrivacyBucket(String bucketId);
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
@@ -1177,6 +1215,41 @@ ORDER BY LOWER(g.name) ASC
                 emoji: row.data['emoji'] as String?,
                 isSubsystem: (row.data['is_subsystem'] as int?) == 1,
                 memberCount: row.data['member_count'] as int,
+              ),
+          ],
+        );
+  }
+
+  @override
+  Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets() {
+    return database
+        .customSelect(
+          '''
+SELECT
+  pb.id,
+  pb.name,
+  pb.description,
+  pb.color_hex,
+  GROUP_CONCAT(pbm.member_id) AS member_ids
+FROM privacy_buckets pb
+LEFT JOIN privacy_bucket_members pbm ON pbm.bucket_id = pb.id
+WHERE pb.system_id = ?
+GROUP BY pb.id, pb.name, pb.description, pb.color_hex, pb.position
+ORDER BY pb.position ASC, LOWER(pb.name) ASC
+''',
+          variables: [Variable<String>(localSystemId)],
+          readsFrom: {database.privacyBuckets, database.privacyBucketMembers},
+        )
+        .watch()
+        .map(
+          (rows) => [
+            for (final row in rows)
+              PrivacyBucketSummary(
+                id: row.read<String>('id'),
+                name: row.read<String>('name'),
+                description: row.readNullable<String>('description'),
+                colorHex: row.readNullable<String>('color_hex'),
+                memberIds: _splitJoinedIds(row.data['member_ids']),
               ),
           ],
         );
@@ -2152,6 +2225,98 @@ SELECT
   }
 
   @override
+  Future<void> savePrivacyBucket(PrivacyBucketDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    final now = DateTime.now().toUtc();
+    final bucketId = 'privacy-bucket-${now.microsecondsSinceEpoch}';
+    await database.transaction(() async {
+      final positionExpression = database.privacyBuckets.position.max();
+      final maxPosition =
+          await (database.selectOnly(database.privacyBuckets)
+                ..addColumns([positionExpression])
+                ..where(database.privacyBuckets.systemId.equals(localSystemId)))
+              .map((row) => row.read(positionExpression))
+              .getSingle();
+      await database
+          .into(database.privacyBuckets)
+          .insert(
+            PrivacyBucketsCompanion.insert(
+              id: bucketId,
+              systemId: localSystemId,
+              name: name,
+              description: Value(_nullIfBlank(draft.description)),
+              colorHex: Value(_normalizeHexColor(draft.colorHex)),
+              position: Value((maxPosition ?? -1) + 1),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await _replacePrivacyBucketMembers(bucketId, draft.memberIds);
+    });
+  }
+
+  @override
+  Future<void> updatePrivacyBucket(
+    String bucketId,
+    PrivacyBucketDraft draft,
+  ) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    await database.transaction(() async {
+      await (database.update(database.privacyBuckets)..where(
+            (bucket) =>
+                bucket.id.equals(bucketId) &
+                bucket.systemId.equals(localSystemId),
+          ))
+          .write(
+            PrivacyBucketsCompanion(
+              name: Value(name),
+              description: Value(_nullIfBlank(draft.description)),
+              colorHex: Value(_normalizeHexColor(draft.colorHex)),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+      await _replacePrivacyBucketMembers(bucketId, draft.memberIds);
+    });
+  }
+
+  Future<void> _replacePrivacyBucketMembers(
+    String bucketId,
+    List<String> memberIds,
+  ) async {
+    await (database.delete(
+      database.privacyBucketMembers,
+    )..where((link) => link.bucketId.equals(bucketId))).go();
+    for (final memberId in memberIds.toSet()) {
+      await database
+          .into(database.privacyBucketMembers)
+          .insert(
+            PrivacyBucketMembersCompanion.insert(
+              bucketId: bucketId,
+              memberId: memberId,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+    }
+  }
+
+  @override
+  Future<void> deletePrivacyBucket(String bucketId) async {
+    await database.transaction(() async {
+      await (database.delete(
+        database.privacyBucketMembers,
+      )..where((link) => link.bucketId.equals(bucketId))).go();
+      await (database.delete(database.privacyBuckets)..where(
+            (bucket) =>
+                bucket.id.equals(bucketId) &
+                bucket.systemId.equals(localSystemId),
+          ))
+          .go();
+    });
+  }
+
+  @override
   Future<void> saveCustomField(CustomFieldDraft draft) async {
     final name = draft.name.trim();
     if (name.isEmpty) {
@@ -2769,6 +2934,13 @@ SELECT
     final namedFrontMembers = await database
         .select(database.namedFrontMembers)
         .get();
+    final privacyBuckets = await (database.select(
+      database.privacyBuckets,
+    )..where((bucket) => bucket.systemId.equals(localSystemId))).get();
+    final privacyBucketIds = privacyBuckets.map((bucket) => bucket.id).toSet();
+    final privacyBucketMembers = await database
+        .select(database.privacyBucketMembers)
+        .get();
     final importRecords = await (database.select(
       database.importRecords,
     )..where((record) => record.systemId.equals(localSystemId))).get();
@@ -2858,6 +3030,15 @@ SELECT
         for (final link in namedFrontMembers)
           if (namedFrontIds.contains(link.namedFrontId))
             _namedFrontMemberToJson(link),
+      ],
+      'privacy_buckets': [
+        for (final bucket in privacyBuckets) _privacyBucketToJson(bucket),
+      ],
+      'privacy_bucket_members': [
+        for (final link in privacyBucketMembers)
+          if (privacyBucketIds.contains(link.bucketId) &&
+              memberIds.contains(link.memberId))
+            _privacyBucketMemberToJson(link),
       ],
       'avatar_assets': avatarAssets,
       'import_records': [
@@ -2973,6 +3154,10 @@ SELECT
     final namedFrontMembers = await database
         .select(database.namedFrontMembers)
         .get();
+    final privacyBuckets = await database.select(database.privacyBuckets).get();
+    final privacyBucketMembers = await database
+        .select(database.privacyBucketMembers)
+        .get();
     final importRecords = await database.select(database.importRecords).get();
     final rawPayloads = await database.select(database.importPayloads).get();
     final notificationEvents = await database
@@ -3007,6 +3192,8 @@ SELECT
       'front_audit_events': frontAuditEvents.length,
       'named_fronts': namedFronts.length,
       'named_front_members': namedFrontMembers.length,
+      'privacy_buckets': privacyBuckets.length,
+      'privacy_bucket_members': privacyBucketMembers.length,
       'import_records': importRecords.length,
       'raw_payloads': rawPayloads.length,
       'notification_events': notificationEvents.length,
@@ -3204,6 +3391,10 @@ SELECT
     final frontAuditEvents = _jsonObjectList(decoded['front_audit_events']);
     final namedFronts = _jsonObjectList(decoded['named_fronts']);
     final namedFrontMembers = _jsonObjectList(decoded['named_front_members']);
+    final privacyBuckets = _jsonObjectList(decoded['privacy_buckets']);
+    final privacyBucketMembers = _jsonObjectList(
+      decoded['privacy_bucket_members'],
+    );
     final avatarAssets = _jsonObjectList(decoded['avatar_assets']);
     final rawPayloads = _jsonObjectList(decoded['raw_payloads']);
     final notificationEvents = _jsonObjectList(decoded['notification_events']);
@@ -3348,6 +3539,12 @@ SELECT
       for (final link in namedFrontMembers) {
         await _importNamedFrontMember(link);
       }
+      for (final bucket in privacyBuckets) {
+        await _importPrivacyBucket(bucket, strategy, now);
+      }
+      for (final link in privacyBucketMembers) {
+        await _importPrivacyBucketMember(link);
+      }
       for (final event in notificationEvents) {
         await _importNotificationEvent(event, strategy, now);
       }
@@ -3390,6 +3587,8 @@ SELECT
                   'front_audit_events': frontAuditEvents.length,
                   'named_fronts': namedFronts.length,
                   'named_front_members': namedFrontMembers.length,
+                  'privacy_buckets': privacyBuckets.length,
+                  'privacy_bucket_members': privacyBucketMembers.length,
                   'avatar_assets': avatarAssets.length,
                   'raw_payloads': rawPayloads.length,
                   'notification_events': notificationEvents.length,
@@ -4289,6 +4488,38 @@ SELECT
         );
   }
 
+  Future<void> _importPrivacyBucket(
+    Map<String, Object?> bucket,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) {
+    final companion = PrivacyBucketsCompanion.insert(
+      id: _requiredString(bucket, 'id'),
+      systemId: localSystemId,
+      name: _requiredString(bucket, 'name'),
+      description: Value(_stringValue(bucket['description'])),
+      colorHex: Value(_normalizeHexColor(_stringValue(bucket['color_hex']))),
+      position: Value(_intValue(bucket['position']) ?? 0),
+      createdAt: _dateValue(bucket['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(bucket['updated_at']) ?? now),
+    );
+    return _insertArchiveRow(database.privacyBuckets, companion, strategy);
+  }
+
+  Future<void> _importPrivacyBucketMember(Map<String, Object?> link) {
+    return database
+        .into(database.privacyBucketMembers)
+        .insert(
+          PrivacyBucketMembersCompanion.insert(
+            bucketId: _requiredString(link, 'bucket_id'),
+            memberId: _requiredString(link, 'member_id'),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
   Future<void> _importNotificationEvent(
     Map<String, Object?> event,
     ImportConflictStrategy strategy,
@@ -5068,6 +5299,21 @@ SELECT
 
   Map<String, Object?> _namedFrontMemberToJson(NamedFrontMember link) => {
     'named_front_id': link.namedFrontId,
+    'member_id': link.memberId,
+  };
+
+  Map<String, Object?> _privacyBucketToJson(PrivacyBucket bucket) => {
+    'id': bucket.id,
+    'name': bucket.name,
+    'description': bucket.description,
+    'color_hex': bucket.colorHex,
+    'position': bucket.position,
+    'created_at': bucket.createdAt.toIso8601String(),
+    'updated_at': bucket.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _privacyBucketMemberToJson(PrivacyBucketMember link) => {
+    'bucket_id': link.bucketId,
     'member_id': link.memberId,
   };
 
