@@ -168,6 +168,8 @@ class _ExternalArchiveNormalizer {
     'front_audit_events': const [],
     'named_fronts': namedFronts,
     'named_front_members': namedFrontMembers,
+    'privacy_buckets': const [],
+    'privacy_bucket_members': const [],
     'avatar_assets': _avatarAssetsToJson(),
     'raw_payloads': rawPayloads,
     'import_records': const [],
@@ -2097,6 +2099,8 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'front_audit_events': _listCount(archive['front_audit_events']),
   'named_fronts': _listCount(archive['named_fronts']),
   'named_front_members': _listCount(archive['named_front_members']),
+  'privacy_buckets': _listCount(archive['privacy_buckets']),
+  'privacy_bucket_members': _listCount(archive['privacy_bucket_members']),
   'avatar_refs':
       _avatarRefCount(archive['members']) +
       _avatarRefCount(archive['named_fronts']),
