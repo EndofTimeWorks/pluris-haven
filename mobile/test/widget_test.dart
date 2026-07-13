@@ -844,6 +844,29 @@ void main() {
     expect(find.text('Cloud account'), findsOneWidget);
     expect(find.text('Field encryption'), findsOneWidget);
 
+    await tester.tap(find.byTooltip('Edit system profile'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('system-name-field')),
+      'Night Garden',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('system-color-field')),
+      '#12AB34',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Description'),
+      'A local system profile.',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-system-profile-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-system-profile-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Night Garden'), findsOneWidget);
+    expect(find.text('A local system profile.'), findsOneWidget);
+
     await openDrawerSection(tester, 'Privacy buckets');
     expect(find.text('Private'), findsOneWidget);
     expect(find.text('Custom fields privacy'), findsOneWidget);
@@ -2411,6 +2434,22 @@ class FakeHavenRepository implements HavenRepository {
   Future<void> setLanguageCode(String languageCode) async {
     _customization = _customization.copyWith(languageCode: languageCode);
     _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> updateSystemProfile(SystemProfileDraft draft) async {
+    _snapshot = HomeSnapshot(
+      systemName: draft.name.trim(),
+      memberCount: _snapshot.memberCount,
+      groupCount: _snapshot.groupCount,
+      noteCount: _snapshot.noteCount,
+      frontHistoryCount: _snapshot.frontHistoryCount,
+      currentFrontLabel: _snapshot.currentFrontLabel,
+      systemColorHex: draft.colorHex,
+      systemAvatarUrl: draft.avatarUrl,
+      systemDescription: draft.description,
+    );
+    _controller.add(_snapshot);
   }
 
   @override

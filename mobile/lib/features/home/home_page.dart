@@ -232,7 +232,11 @@ class _HomePageState extends State<HomePage> {
           onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.accountSettings:
-        return AccountSettingsPage(snapshot: home, onSelect: _selectSection);
+        return AccountSettingsPage(
+          snapshot: home,
+          repository: widget.repository,
+          onSelect: _selectSection,
+        );
       case SpSection.importExport:
         return ImportExportPage(repository: widget.repository);
       case SpSection.sync:
