@@ -489,6 +489,7 @@ class FrontHistoryEntry {
     this.statusNote,
     required this.startedAt,
     this.endedAt,
+    this.memberIds = const [],
   });
 
   final String id;
@@ -496,8 +497,25 @@ class FrontHistoryEntry {
   final String? statusNote;
   final DateTime startedAt;
   final DateTime? endedAt;
+  final List<String> memberIds;
 
   bool get isActive => endedAt == null;
+}
+
+class FrontHistoryDraft {
+  const FrontHistoryDraft({
+    required this.startedAt,
+    required this.endedAt,
+    this.memberIds = const [],
+    this.label,
+    this.statusNote,
+  });
+
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final List<String> memberIds;
+  final String? label;
+  final String? statusNote;
 }
 
 enum HavenThemeMode {
@@ -735,6 +753,10 @@ abstract interface class HavenRepository {
   Future<void> setFrontMembers(List<String> memberIds);
 
   Future<void> updateFrontStatusNote(String frontId, String? statusNote);
+
+  Future<void> saveFrontHistoryEntry(FrontHistoryDraft draft);
+
+  Future<void> updateFrontHistoryEntry(String frontId, FrontHistoryDraft draft);
 
   Future<void> deleteFrontSession(String frontId);
 
@@ -1451,6 +1473,9 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
   ) async {
     final entries = <FrontHistoryEntry>[];
     for (final row in rows) {
+      final links = await (database.select(
+        database.frontSessionMembers,
+      )..where((link) => link.sessionId.equals(row.id))).get();
       entries.add(
         FrontHistoryEntry(
           id: row.id,
@@ -1458,6 +1483,7 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
           statusNote: row.statusNote,
           startedAt: row.startedAt,
           endedAt: row.endedAt,
+          memberIds: [for (final link in links) link.memberId],
         ),
       );
     }
@@ -2113,6 +2139,91 @@ SELECT
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+  }
+
+  @override
+  Future<void> saveFrontHistoryEntry(FrontHistoryDraft draft) async {
+    final now = DateTime.now().toUtc();
+    final id = 'front-${now.microsecondsSinceEpoch}';
+    await _writeFrontHistoryEntry(id, draft, now, create: true);
+  }
+
+  @override
+  Future<void> updateFrontHistoryEntry(
+    String frontId,
+    FrontHistoryDraft draft,
+  ) {
+    return _writeFrontHistoryEntry(
+      frontId,
+      draft,
+      DateTime.now().toUtc(),
+      create: false,
+    );
+  }
+
+  Future<void> _writeFrontHistoryEntry(
+    String frontId,
+    FrontHistoryDraft draft,
+    DateTime now, {
+    required bool create,
+  }) async {
+    final startedAt = draft.startedAt.toUtc();
+    final endedAt = draft.endedAt.toUtc();
+    if (endedAt.isBefore(startedAt)) {
+      throw const FormatException('Front end cannot be before its start.');
+    }
+    final memberIds = draft.memberIds.toSet().toList(growable: false);
+    final label = _nullIfBlank(draft.label);
+    if (memberIds.isEmpty && label == null) {
+      throw const FormatException('Choose members or enter a front label.');
+    }
+    await database.transaction(() async {
+      if (create) {
+        await database
+            .into(database.frontSessions)
+            .insert(
+              FrontSessionsCompanion.insert(
+                id: frontId,
+                systemId: localSystemId,
+                label: Value(memberIds.isEmpty ? label : null),
+                statusNote: Value(_nullIfBlank(draft.statusNote)),
+                startedAt: startedAt,
+                endedAt: Value(endedAt),
+                createdAt: now,
+                updatedAt: now,
+              ),
+            );
+      } else {
+        await (database.update(database.frontSessions)..where(
+              (front) =>
+                  front.id.equals(frontId) &
+                  front.systemId.equals(localSystemId),
+            ))
+            .write(
+              FrontSessionsCompanion(
+                label: Value(memberIds.isEmpty ? label : null),
+                statusNote: Value(_nullIfBlank(draft.statusNote)),
+                startedAt: Value(startedAt),
+                endedAt: Value(endedAt),
+                updatedAt: Value(now),
+              ),
+            );
+        await (database.delete(
+          database.frontSessionMembers,
+        )..where((link) => link.sessionId.equals(frontId))).go();
+      }
+      for (final memberId in memberIds) {
+        await database
+            .into(database.frontSessionMembers)
+            .insert(
+              FrontSessionMembersCompanion.insert(
+                sessionId: frontId,
+                memberId: memberId,
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      }
+    });
   }
 
   @override

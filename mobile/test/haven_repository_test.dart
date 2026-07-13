@@ -44,6 +44,43 @@ void main() {
     expect(history.single.isActive, isFalse);
   });
 
+  test('creates and edits historical front intervals', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = LocalHavenRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final member = (await repository.watchMembers().first).single;
+    final started = DateTime.utc(2026, 1, 1, 10);
+    final ended = DateTime.utc(2026, 1, 1, 11);
+
+    await repository.saveFrontHistoryEntry(
+      FrontHistoryDraft(
+        startedAt: started,
+        endedAt: ended,
+        memberIds: [member.id],
+        statusNote: 'Morning',
+      ),
+    );
+    var history = await repository.watchFrontHistory().first;
+    expect(history.single.label, 'River');
+    expect(history.single.memberIds, [member.id]);
+    expect(history.single.endedAt?.toUtc(), ended);
+
+    await repository.updateFrontHistoryEntry(
+      history.single.id,
+      FrontHistoryDraft(
+        startedAt: started,
+        endedAt: ended.add(const Duration(hours: 1)),
+        label: 'Blurry',
+      ),
+    );
+    history = await repository.watchFrontHistory().first;
+    expect(history.single.label, 'Blurry');
+    expect(history.single.memberIds, isEmpty);
+    expect(history.single.endedAt?.toUtc(), DateTime.utc(2026, 1, 1, 12));
+  });
+
   test('stores app customization in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
