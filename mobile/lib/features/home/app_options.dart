@@ -71,6 +71,18 @@ class AppOptionsPage extends StatelessWidget {
               onChanged: repository.setReducedMotion,
             ),
             SpSwitchRow(
+              title: 'Fronting notification',
+              subtitle: 'keep the current front visible in Android status',
+              value: customization.frontStatusNotification,
+              onChanged: (enabled) async {
+                await repository.setFrontStatusNotification(enabled);
+                if (!enabled) {
+                  await NotificationService.instance
+                      .cancelFrontStatusNotification();
+                }
+              },
+            ),
+            SpSwitchRow(
               title: 'High contrast',
               subtitle: 'stronger text and clearer borders',
               value: customization.highContrast,
