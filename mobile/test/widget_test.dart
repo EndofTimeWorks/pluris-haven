@@ -153,6 +153,43 @@ void main() {
     expect(find.text('No front history yet'), findsOneWidget);
   });
 
+  testWidgets('adds a completed front history interval', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add entry'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-label-field')),
+      'Blurry',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-note-field')),
+      'Retrospective entry',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-front-history-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-front-history-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Blurry'), findsOneWidget);
+    expect(find.text('Retrospective entry'), findsOneWidget);
+    expect(repository._frontHistory.single.isActive, isFalse);
+  });
+
   testWidgets('saves applies and deletes custom and named fronts', (
     tester,
   ) async {
@@ -2697,11 +2734,61 @@ class FakeHavenRepository implements HavenRepository {
             statusNote: normalized,
             startedAt: entry.startedAt,
             endedAt: entry.endedAt,
+            memberIds: entry.memberIds,
           )
         else
           entry,
     ];
     _frontHistoryController.add(_frontHistory);
+  }
+
+  @override
+  Future<void> saveFrontHistoryEntry(FrontHistoryDraft draft) async {
+    _frontHistory = [
+      FrontHistoryEntry(
+        id: 'fake-front-${_frontHistory.length + 1}',
+        label: _frontDraftLabel(draft),
+        statusNote: _nullIfBlank(draft.statusNote),
+        startedAt: draft.startedAt,
+        endedAt: draft.endedAt,
+        memberIds: List.unmodifiable(draft.memberIds),
+      ),
+      ..._frontHistory,
+    ];
+    _frontHistoryController.add(_frontHistory);
+    _emitSnapshot(frontHistoryCount: _frontHistory.length);
+  }
+
+  @override
+  Future<void> updateFrontHistoryEntry(
+    String frontId,
+    FrontHistoryDraft draft,
+  ) async {
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        if (entry.id == frontId)
+          FrontHistoryEntry(
+            id: entry.id,
+            label: _frontDraftLabel(draft),
+            statusNote: _nullIfBlank(draft.statusNote),
+            startedAt: draft.startedAt,
+            endedAt: draft.endedAt,
+            memberIds: List.unmodifiable(draft.memberIds),
+          )
+        else
+          entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
+  }
+
+  String _frontDraftLabel(FrontHistoryDraft draft) {
+    final names = [
+      for (final member in _members)
+        if (draft.memberIds.contains(member.id)) member.displayName,
+    ];
+    return names.isEmpty
+        ? draft.label?.trim() ?? 'Unknown front'
+        : names.join(', ');
   }
 
   @override
@@ -3650,6 +3737,7 @@ class FakeHavenRepository implements HavenRepository {
         id: 'fake-front-${_frontHistory.length + 1}',
         label: label,
         startedAt: now,
+        memberIds: List.unmodifiable(_currentFrontMemberIds),
       ),
       ..._frontHistory,
     ];
@@ -3667,6 +3755,7 @@ class FakeHavenRepository implements HavenRepository {
                 statusNote: entry.statusNote,
                 startedAt: entry.startedAt,
                 endedAt: ended,
+                memberIds: entry.memberIds,
               )
             : entry,
     ];
