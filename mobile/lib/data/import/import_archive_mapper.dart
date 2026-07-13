@@ -82,6 +82,7 @@ class _ExternalArchiveNormalizer {
   final _memberNamesByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
+  final _privacyBucketIdsByExternalId = <String, String>{};
   final _customFieldRawTypesByExternalId = <String, Object?>{};
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
@@ -105,6 +106,8 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> pollOptions;
   late final List<Map<String, Object?>> pollVotes;
   late final List<Map<String, Object?>> preferences;
+  late final List<Map<String, Object?>> privacyBuckets;
+  late final List<Map<String, Object?>> privacyBucketMembers;
   late final List<Map<String, Object?>> rawPayloads;
 
   void normalize() {
@@ -112,6 +115,9 @@ class _ExternalArchiveNormalizer {
     _indexGroupMembers();
     _indexMemberNames();
     members = _normalizeMembers();
+    final privacyData = _normalizePrivacyBuckets();
+    privacyBuckets = privacyData.buckets;
+    privacyBucketMembers = privacyData.members;
     groupMembers = _normalizeGroupMembers();
     customFields = _normalizeCustomFields();
     customFieldValues = _normalizeCustomFieldValues();
@@ -162,8 +168,8 @@ class _ExternalArchiveNormalizer {
     'front_audit_events': const [],
     'named_fronts': namedFronts,
     'named_front_members': namedFrontMembers,
-    'privacy_buckets': const [],
-    'privacy_bucket_members': const [],
+    'privacy_buckets': privacyBuckets,
+    'privacy_bucket_members': privacyBucketMembers,
     'avatar_assets': _avatarAssetsToJson(),
     'raw_payloads': rawPayloads,
     'import_records': const [],
@@ -257,6 +263,64 @@ class _ExternalArchiveNormalizer {
       }
     }
     return records;
+  }
+
+  _PrivacyBucketData _normalizePrivacyBuckets() {
+    if (source != ImportSource.simplyPlural) {
+      return const _PrivacyBucketData([], []);
+    }
+    final sourceBuckets = _firstList(decoded, const ['privacyBuckets']);
+    final buckets = <Map<String, Object?>>[];
+    for (var index = 0; index < sourceBuckets.length; index++) {
+      final bucket = _mapValue(sourceBuckets[index]);
+      if (bucket == null) continue;
+      final externalId = _firstString(bucket, const ['_id', 'id', 'uuid']);
+      final name = _firstString(bucket, const ['name'])?.trim();
+      if (externalId == null || name == null || name.isEmpty) {
+        warnings.add(
+          'Skipped privacy bucket #${index + 1}: missing ID or name.',
+        );
+        continue;
+      }
+      final id = _stableId('privacy-bucket', externalId);
+      _privacyBucketIdsByExternalId[externalId] = id;
+      buckets.add({
+        'id': id,
+        'name': name,
+        'description': _firstString(bucket, const ['desc', 'description']),
+        'color_hex': _normalizeColor(
+          _firstString(bucket, const ['color', 'color_hex']),
+        ),
+        'position': index,
+        'created_at': importedAt.toIso8601String(),
+        'updated_at': importedAt.toIso8601String(),
+      });
+    }
+
+    final links = <Map<String, Object?>>[];
+    final sourceMembers = _firstList(decoded, const ['members']);
+    for (final value in sourceMembers) {
+      final member = _mapValue(value);
+      if (member == null) continue;
+      final externalMemberId = _firstString(member, const [
+        '_id',
+        'id',
+        'uuid',
+        'memberId',
+        'uid',
+      ]);
+      final memberId = externalMemberId == null
+          ? null
+          : _memberIdsByExternalId[externalMemberId];
+      if (memberId == null) continue;
+      for (final bucketId in _memberRefsFromValue(member['buckets'])) {
+        final localBucketId = _privacyBucketIdsByExternalId[bucketId];
+        if (localBucketId != null) {
+          links.add({'bucket_id': localBucketId, 'member_id': memberId});
+        }
+      }
+    }
+    return _PrivacyBucketData(buckets, links);
   }
 
   void _indexMemberNames() {
@@ -1915,6 +1979,13 @@ class _NamedFrontData {
 
   final List<Map<String, Object?>> namedFronts;
   final List<Map<String, Object?>> namedFrontMembers;
+}
+
+class _PrivacyBucketData {
+  const _PrivacyBucketData(this.buckets, this.members);
+
+  final List<Map<String, Object?>> buckets;
+  final List<Map<String, Object?>> members;
 }
 
 class _ReminderScheduleFields {
