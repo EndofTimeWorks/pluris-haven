@@ -17,6 +17,7 @@ class MessagesPage extends StatefulWidget {
 class _MessagesPageState extends State<MessagesPage> {
   final _searchController = TextEditingController();
   String _query = '';
+  String _boardFilter = 'all';
 
   @override
   void dispose() {
@@ -41,13 +42,17 @@ class _MessagesPageState extends State<MessagesPage> {
             };
             final messages = (snapshot.data ?? const <MessageSummary>[])
                 .where(
-                  (message) => _matchesQuery(_query, [
-                    message.body,
-                    _messageSenderLabel(
-                      message,
-                      memberNamesById[message.memberId],
-                    ),
-                  ]),
+                  (message) =>
+                      (_boardFilter == 'all' ||
+                          message.boardKind == _boardFilter) &&
+                      _matchesQuery(_query, [
+                        message.body,
+                        _messageSenderLabel(
+                          message,
+                          memberNamesById[message.memberId],
+                        ),
+                        memberNamesById[message.boardMemberId] ?? '',
+                      ]),
                 )
                 .toList(growable: false);
 
@@ -57,6 +62,17 @@ class _MessagesPageState extends State<MessagesPage> {
                   hintText: 'Search messages',
                   controller: _searchController,
                   onChanged: (value) => setState(() => _query = value),
+                ),
+                const SizedBox(height: 10),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'all', label: Text('All')),
+                    ButtonSegment(value: 'system', label: Text('System')),
+                    ButtonSegment(value: 'member', label: Text('Member')),
+                  ],
+                  selected: {_boardFilter},
+                  onSelectionChanged: (value) =>
+                      setState(() => _boardFilter = value.single),
                 ),
                 const SizedBox(height: 12),
                 SpCard(
@@ -85,6 +101,9 @@ class _MessagesPageState extends State<MessagesPage> {
                             memberName: message.memberId == null
                                 ? null
                                 : memberNamesById[message.memberId],
+                            boardMemberName: message.boardMemberId == null
+                                ? null
+                                : memberNamesById[message.boardMemberId],
                           ),
                           if (message != messages.last)
                             const Divider(height: 1, color: _spLine),
@@ -115,11 +134,13 @@ class MessageTile extends StatelessWidget {
     required this.message,
     required this.repository,
     this.memberName,
+    this.boardMemberName,
   });
 
   final MessageSummary message;
   final HavenRepository repository;
   final String? memberName;
+  final String? boardMemberName;
 
   @override
   Widget build(BuildContext context) {
@@ -137,18 +158,27 @@ class MessageTile extends StatelessWidget {
           style: const TextStyle(height: 1.35),
         ),
         subtitle: Text(
-          '$senderLabel - ${_shortDateTime(message.createdAt)}',
+          '${message.boardKind == 'member' ? '${boardMemberName ?? 'Unknown'} board - ' : ''}$senderLabel - ${_shortDateTime(message.createdAt)}${message.parentMessageId == null ? '' : ' - reply'}',
           style: const TextStyle(color: _spMuted, fontSize: 12),
         ),
-        trailing: IconButton(
-          tooltip: 'Delete message',
-          onPressed: () => confirmDelete(
-            context,
-            title: 'Delete message?',
-            body: 'This message will be hidden from the local board.',
-            onDelete: () => repository.deleteMessage(message.id),
-          ),
-          icon: const Icon(Icons.delete_outline_rounded),
+        trailing: PopupMenuButton<String>(
+          tooltip: 'Message actions',
+          onSelected: (action) {
+            if (action == 'reply') {
+              showMessageSheet(context, repository, parentMessage: message);
+            } else if (action == 'delete') {
+              confirmDelete(
+                context,
+                title: 'Delete message?',
+                body: 'This message will be hidden from the local board.',
+                onDelete: () => repository.deleteMessage(message.id),
+              );
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'reply', child: Text('Reply')),
+            PopupMenuItem(value: 'delete', child: Text('Delete')),
+          ],
         ),
         onTap: () => showMessageSheet(context, repository, message: message),
       ),
@@ -160,22 +190,32 @@ void showMessageSheet(
   BuildContext context,
   HavenRepository repository, {
   MessageSummary? message,
+  MessageSummary? parentMessage,
 }) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) =>
-        MessageSheet(repository: repository, message: message),
+    builder: (context) => MessageSheet(
+      repository: repository,
+      message: message,
+      parentMessage: parentMessage,
+    ),
   );
 }
 
 class MessageSheet extends StatefulWidget {
-  const MessageSheet({super.key, required this.repository, this.message});
+  const MessageSheet({
+    super.key,
+    required this.repository,
+    this.message,
+    this.parentMessage,
+  });
 
   final HavenRepository repository;
   final MessageSummary? message;
+  final MessageSummary? parentMessage;
 
   @override
   State<MessageSheet> createState() => _MessageSheetState();
@@ -194,6 +234,8 @@ class _MessageSheetState extends State<MessageSheet> {
 
   final _bodyController = TextEditingController();
   String? _memberId;
+  String _boardKind = 'system';
+  String? _boardMemberId;
 
   bool get _isEditing => widget.message != null;
 
@@ -203,6 +245,10 @@ class _MessageSheetState extends State<MessageSheet> {
     final message = widget.message;
     _bodyController.text = message?.body ?? '';
     _memberId = message?.memberId;
+    _boardKind =
+        message?.boardKind ?? widget.parentMessage?.boardKind ?? 'system';
+    _boardMemberId =
+        message?.boardMemberId ?? widget.parentMessage?.boardMemberId;
   }
 
   @override
@@ -262,6 +308,58 @@ class _MessageSheetState extends State<MessageSheet> {
               },
             ),
             const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              key: const ValueKey('message-board-kind-field'),
+              initialValue: _boardKind,
+              decoration: const InputDecoration(labelText: 'Board'),
+              items: const [
+                DropdownMenuItem(value: 'system', child: Text('System board')),
+                DropdownMenuItem(value: 'member', child: Text('Member board')),
+              ],
+              onChanged: (value) => setState(() {
+                _boardKind = value ?? 'system';
+                if (_boardKind == 'system') _boardMemberId = null;
+              }),
+            ),
+            if (_boardKind == 'member') ...[
+              const SizedBox(height: 10),
+              StreamBuilder<List<MemberSummary>>(
+                stream: widget.repository.watchMembers(includeArchived: true),
+                initialData: const [],
+                builder: (context, snapshot) {
+                  final members = snapshot.data ?? const <MemberSummary>[];
+                  return DropdownButtonFormField<String>(
+                    key: const ValueKey('message-board-member-field'),
+                    initialValue:
+                        members.any((member) => member.id == _boardMemberId)
+                        ? _boardMemberId
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Member board',
+                    ),
+                    items: [
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _boardMemberId = value),
+                  );
+                },
+              ),
+            ],
+            if (widget.parentMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Replying to: ${widget.parentMessage!.body}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: _spMuted),
+              ),
+            ],
+            const SizedBox(height: 10),
             TextField(
               key: const ValueKey('message-body-field'),
               controller: _bodyController,
@@ -282,7 +380,17 @@ class _MessageSheetState extends State<MessageSheet> {
   }
 
   Future<void> _save() async {
-    final draft = MessageDraft(body: _bodyController.text, memberId: _memberId);
+    if (_boardKind == 'member' && _boardMemberId == null) {
+      return;
+    }
+    final draft = MessageDraft(
+      body: _bodyController.text,
+      memberId: _memberId,
+      boardKind: _boardKind,
+      boardMemberId: _boardMemberId,
+      parentMessageId:
+          widget.message?.parentMessageId ?? widget.parentMessage?.id,
+    );
     final message = widget.message;
     if (message == null) {
       await widget.repository.saveMessage(draft);
