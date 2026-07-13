@@ -4,6 +4,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/haven_repository.dart';
+import '../data/security/master_key_store.dart';
 
 const importArchiveTaskName = 'pluris_haven.import_archive';
 const iosImportArchiveTaskIdentifier =
@@ -14,7 +15,8 @@ const syncTaskName = 'pluris_haven.sync';
 void plurisHavenBackgroundDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     final database = AppDatabase();
-    final repository = LocalHavenRepository(database);
+    final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+    final repository = LocalHavenRepository(database, crypto: crypto);
     try {
       await repository.ensureLocalSystem();
       switch (task) {

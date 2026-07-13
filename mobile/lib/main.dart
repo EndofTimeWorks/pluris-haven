@@ -6,6 +6,7 @@ import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
 import 'data/notifications/notification_service.dart';
+import 'data/security/master_key_store.dart';
 import 'debug/debug_log.dart';
 import 'features/home/home_page.dart';
 
@@ -16,8 +17,10 @@ Future<void> main() async {
   await NotificationService.instance.initialize();
 
   final database = AppDatabase();
-  final repository = LocalHavenRepository(database);
+  final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+  final repository = LocalHavenRepository(database, crypto: crypto);
   await repository.ensureLocalSystem();
+  await repository.migrateMemberNamesToEncryption();
   appDebugLog('Local repository ready');
 
   runApp(PlurisHavenApp(repository: repository));
