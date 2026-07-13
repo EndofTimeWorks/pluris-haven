@@ -278,8 +278,15 @@ void main() {
     final repository = LocalHavenRepository(database);
     await repository.ensureLocalSystem();
 
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    final member = (await repository.watchMembers().first).single;
+
     await repository.saveMessage(
-      const MessageDraft(body: 'Remember to check in.'),
+      MessageDraft(
+        body: 'Remember to check in.',
+        boardKind: 'member',
+        boardMemberId: member.id,
+      ),
     );
     await repository.saveReminder(
       const ReminderDraft(
@@ -301,6 +308,8 @@ void main() {
     final events = await repository.watchNotificationEvents().first;
 
     expect(messages.single.body, 'Remember to check in.');
+    expect(messages.single.boardKind, 'member');
+    expect(messages.single.boardMemberId, member.id);
     await repository.updateMessage(
       messages.single.id,
       const MessageDraft(body: 'Remember to check in after dinner.'),
