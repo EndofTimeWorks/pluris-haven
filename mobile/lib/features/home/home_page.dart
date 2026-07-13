@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -21,6 +20,7 @@ import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
 import '../../data/security/archive_encryption.dart';
 import '../../debug/debug_log.dart';
+import '../../platform/native_file_dialog.dart';
 
 part 'dashboard.dart';
 part 'members.dart';
