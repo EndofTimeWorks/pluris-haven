@@ -256,6 +256,9 @@ class MessageSummary {
     required this.id,
     required this.body,
     this.memberId,
+    this.boardKind = 'system',
+    this.boardMemberId,
+    this.parentMessageId,
     required this.createdAt,
     this.archived = false,
   });
@@ -263,15 +266,27 @@ class MessageSummary {
   final String id;
   final String body;
   final String? memberId;
+  final String boardKind;
+  final String? boardMemberId;
+  final String? parentMessageId;
   final DateTime createdAt;
   final bool archived;
 }
 
 class MessageDraft {
-  const MessageDraft({required this.body, this.memberId});
+  const MessageDraft({
+    required this.body,
+    this.memberId,
+    this.boardKind = 'system',
+    this.boardMemberId,
+    this.parentMessageId,
+  });
 
   final String body;
   final String? memberId;
+  final String boardKind;
+  final String? boardMemberId;
+  final String? parentMessageId;
 }
 
 class ReminderSummary {
@@ -1300,6 +1315,9 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
             id: row.id,
             body: row.body,
             memberId: row.memberId,
+            boardKind: row.boardKind,
+            boardMemberId: row.boardMemberId,
+            parentMessageId: row.parentMessageId,
             createdAt: row.createdAt,
             archived: row.archived,
           ),
@@ -2515,6 +2533,13 @@ SELECT
             systemId: localSystemId,
             memberId: Value(_nullIfBlank(draft.memberId)),
             body: body,
+            boardKind: Value(draft.boardKind == 'member' ? 'member' : 'system'),
+            boardMemberId: Value(
+              draft.boardKind == 'member'
+                  ? _nullIfBlank(draft.boardMemberId)
+                  : null,
+            ),
+            parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
             createdAt: now,
             updatedAt: now,
           ),
@@ -2538,6 +2563,13 @@ SELECT
           MessagesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
             body: Value(body),
+            boardKind: Value(draft.boardKind == 'member' ? 'member' : 'system'),
+            boardMemberId: Value(
+              draft.boardKind == 'member'
+                  ? _nullIfBlank(draft.boardMemberId)
+                  : null,
+            ),
+            parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
             archived: const Value(false),
             deletedAt: const Value(null),
             updatedAt: Value(now),
