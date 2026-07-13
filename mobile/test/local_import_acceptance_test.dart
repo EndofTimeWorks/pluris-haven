@@ -53,6 +53,10 @@ void main() {
         _collectionLength(source, 'customFields'),
       );
       expect(
+        normalized.counts['privacy_buckets'],
+        _collectionLength(source, 'privacyBuckets'),
+      );
+      expect(
         normalized.counts['avatar_assets'],
         avatarBundle.avatarAssets.length,
       );
