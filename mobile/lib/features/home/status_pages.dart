@@ -205,10 +205,12 @@ class AccountSettingsPage extends StatelessWidget {
   const AccountSettingsPage({
     super.key,
     required this.snapshot,
+    required this.repository,
     required this.onSelect,
   });
 
   final HomeSnapshot? snapshot;
+  final HavenRepository repository;
   final ValueChanged<SpSection> onSelect;
 
   @override
@@ -221,10 +223,14 @@ class AccountSettingsPage extends StatelessWidget {
           outlined: true,
           child: Row(
             children: [
-              SpAvatar(
+              StoredAvatar(
                 size: 52,
-                color: Theme.of(context).colorScheme.primary,
-                label: 'PH',
+                color: _colorFromHex(
+                  home?.systemColorHex,
+                  fallback: Theme.of(context).colorScheme.primary,
+                ),
+                label: (home?.systemName ?? 'PH').trim().substring(0, 1),
+                avatarUrl: home?.systemAvatarUrl,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -239,12 +245,27 @@ class AccountSettingsPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'saved on device',
-                      style: TextStyle(color: _spMuted),
+                    Text(
+                      home?.systemDescription?.trim().isNotEmpty == true
+                          ? home!.systemDescription!.trim()
+                          : 'saved on device',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _spMuted),
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: 'Edit system profile',
+                onPressed: home == null
+                    ? null
+                    : () => showSystemProfileEditor(
+                        context,
+                        snapshot: home,
+                        repository: repository,
+                      ),
+                icon: const Icon(Icons.edit_outlined),
               ),
             ],
           ),
@@ -294,5 +315,213 @@ class AccountSettingsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+Future<void> showSystemProfileEditor(
+  BuildContext context, {
+  required HomeSnapshot snapshot,
+  required HavenRepository repository,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        SystemProfileEditorSheet(snapshot: snapshot, repository: repository),
+  );
+}
+
+class SystemProfileEditorSheet extends StatefulWidget {
+  const SystemProfileEditorSheet({
+    super.key,
+    required this.snapshot,
+    required this.repository,
+  });
+
+  final HomeSnapshot snapshot;
+  final HavenRepository repository;
+
+  @override
+  State<SystemProfileEditorSheet> createState() =>
+      _SystemProfileEditorSheetState();
+}
+
+class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _colorController;
+  late String? _avatarUrl;
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.snapshot.systemName);
+    _descriptionController = TextEditingController(
+      text: widget.snapshot.systemDescription,
+    );
+    _colorController = TextEditingController(
+      text: widget.snapshot.systemColorHex ?? '#7B61FF',
+    );
+    _avatarUrl = widget.snapshot.systemAvatarUrl;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _colorController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final previewColor = _colorFromHex(
+      _colorController.text,
+      fallback: Theme.of(context).colorScheme.primary,
+    );
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'System profile',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: StoredAvatar(
+                size: 88,
+                color: previewColor,
+                label: _nameController.text.trim().isEmpty
+                    ? 'PH'
+                    : _nameController.text.trim().substring(0, 1),
+                avatarUrl: _avatarUrl,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: _pickAvatar,
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Choose image'),
+                ),
+                if (_avatarUrl != null)
+                  TextButton.icon(
+                    onPressed: () => setState(() => _avatarUrl = null),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remove'),
+                  ),
+              ],
+            ),
+            TextField(
+              key: const ValueKey('system-name-field'),
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'System name'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('system-color-field'),
+              controller: _colorController,
+              autocorrect: false,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: 'Color hex',
+                hintText: '#7B61FF',
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: AccentSwatch(color: previewColor),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+            ],
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              key: const ValueKey('save-system-profile-button'),
+              onPressed: _saving ? null : _save,
+              icon: const Icon(Icons.save_outlined),
+              label: Text(_saving ? 'Saving...' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAvatar() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+      dialogTitle: 'Choose system avatar',
+    );
+    final file = result?.files.firstOrNull;
+    if (file == null) return;
+    try {
+      final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+      if (bytes == null || bytes.isEmpty) {
+        throw const FormatException('Selected image was empty.');
+      }
+      final ref = await _storeManualAvatar(file.name, bytes);
+      if (mounted) setState(() => _avatarUrl = ref);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = 'Could not save image: $error');
+    }
+  }
+
+  Future<void> _save() async {
+    final color = _colorController.text.trim();
+    if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) {
+      setState(() => _error = 'Use a six-digit hex color such as #7B61FF.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.repository.updateSystemProfile(
+        SystemProfileDraft(
+          name: _nameController.text,
+          description: _descriptionController.text,
+          colorHex: color,
+          avatarUrl: _avatarUrl,
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = error.toString();
+        });
+      }
+    }
   }
 }
