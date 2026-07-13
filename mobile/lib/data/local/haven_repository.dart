@@ -22,6 +22,7 @@ class HomeSnapshot {
     required this.currentFrontLabel,
     this.systemColorHex,
     this.systemAvatarUrl,
+    this.systemDescription,
   });
 
   final String systemName;
@@ -32,6 +33,7 @@ class HomeSnapshot {
   final String? currentFrontLabel;
   final String? systemColorHex;
   final String? systemAvatarUrl;
+  final String? systemDescription;
 
   String get currentFrontText => currentFrontLabel?.trim().isNotEmpty == true
       ? currentFrontLabel!.trim()
@@ -581,6 +583,20 @@ class AppCustomization {
   SupportedLanguage get language => supportedLanguageForCode(languageCode);
 }
 
+class SystemProfileDraft {
+  const SystemProfileDraft({
+    required this.name,
+    this.colorHex,
+    this.avatarUrl,
+    this.description,
+  });
+
+  final String name;
+  final String? colorHex;
+  final String? avatarUrl;
+  final String? description;
+}
+
 const Object _unchanged = Object();
 
 const defaultDashboardShortcutIds = [
@@ -650,6 +666,8 @@ abstract interface class HavenRepository {
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
 
   Future<void> setLanguageCode(String languageCode);
+
+  Future<void> updateSystemProfile(SystemProfileDraft draft);
 
   Future<void> setDashboardShortcutVisible(String shortcutId, bool visible);
 
@@ -1411,6 +1429,7 @@ SELECT
   COALESCE((SELECT name FROM plural_systems WHERE id = ? LIMIT 1), 'Local system') AS system_name,
   (SELECT color_hex FROM plural_systems WHERE id = ? LIMIT 1) AS system_color_hex,
   (SELECT avatar_url FROM plural_systems WHERE id = ? LIMIT 1) AS system_avatar_url,
+  (SELECT description FROM plural_systems WHERE id = ? LIMIT 1) AS system_description,
   (SELECT COUNT(*) FROM members WHERE system_id = ? AND archived = 0 AND is_custom_front = 0) AS member_count,
   (SELECT COUNT(*) FROM system_groups WHERE system_id = ?) AS group_count,
   (SELECT COUNT(*) FROM notes WHERE system_id = ?) AS note_count,
@@ -1418,7 +1437,7 @@ SELECT
           ''';
 
   List<Variable<String>> get _homeSnapshotVariables =>
-      List.filled(7, Variable<String>(localSystemId));
+      List.filled(8, Variable<String>(localSystemId));
 
   Future<HomeSnapshot> _mapHomeSnapshot(QueryRow row) async {
     final data = row.data;
@@ -1432,6 +1451,27 @@ SELECT
       currentFrontLabel: await _currentFrontLabel(),
       systemColorHex: data['system_color_hex'] as String?,
       systemAvatarUrl: data['system_avatar_url'] as String?,
+      systemDescription: data['system_description'] as String?,
+    );
+  }
+
+  @override
+  Future<void> updateSystemProfile(SystemProfileDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) {
+      throw const FormatException('System name is required.');
+    }
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.pluralSystems,
+    )..where((system) => system.id.equals(localSystemId))).write(
+      PluralSystemsCompanion(
+        name: Value(name),
+        colorHex: Value(_normalizeHexColor(draft.colorHex)),
+        avatarUrl: Value(_trimToNull(draft.avatarUrl)),
+        description: Value(_trimToNull(draft.description)),
+        updatedAt: Value(now),
+      ),
     );
   }
 
@@ -5133,6 +5173,11 @@ String? _normalizeHexColor(String? value) {
     return null;
   }
   return '#${trimmed.toUpperCase()}';
+}
+
+String? _trimToNull(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }
 
 int? _argbFromHex(String? value) {
