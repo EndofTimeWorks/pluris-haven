@@ -9,6 +9,7 @@ import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
+import 'package:pluris_haven/data/security/haven_crypto.dart';
 
 void main() {
   test('stores and clears current front in the local database', () async {
@@ -122,6 +123,27 @@ void main() {
     await repository.setDashboardShortcutIds(const []);
     customization = await repository.loadCustomization();
     expect(customization.dashboardShortcutIds, isEmpty);
+  });
+
+  test('migrates plaintext member names to encrypted storage', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final plainRepository = LocalHavenRepository(database);
+    await plainRepository.ensureLocalSystem();
+    await plainRepository.saveMember(const MemberDraft(displayName: 'River'));
+
+    final crypto = HavenCrypto(await generateMasterKey());
+    final encryptedRepository = LocalHavenRepository(database, crypto: crypto);
+    await encryptedRepository.migrateMemberNamesToEncryption();
+    await encryptedRepository.migrateMemberNamesToEncryption();
+
+    final stored = (await database.select(database.members).get()).single;
+    expect(stored.displayName, isNot('River'));
+    expect(stored.displayNameHash, isNotEmpty);
+    expect(
+      (await encryptedRepository.watchMembers().first).single.displayName,
+      'River',
+    );
   });
 
   test('stores members and links them to front sessions', () async {
