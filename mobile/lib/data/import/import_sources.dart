@@ -11,6 +11,7 @@ enum ImportInputKind {
 enum ImporterStatus {
   planned('planned'),
   next('next'),
+  ready('ready'),
   readyShape('shape ready');
 
   const ImporterStatus(this.label);
@@ -35,21 +36,21 @@ enum ImportSource {
     label: 'Pluris Haven archive',
     subtitle: 'Local JSON backup exported from this app',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.readyShape,
+    status: ImporterStatus.ready,
     dedupeKeys: ['local IDs', 'PluralKit IDs', 'normalized names'],
   ),
   simplyPlural(
     label: 'Simply Plural',
     subtitle: 'JSON export or backup archive',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.next,
+    status: ImporterStatus.ready,
     dedupeKeys: ['Simply Plural IDs', 'PluralKit IDs', 'normalized names'],
   ),
   pluralKitFile(
     label: 'PluralKit file',
     subtitle: 'PK export with members, groups, and switches',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.next,
+    status: ImporterStatus.ready,
     dedupeKeys: ['PluralKit UUIDs', 'PluralKit short IDs', 'normalized names'],
   ),
   pluralKitLive(
@@ -63,14 +64,14 @@ enum ImportSource {
     label: 'Tupperbox',
     subtitle: 'Tupper roster export',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.next,
+    status: ImporterStatus.ready,
     dedupeKeys: ['Tupperbox IDs', 'normalized names'],
   ),
   pluralSpace(
     label: 'PluralSpace',
     subtitle: 'PluralSpace export',
     inputKinds: [ImportInputKind.file],
-    status: ImporterStatus.next,
+    status: ImporterStatus.ready,
     dedupeKeys: ['PluralSpace IDs', 'normalized names'],
   ),
   prism(

@@ -32,8 +32,10 @@ void main() {
     );
     expect(ImportSource.pluralKitLive.jobSource, 'pluralkit_api');
     expect(ImportSource.tupperbox.jobSource, 'tupperbox_file');
-    expect(ImportSource.tupperbox.status, ImporterStatus.next);
-    expect(ImportSource.pluralSpace.status, ImporterStatus.next);
+    expect(ImportSource.simplyPlural.status, ImporterStatus.ready);
+    expect(ImportSource.pluralKitFile.status, ImporterStatus.ready);
+    expect(ImportSource.tupperbox.status, ImporterStatus.ready);
+    expect(ImportSource.pluralSpace.status, ImporterStatus.ready);
     expect(ImportSource.prism.status, ImporterStatus.planned);
   });
 
