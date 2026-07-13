@@ -88,13 +88,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                   SpActionRow(
                     primary: 'Add entry',
                     secondary: 'Reset',
-                    onPrimary: () => showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      showDragHandle: true,
-                      backgroundColor: _spSurface,
-                      builder: (context) =>
-                          CustomFrontSheet(repository: widget.repository),
+                    onPrimary: () => showFrontHistoryEditor(
+                      context,
+                      repository: widget.repository,
                     ),
                     onSecondary: () {
                       _searchController.clear();
@@ -302,6 +298,19 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                showFrontHistoryEditor(
+                  context,
+                  repository: widget.repository,
+                  entry: widget.entry,
+                );
+              },
+              icon: const Icon(Icons.edit_calendar_outlined),
+              label: const Text('Edit entry'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
               onPressed: () => confirmDelete(
                 context,
                 title: 'Delete front entry?',
@@ -320,6 +329,213 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
         ),
       ),
     );
+  }
+}
+
+void showFrontHistoryEditor(
+  BuildContext context, {
+  required HavenRepository repository,
+  FrontHistoryEntry? entry,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: _spSurface,
+    builder: (context) =>
+        FrontHistoryEditorSheet(repository: repository, entry: entry),
+  );
+}
+
+class FrontHistoryEditorSheet extends StatefulWidget {
+  const FrontHistoryEditorSheet({
+    super.key,
+    required this.repository,
+    this.entry,
+  });
+
+  final HavenRepository repository;
+  final FrontHistoryEntry? entry;
+
+  @override
+  State<FrontHistoryEditorSheet> createState() =>
+      _FrontHistoryEditorSheetState();
+}
+
+class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
+  late final TextEditingController _labelController;
+  late final TextEditingController _noteController;
+  late DateTime _startedAt;
+  late DateTime _endedAt;
+  late final Set<String> _memberIds;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final entry = widget.entry;
+    _startedAt =
+        entry?.startedAt.toLocal() ?? now.subtract(const Duration(hours: 1));
+    _endedAt = entry?.endedAt?.toLocal() ?? now;
+    _memberIds = {...?entry?.memberIds};
+    _labelController = TextEditingController(
+      text: entry?.memberIds.isEmpty == true ? entry?.label : null,
+    );
+    _noteController = TextEditingController(text: entry?.statusNote);
+  }
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.entry == null ? 'Add front history' : 'Edit front history',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Started'),
+              subtitle: Text(_shortDateTime(_startedAt)),
+              trailing: const Icon(Icons.event_outlined),
+              onTap: () => _pickDateTime(start: true),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ended'),
+              subtitle: Text(_shortDateTime(_endedAt)),
+              trailing: const Icon(Icons.event_available_outlined),
+              onTap: () => _pickDateTime(start: false),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Members',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            StreamBuilder<List<MemberSummary>>(
+              stream: widget.repository.watchMembers(includeArchived: true),
+              initialData: const [],
+              builder: (context, snapshot) => Column(
+                children: [
+                  for (final member in snapshot.data ?? const <MemberSummary>[])
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(member.displayName),
+                      value: _memberIds.contains(member.id),
+                      onChanged: (selected) => setState(() {
+                        if (selected == true) {
+                          _memberIds.add(member.id);
+                        } else {
+                          _memberIds.remove(member.id);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+            ),
+            TextField(
+              key: const ValueKey('front-history-label-field'),
+              controller: _labelController,
+              decoration: const InputDecoration(
+                labelText: 'Custom label',
+                helperText: 'Used when no members are selected',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('front-history-note-field'),
+              controller: _noteController,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(labelText: 'Status note'),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+            ],
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              key: const ValueKey('save-front-history-button'),
+              onPressed: _save,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Save entry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDateTime({required bool start}) async {
+    final initial = start ? _startedAt : _endedAt;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return;
+    final value = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      if (start) {
+        _startedAt = value;
+      } else {
+        _endedAt = value;
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    if (_endedAt.isBefore(_startedAt)) {
+      setState(() => _error = 'End time must be after the start time.');
+      return;
+    }
+    if (_memberIds.isEmpty && _labelController.text.trim().isEmpty) {
+      setState(() => _error = 'Choose members or enter a custom label.');
+      return;
+    }
+    final draft = FrontHistoryDraft(
+      startedAt: _startedAt,
+      endedAt: _endedAt,
+      memberIds: _memberIds.toList(growable: false),
+      label: _labelController.text,
+      statusNote: _noteController.text,
+    );
+    if (widget.entry == null) {
+      await widget.repository.saveFrontHistoryEntry(draft);
+    } else {
+      await widget.repository.updateFrontHistoryEntry(widget.entry!.id, draft);
+    }
+    if (mounted) Navigator.pop(context);
   }
 }
 
