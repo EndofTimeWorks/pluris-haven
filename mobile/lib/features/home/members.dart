@@ -1516,13 +1516,12 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
   Future<void> _chooseAvatar() async {
     setState(() => _avatarMessage = 'Opening image picker...');
-    final result = await FilePicker.pickFiles(
-      type: FileType.image,
+    final result = await NativeFileDialog.pickFiles(
+      type: NativeFileType.image,
       allowMultiple: false,
-      withData: true,
       dialogTitle: 'Choose member avatar',
     );
-    final files = result?.files ?? const <PlatformFile>[];
+    final files = result?.files ?? const <NativePlatformFile>[];
     final file = files.isEmpty ? null : files.first;
     if (file == null) {
       if (mounted) {
@@ -1532,7 +1531,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
 
     try {
-      final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+      final bytes = await _readPickedFileBytes(file.path);
       if (bytes == null || bytes.isEmpty) {
         throw const FormatException('Selected image was empty.');
       }

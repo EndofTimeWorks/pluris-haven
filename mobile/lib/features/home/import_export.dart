@@ -129,11 +129,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _isPickingImport = true;
       _importStatus = 'Waiting for file picker...';
     });
-    final result = await FilePicker.pickFiles(
+    final result = await NativeFileDialog.pickFiles(
       dialogTitle: 'Choose import file',
-      type: FileType.custom,
+      type: NativeFileType.custom,
       allowedExtensions: ['json', 'zip', 'prism', 'txt'],
-      withData: true,
     );
     if (result == null || result.files.isEmpty || !mounted) {
       if (mounted) {
@@ -180,11 +179,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _isPickingImport = true;
       _importStatus = 'Waiting for avatar ZIP...';
     });
-    final result = await FilePicker.pickFiles(
+    final result = await NativeFileDialog.pickFiles(
       dialogTitle: 'Choose avatar ZIP',
-      type: FileType.custom,
+      type: NativeFileType.custom,
       allowedExtensions: ['zip'],
-      withData: true,
     );
     if (result == null || result.files.isEmpty || !mounted) {
       if (mounted) {
@@ -314,20 +312,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
   }
 
-  Future<Uint8List?> _pickedFileBytes(PlatformFile file) async {
-    final bytes = file.bytes;
-    if (bytes != null && bytes.isNotEmpty) {
-      return bytes;
-    }
+  Future<Uint8List?> _pickedFileBytes(NativePlatformFile file) async {
     final path = file.path;
-    if (path == null || path.trim().isEmpty) {
-      return bytes;
-    }
     try {
-      return await File(path).readAsBytes();
+      return await file.readBytes();
     } on Object catch (error) {
       appDebugLog('Import file read failed path=$path error=$error');
-      return bytes;
+      return null;
     }
   }
 
@@ -863,17 +854,14 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
         archiveJson: archiveJson,
         passphrase: passphrase,
       );
-      final path = await FilePicker.saveFile(
+      final saved = await NativeFileDialog.saveBytes(
         dialogTitle: 'Save encrypted Pluris Haven archive',
         fileName: _encryptedArchiveFileName(),
-        type: FileType.custom,
-        allowedExtensions: const ['json'],
         bytes: Uint8List.fromList(utf8.encode(encrypted)),
+        mimeType: 'application/json',
       );
       if (!mounted) return;
-      final message = path == null
-          ? 'Save canceled.'
-          : 'Encrypted archive saved.';
+      final message = saved ? 'Encrypted archive saved.' : 'Save canceled.';
       setState(() {
         _isSaving = false;
         _status = message;
@@ -990,20 +978,17 @@ class LocalArchiveSheet extends StatelessWidget {
   Future<void> _saveArchiveJson(BuildContext context, String archive) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final path = await FilePicker.saveFile(
+      final saved = await NativeFileDialog.saveBytes(
         dialogTitle: 'Save Pluris Haven archive',
         fileName: _archiveFileName(),
-        type: FileType.custom,
-        allowedExtensions: const ['json'],
         bytes: Uint8List.fromList(utf8.encode(archive)),
+        mimeType: 'application/json',
       );
       if (!messenger.mounted) {
         return;
       }
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(path == null ? 'Save canceled' : 'Archive saved'),
-        ),
+        SnackBar(content: Text(saved ? 'Archive saved' : 'Save canceled')),
       );
     } on Object catch (error) {
       if (!messenger.mounted) {
