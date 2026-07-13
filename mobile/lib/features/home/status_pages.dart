@@ -527,8 +527,8 @@ class AccountSettingsPage extends StatelessWidget {
           rows: [
             SpSettingsRow('Storage', 'device database', interactive: false),
             SpSettingsRow(
-              'Field encryption',
-              'local crypto enabled',
+              'Member name encryption',
+              'key stored in device secure storage',
               interactive: false,
             ),
             SpSettingsRow(
