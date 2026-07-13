@@ -974,6 +974,37 @@ class LocalHavenRepository implements HavenRepository {
         );
   }
 
+  Future<void> migrateMemberNamesToEncryption() async {
+    final crypto = this.crypto;
+    if (crypto == null) return;
+    final members = await (database.select(
+      database.members,
+    )..where((member) => member.systemId.equals(localSystemId))).get();
+    await database.transaction(() async {
+      for (final member in members) {
+        var alreadyEncrypted = false;
+        try {
+          await crypto.decrypt(member.displayName);
+          alreadyEncrypted = true;
+        } on Object {
+          alreadyEncrypted = false;
+        }
+        if (alreadyEncrypted) continue;
+        final encrypted = await crypto.encrypt(member.displayName);
+        final blindIndex = await crypto.blindIndex(member.displayName);
+        await (database.update(
+          database.members,
+        )..where((row) => row.id.equals(member.id))).write(
+          MembersCompanion(
+            displayName: Value(encrypted ?? member.displayName),
+            displayNameHash: Value(blindIndex),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() {
     return database
