@@ -340,6 +340,36 @@ void main() {
     expect(archive.archiveJson, contains('"description": "First member"'));
   });
 
+  test('normalizes Simply Plural privacy buckets and member assignments', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-privacy.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "privacyBuckets": [
+    {"_id": "b1", "name": "Trusted", "desc": "Close people", "color": "12ab34"}
+  ],
+  "members": [
+    {"_id": "m1", "name": "Iris", "buckets": ["b1"]}
+  ]
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final buckets = (decoded['privacy_buckets'] as List)
+        .cast<Map<String, dynamic>>();
+    final links = (decoded['privacy_bucket_members'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(buckets.single['name'], 'Trusted');
+    expect(buckets.single['color_hex'], '#12ab34');
+    expect(links.single, {
+      'bucket_id': 'simplyplural_file-privacy-bucket-b1',
+      'member_id': 'simplyplural_file-member-m1',
+    });
+  });
+
   test('keeps external notes and journals in separate sections', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
