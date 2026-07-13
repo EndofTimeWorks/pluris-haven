@@ -499,6 +499,7 @@ class AppCustomization {
     required this.compactDashboard,
     required this.showDashboardSubtitles,
     required this.reducedMotion,
+    required this.frontStatusNotification,
     required this.highContrast,
     required this.largeText,
     required this.compactLists,
@@ -512,6 +513,7 @@ class AppCustomization {
   final bool compactDashboard;
   final bool showDashboardSubtitles;
   final bool reducedMotion;
+  final bool frontStatusNotification;
   final bool highContrast;
   final bool largeText;
   final bool compactLists;
@@ -532,6 +534,7 @@ class AppCustomization {
     compactDashboard: false,
     showDashboardSubtitles: true,
     reducedMotion: false,
+    frontStatusNotification: false,
     highContrast: false,
     largeText: false,
     compactLists: false,
@@ -546,6 +549,7 @@ class AppCustomization {
     bool? compactDashboard,
     bool? showDashboardSubtitles,
     bool? reducedMotion,
+    bool? frontStatusNotification,
     bool? highContrast,
     bool? largeText,
     bool? compactLists,
@@ -562,6 +566,8 @@ class AppCustomization {
       showDashboardSubtitles:
           showDashboardSubtitles ?? this.showDashboardSubtitles,
       reducedMotion: reducedMotion ?? this.reducedMotion,
+      frontStatusNotification:
+          frontStatusNotification ?? this.frontStatusNotification,
       highContrast: highContrast ?? this.highContrast,
       largeText: largeText ?? this.largeText,
       compactLists: compactLists ?? this.compactLists,
@@ -632,6 +638,8 @@ abstract interface class HavenRepository {
   Future<void> setShowDashboardSubtitles(bool show);
 
   Future<void> setReducedMotion(bool reduced);
+
+  Future<void> setFrontStatusNotification(bool enabled);
 
   Future<void> setHighContrast(bool highContrast);
 
@@ -1522,6 +1530,7 @@ SELECT
         defaultValue: true,
       ),
       reducedMotion: _readBool(values[_reducedMotionKey]),
+      frontStatusNotification: _readBool(values[_frontStatusNotificationKey]),
       highContrast: _readBool(values[_highContrastKey]),
       largeText: _readBool(values[_largeTextKey]),
       compactLists: _readBool(values[_compactListsKey]),
@@ -1600,6 +1609,11 @@ SELECT
   @override
   Future<void> setReducedMotion(bool reduced) {
     return _writePreference(_reducedMotionKey, reduced.toString());
+  }
+
+  @override
+  Future<void> setFrontStatusNotification(bool enabled) {
+    return _writePreference(_frontStatusNotificationKey, enabled.toString());
   }
 
   @override
@@ -5135,6 +5149,7 @@ const _customAccentHexKey = 'custom_accent_hex';
 const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
 const _reducedMotionKey = 'reduced_motion';
+const _frontStatusNotificationKey = 'front_status_notification';
 const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';
