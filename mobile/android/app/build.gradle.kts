@@ -2,8 +2,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android application plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -36,10 +35,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         applicationId = "works.endoftime.plurishaven"
         // You can update the following values to match your application needs.
@@ -63,7 +58,20 @@ android {
             signingConfig = if (hasUploadSigning) {
                 signingConfigs.getByName("upload")
             } else {
-                signingConfigs.getByName("debug")
+                null
+            }
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name.contains("Release")) {
+        doFirst {
+            if (!hasUploadSigning) {
+                throw GradleException(
+                    "Release builds require mobile/android/key.properties " +
+                        "with an explicit upload signing key; refusing to use the debug keystore."
+                )
             }
         }
     }
@@ -71,6 +79,7 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.work:work-runtime:2.10.2")
 }
 
 flutter {
