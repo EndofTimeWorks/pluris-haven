@@ -11,12 +11,14 @@ import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/haven_crypto.dart';
 
+import 'test_repository.dart';
+
 void main() {
   test('stores and clears current front in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     var snapshot = await repository.loadHomeSnapshot();
@@ -48,7 +50,7 @@ void main() {
   test('creates and edits historical front intervals', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
     await repository.saveMember(const MemberDraft(displayName: 'River'));
     final member = (await repository.watchMembers().first).single;
@@ -86,7 +88,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     var customization = await repository.loadCustomization();
@@ -128,29 +130,49 @@ void main() {
   test('migrates plaintext member names to encrypted storage', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
-    final plainRepository = LocalHavenRepository(database);
-    await plainRepository.ensureLocalSystem();
-    await plainRepository.saveMember(const MemberDraft(displayName: 'River'));
-
     final crypto = HavenCrypto(await generateMasterKey());
     final encryptedRepository = LocalHavenRepository(database, crypto: crypto);
+    await encryptedRepository.ensureLocalSystem();
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.members)
+        .insert(
+          MembersCompanion.insert(
+            id: 'legacy-member',
+            systemId: localSystemId,
+            displayName: 'River',
+            pronouns: const Value('they/them'),
+            colorHex: const Value('#123456'),
+            birthday: const Value('02-03'),
+            emoji: const Value('🌊'),
+            privacy: const Value('trusted'),
+            description: const Value('Legacy private profile'),
+            avatarUrl: const Value('local-avatar:river.png'),
+            pluralKitId: const Value('pk-river'),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
     await encryptedRepository.migrateMemberNamesToEncryption();
     await encryptedRepository.migrateMemberNamesToEncryption();
 
     final stored = (await database.select(database.members).get()).single;
     expect(stored.displayName, isNot('River'));
+    expect(stored.pronouns, isNot('they/them'));
+    expect(stored.description, isNot('Legacy private profile'));
+    expect(stored.profileEncryptionVersion, 1);
     expect(stored.displayNameHash, isNotEmpty);
-    expect(
-      (await encryptedRepository.watchMembers().first).single.displayName,
-      'River',
-    );
+    final member = (await encryptedRepository.watchMembers().first).single;
+    expect(member.displayName, 'River');
+    expect(member.pronouns, 'they/them');
+    expect(member.description, 'Legacy private profile');
   });
 
   test('stores members and links them to front sessions', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.saveMember(
@@ -196,10 +218,128 @@ void main() {
     expect(snapshot.memberCount, 0);
   });
 
+  test('fails closed when a protected member name is corrupted', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+
+    final stored = (await database.select(database.members).get()).single;
+    await (database.update(
+      database.members,
+    )..where((member) => member.id.equals(stored.id))).write(
+      MembersCompanion(
+        displayName: const Value('corrupted ciphertext'),
+        displayNameHash: Value(stored.displayNameHash),
+      ),
+    );
+
+    expect(repository.watchMembers().first, throwsA(anything));
+  });
+
+  test('migrates legacy notes and messages into encrypted storage', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.notes)
+        .insert(
+          NotesCompanion.insert(
+            id: 'legacy-note',
+            systemId: localSystemId,
+            title: 'Private note',
+            body: 'Legacy note body',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    await database
+        .into(database.messages)
+        .insert(
+          MessagesCompanion.insert(
+            id: 'legacy-message',
+            systemId: localSystemId,
+            body: 'Legacy message body',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await repository.migrateLocalPrivateContentToEncryption();
+
+    final storedNote = (await database.select(database.notes).get()).single;
+    final storedMessage =
+        (await database.select(database.messages).get()).single;
+    expect(storedNote.title, isNot('Private note'));
+    expect(storedNote.body, isNot('Legacy note body'));
+    expect(storedMessage.body, isNot('Legacy message body'));
+    expect((await repository.watchNotes().first).single.title, 'Private note');
+    expect(
+      (await repository.watchMessages().first).single.body,
+      'Legacy message body',
+    );
+  });
+
+  test('migrates and round-trips private custom fields', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.customFieldDefinitions)
+        .insert(
+          CustomFieldDefinitionsCompanion.insert(
+            id: 'legacy-field',
+            systemId: localSystemId,
+            name: 'Legal name',
+            privacy: const Value('private'),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    await database
+        .into(database.customFieldValues)
+        .insert(
+          CustomFieldValuesCompanion.insert(
+            id: 'legacy-field-value',
+            fieldId: 'legacy-field',
+            value: 'River',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await repository.migrateLocalPrivateContentToEncryption();
+
+    final storedField =
+        (await database.select(database.customFieldDefinitions).get()).single;
+    final storedValue =
+        (await database.select(database.customFieldValues).get()).single;
+    expect(storedField.name, isNot('Legal name'));
+    expect(storedField.privacy, isNot('private'));
+    expect(storedValue.value, isNot('River'));
+
+    final fields = await repository.watchCustomFields().first;
+    expect(fields.single.name, 'Legal name');
+    expect(fields.single.privacy, 'private');
+    final values = await repository.watchCustomFieldValues().first;
+    expect(values.single.value, 'River');
+
+    final archive =
+        jsonDecode(await repository.buildLocalArchiveJson())
+            as Map<String, Object?>;
+    expect((archive['custom_fields'] as List).single['name'], 'Legal name');
+    expect((archive['custom_field_values'] as List).single['value'], 'River');
+  });
+
   test('stores edits assigns and deletes privacy buckets', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
     final member = (await repository.watchMembers().first).single;
@@ -237,7 +377,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.saveGroup(
@@ -262,7 +402,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
@@ -304,7 +444,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.saveNote(
@@ -334,7 +474,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
@@ -392,7 +532,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     await repository.savePoll(
@@ -431,7 +571,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
     await repository.saveMember(
       const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
@@ -497,6 +637,7 @@ void main() {
             createdAt: now,
           ),
         );
+    await repository.migrateLocalPrivateContentToEncryption();
     await repository.setFrontMembers([member.id]);
     final front = (await repository.watchFrontHistory().first).single;
     await database
@@ -510,6 +651,7 @@ void main() {
             createdAt: now,
           ),
         );
+    await repository.migrateLocalPrivateContentToEncryption();
     final poll = (await repository.watchPolls().first).single;
     await database
         .into(database.pollVoteEvents)
@@ -553,7 +695,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     const archivedTables = {
@@ -562,6 +704,8 @@ void main() {
       'members': 'members',
       'group_members': 'group_members',
       'notes': 'notes',
+      'chat_categories': 'chat_categories',
+      'chat_channels': 'chat_channels',
       'messages': 'messages',
       'reminders': 'reminders',
       'custom_field_definitions': 'custom_fields',
@@ -604,7 +748,7 @@ void main() {
 
   test('imports a local archive into an empty database', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
-    final source = LocalHavenRepository(sourceDatabase);
+    final source = testRepository(sourceDatabase);
     await source.ensureLocalSystem();
 
     await source.saveMember(
@@ -680,6 +824,7 @@ void main() {
             createdAt: now,
           ),
         );
+    await source.migrateLocalPrivateContentToEncryption();
     await source.setFrontMembers([member.id]);
     final front = (await source.watchFrontHistory().first).single;
     await sourceDatabase
@@ -693,6 +838,7 @@ void main() {
             createdAt: now,
           ),
         );
+    await source.migrateLocalPrivateContentToEncryption();
     final poll = (await source.watchPolls().first).single;
     await sourceDatabase
         .into(sourceDatabase.pollVoteEvents)
@@ -718,7 +864,7 @@ void main() {
 
     final targetDatabase = AppDatabase(NativeDatabase.memory());
     addTearDown(targetDatabase.close);
-    final target = LocalHavenRepository(targetDatabase);
+    final target = testRepository(targetDatabase);
     await target.ensureLocalSystem();
 
     await target.importLocalArchiveJson(
@@ -769,6 +915,10 @@ void main() {
     expect(targetArchive['content_revisions'], hasLength(1));
     expect(targetArchive['front_audit_events'], hasLength(1));
     expect(targetArchive['poll_vote_events'], hasLength(1));
+    expect(
+      (targetArchive['import_records'] as List).single['file_name'],
+      'backup.json',
+    );
 
     final snapshot = await target.loadHomeSnapshot();
     expect(snapshot.memberCount, 1);
@@ -781,12 +931,12 @@ void main() {
         .get();
     expect(importRecords, hasLength(1));
     expect(importRecords.single.source, 'plurishaven_archive');
-    expect(importRecords.single.fileName, 'backup.json');
+    expect(importRecords.single.fileName, isNot('backup.json'));
   });
 
   test('rehearses a restore without changing the current database', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
-    final source = LocalHavenRepository(sourceDatabase);
+    final source = testRepository(sourceDatabase);
     await source.ensureLocalSystem();
     await source.saveMember(
       const MemberDraft(displayName: 'Iris', pronouns: 'she/they'),
@@ -825,7 +975,7 @@ void main() {
 
     final targetDatabase = AppDatabase(NativeDatabase.memory());
     addTearDown(targetDatabase.close);
-    final target = LocalHavenRepository(targetDatabase);
+    final target = testRepository(targetDatabase);
     await target.ensureLocalSystem();
 
     final rehearsal = await target.rehearseLocalArchiveRestore(
@@ -854,7 +1004,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     final rehearsal = await repository.rehearseLocalArchiveRestore(
@@ -871,7 +1021,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     final normalized = normalizeImportTextToLocalArchive(
@@ -922,7 +1072,7 @@ void main() {
       final database = AppDatabase(NativeDatabase.memory());
       addTearDown(database.close);
 
-      final repository = LocalHavenRepository(database);
+      final repository = testRepository(database);
       await repository.ensureLocalSystem();
 
       final normalized = normalizeImportTextToLocalArchive(
@@ -1010,7 +1160,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     final normalized = normalizeImportTextToLocalArchive(
@@ -1048,7 +1198,7 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
-    final repository = LocalHavenRepository(database);
+    final repository = testRepository(database);
     await repository.ensureLocalSystem();
 
     final archive = normalizeImportTextToLocalArchive(
@@ -1076,8 +1226,111 @@ void main() {
       fileName: 'sp.json',
     );
 
-    final rows = await database.select(database.members).get();
-    expect(rows.single.avatarUrl, startsWith('local-avatar:'));
-    expect(rows.single.avatarUrl, endsWith('.png'));
+    final member = (await repository.watchMembers().first).single;
+    expect(member.avatarUrl, startsWith('local-avatar:'));
+    expect(member.avatarUrl, endsWith('.png'));
+  });
+
+  test('uses avatar bytes instead of a misleading source extension', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [{"_id": "m1", "name": "Iris", "avatarUuid": "avatar-1"}]
+}
+''',
+      avatarAssets: [
+        ImportAvatarAsset(
+          id: 'avatar-1',
+          name: 'avatars/avatar-1.png',
+          mimeType: 'image/png',
+          bytes: Uint8List.fromList([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+        ),
+      ],
+    );
+
+    await repository.importLocalArchiveJson(
+      archive.archiveJson,
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+    );
+
+    final member = (await repository.watchMembers().first).single;
+    expect(member.avatarUrl, endsWith('.jpg'));
+    final exported =
+        jsonDecode(await repository.buildLocalArchiveJson())
+            as Map<String, dynamic>;
+    final assets = (exported['avatar_assets'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(assets.single['mime_type'], 'image/jpeg');
+  });
+
+  test('does not retain an unavailable remote avatar as local data', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.importLocalArchiveJson('''
+{
+  "format": "pluris_haven.local_archive",
+  "version": 1,
+  "system": null,
+  "members": [
+    {
+      "id": "m1",
+      "display_name": "Iris",
+      "avatar_url": "http://127.0.0.1:1/unavailable.png"
+    }
+  ]
+}
+''');
+
+    final member = (await repository.watchMembers().first).single;
+    expect(member.avatarUrl, isNull);
+    final exported = await repository.buildLocalArchiveJson();
+    expect(exported, isNot(contains('127.0.0.1')));
+  });
+
+  test('does not export device-local avatar paths or URIs', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'File URI',
+        avatarUrl: 'file:///data/user/0/works.endoftime.plurishaven/avatar.png',
+      ),
+    );
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Document URI',
+        avatarUrl: 'content://com.android.providers.media/avatar/42',
+      ),
+    );
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Absolute path',
+        avatarUrl: '/data/user/0/works.endoftime.plurishaven/avatar.png',
+      ),
+    );
+
+    final archive = await repository.buildLocalArchiveJson();
+    final decoded = jsonDecode(archive) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+
+    expect(members.map((member) => member['avatar_url']), everyElement(isNull));
+    expect(archive, isNot(contains('file://')));
+    expect(archive, isNot(contains('content://')));
+    expect(archive, isNot(contains('/data/user/0/')));
   });
 }
