@@ -12,6 +12,8 @@ import '../security/haven_crypto.dart';
 import 'app_database.dart';
 import 'supported_language.dart';
 
+const _localEncryptedTextPrefix = 'ph1:';
+
 class HomeSnapshot {
   const HomeSnapshot({
     required this.systemName,
@@ -259,6 +261,7 @@ class MessageSummary {
     this.boardKind = 'system',
     this.boardMemberId,
     this.parentMessageId,
+    this.channelId,
     required this.createdAt,
     this.archived = false,
   });
@@ -269,6 +272,7 @@ class MessageSummary {
   final String boardKind;
   final String? boardMemberId;
   final String? parentMessageId;
+  final String? channelId;
   final DateTime createdAt;
   final bool archived;
 }
@@ -280,6 +284,7 @@ class MessageDraft {
     this.boardKind = 'system',
     this.boardMemberId,
     this.parentMessageId,
+    this.channelId,
   });
 
   final String body;
@@ -287,6 +292,60 @@ class MessageDraft {
   final String boardKind;
   final String? boardMemberId;
   final String? parentMessageId;
+  final String? channelId;
+}
+
+class ChatCategorySummary {
+  const ChatCategorySummary({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.position,
+  });
+
+  final String id;
+  final String name;
+  final String? description;
+  final int position;
+}
+
+class ChatCategoryDraft {
+  const ChatCategoryDraft({required this.name, this.description});
+
+  final String name;
+  final String? description;
+}
+
+class ChatChannelSummary {
+  const ChatChannelSummary({
+    required this.id,
+    required this.name,
+    this.categoryId,
+    this.description,
+    this.colorHex,
+    required this.position,
+  });
+
+  final String id;
+  final String name;
+  final String? categoryId;
+  final String? description;
+  final String? colorHex;
+  final int position;
+}
+
+class ChatChannelDraft {
+  const ChatChannelDraft({
+    required this.name,
+    this.categoryId,
+    this.description,
+    this.colorHex,
+  });
+
+  final String name;
+  final String? categoryId;
+  final String? description;
+  final String? colorHex;
 }
 
 class ReminderSummary {
@@ -690,6 +749,10 @@ abstract interface class HavenRepository {
 
   Stream<List<MessageSummary>> watchMessages();
 
+  Stream<List<ChatCategorySummary>> watchChatCategories();
+
+  Stream<List<ChatChannelSummary>> watchChatChannels();
+
   Stream<List<ReminderSummary>> watchReminders();
 
   Stream<List<CustomFieldSummary>> watchCustomFields();
@@ -789,6 +852,18 @@ abstract interface class HavenRepository {
   Future<void> updateMessage(String messageId, MessageDraft draft);
 
   Future<void> deleteMessage(String messageId);
+
+  Future<void> saveChatCategory(ChatCategoryDraft draft);
+
+  Future<void> updateChatCategory(String categoryId, ChatCategoryDraft draft);
+
+  Future<void> deleteChatCategory(String categoryId);
+
+  Future<void> saveChatChannel(ChatChannelDraft draft);
+
+  Future<void> updateChatChannel(String channelId, ChatChannelDraft draft);
+
+  Future<void> deleteChatChannel(String channelId);
 
   Future<String?> saveReminder(ReminderDraft draft);
 
@@ -917,45 +992,33 @@ abstract interface class HavenRepository {
 }
 
 class LocalHavenRepository implements HavenRepository {
-  LocalHavenRepository(this.database, {this.crypto});
+  LocalHavenRepository(this.database, {required this.crypto});
 
   final AppDatabase database;
-  final HavenCrypto? crypto;
+  final HavenCrypto crypto;
 
-  /// Decrypts [ciphertext] using the configured [HavenCrypto], or returns
-  /// [ciphertext] unchanged if no crypto is configured (plaintext dev mode).
+  /// Decrypts [ciphertext] using the configured [HavenCrypto].
+  ///
+  /// There is deliberately no plaintext fallback here. A missing key or a
+  /// failed authentication check must stop the read instead of turning
+  /// protected data into apparently valid plaintext.
   Future<String?> _decrypt(String? ciphertext) async {
-    final crypto = this.crypto;
-    if (crypto == null || ciphertext == null) return ciphertext;
-    try {
-      return await crypto.decrypt(ciphertext);
-    } on Object {
-      return ciphertext;
-    }
+    if (ciphertext == null) return null;
+    return await crypto.decrypt(ciphertext);
   }
 
-  /// Encrypts [plaintext] using the configured [HavenCrypto], or returns
-  /// [plaintext] unchanged if no crypto is configured (plaintext dev mode).
+  /// Encrypts [plaintext] using the configured [HavenCrypto].
+  ///
+  /// Encryption errors are intentionally propagated. Silently storing the
+  /// original value would violate the local data protection boundary.
   Future<String?> _encrypt(String? plaintext) async {
-    final crypto = this.crypto;
-    if (crypto == null || plaintext == null) return plaintext;
-    try {
-      return await crypto.encrypt(plaintext);
-    } on Object {
-      return plaintext;
-    }
+    if (plaintext == null) return null;
+    return await crypto.encrypt(plaintext);
   }
 
-  /// Computes a blind index for [plaintext] if crypto is configured.
-  /// Returns null if no crypto is configured.
+  /// Computes a blind index for [plaintext].
   Future<String?> _blindIndex(String plaintext) async {
-    final crypto = this.crypto;
-    if (crypto == null) return null;
-    try {
-      return await crypto.blindIndex(plaintext);
-    } on Object {
-      return null;
-    }
+    return await crypto.blindIndex(plaintext);
   }
 
   Future<void> ensureLocalSystem() async {
@@ -966,7 +1029,7 @@ class LocalHavenRepository implements HavenRepository {
         .insert(
           PluralSystemsCompanion.insert(
             id: localSystemId,
-            name: 'Local system',
+            name: await _encryptLocalText('Local system'),
             createdAt: now,
             updatedAt: now,
           ),
@@ -975,30 +1038,382 @@ class LocalHavenRepository implements HavenRepository {
   }
 
   Future<void> migrateMemberNamesToEncryption() async {
-    final crypto = this.crypto;
-    if (crypto == null) return;
     final members = await (database.select(
       database.members,
     )..where((member) => member.systemId.equals(localSystemId))).get();
     await database.transaction(() async {
       for (final member in members) {
-        var alreadyEncrypted = false;
-        try {
-          await crypto.decrypt(member.displayName);
-          alreadyEncrypted = true;
-        } on Object {
-          alreadyEncrypted = false;
+        if (member.profileEncryptionVersion >= 1) {
+          await _verifyEncryptedMemberProfile(member);
+          continue;
         }
-        if (alreadyEncrypted) continue;
-        final encrypted = await crypto.encrypt(member.displayName);
-        final blindIndex = await crypto.blindIndex(member.displayName);
+
+        final displayName = member.displayNameHash == null
+            ? member.displayName
+            : await crypto.decrypt(member.displayName);
+        if (displayName == null) {
+          throw StateError('Member name could not be migrated: ${member.id}');
+        }
+
+        final encrypted = await crypto.encrypt(displayName);
+        if (encrypted == null) {
+          throw StateError('Member name encryption returned no value.');
+        }
+        final blindIndex = await crypto.blindIndex(displayName);
         await (database.update(
           database.members,
         )..where((row) => row.id.equals(member.id))).write(
           MembersCompanion(
-            displayName: Value(encrypted ?? member.displayName),
+            displayName: Value(encrypted),
             displayNameHash: Value(blindIndex),
+            profileEncryptionVersion: const Value(1),
+            pronouns: Value(await crypto.encrypt(member.pronouns)),
+            colorHex: Value(await crypto.encrypt(member.colorHex)),
+            birthday: Value(await crypto.encrypt(member.birthday)),
+            emoji: Value(await crypto.encrypt(member.emoji)),
+            privacy: Value(await crypto.encrypt(member.privacy)),
+            description: Value(await crypto.encrypt(member.description)),
+            avatarUrl: Value(await crypto.encrypt(member.avatarUrl)),
+            pluralKitId: Value(await crypto.encrypt(member.pluralKitId)),
             updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _verifyEncryptedMemberProfile(Member member) async {
+    await crypto.decrypt(member.displayName);
+    await crypto.decrypt(member.pronouns);
+    await crypto.decrypt(member.colorHex);
+    await crypto.decrypt(member.birthday);
+    await crypto.decrypt(member.emoji);
+    await crypto.decrypt(member.privacy);
+    await crypto.decrypt(member.description);
+    await crypto.decrypt(member.avatarUrl);
+    await crypto.decrypt(member.pluralKitId);
+  }
+
+  Future<String> _encryptLocalText(String value) async {
+    final encrypted = await crypto.encrypt(value);
+    if (encrypted == null) {
+      throw StateError('Local text encryption returned no value.');
+    }
+    return '$_localEncryptedTextPrefix$encrypted';
+  }
+
+  Future<String?> _encryptNullableLocalText(String? value) async {
+    return value == null ? null : _encryptLocalText(value);
+  }
+
+  Future<String?> _decryptLocalText(String? stored) async {
+    if (stored == null) return null;
+    if (!stored.startsWith(_localEncryptedTextPrefix)) {
+      throw StateError('Protected local text is not encrypted.');
+    }
+    return crypto.decrypt(stored.substring(_localEncryptedTextPrefix.length));
+  }
+
+  Future<String> _migrateLocalText(String stored) async {
+    if (stored.startsWith(_localEncryptedTextPrefix)) {
+      final decrypted = await _decryptLocalText(stored);
+      if (decrypted == null) {
+        throw StateError('Protected local text is unexpectedly null.');
+      }
+      return stored;
+    }
+    return _encryptLocalText(stored);
+  }
+
+  Future<void> migrateLocalPrivateContentToEncryption() async {
+    final notes = await database.select(database.notes).get();
+    final messages = await database.select(database.messages).get();
+    final fronts = await database.select(database.frontSessions).get();
+    final journals = await database.select(database.journalEntries).get();
+    final reminders = await database.select(database.reminders).get();
+    final polls = await database.select(database.polls).get();
+    final pollOptions = await database.select(database.pollOptions).get();
+    final customFields = await database
+        .select(database.customFieldDefinitions)
+        .get();
+    final customFieldValues = await database
+        .select(database.customFieldValues)
+        .get();
+    final groups = await database.select(database.systemGroups).get();
+    final tags = await database.select(database.tags).get();
+    final namedFronts = await database.select(database.namedFronts).get();
+    final privacyBuckets = await database.select(database.privacyBuckets).get();
+    final systems = await database.select(database.pluralSystems).get();
+    final chatCategories = await database.select(database.chatCategories).get();
+    final chatChannels = await database.select(database.chatChannels).get();
+    final notificationEvents = await database
+        .select(database.notificationEvents)
+        .get();
+    final contentRevisions = await database
+        .select(database.contentRevisions)
+        .get();
+    final frontAuditEvents = await database
+        .select(database.frontAuditEvents)
+        .get();
+    final importRecords = await database.select(database.importRecords).get();
+    final importPayloads = await database.select(database.importPayloads).get();
+    final backgroundJobs = await database.select(database.backgroundJobs).get();
+    await database.transaction(() async {
+      for (final note in notes) {
+        await (database.update(
+          database.notes,
+        )..where((row) => row.id.equals(note.id))).write(
+          NotesCompanion(
+            title: Value(await _migrateLocalText(note.title)),
+            body: Value(await _migrateLocalText(note.body)),
+          ),
+        );
+      }
+      for (final message in messages) {
+        await (database.update(
+          database.messages,
+        )..where((row) => row.id.equals(message.id))).write(
+          MessagesCompanion(body: Value(await _migrateLocalText(message.body))),
+        );
+      }
+      for (final front in fronts) {
+        await (database.update(
+          database.frontSessions,
+        )..where((row) => row.id.equals(front.id))).write(
+          FrontSessionsCompanion(
+            label: Value(await _migrateNullableLocalText(front.label)),
+            statusNote: Value(
+              await _migrateNullableLocalText(front.statusNote),
+            ),
+          ),
+        );
+      }
+      for (final journal in journals) {
+        await (database.update(
+          database.journalEntries,
+        )..where((row) => row.id.equals(journal.id))).write(
+          JournalEntriesCompanion(
+            title: Value(await _migrateNullableLocalText(journal.title)),
+            body: Value(await _migrateLocalText(journal.body)),
+          ),
+        );
+      }
+      for (final reminder in reminders) {
+        await (database.update(
+          database.reminders,
+        )..where((row) => row.id.equals(reminder.id))).write(
+          RemindersCompanion(
+            title: Value(await _migrateLocalText(reminder.title)),
+            body: Value(await _migrateNullableLocalText(reminder.body)),
+            scheduleText: Value(await _migrateLocalText(reminder.scheduleText)),
+            triggerEvent: Value(
+              await _migrateNullableLocalText(reminder.triggerEvent),
+            ),
+            scheduleKind: Value(
+              await _migrateNullableLocalText(reminder.scheduleKind),
+            ),
+            scheduleTime: Value(
+              await _migrateNullableLocalText(reminder.scheduleTime),
+            ),
+          ),
+        );
+      }
+      for (final poll in polls) {
+        await (database.update(
+          database.polls,
+        )..where((row) => row.id.equals(poll.id))).write(
+          PollsCompanion(
+            question: Value(await _migrateLocalText(poll.question)),
+            description: Value(
+              await _migrateNullableLocalText(poll.description),
+            ),
+          ),
+        );
+      }
+      for (final option in pollOptions) {
+        await (database.update(
+          database.pollOptions,
+        )..where((row) => row.id.equals(option.id))).write(
+          PollOptionsCompanion(
+            body: Value(await _migrateLocalText(option.body)),
+          ),
+        );
+      }
+      for (final field in customFields) {
+        await (database.update(
+          database.customFieldDefinitions,
+        )..where((row) => row.id.equals(field.id))).write(
+          CustomFieldDefinitionsCompanion(
+            name: Value(await _migrateLocalText(field.name)),
+            privacy: Value(await _migrateNullableLocalText(field.privacy)),
+          ),
+        );
+      }
+      for (final value in customFieldValues) {
+        await (database.update(
+          database.customFieldValues,
+        )..where((row) => row.id.equals(value.id))).write(
+          CustomFieldValuesCompanion(
+            value: Value(await _migrateLocalText(value.value)),
+          ),
+        );
+      }
+      for (final group in groups) {
+        await (database.update(
+          database.systemGroups,
+        )..where((row) => row.id.equals(group.id))).write(
+          SystemGroupsCompanion(
+            name: Value(await _migrateLocalText(group.name)),
+            colorHex: Value(await _migrateNullableLocalText(group.colorHex)),
+            description: Value(
+              await _migrateNullableLocalText(group.description),
+            ),
+            emoji: Value(await _migrateNullableLocalText(group.emoji)),
+          ),
+        );
+      }
+      for (final tag in tags) {
+        await (database.update(
+          database.tags,
+        )..where((row) => row.id.equals(tag.id))).write(
+          TagsCompanion(
+            name: Value(await _migrateLocalText(tag.name)),
+            colorHex: Value(await _migrateNullableLocalText(tag.colorHex)),
+          ),
+        );
+      }
+      for (final front in namedFronts) {
+        await (database.update(
+          database.namedFronts,
+        )..where((row) => row.id.equals(front.id))).write(
+          NamedFrontsCompanion(
+            name: Value(await _migrateLocalText(front.name)),
+            customLabel: Value(
+              await _migrateNullableLocalText(front.customLabel),
+            ),
+            colorHex: Value(await _migrateNullableLocalText(front.colorHex)),
+            avatarUrl: Value(await _migrateNullableLocalText(front.avatarUrl)),
+            description: Value(
+              await _migrateNullableLocalText(front.description),
+            ),
+          ),
+        );
+      }
+      for (final bucket in privacyBuckets) {
+        await (database.update(
+          database.privacyBuckets,
+        )..where((row) => row.id.equals(bucket.id))).write(
+          PrivacyBucketsCompanion(
+            name: Value(await _migrateLocalText(bucket.name)),
+            description: Value(
+              await _migrateNullableLocalText(bucket.description),
+            ),
+            colorHex: Value(await _migrateNullableLocalText(bucket.colorHex)),
+          ),
+        );
+      }
+      for (final system in systems) {
+        await (database.update(
+          database.pluralSystems,
+        )..where((row) => row.id.equals(system.id))).write(
+          PluralSystemsCompanion(
+            name: Value(await _migrateLocalText(system.name)),
+            colorHex: Value(await _migrateNullableLocalText(system.colorHex)),
+            avatarUrl: Value(await _migrateNullableLocalText(system.avatarUrl)),
+            description: Value(
+              await _migrateNullableLocalText(system.description),
+            ),
+          ),
+        );
+      }
+      for (final category in chatCategories) {
+        await (database.update(
+          database.chatCategories,
+        )..where((row) => row.id.equals(category.id))).write(
+          ChatCategoriesCompanion(
+            name: Value(await _migrateLocalText(category.name)),
+            description: Value(
+              await _migrateNullableLocalText(category.description),
+            ),
+          ),
+        );
+      }
+      for (final channel in chatChannels) {
+        await (database.update(
+          database.chatChannels,
+        )..where((row) => row.id.equals(channel.id))).write(
+          ChatChannelsCompanion(
+            name: Value(await _migrateLocalText(channel.name)),
+            description: Value(
+              await _migrateNullableLocalText(channel.description),
+            ),
+            colorHex: Value(await _migrateNullableLocalText(channel.colorHex)),
+          ),
+        );
+      }
+      for (final event in notificationEvents) {
+        await (database.update(
+          database.notificationEvents,
+        )..where((row) => row.id.equals(event.id))).write(
+          NotificationEventsCompanion(
+            title: Value(await _migrateLocalText(event.title)),
+            body: Value(await _migrateLocalText(event.body)),
+          ),
+        );
+      }
+      for (final revision in contentRevisions) {
+        await (database.update(
+          database.contentRevisions,
+        )..where((row) => row.id.equals(revision.id))).write(
+          ContentRevisionsCompanion(
+            title: Value(await _migrateNullableLocalText(revision.title)),
+            body: Value(await _migrateLocalText(revision.body)),
+          ),
+        );
+      }
+      for (final event in frontAuditEvents) {
+        await (database.update(
+          database.frontAuditEvents,
+        )..where((row) => row.id.equals(event.id))).write(
+          FrontAuditEventsCompanion(
+            beforeSnapshot: Value(
+              await _migrateNullableLocalText(event.beforeSnapshot),
+            ),
+            afterSnapshot: Value(
+              await _migrateNullableLocalText(event.afterSnapshot),
+            ),
+          ),
+        );
+      }
+      for (final record in importRecords) {
+        await (database.update(
+          database.importRecords,
+        )..where((row) => row.id.equals(record.id))).write(
+          ImportRecordsCompanion(
+            fileName: Value(await _migrateNullableLocalText(record.fileName)),
+            summaryJson: Value(
+              await _migrateNullableLocalText(record.summaryJson),
+            ),
+          ),
+        );
+      }
+      for (final payload in importPayloads) {
+        await (database.update(
+          database.importPayloads,
+        )..where((row) => row.id.equals(payload.id))).write(
+          ImportPayloadsCompanion(
+            payloadJson: Value(await _migrateLocalText(payload.payloadJson)),
+          ),
+        );
+      }
+      for (final job in backgroundJobs) {
+        await (database.update(
+          database.backgroundJobs,
+        )..where((row) => row.id.equals(job.id))).write(
+          BackgroundJobsCompanion(
+            fileName: Value(await _migrateNullableLocalText(job.fileName)),
+            payloadJson: Value(await _migrateLocalText(job.payloadJson)),
+            error: Value(await _migrateNullableLocalText(job.error)),
           ),
         );
       }
@@ -1033,8 +1448,23 @@ class LocalHavenRepository implements HavenRepository {
       ])
       ..limit(8);
 
-    return query.watch().map(
-      (rows) => [for (final row in rows) _backgroundJobSummary(row)],
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows) await _backgroundJobSummary(row),
+      ],
+    );
+  }
+
+  Future<BackgroundJobSummary> _backgroundJobSummary(BackgroundJob row) async {
+    return BackgroundJobSummary(
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      source: row.source,
+      fileName: await _decryptLocalText(row.fileName),
+      error: await _decryptLocalText(row.error),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
   }
 
@@ -1102,18 +1532,21 @@ ORDER BY m.lexo_rank ASC
             final data = row.data;
             final storedName = data['display_name'] as String;
             final displayName = await _decrypt(storedName);
+            if (displayName == null) {
+              throw StateError('Protected member name is unexpectedly null.');
+            }
             summaries.add(
               MemberSummary(
                 id: data['id'] as String,
-                displayName: displayName ?? storedName,
-                pronouns: data['pronouns'] as String?,
-                colorHex: data['color_hex'] as String?,
-                birthday: data['birthday'] as String?,
-                emoji: data['emoji'] as String?,
-                privacy: data['privacy'] as String?,
-                description: data['description'] as String?,
-                avatarUrl: data['avatar_url'] as String?,
-                pluralKitId: data['plural_kit_id'] as String?,
+                displayName: displayName,
+                pronouns: await _decrypt(data['pronouns'] as String?),
+                colorHex: await _decrypt(data['color_hex'] as String?),
+                birthday: await _decrypt(data['birthday'] as String?),
+                emoji: await _decrypt(data['emoji'] as String?),
+                privacy: await _decrypt(data['privacy'] as String?),
+                description: await _decrypt(data['description'] as String?),
+                avatarUrl: await _decrypt(data['avatar_url'] as String?),
+                pluralKitId: await _decrypt(data['plural_kit_id'] as String?),
                 archived: _readSqlBool(data['archived']),
                 isCustomFront: _readSqlBool(data['is_custom_front']),
                 frameShape: data['frame_shape'] as String,
@@ -1175,18 +1608,21 @@ ORDER BY m.lexo_rank ASC
           continue;
         }
         final displayName = await _decrypt(row.displayName);
+        if (displayName == null) {
+          throw StateError('Protected member name is unexpectedly null.');
+        }
         summaries.add(
           MemberSummary(
             id: row.id,
-            displayName: displayName ?? row.displayName,
-            pronouns: row.pronouns,
-            colorHex: row.colorHex,
-            birthday: row.birthday,
-            emoji: row.emoji,
-            privacy: row.privacy,
-            description: row.description,
-            avatarUrl: row.avatarUrl,
-            pluralKitId: row.pluralKitId,
+            displayName: displayName,
+            pronouns: await _decrypt(row.pronouns),
+            colorHex: await _decrypt(row.colorHex),
+            birthday: await _decrypt(row.birthday),
+            emoji: await _decrypt(row.emoji),
+            privacy: await _decrypt(row.privacy),
+            description: await _decrypt(row.description),
+            avatarUrl: await _decrypt(row.avatarUrl),
+            pluralKitId: await _decrypt(row.pluralKitId),
             archived: row.archived,
             isCustomFront: row.isCustomFront,
             frameShape: row.frameShape,
@@ -1206,7 +1642,6 @@ ORDER BY m.lexo_rank ASC
       ..orderBy([
         (field) =>
             OrderingTerm(expression: field.position, mode: OrderingMode.asc),
-        (field) => OrderingTerm(expression: field.name, mode: OrderingMode.asc),
       ]);
 
     return query.watch().asyncMap((fields) async {
@@ -1219,9 +1654,9 @@ ORDER BY m.lexo_rank ASC
         for (final field in fields)
           CustomFieldSummary(
             id: field.id,
-            name: field.name,
+            name: (await _decryptLocalText(field.name)) ?? '',
             fieldType: field.fieldType,
-            privacy: field.privacy,
+            privacy: await _decryptLocalText(field.privacy),
             position: field.position,
             valueCount: valueCounts[field.id] ?? 0,
           ),
@@ -1231,20 +1666,24 @@ ORDER BY m.lexo_rank ASC
 
   @override
   Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() {
-    return database
-        .select(database.customFieldValues)
-        .watch()
-        .map(
-          (rows) => [
-            for (final row in rows)
-              CustomFieldValueSummary(
-                id: row.id,
-                fieldId: row.fieldId,
-                memberId: row.memberId,
-                value: row.value,
-              ),
-          ],
-        );
+    return database.select(database.customFieldValues).watch().asyncMap((
+      rows,
+    ) async {
+      final fields = await (database.select(
+        database.customFieldDefinitions,
+      )..where((field) => field.systemId.equals(localSystemId))).get();
+      final fieldIds = fields.map((field) => field.id).toSet();
+      return [
+        for (final row in rows)
+          if (fieldIds.contains(row.fieldId))
+            CustomFieldValueSummary(
+              id: row.id,
+              fieldId: row.fieldId,
+              memberId: row.memberId,
+              value: (await _decryptLocalText(row.value)) ?? '',
+            ),
+      ];
+    });
   }
 
   @override
@@ -1271,16 +1710,21 @@ ORDER BY LOWER(g.name) ASC
           readsFrom: {database.systemGroups, database.groupMembers},
         )
         .watch()
-        .map(
-          (rows) => [
+        .asyncMap(
+          (rows) async => [
             for (final row in rows)
               GroupSummary(
                 id: row.data['id'] as String,
-                name: row.data['name'] as String,
+                name:
+                    (await _decryptLocalText(row.data['name'] as String)) ?? '',
                 parentGroupId: row.data['parent_group_id'] as String?,
-                colorHex: row.data['color_hex'] as String?,
-                description: row.data['description'] as String?,
-                emoji: row.data['emoji'] as String?,
+                colorHex: await _decryptLocalText(
+                  row.data['color_hex'] as String?,
+                ),
+                description: await _decryptLocalText(
+                  row.data['description'] as String?,
+                ),
+                emoji: await _decryptLocalText(row.data['emoji'] as String?),
                 isSubsystem: (row.data['is_subsystem'] as int?) == 1,
                 memberCount: row.data['member_count'] as int,
               ),
@@ -1303,20 +1747,24 @@ FROM privacy_buckets pb
 LEFT JOIN privacy_bucket_members pbm ON pbm.bucket_id = pb.id
 WHERE pb.system_id = ?
 GROUP BY pb.id, pb.name, pb.description, pb.color_hex, pb.position
-ORDER BY pb.position ASC, LOWER(pb.name) ASC
+ORDER BY pb.position ASC
 ''',
           variables: [Variable<String>(localSystemId)],
           readsFrom: {database.privacyBuckets, database.privacyBucketMembers},
         )
         .watch()
-        .map(
-          (rows) => [
+        .asyncMap(
+          (rows) async => [
             for (final row in rows)
               PrivacyBucketSummary(
                 id: row.read<String>('id'),
-                name: row.read<String>('name'),
-                description: row.readNullable<String>('description'),
-                colorHex: row.readNullable<String>('color_hex'),
+                name: (await _decryptLocalText(row.read<String>('name'))) ?? '',
+                description: await _decryptLocalText(
+                  row.readNullable<String>('description'),
+                ),
+                colorHex: await _decryptLocalText(
+                  row.readNullable<String>('color_hex'),
+                ),
                 memberIds: _splitJoinedIds(row.data['member_ids']),
               ),
           ],
@@ -1332,18 +1780,18 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
             OrderingTerm(expression: note.updatedAt, mode: OrderingMode.desc),
       ]);
 
-    return query.watch().map(
-      (rows) => [
+    return query.watch().asyncMap((rows) async {
+      return [
         for (final row in rows)
           NoteSummary(
             id: row.id,
-            title: row.title,
-            body: row.body,
+            title: (await _decryptLocalText(row.title)) ?? '',
+            body: (await _decryptLocalText(row.body)) ?? '',
             memberId: row.memberId,
             updatedAt: row.updatedAt,
           ),
-      ],
-    );
+      ];
+    });
   }
 
   @override
@@ -1361,18 +1809,57 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
         ),
       ]);
 
-    return query.watch().map(
-      (rows) => [
+    return query.watch().asyncMap((rows) async {
+      return [
         for (final row in rows)
           MessageSummary(
             id: row.id,
-            body: row.body,
+            body: (await _decryptLocalText(row.body)) ?? '',
             memberId: row.memberId,
             boardKind: row.boardKind,
             boardMemberId: row.boardMemberId,
             parentMessageId: row.parentMessageId,
+            channelId: row.channelId,
             createdAt: row.createdAt,
             archived: row.archived,
+          ),
+      ];
+    });
+  }
+
+  @override
+  Stream<List<ChatCategorySummary>> watchChatCategories() {
+    final query = database.select(database.chatCategories)
+      ..where((category) => category.systemId.equals(localSystemId))
+      ..orderBy([(category) => OrderingTerm(expression: category.position)]);
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          ChatCategorySummary(
+            id: row.id,
+            name: (await _decryptLocalText(row.name)) ?? '',
+            description: await _decryptLocalText(row.description),
+            position: row.position,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Stream<List<ChatChannelSummary>> watchChatChannels() {
+    final query = database.select(database.chatChannels)
+      ..where((channel) => channel.systemId.equals(localSystemId))
+      ..orderBy([(channel) => OrderingTerm(expression: channel.position)]);
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          ChatChannelSummary(
+            id: row.id,
+            name: (await _decryptLocalText(row.name)) ?? '',
+            categoryId: row.categoryId,
+            description: await _decryptLocalText(row.description),
+            colorHex: await _decryptLocalText(row.colorHex),
+            position: row.position,
           ),
       ],
     );
@@ -1389,23 +1876,23 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
         ),
       ]);
 
-    return query.watch().map(
-      (rows) => [
+    return query.watch().asyncMap((rows) async {
+      return [
         for (final row in rows)
           ReminderSummary(
             id: row.id,
-            title: row.title,
-            body: row.body,
-            scheduleText: row.scheduleText,
-            scheduleKind: row.scheduleKind,
-            scheduleTime: row.scheduleTime,
+            title: (await _decryptLocalText(row.title)) ?? '',
+            body: await _decryptLocalText(row.body),
+            scheduleText: (await _decryptLocalText(row.scheduleText)) ?? '',
+            scheduleKind: await _decryptLocalText(row.scheduleKind),
+            scheduleTime: await _decryptLocalText(row.scheduleTime),
             scheduleDowMask: row.scheduleDowMask,
             scheduleDom: row.scheduleDom,
             enabled: row.enabled,
             updatedAt: row.updatedAt,
           ),
-      ],
-    );
+      ];
+    });
   }
 
   @override
@@ -1437,12 +1924,16 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
         database.pollVotes,
       )..where((vote) => vote.pollId.equals(row.id))).get();
       final selectedOptionIds = votes.map((vote) => vote.optionId).toSet();
+      final question = await _decryptLocalText(row.question);
+      if (question == null) {
+        throw StateError('Protected poll question is unexpectedly null.');
+      }
 
       summaries.add(
         PollSummary(
           id: row.id,
-          question: row.question,
-          description: row.description,
+          question: question,
+          description: await _decryptLocalText(row.description),
           kind: PollKind.fromStorage(row.kind),
           closed: row.closed,
           updatedAt: row.updatedAt,
@@ -1450,7 +1941,7 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
             for (final option in options)
               PollOptionSummary(
                 id: option.id,
-                body: option.body,
+                body: (await _decryptLocalText(option.body)) ?? '',
                 position: option.position,
                 selected: selectedOptionIds.contains(option.id),
               ),
@@ -1470,14 +1961,14 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
             OrderingTerm(expression: event.createdAt, mode: OrderingMode.desc),
       ]);
 
-    return query.watch().map(
-      (rows) => [
+    return query.watch().asyncMap(
+      (rows) async => [
         for (final row in rows)
           NotificationEventSummary(
             id: row.id,
             kind: row.kind,
-            title: row.title,
-            body: row.body,
+            title: (await _decryptLocalText(row.title)) ?? '',
+            body: (await _decryptLocalText(row.body)) ?? '',
             readAt: row.readAt,
             createdAt: row.createdAt,
           ),
@@ -1511,7 +2002,7 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
         FrontHistoryEntry(
           id: row.id,
           label: await _frontHistoryLabel(row),
-          statusNote: row.statusNote,
+          statusNote: await _decryptLocalText(row.statusNote),
           startedAt: row.startedAt,
           endedAt: row.endedAt,
           memberIds: [for (final link in links) link.memberId],
@@ -1522,7 +2013,7 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
   }
 
   Future<String> _frontHistoryLabel(FrontSession row) async {
-    final explicit = row.label?.trim();
+    final explicit = (await _decryptLocalText(row.label))?.trim();
     if (explicit != null && explicit.isNotEmpty) {
       return explicit;
     }
@@ -1538,9 +2029,13 @@ ORDER BY pb.position ASC, LOWER(pb.name) ASC
     final members = await (database.select(
       database.members,
     )..where((member) => member.id.isIn(memberIds))).get();
-    final namesById = {
-      for (final member in members) member.id: member.displayName.trim(),
-    };
+    final namesById = <String, String>{};
+    for (final member in members) {
+      final name = (await _decrypt(member.displayName))?.trim();
+      if (name != null && name.isNotEmpty) {
+        namesById[member.id] = name;
+      }
+    }
     final names = [
       for (final link in links)
         if ((namesById[link.memberId] ?? '').isNotEmpty)
@@ -1589,17 +2084,26 @@ SELECT
 
   Future<HomeSnapshot> _mapHomeSnapshot(QueryRow row) async {
     final data = row.data;
+    final storedSystemName = data['system_name'] as String;
 
     return HomeSnapshot(
-      systemName: data['system_name'] as String,
+      systemName: storedSystemName.startsWith(_localEncryptedTextPrefix)
+          ? (await _decryptLocalText(storedSystemName)) ?? 'Local system'
+          : storedSystemName,
       memberCount: data['member_count'] as int,
       groupCount: data['group_count'] as int,
       noteCount: data['note_count'] as int,
       frontHistoryCount: data['front_history_count'] as int,
       currentFrontLabel: await _currentFrontLabel(),
-      systemColorHex: data['system_color_hex'] as String?,
-      systemAvatarUrl: data['system_avatar_url'] as String?,
-      systemDescription: data['system_description'] as String?,
+      systemColorHex: await _decryptLocalText(
+        data['system_color_hex'] as String?,
+      ),
+      systemAvatarUrl: await _decryptLocalText(
+        data['system_avatar_url'] as String?,
+      ),
+      systemDescription: await _decryptLocalText(
+        data['system_description'] as String?,
+      ),
     );
   }
 
@@ -1614,10 +2118,16 @@ SELECT
       database.pluralSystems,
     )..where((system) => system.id.equals(localSystemId))).write(
       PluralSystemsCompanion(
-        name: Value(name),
-        colorHex: Value(_normalizeHexColor(draft.colorHex)),
-        avatarUrl: Value(_trimToNull(draft.avatarUrl)),
-        description: Value(_trimToNull(draft.description)),
+        name: Value(await _encryptLocalText(name)),
+        colorHex: Value(
+          await _encryptNullableLocalText(_normalizeHexColor(draft.colorHex)),
+        ),
+        avatarUrl: Value(
+          await _encryptNullableLocalText(_trimToNull(draft.avatarUrl)),
+        ),
+        description: Value(
+          await _encryptNullableLocalText(_trimToNull(draft.description)),
+        ),
         updatedAt: Value(now),
       ),
     );
@@ -1644,7 +2154,7 @@ SELECT
 
     final labels = <String>[];
     for (final session in sessions) {
-      final explicit = session.label?.trim();
+      final explicit = (await _decryptLocalText(session.label))?.trim();
       if (explicit != null && explicit.isNotEmpty) {
         labels.add(explicit);
         continue;
@@ -1667,7 +2177,7 @@ SELECT
       final namesById = <String, String>{};
       for (final member in members) {
         final displayName = await _decrypt(member.displayName);
-        final name = (displayName ?? member.displayName).trim();
+        final name = displayName?.trim() ?? '';
         if (name.isNotEmpty) {
           namesById[member.id] = name;
         }
@@ -1900,16 +2410,17 @@ SELECT
           MembersCompanion.insert(
             id: memberId,
             systemId: localSystemId,
-            displayName: encryptedName ?? displayName,
+            displayName: encryptedName!,
             displayNameHash: Value(nameHash),
-            pronouns: Value(_nullIfBlank(draft.pronouns)),
-            colorHex: Value(_nullIfBlank(draft.colorHex)),
-            birthday: Value(_nullIfBlank(draft.birthday)),
-            emoji: Value(_nullIfBlank(draft.emoji)),
-            privacy: Value(_nullIfBlank(draft.privacy)),
-            description: Value(_nullIfBlank(draft.description)),
-            avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
-            pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
+            profileEncryptionVersion: const Value(1),
+            pronouns: Value(await _encrypt(_nullIfBlank(draft.pronouns))),
+            colorHex: Value(await _encrypt(_nullIfBlank(draft.colorHex))),
+            birthday: Value(await _encrypt(_nullIfBlank(draft.birthday))),
+            emoji: Value(await _encrypt(_nullIfBlank(draft.emoji))),
+            privacy: Value(await _encrypt(_nullIfBlank(draft.privacy))),
+            description: Value(await _encrypt(_nullIfBlank(draft.description))),
+            avatarUrl: Value(await _encrypt(_nullIfBlank(draft.avatarUrl))),
+            pluralKitId: Value(await _encrypt(_nullIfBlank(draft.pluralKitId))),
             folderId: Value(folderId),
             createdAt: now,
             updatedAt: now,
@@ -1963,16 +2474,17 @@ SELECT
         ))
         .write(
           MembersCompanion(
-            displayName: Value(encryptedName ?? displayName),
+            displayName: Value(encryptedName!),
             displayNameHash: Value(nameHash),
-            pronouns: Value(_nullIfBlank(draft.pronouns)),
-            colorHex: Value(_nullIfBlank(draft.colorHex)),
-            birthday: Value(_nullIfBlank(draft.birthday)),
-            emoji: Value(_nullIfBlank(draft.emoji)),
-            privacy: Value(_nullIfBlank(draft.privacy)),
-            description: Value(_nullIfBlank(draft.description)),
-            avatarUrl: Value(_nullIfBlank(draft.avatarUrl)),
-            pluralKitId: Value(_nullIfBlank(draft.pluralKitId)),
+            profileEncryptionVersion: const Value(1),
+            pronouns: Value(await _encrypt(_nullIfBlank(draft.pronouns))),
+            colorHex: Value(await _encrypt(_nullIfBlank(draft.colorHex))),
+            birthday: Value(await _encrypt(_nullIfBlank(draft.birthday))),
+            emoji: Value(await _encrypt(_nullIfBlank(draft.emoji))),
+            privacy: Value(await _encrypt(_nullIfBlank(draft.privacy))),
+            description: Value(await _encrypt(_nullIfBlank(draft.description))),
+            avatarUrl: Value(await _encrypt(_nullIfBlank(draft.avatarUrl))),
+            pluralKitId: Value(await _encrypt(_nullIfBlank(draft.pluralKitId))),
             folderId: Value(folderId),
             updatedAt: Value(now),
           ),
@@ -2023,6 +2535,10 @@ SELECT
             );
       }
     });
+  }
+
+  Future<String?> _migrateNullableLocalText(String? stored) async {
+    return stored == null ? null : _migrateLocalText(stored);
   }
 
   String? _firstOrNull(Set<String> values) {
@@ -2159,14 +2675,16 @@ SELECT
   }
 
   @override
-  Future<void> updateFrontStatusNote(String frontId, String? statusNote) {
-    return (database.update(database.frontSessions)..where(
+  Future<void> updateFrontStatusNote(String frontId, String? statusNote) async {
+    await (database.update(database.frontSessions)..where(
           (front) =>
               front.systemId.equals(localSystemId) & front.id.equals(frontId),
         ))
         .write(
           FrontSessionsCompanion(
-            statusNote: Value(_nullIfBlank(statusNote)),
+            statusNote: Value(
+              await _encryptNullableLocalText(_nullIfBlank(statusNote)),
+            ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
@@ -2216,8 +2734,16 @@ SELECT
               FrontSessionsCompanion.insert(
                 id: frontId,
                 systemId: localSystemId,
-                label: Value(memberIds.isEmpty ? label : null),
-                statusNote: Value(_nullIfBlank(draft.statusNote)),
+                label: Value(
+                  await _encryptNullableLocalText(
+                    memberIds.isEmpty ? label : null,
+                  ),
+                ),
+                statusNote: Value(
+                  await _encryptNullableLocalText(
+                    _nullIfBlank(draft.statusNote),
+                  ),
+                ),
                 startedAt: startedAt,
                 endedAt: Value(endedAt),
                 createdAt: now,
@@ -2232,8 +2758,16 @@ SELECT
             ))
             .write(
               FrontSessionsCompanion(
-                label: Value(memberIds.isEmpty ? label : null),
-                statusNote: Value(_nullIfBlank(draft.statusNote)),
+                label: Value(
+                  await _encryptNullableLocalText(
+                    memberIds.isEmpty ? label : null,
+                  ),
+                ),
+                statusNote: Value(
+                  await _encryptNullableLocalText(
+                    _nullIfBlank(draft.statusNote),
+                  ),
+                ),
                 startedAt: Value(startedAt),
                 endedAt: Value(endedAt),
                 updatedAt: Value(now),
@@ -2285,11 +2819,17 @@ SELECT
           SystemGroupsCompanion.insert(
             id: 'group-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
-            name: name,
+            name: await _encryptLocalText(name),
             parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
-            colorHex: Value(_nullIfBlank(draft.colorHex)),
-            description: Value(_nullIfBlank(draft.description)),
-            emoji: Value(_nullIfBlank(draft.emoji)),
+            colorHex: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.colorHex)),
+            ),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            emoji: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.emoji)),
+            ),
             isSubsystem: Value(draft.isSubsystem),
             createdAt: now,
             updatedAt: now,
@@ -2317,10 +2857,16 @@ SELECT
         .write(
           SystemGroupsCompanion(
             parentGroupId: Value(parentId),
-            name: Value(name),
-            colorHex: Value(_nullIfBlank(draft.colorHex)),
-            description: Value(_nullIfBlank(draft.description)),
-            emoji: Value(_nullIfBlank(draft.emoji)),
+            name: Value(await _encryptLocalText(name)),
+            colorHex: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.colorHex)),
+            ),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            emoji: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.emoji)),
+            ),
             isSubsystem: Value(draft.isSubsystem),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
@@ -2404,9 +2950,17 @@ SELECT
             PrivacyBucketsCompanion.insert(
               id: bucketId,
               systemId: localSystemId,
-              name: name,
-              description: Value(_nullIfBlank(draft.description)),
-              colorHex: Value(_normalizeHexColor(draft.colorHex)),
+              name: await _encryptLocalText(name),
+              description: Value(
+                await _encryptNullableLocalText(
+                  _nullIfBlank(draft.description),
+                ),
+              ),
+              colorHex: Value(
+                await _encryptNullableLocalText(
+                  _normalizeHexColor(draft.colorHex),
+                ),
+              ),
               position: Value((maxPosition ?? -1) + 1),
               createdAt: now,
               updatedAt: now,
@@ -2431,9 +2985,17 @@ SELECT
           ))
           .write(
             PrivacyBucketsCompanion(
-              name: Value(name),
-              description: Value(_nullIfBlank(draft.description)),
-              colorHex: Value(_normalizeHexColor(draft.colorHex)),
+              name: Value(await _encryptLocalText(name)),
+              description: Value(
+                await _encryptNullableLocalText(
+                  _nullIfBlank(draft.description),
+                ),
+              ),
+              colorHex: Value(
+                await _encryptNullableLocalText(
+                  _normalizeHexColor(draft.colorHex),
+                ),
+              ),
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
@@ -2504,9 +3066,11 @@ SELECT
           CustomFieldDefinitionsCompanion.insert(
             id: 'custom-field-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
-            name: name,
+            name: await _encryptLocalText(name),
             fieldType: Value(fieldType),
-            privacy: Value(_nullIfBlank(draft.privacy)),
+            privacy: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.privacy)),
+            ),
             position: Value((maxPosition ?? -1) + 1),
             createdAt: now,
             updatedAt: now,
@@ -2530,9 +3094,11 @@ SELECT
         ))
         .write(
           CustomFieldDefinitionsCompanion(
-            name: Value(name),
+            name: Value(await _encryptLocalText(name)),
             fieldType: Value(fieldType),
-            privacy: Value(_nullIfBlank(draft.privacy)),
+            privacy: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.privacy)),
+            ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
@@ -2588,7 +3154,7 @@ SELECT
               id: 'custom-field-value-${now.microsecondsSinceEpoch}',
               fieldId: fieldId,
               memberId: Value(ownerId),
-              value: trimmed,
+              value: await _encryptLocalText(trimmed),
               createdAt: now,
               updatedAt: now,
             ),
@@ -2599,7 +3165,10 @@ SELECT
     await (database.update(
       database.customFieldValues,
     )..where((row) => row.id.equals(existing.id))).write(
-      CustomFieldValuesCompanion(value: Value(trimmed), updatedAt: Value(now)),
+      CustomFieldValuesCompanion(
+        value: Value(await _encryptLocalText(trimmed)),
+        updatedAt: Value(now),
+      ),
     );
   }
 
@@ -2619,8 +3188,10 @@ SELECT
             id: 'note-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
             memberId: Value(_nullIfBlank(draft.memberId)),
-            title: title.isEmpty ? 'Untitled note' : title,
-            body: body,
+            title: await _encryptLocalText(
+              title.isEmpty ? 'Untitled note' : title,
+            ),
+            body: await _encryptLocalText(body),
             createdAt: now,
             updatedAt: now,
           ),
@@ -2643,8 +3214,10 @@ SELECT
         .write(
           NotesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
-            title: Value(title.isEmpty ? 'Untitled note' : title),
-            body: Value(body),
+            title: Value(
+              await _encryptLocalText(title.isEmpty ? 'Untitled note' : title),
+            ),
+            body: Value(await _encryptLocalText(body)),
             updatedAt: Value(now),
           ),
         );
@@ -2674,14 +3247,25 @@ SELECT
             id: 'message-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
             memberId: Value(_nullIfBlank(draft.memberId)),
-            body: body,
-            boardKind: Value(draft.boardKind == 'member' ? 'member' : 'system'),
+            body: await _encryptLocalText(body),
+            boardKind: Value(
+              draft.boardKind == 'member'
+                  ? 'member'
+                  : draft.boardKind == 'channel'
+                  ? 'channel'
+                  : 'system',
+            ),
             boardMemberId: Value(
               draft.boardKind == 'member'
                   ? _nullIfBlank(draft.boardMemberId)
                   : null,
             ),
             parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
+            channelId: Value(
+              draft.boardKind == 'channel'
+                  ? _nullIfBlank(draft.channelId)
+                  : null,
+            ),
             createdAt: now,
             updatedAt: now,
           ),
@@ -2704,14 +3288,25 @@ SELECT
         .write(
           MessagesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
-            body: Value(body),
-            boardKind: Value(draft.boardKind == 'member' ? 'member' : 'system'),
+            body: Value(await _encryptLocalText(body)),
+            boardKind: Value(
+              draft.boardKind == 'member'
+                  ? 'member'
+                  : draft.boardKind == 'channel'
+                  ? 'channel'
+                  : 'system',
+            ),
             boardMemberId: Value(
               draft.boardKind == 'member'
                   ? _nullIfBlank(draft.boardMemberId)
                   : null,
             ),
             parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
+            channelId: Value(
+              draft.boardKind == 'channel'
+                  ? _nullIfBlank(draft.channelId)
+                  : null,
+            ),
             archived: const Value(false),
             deletedAt: const Value(null),
             updatedAt: Value(now),
@@ -2737,6 +3332,152 @@ SELECT
   }
 
   @override
+  Future<void> saveChatCategory(ChatCategoryDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    final now = DateTime.now().toUtc();
+    final maxPosition = database.chatCategories.position.max();
+    final position =
+        await (database.selectOnly(database.chatCategories)
+              ..addColumns([maxPosition])
+              ..where(database.chatCategories.systemId.equals(localSystemId)))
+            .map((row) => row.read(maxPosition) ?? -1)
+            .getSingle();
+    await database
+        .into(database.chatCategories)
+        .insert(
+          ChatCategoriesCompanion.insert(
+            id: 'chat-category-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            name: await _encryptLocalText(name),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            position: Value(position + 1),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> updateChatCategory(
+    String categoryId,
+    ChatCategoryDraft draft,
+  ) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    await (database.update(database.chatCategories)..where(
+          (category) =>
+              category.systemId.equals(localSystemId) &
+              category.id.equals(categoryId),
+        ))
+        .write(
+          ChatCategoriesCompanion(
+            name: Value(await _encryptLocalText(name)),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteChatCategory(String categoryId) async {
+    await database.transaction(() async {
+      await (database.update(database.chatChannels)
+            ..where((channel) => channel.categoryId.equals(categoryId)))
+          .write(const ChatChannelsCompanion(categoryId: Value(null)));
+      await (database.delete(database.chatCategories)..where(
+            (category) =>
+                category.systemId.equals(localSystemId) &
+                category.id.equals(categoryId),
+          ))
+          .go();
+    });
+  }
+
+  @override
+  Future<void> saveChatChannel(ChatChannelDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    final now = DateTime.now().toUtc();
+    final maxPosition = database.chatChannels.position.max();
+    final position =
+        await (database.selectOnly(database.chatChannels)
+              ..addColumns([maxPosition])
+              ..where(database.chatChannels.systemId.equals(localSystemId)))
+            .map((row) => row.read(maxPosition) ?? -1)
+            .getSingle();
+    await database
+        .into(database.chatChannels)
+        .insert(
+          ChatChannelsCompanion.insert(
+            id: 'chat-channel-${now.microsecondsSinceEpoch}',
+            systemId: localSystemId,
+            categoryId: Value(_nullIfBlank(draft.categoryId)),
+            name: await _encryptLocalText(name),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            colorHex: Value(
+              await _encryptNullableLocalText(
+                _normalizeHexColor(draft.colorHex),
+              ),
+            ),
+            position: Value(position + 1),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  @override
+  Future<void> updateChatChannel(
+    String channelId,
+    ChatChannelDraft draft,
+  ) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    await (database.update(database.chatChannels)..where(
+          (channel) =>
+              channel.systemId.equals(localSystemId) &
+              channel.id.equals(channelId),
+        ))
+        .write(
+          ChatChannelsCompanion(
+            categoryId: Value(_nullIfBlank(draft.categoryId)),
+            name: Value(await _encryptLocalText(name)),
+            description: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+            ),
+            colorHex: Value(
+              await _encryptNullableLocalText(
+                _normalizeHexColor(draft.colorHex),
+              ),
+            ),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteChatChannel(String channelId) async {
+    await database.transaction(() async {
+      await (database.update(database.messages)
+            ..where((message) => message.channelId.equals(channelId)))
+          .write(const MessagesCompanion(channelId: Value(null)));
+      await (database.delete(database.chatChannels)..where(
+            (channel) =>
+                channel.systemId.equals(localSystemId) &
+                channel.id.equals(channelId),
+          ))
+          .go();
+    });
+  }
+
+  @override
   Future<String?> saveReminder(ReminderDraft draft) async {
     final title = draft.title.trim();
     final scheduleText = draft.scheduleText.trim();
@@ -2752,11 +3493,17 @@ SELECT
           RemindersCompanion.insert(
             id: id,
             systemId: localSystemId,
-            title: title,
-            body: Value(_nullIfBlank(draft.body)),
-            scheduleText: scheduleText,
-            scheduleKind: Value(_nullIfBlank(draft.scheduleKind)),
-            scheduleTime: Value(_nullIfBlank(draft.scheduleTime)),
+            title: await _encryptLocalText(title),
+            body: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.body)),
+            ),
+            scheduleText: await _encryptLocalText(scheduleText),
+            scheduleKind: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.scheduleKind)),
+            ),
+            scheduleTime: Value(
+              await _encryptNullableLocalText(_nullIfBlank(draft.scheduleTime)),
+            ),
             scheduleDowMask: Value(draft.scheduleDowMask),
             scheduleDom: Value(draft.scheduleDom),
             enabled: Value(draft.enabled),
@@ -2809,21 +3556,28 @@ SELECT
             PollsCompanion.insert(
               id: pollId,
               systemId: localSystemId,
-              question: question,
-              description: Value(_nullIfBlank(draft.description)),
+              question: await _encryptLocalText(question),
+              description: Value(
+                await _encryptNullableLocalText(
+                  _nullIfBlank(draft.description),
+                ),
+              ),
               kind: Value(draft.kind.storageValue),
               createdAt: now,
               updatedAt: now,
             ),
           );
 
+      final encryptedOptions = [
+        for (final option in options) await _encryptLocalText(option),
+      ];
       await database.batch((batch) {
         batch.insertAll(database.pollOptions, [
-          for (var index = 0; index < options.length; index++)
+          for (var index = 0; index < encryptedOptions.length; index++)
             PollOptionsCompanion.insert(
               id: '$pollId-option-$index',
               pollId: pollId,
-              body: options[index],
+              body: encryptedOptions[index],
               position: index,
             ),
         ]);
@@ -2946,8 +3700,10 @@ SELECT
             id: 'notification-${now.microsecondsSinceEpoch}',
             systemId: localSystemId,
             kind: draft.kind.trim().isEmpty ? 'general' : draft.kind.trim(),
-            title: title.isEmpty ? 'Notification' : title,
-            body: body,
+            title: await _encryptLocalText(
+              title.isEmpty ? 'Notification' : title,
+            ),
+            body: await _encryptLocalText(body),
             createdAt: now,
           ),
         );
@@ -3010,12 +3766,13 @@ SELECT
           await (database.select(database.frontSessions)..where(
                 (front) =>
                     front.systemId.equals(localSystemId) &
-                    front.endedAt.isNull() &
-                    front.label.equals(trimmed),
+                    front.endedAt.isNull(),
               ))
-              .getSingleOrNull();
-      if (existing != null) {
-        return;
+              .get();
+      for (final front in existing) {
+        if ((await _decryptLocalText(front.label))?.trim() == trimmed) {
+          return;
+        }
       }
 
       await database
@@ -3024,7 +3781,7 @@ SELECT
             FrontSessionsCompanion.insert(
               id: 'front-${now.microsecondsSinceEpoch}',
               systemId: localSystemId,
-              label: Value(trimmed),
+              label: Value(await _encryptLocalText(trimmed)),
               startedAt: now,
               createdAt: now,
               updatedAt: now,
@@ -3057,6 +3814,15 @@ SELECT
       database.notes,
     )..where((note) => note.systemId.equals(localSystemId))).get();
     final noteIds = notes.map((note) => note.id).toSet();
+    final chatCategories = await (database.select(
+      database.chatCategories,
+    )..where((category) => category.systemId.equals(localSystemId))).get();
+    final chatCategoryIds = chatCategories
+        .map((category) => category.id)
+        .toSet();
+    final chatChannels = await (database.select(
+      database.chatChannels,
+    )..where((channel) => channel.systemId.equals(localSystemId))).get();
     final messages = await (database.select(
       database.messages,
     )..where((message) => message.systemId.equals(localSystemId))).get();
@@ -3126,34 +3892,48 @@ SELECT
     )..where((event) => event.systemId.equals(localSystemId))).get();
     final preferences = await database.select(database.appPreferences).get();
     final avatarAssets = await _exportLocalAvatarAssets([
-      if (systems.isNotEmpty) systems.single.avatarUrl,
-      for (final member in members) member.avatarUrl,
-      for (final front in namedFronts) front.avatarUrl,
+      if (systems.isNotEmpty) await _decrypt(systems.single.avatarUrl),
+      for (final member in members) await _decrypt(member.avatarUrl),
+      for (final front in namedFronts) await _decryptLocalText(front.avatarUrl),
     ]);
 
     final archive = {
       'format': 'pluris_haven.local_archive',
       'version': 1,
       'exported_at': DateTime.now().toUtc().toIso8601String(),
-      'system': systems.isEmpty ? null : _systemToJson(systems.single),
-      'members': [for (final member in members) _memberToJson(member)],
-      'groups': [for (final group in groups) _groupToJson(group)],
+      'system': systems.isEmpty ? null : await _systemToJson(systems.single),
+      'members': [for (final member in members) await _memberToJson(member)],
+      'groups': [for (final group in groups) await _groupToJson(group)],
       'group_members': [
         for (final link in groupMembers)
           if (groupIds.contains(link.groupId)) _groupMemberToJson(link),
       ],
-      'notes': [for (final note in notes) _noteToJson(note)],
-      'messages': [for (final message in messages) _messageToJson(message)],
-      'reminders': [
-        for (final reminder in reminders) _reminderToJson(reminder),
+      'notes': [for (final note in notes) await _noteToJson(note)],
+      'chat_categories': [
+        for (final category in chatCategories)
+          await _chatCategoryToJson(category),
       ],
-      'tags': [for (final tag in tags) _tagToJson(tag)],
+      'chat_channels': [
+        for (final channel in chatChannels)
+          if (channel.categoryId == null ||
+              chatCategoryIds.contains(channel.categoryId))
+            await _chatChannelToJson(channel),
+      ],
+      'messages': [
+        for (final message in messages) await _messageToJson(message),
+      ],
+      'reminders': [
+        for (final reminder in reminders) await _reminderToJson(reminder),
+      ],
+      'tags': [for (final tag in tags) await _tagToJson(tag)],
       'member_tags': [
         for (final link in memberTags)
           if (tagIds.contains(link.tagId) && memberIds.contains(link.memberId))
             _memberTagToJson(link),
       ],
-      'journals': [for (final journal in journals) _journalToJson(journal)],
+      'journals': [
+        for (final journal in journals) await _journalToJson(journal),
+      ],
       'content_revisions': [
         for (final revision in contentRevisions)
           if (_revisionBelongsToArchive(
@@ -3163,20 +3943,20 @@ SELECT
             journalIds: journalIds,
             messageIds: messageIds,
           ))
-            _contentRevisionToJson(revision),
+            await _contentRevisionToJson(revision),
       ],
       'custom_fields': [
-        for (final field in customFields) _customFieldToJson(field),
+        for (final field in customFields) await _customFieldToJson(field),
       ],
       'custom_field_values': [
         for (final value in customFieldValues)
           if (customFieldIds.contains(value.fieldId))
-            _customFieldValueToJson(value),
+            await _customFieldValueToJson(value),
       ],
-      'polls': [for (final poll in polls) _pollToJson(poll)],
+      'polls': [for (final poll in polls) await _pollToJson(poll)],
       'poll_options': [
         for (final option in pollOptions)
-          if (pollIds.contains(option.pollId)) _pollOptionToJson(option),
+          if (pollIds.contains(option.pollId)) await _pollOptionToJson(option),
       ],
       'poll_votes': [
         for (final vote in pollVotes)
@@ -3188,17 +3968,18 @@ SELECT
               pollOptionIds.contains(event.optionId))
             _pollVoteEventToJson(event),
       ],
-      'fronts': [for (final front in fronts) _frontToJson(front)],
+      'fronts': [for (final front in fronts) await _frontToJson(front)],
       'front_members': [
         for (final link in frontMembers)
           if (frontIds.contains(link.sessionId)) _frontMemberToJson(link),
       ],
       'front_audit_events': [
         for (final event in frontAuditEvents)
-          if (frontIds.contains(event.frontId)) _frontAuditEventToJson(event),
+          if (frontIds.contains(event.frontId))
+            await _frontAuditEventToJson(event),
       ],
       'named_fronts': [
-        for (final front in namedFronts) _namedFrontToJson(front),
+        for (final front in namedFronts) await _namedFrontToJson(front),
       ],
       'named_front_members': [
         for (final link in namedFrontMembers)
@@ -3206,7 +3987,7 @@ SELECT
             _namedFrontMemberToJson(link),
       ],
       'privacy_buckets': [
-        for (final bucket in privacyBuckets) _privacyBucketToJson(bucket),
+        for (final bucket in privacyBuckets) await _privacyBucketToJson(bucket),
       ],
       'privacy_bucket_members': [
         for (final link in privacyBucketMembers)
@@ -3216,20 +3997,79 @@ SELECT
       ],
       'avatar_assets': avatarAssets,
       'import_records': [
-        for (final record in importRecords) _importRecordToJson(record),
+        for (final record in importRecords) await _importRecordToJson(record),
       ],
       'raw_payloads': [
-        for (final payload in importPayloads) _importPayloadToJson(payload),
+        for (final payload in importPayloads)
+          await _importPayloadToJson(payload),
       ],
       'notification_events': [
-        for (final event in notificationEvents) _notificationEventToJson(event),
+        for (final event in notificationEvents)
+          await _notificationEventToJson(event),
       ],
       'preferences': [
         for (final preference in preferences) _preferenceToJson(preference),
       ],
     };
 
+    _sanitizeExportedAvatarReferences(
+      archive,
+      embeddedAssetIds: {
+        for (final asset in avatarAssets) ?_stringValue(asset['id']),
+      },
+    );
+
     return const JsonEncoder.withIndent('  ').convert(archive);
+  }
+
+  void _sanitizeExportedAvatarReferences(
+    Map<String, Object?> archive, {
+    required Set<String> embeddedAssetIds,
+  }) {
+    void sanitizeRecord(Object? value) {
+      if (value is! Map<String, Object?>) {
+        return;
+      }
+      value['avatar_url'] = _portableExportAvatarReference(
+        _stringValue(value['avatar_url']),
+        embeddedAssetIds: embeddedAssetIds,
+      );
+    }
+
+    sanitizeRecord(archive['system']);
+    for (final collectionName in const ['members', 'named_fronts']) {
+      final records = archive[collectionName];
+      if (records is List<Object?>) {
+        for (final record in records) {
+          sanitizeRecord(record);
+        }
+      }
+    }
+  }
+
+  String? _portableExportAvatarReference(
+    String? value, {
+    required Set<String> embeddedAssetIds,
+  }) {
+    final reference = value?.trim();
+    if (reference == null || reference.isEmpty) {
+      return null;
+    }
+
+    const localPrefix = 'local-avatar:';
+    if (reference.startsWith(localPrefix)) {
+      final assetId = reference.substring(localPrefix.length).trim();
+      return embeddedAssetIds.contains(assetId) ? '$localPrefix$assetId' : null;
+    }
+
+    final uri = Uri.tryParse(reference);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      return reference;
+    }
+
+    // Native document URIs and filesystem paths only work on the source
+    // device. Exported avatar bytes must be referenced through avatar_assets.
+    return null;
   }
 
   @override
@@ -3251,7 +4091,10 @@ SELECT
           previousMultipleDatabaseWarning;
     }
     try {
-      final rehearsalRepository = LocalHavenRepository(rehearsalDatabase);
+      final rehearsalRepository = LocalHavenRepository(
+        rehearsalDatabase,
+        crypto: crypto,
+      );
       await rehearsalRepository.ensureLocalSystem();
       await rehearsalRepository.importLocalArchiveJson(
         archiveJson,
@@ -3299,6 +4142,8 @@ SELECT
     final groups = await database.select(database.systemGroups).get();
     final groupMembers = await database.select(database.groupMembers).get();
     final notes = await database.select(database.notes).get();
+    final chatCategories = await database.select(database.chatCategories).get();
+    final chatChannels = await database.select(database.chatChannels).get();
     final messages = await database.select(database.messages).get();
     final reminders = await database.select(database.reminders).get();
     final tags = await database.select(database.tags).get();
@@ -3349,6 +4194,8 @@ SELECT
       'groups': groups.length,
       'group_members': groupMembers.length,
       'notes': notes.length,
+      'chat_categories': chatCategories.length,
+      'chat_channels': chatChannels.length,
       'messages': messages.length,
       'reminders': reminders.length,
       'tags': tags.length,
@@ -3396,11 +4243,15 @@ SELECT
             type: 'import_archive',
             status: 'queued',
             source: Value(source.name),
-            fileName: Value(_nullIfBlank(fileName)),
-            payloadJson: jsonEncode({
-              'archive_json': archiveJson,
-              'strategy': strategy.name,
-            }),
+            fileName: Value(
+              await _encryptNullableLocalText(_nullIfBlank(fileName)),
+            ),
+            payloadJson: await _encryptLocalText(
+              jsonEncode({
+                'archive_json': archiveJson,
+                'strategy': strategy.name,
+              }),
+            ),
             createdAt: now,
             updatedAt: now,
           ),
@@ -3437,7 +4288,9 @@ SELECT
 
     try {
       if (job.type == 'import_archive') {
-        final payload = jsonDecode(job.payloadJson);
+        final payload = jsonDecode(
+          (await _decryptLocalText(job.payloadJson)) ?? '',
+        );
         if (payload is! Map<String, Object?>) {
           throw const FormatException('Import job payload is invalid.');
         }
@@ -3453,7 +4306,7 @@ SELECT
         await importLocalArchiveJson(
           _requiredString(payload, 'archive_json'),
           strategy: strategy,
-          fileName: job.fileName,
+          fileName: await _decryptLocalText(job.fileName),
           source: source,
         );
       } else {
@@ -3485,7 +4338,7 @@ SELECT
       )..where((job) => job.id.equals(jobId))).write(
         BackgroundJobsCompanion(
           status: const Value('failed'),
-          error: Value(errorText),
+          error: Value(await _encryptLocalText(errorText)),
           updatedAt: Value(failed),
           finishedAt: Value(failed),
         ),
@@ -3548,6 +4401,8 @@ SELECT
     final groups = _jsonObjectList(decoded['groups']);
     final groupMembers = _jsonObjectList(decoded['group_members']);
     final notes = _jsonObjectList(decoded['notes']);
+    final chatCategories = _jsonObjectList(decoded['chat_categories']);
+    final chatChannels = _jsonObjectList(decoded['chat_channels']);
     final messages = _jsonObjectList(decoded['messages']);
     final reminders = _jsonObjectList(decoded['reminders']);
     final tags = _jsonObjectList(decoded['tags']);
@@ -3578,6 +4433,8 @@ SELECT
       groupMembers: groupMembers,
       members: members,
       notes: notes,
+      chatCategories: chatCategories,
+      chatChannels: chatChannels,
       messages: messages,
       tags: tags,
       memberTags: memberTags,
@@ -3616,6 +4473,11 @@ SELECT
             avatarAssets: avatarAssets,
           )
         : const <String, String>{};
+    if (localizeAvatars) {
+      for (final record in [?systemRecord, ...members, ...namedFronts]) {
+        record['avatar_url'] = localAvatarRefs[_requiredString(record, 'id')];
+      }
+    }
 
     await database.transaction(() async {
       if (systemRecord != null) {
@@ -3626,13 +4488,23 @@ SELECT
               .insertOnConflictUpdate(
                 PluralSystemsCompanion.insert(
                   id: localSystemId,
-                  name: name,
-                  colorHex: Value(_stringValue(systemRecord['color_hex'])),
-                  avatarUrl: Value(
-                    localAvatarRefs[localSystemId] ??
-                        _stringValue(systemRecord['avatar_url']),
+                  name: await _encryptLocalText(name),
+                  colorHex: Value(
+                    await _encryptNullableLocalText(
+                      _stringValue(systemRecord['color_hex']),
+                    ),
                   ),
-                  description: Value(_stringValue(systemRecord['description'])),
+                  avatarUrl: Value(
+                    await _encryptNullableLocalText(
+                      localAvatarRefs[localSystemId] ??
+                          _stringValue(systemRecord['avatar_url']),
+                    ),
+                  ),
+                  description: Value(
+                    await _encryptNullableLocalText(
+                      _stringValue(systemRecord['description']),
+                    ),
+                  ),
                   createdAt: _dateValue(systemRecord['created_at']) ?? now,
                   updatedAt: now,
                 ),
@@ -3659,6 +4531,12 @@ SELECT
       }
       for (final note in notes) {
         await _importNote(note, strategy, now);
+      }
+      for (final category in chatCategories) {
+        await _importChatCategory(category, strategy, now);
+      }
+      for (final channel in chatChannels) {
+        await _importChatChannel(channel, strategy, now);
       }
       for (final message in messages) {
         await _importMessage(message, strategy, now);
@@ -3737,37 +4615,43 @@ SELECT
               id: importRecordId,
               systemId: localSystemId,
               source: source.jobSource,
-              fileName: Value(_nullIfBlank(fileName)),
+              fileName: Value(
+                await _encryptNullableLocalText(_nullIfBlank(fileName)),
+              ),
               summaryJson: Value(
-                jsonEncode({
-                  'members': members.length,
-                  'groups': groups.length,
-                  'group_members': groupMembers.length,
-                  'notes': notes.length,
-                  'messages': messages.length,
-                  'reminders': reminders.length,
-                  'tags': tags.length,
-                  'member_tags': memberTags.length,
-                  'journals': journals.length,
-                  'content_revisions': contentRevisions.length,
-                  'custom_fields': customFields.length,
-                  'custom_field_values': customFieldValues.length,
-                  'polls': polls.length,
-                  'poll_options': pollOptions.length,
-                  'poll_votes': pollVotes.length,
-                  'poll_vote_events': pollVoteEvents.length,
-                  'fronts': fronts.length,
-                  'front_members': frontMembers.length,
-                  'front_audit_events': frontAuditEvents.length,
-                  'named_fronts': namedFronts.length,
-                  'named_front_members': namedFrontMembers.length,
-                  'privacy_buckets': privacyBuckets.length,
-                  'privacy_bucket_members': privacyBucketMembers.length,
-                  'avatar_assets': avatarAssets.length,
-                  'raw_payloads': rawPayloads.length,
-                  'notification_events': notificationEvents.length,
-                  'preferences': preferences.length,
-                }),
+                await _encryptLocalText(
+                  jsonEncode({
+                    'members': members.length,
+                    'groups': groups.length,
+                    'group_members': groupMembers.length,
+                    'notes': notes.length,
+                    'chat_categories': chatCategories.length,
+                    'chat_channels': chatChannels.length,
+                    'messages': messages.length,
+                    'reminders': reminders.length,
+                    'tags': tags.length,
+                    'member_tags': memberTags.length,
+                    'journals': journals.length,
+                    'content_revisions': contentRevisions.length,
+                    'custom_fields': customFields.length,
+                    'custom_field_values': customFieldValues.length,
+                    'polls': polls.length,
+                    'poll_options': pollOptions.length,
+                    'poll_votes': pollVotes.length,
+                    'poll_vote_events': pollVoteEvents.length,
+                    'fronts': fronts.length,
+                    'front_members': frontMembers.length,
+                    'front_audit_events': frontAuditEvents.length,
+                    'named_fronts': namedFronts.length,
+                    'named_front_members': namedFrontMembers.length,
+                    'privacy_buckets': privacyBuckets.length,
+                    'privacy_bucket_members': privacyBucketMembers.length,
+                    'avatar_assets': avatarAssets.length,
+                    'raw_payloads': rawPayloads.length,
+                    'notification_events': notificationEvents.length,
+                    'preferences': preferences.length,
+                  }),
+                ),
               ),
               importedAt: now,
             ),
@@ -3784,6 +4668,8 @@ SELECT
     required List<Map<String, Object?>> groupMembers,
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> notes,
+    required List<Map<String, Object?>> chatCategories,
+    required List<Map<String, Object?>> chatChannels,
     required List<Map<String, Object?>> messages,
     required List<Map<String, Object?>> tags,
     required List<Map<String, Object?>> memberTags,
@@ -3809,6 +4695,12 @@ SELECT
     }.whereType<String>().toSet();
     final noteIds = {
       for (final note in notes) _stringValue(note['id']),
+    }.whereType<String>().toSet();
+    final chatCategoryIds = {
+      for (final category in chatCategories) _stringValue(category['id']),
+    }.whereType<String>().toSet();
+    final chatChannelIds = {
+      for (final channel in chatChannels) _stringValue(channel['id']),
     }.whereType<String>().toSet();
     final messageIds = {
       for (final message in messages) _stringValue(message['id']),
@@ -3882,6 +4774,29 @@ SELECT
       final memberId = _stringValue(message['member_id']);
       if (memberId != null && !memberIds.contains(memberId)) {
         message['member_id'] = null;
+        cleanupCount++;
+      }
+      final boardMemberId = _stringValue(message['board_member_id']);
+      if (boardMemberId != null && !memberIds.contains(boardMemberId)) {
+        message['board_member_id'] = null;
+        cleanupCount++;
+      }
+      final channelId = _stringValue(message['channel_id']);
+      if (channelId != null && !chatChannelIds.contains(channelId)) {
+        message['channel_id'] = null;
+        cleanupCount++;
+      }
+      final parentMessageId = _stringValue(message['parent_message_id']);
+      if (parentMessageId != null && !messageIds.contains(parentMessageId)) {
+        message['parent_message_id'] = null;
+        cleanupCount++;
+      }
+    }
+
+    for (final channel in chatChannels) {
+      final categoryId = _stringValue(channel['category_id']);
+      if (categoryId != null && !chatCategoryIds.contains(categoryId)) {
+        channel['category_id'] = null;
         cleanupCount++;
       }
     }
@@ -4153,14 +5068,16 @@ SELECT
       assets.add({
         'id': fileName,
         'name': fileName,
-        'mime_type': _avatarMimeType(fileName),
+        'mime_type': _avatarMimeType(fileName, bytes),
         'bytes_base64': base64Encode(bytes),
       });
     }
     return assets;
   }
 
-  String? _avatarMimeType(String fileName) {
+  String? _avatarMimeType(String fileName, Uint8List bytes) {
+    final detected = _sniffAvatarMimeType(bytes);
+    if (detected != null) return detected;
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
@@ -4168,13 +5085,14 @@ SELECT
     }
     if (lower.endsWith('.webp')) return 'image/webp';
     if (lower.endsWith('.gif')) return 'image/gif';
+    if (lower.endsWith('.svg')) return 'image/svg+xml';
     return null;
   }
 
   Future<String?> _downloadAndStoreAvatar(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasAbsolutePath) {
-      return url;
+      return null;
     }
 
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
@@ -4182,12 +5100,16 @@ SELECT
       final request = await client.getUrl(uri);
       final response = await request.close();
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        return url;
+        appDebugLog(
+          'Avatar download skipped host=${uri.host} status=${response.statusCode}',
+        );
+        return null;
       }
 
       final bytes = await _readAvatarResponseBytes(response);
       if (bytes == null || bytes.isEmpty) {
-        return url;
+        appDebugLog('Avatar download skipped host=${uri.host} invalid bytes');
+        return null;
       }
 
       return _storeAvatarBytes(
@@ -4198,8 +5120,13 @@ SELECT
         mimeType: response.headers.contentType?.mimeType,
         bytes: bytes,
       );
-    } on Object {
-      return url;
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Avatar download failed host=${uri.host}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     } finally {
       client.close(force: true);
     }
@@ -4234,7 +5161,8 @@ SELECT
     required Uint8List bytes,
   }) async {
     final root = await _avatarRootDirectory();
-    final extension = _avatarExtension(sourceName, mimeType);
+    final detectedMimeType = _sniffAvatarMimeType(bytes) ?? mimeType;
+    final extension = _avatarExtension(sourceName, detectedMimeType);
     final safeId = _safeFilePart(id);
     final digest = base64Url
         .encode(bytes.take(18).toList())
@@ -4264,17 +5192,23 @@ SELECT
     Map<String, Object?> group,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(group, 'id');
     final name = _requiredString(group, 'name');
     final companion = SystemGroupsCompanion.insert(
       id: id,
       systemId: localSystemId,
       parentGroupId: Value(_stringValue(group['parent_group_id'])),
-      name: name,
-      colorHex: Value(_stringValue(group['color_hex'])),
-      description: Value(_stringValue(group['description'])),
-      emoji: Value(_stringValue(group['emoji'])),
+      name: await _encryptLocalText(name),
+      colorHex: Value(
+        await _encryptNullableLocalText(_stringValue(group['color_hex'])),
+      ),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(group['description'])),
+      ),
+      emoji: Value(
+        await _encryptNullableLocalText(_stringValue(group['emoji'])),
+      ),
       createdAt: _dateValue(group['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -4288,22 +5222,30 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
     String? localAvatarUrl,
-  ) {
+  ) async {
     final id = _requiredString(member, 'id');
     final displayName = _requiredString(member, 'display_name');
+    final encryptedName = await _encrypt(displayName);
+    if (encryptedName == null) {
+      throw StateError('Member name encryption returned no value.');
+    }
     final companion = MembersCompanion.insert(
       id: id,
       systemId: localSystemId,
-      displayName: displayName,
-      pronouns: Value(_stringValue(member['pronouns'])),
-      colorHex: Value(_stringValue(member['color_hex'])),
-      birthday: Value(_stringValue(member['birthday'])),
-      emoji: Value(_stringValue(member['emoji'])),
-      privacy: Value(_stringValue(member['privacy'])),
+      displayName: encryptedName,
+      displayNameHash: Value(await _blindIndex(displayName)),
+      profileEncryptionVersion: const Value(1),
+      pronouns: Value(await _encrypt(_stringValue(member['pronouns']))),
+      colorHex: Value(await _encrypt(_stringValue(member['color_hex']))),
+      birthday: Value(await _encrypt(_stringValue(member['birthday']))),
+      emoji: Value(await _encrypt(_stringValue(member['emoji']))),
+      privacy: Value(await _encrypt(_stringValue(member['privacy']))),
       folderId: Value(_stringValue(member['folder_id'])),
-      description: Value(_stringValue(member['description'])),
-      avatarUrl: Value(localAvatarUrl ?? _stringValue(member['avatar_url'])),
-      pluralKitId: Value(_stringValue(member['pluralkit_id'])),
+      description: Value(await _encrypt(_stringValue(member['description']))),
+      avatarUrl: Value(
+        await _encrypt(localAvatarUrl ?? _stringValue(member['avatar_url'])),
+      ),
+      pluralKitId: Value(await _encrypt(_stringValue(member['pluralkit_id']))),
       isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
       createdAt: _dateValue(member['created_at']) ?? now,
@@ -4311,7 +5253,7 @@ SELECT
           ? now
           : (_dateValue(member['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.members, companion, strategy);
+    await _insertArchiveRow(database.members, companion, strategy);
   }
 
   Future<void> _importGroupMember(Map<String, Object?> link) {
@@ -4330,60 +5272,128 @@ SELECT
     Map<String, Object?> note,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(note, 'id');
     final title = _requiredString(note, 'title');
     final companion = NotesCompanion.insert(
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(note['member_id'])),
-      title: title,
-      body: _stringValue(note['body']) ?? '',
+      title: await _encryptLocalText(title),
+      body: await _encryptLocalText(_stringValue(note['body']) ?? ''),
       createdAt: _dateValue(note['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
           : (_dateValue(note['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.notes, companion, strategy);
+    await _insertArchiveRow(database.notes, companion, strategy);
   }
 
   Future<void> _importMessage(
     Map<String, Object?> message,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(message, 'id');
     final body = _requiredString(message, 'body');
     final companion = MessagesCompanion.insert(
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(message['member_id'])),
-      body: body,
+      body: await _encryptLocalText(body),
+      boardKind: Value(_stringValue(message['board_kind']) ?? 'system'),
+      boardMemberId: Value(_stringValue(message['board_member_id'])),
+      parentMessageId: Value(_stringValue(message['parent_message_id'])),
+      channelId: Value(_stringValue(message['channel_id'])),
+      deletedAt: Value(_dateValue(message['deleted_at'])),
       archived: Value(message['archived'] == true),
       createdAt: _dateValue(message['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
           : (_dateValue(message['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.messages, companion, strategy);
+    await _insertArchiveRow(database.messages, companion, strategy);
+  }
+
+  Future<void> _importChatCategory(
+    Map<String, Object?> category,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) async {
+    final companion = ChatCategoriesCompanion.insert(
+      id: _requiredString(category, 'id'),
+      systemId: localSystemId,
+      name: await _encryptLocalText(_requiredString(category, 'name')),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(category['description'])),
+      ),
+      position: Value(_intValue(category['position']) ?? 0),
+      createdAt: _dateValue(category['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(category['updated_at']) ?? now),
+    );
+    await _insertArchiveRow(database.chatCategories, companion, strategy);
+  }
+
+  Future<void> _importChatChannel(
+    Map<String, Object?> channel,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) async {
+    final companion = ChatChannelsCompanion.insert(
+      id: _requiredString(channel, 'id'),
+      systemId: localSystemId,
+      categoryId: Value(_stringValue(channel['category_id'])),
+      name: await _encryptLocalText(_requiredString(channel, 'name')),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(channel['description'])),
+      ),
+      colorHex: Value(
+        await _encryptNullableLocalText(
+          _normalizeHexColor(_stringValue(channel['color_hex'])),
+        ),
+      ),
+      position: Value(_intValue(channel['position']) ?? 0),
+      createdAt: _dateValue(channel['created_at']) ?? now,
+      updatedAt: strategy == ImportConflictStrategy.update
+          ? now
+          : (_dateValue(channel['updated_at']) ?? now),
+    );
+    await _insertArchiveRow(database.chatChannels, companion, strategy);
   }
 
   Future<void> _importReminder(
     Map<String, Object?> reminder,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(reminder, 'id');
     final title = _requiredString(reminder, 'title');
     final scheduleText = _requiredString(reminder, 'schedule_text');
     final companion = RemindersCompanion.insert(
       id: id,
       systemId: localSystemId,
-      title: title,
-      body: Value(_stringValue(reminder['body'])),
-      scheduleText: scheduleText,
-      scheduleKind: Value(_stringValue(reminder['schedule_kind'])),
-      scheduleTime: Value(_stringValue(reminder['schedule_time'])),
+      title: await _encryptLocalText(title),
+      body: Value(
+        await _encryptNullableLocalText(_stringValue(reminder['body'])),
+      ),
+      scheduleText: await _encryptLocalText(scheduleText),
+      triggerEvent: Value(
+        await _encryptNullableLocalText(
+          _stringValue(reminder['trigger_event']),
+        ),
+      ),
+      scheduleKind: Value(
+        await _encryptNullableLocalText(
+          _stringValue(reminder['schedule_kind']),
+        ),
+      ),
+      scheduleTime: Value(
+        await _encryptNullableLocalText(
+          _stringValue(reminder['schedule_time']),
+        ),
+      ),
       scheduleDowMask: Value(_intValue(reminder['schedule_dow_mask'])),
       scheduleDom: Value(_intValue(reminder['schedule_dom'])),
       enabled: Value(reminder['enabled'] != false),
@@ -4392,26 +5402,28 @@ SELECT
           ? now
           : (_dateValue(reminder['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.reminders, companion, strategy);
+    await _insertArchiveRow(database.reminders, companion, strategy);
   }
 
   Future<void> _importTag(
     Map<String, Object?> tag,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(tag, 'id');
     final companion = TagsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      name: _requiredString(tag, 'name'),
-      colorHex: Value(_stringValue(tag['color_hex'])),
+      name: await _encryptLocalText(_requiredString(tag, 'name')),
+      colorHex: Value(
+        await _encryptNullableLocalText(_stringValue(tag['color_hex'])),
+      ),
       createdAt: _dateValue(tag['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
           : (_dateValue(tag['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.tags, companion, strategy);
+    await _insertArchiveRow(database.tags, companion, strategy);
   }
 
   Future<void> _importMemberTag(Map<String, Object?> link) {
@@ -4430,54 +5442,60 @@ SELECT
     Map<String, Object?> journal,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(journal, 'id');
     final companion = JournalEntriesCompanion.insert(
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(journal['member_id'])),
-      title: Value(_stringValue(journal['title'])),
-      body: _stringValue(journal['body']) ?? '',
+      title: Value(
+        await _encryptNullableLocalText(_stringValue(journal['title'])),
+      ),
+      body: await _encryptLocalText(_stringValue(journal['body']) ?? ''),
       visibility: Value(_stringValue(journal['visibility']) ?? 'system'),
       createdAt: _dateValue(journal['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
           : (_dateValue(journal['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.journalEntries, companion, strategy);
+    await _insertArchiveRow(database.journalEntries, companion, strategy);
   }
 
   Future<void> _importContentRevision(
     Map<String, Object?> revision,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(revision, 'id');
     final companion = ContentRevisionsCompanion.insert(
       id: id,
       targetType: _requiredString(revision, 'target_type'),
       targetId: _requiredString(revision, 'target_id'),
-      title: Value(_stringValue(revision['title'])),
-      body: _stringValue(revision['body']) ?? '',
+      title: Value(
+        await _encryptNullableLocalText(_stringValue(revision['title'])),
+      ),
+      body: await _encryptLocalText(_stringValue(revision['body']) ?? ''),
       pinnedAt: Value(_dateValue(revision['pinned_at'])),
       createdAt: _dateValue(revision['created_at']) ?? now,
     );
-    return _insertArchiveRow(database.contentRevisions, companion, strategy);
+    await _insertArchiveRow(database.contentRevisions, companion, strategy);
   }
 
   Future<void> _importCustomField(
     Map<String, Object?> field,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(field, 'id');
     final name = _requiredString(field, 'name');
     final companion = CustomFieldDefinitionsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      name: name,
+      name: await _encryptLocalText(name),
       fieldType: Value(_stringValue(field['field_type']) ?? 'text'),
-      privacy: Value(_stringValue(field['privacy'])),
+      privacy: Value(
+        await _encryptNullableLocalText(_stringValue(field['privacy'])),
+      ),
       position: Value(_intValue(field['position']) ?? 0),
       createdAt: _dateValue(field['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -4495,14 +5513,14 @@ SELECT
     Map<String, Object?> value,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(value, 'id');
     final fieldId = _requiredString(value, 'field_id');
     final companion = CustomFieldValuesCompanion.insert(
       id: id,
       fieldId: fieldId,
       memberId: Value(_stringValue(value['member_id'])),
-      value: _stringValue(value['value']) ?? '',
+      value: await _encryptLocalText(_stringValue(value['value']) ?? ''),
       createdAt: _dateValue(value['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -4515,14 +5533,16 @@ SELECT
     Map<String, Object?> poll,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(poll, 'id');
     final question = _requiredString(poll, 'question');
     final companion = PollsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      question: question,
-      description: Value(_stringValue(poll['description'])),
+      question: await _encryptLocalText(question),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(poll['description'])),
+      ),
       kind: Value(
         PollKind.fromStorage(_stringValue(poll['kind'])).storageValue,
       ),
@@ -4532,21 +5552,21 @@ SELECT
           ? now
           : (_dateValue(poll['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.polls, companion, strategy);
+    await _insertArchiveRow(database.polls, companion, strategy);
   }
 
   Future<void> _importPollOption(
     Map<String, Object?> option,
     ImportConflictStrategy strategy,
-  ) {
+  ) async {
     final id = _requiredString(option, 'id');
     final companion = PollOptionsCompanion.insert(
       id: id,
       pollId: _requiredString(option, 'poll_id'),
-      body: _requiredString(option, 'body'),
+      body: await _encryptLocalText(_requiredString(option, 'body')),
       position: _intValue(option['position']) ?? 0,
     );
-    return _insertArchiveRow(database.pollOptions, companion, strategy);
+    await _insertArchiveRow(database.pollOptions, companion, strategy);
   }
 
   Future<void> _importPollVote(Map<String, Object?> vote) {
@@ -4582,13 +5602,17 @@ SELECT
     Map<String, Object?> front,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(front, 'id');
     final companion = FrontSessionsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      label: Value(_stringValue(front['label'])),
-      statusNote: Value(_stringValue(front['status_note'])),
+      label: Value(
+        await _encryptNullableLocalText(_stringValue(front['label'])),
+      ),
+      statusNote: Value(
+        await _encryptNullableLocalText(_stringValue(front['status_note'])),
+      ),
       startedAt: _dateValue(front['started_at']) ?? now,
       endedAt: Value(_dateValue(front['ended_at'])),
       createdAt: _dateValue(front['created_at']) ?? now,
@@ -4596,7 +5620,7 @@ SELECT
           ? now
           : (_dateValue(front['updated_at']) ?? now),
     );
-    return _insertArchiveRow(database.frontSessions, companion, strategy);
+    await _insertArchiveRow(database.frontSessions, companion, strategy);
   }
 
   Future<void> _importFrontMember(Map<String, Object?> link) {
@@ -4615,16 +5639,20 @@ SELECT
     Map<String, Object?> event,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(event, 'id');
     final companion = FrontAuditEventsCompanion.insert(
       id: id,
       frontId: _requiredString(event, 'front_id'),
-      beforeSnapshot: Value(_stringValue(event['before_snapshot'])),
-      afterSnapshot: Value(_stringValue(event['after_snapshot'])),
+      beforeSnapshot: Value(
+        await _encryptNullableLocalText(_stringValue(event['before_snapshot'])),
+      ),
+      afterSnapshot: Value(
+        await _encryptNullableLocalText(_stringValue(event['after_snapshot'])),
+      ),
       createdAt: _dateValue(event['created_at']) ?? now,
     );
-    return _insertArchiveRow(database.frontAuditEvents, companion, strategy);
+    await _insertArchiveRow(database.frontAuditEvents, companion, strategy);
   }
 
   Future<void> _importNamedFront(
@@ -4632,16 +5660,26 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
     String? localAvatarUrl,
-  ) {
+  ) async {
     final frontId = _requiredString(front, 'id');
     final companion = NamedFrontsCompanion.insert(
       id: frontId,
       systemId: localSystemId,
-      name: _requiredString(front, 'name'),
-      customLabel: Value(_stringValue(front['custom_label'])),
-      colorHex: Value(_stringValue(front['color_hex'])),
-      avatarUrl: Value(localAvatarUrl ?? _stringValue(front['avatar_url'])),
-      description: Value(_stringValue(front['description'])),
+      name: await _encryptLocalText(_requiredString(front, 'name')),
+      customLabel: Value(
+        await _encryptNullableLocalText(_stringValue(front['custom_label'])),
+      ),
+      colorHex: Value(
+        await _encryptNullableLocalText(_stringValue(front['color_hex'])),
+      ),
+      avatarUrl: Value(
+        await _encryptNullableLocalText(
+          localAvatarUrl ?? _stringValue(front['avatar_url']),
+        ),
+      ),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(front['description'])),
+      ),
       createdAt: _dateValue(front['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -4666,13 +5704,19 @@ SELECT
     Map<String, Object?> bucket,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final companion = PrivacyBucketsCompanion.insert(
       id: _requiredString(bucket, 'id'),
       systemId: localSystemId,
-      name: _requiredString(bucket, 'name'),
-      description: Value(_stringValue(bucket['description'])),
-      colorHex: Value(_normalizeHexColor(_stringValue(bucket['color_hex']))),
+      name: await _encryptLocalText(_requiredString(bucket, 'name')),
+      description: Value(
+        await _encryptNullableLocalText(_stringValue(bucket['description'])),
+      ),
+      colorHex: Value(
+        await _encryptNullableLocalText(
+          _normalizeHexColor(_stringValue(bucket['color_hex'])),
+        ),
+      ),
       position: Value(_intValue(bucket['position']) ?? 0),
       createdAt: _dateValue(bucket['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -4698,17 +5742,17 @@ SELECT
     Map<String, Object?> event,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final companion = NotificationEventsCompanion.insert(
       id: _requiredString(event, 'id'),
       systemId: localSystemId,
       kind: _requiredString(event, 'kind'),
-      title: _requiredString(event, 'title'),
-      body: _requiredString(event, 'body'),
+      title: await _encryptLocalText(_requiredString(event, 'title')),
+      body: await _encryptLocalText(_requiredString(event, 'body')),
       readAt: Value(_dateValue(event['read_at'])),
       createdAt: _dateValue(event['created_at']) ?? now,
     );
-    return _insertArchiveRow(database.notificationEvents, companion, strategy);
+    await _insertArchiveRow(database.notificationEvents, companion, strategy);
   }
 
   Future<void> _importPreference(
@@ -4732,7 +5776,7 @@ SELECT
     ImportSource source,
     ImportConflictStrategy strategy,
     DateTime now,
-  ) {
+  ) async {
     final id = _requiredString(payload, 'id');
     final companion = ImportPayloadsCompanion.insert(
       id: id,
@@ -4740,10 +5784,12 @@ SELECT
       systemId: localSystemId,
       source: _stringValue(payload['source']) ?? source.jobSource,
       collection: _requiredString(payload, 'collection'),
-      payloadJson: _requiredString(payload, 'payload_json'),
+      payloadJson: await _encryptLocalText(
+        _requiredString(payload, 'payload_json'),
+      ),
       importedAt: _dateValue(payload['imported_at']) ?? now,
     );
-    return _insertArchiveRow(database.importPayloads, companion, strategy);
+    await _insertArchiveRow(database.importPayloads, companion, strategy);
   }
 
   Future<void> _insertArchiveRow<TableDsl extends Table, D>(
@@ -4766,10 +5812,16 @@ SELECT
   Stream<List<Tag>> watchTags() {
     final query = database.select(database.tags)
       ..where((t) => t.systemId.equals(localSystemId))
-      ..orderBy([
-        (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
-      ]);
-    return query.watch();
+      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          row.copyWith(
+            name: await _decryptLocalText(row.name) ?? '',
+            colorHex: Value(await _decryptLocalText(row.colorHex)),
+          ),
+      ],
+    );
   }
 
   @override
@@ -4781,8 +5833,8 @@ SELECT
           TagsCompanion.insert(
             id: tag.id,
             systemId: localSystemId,
-            name: tag.name,
-            colorHex: Value(tag.colorHex),
+            name: await _encryptLocalText(tag.name),
+            colorHex: Value(await _encryptNullableLocalText(tag.colorHex)),
             createdAt: now,
             updatedAt: now,
           ),
@@ -4801,32 +5853,24 @@ SELECT
 
   @override
   Stream<List<Tag>> watchTagsForMember(String memberId) {
-    final query =
-        database.select(database.memberTags).join([
-            innerJoin(
-              database.tags,
-              database.memberTags.tagId.equalsExp(database.tags.id),
-            ),
-          ])
-          ..where(database.memberTags.memberId.equals(memberId))
-          ..orderBy([
-            OrderingTerm(
-              expression: database.tags.name,
-              mode: OrderingMode.asc,
-            ),
-          ]);
-    return query.watch().map((rows) {
-      return rows.map((row) {
-        final tagRow = row.readTable(database.tags);
-        return Tag(
-          id: tagRow.id,
-          systemId: tagRow.systemId,
-          name: tagRow.name,
-          colorHex: tagRow.colorHex,
-          createdAt: tagRow.createdAt,
-          updatedAt: tagRow.updatedAt,
+    final query = database.select(database.memberTags).join([
+      innerJoin(
+        database.tags,
+        database.memberTags.tagId.equalsExp(database.tags.id),
+      ),
+    ])..where(database.memberTags.memberId.equals(memberId));
+    return query.watch().asyncMap((rows) async {
+      final tags = <Tag>[];
+      for (final row in rows) {
+        final tag = row.readTable(database.tags);
+        tags.add(
+          tag.copyWith(
+            name: (await _decryptLocalText(tag.name)) ?? '',
+            colorHex: Value(await _decryptLocalText(tag.colorHex)),
+          ),
         );
-      }).toList();
+      }
+      return tags;
     });
   }
 
@@ -4859,7 +5903,15 @@ SELECT
     query.orderBy([
       (j) => OrderingTerm(expression: j.createdAt, mode: OrderingMode.desc),
     ]);
-    return query.watch();
+    return query.watch().asyncMap((rows) async {
+      return [
+        for (final row in rows)
+          row.copyWith(
+            title: Value(await _decryptLocalText(row.title)),
+            body: (await _decryptLocalText(row.body)) ?? '',
+          ),
+      ];
+    });
   }
 
   @override
@@ -4872,8 +5924,8 @@ SELECT
             id: entry.id,
             systemId: localSystemId,
             memberId: Value(entry.memberId),
-            title: Value(entry.title),
-            body: entry.body,
+            title: Value(await _encryptNullableLocalText(entry.title)),
+            body: await _encryptLocalText(entry.body),
             createdAt: entry.createdAt,
             updatedAt: now,
           ),
@@ -4901,7 +5953,15 @@ SELECT
       ..orderBy([
         (r) => OrderingTerm(expression: r.createdAt, mode: OrderingMode.desc),
       ]);
-    return query.watch();
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          row.copyWith(
+            title: Value(await _decryptLocalText(row.title)),
+            body: (await _decryptLocalText(row.body)) ?? '',
+          ),
+      ],
+    );
   }
 
   @override
@@ -4939,7 +5999,8 @@ SELECT
           database.members,
         )..where((m) => m.id.equals(targetId))).write(
           MembersCompanion(
-            description: Value(revision.body),
+            description: Value(await _encrypt(revision.body)),
+            profileEncryptionVersion: const Value(1),
             updatedAt: Value(now),
           ),
         );
@@ -4948,8 +6009,8 @@ SELECT
           database.notes,
         )..where((n) => n.id.equals(targetId))).write(
           NotesCompanion(
-            title: Value(revision.title ?? ''),
-            body: Value(revision.body),
+            title: Value(await _encryptLocalText(revision.title ?? '')),
+            body: Value(await _encryptLocalText(revision.body)),
             updatedAt: Value(now),
           ),
         );
@@ -4958,8 +6019,8 @@ SELECT
           database.journalEntries,
         )..where((j) => j.id.equals(targetId))).write(
           JournalEntriesCompanion(
-            title: Value(revision.title),
-            body: Value(revision.body),
+            title: Value(await _encryptNullableLocalText(revision.title)),
+            body: Value(await _encryptLocalText(revision.body)),
             updatedAt: Value(now),
           ),
         );
@@ -4967,7 +6028,10 @@ SELECT
         await (database.update(
           database.messages,
         )..where((m) => m.id.equals(targetId))).write(
-          MessagesCompanion(body: Value(revision.body), updatedAt: Value(now)),
+          MessagesCompanion(
+            body: Value(await _encryptLocalText(revision.body)),
+            updatedAt: Value(now),
+          ),
         );
     }
   }
@@ -4981,7 +6045,15 @@ SELECT
       ..orderBy([
         (e) => OrderingTerm(expression: e.createdAt, mode: OrderingMode.desc),
       ]);
-    return query.watch();
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          row.copyWith(
+            beforeSnapshot: Value(await _decryptLocalText(row.beforeSnapshot)),
+            afterSnapshot: Value(await _decryptLocalText(row.afterSnapshot)),
+          ),
+      ],
+    );
   }
 
   // v8: Poll vote events
@@ -5002,10 +6074,19 @@ SELECT
   Stream<List<NamedFront>> watchNamedFronts() {
     final query = database.select(database.namedFronts)
       ..where((nf) => nf.systemId.equals(localSystemId))
-      ..orderBy([
-        (nf) => OrderingTerm(expression: nf.name, mode: OrderingMode.asc),
-      ]);
-    return query.watch();
+      ..orderBy([(nf) => OrderingTerm(expression: nf.createdAt)]);
+    return query.watch().asyncMap(
+      (rows) async => [
+        for (final row in rows)
+          row.copyWith(
+            name: (await _decryptLocalText(row.name)) ?? '',
+            customLabel: Value(await _decryptLocalText(row.customLabel)),
+            colorHex: Value(await _decryptLocalText(row.colorHex)),
+            avatarUrl: Value(await _decryptLocalText(row.avatarUrl)),
+            description: Value(await _decryptLocalText(row.description)),
+          ),
+      ],
+    );
   }
 
   @override
@@ -5018,11 +6099,17 @@ SELECT
             NamedFrontsCompanion.insert(
               id: front.id,
               systemId: localSystemId,
-              name: front.name,
-              customLabel: Value(front.customLabel),
-              colorHex: Value(front.colorHex),
-              avatarUrl: Value(front.avatarUrl),
-              description: Value(front.description),
+              name: await _encryptLocalText(front.name),
+              customLabel: Value(
+                await _encryptNullableLocalText(front.customLabel),
+              ),
+              colorHex: Value(await _encryptNullableLocalText(front.colorHex)),
+              avatarUrl: Value(
+                await _encryptNullableLocalText(front.avatarUrl),
+              ),
+              description: Value(
+                await _encryptNullableLocalText(front.description),
+              ),
               createdAt: front.createdAt,
               updatedAt: now,
             ),
@@ -5052,7 +6139,9 @@ SELECT
     final members = await (database.select(
       database.namedFrontMembers,
     )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).get();
-    final label = _nullIfBlank(namedFront?.customLabel);
+    final label = _nullIfBlank(
+      await _decryptLocalText(namedFront?.customLabel),
+    );
     if (members.isEmpty && label != null) {
       await setCustomFront(label);
       return;
@@ -5278,41 +6367,55 @@ SELECT
     return DateTime.tryParse(text)?.toUtc();
   }
 
-  Map<String, Object?> _systemToJson(PluralSystem system) => {
+  Future<Map<String, Object?>> _systemToJson(PluralSystem system) async => {
     'id': system.id,
-    'name': system.name,
-    'color_hex': system.colorHex,
-    'avatar_url': system.avatarUrl,
-    'description': system.description,
+    'name': (await _decryptLocalText(system.name)) ?? 'Local system',
+    'color_hex': await _decryptLocalText(system.colorHex),
+    'avatar_url': await _decryptLocalText(system.avatarUrl),
+    'description': await _decryptLocalText(system.description),
     'created_at': system.createdAt.toIso8601String(),
     'updated_at': system.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _memberToJson(Member member) => {
-    'id': member.id,
-    'display_name': member.displayName,
-    'pronouns': member.pronouns,
-    'color_hex': member.colorHex,
-    'birthday': member.birthday,
-    'emoji': member.emoji,
-    'privacy': member.privacy,
-    'folder_id': member.folderId,
-    'description': member.description,
-    'avatar_url': member.avatarUrl,
-    'pluralkit_id': member.pluralKitId,
-    'is_custom_front': member.isCustomFront,
-    'archived': member.archived,
-    'created_at': member.createdAt.toIso8601String(),
-    'updated_at': member.updatedAt.toIso8601String(),
-  };
+  Future<Map<String, Object?>> _memberToJson(Member member) async {
+    final displayName = await _decrypt(member.displayName);
+    if (displayName == null) {
+      throw StateError('Protected member name could not be exported.');
+    }
+    final pronouns = await _decrypt(member.pronouns);
+    final colorHex = await _decrypt(member.colorHex);
+    final birthday = await _decrypt(member.birthday);
+    final emoji = await _decrypt(member.emoji);
+    final privacy = await _decrypt(member.privacy);
+    final description = await _decrypt(member.description);
+    final avatarUrl = await _decrypt(member.avatarUrl);
+    final pluralKitId = await _decrypt(member.pluralKitId);
+    return {
+      'id': member.id,
+      'display_name': displayName,
+      'pronouns': pronouns,
+      'color_hex': colorHex,
+      'birthday': birthday,
+      'emoji': emoji,
+      'privacy': privacy,
+      'folder_id': member.folderId,
+      'description': description,
+      'avatar_url': avatarUrl,
+      'pluralkit_id': pluralKitId,
+      'is_custom_front': member.isCustomFront,
+      'archived': member.archived,
+      'created_at': member.createdAt.toIso8601String(),
+      'updated_at': member.updatedAt.toIso8601String(),
+    };
+  }
 
-  Map<String, Object?> _groupToJson(SystemGroup group) => {
+  Future<Map<String, Object?>> _groupToJson(SystemGroup group) async => {
     'id': group.id,
     'parent_group_id': group.parentGroupId,
-    'name': group.name,
-    'color_hex': group.colorHex,
-    'description': group.description,
-    'emoji': group.emoji,
+    'name': (await _decryptLocalText(group.name)) ?? '',
+    'color_hex': await _decryptLocalText(group.colorHex),
+    'description': await _decryptLocalText(group.description),
+    'emoji': await _decryptLocalText(group.emoji),
     'created_at': group.createdAt.toIso8601String(),
     'updated_at': group.updatedAt.toIso8601String(),
   };
@@ -5322,31 +6425,60 @@ SELECT
     'member_id': link.memberId,
   };
 
-  Map<String, Object?> _noteToJson(Note note) => {
+  Future<Map<String, Object?>> _noteToJson(Note note) async => {
     'id': note.id,
     'member_id': note.memberId,
-    'title': note.title,
-    'body': note.body,
+    'title': (await _decryptLocalText(note.title)) ?? '',
+    'body': (await _decryptLocalText(note.body)) ?? '',
     'created_at': note.createdAt.toIso8601String(),
     'updated_at': note.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _messageToJson(Message message) => {
+  Future<Map<String, Object?>> _messageToJson(Message message) async => {
     'id': message.id,
     'member_id': message.memberId,
-    'body': message.body,
+    'body': (await _decryptLocalText(message.body)) ?? '',
+    'board_kind': message.boardKind,
+    'board_member_id': message.boardMemberId,
+    'parent_message_id': message.parentMessageId,
+    'channel_id': message.channelId,
+    'deleted_at': message.deletedAt?.toIso8601String(),
     'archived': message.archived,
     'created_at': message.createdAt.toIso8601String(),
     'updated_at': message.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _reminderToJson(Reminder reminder) => {
+  Future<Map<String, Object?>> _chatCategoryToJson(
+    ChatCategory category,
+  ) async => {
+    'id': category.id,
+    'name': (await _decryptLocalText(category.name)) ?? '',
+    'description': await _decryptLocalText(category.description),
+    'position': category.position,
+    'created_at': category.createdAt.toIso8601String(),
+    'updated_at': category.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _chatChannelToJson(ChatChannel channel) async =>
+      {
+        'id': channel.id,
+        'category_id': channel.categoryId,
+        'name': (await _decryptLocalText(channel.name)) ?? '',
+        'description': await _decryptLocalText(channel.description),
+        'color_hex': await _decryptLocalText(channel.colorHex),
+        'position': channel.position,
+        'created_at': channel.createdAt.toIso8601String(),
+        'updated_at': channel.updatedAt.toIso8601String(),
+      };
+
+  Future<Map<String, Object?>> _reminderToJson(Reminder reminder) async => {
     'id': reminder.id,
-    'title': reminder.title,
-    'body': reminder.body,
-    'schedule_text': reminder.scheduleText,
-    'schedule_kind': reminder.scheduleKind,
-    'schedule_time': reminder.scheduleTime,
+    'title': (await _decryptLocalText(reminder.title)) ?? '',
+    'body': await _decryptLocalText(reminder.body),
+    'schedule_text': (await _decryptLocalText(reminder.scheduleText)) ?? '',
+    'trigger_event': await _decryptLocalText(reminder.triggerEvent),
+    'schedule_kind': await _decryptLocalText(reminder.scheduleKind),
+    'schedule_time': await _decryptLocalText(reminder.scheduleTime),
     'schedule_dow_mask': reminder.scheduleDowMask,
     'schedule_dom': reminder.scheduleDom,
     'enabled': reminder.enabled,
@@ -5354,10 +6486,10 @@ SELECT
     'updated_at': reminder.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _tagToJson(Tag tag) => {
+  Future<Map<String, Object?>> _tagToJson(Tag tag) async => {
     'id': tag.id,
-    'name': tag.name,
-    'color_hex': tag.colorHex,
+    'name': (await _decryptLocalText(tag.name)) ?? '',
+    'color_hex': await _decryptLocalText(tag.colorHex),
     'created_at': tag.createdAt.toIso8601String(),
     'updated_at': tag.updatedAt.toIso8601String(),
   };
@@ -5367,59 +6499,65 @@ SELECT
     'member_id': link.memberId,
   };
 
-  Map<String, Object?> _journalToJson(JournalEntry journal) => {
+  Future<Map<String, Object?>> _journalToJson(JournalEntry journal) async => {
     'id': journal.id,
     'member_id': journal.memberId,
-    'title': journal.title,
-    'body': journal.body,
+    'title': await _decryptLocalText(journal.title),
+    'body': (await _decryptLocalText(journal.body)) ?? '',
     'visibility': journal.visibility,
     'created_at': journal.createdAt.toIso8601String(),
     'updated_at': journal.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _contentRevisionToJson(ContentRevision revision) => {
+  Future<Map<String, Object?>> _contentRevisionToJson(
+    ContentRevision revision,
+  ) async => {
     'id': revision.id,
     'target_type': revision.targetType,
     'target_id': revision.targetId,
-    'title': revision.title,
-    'body': revision.body,
+    'title': await _decryptLocalText(revision.title),
+    'body': (await _decryptLocalText(revision.body)) ?? '',
     'pinned_at': revision.pinnedAt?.toIso8601String(),
     'created_at': revision.createdAt.toIso8601String(),
   };
 
-  Map<String, Object?> _customFieldToJson(CustomFieldDefinition field) => {
+  Future<Map<String, Object?>> _customFieldToJson(
+    CustomFieldDefinition field,
+  ) async => {
     'id': field.id,
-    'name': field.name,
+    'name': (await _decryptLocalText(field.name)) ?? '',
     'field_type': field.fieldType,
-    'privacy': field.privacy,
+    'privacy': await _decryptLocalText(field.privacy),
     'position': field.position,
     'created_at': field.createdAt.toIso8601String(),
     'updated_at': field.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _customFieldValueToJson(CustomFieldValue value) => {
+  Future<Map<String, Object?>> _customFieldValueToJson(
+    CustomFieldValue value,
+  ) async => {
     'id': value.id,
     'field_id': value.fieldId,
     'member_id': value.memberId,
-    'value': value.value,
+    'value': (await _decryptLocalText(value.value)) ?? '',
     'created_at': value.createdAt.toIso8601String(),
     'updated_at': value.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _pollToJson(Poll poll) => {
+  Future<Map<String, Object?>> _pollToJson(Poll poll) async => {
     'id': poll.id,
-    'question': poll.question,
-    'description': poll.description,
+    'question': (await _decryptLocalText(poll.question)) ?? '',
+    'description': await _decryptLocalText(poll.description),
     'kind': poll.kind,
     'closed': poll.closed,
     'created_at': poll.createdAt.toIso8601String(),
     'updated_at': poll.updatedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _pollOptionToJson(PollOption option) => {
+  Future<Map<String, Object?>> _pollOptionToJson(PollOption option) async => {
     'id': option.id,
     'poll_id': option.pollId,
-    'body': option.body,
+    'body': (await _decryptLocalText(option.body)) ?? '',
     'position': option.position,
   };
 
@@ -5437,10 +6575,10 @@ SELECT
     'created_at': event.createdAt.toIso8601String(),
   };
 
-  Map<String, Object?> _frontToJson(FrontSession front) => {
+  Future<Map<String, Object?>> _frontToJson(FrontSession front) async => {
     'id': front.id,
-    'label': front.label,
-    'status_note': front.statusNote,
+    'label': await _decryptLocalText(front.label),
+    'status_note': await _decryptLocalText(front.statusNote),
     'started_at': front.startedAt.toIso8601String(),
     'ended_at': front.endedAt?.toIso8601String(),
     'created_at': front.createdAt.toIso8601String(),
@@ -5452,21 +6590,23 @@ SELECT
     'member_id': link.memberId,
   };
 
-  Map<String, Object?> _frontAuditEventToJson(FrontAuditEvent event) => {
+  Future<Map<String, Object?>> _frontAuditEventToJson(
+    FrontAuditEvent event,
+  ) async => {
     'id': event.id,
     'front_id': event.frontId,
-    'before_snapshot': event.beforeSnapshot,
-    'after_snapshot': event.afterSnapshot,
+    'before_snapshot': await _decryptLocalText(event.beforeSnapshot),
+    'after_snapshot': await _decryptLocalText(event.afterSnapshot),
     'created_at': event.createdAt.toIso8601String(),
   };
 
-  Map<String, Object?> _namedFrontToJson(NamedFront front) => {
+  Future<Map<String, Object?>> _namedFrontToJson(NamedFront front) async => {
     'id': front.id,
-    'name': front.name,
-    'custom_label': front.customLabel,
-    'color_hex': front.colorHex,
-    'avatar_url': front.avatarUrl,
-    'description': front.description,
+    'name': (await _decryptLocalText(front.name)) ?? '',
+    'custom_label': await _decryptLocalText(front.customLabel),
+    'color_hex': await _decryptLocalText(front.colorHex),
+    'avatar_url': await _decryptLocalText(front.avatarUrl),
+    'description': await _decryptLocalText(front.description),
     'created_at': front.createdAt.toIso8601String(),
     'updated_at': front.updatedAt.toIso8601String(),
   };
@@ -5476,11 +6616,13 @@ SELECT
     'member_id': link.memberId,
   };
 
-  Map<String, Object?> _privacyBucketToJson(PrivacyBucket bucket) => {
+  Future<Map<String, Object?>> _privacyBucketToJson(
+    PrivacyBucket bucket,
+  ) async => {
     'id': bucket.id,
-    'name': bucket.name,
-    'description': bucket.description,
-    'color_hex': bucket.colorHex,
+    'name': (await _decryptLocalText(bucket.name)) ?? '',
+    'description': await _decryptLocalText(bucket.description),
+    'color_hex': await _decryptLocalText(bucket.colorHex),
     'position': bucket.position,
     'created_at': bucket.createdAt.toIso8601String(),
     'updated_at': bucket.updatedAt.toIso8601String(),
@@ -5491,28 +6633,33 @@ SELECT
     'member_id': link.memberId,
   };
 
-  Map<String, Object?> _importRecordToJson(ImportRecord record) => {
-    'id': record.id,
-    'source': record.source,
-    'file_name': record.fileName,
-    'summary_json': record.summaryJson,
-    'imported_at': record.importedAt.toIso8601String(),
-  };
+  Future<Map<String, Object?>> _importRecordToJson(ImportRecord record) async =>
+      {
+        'id': record.id,
+        'source': record.source,
+        'file_name': await _decryptLocalText(record.fileName),
+        'summary_json': await _decryptLocalText(record.summaryJson),
+        'imported_at': record.importedAt.toIso8601String(),
+      };
 
-  Map<String, Object?> _importPayloadToJson(ImportPayload payload) => {
+  Future<Map<String, Object?>> _importPayloadToJson(
+    ImportPayload payload,
+  ) async => {
     'id': payload.id,
     'import_record_id': payload.importRecordId,
     'source': payload.source,
     'collection': payload.collection,
-    'payload_json': payload.payloadJson,
+    'payload_json': (await _decryptLocalText(payload.payloadJson)) ?? '',
     'imported_at': payload.importedAt.toIso8601String(),
   };
 
-  Map<String, Object?> _notificationEventToJson(NotificationEvent event) => {
+  Future<Map<String, Object?>> _notificationEventToJson(
+    NotificationEvent event,
+  ) async => {
     'id': event.id,
     'kind': event.kind,
-    'title': event.title,
-    'body': event.body,
+    'title': (await _decryptLocalText(event.title)) ?? '',
+    'body': (await _decryptLocalText(event.body)) ?? '',
     'read_at': event.readAt?.toIso8601String(),
     'created_at': event.createdAt.toIso8601String(),
   };
@@ -5522,19 +6669,6 @@ SELECT
     'value': preference.value,
     'updated_at': preference.updatedAt.toIso8601String(),
   };
-}
-
-BackgroundJobSummary _backgroundJobSummary(BackgroundJob row) {
-  return BackgroundJobSummary(
-    id: row.id,
-    type: row.type,
-    status: row.status,
-    source: row.source,
-    fileName: row.fileName,
-    error: row.error,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  );
 }
 
 class _ImportAvatarBytes {
@@ -5552,6 +6686,18 @@ class _ImportAvatarBytes {
 }
 
 String _avatarExtension(String sourceName, String? mimeType) {
+  final mimeExtension = switch (mimeType) {
+    'image/png' => '.png',
+    'image/jpeg' => '.jpg',
+    'image/webp' => '.webp',
+    'image/gif' => '.gif',
+    'image/svg+xml' => '.svg',
+    _ => null,
+  };
+  if (mimeExtension != null) {
+    return mimeExtension;
+  }
+
   final lowerName = sourceName.toLowerCase();
   if (lowerName.endsWith('.png')) {
     return '.png';
@@ -5565,14 +6711,52 @@ String _avatarExtension(String sourceName, String? mimeType) {
   if (lowerName.endsWith('.gif')) {
     return '.gif';
   }
+  if (lowerName.endsWith('.svg')) {
+    return '.svg';
+  }
 
-  return switch (mimeType) {
-    'image/png' => '.png',
-    'image/jpeg' => '.jpg',
-    'image/webp' => '.webp',
-    'image/gif' => '.gif',
-    _ => '.bin',
-  };
+  return '.bin';
+}
+
+String? _sniffAvatarMimeType(Uint8List bytes) {
+  if (bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4e &&
+      bytes[3] == 0x47 &&
+      bytes[4] == 0x0d &&
+      bytes[5] == 0x0a &&
+      bytes[6] == 0x1a &&
+      bytes[7] == 0x0a) {
+    return 'image/png';
+  }
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xff &&
+      bytes[1] == 0xd8 &&
+      bytes[2] == 0xff) {
+    return 'image/jpeg';
+  }
+  if (bytes.length >= 6) {
+    final signature = String.fromCharCodes(bytes.take(6));
+    if (signature == 'GIF87a' || signature == 'GIF89a') {
+      return 'image/gif';
+    }
+  }
+  if (bytes.length >= 12 &&
+      String.fromCharCodes(bytes.take(4)) == 'RIFF' &&
+      String.fromCharCodes(bytes.skip(8).take(4)) == 'WEBP') {
+    return 'image/webp';
+  }
+  if (bytes.isNotEmpty) {
+    final prefix = String.fromCharCodes(
+      bytes.take(512),
+    ).trimLeft().toLowerCase();
+    if (prefix.startsWith('<svg') ||
+        (prefix.startsWith('<?xml') && prefix.contains('<svg'))) {
+      return 'image/svg+xml';
+    }
+  }
+  return null;
 }
 
 String _safeFilePart(String value) {
