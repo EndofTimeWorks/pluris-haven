@@ -40,6 +40,8 @@ class Members extends Table {
   TextColumn get systemId => text().references(PluralSystems, #id)();
   TextColumn get displayName => text()();
   TextColumn get displayNameHash => text().nullable()();
+  IntColumn get profileEncryptionVersion =>
+      integer().withDefault(const Constant(0))();
   TextColumn get pronouns => text().nullable()();
   TextColumn get colorHex => text().nullable()();
   TextColumn get birthday => text().nullable()();
@@ -82,6 +84,35 @@ class Notes extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class ChatCategories extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+class ChatChannels extends Table {
+  TextColumn get id => text()();
+  TextColumn get systemId => text().references(PluralSystems, #id)();
+  TextColumn get categoryId =>
+      text().nullable().references(ChatCategories, #id)();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get colorHex => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class Messages extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -90,6 +121,7 @@ class Messages extends Table {
   TextColumn get boardKind => text().withDefault(const Constant('system'))();
   TextColumn get boardMemberId => text().nullable()();
   TextColumn get parentMessageId => text().nullable()();
+  TextColumn get channelId => text().nullable().references(ChatChannels, #id)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
@@ -410,6 +442,8 @@ class PrivacyBucketMembers extends Table {
     Members,
     GroupMembers,
     Notes,
+    ChatCategories,
+    ChatChannels,
     Messages,
     Reminders,
     CustomFieldDefinitions,
@@ -441,7 +475,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -532,6 +566,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         await migrator.createTable(privacyBuckets);
         await migrator.createTable(privacyBucketMembers);
+      }
+      if (from < 16) {
+        await migrator.createTable(chatCategories);
+        await migrator.createTable(chatChannels);
+        await migrator.addColumn(messages, messages.channelId);
+      }
+      if (from < 17) {
+        await migrator.addColumn(members, members.profileEncryptionVersion);
       }
     },
     beforeOpen: (details) async {

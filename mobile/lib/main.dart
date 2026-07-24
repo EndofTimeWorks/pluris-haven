@@ -21,6 +21,7 @@ Future<void> main() async {
   final repository = LocalHavenRepository(database, crypto: crypto);
   await repository.ensureLocalSystem();
   await repository.migrateMemberNamesToEncryption();
+  await repository.migrateLocalPrivateContentToEncryption();
   appDebugLog('Local repository ready');
 
   runApp(PlurisHavenApp(repository: repository));

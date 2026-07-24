@@ -1152,6 +1152,18 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _profileEncryptionVersionMeta =
+      const VerificationMeta('profileEncryptionVersion');
+  @override
+  late final GeneratedColumn<int> profileEncryptionVersion =
+      GeneratedColumn<int>(
+        'profile_encryption_version',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
   static const VerificationMeta _pronounsMeta = const VerificationMeta(
     'pronouns',
   );
@@ -1331,6 +1343,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     systemId,
     displayName,
     displayNameHash,
+    profileEncryptionVersion,
     pronouns,
     colorHex,
     birthday,
@@ -1389,6 +1402,15 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         displayNameHash.isAcceptableOrUnknown(
           data['display_name_hash']!,
           _displayNameHashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('profile_encryption_version')) {
+      context.handle(
+        _profileEncryptionVersionMeta,
+        profileEncryptionVersion.isAcceptableOrUnknown(
+          data['profile_encryption_version']!,
+          _profileEncryptionVersionMeta,
         ),
       );
     }
@@ -1520,6 +1542,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.string,
         data['${effectivePrefix}display_name_hash'],
       ),
+      profileEncryptionVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}profile_encryption_version'],
+      )!,
       pronouns: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}pronouns'],
@@ -1594,6 +1620,7 @@ class Member extends DataClass implements Insertable<Member> {
   final String systemId;
   final String displayName;
   final String? displayNameHash;
+  final int profileEncryptionVersion;
   final String? pronouns;
   final String? colorHex;
   final String? birthday;
@@ -1614,6 +1641,7 @@ class Member extends DataClass implements Insertable<Member> {
     required this.systemId,
     required this.displayName,
     this.displayNameHash,
+    required this.profileEncryptionVersion,
     this.pronouns,
     this.colorHex,
     this.birthday,
@@ -1639,6 +1667,7 @@ class Member extends DataClass implements Insertable<Member> {
     if (!nullToAbsent || displayNameHash != null) {
       map['display_name_hash'] = Variable<String>(displayNameHash);
     }
+    map['profile_encryption_version'] = Variable<int>(profileEncryptionVersion);
     if (!nullToAbsent || pronouns != null) {
       map['pronouns'] = Variable<String>(pronouns);
     }
@@ -1683,6 +1712,7 @@ class Member extends DataClass implements Insertable<Member> {
       displayNameHash: displayNameHash == null && nullToAbsent
           ? const Value.absent()
           : Value(displayNameHash),
+      profileEncryptionVersion: Value(profileEncryptionVersion),
       pronouns: pronouns == null && nullToAbsent
           ? const Value.absent()
           : Value(pronouns),
@@ -1729,6 +1759,9 @@ class Member extends DataClass implements Insertable<Member> {
       systemId: serializer.fromJson<String>(json['systemId']),
       displayName: serializer.fromJson<String>(json['displayName']),
       displayNameHash: serializer.fromJson<String?>(json['displayNameHash']),
+      profileEncryptionVersion: serializer.fromJson<int>(
+        json['profileEncryptionVersion'],
+      ),
       pronouns: serializer.fromJson<String?>(json['pronouns']),
       colorHex: serializer.fromJson<String?>(json['colorHex']),
       birthday: serializer.fromJson<String?>(json['birthday']),
@@ -1754,6 +1787,9 @@ class Member extends DataClass implements Insertable<Member> {
       'systemId': serializer.toJson<String>(systemId),
       'displayName': serializer.toJson<String>(displayName),
       'displayNameHash': serializer.toJson<String?>(displayNameHash),
+      'profileEncryptionVersion': serializer.toJson<int>(
+        profileEncryptionVersion,
+      ),
       'pronouns': serializer.toJson<String?>(pronouns),
       'colorHex': serializer.toJson<String?>(colorHex),
       'birthday': serializer.toJson<String?>(birthday),
@@ -1777,6 +1813,7 @@ class Member extends DataClass implements Insertable<Member> {
     String? systemId,
     String? displayName,
     Value<String?> displayNameHash = const Value.absent(),
+    int? profileEncryptionVersion,
     Value<String?> pronouns = const Value.absent(),
     Value<String?> colorHex = const Value.absent(),
     Value<String?> birthday = const Value.absent(),
@@ -1799,6 +1836,8 @@ class Member extends DataClass implements Insertable<Member> {
     displayNameHash: displayNameHash.present
         ? displayNameHash.value
         : this.displayNameHash,
+    profileEncryptionVersion:
+        profileEncryptionVersion ?? this.profileEncryptionVersion,
     pronouns: pronouns.present ? pronouns.value : this.pronouns,
     colorHex: colorHex.present ? colorHex.value : this.colorHex,
     birthday: birthday.present ? birthday.value : this.birthday,
@@ -1825,6 +1864,9 @@ class Member extends DataClass implements Insertable<Member> {
       displayNameHash: data.displayNameHash.present
           ? data.displayNameHash.value
           : this.displayNameHash,
+      profileEncryptionVersion: data.profileEncryptionVersion.present
+          ? data.profileEncryptionVersion.value
+          : this.profileEncryptionVersion,
       pronouns: data.pronouns.present ? data.pronouns.value : this.pronouns,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       birthday: data.birthday.present ? data.birthday.value : this.birthday,
@@ -1858,6 +1900,7 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('systemId: $systemId, ')
           ..write('displayName: $displayName, ')
           ..write('displayNameHash: $displayNameHash, ')
+          ..write('profileEncryptionVersion: $profileEncryptionVersion, ')
           ..write('pronouns: $pronouns, ')
           ..write('colorHex: $colorHex, ')
           ..write('birthday: $birthday, ')
@@ -1883,6 +1926,7 @@ class Member extends DataClass implements Insertable<Member> {
     systemId,
     displayName,
     displayNameHash,
+    profileEncryptionVersion,
     pronouns,
     colorHex,
     birthday,
@@ -1907,6 +1951,7 @@ class Member extends DataClass implements Insertable<Member> {
           other.systemId == this.systemId &&
           other.displayName == this.displayName &&
           other.displayNameHash == this.displayNameHash &&
+          other.profileEncryptionVersion == this.profileEncryptionVersion &&
           other.pronouns == this.pronouns &&
           other.colorHex == this.colorHex &&
           other.birthday == this.birthday &&
@@ -1929,6 +1974,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<String> systemId;
   final Value<String> displayName;
   final Value<String?> displayNameHash;
+  final Value<int> profileEncryptionVersion;
   final Value<String?> pronouns;
   final Value<String?> colorHex;
   final Value<String?> birthday;
@@ -1950,6 +1996,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.systemId = const Value.absent(),
     this.displayName = const Value.absent(),
     this.displayNameHash = const Value.absent(),
+    this.profileEncryptionVersion = const Value.absent(),
     this.pronouns = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.birthday = const Value.absent(),
@@ -1972,6 +2019,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     required String systemId,
     required String displayName,
     this.displayNameHash = const Value.absent(),
+    this.profileEncryptionVersion = const Value.absent(),
     this.pronouns = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.birthday = const Value.absent(),
@@ -1998,6 +2046,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<String>? systemId,
     Expression<String>? displayName,
     Expression<String>? displayNameHash,
+    Expression<int>? profileEncryptionVersion,
     Expression<String>? pronouns,
     Expression<String>? colorHex,
     Expression<String>? birthday,
@@ -2020,6 +2069,8 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (systemId != null) 'system_id': systemId,
       if (displayName != null) 'display_name': displayName,
       if (displayNameHash != null) 'display_name_hash': displayNameHash,
+      if (profileEncryptionVersion != null)
+        'profile_encryption_version': profileEncryptionVersion,
       if (pronouns != null) 'pronouns': pronouns,
       if (colorHex != null) 'color_hex': colorHex,
       if (birthday != null) 'birthday': birthday,
@@ -2044,6 +2095,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<String>? systemId,
     Value<String>? displayName,
     Value<String?>? displayNameHash,
+    Value<int>? profileEncryptionVersion,
     Value<String?>? pronouns,
     Value<String?>? colorHex,
     Value<String?>? birthday,
@@ -2066,6 +2118,8 @@ class MembersCompanion extends UpdateCompanion<Member> {
       systemId: systemId ?? this.systemId,
       displayName: displayName ?? this.displayName,
       displayNameHash: displayNameHash ?? this.displayNameHash,
+      profileEncryptionVersion:
+          profileEncryptionVersion ?? this.profileEncryptionVersion,
       pronouns: pronouns ?? this.pronouns,
       colorHex: colorHex ?? this.colorHex,
       birthday: birthday ?? this.birthday,
@@ -2099,6 +2153,11 @@ class MembersCompanion extends UpdateCompanion<Member> {
     }
     if (displayNameHash.present) {
       map['display_name_hash'] = Variable<String>(displayNameHash.value);
+    }
+    if (profileEncryptionVersion.present) {
+      map['profile_encryption_version'] = Variable<int>(
+        profileEncryptionVersion.value,
+      );
     }
     if (pronouns.present) {
       map['pronouns'] = Variable<String>(pronouns.value);
@@ -2158,6 +2217,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('systemId: $systemId, ')
           ..write('displayName: $displayName, ')
           ..write('displayNameHash: $displayNameHash, ')
+          ..write('profileEncryptionVersion: $profileEncryptionVersion, ')
           ..write('pronouns: $pronouns, ')
           ..write('colorHex: $colorHex, ')
           ..write('birthday: $birthday, ')
@@ -2858,6 +2918,1047 @@ class NotesCompanion extends UpdateCompanion<Note> {
   }
 }
 
+class $ChatCategoriesTable extends ChatCategories
+    with TableInfo<$ChatCategoriesTable, ChatCategory> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChatCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    systemId,
+    name,
+    description,
+    position,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chat_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChatCategory> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChatCategory map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChatCategory(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChatCategoriesTable createAlias(String alias) {
+    return $ChatCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class ChatCategory extends DataClass implements Insertable<ChatCategory> {
+  final String id;
+  final String systemId;
+  final String name;
+  final String? description;
+  final int position;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ChatCategory({
+    required this.id,
+    required this.systemId,
+    required this.name,
+    this.description,
+    required this.position,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['system_id'] = Variable<String>(systemId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ChatCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return ChatCategoriesCompanion(
+      id: Value(id),
+      systemId: Value(systemId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      position: Value(position),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ChatCategory.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChatCategory(
+      id: serializer.fromJson<String>(json['id']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'systemId': serializer.toJson<String>(systemId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ChatCategory copyWith({
+    String? id,
+    String? systemId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    int? position,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ChatCategory(
+    id: id ?? this.id,
+    systemId: systemId ?? this.systemId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ChatCategory copyWithCompanion(ChatCategoriesCompanion data) {
+    return ChatCategory(
+      id: data.id.present ? data.id.value : this.id,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatCategory(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    name,
+    description,
+    position,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChatCategory &&
+          other.id == this.id &&
+          other.systemId == this.systemId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ChatCategoriesCompanion extends UpdateCompanion<ChatCategory> {
+  final Value<String> id;
+  final Value<String> systemId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ChatCategoriesCompanion({
+    this.id = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChatCategoriesCompanion.insert({
+    required String id,
+    required String systemId,
+    required String name,
+    this.description = const Value.absent(),
+    this.position = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       systemId = Value(systemId),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<ChatCategory> custom({
+    Expression<String>? id,
+    Expression<String>? systemId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (systemId != null) 'system_id': systemId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChatCategoriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? systemId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ChatCategoriesCompanion(
+      id: id ?? this.id,
+      systemId: systemId ?? this.systemId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatCategoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChatChannelsTable extends ChatChannels
+    with TableInfo<$ChatChannelsTable, ChatChannel> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChatChannelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _systemIdMeta = const VerificationMeta(
+    'systemId',
+  );
+  @override
+  late final GeneratedColumn<String> systemId = GeneratedColumn<String>(
+    'system_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plural_systems (id)',
+    ),
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES chat_categories (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorHexMeta = const VerificationMeta(
+    'colorHex',
+  );
+  @override
+  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
+    'color_hex',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    systemId,
+    categoryId,
+    name,
+    description,
+    colorHex,
+    position,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chat_channels';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChatChannel> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('system_id')) {
+      context.handle(
+        _systemIdMeta,
+        systemId.isAcceptableOrUnknown(data['system_id']!, _systemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemIdMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color_hex')) {
+      context.handle(
+        _colorHexMeta,
+        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChatChannel map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChatChannel(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      systemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_id'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      colorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_hex'],
+      ),
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChatChannelsTable createAlias(String alias) {
+    return $ChatChannelsTable(attachedDatabase, alias);
+  }
+}
+
+class ChatChannel extends DataClass implements Insertable<ChatChannel> {
+  final String id;
+  final String systemId;
+  final String? categoryId;
+  final String name;
+  final String? description;
+  final String? colorHex;
+  final int position;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ChatChannel({
+    required this.id,
+    required this.systemId,
+    this.categoryId,
+    required this.name,
+    this.description,
+    this.colorHex,
+    required this.position,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['system_id'] = Variable<String>(systemId);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || colorHex != null) {
+      map['color_hex'] = Variable<String>(colorHex);
+    }
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ChatChannelsCompanion toCompanion(bool nullToAbsent) {
+    return ChatChannelsCompanion(
+      id: Value(id),
+      systemId: Value(systemId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      colorHex: colorHex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorHex),
+      position: Value(position),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ChatChannel.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChatChannel(
+      id: serializer.fromJson<String>(json['id']),
+      systemId: serializer.fromJson<String>(json['systemId']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      colorHex: serializer.fromJson<String?>(json['colorHex']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'systemId': serializer.toJson<String>(systemId),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'colorHex': serializer.toJson<String?>(colorHex),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ChatChannel copyWith({
+    String? id,
+    String? systemId,
+    Value<String?> categoryId = const Value.absent(),
+    String? name,
+    Value<String?> description = const Value.absent(),
+    Value<String?> colorHex = const Value.absent(),
+    int? position,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ChatChannel(
+    id: id ?? this.id,
+    systemId: systemId ?? this.systemId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    colorHex: colorHex.present ? colorHex.value : this.colorHex,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ChatChannel copyWithCompanion(ChatChannelsCompanion data) {
+    return ChatChannel(
+      id: data.id.present ? data.id.value : this.id,
+      systemId: data.systemId.present ? data.systemId.value : this.systemId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatChannel(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    systemId,
+    categoryId,
+    name,
+    description,
+    colorHex,
+    position,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChatChannel &&
+          other.id == this.id &&
+          other.systemId == this.systemId &&
+          other.categoryId == this.categoryId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.colorHex == this.colorHex &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
+  final Value<String> id;
+  final Value<String> systemId;
+  final Value<String?> categoryId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String?> colorHex;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ChatChannelsCompanion({
+    this.id = const Value.absent(),
+    this.systemId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChatChannelsCompanion.insert({
+    required String id,
+    required String systemId,
+    this.categoryId = const Value.absent(),
+    required String name,
+    this.description = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.position = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       systemId = Value(systemId),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<ChatChannel> custom({
+    Expression<String>? id,
+    Expression<String>? systemId,
+    Expression<String>? categoryId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<String>? colorHex,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (systemId != null) 'system_id': systemId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (colorHex != null) 'color_hex': colorHex,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChatChannelsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? systemId,
+    Value<String?>? categoryId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<String?>? colorHex,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ChatChannelsCompanion(
+      id: id ?? this.id,
+      systemId: systemId ?? this.systemId,
+      categoryId: categoryId ?? this.categoryId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      colorHex: colorHex ?? this.colorHex,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (systemId.present) {
+      map['system_id'] = Variable<String>(systemId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (colorHex.present) {
+      map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatChannelsCompanion(')
+          ..write('id: $id, ')
+          ..write('systemId: $systemId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -2940,6 +4041,20 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _channelIdMeta = const VerificationMeta(
+    'channelId',
+  );
+  @override
+  late final GeneratedColumn<String> channelId = GeneratedColumn<String>(
+    'channel_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES chat_channels (id)',
+    ),
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -2997,6 +4112,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     boardKind,
     boardMemberId,
     parentMessageId,
+    channelId,
     deletedAt,
     archived,
     createdAt,
@@ -3065,6 +4181,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         ),
       );
     }
+    if (data.containsKey('channel_id')) {
+      context.handle(
+        _channelIdMeta,
+        channelId.isAcceptableOrUnknown(data['channel_id']!, _channelIdMeta),
+      );
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -3130,6 +4252,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         DriftSqlType.string,
         data['${effectivePrefix}parent_message_id'],
       ),
+      channelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}channel_id'],
+      ),
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -3163,6 +4289,7 @@ class Message extends DataClass implements Insertable<Message> {
   final String boardKind;
   final String? boardMemberId;
   final String? parentMessageId;
+  final String? channelId;
   final DateTime? deletedAt;
   final bool archived;
   final DateTime createdAt;
@@ -3175,6 +4302,7 @@ class Message extends DataClass implements Insertable<Message> {
     required this.boardKind,
     this.boardMemberId,
     this.parentMessageId,
+    this.channelId,
     this.deletedAt,
     required this.archived,
     required this.createdAt,
@@ -3195,6 +4323,9 @@ class Message extends DataClass implements Insertable<Message> {
     }
     if (!nullToAbsent || parentMessageId != null) {
       map['parent_message_id'] = Variable<String>(parentMessageId);
+    }
+    if (!nullToAbsent || channelId != null) {
+      map['channel_id'] = Variable<String>(channelId);
     }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
@@ -3220,6 +4351,9 @@ class Message extends DataClass implements Insertable<Message> {
       parentMessageId: parentMessageId == null && nullToAbsent
           ? const Value.absent()
           : Value(parentMessageId),
+      channelId: channelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(channelId),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -3242,6 +4376,7 @@ class Message extends DataClass implements Insertable<Message> {
       boardKind: serializer.fromJson<String>(json['boardKind']),
       boardMemberId: serializer.fromJson<String?>(json['boardMemberId']),
       parentMessageId: serializer.fromJson<String?>(json['parentMessageId']),
+      channelId: serializer.fromJson<String?>(json['channelId']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       archived: serializer.fromJson<bool>(json['archived']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -3259,6 +4394,7 @@ class Message extends DataClass implements Insertable<Message> {
       'boardKind': serializer.toJson<String>(boardKind),
       'boardMemberId': serializer.toJson<String?>(boardMemberId),
       'parentMessageId': serializer.toJson<String?>(parentMessageId),
+      'channelId': serializer.toJson<String?>(channelId),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'archived': serializer.toJson<bool>(archived),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -3274,6 +4410,7 @@ class Message extends DataClass implements Insertable<Message> {
     String? boardKind,
     Value<String?> boardMemberId = const Value.absent(),
     Value<String?> parentMessageId = const Value.absent(),
+    Value<String?> channelId = const Value.absent(),
     Value<DateTime?> deletedAt = const Value.absent(),
     bool? archived,
     DateTime? createdAt,
@@ -3290,6 +4427,7 @@ class Message extends DataClass implements Insertable<Message> {
     parentMessageId: parentMessageId.present
         ? parentMessageId.value
         : this.parentMessageId,
+    channelId: channelId.present ? channelId.value : this.channelId,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     archived: archived ?? this.archived,
     createdAt: createdAt ?? this.createdAt,
@@ -3308,6 +4446,7 @@ class Message extends DataClass implements Insertable<Message> {
       parentMessageId: data.parentMessageId.present
           ? data.parentMessageId.value
           : this.parentMessageId,
+      channelId: data.channelId.present ? data.channelId.value : this.channelId,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       archived: data.archived.present ? data.archived.value : this.archived,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -3325,6 +4464,7 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('boardKind: $boardKind, ')
           ..write('boardMemberId: $boardMemberId, ')
           ..write('parentMessageId: $parentMessageId, ')
+          ..write('channelId: $channelId, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('archived: $archived, ')
           ..write('createdAt: $createdAt, ')
@@ -3342,6 +4482,7 @@ class Message extends DataClass implements Insertable<Message> {
     boardKind,
     boardMemberId,
     parentMessageId,
+    channelId,
     deletedAt,
     archived,
     createdAt,
@@ -3358,6 +4499,7 @@ class Message extends DataClass implements Insertable<Message> {
           other.boardKind == this.boardKind &&
           other.boardMemberId == this.boardMemberId &&
           other.parentMessageId == this.parentMessageId &&
+          other.channelId == this.channelId &&
           other.deletedAt == this.deletedAt &&
           other.archived == this.archived &&
           other.createdAt == this.createdAt &&
@@ -3372,6 +4514,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<String> boardKind;
   final Value<String?> boardMemberId;
   final Value<String?> parentMessageId;
+  final Value<String?> channelId;
   final Value<DateTime?> deletedAt;
   final Value<bool> archived;
   final Value<DateTime> createdAt;
@@ -3385,6 +4528,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.boardKind = const Value.absent(),
     this.boardMemberId = const Value.absent(),
     this.parentMessageId = const Value.absent(),
+    this.channelId = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.archived = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3399,6 +4543,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.boardKind = const Value.absent(),
     this.boardMemberId = const Value.absent(),
     this.parentMessageId = const Value.absent(),
+    this.channelId = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.archived = const Value.absent(),
     required DateTime createdAt,
@@ -3417,6 +4562,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<String>? boardKind,
     Expression<String>? boardMemberId,
     Expression<String>? parentMessageId,
+    Expression<String>? channelId,
     Expression<DateTime>? deletedAt,
     Expression<bool>? archived,
     Expression<DateTime>? createdAt,
@@ -3431,6 +4577,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (boardKind != null) 'board_kind': boardKind,
       if (boardMemberId != null) 'board_member_id': boardMemberId,
       if (parentMessageId != null) 'parent_message_id': parentMessageId,
+      if (channelId != null) 'channel_id': channelId,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (archived != null) 'archived': archived,
       if (createdAt != null) 'created_at': createdAt,
@@ -3447,6 +4594,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Value<String>? boardKind,
     Value<String?>? boardMemberId,
     Value<String?>? parentMessageId,
+    Value<String?>? channelId,
     Value<DateTime?>? deletedAt,
     Value<bool>? archived,
     Value<DateTime>? createdAt,
@@ -3461,6 +4609,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       boardKind: boardKind ?? this.boardKind,
       boardMemberId: boardMemberId ?? this.boardMemberId,
       parentMessageId: parentMessageId ?? this.parentMessageId,
+      channelId: channelId ?? this.channelId,
       deletedAt: deletedAt ?? this.deletedAt,
       archived: archived ?? this.archived,
       createdAt: createdAt ?? this.createdAt,
@@ -3493,6 +4642,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (parentMessageId.present) {
       map['parent_message_id'] = Variable<String>(parentMessageId.value);
     }
+    if (channelId.present) {
+      map['channel_id'] = Variable<String>(channelId.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -3521,6 +4673,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('boardKind: $boardKind, ')
           ..write('boardMemberId: $boardMemberId, ')
           ..write('parentMessageId: $parentMessageId, ')
+          ..write('channelId: $channelId, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('archived: $archived, ')
           ..write('createdAt: $createdAt, ')
@@ -14338,6 +15491,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MembersTable members = $MembersTable(this);
   late final $GroupMembersTable groupMembers = $GroupMembersTable(this);
   late final $NotesTable notes = $NotesTable(this);
+  late final $ChatCategoriesTable chatCategories = $ChatCategoriesTable(this);
+  late final $ChatChannelsTable chatChannels = $ChatChannelsTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
   late final $CustomFieldDefinitionsTable customFieldDefinitions =
@@ -14383,6 +15538,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     members,
     groupMembers,
     notes,
+    chatCategories,
+    chatChannels,
     messages,
     reminders,
     customFieldDefinitions,
@@ -14493,6 +15650,42 @@ final class $$PluralSystemsTableReferences
     ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_notesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ChatCategoriesTable, List<ChatCategory>>
+  _chatCategoriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.chatCategories,
+    aliasName: 'plural_systems__id__chat_categories__system_id',
+  );
+
+  $$ChatCategoriesTableProcessedTableManager get chatCategoriesRefs {
+    final manager = $$ChatCategoriesTableTableManager(
+      $_db,
+      $_db.chatCategories,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_chatCategoriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ChatChannelsTable, List<ChatChannel>>
+  _chatChannelsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.chatChannels,
+    aliasName: 'plural_systems__id__chat_channels__system_id',
+  );
+
+  $$ChatChannelsTableProcessedTableManager get chatChannelsRefs {
+    final manager = $$ChatChannelsTableTableManager(
+      $_db,
+      $_db.chatChannels,
+    ).filter((f) => f.systemId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_chatChannelsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -14874,6 +16067,56 @@ class $$PluralSystemsTableFilterComposer
           }) => $$NotesTableFilterComposer(
             $db: $db,
             $table: $db.notes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> chatCategoriesRefs(
+    Expression<bool> Function($$ChatCategoriesTableFilterComposer f) f,
+  ) {
+    final $$ChatCategoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatCategories,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatCategoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.chatCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> chatChannelsRefs(
+    Expression<bool> Function($$ChatChannelsTableFilterComposer f) f,
+  ) {
+    final $$ChatChannelsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableFilterComposer(
+            $db: $db,
+            $table: $db.chatChannels,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -15387,6 +16630,56 @@ class $$PluralSystemsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> chatCategoriesRefs<T extends Object>(
+    Expression<T> Function($$ChatCategoriesTableAnnotationComposer a) f,
+  ) {
+    final $$ChatCategoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatCategories,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatCategoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> chatChannelsRefs<T extends Object>(
+    Expression<T> Function($$ChatChannelsTableAnnotationComposer a) f,
+  ) {
+    final $$ChatChannelsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.systemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatChannels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> messagesRefs<T extends Object>(
     Expression<T> Function($$MessagesTableAnnotationComposer a) f,
   ) {
@@ -15757,6 +17050,8 @@ class $$PluralSystemsTableTableManager
             bool systemGroupsRefs,
             bool membersRefs,
             bool notesRefs,
+            bool chatCategoriesRefs,
+            bool chatChannelsRefs,
             bool messagesRefs,
             bool remindersRefs,
             bool customFieldDefinitionsRefs,
@@ -15837,6 +17132,8 @@ class $$PluralSystemsTableTableManager
                 systemGroupsRefs = false,
                 membersRefs = false,
                 notesRefs = false,
+                chatCategoriesRefs = false,
+                chatChannelsRefs = false,
                 messagesRefs = false,
                 remindersRefs = false,
                 customFieldDefinitionsRefs = false,
@@ -15858,6 +17155,8 @@ class $$PluralSystemsTableTableManager
                     if (systemGroupsRefs) db.systemGroups,
                     if (membersRefs) db.members,
                     if (notesRefs) db.notes,
+                    if (chatCategoriesRefs) db.chatCategories,
+                    if (chatChannelsRefs) db.chatChannels,
                     if (messagesRefs) db.messages,
                     if (remindersRefs) db.reminders,
                     if (customFieldDefinitionsRefs) db.customFieldDefinitions,
@@ -15933,6 +17232,48 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).notesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (chatCategoriesRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          ChatCategory
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._chatCategoriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chatCategoriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.systemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (chatChannelsRefs)
+                        await $_getPrefetchedData<
+                          PluralSystem,
+                          $PluralSystemsTable,
+                          ChatChannel
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PluralSystemsTableReferences
+                              ._chatChannelsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PluralSystemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chatChannelsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.systemId == item.id,
@@ -16257,6 +17598,8 @@ typedef $$PluralSystemsTableProcessedTableManager =
         bool systemGroupsRefs,
         bool membersRefs,
         bool notesRefs,
+        bool chatCategoriesRefs,
+        bool chatChannelsRefs,
         bool messagesRefs,
         bool remindersRefs,
         bool customFieldDefinitionsRefs,
@@ -16793,6 +18136,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       required String systemId,
       required String displayName,
       Value<String?> displayNameHash,
+      Value<int> profileEncryptionVersion,
       Value<String?> pronouns,
       Value<String?> colorHex,
       Value<String?> birthday,
@@ -16816,6 +18160,7 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<String> systemId,
       Value<String> displayName,
       Value<String?> displayNameHash,
+      Value<int> profileEncryptionVersion,
       Value<String?> pronouns,
       Value<String?> colorHex,
       Value<String?> birthday,
@@ -17022,6 +18367,11 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<String> get displayNameHash => $composableBuilder(
     column: $table.displayNameHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get profileEncryptionVersion => $composableBuilder(
+    column: $table.profileEncryptionVersion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17323,6 +18673,11 @@ class $$MembersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get profileEncryptionVersion => $composableBuilder(
+    column: $table.profileEncryptionVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get pronouns => $composableBuilder(
     column: $table.pronouns,
     builder: (column) => ColumnOrderings(column),
@@ -17441,6 +18796,11 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<String> get displayNameHash => $composableBuilder(
     column: $table.displayNameHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get profileEncryptionVersion => $composableBuilder(
+    column: $table.profileEncryptionVersion,
     builder: (column) => column,
   );
 
@@ -17741,6 +19101,7 @@ class $$MembersTableTableManager
                 Value<String> systemId = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
                 Value<String?> displayNameHash = const Value.absent(),
+                Value<int> profileEncryptionVersion = const Value.absent(),
                 Value<String?> pronouns = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
                 Value<String?> birthday = const Value.absent(),
@@ -17762,6 +19123,7 @@ class $$MembersTableTableManager
                 systemId: systemId,
                 displayName: displayName,
                 displayNameHash: displayNameHash,
+                profileEncryptionVersion: profileEncryptionVersion,
                 pronouns: pronouns,
                 colorHex: colorHex,
                 birthday: birthday,
@@ -17785,6 +19147,7 @@ class $$MembersTableTableManager
                 required String systemId,
                 required String displayName,
                 Value<String?> displayNameHash = const Value.absent(),
+                Value<int> profileEncryptionVersion = const Value.absent(),
                 Value<String?> pronouns = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
                 Value<String?> birthday = const Value.absent(),
@@ -17806,6 +19169,7 @@ class $$MembersTableTableManager
                 systemId: systemId,
                 displayName: displayName,
                 displayNameHash: displayNameHash,
+                profileEncryptionVersion: profileEncryptionVersion,
                 pronouns: pronouns,
                 colorHex: colorHex,
                 birthday: birthday,
@@ -18763,6 +20127,1052 @@ typedef $$NotesTableProcessedTableManager =
       Note,
       PrefetchHooks Function({bool systemId})
     >;
+typedef $$ChatCategoriesTableCreateCompanionBuilder =
+    ChatCategoriesCompanion Function({
+      required String id,
+      required String systemId,
+      required String name,
+      Value<String?> description,
+      Value<int> position,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ChatCategoriesTableUpdateCompanionBuilder =
+    ChatCategoriesCompanion Function({
+      Value<String> id,
+      Value<String> systemId,
+      Value<String> name,
+      Value<String?> description,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$ChatCategoriesTableReferences
+    extends BaseReferences<_$AppDatabase, $ChatCategoriesTable, ChatCategory> {
+  $$ChatCategoriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) => db
+      .pluralSystems
+      .createAlias('chat_categories__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ChatChannelsTable, List<ChatChannel>>
+  _chatChannelsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.chatChannels,
+    aliasName: 'chat_categories__id__chat_channels__category_id',
+  );
+
+  $$ChatChannelsTableProcessedTableManager get chatChannelsRefs {
+    final manager = $$ChatChannelsTableTableManager(
+      $_db,
+      $_db.chatChannels,
+    ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_chatChannelsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ChatCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChatCategoriesTable> {
+  $$ChatCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> chatChannelsRefs(
+    Expression<bool> Function($$ChatChannelsTableFilterComposer f) f,
+  ) {
+    final $$ChatChannelsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableFilterComposer(
+            $db: $db,
+            $table: $db.chatChannels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChatCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChatCategoriesTable> {
+  $$ChatCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChatCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChatCategoriesTable> {
+  $$ChatCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> chatChannelsRefs<T extends Object>(
+    Expression<T> Function($$ChatChannelsTableAnnotationComposer a) f,
+  ) {
+    final $$ChatChannelsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.categoryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatChannels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChatCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChatCategoriesTable,
+          ChatCategory,
+          $$ChatCategoriesTableFilterComposer,
+          $$ChatCategoriesTableOrderingComposer,
+          $$ChatCategoriesTableAnnotationComposer,
+          $$ChatCategoriesTableCreateCompanionBuilder,
+          $$ChatCategoriesTableUpdateCompanionBuilder,
+          (ChatCategory, $$ChatCategoriesTableReferences),
+          ChatCategory,
+          PrefetchHooks Function({bool systemId, bool chatChannelsRefs})
+        > {
+  $$ChatCategoriesTableTableManager(
+    _$AppDatabase db,
+    $ChatCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChatCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChatCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChatCategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChatCategoriesCompanion(
+                id: id,
+                systemId: systemId,
+                name: name,
+                description: description,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String systemId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ChatCategoriesCompanion.insert(
+                id: id,
+                systemId: systemId,
+                name: name,
+                description: description,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChatCategoriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({systemId = false, chatChannelsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (chatChannelsRefs) db.chatChannels,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.systemId,
+                                    referencedTable:
+                                        $$ChatCategoriesTableReferences
+                                            ._systemIdTable(db),
+                                    referencedColumn:
+                                        $$ChatCategoriesTableReferences
+                                            ._systemIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (chatChannelsRefs)
+                        await $_getPrefetchedData<
+                          ChatCategory,
+                          $ChatCategoriesTable,
+                          ChatChannel
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChatCategoriesTableReferences
+                              ._chatChannelsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChatCategoriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chatChannelsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.categoryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ChatCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChatCategoriesTable,
+      ChatCategory,
+      $$ChatCategoriesTableFilterComposer,
+      $$ChatCategoriesTableOrderingComposer,
+      $$ChatCategoriesTableAnnotationComposer,
+      $$ChatCategoriesTableCreateCompanionBuilder,
+      $$ChatCategoriesTableUpdateCompanionBuilder,
+      (ChatCategory, $$ChatCategoriesTableReferences),
+      ChatCategory,
+      PrefetchHooks Function({bool systemId, bool chatChannelsRefs})
+    >;
+typedef $$ChatChannelsTableCreateCompanionBuilder =
+    ChatChannelsCompanion Function({
+      required String id,
+      required String systemId,
+      Value<String?> categoryId,
+      required String name,
+      Value<String?> description,
+      Value<String?> colorHex,
+      Value<int> position,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ChatChannelsTableUpdateCompanionBuilder =
+    ChatChannelsCompanion Function({
+      Value<String> id,
+      Value<String> systemId,
+      Value<String?> categoryId,
+      Value<String> name,
+      Value<String?> description,
+      Value<String?> colorHex,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$ChatChannelsTableReferences
+    extends BaseReferences<_$AppDatabase, $ChatChannelsTable, ChatChannel> {
+  $$ChatChannelsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PluralSystemsTable _systemIdTable(_$AppDatabase db) => db
+      .pluralSystems
+      .createAlias('chat_channels__system_id__plural_systems__id');
+
+  $$PluralSystemsTableProcessedTableManager get systemId {
+    final $_column = $_itemColumn<String>('system_id')!;
+
+    final manager = $$PluralSystemsTableTableManager(
+      $_db,
+      $_db.pluralSystems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ChatCategoriesTable _categoryIdTable(_$AppDatabase db) => db
+      .chatCategories
+      .createAlias('chat_channels__category_id__chat_categories__id');
+
+  $$ChatCategoriesTableProcessedTableManager? get categoryId {
+    final $_column = $_itemColumn<String>('category_id');
+    if ($_column == null) return null;
+    final manager = $$ChatCategoriesTableTableManager(
+      $_db,
+      $_db.chatCategories,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_categoryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$MessagesTable, List<Message>> _messagesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.messages,
+    aliasName: 'chat_channels__id__messages__channel_id',
+  );
+
+  $$MessagesTableProcessedTableManager get messagesRefs {
+    final manager = $$MessagesTableTableManager(
+      $_db,
+      $_db.messages,
+    ).filter((f) => f.channelId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_messagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ChatChannelsTableFilterComposer
+    extends Composer<_$AppDatabase, $ChatChannelsTable> {
+  $$ChatChannelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PluralSystemsTableFilterComposer get systemId {
+    final $$PluralSystemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableFilterComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChatCategoriesTableFilterComposer get categoryId {
+    final $$ChatCategoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.chatCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatCategoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.chatCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> messagesRefs(
+    Expression<bool> Function($$MessagesTableFilterComposer f) f,
+  ) {
+    final $$MessagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.messages,
+      getReferencedColumn: (t) => t.channelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MessagesTableFilterComposer(
+            $db: $db,
+            $table: $db.messages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChatChannelsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChatChannelsTable> {
+  $$ChatChannelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PluralSystemsTableOrderingComposer get systemId {
+    final $$PluralSystemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChatCategoriesTableOrderingComposer get categoryId {
+    final $$ChatCategoriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.chatCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatCategoriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.chatCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChatChannelsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChatChannelsTable> {
+  $$ChatChannelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colorHex =>
+      $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PluralSystemsTableAnnotationComposer get systemId {
+    final $$PluralSystemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.systemId,
+      referencedTable: $db.pluralSystems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PluralSystemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChatCategoriesTableAnnotationComposer get categoryId {
+    final $$ChatCategoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.chatCategories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatCategoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatCategories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> messagesRefs<T extends Object>(
+    Expression<T> Function($$MessagesTableAnnotationComposer a) f,
+  ) {
+    final $$MessagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.messages,
+      getReferencedColumn: (t) => t.channelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MessagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.messages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChatChannelsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChatChannelsTable,
+          ChatChannel,
+          $$ChatChannelsTableFilterComposer,
+          $$ChatChannelsTableOrderingComposer,
+          $$ChatChannelsTableAnnotationComposer,
+          $$ChatChannelsTableCreateCompanionBuilder,
+          $$ChatChannelsTableUpdateCompanionBuilder,
+          (ChatChannel, $$ChatChannelsTableReferences),
+          ChatChannel,
+          PrefetchHooks Function({
+            bool systemId,
+            bool categoryId,
+            bool messagesRefs,
+          })
+        > {
+  $$ChatChannelsTableTableManager(_$AppDatabase db, $ChatChannelsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChatChannelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChatChannelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChatChannelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> systemId = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChatChannelsCompanion(
+                id: id,
+                systemId: systemId,
+                categoryId: categoryId,
+                name: name,
+                description: description,
+                colorHex: colorHex,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String systemId,
+                Value<String?> categoryId = const Value.absent(),
+                required String name,
+                Value<String?> description = const Value.absent(),
+                Value<String?> colorHex = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ChatChannelsCompanion.insert(
+                id: id,
+                systemId: systemId,
+                categoryId: categoryId,
+                name: name,
+                description: description,
+                colorHex: colorHex,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChatChannelsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({systemId = false, categoryId = false, messagesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [if (messagesRefs) db.messages],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.systemId,
+                                    referencedTable:
+                                        $$ChatChannelsTableReferences
+                                            ._systemIdTable(db),
+                                    referencedColumn:
+                                        $$ChatChannelsTableReferences
+                                            ._systemIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (categoryId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.categoryId,
+                                    referencedTable:
+                                        $$ChatChannelsTableReferences
+                                            ._categoryIdTable(db),
+                                    referencedColumn:
+                                        $$ChatChannelsTableReferences
+                                            ._categoryIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (messagesRefs)
+                        await $_getPrefetchedData<
+                          ChatChannel,
+                          $ChatChannelsTable,
+                          Message
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChatChannelsTableReferences
+                              ._messagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChatChannelsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).messagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.channelId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ChatChannelsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChatChannelsTable,
+      ChatChannel,
+      $$ChatChannelsTableFilterComposer,
+      $$ChatChannelsTableOrderingComposer,
+      $$ChatChannelsTableAnnotationComposer,
+      $$ChatChannelsTableCreateCompanionBuilder,
+      $$ChatChannelsTableUpdateCompanionBuilder,
+      (ChatChannel, $$ChatChannelsTableReferences),
+      ChatChannel,
+      PrefetchHooks Function({
+        bool systemId,
+        bool categoryId,
+        bool messagesRefs,
+      })
+    >;
 typedef $$MessagesTableCreateCompanionBuilder =
     MessagesCompanion Function({
       required String id,
@@ -18772,6 +21182,7 @@ typedef $$MessagesTableCreateCompanionBuilder =
       Value<String> boardKind,
       Value<String?> boardMemberId,
       Value<String?> parentMessageId,
+      Value<String?> channelId,
       Value<DateTime?> deletedAt,
       Value<bool> archived,
       required DateTime createdAt,
@@ -18787,6 +21198,7 @@ typedef $$MessagesTableUpdateCompanionBuilder =
       Value<String> boardKind,
       Value<String?> boardMemberId,
       Value<String?> parentMessageId,
+      Value<String?> channelId,
       Value<DateTime?> deletedAt,
       Value<bool> archived,
       Value<DateTime> createdAt,
@@ -18809,6 +21221,23 @@ final class $$MessagesTableReferences
       $_db.pluralSystems,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_systemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ChatChannelsTable _channelIdTable(_$AppDatabase db) =>
+      db.chatChannels.createAlias('messages__channel_id__chat_channels__id');
+
+  $$ChatChannelsTableProcessedTableManager? get channelId {
+    final $_column = $_itemColumn<String>('channel_id');
+    if ($_column == null) return null;
+    final manager = $$ChatChannelsTableTableManager(
+      $_db,
+      $_db.chatChannels,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_channelIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -18889,6 +21318,29 @@ class $$MessagesTableFilterComposer
           }) => $$PluralSystemsTableFilterComposer(
             $db: $db,
             $table: $db.pluralSystems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChatChannelsTableFilterComposer get channelId {
+    final $$ChatChannelsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.channelId,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableFilterComposer(
+            $db: $db,
+            $table: $db.chatChannels,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -18980,6 +21432,29 @@ class $$MessagesTableOrderingComposer
     );
     return composer;
   }
+
+  $$ChatChannelsTableOrderingComposer get channelId {
+    final $$ChatChannelsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.channelId,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableOrderingComposer(
+            $db: $db,
+            $table: $db.chatChannels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$MessagesTableAnnotationComposer
@@ -19047,6 +21522,29 @@ class $$MessagesTableAnnotationComposer
     );
     return composer;
   }
+
+  $$ChatChannelsTableAnnotationComposer get channelId {
+    final $$ChatChannelsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.channelId,
+      referencedTable: $db.chatChannels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatChannelsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatChannels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$MessagesTableTableManager
@@ -19062,7 +21560,7 @@ class $$MessagesTableTableManager
           $$MessagesTableUpdateCompanionBuilder,
           (Message, $$MessagesTableReferences),
           Message,
-          PrefetchHooks Function({bool systemId})
+          PrefetchHooks Function({bool systemId, bool channelId})
         > {
   $$MessagesTableTableManager(_$AppDatabase db, $MessagesTable table)
     : super(
@@ -19084,6 +21582,7 @@ class $$MessagesTableTableManager
                 Value<String> boardKind = const Value.absent(),
                 Value<String?> boardMemberId = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
+                Value<String?> channelId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -19097,6 +21596,7 @@ class $$MessagesTableTableManager
                 boardKind: boardKind,
                 boardMemberId: boardMemberId,
                 parentMessageId: parentMessageId,
+                channelId: channelId,
                 deletedAt: deletedAt,
                 archived: archived,
                 createdAt: createdAt,
@@ -19112,6 +21612,7 @@ class $$MessagesTableTableManager
                 Value<String> boardKind = const Value.absent(),
                 Value<String?> boardMemberId = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
+                Value<String?> channelId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
                 required DateTime createdAt,
@@ -19125,6 +21626,7 @@ class $$MessagesTableTableManager
                 boardKind: boardKind,
                 boardMemberId: boardMemberId,
                 parentMessageId: parentMessageId,
+                channelId: channelId,
                 deletedAt: deletedAt,
                 archived: archived,
                 createdAt: createdAt,
@@ -19139,7 +21641,7 @@ class $$MessagesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({systemId = false}) {
+          prefetchHooksCallback: ({systemId = false, channelId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -19172,6 +21674,19 @@ class $$MessagesTableTableManager
                               )
                               as T;
                     }
+                    if (channelId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.channelId,
+                                referencedTable: $$MessagesTableReferences
+                                    ._channelIdTable(db),
+                                referencedColumn: $$MessagesTableReferences
+                                    ._channelIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
 
                     return state;
                   },
@@ -19196,7 +21711,7 @@ typedef $$MessagesTableProcessedTableManager =
       $$MessagesTableUpdateCompanionBuilder,
       (Message, $$MessagesTableReferences),
       Message,
-      PrefetchHooks Function({bool systemId})
+      PrefetchHooks Function({bool systemId, bool channelId})
     >;
 typedef $$RemindersTableCreateCompanionBuilder =
     RemindersCompanion Function({
@@ -29508,6 +32023,10 @@ class $AppDatabaseManager {
       $$GroupMembersTableTableManager(_db, _db.groupMembers);
   $$NotesTableTableManager get notes =>
       $$NotesTableTableManager(_db, _db.notes);
+  $$ChatCategoriesTableTableManager get chatCategories =>
+      $$ChatCategoriesTableTableManager(_db, _db.chatCategories);
+  $$ChatChannelsTableTableManager get chatChannels =>
+      $$ChatChannelsTableTableManager(_db, _db.chatChannels);
   $$MessagesTableTableManager get messages =>
       $$MessagesTableTableManager(_db, _db.messages);
   $$RemindersTableTableManager get reminders =>
