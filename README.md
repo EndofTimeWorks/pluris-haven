@@ -25,6 +25,10 @@ other network features are opt-in.
 
 - `docs/product-goals.md` - product scope and milestone order
 - `docs/release/mobile.md` - mobile dev builds and releases
+- `docs/reference-matrix.md` - comparative inspiration, provenance, and alpha targets
+- `docs/mobile-accessibility.md` - mobile accessibility rules and alpha gate
+- `docs/release/alpha-checklist.md` - blocking evidence for an alpha candidate
+- `CHANGELOG.md` - detailed user, security, compatibility, and verification history
 - `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 - `sp-replacement-schema.md` - local data model notes
 
