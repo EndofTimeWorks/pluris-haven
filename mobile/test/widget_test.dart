@@ -2240,6 +2240,16 @@ class FakeHavenRepository implements HavenRepository {
       sync: true,
       onListen: () => _messagesController.add(_messages),
     );
+    _chatCategoriesController =
+        StreamController<List<ChatCategorySummary>>.broadcast(
+          sync: true,
+          onListen: () => _chatCategoriesController.add(_chatCategories),
+        );
+    _chatChannelsController =
+        StreamController<List<ChatChannelSummary>>.broadcast(
+          sync: true,
+          onListen: () => _chatChannelsController.add(_chatChannels),
+        );
     _remindersController = StreamController<List<ReminderSummary>>.broadcast(
       sync: true,
       onListen: () => _remindersController.add(_reminders),
@@ -2300,6 +2310,8 @@ class FakeHavenRepository implements HavenRepository {
   List<PrivacyBucketSummary> _privacyBuckets = const [];
   List<NoteSummary> _notes = const [];
   List<MessageSummary> _messages = const [];
+  List<ChatCategorySummary> _chatCategories = const [];
+  List<ChatChannelSummary> _chatChannels = const [];
   List<ReminderSummary> _reminders = const [];
   List<CustomFieldSummary> _customFields = const [];
   List<CustomFieldValueSummary> _customFieldValues = const [];
@@ -2323,6 +2335,9 @@ class FakeHavenRepository implements HavenRepository {
   _privacyBucketsController;
   late final StreamController<List<NoteSummary>> _notesController;
   late final StreamController<List<MessageSummary>> _messagesController;
+  late final StreamController<List<ChatCategorySummary>>
+  _chatCategoriesController;
+  late final StreamController<List<ChatChannelSummary>> _chatChannelsController;
   late final StreamController<List<ReminderSummary>> _remindersController;
   late final StreamController<List<CustomFieldSummary>> _customFieldsController;
   late final StreamController<List<CustomFieldValueSummary>>
@@ -2389,6 +2404,16 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Stream<List<MessageSummary>> watchMessages() {
     return _messagesController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<ChatCategorySummary>> watchChatCategories() {
+    return _chatCategoriesController.stream.map(List.unmodifiable);
+  }
+
+  @override
+  Stream<List<ChatChannelSummary>> watchChatChannels() {
+    return _chatChannelsController.stream.map(List.unmodifiable);
   }
 
   @override
@@ -3111,6 +3136,7 @@ class FakeHavenRepository implements HavenRepository {
         boardKind: draft.boardKind,
         boardMemberId: draft.boardMemberId,
         parentMessageId: draft.parentMessageId,
+        channelId: draft.channelId,
         createdAt: DateTime(2026),
       ),
       ..._messages,
@@ -3135,6 +3161,7 @@ class FakeHavenRepository implements HavenRepository {
             boardKind: draft.boardKind,
             boardMemberId: draft.boardMemberId,
             parentMessageId: draft.parentMessageId,
+            channelId: draft.channelId,
             createdAt: message.createdAt,
             archived: message.archived,
           )
@@ -3150,6 +3177,131 @@ class FakeHavenRepository implements HavenRepository {
       for (final message in _messages)
         if (message.id != messageId) message,
     ];
+    _messagesController.add(_messages);
+  }
+
+  @override
+  Future<void> saveChatCategory(ChatCategoryDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    _chatCategories = [
+      ..._chatCategories,
+      ChatCategorySummary(
+        id: 'fake-chat-category-${_chatCategories.length + 1}',
+        name: name,
+        description: _nullIfBlank(draft.description),
+        position: _chatCategories.length,
+      ),
+    ];
+    _chatCategoriesController.add(_chatCategories);
+  }
+
+  @override
+  Future<void> updateChatCategory(
+    String categoryId,
+    ChatCategoryDraft draft,
+  ) async {
+    _chatCategories = [
+      for (final category in _chatCategories)
+        if (category.id == categoryId)
+          ChatCategorySummary(
+            id: category.id,
+            name: draft.name.trim(),
+            description: _nullIfBlank(draft.description),
+            position: category.position,
+          )
+        else
+          category,
+    ];
+    _chatCategoriesController.add(_chatCategories);
+  }
+
+  @override
+  Future<void> deleteChatCategory(String categoryId) async {
+    _chatCategories = [
+      for (final category in _chatCategories)
+        if (category.id != categoryId) category,
+    ];
+    _chatChannels = [
+      for (final channel in _chatChannels)
+        if (channel.categoryId == categoryId)
+          ChatChannelSummary(
+            id: channel.id,
+            name: channel.name,
+            description: channel.description,
+            colorHex: channel.colorHex,
+            position: channel.position,
+          )
+        else
+          channel,
+    ];
+    _chatCategoriesController.add(_chatCategories);
+    _chatChannelsController.add(_chatChannels);
+  }
+
+  @override
+  Future<void> saveChatChannel(ChatChannelDraft draft) async {
+    final name = draft.name.trim();
+    if (name.isEmpty) return;
+    _chatChannels = [
+      ..._chatChannels,
+      ChatChannelSummary(
+        id: 'fake-chat-channel-${_chatChannels.length + 1}',
+        name: name,
+        categoryId: _nullIfBlank(draft.categoryId),
+        description: _nullIfBlank(draft.description),
+        colorHex: _nullIfBlank(draft.colorHex),
+        position: _chatChannels.length,
+      ),
+    ];
+    _chatChannelsController.add(_chatChannels);
+  }
+
+  @override
+  Future<void> updateChatChannel(
+    String channelId,
+    ChatChannelDraft draft,
+  ) async {
+    _chatChannels = [
+      for (final channel in _chatChannels)
+        if (channel.id == channelId)
+          ChatChannelSummary(
+            id: channel.id,
+            name: draft.name.trim(),
+            categoryId: _nullIfBlank(draft.categoryId),
+            description: _nullIfBlank(draft.description),
+            colorHex: _nullIfBlank(draft.colorHex),
+            position: channel.position,
+          )
+        else
+          channel,
+    ];
+    _chatChannelsController.add(_chatChannels);
+  }
+
+  @override
+  Future<void> deleteChatChannel(String channelId) async {
+    _chatChannels = [
+      for (final channel in _chatChannels)
+        if (channel.id != channelId) channel,
+    ];
+    _messages = [
+      for (final message in _messages)
+        if (message.channelId == channelId)
+          MessageSummary(
+            id: message.id,
+            body: message.body,
+            memberId: message.memberId,
+            boardKind: 'system',
+            boardMemberId: message.boardMemberId,
+            parentMessageId: message.parentMessageId,
+            createdAt: message.createdAt,
+            archived: message.archived,
+          )
+        else
+          message,
+    ];
+    _chatChannelsController.add(_chatChannels);
     _messagesController.add(_messages);
   }
 
