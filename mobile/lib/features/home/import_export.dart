@@ -224,7 +224,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _preview = preview;
       _isPickingImport = false;
       _importStatus =
-          'Attached ${avatars.length} avatars from ${file.name}. '
+          'Attached ${avatars.length} ${avatars.length == 1 ? 'avatar' : 'avatars'} from ${file.name}. '
           '${_fileText == null ? 'Choose the JSON export next.' : 'Refresh or import when ready.'}';
     });
     appDebugLog(
@@ -1171,7 +1171,7 @@ class ImportSetupCard extends StatelessWidget {
             label: Text(
               avatarAssetCount == 0
                   ? 'Attach avatars'
-                  : '$avatarAssetCount avatars attached',
+                  : '$avatarAssetCount ${avatarAssetCount == 1 ? 'avatar' : 'avatars'} attached',
             ),
           ),
           const SizedBox(height: 12),
