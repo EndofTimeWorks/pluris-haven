@@ -23,6 +23,8 @@ other network features are opt-in.
 ## Docs
 
 - `docs/release/mobile.md` - mobile dev builds and releases
+- `docs/mobile-accessibility.md` - mobile accessibility rules and alpha gate
+- `docs/release/alpha-checklist.md` - blocking evidence for an alpha candidate
 - `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 
 ## Mobile

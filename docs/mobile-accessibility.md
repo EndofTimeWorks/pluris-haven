@@ -27,6 +27,34 @@ users, and people who need reduced motion or simpler screens.
 - Paste JSON sheet can be dismissed with Android back without crashing.
 - Delete actions for members, notes, and reminders use confirmation dialogs.
 - Support links are real buttons that open in the browser.
+- Reduced motion is persisted and also respects the platform's animation
+  preference.
+- High contrast is a persisted app preference with a dedicated theme path.
+- The widget suite exercises semantic labels for fronting and common icon-only
+  controls.
+
+## Alpha blocking audit
+
+The alpha candidate is blocked until each item below has a passing manual or
+automated check. A check may be marked complete only with an evidence link in
+the release record or a focused test.
+
+- [ ] TalkBack pass on every app route and sheet.
+- [ ] VoiceOver pass on every app route and sheet.
+- [ ] Keyboard and switch-access pass, including focus order and back behavior.
+- [ ] Large-text pass at the largest supported system scale without clipped
+  actions or hidden form fields.
+- [ ] High-contrast pass for text, borders, status indicators, charts, and
+  avatars.
+- [ ] Reduced-motion pass for navigation, sheets, import progress, and
+  notifications.
+- [ ] Every icon-only action has a unique tooltip or semantic label.
+- [ ] Every status communicated by color also has text or a semantic state.
+- [ ] Destructive actions identify the object and require confirmation.
+- [ ] Import and restore progress exposes text, current phase, and failure
+  recovery.
+- [ ] Avatar and banner inputs expose meaningful alternative text or an
+  explicitly described decorative state.
 
 ## Still Needed
 
@@ -37,3 +65,7 @@ users, and people who need reduced motion or simpler screens.
 - Alt text fields for imported/stored avatars.
 - Better structured reminder scheduling with actual notification scheduling.
 - Focus order checks for import sheets and long forms.
+
+The full audit is intentionally still open. Existing automated coverage is
+evidence for individual behaviors, not a substitute for device-level
+TalkBack/VoiceOver and switch-access testing.
