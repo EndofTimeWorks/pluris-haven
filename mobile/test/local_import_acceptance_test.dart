@@ -8,12 +8,14 @@ import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
-import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+
+import 'test_repository.dart';
 
 void main() {
   final exportPath = Platform.environment['PLURIS_SP_EXPORT'];
   final avatarsPath = Platform.environment['PLURIS_SP_AVATARS'];
+  final localArchivePath = Platform.environment['PLURIS_HAVEN_ARCHIVE'];
 
   test(
     'imports and restores a local Simply Plural export without data loss',
@@ -63,7 +65,7 @@ void main() {
 
       final database = AppDatabase(NativeDatabase.memory());
       addTearDown(database.close);
-      final repository = LocalHavenRepository(database);
+      final repository = testRepository(database);
       await repository.ensureLocalSystem();
 
       await repository.importLocalArchiveJson(
@@ -126,7 +128,7 @@ void main() {
 
       final restoredDatabase = AppDatabase(NativeDatabase.memory());
       addTearDown(restoredDatabase.close);
-      final restoredRepository = LocalHavenRepository(restoredDatabase);
+      final restoredRepository = testRepository(restoredDatabase);
       await restoredRepository.ensureLocalSystem();
       await restoredRepository.importLocalArchiveJson(
         decrypted,
@@ -146,6 +148,60 @@ void main() {
     },
     skip: exportPath == null || avatarsPath == null
         ? 'Set PLURIS_SP_EXPORT and PLURIS_SP_AVATARS to run this local test.'
+        : false,
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
+    'restores and re-exports a user-facing Pluris Haven archive',
+    () async {
+      final archiveJson = await File(localArchivePath!).readAsString();
+      final original = _decodeArchive(archiveJson);
+      final originalCounts = _archiveCollectionCounts(original);
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+
+      final rehearsal = await repository.rehearseLocalArchiveRestore(
+        archiveJson,
+        fileName: File(localArchivePath).uri.pathSegments.last,
+      );
+      expect(rehearsal.canRestore, isTrue, reason: rehearsal.error);
+      await repository.importLocalArchiveJson(
+        archiveJson,
+        fileName: File(localArchivePath).uri.pathSegments.last,
+      );
+
+      final reExportJson = await repository.buildLocalArchiveJson();
+      final reExport = _decodeArchive(reExportJson);
+      final reExportCounts = _archiveCollectionCounts(reExport);
+      for (final entry in originalCounts.entries) {
+        if (entry.key != 'import_records') {
+          expect(reExportCounts[entry.key], entry.value, reason: entry.key);
+        }
+      }
+
+      final avatarAssets = (reExport['avatar_assets'] as List)
+          .cast<Map<String, dynamic>>();
+      final assetIds = avatarAssets.map((asset) => asset['id']).toSet();
+      final avatarReferences = <Object?>[
+        (reExport['system'] as Map<String, dynamic>?)?['avatar_url'],
+        for (final member in (reExport['members'] as List))
+          (member as Map<String, dynamic>)['avatar_url'],
+        for (final front in (reExport['named_fronts'] as List))
+          (front as Map<String, dynamic>)['avatar_url'],
+      ].whereType<String>();
+      for (final reference in avatarReferences) {
+        expect(reference, startsWith('local-avatar:'));
+        expect(assetIds, contains(reference.substring('local-avatar:'.length)));
+      }
+      expect(reExportJson, isNot(contains('content://')));
+      expect(reExportJson, isNot(contains('file://')));
+      expect(reExportJson, isNot(contains('/data/user/')));
+    },
+    skip: localArchivePath == null
+        ? 'Set PLURIS_HAVEN_ARCHIVE to inspect a saved app export.'
         : false,
     timeout: const Timeout(Duration(minutes: 3)),
   );
