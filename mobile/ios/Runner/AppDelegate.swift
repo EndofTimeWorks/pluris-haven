@@ -1,19 +1,30 @@
+import BackgroundTasks
 import Flutter
 import UIKit
 import UniformTypeIdentifiers
-import workmanager_apple
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var fileDialogHandler: NativeFileDialogHandler?
+  private var backgroundEngine: FlutterEngine?
+  private var backgroundChannel: FlutterMethodChannel?
+  private var backgroundTaskActive = false
+  private let backgroundTaskIdentifier = "works.endoftime.plurishaven.import_archive"
 
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    WorkmanagerPlugin.registerBGProcessingTask(
-      withIdentifier: "works.endoftime.plurishaven.import_archive"
-    )
+    BGTaskScheduler.shared.register(
+      forTaskWithIdentifier: backgroundTaskIdentifier,
+      using: nil
+    ) { [weak self] task in
+      guard let processingTask = task as? BGProcessingTask else {
+        task.setTaskCompleted(success: false)
+        return
+      }
+      self?.runBackgroundImport(processingTask)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -28,6 +39,11 @@ import workmanager_apple
     })
     channel.setMethodCallHandler(handler.handle)
     fileDialogHandler = handler
+    let backgroundControl = FlutterMethodChannel(
+      name: "works.endoftime.plurishaven/background_tasks",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    backgroundControl.setMethodCallHandler(handleBackgroundControl)
   }
 
   private func topViewController() -> UIViewController? {
@@ -36,6 +52,92 @@ import workmanager_apple
       controller = presented
     }
     return controller
+  }
+
+  private func handleBackgroundControl(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    let arguments = call.arguments as? [String: Any]
+    switch call.method {
+    case "initialize":
+      guard let handle = (arguments?["callbackHandle"] as? NSNumber)?.int64Value else {
+        result(FlutterError(code: "invalid_callback", message: "Missing background callback handle.", details: nil))
+        return
+      }
+      UserDefaults.standard.set(handle, forKey: "pluris_haven_background_callback")
+      result(nil)
+    case "scheduleImport":
+      BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
+      let request = BGProcessingTaskRequest(identifier: backgroundTaskIdentifier)
+      request.requiresNetworkConnectivity = false
+      request.requiresExternalPower = false
+      do {
+        try BGTaskScheduler.shared.submit(request)
+        result(nil)
+      } catch {
+        result(FlutterError(code: "schedule_failed", message: error.localizedDescription, details: nil))
+      }
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func runBackgroundImport(_ task: BGProcessingTask) {
+    guard
+      let handle = UserDefaults.standard.object(forKey: "pluris_haven_background_callback") as? NSNumber,
+      let callback = FlutterCallbackCache.lookupCallbackInformation(handle.int64Value)
+    else {
+      task.setTaskCompleted(success: false)
+      return
+    }
+
+    let engine = FlutterEngine(
+      name: "PlurisHaven.BackgroundImport",
+      project: nil,
+      allowHeadlessExecution: true
+    )
+    backgroundTaskActive = true
+    backgroundEngine = engine
+    guard engine.run(
+      withEntrypoint: callback.callbackName,
+      libraryURI: callback.callbackLibraryPath
+    ) else {
+      finishBackgroundTask(task, success: false)
+      return
+    }
+    GeneratedPluginRegistrant.register(with: engine)
+    let channel = FlutterMethodChannel(
+      name: "works.endoftime.plurishaven/background_tasks/worker",
+      binaryMessenger: engine.binaryMessenger
+    )
+    backgroundChannel = channel
+    channel.setMethodCallHandler { [weak self] call, readyResult in
+      guard call.method == "backgroundReady" else {
+        readyResult(FlutterMethodNotImplemented)
+        return
+      }
+      readyResult(nil)
+      channel.invokeMethod(
+        "runTask",
+        withArguments: [
+          "task": self?.backgroundTaskIdentifier ?? "",
+          "inputData": [:],
+        ]
+      ) { value in
+        self?.finishBackgroundTask(task, success: value as? Bool == true)
+      }
+    }
+    task.expirationHandler = { [weak self] in
+      self?.finishBackgroundTask(task, success: false)
+    }
+  }
+
+  private func finishBackgroundTask(_ task: BGTask, success: Bool) {
+    guard backgroundTaskActive else { return }
+    backgroundTaskActive = false
+    backgroundChannel?.setMethodCallHandler(nil)
+    backgroundChannel = nil
+    backgroundEngine?.destroyContext()
+    backgroundEngine = nil
+    task.setTaskCompleted(success: success)
   }
 }
 
