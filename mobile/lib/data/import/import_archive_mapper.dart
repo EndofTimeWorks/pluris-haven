@@ -89,6 +89,7 @@ class _ExternalArchiveNormalizer {
   final _groupIdsByExternalId = <String, String>{};
   final _customFieldIdsByExternalId = <String, String>{};
   final _privacyBucketIdsByExternalId = <String, String>{};
+  final _chatChannelIdsByExternalId = <String, String>{};
   final _customFieldRawTypesByExternalId = <String, Object?>{};
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
@@ -103,6 +104,8 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> notes;
   late final List<Map<String, Object?>> journals;
   late final List<Map<String, Object?>> messages;
+  late final List<Map<String, Object?>> chatCategories;
+  late final List<Map<String, Object?>> chatChannels;
   late final List<Map<String, Object?>> fronts;
   late final List<Map<String, Object?>> frontMembers;
   late final List<Map<String, Object?>> namedFronts;
@@ -129,6 +132,9 @@ class _ExternalArchiveNormalizer {
     customFieldValues = _normalizeCustomFieldValues();
     notes = _normalizeNotes();
     journals = _normalizeJournals();
+    final chatData = _normalizeChatStructure();
+    chatCategories = chatData.categories;
+    chatChannels = chatData.channels;
     messages = _normalizeMessages();
     reminders = _normalizeReminders();
     final namedFrontData = _normalizeNamedFronts();
@@ -159,6 +165,8 @@ class _ExternalArchiveNormalizer {
     'custom_fields': customFields,
     'custom_field_values': customFieldValues,
     'notes': notes,
+    'chat_categories': chatCategories,
+    'chat_channels': chatChannels,
     'messages': messages,
     'reminders': reminders,
     'tags': const [],
@@ -1114,6 +1122,115 @@ class _ExternalArchiveNormalizer {
     };
   }
 
+  ({List<Map<String, Object?>> categories, List<Map<String, Object?>> channels})
+  _normalizeChatStructure() {
+    final channelItems = _combinedLists(decoded, const [
+      'channels',
+      'chatChannels',
+    ]);
+    final channels = <Map<String, Object?>>[];
+    final channelsByExternalId = <String, Map<String, Object?>>{};
+    for (var index = 0; index < channelItems.length; index++) {
+      final channel = _mapValue(channelItems[index]);
+      if (channel == null) {
+        warnings.add('Skipped chat channel #${index + 1}: expected an object.');
+        continue;
+      }
+      final name = _firstString(channel, const ['name', 'title'])?.trim();
+      if (name == null || name.isEmpty) {
+        warnings.add('Skipped chat channel #${index + 1}: missing name.');
+        continue;
+      }
+      final externalId =
+          _firstString(channel, const ['_id', 'id', 'uuid', 'uid']) ??
+          'chat-channel-$index';
+      final id = _stableId('chat-channel', externalId);
+      _chatChannelIdsByExternalId[externalId] = id;
+      final record = <String, Object?>{
+        'id': id,
+        'category_id': null,
+        'name': _clamp(name, _capContentTitle),
+        'description': _clamp(
+          _firstString(channel, const ['desc', 'description']),
+          _capJournalBody,
+        ),
+        'color_hex': _firstString(channel, const ['color', 'colorHex']),
+        'position': index,
+        'created_at': _dateString(channel, const [
+          'created_at',
+          'createdAt',
+          'lastOperationTime',
+        ]),
+        'updated_at': _dateString(channel, const [
+          'updated_at',
+          'updatedAt',
+          'lastOperationTime',
+        ]),
+      };
+      channels.add(record);
+      channelsByExternalId[externalId] = record;
+    }
+
+    final categoryItems = _combinedLists(decoded, const [
+      'channelCategories',
+      'chatCategories',
+    ]);
+    final categories = <Map<String, Object?>>[];
+    for (var index = 0; index < categoryItems.length; index++) {
+      final category = _mapValue(categoryItems[index]);
+      if (category == null) {
+        warnings.add(
+          'Skipped chat category #${index + 1}: expected an object.',
+        );
+        continue;
+      }
+      final name = _firstString(category, const ['name', 'title'])?.trim();
+      if (name == null || name.isEmpty) {
+        warnings.add('Skipped chat category #${index + 1}: missing name.');
+        continue;
+      }
+      final externalId =
+          _firstString(category, const ['_id', 'id', 'uuid', 'uid']) ??
+          'chat-category-$index';
+      final id = _stableId('chat-category', externalId);
+      categories.add({
+        'id': id,
+        'name': _clamp(name, _capContentTitle),
+        'description': _clamp(
+          _firstString(category, const ['desc', 'description']),
+          _capJournalBody,
+        ),
+        'position': index,
+        'created_at': _dateString(category, const [
+          'created_at',
+          'createdAt',
+          'lastOperationTime',
+        ]),
+        'updated_at': _dateString(category, const [
+          'updated_at',
+          'updatedAt',
+          'lastOperationTime',
+        ]),
+      });
+      final refs = _firstList(category, const ['channels', 'channelIds']);
+      for (var channelIndex = 0; channelIndex < refs.length; channelIndex++) {
+        final ref = refs[channelIndex]?.toString();
+        final channel = ref == null ? null : channelsByExternalId[ref];
+        if (channel == null) {
+          if (ref != null) {
+            warnings.add(
+              'Ignored missing chat channel reference "$ref" in "$name".',
+            );
+          }
+          continue;
+        }
+        channel['category_id'] = id;
+        channel['position'] = channelIndex;
+      }
+    }
+    return (categories: categories, channels: channels);
+  }
+
   List<Map<String, Object?>> _normalizeMessages() {
     final items = _combinedLists(decoded, const [
       'messages',
@@ -1160,6 +1277,16 @@ class _ExternalArchiveNormalizer {
     final externalId =
         _firstString(message, const ['_id', 'id', 'uuid', 'uid']) ??
         'message-$index';
+    final channelExternalId = _firstString(message, const [
+      'channel_id',
+      'channelId',
+      'channel',
+    ]);
+    final parentExternalId = _firstString(message, const [
+      'parent_message_id',
+      'parentMessageId',
+      'replyTo',
+    ]);
     return {
       'id': _stableId('message', externalId),
       'member_id': _memberRef(message),
@@ -1170,6 +1297,13 @@ class _ExternalArchiveNormalizer {
           ) ??
           '',
       'archived': message['archived'] == true,
+      'board_kind': channelExternalId == null ? 'system' : 'channel',
+      'channel_id': channelExternalId == null
+          ? null
+          : _chatChannelIdsByExternalId[channelExternalId],
+      'parent_message_id': parentExternalId == null
+          ? null
+          : _stableId('message', parentExternalId),
       'created_at': _dateString(message, const [
         'created_at',
         'createdAt',
@@ -2155,6 +2289,8 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'custom_fields': _listCount(archive['custom_fields']),
   'custom_field_values': _listCount(archive['custom_field_values']),
   'notes': _listCount(archive['notes']),
+  'chat_categories': _listCount(archive['chat_categories']),
+  'chat_channels': _listCount(archive['chat_channels']),
   'messages': _listCount(archive['messages']),
   'reminders': _listCount(archive['reminders']),
   'tags': _listCount(archive['tags']),
