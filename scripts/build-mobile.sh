@@ -4,17 +4,17 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mobile_dir="${repo_root}/mobile"
+cache_root="${PLURIS_BUILD_CACHE_ROOT:-${XDG_CACHE_HOME:-${HOME}/.cache}/pluris-haven/flutter}"
 
-restore_dangling_directory_link() {
+ensure_generated_directory() {
   local path="$1"
-  local target
+  local target="$2"
 
-  if [[ -L "${path}" && ! -e "${path}" ]]; then
-    target="$(readlink "${path}")"
-    if [[ "${target}" != /* ]]; then
-      target="$(dirname "${path}")/${target}"
-    fi
+  if [[ -L "${path}" ]]; then
+    mkdir -p "$(readlink -f "${path}" 2>/dev/null || readlink "${path}")"
+  elif [[ ! -e "${path}" ]]; then
     mkdir -p "${target}"
+    ln -s "${target}" "${path}"
   fi
 }
 
@@ -54,8 +54,8 @@ if ! command -v flutter >/dev/null 2>&1; then
 fi
 
 cd "${mobile_dir}"
-restore_dangling_directory_link "${mobile_dir}/.dart_tool"
-restore_dangling_directory_link "${mobile_dir}/build"
+ensure_generated_directory "${mobile_dir}/.dart_tool" "${cache_root}/dart-tool"
+ensure_generated_directory "${mobile_dir}/build" "${cache_root}/build"
 flutter pub get
 
 case "${target}" in
