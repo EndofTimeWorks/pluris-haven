@@ -9,8 +9,8 @@ There are two build tracks.
 It creates one prerelease from the checked-in `mobile/pubspec.yaml` version when
 that version is a dev prerelease:
 
-- pubspec version: `0.2.0-pre-alpha.1.dev.6+2004`
-- tag: `mobile-v0.2.0-pre-alpha.1.dev.6+2004`
+- pubspec version: `0.2.0-pre-alpha.1.dev.8+2006`
+- tag: `mobile-v0.2.0-pre-alpha.1.dev.8+2006`
 - asset: `pluris-haven-dev.apk`
 - metadata: `BUILD.txt`
 - checksums: `SHA256SUMS.txt`
@@ -28,7 +28,7 @@ Before publishing another dev prerelease, bump both parts in
 `mobile/pubspec.yaml`:
 
 ```yaml
-version: 0.2.0-pre-alpha.1.dev.6+2004
+version: 0.2.0-pre-alpha.1.dev.8+2006
 ```
 
 The `0.2.0` part is the pre-1.0 feature line. The `pre-alpha.1` part is the
@@ -36,10 +36,10 @@ current prerelease milestone. The `.dev.N` part is for automatic debug builds on
 `main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
 metadata for precedence, so do not only change the number after `+`.
 
-`0.2.0-pre-alpha.1.dev.6+2004` marks the second broader pre-alpha line: local
-schema v8, imports, avatars, archive handling, local crypto plumbing, member
-ordering, custom fronts, tags, journals, and the alpha repository services are
-all present enough to test together.
+`0.2.0-pre-alpha.1.dev.8+2006` is the current development build line. It
+includes the local encrypted repository, migration coverage, imports, avatars,
+archive handling, member ordering, custom fronts, tags, journals, and the
+alpha repository services.
 
 Keep the number after `+` monotonic. A prior published APK used a build code in
 the 2000 range, so later APKs must stay above that or Android and Obtainium will
@@ -113,3 +113,9 @@ flutter test test/local_import_acceptance_test.dart --reporter expanded
 The test uses in-memory databases. It checks members, groups, fronts,
 front-member links, custom fronts, custom fields, attached system avatars,
 re-import stability, encryption, rehearsal, and clean restore.
+
+The local repository also exposes a device-key encrypted snapshot path. It
+builds the archive inside a database transaction, emits independently
+authenticated chunks, and is compatible with the optional server's opaque
+chunk API. The server never receives the archive plaintext or device master
+key.
