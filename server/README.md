@@ -1,0 +1,111 @@
+# Pluris Haven server
+
+This service is optional. The mobile app remains usable without an account or a server.
+
+The first server boundary handles accounts, revocable device sessions, friend requests, blocking, and directional sharing grants. Accepting a friend request shares nothing until the owner enables specific grants. Local system data is not uploaded or synchronized yet.
+
+The backup workstream has a tested client-side snapshot contract, an
+authenticated per-user snapshot API, and a filesystem object store. Clients
+upload opaque encrypted chunks through this boundary; the server never
+receives archive plaintext or a device master key, and it never overwrites an
+existing chunk key. This is versioned backup, not bidirectional synchronization.
+
+Set `PLURIS_BACKUP_OBJECT_DIR` to a private filesystem location with enough
+space for user-configured snapshot retention. The application creates the
+directory only when a store is used; operators must include it in their
+backup and access-control plan. Snapshot retention remains user-controlled:
+clients create versioned snapshots and explicitly delete them. The server does
+not silently expire recovery points.
+
+The authenticated endpoints are `POST /v1/backups/snapshots`, `GET
+/v1/backups/snapshots`, `PUT /v1/backups/snapshots/{snapshot_id}/chunks/{index}`,
+`GET` for the same chunk path, and `DELETE /v1/backups/snapshots/{snapshot_id}`.
+Chunk requests require `X-Content-SHA256`; only the owning authenticated user
+can access a snapshot.
+
+## Local development
+
+```sh
+cd server
+uv sync --dev
+PLURIS_REGISTRATION_ENABLED=true PLURIS_FRIENDS_ENABLED=true \
+  uv run uvicorn pluris_server.main:app --reload
+```
+
+Development uses SQLite in `server/data/`. API documentation is at `http://127.0.0.1:8000/docs`.
+
+## Native Debian deployment
+
+Install PostgreSQL, Python, and `uv`, then create an unprivileged service account:
+
+```sh
+sudo apt install postgresql python3
+sudo useradd --system --home /opt/pluris-haven --create-home --shell /usr/sbin/nologin pluris-haven
+sudo install -d -o pluris-haven -g pluris-haven /opt/pluris-haven
+```
+
+Create the database with a unique password:
+
+```sql
+CREATE ROLE pluris LOGIN PASSWORD 'replace-this';
+CREATE DATABASE pluris OWNER pluris;
+```
+
+Place the checkout at `/opt/pluris-haven`, then install the locked dependencies:
+
+```sh
+cd /opt/pluris-haven/server
+sudo -u pluris-haven uv sync --frozen --no-dev
+```
+
+Install the environment and service templates:
+
+```sh
+sudo install -d -m 0750 /etc/pluris-haven
+sudo install -m 0640 -o root -g pluris-haven deploy/server.env.example /etc/pluris-haven/server.env
+sudo install -m 0644 deploy/pluris-haven-server.service /etc/systemd/system/
+sudo install -m 0644 deploy/pluris-haven-backup.service deploy/pluris-haven-backup.timer /etc/systemd/system/
+sudo install -d -m 0750 -o pluris-haven -g pluris-haven /var/backups/pluris-haven
+sudo systemctl daemon-reload
+sudo systemctl enable --now pluris-haven-server
+sudo systemctl enable --now pluris-haven-backup.timer
+```
+
+Edit `/etc/pluris-haven/server.env` before starting the service. Generate independent secrets with `openssl rand -hex 32`; the JWT secret, friend-code pepper, and database password must all differ.
+
+Use Caddy, nginx, or another reverse proxy for HTTPS. `deploy/Caddyfile.example` is a minimal Caddy route. The application only listens on `127.0.0.1:8000`.
+
+Useful checks:
+
+```sh
+systemctl status pluris-haven-server
+journalctl -u pluris-haven-server -f
+curl --fail http://127.0.0.1:8000/ready
+```
+
+Run the first backup and restore rehearsal before opening registration:
+
+```sh
+sudo systemctl start pluris-haven-backup.service
+latest="$(find /var/backups/pluris-haven -type f -name 'pluris-*.dump' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+sudo -u postgres /opt/pluris-haven/server/deploy/restore-rehearsal.sh "$latest"
+```
+
+The rehearsal creates a temporary database, restores the dump, verifies the application tables, and drops the temporary database on exit.
+
+## Public launch gate
+
+Keep `PLURIS_REGISTRATION_ENABLED=false` and `PLURIS_FRIENDS_ENABLED=false` until all of these are complete:
+
+- HTTPS and strict reverse-proxy request limits
+- distributed rate limits for registration, login, refresh, and friend-code attempts
+- email verification and account recovery
+- privacy, terms, moderation, abuse-reporting, and minor-safety policies
+- automated PostgreSQL backups and a successful restore rehearsal
+- readiness, authentication-failure, and database-capacity monitoring
+
+Run `uv run alembic upgrade head` during every deployment. The systemd unit does this before startup and refuses to start if migration fails.
+
+## Optional containers
+
+`Dockerfile` and `compose.yml` remain available for isolated testing. Native systemd deployment is the primary path for the live instance.
