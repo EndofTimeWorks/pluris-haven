@@ -1,0 +1,58 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      PLURIS_ENVIRONMENT: ${PLURIS_ENVIRONMENT}
+      PLURIS_DATABASE_URL: ${PLURIS_DATABASE_URL}
+      PLURIS_JWT_SECRET: ${PLURIS_JWT_SECRET}
+      PLURIS_FRIEND_CODE_PEPPER: ${PLURIS_FRIEND_CODE_PEPPER}
+      PLURIS_ACCESS_TOKEN_MINUTES: ${PLURIS_ACCESS_TOKEN_MINUTES:-15}
+      PLURIS_REFRESH_TOKEN_DAYS: ${PLURIS_REFRESH_TOKEN_DAYS:-30}
+      PLURIS_REGISTRATION_ENABLED: ${PLURIS_REGISTRATION_ENABLED:-false}
+      PLURIS_FRIENDS_ENABLED: ${PLURIS_FRIENDS_ENABLED:-false}
+      PLURIS_SERVER_ID: ${PLURIS_SERVER_ID}
+      PLURIS_SERVER_NAME: ${PLURIS_SERVER_NAME}
+      PLURIS_SERVER_MODE: ${PLURIS_SERVER_MODE:-private}
+      PLURIS_SERVER_OPERATOR: ${PLURIS_SERVER_OPERATOR}
+      PLURIS_PUBLIC_URL: ${PLURIS_PUBLIC_URL}
+      PLURIS_PRIVACY_POLICY_URL: ${PLURIS_PRIVACY_POLICY_URL:-}
+      PLURIS_TERMS_URL: ${PLURIS_TERMS_URL:-}
+      PLURIS_SUPPORT_EMAIL: ${PLURIS_SUPPORT_EMAIL:-}
+      PLURIS_CORS_ORIGINS: ${PLURIS_CORS_ORIGINS:-}
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn pluris_server.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=*"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres-data:

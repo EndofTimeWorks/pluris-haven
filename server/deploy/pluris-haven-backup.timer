@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Pluris Haven database backup daily
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30m
+Persistent=true
+Unit=pluris-haven-backup.service
+
+[Install]
+WantedBy=timers.target
+
