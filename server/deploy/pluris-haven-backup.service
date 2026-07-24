@@ -1,0 +1,27 @@
+[Unit]
+Description=Back up the Pluris Haven PostgreSQL database
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=pluris-haven
+Group=pluris-haven
+EnvironmentFile=/etc/pluris-haven/server.env
+ExecStart=/opt/pluris-haven/server/deploy/backup-postgres.sh
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/pluris-haven
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+

@@ -1,0 +1,11 @@
+*
+!.dockerignore
+!Dockerfile
+!README.md
+!alembic.ini
+!pyproject.toml
+!uv.lock
+!alembic/
+!alembic/**
+!pluris_server/
+!pluris_server/**
