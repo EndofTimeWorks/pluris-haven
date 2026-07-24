@@ -1,0 +1,12 @@
+friends.example.com {
+    encode zstd gzip
+
+    @api path /health /ready /.well-known/pluris-haven /v1/*
+    handle @api {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        respond "Not found" 404
+    }
+}
