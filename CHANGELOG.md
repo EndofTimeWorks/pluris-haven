@@ -43,6 +43,8 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 - `pnpm lint` passes: Prettier, Svelte check, Ruff format/lint, and ShellCheck.
 - Recent commits pass commitlint.
 - System Dart format and analysis pass for the import and backup changes.
+- The accessibility contract test passes all four checks, including the
+  high-contrast light and dark theme paths.
 - The complete server suite passed: 17 tests in 2.61 seconds, including the
   rate-limit tests.
 - The current Android release run passed Dart format, `flutter analyze`, the
@@ -72,6 +74,7 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Recent commits
 
+- `8b2e0d6` - `test(accessibility): cover high contrast themes`
 - `9d3318c` - `docs(release): record current mobile test evidence`
 - `22910be` - `docs(project): make notes more direct`
 - `351264a` - `docs(release): record bounded backup manifests`
