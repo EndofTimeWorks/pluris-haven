@@ -64,4 +64,54 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+  test('rejects manifests outside resource limits', () {
+    final oversizedChunkSize = <String, dynamic>{
+      'format': encryptedBackupFormat,
+      'version': encryptedBackupVersion,
+      'snapshot_id': 'snapshot-test',
+      'created_at': DateTime.utc(2026, 7, 24).toIso8601String(),
+      'chunk_size': maxEncryptedBackupChunkSize + 1,
+      'chunk_count': 1,
+      'chunks': <Map<String, dynamic>>[],
+    };
+    expect(
+      () => EncryptedBackupSnapshot.fromJson(oversizedChunkSize),
+      throwsA(isA<FormatException>()),
+    );
+
+    final oversizedChunkCount = <String, dynamic>{
+      'format': encryptedBackupFormat,
+      'version': encryptedBackupVersion,
+      'snapshot_id': 'snapshot-test',
+      'created_at': DateTime.utc(2026, 7, 24).toIso8601String(),
+      'chunk_size': defaultEncryptedBackupChunkSize,
+      'chunk_count': maxEncryptedBackupChunkCount + 1,
+      'chunks': List<Map<String, dynamic>>.filled(
+        maxEncryptedBackupChunkCount + 1,
+        <String, dynamic>{},
+      ),
+    };
+    expect(
+      () => EncryptedBackupSnapshot.fromJson(oversizedChunkCount),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('rejects malformed chunk metadata before restore', () async {
+    final snapshot = await EncryptedBackupSnapshot.create(
+      snapshotId: 'snapshot-test',
+      archiveJson: '{"private":"value"}',
+      crypto: testCrypto(),
+      chunkSize: 1024,
+    );
+    final json = snapshot.toJson();
+    final chunks = (json['chunks'] as List).cast<Map<String, dynamic>>();
+    chunks[0] = {...chunks[0], 'sha256': 'not-a-sha256'};
+
+    expect(
+      () => EncryptedBackupSnapshot.fromJson(json),
+      throwsA(isA<FormatException>()),
+    );
+  });
 }
