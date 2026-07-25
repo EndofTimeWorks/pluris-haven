@@ -56,5 +56,12 @@ void main() {
       tampered.restoreArchiveJson(crypto),
       throwsA(isA<FormatException>()),
     );
+
+    final missingChunkJson = snapshot.toJson();
+    missingChunkJson['chunks'] = <Map<String, dynamic>>[];
+    expect(
+      () => EncryptedBackupSnapshot.fromJson(missingChunkJson),
+      throwsA(isA<FormatException>()),
+    );
   });
 }
