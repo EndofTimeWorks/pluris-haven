@@ -103,6 +103,11 @@ Recent implementation commits are listed for source-level traceability:
 - `09ecb05` — `ci(mobile): gate releases on iOS compilation`
 - `2f924ee` — `style(format): normalize web and documentation files`
 - `dd1791a` — `chore(tooling): add formatting and commit hooks`
+- `30ea105` — `ci(tooling): enforce repository quality gates`
+- `696843c` — `chore(tooling): expose platform lint commands`
+- `86a6be0` — `docs(website): align alpha changelog status`
+- `df1afc8` — `docs(release): restore detailed alpha change record`
+- `98253b4` — `chore(tooling): include changelog in format gate`
 
 ## Changelog rules
 
