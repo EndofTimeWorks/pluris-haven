@@ -86,3 +86,12 @@ def test_duplicate_registration_and_bad_password(client: TestClient) -> None:
         },
     )
     assert bad_login.status_code == 401
+
+
+def test_refresh_requests_are_rate_limited(client: TestClient) -> None:
+    payload = {"refresh_token": "x" * 32}
+    responses = [client.post("/v1/auth/refresh", json=payload) for _ in range(11)]
+
+    assert all(response.status_code == 401 for response in responses[:10])
+    assert responses[-1].status_code == 429
+    assert responses[-1].headers["Retry-After"].isdigit()
