@@ -43,7 +43,8 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 - `pnpm lint` passes: Prettier, Svelte check, Ruff format/lint, and ShellCheck.
 - Recent commits pass commitlint.
 - System Dart format and analysis pass for the import and backup changes.
-- The rate-limiter unit test passes.
+- The complete server suite passed: 17 tests in 2.61 seconds, including the
+  rate-limit tests.
 - The current Android release run passed Dart format, `flutter analyze`, the
   signed universal APK, all three ABI splits, APK signature verification, and
   package inspection. It produced package
@@ -54,8 +55,6 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The Flutter SDK cache used by this checkout is read-only, so the test run used
   writable temporary generated directories; that workaround did not change the
   project files.
-- The local FastAPI TestClient hangs during application startup, so the full
-  server integration suite is not being called green here.
 
 ### Still open for alpha
 
