@@ -45,6 +45,13 @@ class EncryptedBackupSnapshot {
     }
 
     final plainBytes = utf8.encode(archiveJson);
+    if (plainBytes.isEmpty) {
+      throw ArgumentError.value(
+        archiveJson,
+        'archiveJson',
+        'must contain an archive payload',
+      );
+    }
     final chunks = <EncryptedBackupChunk>[];
     for (var offset = 0; offset < plainBytes.length; offset += chunkSize) {
       final end = (offset + chunkSize).clamp(0, plainBytes.length);
@@ -80,12 +87,19 @@ class EncryptedBackupSnapshot {
     final snapshotId = json['snapshot_id'];
     final createdAt = json['created_at'];
     final chunkSize = json['chunk_size'];
+    final chunkCount = json['chunk_count'];
     final rawChunks = json['chunks'];
     if (snapshotId is! String ||
         createdAt is! String ||
         chunkSize is! int ||
+        chunkCount is! int ||
         rawChunks is! List) {
       throw const FormatException('Encrypted backup manifest is malformed.');
+    }
+    if (chunkCount < 1 || chunkCount != rawChunks.length) {
+      throw const FormatException(
+        'Encrypted backup manifest has missing chunks.',
+      );
     }
     _validateSnapshotId(snapshotId);
     return EncryptedBackupSnapshot(
@@ -116,6 +130,9 @@ class EncryptedBackupSnapshot {
   /// Verifies chunk hashes, decrypts in index order, and returns the archive.
   Future<String> restoreArchiveJson(HavenCrypto crypto) async {
     final ordered = [...chunks]..sort((a, b) => a.index.compareTo(b.index));
+    if (ordered.isEmpty) {
+      throw const FormatException('Encrypted backup snapshot has no chunks.');
+    }
     final plainBytes = <int>[];
     for (var position = 0; position < ordered.length; position++) {
       final chunk = ordered[position];
