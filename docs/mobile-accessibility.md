@@ -18,7 +18,8 @@ users, and people who need reduced motion or simpler screens.
 - Tap targets should stay at least 48 by 48 logical pixels.
 - Back navigation must close sheets before leaving the page.
 - Import and sync progress must be visible as text, not just spinners.
-- Motion should be minimal until a reduced-motion setting exists.
+- Motion should be minimal and must honor the reduced-motion setting and the
+  platform animation preference.
 
 ## Current Coverage
 
@@ -65,7 +66,7 @@ the release record or a focused test.
 - Full TalkBack and VoiceOver pass on every screen.
 - Keyboard, switch-access, and large-text testing.
 - High-contrast theme pass.
-- Reduced-motion setting.
+- Device-level reduced-motion verification.
 - Device-level verification of named avatar and banner semantics; persisted
   user-provided alternative-text fields are not yet implemented.
 - Better structured reminder scheduling with actual notification scheduling.
