@@ -1,71 +1,60 @@
 {
-	"version": "v1.1.0",
-	"entity": {
-		"type": "group",
-		"role": "owner",
-		"name": "EndofTimeWorks",
-		"description": "Maintainer of Pluris Haven.",
-		"webpageUrl": {
-			"url": "https://pluris.endoftime.works"
-		}
-	},
-	"projects": [
-		{
-			"guid": "pluris-haven",
-			"name": "Pluris Haven",
-			"description": "Offline-first plural system app.",
-			"webpageUrl": {
-				"url": "https://pluris.endoftime.works"
-			},
-			"repositoryUrl": {
-				"url": "https://github.com/EndofTimeWorks/pluris-haven",
-				"wellKnown": "https://pluris.endoftime.works/.well-known/funding-manifest-urls"
-			},
-			"licenses": [
-				"Pluris Haven Source-Available Noncommercial License v0.1"
-			],
-			"tags": [
-				"plural-systems",
-				"offline-first",
-				"front-tracking",
-				"import-export"
-			]
-		}
-	],
-	"funding": {
-		"channels": [
-			{
-				"guid": "github-sponsors",
-				"type": "payment-provider",
-				"address": "https://github.com/sponsors/EndofTimeWorks",
-				"description": "GitHub Sponsors for EndofTimeWorks."
-			},
-			{
-				"guid": "patreon",
-				"type": "payment-provider",
-				"address": "https://patreon.com/EndofTimeWorks",
-				"description": "Patreon for EndofTimeWorks."
-			},
-			{
-				"guid": "monero",
-				"type": "cryptocurrency",
-				"address": "85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ",
-				"description": "Optional Monero support."
-			}
-		],
-		"plans": [
-			{
-				"guid": "optional-project-support",
-				"status": "active",
-				"name": "Optional project support",
-				"description": "Funding is optional and does not unlock app features.",
-				"channels": [
-					"github-sponsors",
-					"patreon",
-					"monero"
-				]
-			}
-		],
-		"history": null
-	}
+  "version": "v1.1.0",
+  "entity": {
+    "type": "group",
+    "role": "owner",
+    "name": "EndofTimeWorks",
+    "description": "Maintainer of Pluris Haven.",
+    "webpageUrl": {
+      "url": "https://pluris.endoftime.works"
+    }
+  },
+  "projects": [
+    {
+      "guid": "pluris-haven",
+      "name": "Pluris Haven",
+      "description": "Offline-first plural system app.",
+      "webpageUrl": {
+        "url": "https://pluris.endoftime.works"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/EndofTimeWorks/pluris-haven",
+        "wellKnown": "https://pluris.endoftime.works/.well-known/funding-manifest-urls"
+      },
+      "licenses": ["Pluris Haven Source-Available Noncommercial License v0.1"],
+      "tags": ["plural-systems", "offline-first", "front-tracking", "import-export"]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "github-sponsors",
+        "type": "payment-provider",
+        "address": "https://github.com/sponsors/EndofTimeWorks",
+        "description": "GitHub Sponsors for EndofTimeWorks."
+      },
+      {
+        "guid": "patreon",
+        "type": "payment-provider",
+        "address": "https://patreon.com/EndofTimeWorks",
+        "description": "Patreon for EndofTimeWorks."
+      },
+      {
+        "guid": "monero",
+        "type": "cryptocurrency",
+        "address": "85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ",
+        "description": "Optional Monero support."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "optional-project-support",
+        "status": "active",
+        "name": "Optional project support",
+        "description": "Funding is optional and does not unlock app features.",
+        "channels": ["github-sponsors", "patreon", "monero"]
+      }
+    ],
+    "history": null
+  }
 }
