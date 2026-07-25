@@ -16,8 +16,22 @@ review.
 | --- | --- | --- |
 | Sheaf | `/home/end/Projects/sheaf/docs/IMPORT.md`, `/home/end/Projects/sheaf/docs/CLIENT_DESIGN.md`, importer/export tests, and [the official FAQ](https://sheaf.sh/faq/) | Import fidelity, recovery UX, self-hosting and client-first boundaries |
 | Ampersand | `/home/end/Projects/ampersand/README.md`, `src/lib/serialization.ts`, accessibility/options/security code, import/export tests | Serialization, accessibility controls, app-lock and distribution ideas |
-| Simply Plural | Pluris Haven's importer, local acceptance fixture, and schema mapping | Compatibility target and round-trip evidence |
-| PluralKit, Tupperbox, PluralSpace, Prism | Existing Pluris Haven importer contracts and fixtures | Additional import compatibility targets |
+| Simply Plural | Pluris Haven's importer, private local acceptance fixture, and schema mapping | Compatibility target and round-trip evidence; fixture is local-only |
+| PluralKit, Tupperbox, PluralSpace, Prism | Existing Pluris Haven importer contracts and inline tests in `mobile/test/import_sources_test.dart` | Contract-level compatibility evidence; no private end-to-end source export is claimed |
+
+## Fixture provenance status
+
+- The private Simply Plural export and avatar ZIP were used for the local
+  acceptance run on 2026-07-24. They remain untracked and are not part of the
+  repository.
+- The private Pluris Haven archive was used for the local restore/re-export
+  acceptance run on 2026-07-24. It also remains untracked.
+- PluralKit, Tupperbox, PluralSpace, and Prism have checked-in inline contract
+  fixtures and source-shape tests, but no private real-world export is claimed
+  for this alpha evidence set.
+- Sheaf and Ampersand informed product and recovery research only. No Sheaf or
+  Ampersand import fixture is claimed for Pluris Haven, and their code/assets
+  are not copied into this repository.
 
 ## Comparative matrix
 
