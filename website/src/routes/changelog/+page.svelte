@@ -25,9 +25,10 @@
   <section>
     <h2>0.2.0 pre-alpha</h2>
     <ul>
-      <li>Current dev line: <code>0.2.0-pre-alpha.1.dev.6+2004</code>.</li>
+      <li>Current dev line: <code>0.2.0-pre-alpha.1.dev.9+2007</code>.</li>
       <li>
-        Local Android app with offline storage and a restore rehearsal before archive imports.
+        Local Android app with encrypted storage, encrypted backup snapshots, and a restore
+        rehearsal before archive imports.
       </li>
       <li>
         Members, archived members, groups, tags, custom fields, notes, journals, messages, polls,
@@ -35,16 +36,16 @@
       </li>
       <li>Custom fronts are stored separately from members and do not import as alters.</li>
       <li>
-        Simply Plural, PluralKit, OpenPlural, Tupperbox, and PluralSpace import paths are available
-        for testing.
+        Simply Plural, PluralKit, OpenPlural, Tupperbox, and PluralSpace import paths are covered
+        for testing; the Prism encrypted path remains planned.
       </li>
       <li>
-        Avatar ZIPs are supported for Simply Plural imports; remote avatar links may be localized
-        during import.
+        Avatar ZIPs are supported for Simply Plural imports; remote avatar links are localized only
+        after public-address and redirect safety checks.
       </li>
       <li>
-        Dashboard, accessibility, language, and theme customization are available, but still
-        changing.
+        Dashboard, accessibility, language, and theme customization are available, with named avatar
+        semantics and persisted high-contrast/reduced-motion settings.
       </li>
     </ul>
   </section>
@@ -55,13 +56,16 @@
       <li>Imports are best-effort and need more large-system device testing.</li>
       <li>
         Avatar downloads depend on the source service staying reachable unless an avatar ZIP is
-        attached.
+        attached; malformed or oversized archives are rejected.
       </li>
       <li>
         Accessibility has toggles and labels, but still needs a full TalkBack, VoiceOver, keyboard,
         and low-mobility pass.
       </li>
-      <li>Sync, friends, web login, hosted backup, iOS, and store distribution are not ready.</li>
+      <li>
+        Mobile account/session UI, network backup upload, sync, public server launch, iOS, and store
+        distribution are not ready.
+      </li>
     </ul>
   </section>
 </main>
