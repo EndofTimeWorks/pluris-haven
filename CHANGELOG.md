@@ -37,6 +37,11 @@ Current target: Android-first alpha, mobile version
   tamper rejection, and private fixture-backed import acceptance remain local-
   first. The server still receives opaque ciphertext rather than archive
   plaintext or a device master key.
+- Encrypted backup manifests and restore paths now enforce bounded chunk size,
+  chunk count, ciphertext metadata, contiguous indices, and total restored
+  plaintext. Malformed authentication or base64 data is reported as a
+  recoverable format failure instead of being allowed to allocate without a
+  limit.
 
 ### Changed: server and CI security defaults
 
@@ -65,6 +70,9 @@ Current target: Android-first alpha, mobile version
 - Mobile import hardening - system Dart format and analysis pass; focused
   Flutter tests were added for malformed ZIPs, declared ZIP expansion limits,
   and unsafe avatar URL classes.
+- Encrypted backup hardening - system Dart format and analysis pass for bounded
+  snapshot creation, manifest parsing, and authenticated restore failure paths;
+  focused Flutter execution remains pending with the read-only SDK cache.
 - Prior full fixture-backed mobile suite - 140 tests passed with no skips
   before the current import-hardening tests were added. A fresh Flutter run is
   still pending because this Linux checkout's Flutter SDK cache is read-only.
@@ -95,19 +103,20 @@ Current target: Android-first alpha, mobile version
 
 Recent implementation commits are listed for source-level traceability:
 
-- `1c790fb` - `feat(server): add auth endpoint rate limits`
-- `92550f1` - `fix(server): stop trusting arbitrary proxy headers`
-- `e563be9` - `fix(ci): remove automated pull request approval`
-- `cf5981a` - `fix(import): harden archive and avatar fetching`
-- `077bb91` - `fix(build): guard iOS checks before Flutter setup`
-- `09ecb05` - `ci(mobile): gate releases on iOS compilation`
-- `2f924ee` - `style(format): normalize web and documentation files`
-- `dd1791a` - `chore(tooling): add formatting and commit hooks`
+- `7642d02` - `fix(backup): bound encrypted snapshot resources`
 - `30ea105` - `ci(tooling): enforce repository quality gates`
 - `696843c` - `chore(tooling): expose platform lint commands`
 - `86a6be0` - `docs(website): align alpha changelog status`
 - `df1afc8` - `docs(release): restore detailed alpha change record`
 - `98253b4` - `chore(tooling): include changelog in format gate`
+- `1c790fb` - `feat(server): add auth endpoint rate limits`
+- `2f924ee` - `style(format): normalize web and documentation files`
+- `dd1791a` - `chore(tooling): add formatting and commit hooks`
+- `92550f1` - `fix(server): stop trusting arbitrary proxy headers`
+- `e563be9` - `fix(ci): remove automated pull request approval`
+- `cf5981a` - `fix(import): harden archive and avatar fetching`
+- `077bb91` - `fix(build): guard iOS checks before Flutter setup`
+- `09ecb05` - `ci(mobile): gate releases on iOS compilation`
 
 ## Changelog rules
 
