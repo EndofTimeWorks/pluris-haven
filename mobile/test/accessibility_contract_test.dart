@@ -33,6 +33,27 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('high contrast preference reaches both app themes', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.setHighContrast(true);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.colorScheme.surface, Colors.white);
+    expect(app.darkTheme!.colorScheme.surface, const Color(0xFF11131A));
+    expect(app.darkTheme!.scaffoldBackgroundColor, Colors.black);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   test('app customization defaults keep accessibility opt-in and explicit', () {
     expect(AppCustomization.defaults.reducedMotion, isFalse);
     expect(AppCustomization.defaults.highContrast, isFalse);
