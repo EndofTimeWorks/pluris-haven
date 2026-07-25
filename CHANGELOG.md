@@ -44,8 +44,11 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 - Recent commits pass commitlint.
 - System Dart format and analysis pass for the import and backup changes.
 - The rate-limiter unit test passes.
-- Existing Android evidence covers signed universal and split APKs, package
-  `works.endoftime.plurishaven`, build `2007`, and checksum assembly.
+- The current Android release run passed Dart format, `flutter analyze`, the
+  signed universal APK, all three ABI splits, APK signature verification, and
+  package inspection. It produced package
+  `works.endoftime.plurishaven`, version `0.2.0-pre-alpha.1.dev.9`, build
+  `2007`.
 - The current full Flutter run passed 144 tests. Two optional local-fixture
   tests were skipped because their fixture paths were not set in this run.
 - The Flutter SDK cache used by this checkout is read-only, so the test run used
@@ -70,6 +73,9 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Recent commits
 
+- `9d3318c` — `docs(release): record current mobile test evidence`
+- `22910be` — `docs(project): make notes more direct`
+- `351264a` — `docs(release): record bounded backup manifests`
 - `7642d02` — `fix(backup): bound encrypted snapshot resources`
 - `30ea105` — `ci(tooling): enforce repository quality gates`
 - `696843c` — `chore(tooling): expose platform lint commands`
