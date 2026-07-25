@@ -31,6 +31,11 @@ class ImportAvatarAsset {
   final String? mimeType;
 }
 
+const _maxImportBytes = 100 * 1024 * 1024;
+const _maxZipEntries = 10_000;
+const _maxZipEntryBytes = 50 * 1024 * 1024;
+const _maxZipExpandedBytes = 100 * 1024 * 1024;
+
 DecodedImportFile? decodeImportFileBytes({
   required String fileName,
   required Uint8List? bytes,
@@ -39,8 +44,16 @@ DecodedImportFile? decodeImportFileBytes({
     return null;
   }
 
+  if (bytes.length > _maxImportBytes) {
+    return null;
+  }
+
   if (_looksLikeZip(fileName, bytes)) {
-    return _decodeZipImport(fileName: fileName, bytes: bytes);
+    try {
+      return _decodeZipImport(fileName: fileName, bytes: bytes);
+    } on Object {
+      return null;
+    }
   }
 
   return DecodedImportFile(
@@ -67,20 +80,36 @@ DecodedImportFile? _decodeZipImport({
   final archive = ZipDecoder().decodeBytes(bytes, verify: true);
   _ZipJsonCandidate? best;
   final avatarAssets = <ImportAvatarAsset>[];
+  var expandedBytes = 0;
 
-  for (final entry in archive) {
+  for (var entryIndex = 0; entryIndex < archive.length; entryIndex++) {
+    if (entryIndex >= _maxZipEntries) {
+      return null;
+    }
+    final entry = archive[entryIndex];
     final name = entry.name;
     final lowerName = name.toLowerCase();
     if (!entry.isFile) {
       continue;
     }
 
+    final isAvatar = _looksLikeAvatarAsset(lowerName, zipFileName: fileName);
+    final isJson = lowerName.endsWith('.json');
+    if (!isAvatar && !isJson) {
+      continue;
+    }
+    if (entry.size > _maxZipEntryBytes ||
+        expandedBytes > _maxZipExpandedBytes - entry.size) {
+      return null;
+    }
+    expandedBytes += entry.size;
+
     final fileBytes = entry.readBytes();
     if (fileBytes == null || fileBytes.isEmpty) {
       continue;
     }
 
-    if (_looksLikeAvatarAsset(lowerName, zipFileName: fileName)) {
+    if (isAvatar) {
       avatarAssets.add(
         ImportAvatarAsset(
           id: _avatarAssetId(name),
