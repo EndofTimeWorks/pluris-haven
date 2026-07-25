@@ -104,6 +104,17 @@ Keep `PLURIS_REGISTRATION_ENABLED=false` and `PLURIS_FRIENDS_ENABLED=false` unti
 - automated PostgreSQL backups and a successful restore rehearsal
 - readiness, authentication-failure, and database-capacity monitoring
 
+The server also applies a small per-process rate limit to registration, login,
+and refresh. Configure `PLURIS_AUTH_RATE_LIMIT_ATTEMPTS` and
+`PLURIS_AUTH_RATE_LIMIT_WINDOW_SECONDS` when needed. This does not replace a
+distributed limiter or a reverse-proxy request policy in a multi-process or
+public deployment.
+
+The container image does not enable Uvicorn's proxy-header trust by default.
+If a reverse proxy is used, keep the trusted proxy boundary explicit and narrow;
+never use `--forwarded-allow-ips=*` on an endpoint that can receive direct
+traffic.
+
 Run `uv run alembic upgrade head` during every deployment. The systemd unit does this before startup and refuses to start if migration fails.
 
 ## Optional containers
