@@ -98,6 +98,12 @@ release.
 Release APKs use the configured Android signing key. Dev prereleases are
 debuggable and intended for testing.
 
+The tag/manual `Mobile Release` workflow also runs an unsigned iOS release
+compilation on `macos-latest` before the Android job can publish artifacts.
+This is a compile gate for alpha release confidence, not iOS signing or iOS
+distribution. A successful hosted macOS run is required before the release
+record can claim iOS compilation evidence.
+
 ## Local Import Acceptance
 
 Large Simply Plural exports can exercise import, deduplication, encrypted
