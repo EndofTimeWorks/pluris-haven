@@ -1,0 +1,22 @@
+{
+  "name": "pluris-haven-tooling",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write .github docs website package.json commitlint.config.mjs .prettierrc.json README.md",
+    "format:check": "prettier --check .github docs website package.json commitlint.config.mjs .prettierrc.json README.md",
+    "lint:website": "pnpm --dir website check",
+    "lint:server:format": "server/.venv/bin/ruff format --check server/pluris_server server/tests",
+    "lint:server": "server/.venv/bin/ruff check server/pluris_server server/tests",
+    "lint": "pnpm format:check && pnpm lint:website && pnpm lint:server:format && pnpm lint:server",
+    "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
+    "prettier-plugin-svelte": "^4.1.1"
+  }
+}
