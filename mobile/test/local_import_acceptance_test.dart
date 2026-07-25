@@ -73,12 +73,16 @@ void main() {
         source: ImportSource.simplyPlural,
         fileName: normalized.fileName,
       );
-      final importedSystem = await (database.select(
-        database.pluralSystems,
-      )..where((system) => system.id.equals(localSystemId))).getSingle();
-      expect(importedSystem.colorHex, isNotNull);
-      expect(importedSystem.avatarUrl, startsWith('local-avatar:'));
-      final importedAvatar = _testAvatarFile(importedSystem.avatarUrl!);
+      final importedArchive = _decodeArchive(
+        await repository.buildLocalArchiveJson(),
+      );
+      final importedSystem =
+          (importedArchive['system'] as Map<String, dynamic>?)!;
+      expect(importedSystem['color_hex'], isNotNull);
+      expect(importedSystem['avatar_url'], startsWith('local-avatar:'));
+      final importedAvatar = _testAvatarFile(
+        importedSystem['avatar_url'] as String,
+      );
       expect(await importedAvatar.exists(), isTrue);
       await _expectFrontMemberReferencesValid(database);
 
@@ -134,11 +138,16 @@ void main() {
         decrypted,
         fileName: 'acceptance-backup.json',
       );
-      final restoredSystem = await (restoredDatabase.select(
-        restoredDatabase.pluralSystems,
-      )..where((system) => system.id.equals(localSystemId))).getSingle();
-      expect(restoredSystem.avatarUrl, startsWith('local-avatar:'));
-      expect(await _testAvatarFile(restoredSystem.avatarUrl!).exists(), isTrue);
+      final restoredArchive = _decodeArchive(
+        await restoredRepository.buildLocalArchiveJson(),
+      );
+      final restoredSystem =
+          (restoredArchive['system'] as Map<String, dynamic>?)!;
+      expect(restoredSystem['avatar_url'], startsWith('local-avatar:'));
+      expect(
+        await _testAvatarFile(restoredSystem['avatar_url'] as String).exists(),
+        isTrue,
+      );
       await _expectFrontMemberReferencesValid(restoredDatabase);
       final restoredExport = await restoredRepository.buildLocalArchiveJson();
       expect(
@@ -178,7 +187,13 @@ void main() {
       final reExportCounts = _archiveCollectionCounts(reExport);
       for (final entry in originalCounts.entries) {
         if (entry.key != 'import_records') {
-          expect(reExportCounts[entry.key], entry.value, reason: entry.key);
+          expect(
+            reExportCounts[entry.key],
+            rehearsal.counts[entry.key] ?? entry.value,
+            reason:
+                '${entry.key} should preserve valid rows and omit invalid '
+                'foreign-key references identified during restore rehearsal',
+          );
         }
       }
 
