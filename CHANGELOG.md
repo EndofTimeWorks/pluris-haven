@@ -46,9 +46,11 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The rate-limiter unit test passes.
 - Existing Android evidence covers signed universal and split APKs, package
   `works.endoftime.plurishaven`, build `2007`, and checksum assembly.
-- The earlier fixture-backed mobile run passed 140 tests. A new Flutter run is
-  still pending because the Flutter SDK cache in this Linux checkout is
-  read-only.
+- The current full Flutter run passed 144 tests. Two optional local-fixture
+  tests were skipped because their fixture paths were not set in this run.
+- The Flutter SDK cache used by this checkout is read-only, so the test run used
+  writable temporary generated directories; that workaround did not change the
+  project files.
 - The local FastAPI TestClient hangs during application startup, so the full
   server integration suite is not being called green here.
 
