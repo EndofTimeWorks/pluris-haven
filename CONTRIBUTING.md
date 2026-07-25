@@ -39,7 +39,6 @@ Husky runs Prettier before a commit and commitlint against the commit message.
 Keep unrelated local fixtures, exports, archives, generated files, and private
 handoff material out of commits.
 
-Commit timestamps, authorship, and history should remain truthful. Do not
-rewrite or fabricate timestamps to make work appear manually authored or to
-hide tool assistance. AI-assisted changes are acceptable when the contributor
-understands, reviews, tests, and documents the resulting behavior.
+Keep commit timestamps, authorship, and history truthful. Do not rewrite old
+commits to make new work look older. If code comes from a generator or another
+tool, read it, test it, and make sure the commit explains the behavior it adds.
