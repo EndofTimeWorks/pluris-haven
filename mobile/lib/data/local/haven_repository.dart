@@ -3892,7 +3892,7 @@ SELECT
     )..where((event) => event.systemId.equals(localSystemId))).get();
     final preferences = await database.select(database.appPreferences).get();
     final avatarAssets = await _exportLocalAvatarAssets([
-      if (systems.isNotEmpty) await _decrypt(systems.single.avatarUrl),
+      if (systems.isNotEmpty) await _decryptLocalText(systems.single.avatarUrl),
       for (final member in members) await _decrypt(member.avatarUrl),
       for (final front in namedFronts) await _decryptLocalText(front.avatarUrl),
     ]);
