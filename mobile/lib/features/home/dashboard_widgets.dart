@@ -23,6 +23,8 @@ class DashboardSystemHeader extends StatelessWidget {
               ),
               avatarUrl: home?.systemAvatarUrl,
               label: 'PH',
+              semanticLabel:
+                  'System avatar for ${home?.systemName ?? 'Local system'}',
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -166,6 +168,8 @@ class SystemListEntry extends StatelessWidget {
             size: 52,
             color: Theme.of(context).colorScheme.primary,
             label: 'PH',
+            semanticLabel:
+                'System avatar for ${home?.systemName ?? 'Local system'}',
           ),
           const SizedBox(width: 14),
           Expanded(

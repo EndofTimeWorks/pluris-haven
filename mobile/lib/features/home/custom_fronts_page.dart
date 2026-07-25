@@ -553,7 +553,12 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final ref = avatarUrl?.trim();
     if (ref == null || ref.isEmpty) {
-      return SpAvatar(size: 42, color: color, label: label);
+      return SpAvatar(
+        size: 42,
+        color: color,
+        label: label,
+        semanticLabel: 'Avatar for $label',
+      );
     }
     if (ref.startsWith('local-avatar:')) {
       return FutureBuilder<File?>(
@@ -564,6 +569,7 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
             color: color,
             label: label,
             image: snapshot.data == null ? null : FileImage(snapshot.data!),
+            semanticLabel: 'Avatar for $label',
           );
         },
       );
@@ -574,9 +580,15 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
         color: color,
         label: label,
         image: NetworkImage(ref),
+        semanticLabel: 'Avatar for $label',
       );
     }
-    return SpAvatar(size: 42, color: color, label: label);
+    return SpAvatar(
+      size: 42,
+      color: color,
+      label: label,
+      semanticLabel: 'Avatar for $label',
+    );
   }
 }
 
