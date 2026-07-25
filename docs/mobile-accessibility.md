@@ -47,18 +47,18 @@ the release record or a focused test.
 - [ ] VoiceOver pass on every app route and sheet.
 - [ ] Keyboard and switch-access pass, including focus order and back behavior.
 - [ ] Large-text pass at the largest supported system scale without clipped
-  actions or hidden form fields.
+      actions or hidden form fields.
 - [ ] High-contrast pass for text, borders, status indicators, charts, and
-  avatars.
+      avatars.
 - [ ] Reduced-motion pass for navigation, sheets, import progress, and
-  notifications.
+      notifications.
 - [ ] Every icon-only action has a unique tooltip or semantic label.
 - [ ] Every status communicated by color also has text or a semantic state.
 - [ ] Destructive actions identify the object and require confirmation.
 - [ ] Import and restore progress exposes text, current phase, and failure
-  recovery.
+      recovery.
 - [ ] Avatar and banner inputs expose meaningful alternative text or an
-  explicitly described decorative state.
+      explicitly described decorative state.
 
 ## Still Needed
 

@@ -3,18 +3,18 @@ name: Mobile Release
 on:
   push:
     tags:
-      - "mobile-v*"
+      - 'mobile-v*'
   workflow_dispatch:
     inputs:
       version:
-        description: "SemVer version, e.g. 0.0.1-pre-alpha.1"
+        description: 'SemVer version, e.g. 0.0.1-pre-alpha.1'
         required: true
       build_number:
-        description: "Android/iOS build number"
+        description: 'Android/iOS build number'
         required: true
-        default: "1"
+        default: '1'
       prerelease:
-        description: "Create a prerelease"
+        description: 'Create a prerelease'
         type: boolean
         required: true
         default: true
@@ -41,7 +41,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -76,12 +76,12 @@ jobs:
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 

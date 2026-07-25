@@ -28,11 +28,11 @@ jobs:
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -70,7 +70,7 @@ jobs:
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -127,7 +127,7 @@ jobs:
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: "3.13"
+          python-version: '3.13'
           cache: pip
 
       - name: Install uv
@@ -164,11 +164,11 @@ jobs:
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -213,12 +213,12 @@ jobs:
         if: matrix.language == 'java-kotlin'
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         if: matrix.build-mode == 'manual'
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -246,4 +246,4 @@ jobs:
 
       - uses: github/codeql-action/analyze@fb84f6228fd846d3c392887f22b18ce2d9139495 # v4
         with:
-          category: "/language:${{ matrix.language }}"
+          category: '/language:${{ matrix.language }}'

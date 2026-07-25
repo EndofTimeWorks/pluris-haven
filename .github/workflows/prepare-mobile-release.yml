@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_type:
-        description: "Version bump to prepare"
+        description: 'Version bump to prepare'
         required: true
         default: dev
         type: choice
@@ -16,10 +16,10 @@ on:
           - major
           - custom
       custom_version:
-        description: "Custom SemVer without +build, required only for release_type=custom"
+        description: 'Custom SemVer without +build, required only for release_type=custom'
         required: false
       build_number:
-        description: "Optional Android build number. Defaults to current build + 1."
+        description: 'Optional Android build number. Defaults to current build + 1.'
         required: false
 
 permissions:
