@@ -9,6 +9,7 @@ from pluris_server import __version__
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
+from pluris_server.rate_limit import InMemoryRateLimiter
 from pluris_server.routers import auth, backups, friends, health
 
 
@@ -40,6 +41,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = active_settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+    app.state.auth_rate_limiter = InMemoryRateLimiter(
+        max_attempts=active_settings.auth_rate_limit_attempts,
+        window_seconds=active_settings.auth_rate_limit_window_seconds,
+    )
     app.state.backup_object_store = FilesystemBackupObjectStore(
         Path(active_settings.backup_object_dir),
         max_chunk_bytes=active_settings.backup_max_chunk_bytes,
