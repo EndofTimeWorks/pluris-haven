@@ -188,6 +188,27 @@ void main() {
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
+  test('rejects malformed ZIP input without throwing', () {
+    final decoded = decodeImportFileBytes(
+      fileName: 'broken.zip',
+      bytes: Uint8List.fromList([0x50, 0x4b, 0x03, 0x04, 0x00]),
+    );
+
+    expect(decoded, isNull);
+  });
+
+  test('rejects ZIP entries whose declared expansion is too large', () {
+    final archive = Archive()
+      ..addFile(ArchiveFile('export.json', 50 * 1024 * 1024 + 1, [0x7b, 0x7d]));
+
+    final decoded = decodeImportFileBytes(
+      fileName: 'oversized.zip',
+      bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+    );
+
+    expect(decoded, isNull);
+  });
+
   test('previews invalid archive as not applyable', () {
     final preview = previewImportText(
       fileName: 'bad.json',

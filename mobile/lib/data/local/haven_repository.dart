@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
+import '../import/remote_avatar_policy.dart';
 import '../import/import_sources.dart';
 import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
@@ -5091,13 +5092,15 @@ SELECT
 
   Future<String?> _downloadAndStoreAvatar(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasAbsolutePath) {
+    if (uri == null || !await isAllowedRemoteAvatarUri(uri)) {
+      appDebugLog('Avatar download skipped unsafe URL');
       return null;
     }
 
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
     try {
       final request = await client.getUrl(uri);
+      request.followRedirects = false;
       final response = await request.close();
       if (response.statusCode < 200 || response.statusCode >= 300) {
         appDebugLog(
