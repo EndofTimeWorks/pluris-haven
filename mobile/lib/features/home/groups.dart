@@ -197,6 +197,7 @@ class GroupListTile extends StatelessWidget {
                   label: group.emoji?.trim().isNotEmpty == true
                       ? group.emoji!.trim()
                       : _initialFor(group.name),
+                  semanticLabel: 'Avatar for group ${group.name}',
                 ),
               ],
             ),

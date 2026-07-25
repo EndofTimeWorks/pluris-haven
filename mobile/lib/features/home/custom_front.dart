@@ -580,7 +580,12 @@ class _NamedFrontAvatar extends StatelessWidget {
     final avatarUrl = front.avatarUrl;
 
     if (avatarUrl == null || avatarUrl.trim().isEmpty) {
-      return SpAvatar(size: 34, color: color, label: _initialFor(label));
+      return SpAvatar(
+        size: 34,
+        color: color,
+        label: _initialFor(label),
+        semanticLabel: 'Avatar for $label',
+      );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
       return FutureBuilder<File?>(
@@ -591,6 +596,7 @@ class _NamedFrontAvatar extends StatelessWidget {
             color: color,
             label: _initialFor(label),
             image: snapshot.data == null ? null : FileImage(snapshot.data!),
+            semanticLabel: 'Avatar for $label',
           );
         },
       );
@@ -601,8 +607,14 @@ class _NamedFrontAvatar extends StatelessWidget {
         color: color,
         label: _initialFor(label),
         image: NetworkImage(avatarUrl),
+        semanticLabel: 'Avatar for $label',
       );
     }
-    return SpAvatar(size: 34, color: color, label: _initialFor(label));
+    return SpAvatar(
+      size: 34,
+      color: color,
+      label: _initialFor(label),
+      semanticLabel: 'Avatar for $label',
+    );
   }
 }

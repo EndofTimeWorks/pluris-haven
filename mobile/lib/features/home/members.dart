@@ -1023,7 +1023,12 @@ class MemberAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final avatarUrl = member.avatarUrl;
     if (avatarUrl == null || avatarUrl.trim().isEmpty) {
-      return SpAvatar(size: size, color: color, label: label);
+      return SpAvatar(
+        size: size,
+        color: color,
+        label: label,
+        semanticLabel: 'Avatar for ${member.displayName}',
+      );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
       return FutureBuilder<File?>(
@@ -1035,6 +1040,7 @@ class MemberAvatar extends StatelessWidget {
             color: color,
             label: label,
             image: file == null ? null : FileImage(file),
+            semanticLabel: 'Avatar for ${member.displayName}',
           );
         },
       );
@@ -1045,9 +1051,15 @@ class MemberAvatar extends StatelessWidget {
         color: color,
         label: label,
         image: NetworkImage(avatarUrl),
+        semanticLabel: 'Avatar for ${member.displayName}',
       );
     }
-    return SpAvatar(size: size, color: color, label: label);
+    return SpAvatar(
+      size: size,
+      color: color,
+      label: label,
+      semanticLabel: 'Avatar for ${member.displayName}',
+    );
   }
 }
 

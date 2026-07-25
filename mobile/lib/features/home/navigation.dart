@@ -70,6 +70,8 @@ class SpDrawer extends StatelessWidget {
                     ),
                     avatarUrl: home?.systemAvatarUrl,
                     label: home?.systemName ?? 'Local system',
+                    semanticLabel:
+                        'System avatar for ${home?.systemName ?? 'Local system'}',
                   ),
                   const SizedBox(width: 14),
                   Expanded(
