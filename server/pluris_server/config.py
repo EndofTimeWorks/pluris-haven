@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     support_email: str = ""
     backup_object_dir: str = "./data/backups"
     backup_max_chunk_bytes: int = 8 * 1024 * 1024
+    auth_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
+    auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ()
 
     @field_validator("cors_origins", mode="before")

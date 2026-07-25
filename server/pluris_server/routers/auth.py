@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -29,6 +29,24 @@ from pluris_server.security import (
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 
+async def _enforce_rate_limit(
+    request: Request,
+    endpoint: str,
+    subject: str | None = None,
+) -> None:
+    client_host = request.client.host if request.client is not None else "unknown"
+    keys = [f"auth:{endpoint}:ip:{client_host}"]
+    if subject is not None:
+        keys.append(f"auth:{endpoint}:subject:{subject}")
+    retry_after = await request.app.state.auth_rate_limiter.retry_after(keys)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
     for _ in range(10):
         code = new_friend_code()
@@ -41,10 +59,13 @@ async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
 
 
 @router.post("/register", response_model=RegistrationResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, db: Db, settings: AppSettings) -> RegistrationResponse:
+async def register(
+    request: Request, payload: RegisterRequest, db: Db, settings: AppSettings
+) -> RegistrationResponse:
+    email = str(payload.email).strip().casefold()
+    await _enforce_rate_limit(request, "register", email)
     if not settings.registration_enabled:
         raise HTTPException(status_code=503, detail="Account registration is not enabled")
-    email = str(payload.email).strip().casefold()
     if await db.scalar(select(User.id).where(User.email == email)) is not None:
         raise HTTPException(status_code=409, detail="An account with that email already exists")
 
@@ -73,8 +94,11 @@ async def register(payload: RegisterRequest, db: Db, settings: AppSettings) -> R
 
 
 @router.post("/login", response_model=TokenPair)
-async def login(payload: LoginRequest, db: Db, settings: AppSettings) -> TokenPair:
+async def login(
+    request: Request, payload: LoginRequest, db: Db, settings: AppSettings
+) -> TokenPair:
     email = str(payload.email).strip().casefold()
+    await _enforce_rate_limit(request, "login", email)
     user = await db.scalar(select(User).where(User.email == email))
     if user is None:
         await dummy_verify_password(payload.password)
@@ -90,7 +114,10 @@ async def login(payload: LoginRequest, db: Db, settings: AppSettings) -> TokenPa
 
 
 @router.post("/refresh", response_model=TokenPair)
-async def refresh(payload: RefreshRequest, db: Db, settings: AppSettings) -> TokenPair:
+async def refresh(
+    request: Request, payload: RefreshRequest, db: Db, settings: AppSettings
+) -> TokenPair:
+    await _enforce_rate_limit(request, "refresh")
     tokens = await rotate_refresh_token(db, payload.refresh_token, settings)
     if tokens is None:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
