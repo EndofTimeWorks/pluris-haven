@@ -8,6 +8,13 @@ const encryptedBackupFormat = 'pluris_haven.encrypted_backup_snapshot';
 const encryptedBackupVersion = 1;
 const encryptedBackupCiphertextPrefix = 'ph1:';
 const defaultEncryptedBackupChunkSize = 256 * 1024;
+const minEncryptedBackupChunkSize = 1024;
+const maxEncryptedBackupChunkSize = 4 * 1024 * 1024;
+const maxEncryptedBackupChunkCount = 1024;
+const maxEncryptedBackupPlainBytes = 100 * 1024 * 1024;
+const maxEncryptedBackupCiphertextLength = 8 * 1024 * 1024;
+
+final _sha256Pattern = RegExp(r'^[a-f0-9]{64}$');
 
 /// A client-encrypted, immutable snapshot suitable for uploading as opaque
 /// chunks to a backup object store.
@@ -36,11 +43,13 @@ class EncryptedBackupSnapshot {
     int chunkSize = defaultEncryptedBackupChunkSize,
   }) async {
     _validateSnapshotId(snapshotId);
-    if (chunkSize < 1024) {
+    if (chunkSize < minEncryptedBackupChunkSize ||
+        chunkSize > maxEncryptedBackupChunkSize) {
       throw ArgumentError.value(
         chunkSize,
         'chunkSize',
-        'must be at least 1024 bytes',
+        'must be between $minEncryptedBackupChunkSize and '
+            '$maxEncryptedBackupChunkSize bytes',
       );
     }
 
@@ -50,6 +59,13 @@ class EncryptedBackupSnapshot {
         archiveJson,
         'archiveJson',
         'must contain an archive payload',
+      );
+    }
+    if (plainBytes.length > maxEncryptedBackupPlainBytes) {
+      throw ArgumentError.value(
+        archiveJson,
+        'archiveJson',
+        'must not exceed $maxEncryptedBackupPlainBytes bytes',
       );
     }
     final chunks = <EncryptedBackupChunk>[];
@@ -96,7 +112,15 @@ class EncryptedBackupSnapshot {
         rawChunks is! List) {
       throw const FormatException('Encrypted backup manifest is malformed.');
     }
-    if (chunkCount < 1 || chunkCount != rawChunks.length) {
+    if (chunkSize < minEncryptedBackupChunkSize ||
+        chunkSize > maxEncryptedBackupChunkSize) {
+      throw const FormatException(
+        'Encrypted backup manifest has an invalid chunk size.',
+      );
+    }
+    if (chunkCount < 1 ||
+        chunkCount > maxEncryptedBackupChunkCount ||
+        chunkCount != rawChunks.length) {
       throw const FormatException(
         'Encrypted backup manifest has missing chunks.',
       );
@@ -129,6 +153,11 @@ class EncryptedBackupSnapshot {
 
   /// Verifies chunk hashes, decrypts in index order, and returns the archive.
   Future<String> restoreArchiveJson(HavenCrypto crypto) async {
+    if (chunkSize < minEncryptedBackupChunkSize ||
+        chunkSize > maxEncryptedBackupChunkSize ||
+        chunks.length > maxEncryptedBackupChunkCount) {
+      throw const FormatException('Encrypted backup snapshot exceeds limits.');
+    }
     final ordered = [...chunks]..sort((a, b) => a.index.compareTo(b.index));
     if (ordered.isEmpty) {
       throw const FormatException('Encrypted backup snapshot has no chunks.');
@@ -139,6 +168,7 @@ class EncryptedBackupSnapshot {
       if (chunk.index != position) {
         throw const FormatException('Encrypted backup chunks are incomplete.');
       }
+      _validateEncryptedBackupChunk(chunk);
       final actualHash = await _sha256(utf8.encode(chunk.ciphertext));
       if (actualHash != chunk.sha256) {
         throw const FormatException(
@@ -148,13 +178,37 @@ class EncryptedBackupSnapshot {
       if (!chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix)) {
         throw const FormatException('Unsupported encrypted backup chunk.');
       }
-      final encodedPlainChunk = await crypto.decrypt(
-        chunk.ciphertext.substring(encryptedBackupCiphertextPrefix.length),
-      );
+      String? encodedPlainChunk;
+      try {
+        encodedPlainChunk = await crypto.decrypt(
+          chunk.ciphertext.substring(encryptedBackupCiphertextPrefix.length),
+        );
+      } on Object {
+        throw const FormatException(
+          'Encrypted backup chunk could not be authenticated.',
+        );
+      }
       if (encodedPlainChunk == null) {
         throw const FormatException('Encrypted backup chunk has no content.');
       }
-      plainBytes.addAll(base64Url.decode(encodedPlainChunk));
+      late final List<int> plainChunk;
+      try {
+        plainChunk = base64Url.decode(encodedPlainChunk);
+      } on FormatException {
+        throw const FormatException('Encrypted backup chunk is not valid.');
+      }
+      if (plainChunk.isEmpty || plainChunk.length > chunkSize) {
+        throw const FormatException(
+          'Encrypted backup chunk exceeds its declared size.',
+        );
+      }
+      if (plainBytes.length >
+          maxEncryptedBackupPlainBytes - plainChunk.length) {
+        throw const FormatException(
+          'Encrypted backup snapshot exceeds its size limit.',
+        );
+      }
+      plainBytes.addAll(plainChunk);
     }
     return utf8.decode(plainBytes);
   }
@@ -178,11 +232,13 @@ class EncryptedBackupChunk {
     if (index is! int || ciphertext is! String || sha256 is! String) {
       throw const FormatException('Encrypted backup chunk is malformed.');
     }
-    return EncryptedBackupChunk(
+    final chunk = EncryptedBackupChunk(
       index: index,
       ciphertext: ciphertext,
       sha256: sha256,
     );
+    _validateEncryptedBackupChunk(chunk);
+    return chunk;
   }
 
   Map<String, dynamic> toJson() => {
@@ -206,5 +262,20 @@ void _validateSnapshotId(String snapshotId) {
       'snapshotId',
       'must contain only letters, numbers, underscore, or hyphen',
     );
+  }
+}
+
+void _validateEncryptedBackupChunk(EncryptedBackupChunk chunk) {
+  if (chunk.index < 0 || chunk.index >= maxEncryptedBackupChunkCount) {
+    throw const FormatException('Encrypted backup chunk index is invalid.');
+  }
+  if (chunk.ciphertext.length > maxEncryptedBackupCiphertextLength ||
+      !chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix)) {
+    throw const FormatException(
+      'Encrypted backup chunk ciphertext is invalid.',
+    );
+  }
+  if (!_sha256Pattern.hasMatch(chunk.sha256)) {
+    throw const FormatException('Encrypted backup chunk hash is invalid.');
   }
 }
