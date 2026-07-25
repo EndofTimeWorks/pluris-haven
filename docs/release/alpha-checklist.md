@@ -41,6 +41,10 @@ candidate.
 - The release workflow's GitHub publication step has not run from this local
   checkout. Signing secrets and the remote macOS iOS runner remain external
   release evidence.
+- The tag/manual mobile release workflow now makes Android publication depend
+  on its unsigned macOS iOS compilation job. The workflow configuration parses
+  locally, but the hosted macOS job still needs to run successfully before the
+  iOS evidence checkbox can be checked.
 - The automated accessibility contract covers entity-specific avatar labels
   and the decorative placeholder fallback. Device-level TalkBack, VoiceOver,
   banner, keyboard/switch, large-text, high-contrast, and reduced-motion notes
