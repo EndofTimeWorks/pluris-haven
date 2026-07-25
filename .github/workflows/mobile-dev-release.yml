@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "mobile/**"
-      - ".github/workflows/mobile-dev-release.yml"
+      - 'mobile/**'
+      - '.github/workflows/mobile-dev-release.yml'
   workflow_dispatch:
 
 permissions:
@@ -88,13 +88,13 @@ jobs:
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Set up Flutter
         if: steps.version.outputs.should_publish == 'true'
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 

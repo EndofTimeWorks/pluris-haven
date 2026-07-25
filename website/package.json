@@ -1,34 +1,34 @@
 {
-	"name": "@pluris-haven/website",
-	"private": true,
-	"version": "0.0.1",
-	"description": "Pluris Haven website.",
-	"repository": "https://github.com/EndofTimeWorks/pluris-haven",
-	"license": "SEE LICENSE IN ../../LICENSE",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-	},
-	"devDependencies": {
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.65.1",
-		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"@types/node": "^25.9.3",
-		"svelte": "^5.56.3",
-		"svelte-check": "^4.6.0",
-		"typescript": "^6.0.3",
-		"vite": "^8.0.16"
-	},
-	"pnpm": {
-		"overrides": {
-			"cookie": "0.7.2",
-			"esbuild": "0.28.1",
-			"postcss": "8.5.10"
-		}
-	}
+  "name": "@pluris-haven/website",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Pluris Haven website.",
+  "repository": "https://github.com/EndofTimeWorks/pluris-haven",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.65.1",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@types/node": "^25.9.3",
+    "svelte": "^5.56.3",
+    "svelte-check": "^4.6.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "pnpm": {
+    "overrides": {
+      "cookie": "0.7.2",
+      "esbuild": "0.28.1",
+      "postcss": "8.5.10"
+    }
+  }
 }

@@ -4,11 +4,11 @@ queries:
   - uses: security-extended
 
 paths-ignore:
-  - "sp/**"
-  - "local-untracked-ignored-*/**"
-  - "release/**"
-  - "mobile/build/**"
-  - "mobile/.dart_tool/**"
-  - "website/build/**"
-  - "website/.svelte-kit/**"
-  - "website/node_modules/**"
+  - 'sp/**'
+  - 'local-untracked-ignored-*/**'
+  - 'release/**'
+  - 'mobile/build/**'
+  - 'mobile/.dart_tool/**'
+  - 'website/build/**'
+  - 'website/.svelte-kit/**'
+  - 'website/node_modules/**'

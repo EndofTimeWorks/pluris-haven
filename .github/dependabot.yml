@@ -9,7 +9,7 @@ updates:
     groups:
       github-actions:
         patterns:
-          - "*"
+          - '*'
 
   - package-ecosystem: npm
     directory: /website
@@ -19,7 +19,7 @@ updates:
     groups:
       website-deps:
         patterns:
-          - "*"
+          - '*'
 
   - package-ecosystem: pub
     directory: /mobile
@@ -29,7 +29,7 @@ updates:
     groups:
       mobile-deps:
         patterns:
-          - "*"
+          - '*'
 
   - package-ecosystem: pip
     directory: /server
@@ -39,4 +39,4 @@ updates:
     groups:
       server-deps:
         patterns:
-          - "*"
+          - '*'
