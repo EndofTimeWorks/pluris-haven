@@ -456,6 +456,8 @@ class AccountSettingsPage extends StatelessWidget {
                 ),
                 label: (home?.systemName ?? 'PH').trim().substring(0, 1),
                 avatarUrl: home?.systemAvatarUrl,
+                semanticLabel:
+                    'System avatar for ${home?.systemName ?? 'Local system'}',
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -633,6 +635,8 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
                     ? 'PH'
                     : _nameController.text.trim().substring(0, 1),
                 avatarUrl: _avatarUrl,
+                semanticLabel:
+                    'System avatar for ${_nameController.text.trim().isEmpty ? 'Local system' : _nameController.text.trim()}',
               ),
             ),
             const SizedBox(height: 8),
