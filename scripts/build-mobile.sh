@@ -53,6 +53,15 @@ if ! command -v flutter >/dev/null 2>&1; then
   exit 127
 fi
 
+case "${target}" in
+  ios-check|ios-debug)
+    if [[ "$(uname -s)" != "Darwin" ]]; then
+      echo "The iOS target requires macOS with Xcode installed." >&2
+      exit 69
+    fi
+    ;;
+esac
+
 cd "${mobile_dir}"
 ensure_generated_directory "${mobile_dir}/.dart_tool" "${cache_root}/dart-tool"
 ensure_generated_directory "${mobile_dir}/build" "${cache_root}/build"
@@ -69,17 +78,9 @@ case "${target}" in
     flutter build apk --release --split-per-abi "$@"
     ;;
   ios-check)
-    if [[ "$(uname -s)" != "Darwin" ]]; then
-      echo "The iOS target requires macOS with Xcode installed." >&2
-      exit 69
-    fi
     flutter build ios --release --no-codesign "$@"
     ;;
   ios-debug)
-    if [[ "$(uname -s)" != "Darwin" ]]; then
-      echo "The iOS target requires macOS with Xcode installed." >&2
-      exit 69
-    fi
     flutter build ios --debug --no-codesign "$@"
     ;;
   *)
