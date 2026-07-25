@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
+import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/main.dart';
 
 import 'test_repository.dart';
@@ -36,5 +37,26 @@ void main() {
     expect(AppCustomization.defaults.reducedMotion, isFalse);
     expect(AppCustomization.defaults.highContrast, isFalse);
     expect(AppCustomization.defaults.largeText, isFalse);
+  });
+
+  testWidgets('avatars expose named image semantics', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Center(
+          child: SpAvatar(
+            size: 48,
+            color: Color(0xFF7B61FF),
+            label: 'R',
+            semanticLabel: 'Avatar for River',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Avatar for River'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Decorative avatar placeholder'),
+      findsNothing,
+    );
   });
 }

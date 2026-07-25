@@ -470,17 +470,21 @@ class SpAvatar extends StatelessWidget {
     required this.color,
     this.label,
     this.image,
+    this.semanticLabel,
   });
 
   final double size;
   final Color color;
   final String? label;
   final ImageProvider? image;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: label == null ? 'System avatar' : 'Avatar $label',
+      label: semanticLabel?.trim().isNotEmpty == true
+          ? semanticLabel!.trim()
+          : 'Decorative avatar placeholder',
       image: true,
       child: Container(
         width: size,
@@ -518,18 +522,25 @@ class StoredAvatar extends StatelessWidget {
     required this.color,
     required this.label,
     this.avatarUrl,
+    this.semanticLabel,
   });
 
   final double size;
   final Color color;
   final String label;
   final String? avatarUrl;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final source = avatarUrl?.trim();
     if (source == null || source.isEmpty) {
-      return SpAvatar(size: size, color: color, label: label);
+      return SpAvatar(
+        size: size,
+        color: color,
+        label: label,
+        semanticLabel: semanticLabel,
+      );
     }
     if (source.startsWith('local-avatar:')) {
       return FutureBuilder<File?>(
@@ -539,6 +550,7 @@ class StoredAvatar extends StatelessWidget {
           color: color,
           label: label,
           image: snapshot.data == null ? null : FileImage(snapshot.data!),
+          semanticLabel: semanticLabel,
         ),
       );
     }
@@ -548,9 +560,15 @@ class StoredAvatar extends StatelessWidget {
         color: color,
         label: label,
         image: NetworkImage(source),
+        semanticLabel: semanticLabel,
       );
     }
-    return SpAvatar(size: size, color: color, label: label);
+    return SpAvatar(
+      size: size,
+      color: color,
+      label: label,
+      semanticLabel: semanticLabel,
+    );
   }
 }
 

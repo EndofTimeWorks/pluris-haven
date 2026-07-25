@@ -32,6 +32,10 @@ users, and people who need reduced motion or simpler screens.
 - High contrast is a persisted app preference with a dedicated theme path.
 - The widget suite exercises semantic labels for fronting and common icon-only
   controls.
+- Member, group, system, and custom-front avatars expose entity-specific image
+  semantics rather than announcing initials as if they were the image label.
+- Missing or unavailable avatar images expose an explicit decorative
+  placeholder state.
 
 ## Alpha blocking audit
 
@@ -62,7 +66,8 @@ the release record or a focused test.
 - Keyboard, switch-access, and large-text testing.
 - High-contrast theme pass.
 - Reduced-motion setting.
-- Alt text fields for imported/stored avatars.
+- Device-level verification of named avatar and banner semantics; persisted
+  user-provided alternative-text fields are not yet implemented.
 - Better structured reminder scheduling with actual notification scheduling.
 - Focus order checks for import sheets and long forms.
 
