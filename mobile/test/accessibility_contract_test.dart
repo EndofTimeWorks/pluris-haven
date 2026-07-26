@@ -103,6 +103,28 @@ void main() {
     expect(settingsSemantics.label, contains('not available yet'));
   });
 
+  testWidgets('every drawer route has a semantic label', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SpDrawer(
+          snapshot: null,
+          selected: SpSection.dashboard,
+          onSelect: (_) {},
+        ),
+      ),
+    );
+
+    final drawerList = find.byType(Scrollable);
+    for (final section in SpSection.values) {
+      final text = find.text(section.label);
+      await tester.scrollUntilVisible(text, 180, scrollable: drawerList);
+      expect(
+        find.bySemanticsLabel(RegExp('^${RegExp.escape(section.label)}')),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets('import and restore progress announce their current status', (
     tester,
   ) async {
