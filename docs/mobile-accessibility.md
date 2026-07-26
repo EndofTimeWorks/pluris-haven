@@ -21,7 +21,7 @@ users, and people who need reduced motion or simpler screens.
 - Motion should be minimal and must honor the reduced-motion setting and the
   platform animation preference.
 
-## Current Coverage
+## Covered so far
 
 - Dashboard supports hiding all shortcuts and shows a text empty state.
 - Member archive state is shown in text.
@@ -38,11 +38,10 @@ users, and people who need reduced motion or simpler screens.
 - Missing or unavailable avatar images expose an explicit decorative
   placeholder state.
 
-## Alpha blocking audit
+## Alpha blockers
 
-The alpha candidate is blocked until each item below has a passing manual or
-automated check. A check may be marked complete only with an evidence link in
-the release record or a focused test.
+The alpha stays blocked until each item below has a passing manual or automated
+check. Link the evidence from the release record or a focused test.
 
 - [ ] TalkBack pass on every app route and sheet.
 - [ ] VoiceOver pass on every app route and sheet.
@@ -61,7 +60,7 @@ the release record or a focused test.
 - [ ] Avatar and banner inputs expose meaningful alternative text or an
       explicitly described decorative state.
 
-## Still Needed
+## Next pass
 
 - Full TalkBack and VoiceOver pass on every screen.
 - Keyboard, switch-access, and large-text testing.
@@ -72,6 +71,5 @@ the release record or a focused test.
 - Better structured reminder scheduling with actual notification scheduling.
 - Focus order checks for import sheets and long forms.
 
-The full audit is intentionally still open. Existing automated coverage is
-evidence for individual behaviors, not a substitute for device-level
-TalkBack/VoiceOver and switch-access testing.
+The automated checks cover individual behaviors. They do not replace testing
+with TalkBack, VoiceOver, or switch access on a device.
