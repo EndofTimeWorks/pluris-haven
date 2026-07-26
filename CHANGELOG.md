@@ -83,8 +83,9 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - TalkBack, VoiceOver, keyboard/switch access, large text, high contrast,
   reduced motion, focus order, and every route/sheet still need device notes.
 - Public server launch still needs distributed rate limits, email verification,
-  account recovery and deletion, HTTPS/proxy operations, moderation, legal
-  pages, and monitoring. Registration and friends remain disabled by default.
+  account recovery, a user-facing account-deletion flow, HTTPS/proxy
+  operations, moderation, legal pages, and monitoring. Registration and
+  friends remain disabled by default.
 - The mobile account/session UI and network uploader for device-key snapshots
   are not finished. The password-protected archive remains the portable local
   recovery path: import it on a new device with its passphrase to create new
