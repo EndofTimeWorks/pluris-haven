@@ -101,10 +101,25 @@ Release APKs use the configured Android signing key. Dev prereleases are
 debuggable and intended for testing.
 
 The tag/manual `Mobile Release` workflow also runs an unsigned iOS release
-compilation on `macos-latest` before the Android job can publish artifacts.
+compilation on the pinned `macos-15-intel` runner with Xcode 16.4 before the
+Android job can publish artifacts.
 This is a compile gate for alpha release confidence, not iOS signing or iOS
 distribution. A successful hosted macOS run is required before the release
 record can claim iOS compilation evidence.
+
+## iOS support
+
+The alpha targets iOS 14 and newer. That is the deployment target in the
+project and the floor we intend to test for this release.
+
+The current Flutter support line starts at iOS 13, but iOS 12 and earlier are
+unsupported. Lowering the app to iOS 12 would mean pinning an older Flutter
+engine and older plugin set, which would make current dependency and Xcode
+updates harder to use. It is not worth that trade for this alpha.
+
+Newer iOS presentation features remain optional. An iOS 26-or-later native
+path can be added behind availability checks while iOS 14 keeps the regular
+Flutter presentation. The older path must remain complete and usable.
 
 ## Local Import Acceptance
 
