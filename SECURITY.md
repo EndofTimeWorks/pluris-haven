@@ -24,6 +24,7 @@ real user exports, passwords, tokens, or private avatars in a report.
 - Authentication and friend-request rate limits are in-memory and apply per
   process. Running multiple workers or replicas requires a shared limiter
   before treating them as global controls.
-- The server does not yet provide self-service account deletion and erasure.
-  Keep public account features disabled until the account lifecycle and legal
-  requirements are complete.
+- The server provides password-confirmed account deletion and removes the
+  account's opaque backup files with it. The mobile app does not expose the
+  account/session flow yet. Keep public account features disabled until account
+  recovery, client flows, and legal requirements are complete.
