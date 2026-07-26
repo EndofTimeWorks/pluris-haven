@@ -74,8 +74,12 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Recent commits
 
+- `e07cdb8` - `docs(release): correct mobile evidence count`
+- `c25e810` - `docs(release): record final mobile test count`
 - `4c1ba2f` - `docs(release): record high contrast coverage`
 - `8b2e0d6` - `test(accessibility): cover high contrast themes`
+- `cb8a077` - `docs(release): record passing server suite`
+- `78c2a75` - `docs(release): record current Android build`
 - `9d3318c` - `docs(release): record current mobile test evidence`
 - `22910be` - `docs(project): make notes more direct`
 - `351264a` - `docs(release): record bounded backup manifests`
