@@ -45,6 +45,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_attempts=active_settings.auth_rate_limit_attempts,
         window_seconds=active_settings.auth_rate_limit_window_seconds,
     )
+    app.state.friend_request_rate_limiter = InMemoryRateLimiter(
+        max_attempts=active_settings.friend_request_rate_limit_attempts,
+        window_seconds=active_settings.friend_request_rate_limit_window_seconds,
+    )
     app.state.backup_object_store = FilesystemBackupObjectStore(
         Path(active_settings.backup_object_dir),
         max_chunk_bytes=active_settings.backup_max_chunk_bytes,

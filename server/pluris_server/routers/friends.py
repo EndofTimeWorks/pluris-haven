@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 
@@ -49,6 +49,22 @@ ALLOWED_GRANT_SCOPES = frozenset(
         "polls",
     }
 )
+
+
+async def _enforce_request_rate_limit(request: Request, user_id: str) -> None:
+    client_host = request.client.host if request.client is not None else "unknown"
+    retry_after = await request.app.state.friend_request_rate_limiter.retry_after(
+        [
+            f"friends:requests:ip:{client_host}",
+            f"friends:requests:user:{user_id}",
+        ]
+    )
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many friend requests",
+            headers={"Retry-After": str(retry_after)},
+        )
 
 
 def _pair(first: str, second: str) -> tuple[str, str]:
@@ -109,10 +125,12 @@ async def rotate_code(auth: CurrentAuth, db: Db, settings: AppSettings) -> Frien
 @router.post("/requests", response_model=FriendRequestView, status_code=status.HTTP_201_CREATED)
 async def create_request(
     payload: FriendRequestCreate,
+    request: Request,
     auth: CurrentAuth,
     db: Db,
     settings: AppSettings,
 ) -> FriendRequestView:
+    await _enforce_request_rate_limit(request, auth.user.id)
     digest = digest_friend_code(payload.friend_code, settings.friend_code_pepper)
     recipient = await db.scalar(select(User).where(User.friend_code_digest == digest))
     if recipient is None or recipient.disabled:

@@ -38,6 +38,8 @@ class Settings(BaseSettings):
         le=1 * 1024 * 1024 * 1024 * 1024,
     )
     friend_request_cooldown_seconds: int = Field(default=86_400, ge=0, le=2_592_000)
+    friend_request_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
+    friend_request_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
     auth_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
     auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ()
