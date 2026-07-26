@@ -61,6 +61,9 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   armeabi-v7a, and x86_64 splits. `apksigner` v2 verification and `aapt2`
   package/ABI checks pass; Flutter assigns the splits version codes `4007`,
   `3007`, and `6007` respectively.
+- The iOS CI gate now runs on GitHub's Intel Tahoe image with Xcode 26.4.1.
+  The deployment target remains iOS 14; this only moves the build check to the
+  current SDK line.
 - Flutter passed 147 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
 - Hosted CI run `30185733204` passed the website, mobile, server, repository,
