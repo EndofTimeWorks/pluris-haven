@@ -6,7 +6,7 @@ import 'dart:io';
 /// Imported archives are untrusted input. The caller must also disable
 /// redirect following so a public URL cannot redirect into a private network.
 Future<bool> isAllowedRemoteAvatarUri(Uri uri) async {
-  if ((uri.scheme != 'http' && uri.scheme != 'https') ||
+  if (uri.scheme != 'https' ||
       uri.host.trim().isEmpty ||
       uri.userInfo.isNotEmpty ||
       (uri.port != 0 && uri.port != 80 && uri.port != 443) ||

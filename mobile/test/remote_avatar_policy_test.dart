@@ -29,6 +29,12 @@ void main() {
     );
     expect(
       await isAllowedRemoteAvatarUri(
+        Uri.parse('http://example.invalid/avatar.png'),
+      ),
+      isFalse,
+    );
+    expect(
+      await isAllowedRemoteAvatarUri(
         Uri.parse('http://user:password@127.0.0.1/avatar.png'),
       ),
       isFalse,
