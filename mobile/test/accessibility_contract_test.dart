@@ -80,4 +80,26 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('status and settings rows expose useful semantics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ListView(
+            children: [
+              const StatusPill(text: 'offline'),
+              SpSettingsRow('Sync', 'not available yet', onTap: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Status offline'), findsOneWidget);
+    final settingsSemantics = tester.getSemantics(find.byType(SpSettingsRow));
+    expect(settingsSemantics.label, contains('Sync'));
+    expect(settingsSemantics.label, contains('not available yet'));
+  });
 }
