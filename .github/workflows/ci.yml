@@ -94,7 +94,7 @@ jobs:
 
   ios:
     name: iOS (unsigned build)
-    runs-on: macos-14
+    runs-on: macos-15-intel
     defaults:
       run:
         working-directory: mobile
@@ -108,8 +108,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Select Xcode 15.4
-        run: sudo xcode-select --switch /Applications/Xcode_15.4.app
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app
 
       - name: Install dependencies
         run: flutter pub get
