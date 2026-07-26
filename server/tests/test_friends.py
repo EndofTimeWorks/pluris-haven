@@ -134,3 +134,21 @@ def test_block_removes_friendship_and_prevents_new_requests(client: TestClient) 
         f"/v1/friends/blocks/{bob_me['id']}", headers=auth(alice["access_token"])
     )
     assert unblocked.status_code == 200
+
+
+def test_friend_request_endpoint_is_rate_limited(client: TestClient) -> None:
+    alice = register(client, "rate-alice@example.com", "Rate Alice")
+    bob = register(client, "rate-bob@example.com", "Rate Bob")
+
+    responses = [
+        client.post(
+            "/v1/friends/requests",
+            headers=auth(alice["access_token"]),
+            json={"friend_code": bob["friend_code"]},
+        )
+        for _ in range(11)
+    ]
+
+    assert all(response.status_code != 429 for response in responses[:10])
+    assert responses[-1].status_code == 429
+    assert responses[-1].headers["Retry-After"].isdigit()
