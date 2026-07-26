@@ -36,7 +36,8 @@ current prerelease milestone. The `.dev.N` part is for automatic debug builds on
 `main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
 metadata for precedence, so do not only change the number after `+`.
 
-`0.2.0-pre-alpha.1.dev.9+2007` is the current development build line. It
+`0.2.0-pre-alpha.1.dev.9+2007` is the development build line used for this
+alpha work. It
 includes the local encrypted repository, migration coverage, imports, avatars,
 archive handling, member ordering, custom fronts, tags, journals, and the
 alpha repository services.
