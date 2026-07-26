@@ -144,3 +144,8 @@ builds the archive inside a database transaction, emits independently
 authenticated chunks, and is compatible with the optional server's opaque
 chunk API. The server never receives the archive plaintext or device master
 key.
+
+That snapshot format is tied to the device key. For a portable recovery copy,
+use the password-protected archive export instead: import it on the new device
+with the passphrase and the restored local data will be encrypted with the new
+device key.
