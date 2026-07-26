@@ -64,7 +64,7 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The iOS CI gate now runs on GitHub's Intel Tahoe image with Xcode 26.4.1.
   The deployment target remains iOS 14; this only moves the build check to the
   current SDK line.
-- Flutter passed 147 tests. Two optional fixture tests were skipped because
+- Flutter passed 148 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
 - Hosted CI run `30185733204` passed the website, mobile, server, repository,
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
@@ -84,7 +84,9 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - Public server launch still needs distributed rate limits, email verification,
   account recovery and deletion, HTTPS/proxy operations, moderation, legal
   pages, and monitoring. Registration and friends remain disabled by default.
-- The mobile account/session UI and network uploader for encrypted snapshots are
-  not finished. Losing the device key is still unrecoverable.
+- The mobile account/session UI and network uploader for device-key snapshots
+  are not finished. The password-protected archive remains the portable local
+  recovery path: import it on a new device with its passphrase to create new
+  device-key encryption there.
 - Sync, portable identity, federation, ActivityPub, and signed iOS releases are
   outside this alpha.

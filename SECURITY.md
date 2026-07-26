@@ -21,6 +21,10 @@ real user exports, passwords, tokens, or private avatars in a report.
 - Registration and friend connections are disabled by default.
 - Backup snapshots are client-encrypted, but the optional server stores their
   opaque chunks and applies per-user snapshot-count and byte quotas.
+- Device-key snapshots cannot be restored without the original device key. The
+  user-facing password-protected archive is a separate portable recovery path:
+  import it on a new device with its passphrase and the app will encrypt the
+  restored local data with that device's new key.
 - Authentication and friend-request rate limits are in-memory and apply per
   process. Running multiple workers or replicas requires a shared limiter
   before treating them as global controls.
