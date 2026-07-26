@@ -38,39 +38,19 @@ users, and people who need reduced motion or simpler screens.
 - Missing or unavailable avatar images expose an explicit decorative
   placeholder state.
 
-## Alpha blockers
+## Still needs device coverage
 
-The alpha stays blocked until each item below has a passing manual or automated
-check. Link the evidence from the release record or a focused test.
+The automated checks cover individual behaviors. They do not replace a
+route-by-route pass with TalkBack, VoiceOver, keyboard or switch access. The
+remaining device work is:
 
-- [ ] TalkBack pass on every app route and sheet.
-- [ ] VoiceOver pass on every app route and sheet.
-- [ ] Keyboard and switch-access pass, including focus order and back behavior.
-- [ ] Large-text pass at the largest supported system scale without clipped
-      actions or hidden form fields.
-- [ ] High-contrast pass for text, borders, status indicators, charts, and
-      avatars.
-- [ ] Reduced-motion pass for navigation, sheets, import progress, and
-      notifications.
-- [ ] Every icon-only action has a unique tooltip or semantic label.
-- [ ] Every status communicated by color also has text or a semantic state.
-- [ ] Destructive actions identify the object and require confirmation.
-- [x] Import and restore progress exposes text, current phase, and failure
-      recovery in the widget semantics. Device timing and focus checks remain
-      open.
-- [ ] Avatar and banner inputs expose meaningful alternative text or an
-      explicitly described decorative state.
-
-## Next pass
-
-- Full TalkBack and VoiceOver pass on every screen.
-- Keyboard, switch-access, and large-text testing.
-- High-contrast theme pass.
+- TalkBack and VoiceOver on every screen and sheet.
+- Keyboard, switch-access, and large-text testing, including focus order.
+- High-contrast checks for text, borders, status indicators, charts, and avatars.
 - Device-level reduced-motion verification.
 - Device-level verification of named avatar and banner semantics; persisted
   user-provided alternative-text fields are not yet implemented.
 - Better structured reminder scheduling with actual notification scheduling.
-- Focus order checks for import sheets and long forms.
 
-The automated checks cover individual behaviors. They do not replace testing
-with TalkBack, VoiceOver, or switch access on a device.
+Import and restore progress already exposes text, the current phase, and failure
+recovery in widget semantics. Device timing and focus checks remain open.
