@@ -41,6 +41,8 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   total byte quota before accepting a manifest.
 - A declined friend request cannot be immediately sent again; the cooldown is
   configurable and returns `Retry-After`.
+- Friend-request creation is also limited by both client IP and account, so a
+  single user cannot flood the endpoint through one or many addresses.
 - Crypto subkey derivation stays at `v1`; changing it needs a migration path.
 
 ### Checks

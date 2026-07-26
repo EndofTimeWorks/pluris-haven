@@ -21,9 +21,9 @@ real user exports, passwords, tokens, or private avatars in a report.
 - Registration and friend connections are disabled by default.
 - Backup snapshots are client-encrypted, but the optional server stores their
   opaque chunks and applies per-user snapshot-count and byte quotas.
-- Authentication rate limits are in-memory and apply per process. Running
-  multiple workers or replicas requires a shared limiter before treating the
-  limits as a global control.
+- Authentication and friend-request rate limits are in-memory and apply per
+  process. Running multiple workers or replicas requires a shared limiter
+  before treating them as global controls.
 - The server does not yet provide self-service account deletion and erasure.
   Keep public account features disabled until the account lifecycle and legal
   requirements are complete.
