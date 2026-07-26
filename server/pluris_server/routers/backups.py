@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from pluris_server.backup_storage import BackupChunkConflict, BackupChunkIntegrityError
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
-from pluris_server.models import BackupChunk, BackupSnapshot
+from pluris_server.models import BackupChunk, BackupSnapshot, User
 from pluris_server.schemas import (
     BackupChunkView,
     BackupSnapshotCreate,
@@ -55,8 +55,32 @@ async def _get_snapshot(snapshot_id: str, auth: CurrentAuth, db: Db) -> BackupSn
 
 @router.post("/snapshots", response_model=BackupSnapshotView, status_code=status.HTTP_201_CREATED)
 async def create_snapshot(
-    payload: BackupSnapshotCreate, auth: CurrentAuth, db: Db
+    payload: BackupSnapshotCreate,
+    auth: CurrentAuth,
+    db: Db,
+    settings: AppSettings,
 ) -> BackupSnapshotView:
+    # Lock the user row while reserving the snapshot's declared size. This
+    # keeps concurrent snapshot creation from racing past the per-user quota.
+    await db.scalar(select(User).where(User.id == auth.user.id).with_for_update())
+    snapshot_count, reserved_bytes = (
+        await db.execute(
+            select(
+                func.count(BackupSnapshot.id),
+                func.coalesce(func.sum(BackupSnapshot.total_bytes), 0),
+            ).where(BackupSnapshot.user_id == auth.user.id)
+        )
+    ).one()
+    if int(snapshot_count) >= settings.backup_max_snapshots_per_user:
+        raise HTTPException(
+            status_code=413,
+            detail="Backup snapshot limit reached for this account",
+        )
+    if int(reserved_bytes or 0) + payload.total_bytes > settings.backup_max_total_bytes_per_user:
+        raise HTTPException(
+            status_code=413,
+            detail="Backup storage quota exceeded for this account",
+        )
     created_at = payload.created_at or datetime.now(UTC)
     if created_at.tzinfo is None:
         created_at = created_at.replace(tzinfo=UTC)

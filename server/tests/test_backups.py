@@ -135,3 +135,74 @@ def test_backup_upload_resumes_and_isolated_from_other_users(client: TestClient)
         ).status_code
         == 404
     )
+
+
+def test_backup_snapshot_quotas_reserve_declared_storage(client: TestClient) -> None:
+    user = register(client, "quota@example.com", "Quota user")
+    headers = auth(user["access_token"])
+    settings = client.app.state.settings
+    settings.backup_max_snapshots_per_user = 2
+    settings.backup_max_total_bytes_per_user = 20
+
+    first = client.post(
+        "/v1/backups/snapshots",
+        headers=headers,
+        json={
+            "snapshot_id": "quota-first",
+            "manifest_sha256": "c" * 64,
+            "chunk_count": 1,
+            "total_bytes": 16,
+        },
+    )
+    assert first.status_code == 201, first.text
+
+    over_bytes = client.post(
+        "/v1/backups/snapshots",
+        headers=headers,
+        json={
+            "snapshot_id": "quota-second",
+            "manifest_sha256": "d" * 64,
+            "chunk_count": 1,
+            "total_bytes": 5,
+        },
+    )
+    assert over_bytes.status_code == 413
+    assert "quota" in over_bytes.json()["detail"].lower()
+
+    deleted = client.delete("/v1/backups/snapshots/quota-first", headers=headers)
+    assert deleted.status_code == 200
+    available = client.post(
+        "/v1/backups/snapshots",
+        headers=headers,
+        json={
+            "snapshot_id": "quota-second",
+            "manifest_sha256": "d" * 64,
+            "chunk_count": 1,
+            "total_bytes": 5,
+        },
+    )
+    assert available.status_code == 201, available.text
+
+
+def test_backup_snapshot_count_quota_blocks_new_manifests(client: TestClient) -> None:
+    user = register(client, "count-quota@example.com", "Count quota")
+    headers = auth(user["access_token"])
+    settings = client.app.state.settings
+    settings.backup_max_snapshots_per_user = 1
+
+    for snapshot_id in ("count-first", "count-second"):
+        response = client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "e" * 64,
+                "chunk_count": 1,
+                "total_bytes": 1,
+            },
+        )
+        if snapshot_id == "count-first":
+            assert response.status_code == 201, response.text
+        else:
+            assert response.status_code == 413
+            assert "limit" in response.json()["detail"].lower()

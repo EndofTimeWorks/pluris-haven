@@ -78,12 +78,27 @@ def test_decline_cancel_rotation_and_re_request(client: TestClient) -> None:
         headers=auth(alice["access_token"]),
         json={"friend_code": bob["friend_code"]},
     )
-    assert second.status_code == 201
+    assert second.status_code == 429
+    assert int(second.headers["Retry-After"]) > 0
+
+    charlie = register(client, "charlie2@example.com", "Charlie")
+    third = client.post(
+        "/v1/friends/requests",
+        headers=auth(alice["access_token"]),
+        json={"friend_code": charlie["friend_code"]},
+    )
+    assert third.status_code == 201, third.text
     cancelled = client.post(
-        f"/v1/friends/requests/{second.json()['id']}/cancel",
+        f"/v1/friends/requests/{third.json()['id']}/cancel",
         headers=auth(alice["access_token"]),
     )
     assert cancelled.status_code == 200
+    re_requested = client.post(
+        "/v1/friends/requests",
+        headers=auth(alice["access_token"]),
+        json={"friend_code": charlie["friend_code"]},
+    )
+    assert re_requested.status_code == 201, re_requested.text
 
     rotated = client.post("/v1/friends/code/rotate", headers=auth(bob["access_token"]))
     assert rotated.status_code == 200

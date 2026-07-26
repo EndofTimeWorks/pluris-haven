@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     support_email: str = ""
     backup_object_dir: str = "./data/backups"
     backup_max_chunk_bytes: int = 8 * 1024 * 1024
+    backup_max_snapshots_per_user: int = Field(default=10, ge=1, le=10_000)
+    backup_max_total_bytes_per_user: int = Field(
+        default=1 * 1024 * 1024 * 1024,
+        ge=1 * 1024 * 1024,
+        le=1 * 1024 * 1024 * 1024 * 1024,
+    )
+    friend_request_cooldown_seconds: int = Field(default=86_400, ge=0, le=2_592_000)
     auth_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
     auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ()
