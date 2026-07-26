@@ -55,8 +55,9 @@ check. Link the evidence from the release record or a focused test.
 - [ ] Every icon-only action has a unique tooltip or semantic label.
 - [ ] Every status communicated by color also has text or a semantic state.
 - [ ] Destructive actions identify the object and require confirmation.
-- [ ] Import and restore progress exposes text, current phase, and failure
-      recovery.
+- [x] Import and restore progress exposes text, current phase, and failure
+      recovery in the widget semantics. Device timing and focus checks remain
+      open.
 - [ ] Avatar and banner inputs expose meaningful alternative text or an
       explicitly described decorative state.
 
