@@ -94,7 +94,7 @@ jobs:
 
   ios:
     name: iOS (unsigned build)
-    runs-on: macos-latest
+    runs-on: macos-14
     defaults:
       run:
         working-directory: mobile
@@ -107,6 +107,9 @@ jobs:
           flutter-version: '3.44.4'
           channel: stable
           cache: true
+
+      - name: Select Xcode 15.4
+        run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
       - name: Install dependencies
         run: flutter pub get
