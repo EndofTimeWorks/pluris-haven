@@ -52,8 +52,9 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 - `pnpm lint` passes: Prettier, Svelte check, Ruff format/lint, and ShellCheck.
 - The website audit, check, and production build pass. Commitlint passes too.
-- The accessibility contract test passes all five checks, including status,
-  settings-row, avatar, high-contrast, and import/restore progress semantics.
+- The accessibility contract test passes seven checks, including every drawer
+  route, status, settings-row, avatar, high-contrast, and import/restore
+  progress semantics.
 - The server suite passes: 21 tests, including account deletion, rate-limit,
   and quota tests.
 - A fresh local Flutter 3.44.4 release build produced a signed universal APK
@@ -64,7 +65,7 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The iOS CI gate now runs on GitHub's Intel Tahoe image with Xcode 26.4.1.
   The deployment target remains iOS 14; this only moves the build check to the
   current SDK line.
-- Flutter passed 148 tests. Two optional fixture tests were skipped because
+- Flutter passed 149 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
 - Hosted CI run `30185733204` passed the website, mobile, server, repository,
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
