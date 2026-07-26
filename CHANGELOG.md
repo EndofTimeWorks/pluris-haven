@@ -41,10 +41,12 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 ### Checks
 
 - `pnpm lint` passes: Prettier, Svelte check, Ruff format/lint, and ShellCheck.
+- `pnpm audit --prod=false` passes for the website after raising the SvelteKit
+  and PostCSS floors.
 - Recent commits pass commitlint.
 - System Dart format and analysis pass for the import and backup changes.
-- The accessibility contract test passes all four checks, including the
-  high-contrast light and dark theme paths.
+- The accessibility contract test passes all five checks, including status and
+  settings-row semantics and both high-contrast theme paths.
 - The complete server suite passed: 17 tests in 2.61 seconds, including the
   rate-limit tests.
 - The current Android release run passed Dart format, `flutter analyze`, the
@@ -52,7 +54,7 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
   package inspection. It produced package
   `works.endoftime.plurishaven`, version `0.2.0-pre-alpha.1.dev.9`, build
   `2007`.
-- The current full Flutter run passed 145 tests. Two optional local-fixture
+- The current full Flutter run passed 146 tests. Two optional local-fixture
   tests were skipped because their fixture paths were not set in this run.
 - The Flutter SDK cache used by this checkout is read-only, so the test run used
   writable temporary generated directories; that workaround did not change the
@@ -60,8 +62,11 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Still open for alpha
 
-- The unsigned iOS build needs a successful hosted macOS/Xcode run. The release
-  workflow waits for that job before publishing Android artifacts.
+- The hosted macOS run reached Xcode but hit a CocoaPods sandbox mismatch. The
+  project now keeps Flutter on its existing CocoaPods integration; that fix
+  needs a new hosted run before the iOS checkbox can be checked.
+- The hosted website run also needs to rerun on the dependency-floor fix. The
+  local audit, check, and build are clean.
 - TalkBack, VoiceOver, keyboard/switch access, large text, high contrast,
   reduced motion, focus order, and every route/sheet still need device notes.
 - Public server launch still needs distributed rate limits, email verification,
@@ -74,6 +79,9 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Recent commits
 
+- `dfa6632` — `fix(website): raise audited dependency floors`
+- `123fdc4` — `fix(mobile): keep iOS on CocoaPods`
+- `aec80a0` — `test(accessibility): cover status semantics`
 - `e07cdb8` — `docs(release): correct mobile evidence count`
 - `c25e810` — `docs(release): record final mobile test count`
 - `4c1ba2f` — `docs(release): record high contrast coverage`
