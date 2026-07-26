@@ -29,7 +29,7 @@ concurrency:
 jobs:
   ios:
     name: Verify unsigned iOS build
-    runs-on: macos-15-intel
+    runs-on: macos-26-intel
     defaults:
       run:
         working-directory: mobile
@@ -45,8 +45,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Select Xcode 16.4
-        run: sudo xcode-select --switch /Applications/Xcode_16.4.app
+      - name: Select Xcode 26.4.1
+        run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
 
       - name: Install dependencies
         run: flutter pub get
