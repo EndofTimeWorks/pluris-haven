@@ -57,9 +57,14 @@ jobs:
           max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
           max_tagged_build="${max_tagged_build:-0}"
           if (( build <= max_tagged_build )); then
-            echo "Android build number ${build} is not newer than the highest tagged mobile build ${max_tagged_build}." >&2
-            echo "Bump mobile/pubspec.yaml to a higher +build so Android/Obtainium can update." >&2
-            exit 1
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo "## Dev APK skipped"
+              echo
+              echo "Build `${build}` is not newer than the highest tagged mobile build `${max_tagged_build}`."
+              echo "Bump `mobile/pubspec.yaml` before publishing another dev APK."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
           fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -77,8 +82,13 @@ jobs:
           fi
 
           if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
-            echo "Release tag ${tag} already exists. Bump mobile/pubspec.yaml before publishing another dev release." >&2
-            exit 1
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo "## Dev APK skipped"
+              echo
+              echo "Release tag `${tag}` already exists. Bump `mobile/pubspec.yaml` before publishing another dev release."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
           fi
 
           echo "should_publish=true" >> "${GITHUB_OUTPUT}"

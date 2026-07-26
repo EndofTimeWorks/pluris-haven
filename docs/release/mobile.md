@@ -45,8 +45,9 @@ Keep the number after `+` monotonic. A prior published APK used a build code in
 the 2000 range, so later APKs must stay above that or Android and Obtainium will
 treat the download as older even when the SemVer text looks newer.
 
-Do not reuse a published version. The workflow fails if the matching tag already
-exists.
+Do not reuse a published version. If a normal `main` push still has the current
+published version, the workflow records a successful skip instead of rebuilding
+the same APK. Bump the version and build number when a new dev APK is wanted.
 
 Old dev builds stay visible in GitHub Releases. For Obtainium, track GitHub
 Releases and allow prereleases. The asset name stays `pluris-haven-dev.apk`, so
