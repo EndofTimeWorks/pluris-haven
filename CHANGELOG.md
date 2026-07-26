@@ -56,9 +56,11 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   settings-row, avatar, high-contrast, and import/restore progress semantics.
 - The server suite passes: 21 tests, including account deletion, rate-limit,
   and quota tests.
-- The Android release build produced a signed universal APK and arm64,
-  armeabi-v7a, and x86_64 splits. `apksigner`, `aapt2`, and the checksum file
-  all pass for package `works.endoftime.plurishaven`, build `2007`.
+- A fresh local Flutter 3.44.4 release build produced a signed universal APK
+  for package `works.endoftime.plurishaven`, build `2007`, plus arm64-v8a,
+  armeabi-v7a, and x86_64 splits. `apksigner` v2 verification and `aapt2`
+  package/ABI checks pass; Flutter assigns the splits version codes `4007`,
+  `3007`, and `6007` respectively.
 - Flutter passed 147 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
 - Hosted CI run `30185733204` passed the website, mobile, server, repository,
