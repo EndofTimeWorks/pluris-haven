@@ -18,8 +18,9 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 - ZIP imports now limit the input size, entry count, per-entry expansion, and
   total expansion. Malformed ZIPs are rejected cleanly.
-- Remote avatar imports only accept safe HTTP(S) URLs. Private and special-use
-  addresses are rejected, DNS results are checked, and redirects are off.
+- Remote avatar imports only accept safe HTTPS URLs. Private and special-use
+  addresses are rejected, DNS results are checked, redirects are off, and
+  plaintext HTTP is rejected.
 - Encrypted backup snapshots now limit chunk size, chunk count, ciphertext
   metadata, and total restored plaintext. Restore checks chunk order and hashes
   before touching the archive. Bad authentication and malformed base64 are
@@ -36,6 +37,10 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   deployment needs an explicit, narrow trusted-proxy configuration.
 - Dependabot CI no longer has write access or the ability to approve a pull
   request automatically.
+- Backup snapshot creation reserves a configurable per-user snapshot count and
+  total byte quota before accepting a manifest.
+- A declined friend request cannot be immediately sent again; the cooldown is
+  configurable and returns `Retry-After`.
 - Crypto subkey derivation stays at `v1`; changing it needs a migration path.
 
 ### Checks
@@ -54,6 +59,8 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
 - The local Flutter cache is read-only, so tests used temporary generated
   directories. No project files were changed by that workaround.
+- `SECURITY.md` now explains private reporting and calls out the remaining
+  account-lifecycle and multi-process rate-limit limits.
 
 ### Not done yet
 
@@ -62,8 +69,8 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - TalkBack, VoiceOver, keyboard/switch access, large text, high contrast,
   reduced motion, focus order, and every route/sheet still need device notes.
 - Public server launch still needs distributed rate limits, email verification,
-  account recovery, HTTPS/proxy operations, moderation, legal pages, and
-  monitoring. Registration and friends remain disabled by default.
+  account recovery and deletion, HTTPS/proxy operations, moderation, legal
+  pages, and monitoring. Registration and friends remain disabled by default.
 - The mobile account/session UI and network uploader for encrypted snapshots are
   not finished. Losing the device key is still unrecoverable.
 - Sync, portable identity, federation, ActivityPub, and signed iOS releases are
