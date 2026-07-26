@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, or_, select
@@ -145,6 +146,25 @@ async def create_request(
     elif request.status == RequestStatus.PENDING.value:
         raise HTTPException(status_code=409, detail="A request is already pending")
     else:
+        if (
+            request.status == RequestStatus.DECLINED.value
+            and request.requester_id == auth.user.id
+            and request.recipient_id == recipient.id
+            and request.responded_at is not None
+            and settings.friend_request_cooldown_seconds > 0
+        ):
+            responded_at = request.responded_at
+            if responded_at.tzinfo is None:
+                responded_at = responded_at.replace(tzinfo=UTC)
+            retry_after = (
+                responded_at + timedelta(seconds=settings.friend_request_cooldown_seconds) - now
+            ).total_seconds()
+            if retry_after > 0:
+                raise HTTPException(
+                    status_code=429,
+                    detail="You cannot send another request to this account yet",
+                    headers={"Retry-After": str(max(1, ceil(retry_after)))},
+                )
         request.requester_id = auth.user.id
         request.recipient_id = recipient.id
         request.status = RequestStatus.PENDING.value
