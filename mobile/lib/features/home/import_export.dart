@@ -802,7 +802,17 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
             ),
             if (_status != null) ...[
               const SizedBox(height: 10),
-              Text(_status!, style: const TextStyle(color: _spMuted)),
+              Semantics(
+                container: true,
+                liveRegion: true,
+                label: 'Encrypted export status: $_status',
+                child: ExcludeSemantics(
+                  child: Text(
+                    _status!,
+                    style: const TextStyle(color: _spMuted),
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 14),
             FilledButton.icon(
@@ -919,11 +929,31 @@ class LocalArchiveSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 if (snapshot.connectionState != ConnectionState.done)
-                  const Center(child: CircularProgressIndicator())
+                  Semantics(
+                    container: true,
+                    liveRegion: true,
+                    label: 'Building local archive. Please wait.',
+                    child: ExcludeSemantics(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 10),
+                          Text('Building local archive...'),
+                        ],
+                      ),
+                    ),
+                  )
                 else if (snapshot.hasError)
-                  Text(
-                    'Could not build archive: ${snapshot.error}',
-                    style: const TextStyle(color: _spMuted),
+                  Semantics(
+                    container: true,
+                    liveRegion: true,
+                    label: 'Archive error: ${snapshot.error}',
+                    child: ExcludeSemantics(
+                      child: Text(
+                        'Could not build archive: ${snapshot.error}',
+                        style: const TextStyle(color: _spMuted),
+                      ),
+                    ),
                   )
                 else ...[
                   FilledButton.icon(
@@ -1417,55 +1447,66 @@ class RestoreRehearsalResult extends StatelessWidget {
     final body = summary.canRestore
         ? 'Imported into a temporary local database. Nothing was written to your app data.'
         : summary.error ?? 'The archive could not be restored safely.';
+    final counts = visibleCounts
+        .map((entry) => '${entry.key}: ${entry.value}')
+        .join(', ');
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _spSurface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: summary.canRestore
-              ? _spGold.withValues(alpha: 0.65)
-              : Theme.of(context).colorScheme.error,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label:
+          'Restore status: $title. $body${counts.isEmpty ? '' : '. $counts'}',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _spSurface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: summary.canRestore
+                  ? _spGold.withValues(alpha: 0.65)
+                  : Theme.of(context).colorScheme.error,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                summary.canRestore
-                    ? Icons.verified_rounded
-                    : Icons.error_outline_rounded,
-                color: summary.canRestore
-                    ? _spGold
-                    : Theme.of(context).colorScheme.error,
+              Row(
+                children: [
+                  Icon(
+                    summary.canRestore
+                        ? Icons.verified_rounded
+                        : Icons.error_outline_rounded,
+                    color: summary.canRestore
+                        ? _spGold
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  StatusPill(text: '${summary.elapsed.inMilliseconds}ms'),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+              const SizedBox(height: 8),
+              Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+              if (visibleCounts.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final entry in visibleCounts)
+                      StatusPill(text: '${entry.key}: ${entry.value}'),
+                  ],
                 ),
-              ),
-              StatusPill(text: '${summary.elapsed.inMilliseconds}ms'),
+              ],
             ],
           ),
-          const SizedBox(height: 8),
-          Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
-          if (visibleCounts.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final entry in visibleCounts)
-                  StatusPill(text: '${entry.key}: ${entry.value}'),
-              ],
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -1485,42 +1526,50 @@ class ImportProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final normalizedStatus = status?.toLowerCase() ?? '';
     final isQueued = normalizedStatus.contains('queued');
+    final announcement = status ?? 'Import ready.';
 
-    return SpCard(
-      outlined: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: 'Import status: $announcement',
+      child: ExcludeSemantics(
+        child: SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isActive)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                Icon(
-                  isQueued
-                      ? Icons.schedule_rounded
-                      : Icons.check_circle_rounded,
-                  size: 18,
-                  color: _spGold,
-                ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  status ?? 'Import ready.',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
+              Row(
+                children: [
+                  if (isActive)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      isQueued
+                          ? Icons.schedule_rounded
+                          : Icons.check_circle_rounded,
+                      size: 18,
+                      color: _spGold,
+                    ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      announcement,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
+              if (isActive) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
             ],
           ),
-          if (isActive) ...[
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(),
-          ],
-        ],
+        ),
       ),
     );
   }

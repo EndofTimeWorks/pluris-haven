@@ -102,4 +102,43 @@ void main() {
     expect(settingsSemantics.label, contains('Sync'));
     expect(settingsSemantics.label, contains('not available yet'));
   });
+
+  testWidgets('import and restore progress announce their current status', (
+    tester,
+  ) async {
+    final summary = RestoreRehearsalSummary(
+      canRestore: false,
+      fileName: 'backup.json',
+      counts: const {},
+      checkedAt: DateTime(2026),
+      elapsed: Duration.zero,
+      error: 'The archive could not be restored safely.',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ListView(
+          children: [
+            const ImportProgressCard(
+              status: 'Importing members...',
+              isActive: true,
+            ),
+            RestoreRehearsalResult(summary: summary),
+          ],
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('Import status: Importing members...'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Restore status: Restore rehearsal failed. '
+        'The archive could not be restored safely.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
