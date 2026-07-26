@@ -63,6 +63,8 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   their fixture paths were not set.
 - Hosted CI run `30185733204` passed the website, mobile, server, repository,
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
+- That hosted run predates the unpushed local commits listed here. No new
+  Android or iOS release artifact has been published for this local delta.
 - The local Flutter cache is read-only, so tests used temporary generated
   directories. No project files were changed by that workaround.
 - `SECURITY.md` now explains private reporting and calls out the remaining
