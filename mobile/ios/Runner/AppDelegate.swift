@@ -117,13 +117,14 @@ import UniformTypeIdentifiers
       readyResult(nil)
       channel.invokeMethod(
         "runTask",
-        withArguments: [
+        arguments: [
           "task": self?.backgroundTaskIdentifier ?? "",
           "inputData": [:],
-        ]
-      ) { value in
-        self?.finishBackgroundTask(task, success: value as? Bool == true)
-      }
+        ],
+        result: { value in
+          self?.finishBackgroundTask(task, success: value as? Bool == true)
+        }
+      )
     }
     task.expirationHandler = { [weak self] in
       self?.finishBackgroundTask(task, success: false)
