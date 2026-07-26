@@ -56,17 +56,17 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
   `2007`.
 - The current full Flutter run passed 146 tests. Two optional local-fixture
   tests were skipped because their fixture paths were not set in this run.
+- Hosted main CI run `30185394365` passed the website audit/check/build, all
+  mobile checks, the unsigned macOS iOS build, server checks, repository gates,
+  and CodeQL analysis. The iOS job uploaded `pluris-haven-ios-unsigned`.
 - The Flutter SDK cache used by this checkout is read-only, so the test run used
   writable temporary generated directories; that workaround did not change the
   project files.
 
 ### Still open for alpha
 
-- The hosted macOS run reached Xcode but hit a CocoaPods sandbox mismatch. The
-  project now keeps Flutter on its existing CocoaPods integration; that fix
-  needs a new hosted run before the iOS checkbox can be checked.
-- The hosted website run also needs to rerun on the dependency-floor fix. The
-  local audit, check, and build are clean.
+- The hosted iOS evidence is unsigned compilation only. Signed iOS
+  distribution remains outside this alpha.
 - TalkBack, VoiceOver, keyboard/switch access, large text, high contrast,
   reduced motion, focus order, and every route/sheet still need device notes.
 - Public server launch still needs distributed rate limits, email verification,
@@ -79,6 +79,9 @@ Android-first alpha target: `0.2.0-pre-alpha.1.dev.9+2007`.
 
 ### Recent commits
 
+- `f2b2937` — `fix(ci): skip duplicate mobile dev builds`
+- `8539289` — `fix(ios): call Flutter channel with current API`
+- `47c2eac` — `docs(release): record hosted checks and fixes`
 - `dfa6632` — `fix(website): raise audited dependency floors`
 - `123fdc4` — `fix(mobile): keep iOS on CocoaPods`
 - `aec80a0` — `test(accessibility): cover status semantics`
