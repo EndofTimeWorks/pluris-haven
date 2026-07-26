@@ -1,5 +1,10 @@
-from fastapi.testclient import TestClient
+import asyncio
+import hashlib
 
+from fastapi.testclient import TestClient
+from sqlalchemy import func, select
+
+from pluris_server.models import BackupSnapshot, User
 from tests.conftest import auth, register
 
 
@@ -95,3 +100,69 @@ def test_refresh_requests_are_rate_limited(client: TestClient) -> None:
     assert all(response.status_code == 401 for response in responses[:10])
     assert responses[-1].status_code == 429
     assert responses[-1].headers["Retry-After"].isdigit()
+
+
+def test_account_deletion_requires_password_and_removes_server_data(client: TestClient) -> None:
+    registered = register(client, "delete@example.com", "Delete User")
+    headers = auth(registered["access_token"])
+    payload = {
+        "snapshot_id": "delete-snapshot",
+        "manifest_sha256": "f" * 64,
+        "chunk_count": 1,
+        "total_bytes": 4,
+    }
+    created = client.post("/v1/backups/snapshots", headers=headers, json=payload)
+    assert created.status_code == 201, created.text
+
+    body = b"data"
+    uploaded = client.put(
+        "/v1/backups/snapshots/delete-snapshot/chunks/0",
+        headers={**headers, "X-Content-SHA256": hashlib.sha256(body).hexdigest()},
+        content=body,
+    )
+    assert uploaded.status_code == 200, uploaded.text
+
+    wrong_password = client.request(
+        "DELETE",
+        "/v1/auth/account",
+        headers=headers,
+        json={"password": "not the password"},
+    )
+    assert wrong_password.status_code == 401
+    assert client.get("/v1/auth/me", headers=headers).status_code == 200
+
+    deleted = client.request(
+        "DELETE",
+        "/v1/auth/account",
+        headers=headers,
+        json={"password": "correct horse battery staple"},
+    )
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json() == {"detail": "Account deleted"}
+    assert client.get("/v1/auth/me", headers=headers).status_code == 401
+    assert (
+        client.post(
+            "/v1/auth/refresh", json={"refresh_token": registered["refresh_token"]}
+        ).status_code
+        == 401
+    )
+    login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "delete@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Phone",
+        },
+    )
+    assert login.status_code == 401
+
+    async def assert_deleted() -> None:
+        async with client.app.state.session_factory() as session:
+            assert (
+                await session.scalar(select(User).where(User.email == "delete@example.com")) is None
+            )
+            assert await session.scalar(select(func.count(BackupSnapshot.id))) == 0
+
+    asyncio.run(assert_deleted())
+    storage_root = client.app.state.backup_object_store.root
+    assert not any(storage_root.iterdir())

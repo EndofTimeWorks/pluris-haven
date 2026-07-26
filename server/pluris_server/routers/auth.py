@@ -5,8 +5,9 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
-from pluris_server.models import DeviceSession, RefreshToken, User
+from pluris_server.models import BackupSnapshot, DeviceSession, RefreshToken, User
 from pluris_server.schemas import (
+    DeleteAccountRequest,
     LoginRequest,
     MessageResponse,
     RefreshRequest,
@@ -27,6 +28,10 @@ from pluris_server.security import (
 )
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
+
+
+def _storage_snapshot_id(user_id: str, snapshot_id: str) -> str:
+    return f"{user_id}_{snapshot_id}"
 
 
 async def _enforce_rate_limit(
@@ -135,6 +140,30 @@ async def logout(auth: CurrentAuth, db: Db) -> MessageResponse:
     )
     await db.commit()
     return MessageResponse(detail="Signed out")
+
+
+@router.delete("/account", response_model=MessageResponse)
+async def delete_account(
+    request: Request,
+    payload: DeleteAccountRequest,
+    auth: CurrentAuth,
+    db: Db,
+) -> MessageResponse:
+    await _enforce_rate_limit(request, "delete", auth.user.email)
+    if not await verify_password(payload.password, auth.user.password_hash):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    snapshots = (
+        await db.scalars(select(BackupSnapshot).where(BackupSnapshot.user_id == auth.user.id))
+    ).all()
+    request.app.state.backup_object_store.delete_snapshots(
+        snapshot_ids=[
+            _storage_snapshot_id(auth.user.id, snapshot.snapshot_id) for snapshot in snapshots
+        ]
+    )
+    await db.delete(auth.user)
+    await db.commit()
+    return MessageResponse(detail="Account deleted")
 
 
 @router.get("/me", response_model=UserView)
