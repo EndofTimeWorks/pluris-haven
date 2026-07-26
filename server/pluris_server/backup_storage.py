@@ -104,6 +104,11 @@ class FilesystemBackupObjectStore:
                 path.unlink()
         snapshot_dir.rmdir()
 
+    def delete_snapshots(self, *, snapshot_ids: list[str]) -> None:
+        """Delete a known set of snapshot directories during account removal."""
+        for snapshot_id in snapshot_ids:
+            self.delete_snapshot(snapshot_id=snapshot_id)
+
     @staticmethod
     def _validate_key(value: str, name: str) -> None:
         if not _SAFE_KEY.fullmatch(value):
