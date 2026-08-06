@@ -3,8 +3,7 @@
 ## Reporting a vulnerability
 
 Please do not put exploit details in a public issue. Send a report to
-`support@endoftime.works` with `[security]` in the subject, or use a private
-GitHub security report if that option is available for the repository.
+`security@endoftime.works` with `[security]` in the subject!
 
 Useful reports include:
 
