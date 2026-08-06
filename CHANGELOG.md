@@ -67,7 +67,7 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
   current SDK line.
 - Flutter passed 149 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
-- Hosted CI run `30185733204` passed the website, mobile, server, repository,
+- Hosted CI run `30185996637` passed the website, mobile, server, repository,
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
 - That hosted run predates the unpushed local commits listed here. No new
   Android or iOS release artifact has been published for this local delta.
