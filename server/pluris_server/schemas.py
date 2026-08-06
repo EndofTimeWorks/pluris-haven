@@ -147,6 +147,6 @@ class ServerInfo(BaseModel):
     minimum_age: int = 13
     registration_enabled: bool
     friends_enabled: bool
+    capabilities: list[str]
     federation_enabled: bool = False
     encrypted_sync_enabled: bool = False
-    capabilities: list[str]

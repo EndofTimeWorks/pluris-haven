@@ -22,6 +22,21 @@ def client(tmp_path) -> Iterator[TestClient]:
         yield test_client
 
 
+@pytest.fixture
+def client_no_friends(tmp_path) -> Iterator[TestClient]:
+    settings = Settings(
+        environment="test",
+        database_url=f"sqlite+aiosqlite:///{tmp_path / 'test.db'}",
+        jwt_secret="test-jwt-secret-that-is-long-and-unique",
+        friend_code_pepper="test-friend-code-pepper-that-is-different",
+        registration_enabled=True,
+        friends_enabled=False,
+        backup_object_dir=str(tmp_path / "backups"),
+    )
+    with TestClient(create_app(settings)) as test_client:
+        yield test_client
+
+
 def register(client: TestClient, email: str, name: str) -> dict:
     response = client.post(
         "/v1/auth/register",

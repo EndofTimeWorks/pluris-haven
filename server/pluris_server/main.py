@@ -10,7 +10,7 @@ from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
 from pluris_server.rate_limit import InMemoryRateLimiter
-from pluris_server.routers import auth, backups, friends, health
+from pluris_server.routers import auth, backups, friends, health, server_info
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -64,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(health.router)
+    app.include_router(server_info.router)
     app.include_router(auth.router)
     app.include_router(backups.router)
     app.include_router(friends.router)
