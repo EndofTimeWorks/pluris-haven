@@ -215,6 +215,10 @@ jobs:
       - run: flutter test
         working-directory: mobile
 
+      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
+        with:
+          version: 10.33.0
+
       - run: pnpm install --frozen-lockfile
         working-directory: website
 
