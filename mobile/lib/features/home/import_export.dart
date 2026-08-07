@@ -1276,10 +1276,12 @@ class ImportSetupCard extends StatelessWidget {
           if (plan.requiresToken) ...[
             const SizedBox(height: 10),
             const TextField(
+              enabled: false,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'pk;token',
-                helperText: 'Used for live import; not exported.',
+                helperText: 'Live import is not available yet. Use a file '
+                    'export instead.',
               ),
             ),
           ],

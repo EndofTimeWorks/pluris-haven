@@ -341,7 +341,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
     ),
     ImportSource.pluralKitLive => const ImportSourcePlan(
       source: ImportSource.pluralKitLive,
-      status: ImportPlanStatus.ready,
+      status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
         ImportPlanCount('members'),
