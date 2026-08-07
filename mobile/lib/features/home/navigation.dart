@@ -69,7 +69,9 @@ class SpDrawer extends StatelessWidget {
                       fallback: Theme.of(context).colorScheme.primary,
                     ),
                     avatarUrl: home?.systemAvatarUrl,
-                    label: home?.systemName ?? 'Local system',
+                    label: (home?.systemName ?? '').trim().isEmpty
+                        ? 'PH'
+                        : home!.systemName.trim().substring(0, 1),
                     semanticLabel:
                         'System avatar for ${home?.systemName ?? 'Local system'}',
                   ),

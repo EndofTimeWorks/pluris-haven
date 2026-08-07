@@ -454,7 +454,9 @@ class AccountSettingsPage extends StatelessWidget {
                   home?.systemColorHex,
                   fallback: Theme.of(context).colorScheme.primary,
                 ),
-                label: (home?.systemName ?? 'PH').trim().substring(0, 1),
+                label: (home?.systemName ?? '').trim().isEmpty
+                    ? 'PH'
+                    : home!.systemName.trim().substring(0, 1),
                 avatarUrl: home?.systemAvatarUrl,
                 semanticLabel:
                     'System avatar for ${home?.systemName ?? 'Local system'}',
