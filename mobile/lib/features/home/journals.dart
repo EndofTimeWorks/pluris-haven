@@ -256,6 +256,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   Future<void> _save() async {
     final body = _bodyController.text.trim();
     if (body.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Write something before saving.')),
+      );
       return;
     }
     final now = DateTime.now().toUtc();
