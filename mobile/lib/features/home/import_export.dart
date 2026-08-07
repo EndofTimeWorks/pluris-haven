@@ -552,9 +552,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
   }
 
-  Future<_ConflictPromptResult> _promptForConflicts(
-    String archiveJson,
-  ) async {
+  Future<_ConflictPromptResult> _promptForConflicts(String archiveJson) async {
     final decoded = jsonDecode(archiveJson);
     if (decoded is! Map<String, Object?>) {
       return const _ConflictPromptResult.resolved(ImportConflictStrategy.skip);
@@ -666,15 +664,13 @@ String _importCountPillLabel(String key, int count) {
 /// dialog and an empty conflict set both previously resolved to `null`.
 class _ConflictPromptResult {
   const _ConflictPromptResult.noConflicts()
-      : cancelled = false,
-        strategy = null;
+    : cancelled = false,
+      strategy = null;
 
-  const _ConflictPromptResult.cancelled()
-      : cancelled = true,
-        strategy = null;
+  const _ConflictPromptResult.cancelled() : cancelled = true, strategy = null;
 
   const _ConflictPromptResult.resolved(ImportConflictStrategy this.strategy)
-      : cancelled = false;
+    : cancelled = false;
 
   final bool cancelled;
   final ImportConflictStrategy? strategy;
@@ -1280,7 +1276,8 @@ class ImportSetupCard extends StatelessWidget {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'pk;token',
-                helperText: 'Live import is not available yet. Use a file '
+                helperText:
+                    'Live import is not available yet. Use a file '
                     'export instead.',
               ),
             ),
