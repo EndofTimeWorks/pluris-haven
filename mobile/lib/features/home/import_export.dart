@@ -447,11 +447,20 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       var effectiveStrategy = _strategy;
       if (effectiveStrategy == ImportConflictStrategy.prompt) {
-        final override = await _promptForConflicts(normalized.archiveJson);
-        if (override == null) {
-          // no conflicts - proceed
-        } else {
-          effectiveStrategy = override;
+        final conflictResult = await _promptForConflicts(
+          normalized.archiveJson,
+        );
+        if (conflictResult.cancelled) {
+          if (mounted) {
+            setState(() {
+              _isApplyingImport = false;
+              _importStatus = 'Import cancelled.';
+            });
+          }
+          return;
+        }
+        if (conflictResult.strategy != null) {
+          effectiveStrategy = conflictResult.strategy!;
         }
       }
 
@@ -541,11 +550,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
   }
 
-  Future<ImportConflictStrategy?> _promptForConflicts(
+  Future<_ConflictPromptResult> _promptForConflicts(
     String archiveJson,
   ) async {
     final decoded = jsonDecode(archiveJson);
-    if (decoded is! Map<String, Object?>) return ImportConflictStrategy.skip;
+    if (decoded is! Map<String, Object?>) {
+      return const _ConflictPromptResult.resolved(ImportConflictStrategy.skip);
+    }
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
@@ -593,10 +604,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     if (memberConflicts.isEmpty && groupConflicts.isEmpty) {
-      return null;
+      return const _ConflictPromptResult.noConflicts();
     }
 
-    if (!mounted) return null;
+    if (!mounted) return const _ConflictPromptResult.cancelled();
 
     final result = await showDialog<ImportConflictStrategy>(
       context: context,
@@ -608,7 +619,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
       ),
     );
 
-    return result;
+    if (result == null) {
+      // Dialog was dismissed without an explicit choice (e.g. a system back
+      // gesture) - treat this as cancelling the import, never as "no
+      // conflicts found", so an unresolved conflict can never be silently
+      // skipped.
+      return const _ConflictPromptResult.cancelled();
+    }
+    return _ConflictPromptResult.resolved(result);
   }
 
   String _countSummary(Map<String, int> counts) {
@@ -638,6 +656,26 @@ String _importCountPillLabel(String key, int count) {
     return 'preserved source collections: $count';
   }
   return '$key: $count';
+}
+
+/// Distinguishes "no conflicts were found" (proceed with the original
+/// strategy), "the user chose a strategy" (use it), and "the user cancelled"
+/// (abort the import) - these must never be conflated, since a dismissed
+/// dialog and an empty conflict set both previously resolved to `null`.
+class _ConflictPromptResult {
+  const _ConflictPromptResult.noConflicts()
+      : cancelled = false,
+        strategy = null;
+
+  const _ConflictPromptResult.cancelled()
+      : cancelled = true,
+        strategy = null;
+
+  const _ConflictPromptResult.resolved(ImportConflictStrategy this.strategy)
+      : cancelled = false;
+
+  final bool cancelled;
+  final ImportConflictStrategy? strategy;
 }
 
 String? _stringValue(Object? value) {
