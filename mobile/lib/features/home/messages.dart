@@ -381,6 +381,9 @@ class _MessageSheetState extends State<MessageSheet> {
 
   Future<void> _save() async {
     if (_boardKind == 'member' && _boardMemberId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a member board first.')),
+      );
       return;
     }
     final draft = MessageDraft(
