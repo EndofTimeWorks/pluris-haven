@@ -466,83 +466,91 @@ void main() {
     await database.customSelect('SELECT 1').getSingle();
 
     // v8: displayNameHash / frameShape / lexoRank on members.
-    await database.customSelect(
-      'SELECT display_name_hash, frame_shape, lexo_rank FROM members LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT display_name_hash, frame_shape, lexo_rank FROM members LIMIT 0',
+        )
+        .get();
 
     // v7: custom_field_definitions table.
-    await database.customSelect(
-      'SELECT id, name, field_type FROM custom_field_definitions LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT id, name, field_type FROM custom_field_definitions LIMIT 0',
+        )
+        .get();
 
     // v6: polls / poll_options / poll_votes tables.
-    await database.customSelect(
-      'SELECT id, question FROM polls LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, poll_id, body FROM poll_options LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT poll_id, option_id FROM poll_votes LIMIT 0',
-    ).get();
+    await database.customSelect('SELECT id, question FROM polls LIMIT 0').get();
+    await database
+        .customSelect('SELECT id, poll_id, body FROM poll_options LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT poll_id, option_id FROM poll_votes LIMIT 0')
+        .get();
 
     // v17: profile_encryption_version on members.
-    await database.customSelect(
-      'SELECT profile_encryption_version FROM members LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT profile_encryption_version FROM members LIMIT 0')
+        .get();
 
     // v16: chat_categories / chat_channels tables + messages.channel_id.
-    await database.customSelect(
-      'SELECT id, name FROM chat_categories LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, category_id, name FROM chat_channels LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT channel_id FROM messages LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT id, name FROM chat_categories LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT id, category_id, name FROM chat_channels LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT channel_id FROM messages LIMIT 0')
+        .get();
 
     // v15: privacy_buckets / privacy_bucket_members tables.
-    await database.customSelect(
-      'SELECT id, name FROM privacy_buckets LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT bucket_id, member_id FROM privacy_bucket_members LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT id, name FROM privacy_buckets LIMIT 0')
+        .get();
+    await database
+        .customSelect(
+          'SELECT bucket_id, member_id FROM privacy_bucket_members LIMIT 0',
+        )
+        .get();
 
     // v14: color_hex / avatar_url / description on plural_systems.
-    await database.customSelect(
-      'SELECT color_hex, avatar_url, description FROM plural_systems LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT color_hex, avatar_url, description FROM plural_systems LIMIT 0',
+        )
+        .get();
 
     // v13: is_subsystem on system_groups.
-    await database.customSelect(
-      'SELECT is_subsystem FROM system_groups LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT is_subsystem FROM system_groups LIMIT 0')
+        .get();
 
     // v12: group_members table.
-    await database.customSelect(
-      'SELECT group_id, member_id FROM group_members LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT group_id, member_id FROM group_members LIMIT 0')
+        .get();
 
     // v11: birthday / emoji / privacy on members.
-    await database.customSelect(
-      'SELECT birthday, emoji, privacy FROM members LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT birthday, emoji, privacy FROM members LIMIT 0')
+        .get();
 
     // v10: status_note on front_sessions.
-    await database.customSelect(
-      'SELECT status_note FROM front_sessions LIMIT 0',
-    ).get();
+    await database
+        .customSelect('SELECT status_note FROM front_sessions LIMIT 0')
+        .get();
 
     // v9: color_hex / avatar_url / description on named_fronts.
-    await database.customSelect(
-      'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
+        )
+        .get();
 
-    final version = await database.customSelect(
-      'PRAGMA user_version',
-    ).getSingle();
+    final version = await database
+        .customSelect('PRAGMA user_version')
+        .getSingle();
     expect(version.data['user_version'], 17);
   });
 
@@ -557,54 +565,64 @@ void main() {
     await database.customSelect('SELECT 1').getSingle();
 
     // v9-v17 columns/tables should all be present.
-    await database.customSelect(
-      'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT status_note FROM front_sessions LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT birthday, emoji, privacy FROM members LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT group_id, member_id FROM group_members LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT is_subsystem FROM system_groups LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT color_hex, avatar_url, description FROM plural_systems LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, name FROM privacy_buckets LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT bucket_id, member_id FROM privacy_bucket_members LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, name FROM chat_categories LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, category_id, name FROM chat_channels LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT channel_id FROM messages LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT profile_encryption_version FROM members LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
+        )
+        .get();
+    await database
+        .customSelect('SELECT status_note FROM front_sessions LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT birthday, emoji, privacy FROM members LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT group_id, member_id FROM group_members LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT is_subsystem FROM system_groups LIMIT 0')
+        .get();
+    await database
+        .customSelect(
+          'SELECT color_hex, avatar_url, description FROM plural_systems LIMIT 0',
+        )
+        .get();
+    await database
+        .customSelect('SELECT id, name FROM privacy_buckets LIMIT 0')
+        .get();
+    await database
+        .customSelect(
+          'SELECT bucket_id, member_id FROM privacy_bucket_members LIMIT 0',
+        )
+        .get();
+    await database
+        .customSelect('SELECT id, name FROM chat_categories LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT id, category_id, name FROM chat_channels LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT channel_id FROM messages LIMIT 0')
+        .get();
+    await database
+        .customSelect('SELECT profile_encryption_version FROM members LIMIT 0')
+        .get();
 
     // v8 columns should still be intact (untouched by the remaining steps).
-    await database.customSelect(
-      'SELECT display_name_hash, frame_shape, lexo_rank FROM members LIMIT 0',
-    ).get();
-    await database.customSelect(
-      'SELECT id, name, field_type FROM custom_field_definitions LIMIT 0',
-    ).get();
+    await database
+        .customSelect(
+          'SELECT display_name_hash, frame_shape, lexo_rank FROM members LIMIT 0',
+        )
+        .get();
+    await database
+        .customSelect(
+          'SELECT id, name, field_type FROM custom_field_definitions LIMIT 0',
+        )
+        .get();
 
-    final version = await database.customSelect(
-      'PRAGMA user_version',
-    ).getSingle();
+    final version = await database
+        .customSelect('PRAGMA user_version')
+        .getSingle();
     expect(version.data['user_version'], 17);
   });
 
@@ -630,11 +648,13 @@ void main() {
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
 
-    final member = await database.customSelect(
-      'SELECT display_name, frame_shape, lexo_rank, is_custom_front, '
-      'profile_encryption_version FROM members WHERE id = ?',
-      variables: [Variable('mem-1')],
-    ).getSingle();
+    final member = await database
+        .customSelect(
+          'SELECT display_name, frame_shape, lexo_rank, is_custom_front, '
+          'profile_encryption_version FROM members WHERE id = ?',
+          variables: [Variable('mem-1')],
+        )
+        .getSingle();
 
     expect(member.data['display_name'], 'River');
     // frame_shape / lexo_rank were added via addColumn with withDefault(...),

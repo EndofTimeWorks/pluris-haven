@@ -538,11 +538,7 @@ class AppDatabase extends _$AppDatabase {
         // Messages: two-board model + reply chain + soft delete.
         await _addColumnIfMissing(migrator, messages, messages.boardKind);
         await _addColumnIfMissing(migrator, messages, messages.boardMemberId);
-        await _addColumnIfMissing(
-          migrator,
-          messages,
-          messages.parentMessageId,
-        );
+        await _addColumnIfMissing(migrator, messages, messages.parentMessageId);
         await _addColumnIfMissing(migrator, messages, messages.deletedAt);
         // Reminders: structured scheduling columns (alongside existing scheduleText).
         await _addColumnIfMissing(migrator, reminders, reminders.triggerType);
@@ -551,16 +547,8 @@ class AppDatabase extends _$AppDatabase {
           reminders,
           reminders.triggerMemberId,
         );
-        await _addColumnIfMissing(
-          migrator,
-          reminders,
-          reminders.triggerEvent,
-        );
-        await _addColumnIfMissing(
-          migrator,
-          reminders,
-          reminders.delaySeconds,
-        );
+        await _addColumnIfMissing(migrator, reminders, reminders.triggerEvent);
+        await _addColumnIfMissing(migrator, reminders, reminders.delaySeconds);
         await _addColumnIfMissing(migrator, reminders, reminders.scheduleKind);
         await _addColumnIfMissing(migrator, reminders, reminders.scheduleTime);
         await _addColumnIfMissing(
@@ -569,11 +557,7 @@ class AppDatabase extends _$AppDatabase {
           reminders.scheduleDowMask,
         );
         await _addColumnIfMissing(migrator, reminders, reminders.scheduleDom);
-        await _addColumnIfMissing(
-          migrator,
-          reminders,
-          reminders.lastFiredAt,
-        );
+        await _addColumnIfMissing(migrator, reminders, reminders.lastFiredAt);
         // Polls: restrict-to-fronters + deadline + retention.
         await _addColumnIfMissing(
           migrator,
@@ -595,11 +579,7 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 9) {
         await _addColumnIfMissing(migrator, namedFronts, namedFronts.colorHex);
-        await _addColumnIfMissing(
-          migrator,
-          namedFronts,
-          namedFronts.avatarUrl,
-        );
+        await _addColumnIfMissing(migrator, namedFronts, namedFronts.avatarUrl);
         await _addColumnIfMissing(
           migrator,
           namedFronts,
