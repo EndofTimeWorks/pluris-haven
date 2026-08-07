@@ -1,10 +1,17 @@
-Pluris Haven Source-Available Noncommercial License v0.1
+Pluris Haven Source-Available Noncommercial Licence v0.2
 
 Copyright (c) 2026 EndofTimeWorks
 
-This license applies to Pluris Haven and all source code, documentation,
+This licence applies to Pluris Haven and all source code, documentation,
 assets, build files, and other materials in this repository unless a file
 clearly says otherwise.
+
+Sections 9-13 of this licence adapt clauses from the PolyForm Noncommercial
+License 1.0.0 (https://polyformproject.org/licenses/noncommercial/1.0.0),
+copyright PolyForm Project, used and adapted under its terms of reuse. Where
+this licence and the plain-language sections below differ from PolyForm's
+generic noncommercial permission, the specific terms in this document control
+for this repository.
 
 1. Noncommercial permission
 
@@ -15,7 +22,7 @@ private group.
 
 You may distribute modified versions for noncommercial purposes only if you:
 
-- keep this license with the distribution;
+- keep this licence with the distribution;
 - keep copyright notices intact;
 - give clear credit to "Pluris Haven" and "EndofTimeWorks";
 - state that you changed the software, if you changed it; and
@@ -23,7 +30,7 @@ You may distribute modified versions for noncommercial purposes only if you:
 
 2. Commercial use is not granted
 
-This license does not allow commercial use.
+This licence does not allow commercial use.
 
 Commercial use includes, without limitation:
 
@@ -32,12 +39,21 @@ Commercial use includes, without limitation:
 - using the software in a paid product, paid service, or paid bundle;
 - distributing the software through a commercial marketplace for money;
 - using the software to provide paid support, managed hosting, or consulting;
-- monetizing the software through advertising, sponsorships, subscriptions,
-  in-app purchases, or other revenue tied to the software.
+- monetising the software through advertising, sponsorships, subscriptions,
+  in-app purchases, or other revenue tied to the software;
+- hosting the software for others, for any compensation, including
+  compensation framed as cost-recovery beyond actual, itemised, transparently
+  documented shared infrastructure costs.
 
-Commercial use requires a separate written commercial license from
-EndofTimeWorks. Commercial licenses may include revenue-sharing or other payment
-terms. No commercial rights are granted until both sides agree in writing.
+A community server may recover its own actual, itemised hosting costs from
+its own users without that alone being commercial use, provided it does not
+generate surplus, does not pay anyone for their time, and publishes an
+itemised accounting of costs on request.
+
+Commercial use requires a separate written commercial licence from
+EndofTimeWorks. Commercial licences may include revenue-sharing or other
+payment terms. No commercial rights are granted until both sides agree in
+writing.
 
 3. Attribution
 
@@ -52,7 +68,7 @@ metadata, or source notice.
 
 4. Trademarks and names
 
-This license does not grant trademark rights. Do not use the names "Pluris
+This licence does not grant trademark rights. Do not use the names "Pluris
 Haven" or "EndofTimeWorks" in a way that suggests endorsement, official status,
 or ownership of your modified version unless EndofTimeWorks gives written
 permission.
@@ -60,14 +76,14 @@ permission.
 5. Contributions
 
 Unless otherwise agreed in writing, contributions submitted to this repository
-are licensed under this same license. By submitting a contribution, you confirm
-that you have the right to license it this way.
+are licensed under this same licence. By submitting a contribution, you confirm
+that you have the right to licence it this way.
 
 6. Third-party components
 
-Third-party dependencies, SDKs, fonts, icons, and tools keep their own licenses.
-This license only covers the parts of this repository that EndofTimeWorks owns
-or has the right to license.
+Third-party dependencies, SDKs, fonts, icons, and tools keep their own
+licences. This licence only covers the parts of this repository that
+EndofTimeWorks owns or has the right to licence.
 
 7. No warranty
 
@@ -81,3 +97,68 @@ NONINFRINGEMENT. USE IT AT YOUR OWN RISK.
 TO THE MAXIMUM EXTENT PERMITTED BY LAW, ENDOFTIMEWORKS AND CONTRIBUTORS WILL
 NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE
 SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE.
+
+9. Patent licence
+
+EndofTimeWorks grants you a patent licence for the software, covering any
+patent claims EndofTimeWorks can licence, or becomes able to licence, that you
+would otherwise infringe by using the software for a permitted purpose under
+this licence.
+
+10. Patent defence
+
+If you make a written claim that the software infringes or contributes to
+infringement of any patent, your patent licence under this licence ends
+immediately. If your employer or organisation makes such a claim, your patent
+licence ends immediately for any work on behalf of that employer or
+organisation.
+
+11. Fair use
+
+You may have rights to use the software under applicable copyright exceptions
+and limitations, such as fair use. This licence does not reduce or limit those
+rights.
+
+12. Violations and termination
+
+If EndofTimeWorks notifies you in writing that you have violated this licence,
+your licences continue only if you come into full compliance and take
+practical steps to correct past violations within 32 days of that notice.
+Otherwise, all your licences under this document end immediately. A second
+notice for the same or a related violation ends your licences immediately,
+without a further cure period.
+
+13. Definitions
+
+The "licensor" is EndofTimeWorks. The "software" is the software EndofTimeWorks
+makes available under this licence.
+
+"You" refers to the individual or entity agreeing to this licence.
+
+"Your organisation" is any legal entity, sole proprietorship, or other
+organisation you work for or act on behalf of, plus any entity that controls,
+is controlled by, or is under common control with that organisation. "Control"
+means ownership of substantially all of an entity's assets, or the power to
+direct its management and policies, whether by vote, contract, or otherwise.
+
+"Use" means anything you do with the software that requires a licence under
+this document.
+
+14. No other rights
+
+This licence does not let you sub-license or transfer your rights under it to
+anyone else, and does not stop EndofTimeWorks from licensing the software to
+others on different terms. This licence does not imply any rights beyond what
+it states.
+
+15. Severability
+
+If any part of this licence is found unenforceable, the rest of the licence
+remains in effect, and the unenforceable part is read to be as effective as
+possible while matching its original intent.
+
+16. Governing law
+
+This licence is governed by the laws of the State of Arizona, United States,
+without regard to conflict-of-law rules, except where a mandatory local law
+gives you additional rights.
