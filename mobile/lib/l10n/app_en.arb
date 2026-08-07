@@ -1,0 +1,60 @@
+{
+  "@@locale": "en",
+  "customizeTitle": "Customise",
+  "@customizeTitle": {
+    "description": "Title of the settings group for theme, accent colour, dashboard, and language."
+  },
+  "themeRowTitle": "Theme",
+  "accentColorLabel": "Accent colour",
+  "compactDashboardTitle": "Compact dashboard",
+  "compactDashboardSubtitle": "smaller shortcuts, more room",
+  "dashboardSubtitlesTitle": "Dashboard subtitles",
+  "dashboardSubtitlesSubtitle": "show counts under shortcuts",
+  "languageRowTitle": "Language",
+  "accessibilityGroupTitle": "Accessibility",
+  "reducedMotionTitle": "Reduced motion",
+  "reducedMotionSubtitle": "request simpler, slower-moving UI",
+  "frontingNotificationTitle": "Fronting notification",
+  "frontingNotificationSubtitle": "keep the current front visible in Android status",
+  "highContrastTitle": "High contrast",
+  "highContrastSubtitle": "stronger text and clearer borders",
+  "largerAppTextTitle": "Larger app text",
+  "largerAppTextSubtitle": "increase Pluris Haven text sizing",
+  "compactListsTitle": "Compact lists",
+  "compactListsSubtitle": "denser controls and repeated rows",
+  "localDefaultsTitle": "Local defaults",
+  "securityRowTitle": "Security",
+  "securityRowValue": "device storage",
+  "syncRowTitle": "Sync",
+  "syncRowValue": "off by default",
+  "currentColorLabel": "Current colour",
+  "copyHexColorTooltip": "Copy hex colour",
+  "customHexFieldLabel": "Custom hex",
+  "useCustomColorLabel": "Use custom colour",
+  "usePresetLabel": "Use {presetLabel} preset",
+  "@usePresetLabel": {
+    "placeholders": {
+      "presetLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "customAccentChipLabel": "Custom {hex}",
+  "@customAccentChipLabel": {
+    "placeholders": {
+      "hex": {
+        "type": "String"
+      }
+    }
+  },
+  "hexDigitsErrorText": "Use 6 hex digits, like #7B61FF.",
+  "chooseLanguageTitle": "Choose your language",
+  "chooseLanguageSubtitle": "Interface text stays English until translations are added.",
+  "dashboardShortcutsTitle": "Dashboard shortcuts",
+  "shortcutShownLabel": "shown on dashboard",
+  "shortcutHiddenLabel": "hidden",
+  "moveUpTooltip": "Move up",
+  "moveDownTooltip": "Move down",
+  "resetDashboardTitle": "Reset dashboard",
+  "resetDashboardValue": "restore default shortcut order"
+}

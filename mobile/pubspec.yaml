@@ -41,6 +41,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   drift: ^2.34.0
   drift_flutter: ^0.3.0
+  intl: ^0.20.2
   path_provider: ^2.1.5
   url_launcher: ^6.3.2
   flutter_local_notifications: ^22.0.1
@@ -66,6 +67,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # Keep iOS on the project's existing CocoaPods integration until the
   # dependency graph is migrated to Swift Package Manager deliberately.
