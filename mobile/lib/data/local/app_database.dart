@@ -477,6 +477,32 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 17;
 
+  // `migrator.createTable(x)` always creates `x` using its CURRENT (v17)
+  // Dart column definition - there is no per-historical-version table shape
+  // stored anywhere, and `CREATE TABLE IF NOT EXISTS` means it happily
+  // no-ops if the table is already there. That has a sharp edge: if a
+  // device jumps straight from an old version to the latest one in a single
+  // upgrade (e.g. the app wasn't opened for a long time), a table created by
+  // an early `if (from < N)` block already has every column the table has
+  // today - including ones a *later* block tries to add with
+  // `migrator.addColumn`. Without a guard, that second call fails with a
+  // "duplicate column name" SqliteException and aborts the whole migration.
+  // This helper makes `addColumn` idempotent so both single-step and
+  // multi-version-jump upgrades succeed.
+  static Future<void> _addColumnIfMissing(
+    Migrator migrator,
+    TableInfo<Table, dynamic> table,
+    GeneratedColumn column,
+  ) async {
+    final existing = await migrator.database
+        .customSelect('PRAGMA table_info(${table.actualTableName})')
+        .get();
+    final hasColumn = existing.any((row) => row.data['name'] == column.name);
+    if (!hasColumn) {
+      await migrator.addColumn(table, column);
+    }
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
@@ -500,34 +526,62 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(pollVotes);
       }
       if (from < 7) {
-        await migrator.addColumn(members, members.isCustomFront);
+        await _addColumnIfMissing(migrator, members, members.isCustomFront);
         await migrator.createTable(customFieldDefinitions);
         await migrator.createTable(customFieldValues);
       }
       if (from < 8) {
         // Members: add blind-index hash + frame shape + lexo rank for ordering.
-        await migrator.addColumn(members, members.displayNameHash);
-        await migrator.addColumn(members, members.frameShape);
-        await migrator.addColumn(members, members.lexoRank);
+        await _addColumnIfMissing(migrator, members, members.displayNameHash);
+        await _addColumnIfMissing(migrator, members, members.frameShape);
+        await _addColumnIfMissing(migrator, members, members.lexoRank);
         // Messages: two-board model + reply chain + soft delete.
-        await migrator.addColumn(messages, messages.boardKind);
-        await migrator.addColumn(messages, messages.boardMemberId);
-        await migrator.addColumn(messages, messages.parentMessageId);
-        await migrator.addColumn(messages, messages.deletedAt);
+        await _addColumnIfMissing(migrator, messages, messages.boardKind);
+        await _addColumnIfMissing(migrator, messages, messages.boardMemberId);
+        await _addColumnIfMissing(
+          migrator,
+          messages,
+          messages.parentMessageId,
+        );
+        await _addColumnIfMissing(migrator, messages, messages.deletedAt);
         // Reminders: structured scheduling columns (alongside existing scheduleText).
-        await migrator.addColumn(reminders, reminders.triggerType);
-        await migrator.addColumn(reminders, reminders.triggerMemberId);
-        await migrator.addColumn(reminders, reminders.triggerEvent);
-        await migrator.addColumn(reminders, reminders.delaySeconds);
-        await migrator.addColumn(reminders, reminders.scheduleKind);
-        await migrator.addColumn(reminders, reminders.scheduleTime);
-        await migrator.addColumn(reminders, reminders.scheduleDowMask);
-        await migrator.addColumn(reminders, reminders.scheduleDom);
-        await migrator.addColumn(reminders, reminders.lastFiredAt);
+        await _addColumnIfMissing(migrator, reminders, reminders.triggerType);
+        await _addColumnIfMissing(
+          migrator,
+          reminders,
+          reminders.triggerMemberId,
+        );
+        await _addColumnIfMissing(
+          migrator,
+          reminders,
+          reminders.triggerEvent,
+        );
+        await _addColumnIfMissing(
+          migrator,
+          reminders,
+          reminders.delaySeconds,
+        );
+        await _addColumnIfMissing(migrator, reminders, reminders.scheduleKind);
+        await _addColumnIfMissing(migrator, reminders, reminders.scheduleTime);
+        await _addColumnIfMissing(
+          migrator,
+          reminders,
+          reminders.scheduleDowMask,
+        );
+        await _addColumnIfMissing(migrator, reminders, reminders.scheduleDom);
+        await _addColumnIfMissing(
+          migrator,
+          reminders,
+          reminders.lastFiredAt,
+        );
         // Polls: restrict-to-fronters + deadline + retention.
-        await migrator.addColumn(polls, polls.restrictVotingToFronters);
-        await migrator.addColumn(polls, polls.closesAt);
-        await migrator.addColumn(polls, polls.retentionDays);
+        await _addColumnIfMissing(
+          migrator,
+          polls,
+          polls.restrictVotingToFronters,
+        );
+        await _addColumnIfMissing(migrator, polls, polls.closesAt);
+        await _addColumnIfMissing(migrator, polls, polls.retentionDays);
         // New tables.
         await migrator.createTable(tags);
         await migrator.createTable(memberTags);
@@ -540,28 +594,56 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createTable(namedFrontMembers);
       }
       if (from < 9) {
-        await migrator.addColumn(namedFronts, namedFronts.colorHex);
-        await migrator.addColumn(namedFronts, namedFronts.avatarUrl);
-        await migrator.addColumn(namedFronts, namedFronts.description);
+        await _addColumnIfMissing(migrator, namedFronts, namedFronts.colorHex);
+        await _addColumnIfMissing(
+          migrator,
+          namedFronts,
+          namedFronts.avatarUrl,
+        );
+        await _addColumnIfMissing(
+          migrator,
+          namedFronts,
+          namedFronts.description,
+        );
       }
       if (from < 10) {
-        await migrator.addColumn(frontSessions, frontSessions.statusNote);
+        await _addColumnIfMissing(
+          migrator,
+          frontSessions,
+          frontSessions.statusNote,
+        );
       }
       if (from < 11) {
-        await migrator.addColumn(members, members.birthday);
-        await migrator.addColumn(members, members.emoji);
-        await migrator.addColumn(members, members.privacy);
+        await _addColumnIfMissing(migrator, members, members.birthday);
+        await _addColumnIfMissing(migrator, members, members.emoji);
+        await _addColumnIfMissing(migrator, members, members.privacy);
       }
       if (from < 12) {
         await migrator.createTable(groupMembers);
       }
       if (from < 13) {
-        await migrator.addColumn(systemGroups, systemGroups.isSubsystem);
+        await _addColumnIfMissing(
+          migrator,
+          systemGroups,
+          systemGroups.isSubsystem,
+        );
       }
       if (from < 14) {
-        await migrator.addColumn(pluralSystems, pluralSystems.colorHex);
-        await migrator.addColumn(pluralSystems, pluralSystems.avatarUrl);
-        await migrator.addColumn(pluralSystems, pluralSystems.description);
+        await _addColumnIfMissing(
+          migrator,
+          pluralSystems,
+          pluralSystems.colorHex,
+        );
+        await _addColumnIfMissing(
+          migrator,
+          pluralSystems,
+          pluralSystems.avatarUrl,
+        );
+        await _addColumnIfMissing(
+          migrator,
+          pluralSystems,
+          pluralSystems.description,
+        );
       }
       if (from < 15) {
         await migrator.createTable(privacyBuckets);
@@ -570,10 +652,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 16) {
         await migrator.createTable(chatCategories);
         await migrator.createTable(chatChannels);
-        await migrator.addColumn(messages, messages.channelId);
+        await _addColumnIfMissing(migrator, messages, messages.channelId);
       }
       if (from < 17) {
-        await migrator.addColumn(members, members.profileEncryptionVersion);
+        await _addColumnIfMissing(
+          migrator,
+          members,
+          members.profileEncryptionVersion,
+        );
       }
     },
     beforeOpen: (details) async {
