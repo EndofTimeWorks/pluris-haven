@@ -149,6 +149,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _importStatus = 'Reading ${file.name}...';
     });
     final bytes = await _pickedFileBytes(file);
+    if (!mounted) return;
     final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
     _setImportText(
       displayName: decoded?.displayName ?? file.name,
@@ -199,6 +200,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _importStatus = 'Reading avatars from ${file.name}...';
     });
     final bytes = await _pickedFileBytes(file);
+    if (!mounted) return;
     final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
     final avatars = decoded?.avatarAssets ?? const <ImportAvatarAsset>[];
     if (avatars.isEmpty) {

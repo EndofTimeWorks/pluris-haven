@@ -497,7 +497,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
     );
-    if (time == null) return;
+    if (time == null || !mounted) return;
     final value = DateTime(
       date.year,
       date.month,
