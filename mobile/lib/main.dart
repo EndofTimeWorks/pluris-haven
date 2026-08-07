@@ -9,6 +9,7 @@ import 'data/notifications/notification_service.dart';
 import 'data/security/master_key_store.dart';
 import 'debug/debug_log.dart';
 import 'features/home/home_page.dart';
+import 'l10n/app_localizations_fallback.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ class PlurisHavenApp extends StatelessWidget {
           locale: _locale(customization.languageCode),
           supportedLocales: supportedLanguageLocales,
           localizationsDelegates: const [
+            FallbackAppLocalizationsDelegate(),
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
