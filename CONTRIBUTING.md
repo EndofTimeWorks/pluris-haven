@@ -42,3 +42,7 @@ handoff material out of commits.
 Keep commit timestamps, authorship, and history truthful. Do not rewrite old
 commits to make new work look older. If code comes from a generator or another
 tool, read it, test it, and make sure the commit explains the behavior it adds.
+
+## Translations
+
+See [TRANSLATING.md](TRANSLATING.md) if you want to add or fix a language.
