@@ -12,20 +12,21 @@ class AppOptionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
         SpSettingsGroup(
-          title: 'Customize',
+          title: l10n.customizeTitle,
           rows: [
             SpSettingsRow(
-              'Theme',
+              l10n.themeRowTitle,
               customization.themeMode.label,
               onTap: () => repository.setThemeMode(
                 _nextThemeMode(customization.themeMode),
               ),
             ),
             SpSettingsRow(
-              'Accent color',
+              l10n.accentColorLabel,
               customization.accentLabel,
               trailing: AccentSwatch(
                 color: Color(customization.effectiveAccentArgb),
@@ -37,19 +38,19 @@ class AppOptionsPage extends StatelessWidget {
               ),
             ),
             SpSwitchRow(
-              title: 'Compact dashboard',
-              subtitle: 'smaller shortcuts, more room',
+              title: l10n.compactDashboardTitle,
+              subtitle: l10n.compactDashboardSubtitle,
               value: customization.compactDashboard,
               onChanged: repository.setCompactDashboard,
             ),
             SpSwitchRow(
-              title: 'Dashboard subtitles',
-              subtitle: 'show counts under shortcuts',
+              title: l10n.dashboardSubtitlesTitle,
+              subtitle: l10n.dashboardSubtitlesSubtitle,
               value: customization.showDashboardSubtitles,
               onChanged: repository.setShowDashboardSubtitles,
             ),
             SpSettingsRow(
-              'Language',
+              l10n.languageRowTitle,
               customization.language.label,
               key: const ValueKey('language-setting-row'),
               onTap: () => showLanguagePicker(
@@ -62,17 +63,17 @@ class AppOptionsPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Accessibility',
+          title: l10n.accessibilityGroupTitle,
           rows: [
             SpSwitchRow(
-              title: 'Reduced motion',
-              subtitle: 'request simpler, slower-moving UI',
+              title: l10n.reducedMotionTitle,
+              subtitle: l10n.reducedMotionSubtitle,
               value: customization.reducedMotion,
               onChanged: repository.setReducedMotion,
             ),
             SpSwitchRow(
-              title: 'Fronting notification',
-              subtitle: 'keep the current front visible in Android status',
+              title: l10n.frontingNotificationTitle,
+              subtitle: l10n.frontingNotificationSubtitle,
               value: customization.frontStatusNotification,
               onChanged: (enabled) async {
                 await repository.setFrontStatusNotification(enabled);
@@ -83,20 +84,20 @@ class AppOptionsPage extends StatelessWidget {
               },
             ),
             SpSwitchRow(
-              title: 'High contrast',
-              subtitle: 'stronger text and clearer borders',
+              title: l10n.highContrastTitle,
+              subtitle: l10n.highContrastSubtitle,
               value: customization.highContrast,
               onChanged: repository.setHighContrast,
             ),
             SpSwitchRow(
-              title: 'Larger app text',
-              subtitle: 'increase Pluris Haven text sizing',
+              title: l10n.largerAppTextTitle,
+              subtitle: l10n.largerAppTextSubtitle,
               value: customization.largeText,
               onChanged: repository.setLargeText,
             ),
             SpSwitchRow(
-              title: 'Compact lists',
-              subtitle: 'denser controls and repeated rows',
+              title: l10n.compactListsTitle,
+              subtitle: l10n.compactListsSubtitle,
               value: customization.compactLists,
               onChanged: repository.setCompactLists,
             ),
@@ -108,11 +109,11 @@ class AppOptionsPage extends StatelessWidget {
           repository: repository,
         ),
         const SizedBox(height: 12),
-        const SpSettingsGroup(
-          title: 'Local defaults',
+        SpSettingsGroup(
+          title: l10n.localDefaultsTitle,
           rows: [
-            SpSettingsRow('Security', 'device storage'),
-            SpSettingsRow('Sync', 'off by default'),
+            SpSettingsRow(l10n.securityRowTitle, l10n.securityRowValue),
+            SpSettingsRow(l10n.syncRowTitle, l10n.syncRowValue),
           ],
         ),
       ],
@@ -177,6 +178,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -189,9 +191,9 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Accent color',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.accentColorLabel,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -215,7 +217,9 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                 if (widget.customization.customAccentHex != null)
                   ChoiceChip(
                     label: Text(
-                      'Custom ${widget.customization.customAccentHex!.toUpperCase()}',
+                      l10n.customAccentChipLabel(
+                        widget.customization.customAccentHex!.toUpperCase(),
+                      ),
                     ),
                     selected: true,
                     avatar: AccentSwatch(
@@ -238,9 +242,9 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Current color',
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                        Text(
+                          l10n.currentColorLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 3),
                         SelectableText(
@@ -253,7 +257,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                   ),
                   IconButton(
                     key: const ValueKey('copy-accent-hex-button'),
-                    tooltip: 'Copy hex color',
+                    tooltip: l10n.copyHexColorTooltip,
                     onPressed: () =>
                         Clipboard.setData(ClipboardData(text: _currentHex)),
                     icon: const Icon(Icons.copy_rounded),
@@ -266,7 +270,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
               key: const ValueKey('custom-accent-hex-field'),
               controller: _controller,
               decoration: InputDecoration(
-                labelText: 'Custom hex',
+                labelText: l10n.customHexFieldLabel,
                 hintText: '#7B61FF',
                 errorText: _error,
               ),
@@ -276,7 +280,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
               key: const ValueKey('save-custom-accent-button'),
               onPressed: _save,
               icon: const Icon(Icons.palette_rounded),
-              label: const Text('Use custom color'),
+              label: Text(l10n.useCustomColorLabel),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -286,7 +290,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                   : _clearCustom,
               icon: const Icon(Icons.restart_alt_rounded),
               label: Text(
-                'Use ${widget.customization.accentColor.label} preset',
+                l10n.usePresetLabel(widget.customization.accentColor.label),
               ),
             ),
           ],
@@ -304,7 +308,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
     final text = _controller.text.trim();
     final normalized = _normalizeUiHexColor(text);
     if (normalized == null) {
-      setState(() => _error = 'Use 6 hex digits, like #7B61FF.');
+      setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
       return;
     }
     await widget.repository.setCustomAccentColor(normalized);
@@ -355,18 +359,19 @@ class LanguagePickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         children: [
-          const Text(
-            'Choose your language',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            l10n.chooseLanguageTitle,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Interface text stays English until translations are added.',
-            style: TextStyle(color: _spMuted, height: 1.35),
+          Text(
+            l10n.chooseLanguageSubtitle,
+            style: const TextStyle(color: _spMuted, height: 1.35),
           ),
           const SizedBox(height: 14),
           for (final language in supportedLanguages)
@@ -466,7 +471,10 @@ class DashboardShortcutManager extends StatelessWidget {
       DashboardResetRow(onReset: repository.resetDashboardShortcuts),
     ];
 
-    return SpSettingsGroup(title: 'Dashboard shortcuts', rows: rows);
+    return SpSettingsGroup(
+      title: AppLocalizations.of(context).dashboardShortcutsTitle,
+      rows: rows,
+    );
   }
 
   List<DashboardShortcutDefinition> _orderedShortcutDefinitions(
@@ -503,6 +511,7 @@ class DashboardShortcutRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
       child: Row(
@@ -525,7 +534,7 @@ class DashboardShortcutRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  visible ? 'shown on dashboard' : 'hidden',
+                  visible ? l10n.shortcutShownLabel : l10n.shortcutHiddenLabel,
                   style: const TextStyle(color: _spMuted, fontSize: 13),
                 ),
               ],
@@ -533,13 +542,13 @@ class DashboardShortcutRow extends StatelessWidget {
           ),
           IconButton(
             key: ValueKey('shortcut-up-${shortcut.id}'),
-            tooltip: 'Move up',
+            tooltip: l10n.moveUpTooltip,
             onPressed: visible && canMoveUp ? onMoveUp : null,
             icon: const Icon(Icons.keyboard_arrow_up_rounded),
           ),
           IconButton(
             key: ValueKey('shortcut-down-${shortcut.id}'),
-            tooltip: 'Move down',
+            tooltip: l10n.moveDownTooltip,
             onPressed: visible && canMoveDown ? onMoveDown : null,
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),
@@ -566,9 +575,10 @@ class DashboardResetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpSettingsRow(
-      'Reset dashboard',
-      'restore default shortcut order',
+      l10n.resetDashboardTitle,
+      l10n.resetDashboardValue,
       trailing: const Icon(Icons.restart_alt_rounded, color: _spMuted),
       onTap: onReset,
     );

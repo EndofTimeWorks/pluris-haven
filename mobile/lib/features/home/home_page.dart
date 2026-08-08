@@ -20,6 +20,7 @@ import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
 import '../../data/security/archive_encryption.dart';
 import '../../debug/debug_log.dart';
+import '../../l10n/app_localizations.dart';
 import '../../platform/native_file_dialog.dart';
 
 part 'dashboard.dart';
