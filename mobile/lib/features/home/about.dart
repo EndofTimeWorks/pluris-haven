@@ -5,37 +5,38 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
-        const SpCard(
+        SpCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Pluris Haven',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Offline-first plural system tracker.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.appTagline,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'About',
+          title: l10n.aboutGroupTitle,
           rows: [
-            SpSettingsRow('Storage', 'saved on device'),
+            SpSettingsRow(l10n.storageLabel, l10n.storageValue),
             SpSettingsRow(
-              'Compatibility',
+              l10n.compatibilityLabel,
               'Simply Plural and PluralKit',
-              trailing: SizedBox.shrink(),
+              trailing: const SizedBox.shrink(),
               interactive: false,
             ),
             SpSettingsRow(
-              'Source',
+              l10n.sourceLabel,
               'github.com/EndofTimeWorks/pluris-haven',
               onTap: () => launchExternalUrl(
                 context,
@@ -44,9 +45,9 @@ class AboutPage extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Optional support',
+          title: l10n.optionalSupportTitle,
           rows: [
             SpSettingsRow(
               'GitHub Sponsors',
@@ -84,7 +85,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   IconButton(
                     key: const ValueKey('copy-monero-address-button'),
-                    tooltip: 'Copy Monero address',
+                    tooltip: l10n.copyMoneroTooltip,
                     onPressed: () => _copyMoneroAddress(context),
                     icon: const Icon(Icons.copy_rounded),
                   ),
@@ -107,19 +108,19 @@ const _moneroAddress =
     '85xURN4NDUbULxsVcVMA8EQSLDonAYvuc945g1sQckZvXXeTXg9dLnB7tHmNqKEUFzGEkquDqCTuHS1Ca9yPCjXcNXrTvvZ';
 
 void _copyMoneroAddress(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
   Clipboard.setData(const ClipboardData(text: _moneroAddress));
-  messenger.showSnackBar(
-    const SnackBar(content: Text('Monero address copied')),
-  );
+  messenger.showSnackBar(SnackBar(content: Text(l10n.moneroAddressCopied)));
 }
 
 Future<void> launchExternalUrl(BuildContext context, Uri url) async {
   final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
   if (!launched && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Could not open $url')));
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.couldNotOpenUrl(url.toString()))),
+    );
   }
 }
 
@@ -129,6 +130,7 @@ Future<void> confirmDelete(
   required String body,
   required Future<void> Function() onDelete,
 }) async {
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -138,11 +140,11 @@ Future<void> confirmDelete(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButtonLabel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Delete'),
+          child: Text(l10n.deleteButtonLabel),
         ),
       ],
     ),

@@ -133,6 +133,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetDashboardValue => 'restore default shortcut order';
+
+  @override
+  String get syncOffTitle => 'Sync is off';
+
+  @override
+  String get localStatusPill => 'local';
+
+  @override
+  String get syncOffDescription =>
+      'Pluris Haven keeps data on this device unless sync is turned on.';
+
+  @override
+  String get encryptedSyncLabel => 'Encrypted sync';
+
+  @override
+  String get encryptedSyncValue => 'not configured';
+
+  @override
+  String get friendsLabel => 'Friends';
+
+  @override
+  String get friendsValue => 'not shared';
+
+  @override
+  String get backupsLabel => 'Backups';
+
+  @override
+  String get backupsValue => 'manual for now';
+
+  @override
+  String get notificationHistoryTitle => 'Notification history';
+
+  @override
+  String get noNotificationsYetTitle => 'No notifications yet';
+
+  @override
+  String get noNotificationsYetBody =>
+      'Front notifications and reminders will be recorded here.';
+
+  @override
+  String get newStatusPill => 'new';
+
+  @override
+  String get appTagline => 'Offline-first plural system tracker.';
+
+  @override
+  String get aboutGroupTitle => 'About';
+
+  @override
+  String get storageLabel => 'Storage';
+
+  @override
+  String get storageValue => 'saved on device';
+
+  @override
+  String get compatibilityLabel => 'Compatibility';
+
+  @override
+  String get sourceLabel => 'Source';
+
+  @override
+  String get optionalSupportTitle => 'Optional support';
+
+  @override
+  String get copyMoneroTooltip => 'Copy Monero address';
+
+  @override
+  String get moneroAddressCopied => 'Monero address copied';
+
+  @override
+  String couldNotOpenUrl(String url) {
+    return 'Could not open $url';
+  }
+
+  @override
+  String get cancelButtonLabel => 'Cancel';
+
+  @override
+  String get deleteButtonLabel => 'Delete';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -264,4 +343,83 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get resetDashboardValue => 'restore default shortcut order';
+
+  @override
+  String get syncOffTitle => 'Sync is off';
+
+  @override
+  String get localStatusPill => 'local';
+
+  @override
+  String get syncOffDescription =>
+      'Pluris Haven keeps data on this device unless sync is turned on.';
+
+  @override
+  String get encryptedSyncLabel => 'Encrypted sync';
+
+  @override
+  String get encryptedSyncValue => 'not configured';
+
+  @override
+  String get friendsLabel => 'Friends';
+
+  @override
+  String get friendsValue => 'not shared';
+
+  @override
+  String get backupsLabel => 'Backups';
+
+  @override
+  String get backupsValue => 'manual for now';
+
+  @override
+  String get notificationHistoryTitle => 'Notification history';
+
+  @override
+  String get noNotificationsYetTitle => 'No notifications yet';
+
+  @override
+  String get noNotificationsYetBody =>
+      'Front notifications and reminders will be recorded here.';
+
+  @override
+  String get newStatusPill => 'new';
+
+  @override
+  String get appTagline => 'Offline-first plural system tracker.';
+
+  @override
+  String get aboutGroupTitle => 'About';
+
+  @override
+  String get storageLabel => 'Storage';
+
+  @override
+  String get storageValue => 'saved on device';
+
+  @override
+  String get compatibilityLabel => 'Compatibility';
+
+  @override
+  String get sourceLabel => 'Source';
+
+  @override
+  String get optionalSupportTitle => 'Optional support';
+
+  @override
+  String get copyMoneroTooltip => 'Copy Monero address';
+
+  @override
+  String get moneroAddressCopied => 'Monero address copied';
+
+  @override
+  String couldNotOpenUrl(String url) {
+    return 'Could not open $url';
+  }
+
+  @override
+  String get cancelButtonLabel => 'Cancel';
+
+  @override
+  String get deleteButtonLabel => 'Delete';
 }
