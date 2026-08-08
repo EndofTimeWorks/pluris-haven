@@ -88,5 +88,77 @@
     }
   },
   "cancelButtonLabel": "Cancel",
-  "deleteButtonLabel": "Delete"
+  "deleteButtonLabel": "Delete",
+  "dashboardMainSectionTitle": "Main",
+  "noDashboardShortcutsTitle": "No dashboard shortcuts",
+  "noDashboardShortcutsBody": "Open Customise to add shortcuts back.",
+  "dashboardShortcutSemanticLabel": "{title} dashboard shortcut",
+  "@dashboardShortcutSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardShortcutMembersTitle": "Members",
+  "dashboardShortcutFrontHistoryTitle": "Front History",
+  "dashboardShortcutCustomFrontsTitle": "Custom Fronts",
+  "dashboardShortcutCustomFrontsSubtitle": "saved states",
+  "dashboardShortcutGroupsTitle": "Groups",
+  "dashboardShortcutNotesTitle": "Notes",
+  "dashboardShortcutJournalsTitle": "Journals",
+  "dashboardShortcutJournalsSubtitle": "long entries",
+  "dashboardShortcutImportExportTitle": "Import / Export",
+  "dashboardShortcutImportExportSubtitle": "local archive",
+  "dashboardShortcutSyncSubtitle": "off by default",
+  "dashboardShortcutCustomizeSubtitle": "layout and theme",
+  "dashboardShortcutAnalyticsTitle": "Analytics",
+  "dashboardShortcutAnalyticsSubtitle": "local stats",
+  "dashboardShortcutRemindersTitle": "Reminders",
+  "dashboardShortcutRemindersSubtitle": "0 scheduled",
+  "dashboardShortcutCustomFieldsTitle": "Custom Fields",
+  "dashboardShortcutCustomFieldsSubtitle": "profile fields",
+  "dashboardShortcutFriendsSubtitle": "sync required",
+  "dashboardShortcutChatTitle": "Chat",
+  "dashboardShortcutChatSubtitle": "offline board",
+  "dashboardShortcutPollsTitle": "Polls",
+  "dashboardShortcutPollsSubtitle": "0 active",
+  "dashboardShortcutUsefulLinksTitle": "Useful Links",
+  "dashboardShortcutUsefulLinksSubtitle": "help and links",
+  "dashboardShortcutPrivacyBucketsTitle": "Privacy Buckets",
+  "dashboardShortcutPrivacyBucketsSubtitle": "local visibility",
+  "dashboardShortcutTokensTitle": "Tokens",
+  "dashboardShortcutTokensSubtitle": "sync later",
+  "dashboardShortcutUserReportTitle": "User Report",
+  "dashboardShortcutUserReportSubtitle": "diagnostics",
+  "dashboardShortcutNotificationHistoryTitle": "Notification History",
+  "dashboardShortcutNotificationHistorySubtitle": "local log",
+  "dashboardShortcutHowtosTitle": "How-to's",
+  "dashboardShortcutHowtosSubtitle": "offline guides",
+  "dashboardShortcutAccountSettingsTitle": "Account Settings",
+  "dashboardShortcutAccountSettingsSubtitle": "local profile",
+  "frontHistoryCountSubtitle": "{count} entries",
+  "@frontHistoryCountSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCountSubtitle": "{count} groups",
+  "@groupCountSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteCountSubtitle": "{count} notes",
+  "@noteCountSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
