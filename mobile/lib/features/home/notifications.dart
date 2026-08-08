@@ -12,6 +12,7 @@ class NotificationHistoryPage extends StatelessWidget {
       initialData: const [],
       builder: (context, snapshot) {
         final events = snapshot.data ?? const <NotificationEventSummary>[];
+        final l10n = AppLocalizations.of(context);
 
         return SpPage(
           children: [
@@ -20,15 +21,14 @@ class NotificationHistoryPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Notification history',
+                    title: l10n.notificationHistoryTitle,
                     trailing: StatusPill(text: '${events.length}'),
                   ),
                   const SizedBox(height: 12),
                   if (events.isEmpty)
-                    const SpEmptyState(
-                      title: 'No notifications yet',
-                      body:
-                          'Front notifications and reminders will be recorded here.',
+                    SpEmptyState(
+                      title: l10n.noNotificationsYetTitle,
+                      body: l10n.noNotificationsYetBody,
                     )
                   else
                     for (final event in events) ...[
@@ -53,6 +53,7 @@ class NotificationEventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -78,7 +79,7 @@ class NotificationEventTile extends StatelessWidget {
               ],
             ),
           ),
-          if (event.isUnread) const StatusPill(text: 'new'),
+          if (event.isUnread) StatusPill(text: l10n.newStatusPill),
         ],
       ),
     );

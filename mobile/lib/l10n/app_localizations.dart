@@ -336,6 +336,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'restore default shortcut order'**
   String get resetDashboardValue;
+
+  /// No description provided for @syncOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is off'**
+  String get syncOffTitle;
+
+  /// No description provided for @localStatusPill.
+  ///
+  /// In en, this message translates to:
+  /// **'local'**
+  String get localStatusPill;
+
+  /// No description provided for @syncOffDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven keeps data on this device unless sync is turned on.'**
+  String get syncOffDescription;
+
+  /// No description provided for @encryptedSyncLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted sync'**
+  String get encryptedSyncLabel;
+
+  /// No description provided for @encryptedSyncValue.
+  ///
+  /// In en, this message translates to:
+  /// **'not configured'**
+  String get encryptedSyncValue;
+
+  /// No description provided for @friendsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get friendsLabel;
+
+  /// No description provided for @friendsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'not shared'**
+  String get friendsValue;
+
+  /// No description provided for @backupsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups'**
+  String get backupsLabel;
+
+  /// No description provided for @backupsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'manual for now'**
+  String get backupsValue;
+
+  /// No description provided for @notificationHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification history'**
+  String get notificationHistoryTitle;
+
+  /// No description provided for @noNotificationsYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get noNotificationsYetTitle;
+
+  /// No description provided for @noNotificationsYetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Front notifications and reminders will be recorded here.'**
+  String get noNotificationsYetBody;
+
+  /// No description provided for @newStatusPill.
+  ///
+  /// In en, this message translates to:
+  /// **'new'**
+  String get newStatusPill;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline-first plural system tracker.'**
+  String get appTagline;
+
+  /// No description provided for @aboutGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutGroupTitle;
+
+  /// No description provided for @storageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get storageLabel;
+
+  /// No description provided for @storageValue.
+  ///
+  /// In en, this message translates to:
+  /// **'saved on device'**
+  String get storageValue;
+
+  /// No description provided for @compatibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility'**
+  String get compatibilityLabel;
+
+  /// No description provided for @sourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceLabel;
+
+  /// No description provided for @optionalSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional support'**
+  String get optionalSupportTitle;
+
+  /// No description provided for @copyMoneroTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Monero address'**
+  String get copyMoneroTooltip;
+
+  /// No description provided for @moneroAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero address copied'**
+  String get moneroAddressCopied;
+
+  /// No description provided for @couldNotOpenUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open {url}'**
+  String couldNotOpenUrl(String url);
+
+  /// No description provided for @cancelButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButtonLabel;
+
+  /// No description provided for @deleteButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButtonLabel;
 }
 
 class _AppLocalizationsDelegate

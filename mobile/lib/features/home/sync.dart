@@ -5,7 +5,8 @@ class SyncPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SpPage(
+    final l10n = AppLocalizations.of(context);
+    return SpPage(
       children: [
         SpCard(
           outlined: true,
@@ -13,24 +14,24 @@ class SyncPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Sync is off',
-                trailing: StatusPill(text: 'local'),
+                title: l10n.syncOffTitle,
+                trailing: StatusPill(text: l10n.localStatusPill),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Pluris Haven keeps data on this device unless sync is turned on.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.syncOffDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Sync',
+          title: l10n.syncRowTitle,
           rows: [
-            SpSettingsRow('Encrypted sync', 'not configured'),
-            SpSettingsRow('Friends', 'not shared'),
-            SpSettingsRow('Backups', 'manual for now'),
+            SpSettingsRow(l10n.encryptedSyncLabel, l10n.encryptedSyncValue),
+            SpSettingsRow(l10n.friendsLabel, l10n.friendsValue),
+            SpSettingsRow(l10n.backupsLabel, l10n.backupsValue),
           ],
         ),
       ],
