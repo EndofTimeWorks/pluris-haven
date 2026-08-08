@@ -526,7 +526,7 @@ class DashboardShortcutRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  shortcut.title,
+                  shortcut.title(l10n),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -553,7 +553,7 @@ class DashboardShortcutRow extends StatelessWidget {
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),
           Semantics(
-            label: '${shortcut.title} dashboard shortcut',
+            label: l10n.dashboardShortcutSemanticLabel(shortcut.title(l10n)),
             toggled: visible,
             child: Switch(
               key: ValueKey('shortcut-visible-${shortcut.id}'),

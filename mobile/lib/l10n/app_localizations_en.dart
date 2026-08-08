@@ -212,6 +212,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteButtonLabel => 'Delete';
+
+  @override
+  String get dashboardMainSectionTitle => 'Main';
+
+  @override
+  String get noDashboardShortcutsTitle => 'No dashboard shortcuts';
+
+  @override
+  String get noDashboardShortcutsBody =>
+      'Open Customise to add shortcuts back.';
+
+  @override
+  String dashboardShortcutSemanticLabel(String title) {
+    return '$title dashboard shortcut';
+  }
+
+  @override
+  String get dashboardShortcutMembersTitle => 'Members';
+
+  @override
+  String get dashboardShortcutFrontHistoryTitle => 'Front History';
+
+  @override
+  String get dashboardShortcutCustomFrontsTitle => 'Custom Fronts';
+
+  @override
+  String get dashboardShortcutCustomFrontsSubtitle => 'saved states';
+
+  @override
+  String get dashboardShortcutGroupsTitle => 'Groups';
+
+  @override
+  String get dashboardShortcutNotesTitle => 'Notes';
+
+  @override
+  String get dashboardShortcutJournalsTitle => 'Journals';
+
+  @override
+  String get dashboardShortcutJournalsSubtitle => 'long entries';
+
+  @override
+  String get dashboardShortcutImportExportTitle => 'Import / Export';
+
+  @override
+  String get dashboardShortcutImportExportSubtitle => 'local archive';
+
+  @override
+  String get dashboardShortcutSyncSubtitle => 'off by default';
+
+  @override
+  String get dashboardShortcutCustomizeSubtitle => 'layout and theme';
+
+  @override
+  String get dashboardShortcutAnalyticsTitle => 'Analytics';
+
+  @override
+  String get dashboardShortcutAnalyticsSubtitle => 'local stats';
+
+  @override
+  String get dashboardShortcutRemindersTitle => 'Reminders';
+
+  @override
+  String get dashboardShortcutRemindersSubtitle => '0 scheduled';
+
+  @override
+  String get dashboardShortcutCustomFieldsTitle => 'Custom Fields';
+
+  @override
+  String get dashboardShortcutCustomFieldsSubtitle => 'profile fields';
+
+  @override
+  String get dashboardShortcutFriendsSubtitle => 'sync required';
+
+  @override
+  String get dashboardShortcutChatTitle => 'Chat';
+
+  @override
+  String get dashboardShortcutChatSubtitle => 'offline board';
+
+  @override
+  String get dashboardShortcutPollsTitle => 'Polls';
+
+  @override
+  String get dashboardShortcutPollsSubtitle => '0 active';
+
+  @override
+  String get dashboardShortcutUsefulLinksTitle => 'Useful Links';
+
+  @override
+  String get dashboardShortcutUsefulLinksSubtitle => 'help and links';
+
+  @override
+  String get dashboardShortcutPrivacyBucketsTitle => 'Privacy Buckets';
+
+  @override
+  String get dashboardShortcutPrivacyBucketsSubtitle => 'local visibility';
+
+  @override
+  String get dashboardShortcutTokensTitle => 'Tokens';
+
+  @override
+  String get dashboardShortcutTokensSubtitle => 'sync later';
+
+  @override
+  String get dashboardShortcutUserReportTitle => 'User Report';
+
+  @override
+  String get dashboardShortcutUserReportSubtitle => 'diagnostics';
+
+  @override
+  String get dashboardShortcutNotificationHistoryTitle =>
+      'Notification History';
+
+  @override
+  String get dashboardShortcutNotificationHistorySubtitle => 'local log';
+
+  @override
+  String get dashboardShortcutHowtosTitle => 'How-to\'s';
+
+  @override
+  String get dashboardShortcutHowtosSubtitle => 'offline guides';
+
+  @override
+  String get dashboardShortcutAccountSettingsTitle => 'Account Settings';
+
+  @override
+  String get dashboardShortcutAccountSettingsSubtitle => 'local profile';
+
+  @override
+  String frontHistoryCountSubtitle(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String groupCountSubtitle(int count) {
+    return '$count groups';
+  }
+
+  @override
+  String noteCountSubtitle(int count) {
+    return '$count notes';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -422,4 +564,146 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get deleteButtonLabel => 'Delete';
+
+  @override
+  String get dashboardMainSectionTitle => 'Main';
+
+  @override
+  String get noDashboardShortcutsTitle => 'No dashboard shortcuts';
+
+  @override
+  String get noDashboardShortcutsBody =>
+      'Open Customize to add shortcuts back.';
+
+  @override
+  String dashboardShortcutSemanticLabel(String title) {
+    return '$title dashboard shortcut';
+  }
+
+  @override
+  String get dashboardShortcutMembersTitle => 'Members';
+
+  @override
+  String get dashboardShortcutFrontHistoryTitle => 'Front History';
+
+  @override
+  String get dashboardShortcutCustomFrontsTitle => 'Custom Fronts';
+
+  @override
+  String get dashboardShortcutCustomFrontsSubtitle => 'saved states';
+
+  @override
+  String get dashboardShortcutGroupsTitle => 'Groups';
+
+  @override
+  String get dashboardShortcutNotesTitle => 'Notes';
+
+  @override
+  String get dashboardShortcutJournalsTitle => 'Journals';
+
+  @override
+  String get dashboardShortcutJournalsSubtitle => 'long entries';
+
+  @override
+  String get dashboardShortcutImportExportTitle => 'Import / Export';
+
+  @override
+  String get dashboardShortcutImportExportSubtitle => 'local archive';
+
+  @override
+  String get dashboardShortcutSyncSubtitle => 'off by default';
+
+  @override
+  String get dashboardShortcutCustomizeSubtitle => 'layout and theme';
+
+  @override
+  String get dashboardShortcutAnalyticsTitle => 'Analytics';
+
+  @override
+  String get dashboardShortcutAnalyticsSubtitle => 'local stats';
+
+  @override
+  String get dashboardShortcutRemindersTitle => 'Reminders';
+
+  @override
+  String get dashboardShortcutRemindersSubtitle => '0 scheduled';
+
+  @override
+  String get dashboardShortcutCustomFieldsTitle => 'Custom Fields';
+
+  @override
+  String get dashboardShortcutCustomFieldsSubtitle => 'profile fields';
+
+  @override
+  String get dashboardShortcutFriendsSubtitle => 'sync required';
+
+  @override
+  String get dashboardShortcutChatTitle => 'Chat';
+
+  @override
+  String get dashboardShortcutChatSubtitle => 'offline board';
+
+  @override
+  String get dashboardShortcutPollsTitle => 'Polls';
+
+  @override
+  String get dashboardShortcutPollsSubtitle => '0 active';
+
+  @override
+  String get dashboardShortcutUsefulLinksTitle => 'Useful Links';
+
+  @override
+  String get dashboardShortcutUsefulLinksSubtitle => 'help and links';
+
+  @override
+  String get dashboardShortcutPrivacyBucketsTitle => 'Privacy Buckets';
+
+  @override
+  String get dashboardShortcutPrivacyBucketsSubtitle => 'local visibility';
+
+  @override
+  String get dashboardShortcutTokensTitle => 'Tokens';
+
+  @override
+  String get dashboardShortcutTokensSubtitle => 'sync later';
+
+  @override
+  String get dashboardShortcutUserReportTitle => 'User Report';
+
+  @override
+  String get dashboardShortcutUserReportSubtitle => 'diagnostics';
+
+  @override
+  String get dashboardShortcutNotificationHistoryTitle =>
+      'Notification History';
+
+  @override
+  String get dashboardShortcutNotificationHistorySubtitle => 'local log';
+
+  @override
+  String get dashboardShortcutHowtosTitle => 'How-to\'s';
+
+  @override
+  String get dashboardShortcutHowtosSubtitle => 'offline guides';
+
+  @override
+  String get dashboardShortcutAccountSettingsTitle => 'Account Settings';
+
+  @override
+  String get dashboardShortcutAccountSettingsSubtitle => 'local profile';
+
+  @override
+  String frontHistoryCountSubtitle(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String groupCountSubtitle(int count) {
+    return '$count groups';
+  }
+
+  @override
+  String noteCountSubtitle(int count) {
+    return '$count notes';
+  }
 }

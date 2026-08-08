@@ -16,6 +16,7 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 24),
       children: [
@@ -23,18 +24,22 @@ class DashboardPage extends StatelessWidget {
         const SizedBox(height: 10),
         CurrentFrontEntry(snapshot: snapshot, repository: repository),
         const SizedBox(height: 18),
-        const DashboardSectionTitle('Main'),
+        DashboardSectionTitle(l10n.dashboardMainSectionTitle),
         const SizedBox(height: 8),
         DashboardActionGrid(
-          items: _dashboardItems(snapshot, customization.dashboardShortcutIds),
+          items: _dashboardItems(
+            snapshot,
+            customization.dashboardShortcutIds,
+            l10n,
+          ),
           customization: customization,
           onSelect: onSelect,
         ),
         if (customization.dashboardShortcutIds.isEmpty) ...[
           const SizedBox(height: 10),
-          const SpEmptyState(
-            title: 'No dashboard shortcuts',
-            body: 'Open Customize to add shortcuts back.',
+          SpEmptyState(
+            title: l10n.noDashboardShortcutsTitle,
+            body: l10n.noDashboardShortcutsBody,
           ),
         ],
       ],
@@ -44,168 +49,169 @@ class DashboardPage extends StatelessWidget {
   List<HomeNavigationItem> _dashboardItems(
     HomeSnapshot? home,
     List<String> ids,
+    AppLocalizations l10n,
   ) {
     final definitions = {for (final item in dashboardShortcuts) item.id: item};
 
     return [
       for (final id in ids)
-        if (definitions[id] case final definition?) definition.item(home),
+        if (definitions[id] case final definition?) definition.item(home, l10n),
     ];
   }
 }
 
-const dashboardShortcuts = [
+final dashboardShortcuts = [
   DashboardShortcutDefinition(
     id: 'members',
-    title: 'Members',
+    title: (l10n) => l10n.dashboardShortcutMembersTitle,
     section: SpSection.members,
     icon: Icons.people_alt_rounded,
     countKind: DashboardCountKind.members,
   ),
   DashboardShortcutDefinition(
     id: 'front-history',
-    title: 'Front History',
+    title: (l10n) => l10n.dashboardShortcutFrontHistoryTitle,
     section: SpSection.frontHistory,
     icon: Icons.history_rounded,
     countKind: DashboardCountKind.frontHistory,
   ),
   DashboardShortcutDefinition(
     id: 'custom-fronts',
-    title: 'Custom Fronts',
-    subtitle: 'saved states',
+    title: (l10n) => l10n.dashboardShortcutCustomFrontsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutCustomFrontsSubtitle,
     section: SpSection.customFronts,
     icon: Icons.label_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'groups',
-    title: 'Groups',
+    title: (l10n) => l10n.dashboardShortcutGroupsTitle,
     section: SpSection.groups,
     icon: Icons.folder_rounded,
     countKind: DashboardCountKind.groups,
   ),
   DashboardShortcutDefinition(
     id: 'notes',
-    title: 'Notes',
+    title: (l10n) => l10n.dashboardShortcutNotesTitle,
     section: SpSection.notes,
     icon: Icons.sticky_note_2_rounded,
     countKind: DashboardCountKind.notes,
   ),
   DashboardShortcutDefinition(
     id: 'journals',
-    title: 'Journals',
-    subtitle: 'long entries',
+    title: (l10n) => l10n.dashboardShortcutJournalsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutJournalsSubtitle,
     section: SpSection.journals,
     icon: Icons.menu_book_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'import-export',
-    title: 'Import / Export',
-    subtitle: 'local archive',
+    title: (l10n) => l10n.dashboardShortcutImportExportTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutImportExportSubtitle,
     section: SpSection.importExport,
     icon: Icons.archive_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'sync',
-    title: 'Sync',
-    subtitle: 'off by default',
+    title: (l10n) => l10n.syncRowTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutSyncSubtitle,
     section: SpSection.sync,
     icon: Icons.sync_disabled_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'customize',
-    title: 'Customize',
-    subtitle: 'layout and theme',
+    title: (l10n) => l10n.customizeTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutCustomizeSubtitle,
     section: SpSection.appOptions,
     icon: Icons.tune_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'analytics',
-    title: 'Analytics',
-    subtitle: 'local stats',
+    title: (l10n) => l10n.dashboardShortcutAnalyticsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutAnalyticsSubtitle,
     section: SpSection.analytics,
     icon: Icons.analytics_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'reminders',
-    title: 'Reminders',
-    subtitle: '0 scheduled',
+    title: (l10n) => l10n.dashboardShortcutRemindersTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutRemindersSubtitle,
     section: SpSection.reminders,
     icon: Icons.notification_add_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'custom-fields',
-    title: 'Custom Fields',
-    subtitle: 'profile fields',
+    title: (l10n) => l10n.dashboardShortcutCustomFieldsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutCustomFieldsSubtitle,
     section: SpSection.customFields,
     icon: Icons.table_rows_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'friends',
-    title: 'Friends',
-    subtitle: 'sync required',
+    title: (l10n) => l10n.friendsLabel,
+    subtitle: (l10n) => l10n.dashboardShortcutFriendsSubtitle,
     section: SpSection.friends,
     icon: Icons.people_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'chat',
-    title: 'Chat',
-    subtitle: 'offline board',
+    title: (l10n) => l10n.dashboardShortcutChatTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutChatSubtitle,
     section: SpSection.chat,
     icon: Icons.chat_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'polls',
-    title: 'Polls',
-    subtitle: '0 active',
+    title: (l10n) => l10n.dashboardShortcutPollsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutPollsSubtitle,
     section: SpSection.polls,
     icon: Icons.how_to_vote_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'useful-links',
-    title: 'Useful Links',
-    subtitle: 'help and links',
+    title: (l10n) => l10n.dashboardShortcutUsefulLinksTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutUsefulLinksSubtitle,
     section: SpSection.usefulLinks,
     icon: Icons.star_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'privacy-buckets',
-    title: 'Privacy Buckets',
-    subtitle: 'local visibility',
+    title: (l10n) => l10n.dashboardShortcutPrivacyBucketsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutPrivacyBucketsSubtitle,
     section: SpSection.privacyBuckets,
     icon: Icons.privacy_tip_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'tokens',
-    title: 'Tokens',
-    subtitle: 'sync later',
+    title: (l10n) => l10n.dashboardShortcutTokensTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutTokensSubtitle,
     section: SpSection.tokens,
     icon: Icons.verified_user_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'user-report',
-    title: 'User Report',
-    subtitle: 'diagnostics',
+    title: (l10n) => l10n.dashboardShortcutUserReportTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutUserReportSubtitle,
     section: SpSection.userReport,
     icon: Icons.picture_as_pdf_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'notification-history',
-    title: 'Notification History',
-    subtitle: 'local log',
+    title: (l10n) => l10n.dashboardShortcutNotificationHistoryTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutNotificationHistorySubtitle,
     section: SpSection.notificationHistory,
     icon: Icons.notifications_active_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'howtos',
-    title: "How-to's",
-    subtitle: 'offline guides',
+    title: (l10n) => l10n.dashboardShortcutHowtosTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutHowtosSubtitle,
     section: SpSection.howtos,
     icon: Icons.school_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'account-settings',
-    title: 'Account Settings',
-    subtitle: 'local profile',
+    title: (l10n) => l10n.dashboardShortcutAccountSettingsTitle,
+    subtitle: (l10n) => l10n.dashboardShortcutAccountSettingsSubtitle,
     section: SpSection.accountSettings,
     icon: Icons.settings_rounded,
   ),
@@ -224,24 +230,32 @@ class DashboardShortcutDefinition {
   });
 
   final String id;
-  final String title;
+  final String Function(AppLocalizations l10n) title;
   final SpSection section;
   final IconData icon;
-  final String? subtitle;
+  final String Function(AppLocalizations l10n)? subtitle;
   final DashboardCountKind? countKind;
 
-  HomeNavigationItem item(HomeSnapshot? home) {
-    return HomeNavigationItem(title, _subtitle(home), section, icon);
+  HomeNavigationItem item(HomeSnapshot? home, AppLocalizations l10n) {
+    return HomeNavigationItem(
+      title(l10n),
+      _subtitle(home, l10n),
+      section,
+      icon,
+    );
   }
 
-  String _subtitle(HomeSnapshot? home) {
+  String _subtitle(HomeSnapshot? home, AppLocalizations l10n) {
     return switch (countKind) {
       DashboardCountKind.members => '${home?.memberCount ?? 0}',
-      DashboardCountKind.frontHistory =>
-        '${home?.frontHistoryCount ?? 0} entries',
-      DashboardCountKind.groups => '${home?.groupCount ?? 0} groups',
-      DashboardCountKind.notes => '${home?.noteCount ?? 0} notes',
-      null => subtitle ?? '',
+      DashboardCountKind.frontHistory => l10n.frontHistoryCountSubtitle(
+        home?.frontHistoryCount ?? 0,
+      ),
+      DashboardCountKind.groups => l10n.groupCountSubtitle(
+        home?.groupCount ?? 0,
+      ),
+      DashboardCountKind.notes => l10n.noteCountSubtitle(home?.noteCount ?? 0),
+      null => subtitle?.call(l10n) ?? '',
     };
   }
 }

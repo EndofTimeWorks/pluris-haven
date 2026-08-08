@@ -486,6 +486,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get deleteButtonLabel;
+
+  /// No description provided for @dashboardMainSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Main'**
+  String get dashboardMainSectionTitle;
+
+  /// No description provided for @noDashboardShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No dashboard shortcuts'**
+  String get noDashboardShortcutsTitle;
+
+  /// No description provided for @noDashboardShortcutsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Customise to add shortcuts back.'**
+  String get noDashboardShortcutsBody;
+
+  /// No description provided for @dashboardShortcutSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} dashboard shortcut'**
+  String dashboardShortcutSemanticLabel(String title);
+
+  /// No description provided for @dashboardShortcutMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get dashboardShortcutMembersTitle;
+
+  /// No description provided for @dashboardShortcutFrontHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front History'**
+  String get dashboardShortcutFrontHistoryTitle;
+
+  /// No description provided for @dashboardShortcutCustomFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Fronts'**
+  String get dashboardShortcutCustomFrontsTitle;
+
+  /// No description provided for @dashboardShortcutCustomFrontsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'saved states'**
+  String get dashboardShortcutCustomFrontsSubtitle;
+
+  /// No description provided for @dashboardShortcutGroupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get dashboardShortcutGroupsTitle;
+
+  /// No description provided for @dashboardShortcutNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get dashboardShortcutNotesTitle;
+
+  /// No description provided for @dashboardShortcutJournalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Journals'**
+  String get dashboardShortcutJournalsTitle;
+
+  /// No description provided for @dashboardShortcutJournalsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'long entries'**
+  String get dashboardShortcutJournalsSubtitle;
+
+  /// No description provided for @dashboardShortcutImportExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import / Export'**
+  String get dashboardShortcutImportExportTitle;
+
+  /// No description provided for @dashboardShortcutImportExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local archive'**
+  String get dashboardShortcutImportExportSubtitle;
+
+  /// No description provided for @dashboardShortcutSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'off by default'**
+  String get dashboardShortcutSyncSubtitle;
+
+  /// No description provided for @dashboardShortcutCustomizeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'layout and theme'**
+  String get dashboardShortcutCustomizeSubtitle;
+
+  /// No description provided for @dashboardShortcutAnalyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get dashboardShortcutAnalyticsTitle;
+
+  /// No description provided for @dashboardShortcutAnalyticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local stats'**
+  String get dashboardShortcutAnalyticsSubtitle;
+
+  /// No description provided for @dashboardShortcutRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get dashboardShortcutRemindersTitle;
+
+  /// No description provided for @dashboardShortcutRemindersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'0 scheduled'**
+  String get dashboardShortcutRemindersSubtitle;
+
+  /// No description provided for @dashboardShortcutCustomFieldsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Fields'**
+  String get dashboardShortcutCustomFieldsTitle;
+
+  /// No description provided for @dashboardShortcutCustomFieldsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'profile fields'**
+  String get dashboardShortcutCustomFieldsSubtitle;
+
+  /// No description provided for @dashboardShortcutFriendsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'sync required'**
+  String get dashboardShortcutFriendsSubtitle;
+
+  /// No description provided for @dashboardShortcutChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get dashboardShortcutChatTitle;
+
+  /// No description provided for @dashboardShortcutChatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'offline board'**
+  String get dashboardShortcutChatSubtitle;
+
+  /// No description provided for @dashboardShortcutPollsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls'**
+  String get dashboardShortcutPollsTitle;
+
+  /// No description provided for @dashboardShortcutPollsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'0 active'**
+  String get dashboardShortcutPollsSubtitle;
+
+  /// No description provided for @dashboardShortcutUsefulLinksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful Links'**
+  String get dashboardShortcutUsefulLinksTitle;
+
+  /// No description provided for @dashboardShortcutUsefulLinksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'help and links'**
+  String get dashboardShortcutUsefulLinksSubtitle;
+
+  /// No description provided for @dashboardShortcutPrivacyBucketsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Buckets'**
+  String get dashboardShortcutPrivacyBucketsTitle;
+
+  /// No description provided for @dashboardShortcutPrivacyBucketsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local visibility'**
+  String get dashboardShortcutPrivacyBucketsSubtitle;
+
+  /// No description provided for @dashboardShortcutTokensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get dashboardShortcutTokensTitle;
+
+  /// No description provided for @dashboardShortcutTokensSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'sync later'**
+  String get dashboardShortcutTokensSubtitle;
+
+  /// No description provided for @dashboardShortcutUserReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Report'**
+  String get dashboardShortcutUserReportTitle;
+
+  /// No description provided for @dashboardShortcutUserReportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'diagnostics'**
+  String get dashboardShortcutUserReportSubtitle;
+
+  /// No description provided for @dashboardShortcutNotificationHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification History'**
+  String get dashboardShortcutNotificationHistoryTitle;
+
+  /// No description provided for @dashboardShortcutNotificationHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local log'**
+  String get dashboardShortcutNotificationHistorySubtitle;
+
+  /// No description provided for @dashboardShortcutHowtosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How-to\'s'**
+  String get dashboardShortcutHowtosTitle;
+
+  /// No description provided for @dashboardShortcutHowtosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'offline guides'**
+  String get dashboardShortcutHowtosSubtitle;
+
+  /// No description provided for @dashboardShortcutAccountSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get dashboardShortcutAccountSettingsTitle;
+
+  /// No description provided for @dashboardShortcutAccountSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local profile'**
+  String get dashboardShortcutAccountSettingsSubtitle;
+
+  /// No description provided for @frontHistoryCountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries'**
+  String frontHistoryCountSubtitle(int count);
+
+  /// No description provided for @groupCountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} groups'**
+  String groupCountSubtitle(int count);
+
+  /// No description provided for @noteCountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} notes'**
+  String noteCountSubtitle(int count);
 }
 
 class _AppLocalizationsDelegate
