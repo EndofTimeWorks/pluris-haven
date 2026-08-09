@@ -20,3 +20,4 @@
 **/*.g.dart
 docs/code-map.md
 local-untracked-ignored-*/
+tools/

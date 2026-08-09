@@ -4,8 +4,8 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "prepare": "husky",
-    "format": "prettier --write .github docs website package.json commitlint.config.mjs .prettierrc.json README.md CHANGELOG.md",
-    "format:check": "prettier --check .github docs website package.json commitlint.config.mjs .prettierrc.json README.md CHANGELOG.md",
+    "format": "git ls-files -z | xargs -0 prettier --write --ignore-unknown",
+    "format:check": "git ls-files -z | xargs -0 prettier --check --ignore-unknown",
     "lint:website": "pnpm --dir website check",
     "lint:server:format": "server/.venv/bin/ruff format --check server/pluris_server server/tests",
     "lint:server": "server/.venv/bin/ruff check server/pluris_server server/tests",
