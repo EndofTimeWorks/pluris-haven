@@ -25,7 +25,7 @@
   <section>
     <h2>0.2.0 pre-alpha</h2>
     <ul>
-      <li>Current dev line: <code>0.2.0-pre-alpha.1.dev.9+2007</code>.</li>
+      <li>Current release: <code>0.2.0-pre-alpha.2+2008</code>.</li>
       <li>
         Local Android app with encrypted storage, encrypted backup snapshots, and a restore
         rehearsal before archive imports.
@@ -47,6 +47,10 @@
         Dashboard, accessibility, language, and theme customization are available, with named avatar
         semantics and persisted high-contrast/reduced-motion settings.
       </li>
+      <li>
+        Versioned releases include an unsigned iOS IPA for AltStore, SideStore, or Sideloadly to
+        re-sign.
+      </li>
     </ul>
   </section>
 
@@ -63,8 +67,8 @@
         and low-mobility pass.
       </li>
       <li>
-        Mobile account/session UI, network backup upload, sync, public server launch, iOS, and store
-        distribution are not ready.
+        Public server launch, bidirectional sync, signed iOS distribution, and store distribution
+        are not ready.
       </li>
     </ul>
   </section>

@@ -9,11 +9,12 @@
     <p class="eyebrow">Android pre-alpha</p>
     <h1>Download</h1>
     <p>
-      Android is the only supported client right now. Builds are pre-alpha and may need a fresh
-      import after larger data model changes.
+      Android is the primary supported client. Versioned releases also include an unsigned iOS IPA
+      that must be re-signed before installation. Builds are pre-alpha and may need a fresh import
+      after larger data model changes.
     </p>
     <ul class="data-list">
-      <li><span>Current version</span><strong>0.2.0-pre-alpha.1.dev.6+2004</strong></li>
+      <li><span>Current version</span><strong>0.2.0-pre-alpha.2+2008</strong></li>
       <li><span>Package id</span><strong>works.endoftime.plurishaven</strong></li>
       <li><span>Release channel</span><strong>GitHub prereleases</strong></li>
     </ul>
