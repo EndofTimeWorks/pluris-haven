@@ -1,7 +1,14 @@
 part of 'home_page.dart';
 
 class SyncPage extends StatelessWidget {
-  const SyncPage({super.key});
+  const SyncPage({
+    super.key,
+    required this.repository,
+    required this.controller,
+  });
+
+  final HavenRepository repository;
+  final ServerAccountController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +41,8 @@ class SyncPage extends StatelessWidget {
             SpSettingsRow(l10n.backupsLabel, l10n.backupsValue),
           ],
         ),
+        const SizedBox(height: 12),
+        ServerBackupPanel(repository: repository, controller: controller),
       ],
     );
   }

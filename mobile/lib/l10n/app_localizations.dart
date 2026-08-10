@@ -750,6 +750,1181 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} notes'**
   String noteCountSubtitle(int count);
+
+  /// No description provided for @serverAccountsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server accounts are unavailable in this app session.'**
+  String get serverAccountsUnavailable;
+
+  /// No description provided for @optionalServerAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional server account'**
+  String get optionalServerAccountTitle;
+
+  /// No description provided for @serverConnectDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect an HTTPS server to use encrypted online backups and account features. Local use stays independent.'**
+  String get serverConnectDescription;
+
+  /// No description provided for @serverUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get serverUrlLabel;
+
+  /// No description provided for @connectServerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and connect'**
+  String get connectServerButton;
+
+  /// No description provided for @connectedServerFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected server'**
+  String get connectedServerFallback;
+
+  /// No description provided for @signInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInButton;
+
+  /// No description provided for @createAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get createAccountButton;
+
+  /// No description provided for @disconnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get disconnectButton;
+
+  /// No description provided for @accountFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountFallback;
+
+  /// No description provided for @thisDeviceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get thisDeviceLabel;
+
+  /// No description provided for @activeServerSessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active server session'**
+  String get activeServerSessionLabel;
+
+  /// No description provided for @revokeSessionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke session'**
+  String get revokeSessionTooltip;
+
+  /// No description provided for @refreshButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refreshButton;
+
+  /// No description provided for @signOutButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOutButton;
+
+  /// No description provided for @deleteServerAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete server account'**
+  String get deleteServerAccountButton;
+
+  /// No description provided for @deleteServerAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete server account?'**
+  String get deleteServerAccountTitle;
+
+  /// No description provided for @deleteServerAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.'**
+  String get deleteServerAccountBody;
+
+  /// No description provided for @currentPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPasswordLabel;
+
+  /// No description provided for @deleteAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccountButton;
+
+  /// No description provided for @createServerAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create server account'**
+  String get createServerAccountTitle;
+
+  /// No description provided for @displayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get displayNameLabel;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @invalidEmailError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get invalidEmailError;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @passwordLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 12 characters.'**
+  String get passwordLengthError;
+
+  /// No description provided for @deviceNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get deviceNameLabel;
+
+  /// No description provided for @requiredFieldError.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get requiredFieldError;
+
+  /// No description provided for @onlineBackupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Online backup is unavailable in this app session.'**
+  String get onlineBackupUnavailable;
+
+  /// No description provided for @encryptedOnlineBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted online backup'**
+  String get encryptedOnlineBackupTitle;
+
+  /// No description provided for @backupEncryptionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshots are encrypted on this device before upload.'**
+  String get backupEncryptionDescription;
+
+  /// No description provided for @backupSignInDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect and sign in from Account Settings first.'**
+  String get backupSignInDescription;
+
+  /// No description provided for @backupUploadProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup upload progress'**
+  String get backupUploadProgressLabel;
+
+  /// No description provided for @backupUploadProgressValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} chunks'**
+  String backupUploadProgressValue(int completed, int total);
+
+  /// No description provided for @createUploadSnapshotButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and upload snapshot'**
+  String get createUploadSnapshotButton;
+
+  /// No description provided for @backupSnapshotProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{uploadedChunks}/{chunkCount} chunks, {uploadedBytes}/{totalBytes} bytes'**
+  String backupSnapshotProgress(
+    int uploadedChunks,
+    int chunkCount,
+    int uploadedBytes,
+    int totalBytes,
+  );
+
+  /// No description provided for @deleteEncryptedBackupTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete encrypted backup'**
+  String get deleteEncryptedBackupTooltip;
+
+  /// No description provided for @deleteEncryptedBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete encrypted backup?'**
+  String get deleteEncryptedBackupTitle;
+
+  /// No description provided for @deleteEncryptedBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This server copy will be permanently removed.'**
+  String get deleteEncryptedBackupBody;
+
+  /// No description provided for @friendsSignInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect and sign in to a server from Account Settings first.'**
+  String get friendsSignInBody;
+
+  /// No description provided for @localDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local data'**
+  String get localDataLabel;
+
+  /// No description provided for @notSharedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'not shared'**
+  String get notSharedValue;
+
+  /// No description provided for @requestsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get requestsLabel;
+
+  /// No description provided for @offValue.
+  ///
+  /// In en, this message translates to:
+  /// **'off'**
+  String get offValue;
+
+  /// No description provided for @friendsDisabledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has friend connections disabled.'**
+  String get friendsDisabledBody;
+
+  /// No description provided for @serverDisabledValue.
+  ///
+  /// In en, this message translates to:
+  /// **'server disabled'**
+  String get serverDisabledValue;
+
+  /// No description provided for @friendCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend code'**
+  String get friendCodeTitle;
+
+  /// No description provided for @rotateFriendCodePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate to create a new code'**
+  String get rotateFriendCodePrompt;
+
+  /// No description provided for @rotateFriendCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate friend code'**
+  String get rotateFriendCodeButton;
+
+  /// No description provided for @someoneElsesCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else’s code'**
+  String get someoneElsesCodeLabel;
+
+  /// No description provided for @sendRequestButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get sendRequestButton;
+
+  /// No description provided for @pendingRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending requests'**
+  String get pendingRequestsTitle;
+
+  /// No description provided for @noPendingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending requests.'**
+  String get noPendingRequests;
+
+  /// No description provided for @acceptRequestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept request'**
+  String get acceptRequestTooltip;
+
+  /// No description provided for @declineRequestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline request'**
+  String get declineRequestTooltip;
+
+  /// No description provided for @cancelRequestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get cancelRequestTooltip;
+
+  /// No description provided for @noFriendsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet.'**
+  String get noFriendsYet;
+
+  /// No description provided for @nothingShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing shared'**
+  String get nothingShared;
+
+  /// No description provided for @permissionsShared.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} permissions shared'**
+  String permissionsShared(int count);
+
+  /// No description provided for @removeFriendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove friend?'**
+  String get removeFriendTitle;
+
+  /// No description provided for @removeFriendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The friendship and its sharing permissions will be removed.'**
+  String get removeFriendBody;
+
+  /// No description provided for @blockUserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block {displayName}?'**
+  String blockUserTitle(String displayName);
+
+  /// No description provided for @blockUserBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the friendship, pending requests, and every sharing permission in both directions.'**
+  String get blockUserBody;
+
+  /// No description provided for @sharingPermissionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing permissions'**
+  String get sharingPermissionsLabel;
+
+  /// No description provided for @removeFriendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove friend'**
+  String get removeFriendButton;
+
+  /// No description provided for @blockUserButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Block user'**
+  String get blockUserButton;
+
+  /// No description provided for @blockedUsersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked users'**
+  String get blockedUsersTitle;
+
+  /// No description provided for @noBlockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked users.'**
+  String get noBlockedUsers;
+
+  /// No description provided for @unblockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockButton;
+
+  /// No description provided for @shareWithTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with {displayName}'**
+  String shareWithTitle(String displayName);
+
+  /// No description provided for @saveButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButtonLabel;
+
+  /// No description provided for @friendGrantCurrentFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Current front'**
+  String get friendGrantCurrentFront;
+
+  /// No description provided for @friendGrantMemberList.
+  ///
+  /// In en, this message translates to:
+  /// **'Member list'**
+  String get friendGrantMemberList;
+
+  /// No description provided for @friendGrantMemberDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Member details'**
+  String get friendGrantMemberDetails;
+
+  /// No description provided for @friendGrantFrontHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Front history'**
+  String get friendGrantFrontHistory;
+
+  /// No description provided for @friendGrantGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get friendGrantGroups;
+
+  /// No description provided for @friendGrantNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get friendGrantNotes;
+
+  /// No description provided for @friendGrantPolls.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls'**
+  String get friendGrantPolls;
+
+  /// No description provided for @remindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get remindersTitle;
+
+  /// No description provided for @noRemindersYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders yet'**
+  String get noRemindersYetTitle;
+
+  /// No description provided for @noRemindersYetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a daily, weekly, or monthly notification reminder.'**
+  String get noRemindersYetBody;
+
+  /// No description provided for @addReminderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reminder'**
+  String get addReminderButton;
+
+  /// No description provided for @notificationSettingsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification settings'**
+  String get notificationSettingsButton;
+
+  /// No description provided for @onStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'on'**
+  String get onStatus;
+
+  /// No description provided for @reminderSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder {title}'**
+  String reminderSemanticLabel(String title);
+
+  /// No description provided for @deleteReminderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete reminder'**
+  String get deleteReminderTooltip;
+
+  /// No description provided for @deleteReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete reminder?'**
+  String get deleteReminderTitle;
+
+  /// No description provided for @deleteReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This reminder will be permanently removed.'**
+  String get deleteReminderBody;
+
+  /// No description provided for @dailySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get dailySchedule;
+
+  /// No description provided for @weeklySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get weeklySchedule;
+
+  /// No description provided for @monthlySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get monthlySchedule;
+
+  /// No description provided for @afterFrontSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'After member fronts'**
+  String get afterFrontSchedule;
+
+  /// No description provided for @titleFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get titleFieldLabel;
+
+  /// No description provided for @scheduleFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get scheduleFieldLabel;
+
+  /// No description provided for @dayFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get dayFieldLabel;
+
+  /// No description provided for @dayOfMonthFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day of month'**
+  String get dayOfMonthFieldLabel;
+
+  /// No description provided for @monday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get monday;
+
+  /// No description provided for @tuesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get tuesday;
+
+  /// No description provided for @wednesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get wednesday;
+
+  /// No description provided for @thursday.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get thursday;
+
+  /// No description provided for @friday.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get friday;
+
+  /// No description provided for @saturday.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get saturday;
+
+  /// No description provided for @sunday.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get sunday;
+
+  /// No description provided for @memberOrFrontLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Member or front label'**
+  String get memberOrFrontLabel;
+
+  /// No description provided for @memberOrFrontHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued until this member or label fronts'**
+  String get memberOrFrontHelper;
+
+  /// No description provided for @timeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeFieldLabel;
+
+  /// No description provided for @timeFieldHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour local time, like 09:00'**
+  String get timeFieldHelper;
+
+  /// No description provided for @noteFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteFieldLabel;
+
+  /// No description provided for @dailyScheduleAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily at {time}'**
+  String dailyScheduleAt(String time);
+
+  /// No description provided for @weeklyScheduleAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly on {weekday} at {time}'**
+  String weeklyScheduleAt(String weekday, String time);
+
+  /// No description provided for @monthlyScheduleAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly on day {day} at {time}'**
+  String monthlyScheduleAt(int day, String time);
+
+  /// No description provided for @afterSelectedFrontStarts.
+  ///
+  /// In en, this message translates to:
+  /// **'After a selected front starts'**
+  String get afterSelectedFrontStarts;
+
+  /// No description provided for @afterFrontLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'After {detail} fronts'**
+  String afterFrontLabel(String detail);
+
+  /// No description provided for @importTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importTitle;
+
+  /// No description provided for @previewFirstStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'preview first'**
+  String get previewFirstStatus;
+
+  /// No description provided for @importDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload an export, check what was found, then import it into local storage.'**
+  String get importDescription;
+
+  /// No description provided for @exportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportTitle;
+
+  /// No description provided for @exportLocalArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export local archive'**
+  String get exportLocalArchiveTitle;
+
+  /// No description provided for @portableJsonValue.
+  ///
+  /// In en, this message translates to:
+  /// **'portable JSON'**
+  String get portableJsonValue;
+
+  /// No description provided for @encryptedExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted export'**
+  String get encryptedExportTitle;
+
+  /// No description provided for @passwordProtectedFileValue.
+  ///
+  /// In en, this message translates to:
+  /// **'password protected file'**
+  String get passwordProtectedFileValue;
+
+  /// No description provided for @backupFolderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup folder'**
+  String get backupFolderTitle;
+
+  /// No description provided for @manualArchiveSaveValue.
+  ///
+  /// In en, this message translates to:
+  /// **'manual save from archive sheet'**
+  String get manualArchiveSaveValue;
+
+  /// No description provided for @waitingForFilePicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for file picker...'**
+  String get waitingForFilePicker;
+
+  /// No description provided for @chooseImportFileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose import file'**
+  String get chooseImportFileTitle;
+
+  /// No description provided for @noFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No file selected.'**
+  String get noFileSelected;
+
+  /// No description provided for @readingFileStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading {fileName}...'**
+  String readingFileStatus(String fileName);
+
+  /// No description provided for @couldNotReadImportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read an import JSON from {fileName}.'**
+  String couldNotReadImportFile(String fileName);
+
+  /// No description provided for @couldNotReadPastedJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the pasted JSON.'**
+  String get couldNotReadPastedJson;
+
+  /// No description provided for @waitingForAvatarZip.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for avatar ZIP...'**
+  String get waitingForAvatarZip;
+
+  /// No description provided for @chooseAvatarZipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose avatar ZIP'**
+  String get chooseAvatarZipTitle;
+
+  /// No description provided for @noAvatarFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No avatar file selected.'**
+  String get noAvatarFileSelected;
+
+  /// No description provided for @readingAvatarsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading avatars from {fileName}...'**
+  String readingAvatarsStatus(String fileName);
+
+  /// No description provided for @noAvatarsFoundStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No avatar images found in {fileName}.'**
+  String noAvatarsFoundStatus(String fileName);
+
+  /// No description provided for @avatarsAttachedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached {count, plural, =1{1 avatar} other{{count} avatars}} from {fileName}. {nextStep}'**
+  String avatarsAttachedStatus(int count, String fileName, String nextStep);
+
+  /// No description provided for @chooseJsonNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the JSON export next.'**
+  String get chooseJsonNext;
+
+  /// No description provided for @refreshOrImportNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh or import when ready.'**
+  String get refreshOrImportNext;
+
+  /// No description provided for @encryptedArchiveLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted archive loaded. Enter its passphrase, then preview.'**
+  String get encryptedArchiveLoaded;
+
+  /// No description provided for @previewReadyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview ready: {summary}.'**
+  String previewReadyStatus(String summary);
+
+  /// No description provided for @chooseFileBeforePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or paste a file before previewing.'**
+  String get chooseFileBeforePreview;
+
+  /// No description provided for @decryptArchiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not decrypt archive. Check the passphrase.'**
+  String get decryptArchiveFailed;
+
+  /// No description provided for @fetchingPluralKitData.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching PluralKit data...'**
+  String get fetchingPluralKitData;
+
+  /// No description provided for @pluralKitImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit import failed: {error}'**
+  String pluralKitImportFailed(String error);
+
+  /// No description provided for @chooseFileBeforeRehearsal.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or paste a file before rehearsing restore.'**
+  String get chooseFileBeforeRehearsal;
+
+  /// No description provided for @rehearsingRestoreStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Rehearsing restore in a temporary local database...'**
+  String get rehearsingRestoreStatus;
+
+  /// No description provided for @restoreRehearsalPassedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore rehearsal passed: {summary}.'**
+  String restoreRehearsalPassedStatus(String summary);
+
+  /// No description provided for @restoreRehearsalFailedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore rehearsal failed. Nothing was imported.'**
+  String get restoreRehearsalFailedStatus;
+
+  /// No description provided for @preparingImportStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing {source} import...'**
+  String preparingImportStatus(String source);
+
+  /// No description provided for @writingImportStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing {summary}...'**
+  String writingImportStatus(String summary);
+
+  /// No description provided for @importCancelledStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Import cancelled.'**
+  String get importCancelledStatus;
+
+  /// No description provided for @importingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing {summary}...'**
+  String importingStatus(String summary);
+
+  /// No description provided for @importCompleteStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Import complete: {summary}.'**
+  String importCompleteStatus(String summary);
+
+  /// No description provided for @importFailedJobsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed. Check recent jobs below.'**
+  String get importFailedJobsStatus;
+
+  /// No description provided for @importFailedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String importFailedStatus(String error);
+
+  /// No description provided for @sourceImportComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} import complete'**
+  String sourceImportComplete(String source);
+
+  /// No description provided for @enterExportPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the export passphrase first.'**
+  String get enterExportPassphrase;
+
+  /// No description provided for @importSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import setup'**
+  String get importSetupTitle;
+
+  /// No description provided for @uploadFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload file'**
+  String get uploadFileButton;
+
+  /// No description provided for @chooseAnotherFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another file'**
+  String get chooseAnotherFileButton;
+
+  /// No description provided for @pasteJsonTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste JSON'**
+  String get pasteJsonTooltip;
+
+  /// No description provided for @attachAvatarsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach avatars'**
+  String get attachAvatarsButton;
+
+  /// No description provided for @avatarsAttachedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 avatar attached} other{{count} avatars attached}}'**
+  String avatarsAttachedButton(int count);
+
+  /// No description provided for @serviceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get serviceFieldLabel;
+
+  /// No description provided for @matchStrategyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When a match exists'**
+  String get matchStrategyFieldLabel;
+
+  /// No description provided for @pluralKitTokenHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for this fetch only. It is not saved or logged.'**
+  String get pluralKitTokenHelper;
+
+  /// No description provided for @passphraseFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get passphraseFieldLabel;
+
+  /// No description provided for @importPassphraseHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Used locally to decrypt the preview and import.'**
+  String get importPassphraseHelper;
+
+  /// No description provided for @inputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get inputLabel;
+
+  /// No description provided for @jobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Job'**
+  String get jobLabel;
+
+  /// No description provided for @dedupeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe'**
+  String get dedupeLabel;
+
+  /// No description provided for @previewImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview import'**
+  String get previewImportButton;
+
+  /// No description provided for @refreshPreviewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh preview'**
+  String get refreshPreviewButton;
+
+  /// No description provided for @chooseServiceStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose service'**
+  String get chooseServiceStatus;
+
+  /// No description provided for @serviceDetectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{service} detected'**
+  String serviceDetectedStatus(String service);
+
+  /// No description provided for @waitingForDetection.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting for detection'**
+  String get waitingForDetection;
+
+  /// No description provided for @previewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewTitle;
+
+  /// No description provided for @validShapeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'valid shape'**
+  String get validShapeStatus;
+
+  /// No description provided for @needsAttentionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'needs attention'**
+  String get needsAttentionStatus;
+
+  /// No description provided for @noRecordsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'no records found'**
+  String get noRecordsFound;
+
+  /// No description provided for @rehearsingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Rehearsing...'**
+  String get rehearsingButton;
+
+  /// No description provided for @runRestoreRehearsalButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run restore rehearsal'**
+  String get runRestoreRehearsalButton;
+
+  /// No description provided for @importingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing...'**
+  String get importingButton;
+
+  /// No description provided for @importArchiveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import archive'**
+  String get importArchiveButton;
+
+  /// No description provided for @restoreRehearsalPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore rehearsal passed'**
+  String get restoreRehearsalPassed;
+
+  /// No description provided for @restoreRehearsalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore rehearsal failed'**
+  String get restoreRehearsalFailed;
+
+  /// No description provided for @restoreRehearsalPassedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported into a temporary local database. Nothing was written to your app data.'**
+  String get restoreRehearsalPassedBody;
+
+  /// No description provided for @restoreRehearsalFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The archive could not be restored safely.'**
+  String get restoreRehearsalFailedBody;
+
+  /// No description provided for @restoreStatusSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore status: {title}. {body}{counts}'**
+  String restoreStatusSemanticLabel(String title, String body, String counts);
+
+  /// No description provided for @importReadyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Import ready.'**
+  String get importReadyStatus;
+
+  /// No description provided for @importStatusSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Import status: {status}'**
+  String importStatusSemanticLabel(String status);
+
+  /// No description provided for @recentJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent jobs'**
+  String get recentJobsTitle;
+
+  /// No description provided for @noneStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get noneStatus;
+
+  /// No description provided for @noImportsQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'No imports queued yet.'**
+  String get noImportsQueued;
+
+  /// No description provided for @tapForDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'tap for details'**
+  String get tapForDetails;
+
+  /// No description provided for @importJobSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Import job {title}, {status}. Double tap for details.'**
+  String importJobSemanticLabel(String title, String status);
 }
 
 class _AppLocalizationsDelegate

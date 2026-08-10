@@ -8,6 +8,8 @@ abstract interface class SecureValueStore {
   Future<String?> read(String key);
 
   Future<void> write(String key, String value);
+
+  Future<void> delete(String key);
 }
 
 class PlatformSecureValueStore implements SecureValueStore {
@@ -26,6 +28,9 @@ class PlatformSecureValueStore implements SecureValueStore {
   @override
   Future<void> write(String key, String value) =>
       _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
 }
 
 class HavenMasterKeyStore {

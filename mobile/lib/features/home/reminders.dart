@@ -17,6 +17,7 @@ class RemindersPage extends StatelessWidget {
       initialData: const [],
       builder: (context, snapshot) {
         final reminders = snapshot.data ?? const <ReminderSummary>[];
+        final l10n = AppLocalizations.of(context);
 
         return SpPage(
           children: [
@@ -25,15 +26,14 @@ class RemindersPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Reminders',
+                    title: l10n.remindersTitle,
                     trailing: StatusPill(text: '${reminders.length}'),
                   ),
                   const SizedBox(height: 12),
                   if (reminders.isEmpty)
-                    const SpEmptyState(
-                      title: 'No reminders yet',
-                      body:
-                          'Create local reminders before notification scheduling is wired.',
+                    SpEmptyState(
+                      title: l10n.noRemindersYetTitle,
+                      body: l10n.noRemindersYetBody,
                     )
                   else
                     for (final reminder in reminders) ...[
@@ -43,8 +43,8 @@ class RemindersPage extends StatelessWidget {
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
-                    primary: 'Add reminder',
-                    secondary: 'Notification settings',
+                    primary: l10n.addReminderButton,
+                    secondary: l10n.notificationSettingsButton,
                     onPrimary: () => showAddReminderSheet(context, repository),
                     onSecondary: onNotificationSettings,
                   ),
@@ -70,6 +70,7 @@ class ReminderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -105,9 +106,11 @@ class ReminderTile extends StatelessWidget {
           ),
           Column(
             children: [
-              StatusPill(text: reminder.enabled ? 'on' : 'off'),
+              StatusPill(
+                text: reminder.enabled ? l10n.onStatus : l10n.offValue,
+              ),
               Semantics(
-                label: 'Reminder ${reminder.title}',
+                label: l10n.reminderSemanticLabel(reminder.title),
                 toggled: reminder.enabled,
                 child: Switch(
                   value: reminder.enabled,
@@ -123,11 +126,11 @@ class ReminderTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Delete reminder',
+                tooltip: l10n.deleteReminderTooltip,
                 onPressed: () => confirmDelete(
                   context,
-                  title: 'Delete reminder?',
-                  body: 'This reminder will be permanently removed.',
+                  title: l10n.deleteReminderTitle,
+                  body: l10n.deleteReminderBody,
                   onDelete: () async {
                     await NotificationService.instance
                         .cancelReminderNotification(reminder.id);
@@ -164,15 +167,14 @@ class AddReminderSheet extends StatefulWidget {
 }
 
 enum ReminderScheduleKind {
-  daily('daily', 'Daily'),
-  weekly('weekly', 'Weekly'),
-  monthly('monthly', 'Monthly'),
-  afterFront('after_front', 'After member fronts');
+  daily('daily'),
+  weekly('weekly'),
+  monthly('monthly'),
+  afterFront('after_front');
 
-  const ReminderScheduleKind(this.storageValue, this.label);
+  const ReminderScheduleKind(this.storageValue);
 
   final String storageValue;
-  final String label;
 
   static ReminderScheduleKind? fromStorage(String? value) {
     for (final kind in values) {
@@ -202,6 +204,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -214,24 +217,27 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Add reminder',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.addReminderButton,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
               key: const ValueKey('reminder-title-field'),
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: l10n.titleFieldLabel),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<ReminderScheduleKind>(
               key: const ValueKey('reminder-schedule-kind-field'),
               initialValue: _scheduleKind,
-              decoration: const InputDecoration(labelText: 'Schedule'),
+              decoration: InputDecoration(labelText: l10n.scheduleFieldLabel),
               items: [
                 for (final kind in ReminderScheduleKind.values)
-                  DropdownMenuItem(value: kind, child: Text(kind.label)),
+                  DropdownMenuItem(
+                    value: kind,
+                    child: Text(_reminderScheduleLabel(l10n, kind)),
+                  ),
               ],
               onChanged: (kind) {
                 if (kind != null) {
@@ -244,18 +250,24 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               DropdownButtonFormField<String>(
                 key: const ValueKey('reminder-weekday-field'),
                 initialValue: _weekday,
-                decoration: const InputDecoration(labelText: 'Day'),
-                items: const [
-                  DropdownMenuItem(value: 'Monday', child: Text('Monday')),
-                  DropdownMenuItem(value: 'Tuesday', child: Text('Tuesday')),
+                decoration: InputDecoration(labelText: l10n.dayFieldLabel),
+                items: [
+                  DropdownMenuItem(value: 'Monday', child: Text(l10n.monday)),
+                  DropdownMenuItem(value: 'Tuesday', child: Text(l10n.tuesday)),
                   DropdownMenuItem(
                     value: 'Wednesday',
-                    child: Text('Wednesday'),
+                    child: Text(l10n.wednesday),
                   ),
-                  DropdownMenuItem(value: 'Thursday', child: Text('Thursday')),
-                  DropdownMenuItem(value: 'Friday', child: Text('Friday')),
-                  DropdownMenuItem(value: 'Saturday', child: Text('Saturday')),
-                  DropdownMenuItem(value: 'Sunday', child: Text('Sunday')),
+                  DropdownMenuItem(
+                    value: 'Thursday',
+                    child: Text(l10n.thursday),
+                  ),
+                  DropdownMenuItem(value: 'Friday', child: Text(l10n.friday)),
+                  DropdownMenuItem(
+                    value: 'Saturday',
+                    child: Text(l10n.saturday),
+                  ),
+                  DropdownMenuItem(value: 'Sunday', child: Text(l10n.sunday)),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -269,7 +281,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               DropdownButtonFormField<int>(
                 key: const ValueKey('reminder-month-day-field'),
                 initialValue: _monthDay,
-                decoration: const InputDecoration(labelText: 'Day of month'),
+                decoration: InputDecoration(
+                  labelText: l10n.dayOfMonthFieldLabel,
+                ),
                 items: [
                   for (var day = 1; day <= 31; day++)
                     DropdownMenuItem(value: day, child: Text('$day')),
@@ -286,9 +300,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               TextField(
                 key: const ValueKey('reminder-front-detail-field'),
                 controller: _detailController,
-                decoration: const InputDecoration(
-                  labelText: 'Member or front label',
-                  helperText: 'Queued until this member or label fronts',
+                decoration: InputDecoration(
+                  labelText: l10n.memberOrFrontLabel,
+                  helperText: l10n.memberOrFrontHelper,
                 ),
               ),
               const SizedBox(height: 10),
@@ -298,9 +312,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 key: const ValueKey('reminder-time-field'),
                 controller: _timeController,
                 keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(
-                  labelText: 'Time',
-                  helperText: '24-hour local time, like 09:00',
+                decoration: InputDecoration(
+                  labelText: l10n.timeFieldLabel,
+                  helperText: l10n.timeFieldHelper,
                 ),
               ),
               const SizedBox(height: 10),
@@ -310,13 +324,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               controller: _bodyController,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(labelText: 'Note'),
+              decoration: InputDecoration(labelText: l10n.noteFieldLabel),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-reminder-button'),
               onPressed: _save,
-              child: const Text('Save'),
+              child: Text(l10n.saveButtonLabel),
             ),
           ],
         ),
@@ -325,6 +339,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
@@ -334,7 +349,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       ReminderDraft(
         title: title,
         body: body,
-        scheduleText: _scheduleText,
+        scheduleText: _scheduleText(l10n),
         scheduleKind: _scheduleKind.storageValue,
         scheduleTime: scheduleTime,
         scheduleDowMask: _scheduleKind == ReminderScheduleKind.weekly
@@ -383,19 +398,24 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  String get _scheduleText {
+  String _scheduleText(AppLocalizations l10n) {
     final time = _normalizedTimeText;
     final detail = _detailController.text.trim();
     return switch (_scheduleKind) {
-      ReminderScheduleKind.daily => 'Daily${time.isEmpty ? '' : ' at $time'}',
+      ReminderScheduleKind.daily =>
+        time.isEmpty ? l10n.dailySchedule : l10n.dailyScheduleAt(time),
       ReminderScheduleKind.weekly =>
-        'Weekly on $_weekday${time.isEmpty ? '' : ' at $time'}',
+        time.isEmpty
+            ? '${l10n.weeklySchedule} ${_localisedWeekday(l10n, _weekday)}'
+            : l10n.weeklyScheduleAt(_localisedWeekday(l10n, _weekday), time),
       ReminderScheduleKind.monthly =>
-        'Monthly on day $_monthDay${time.isEmpty ? '' : ' at $time'}',
+        time.isEmpty
+            ? '${l10n.monthlySchedule} ${l10n.dayFieldLabel.toLowerCase()} $_monthDay'
+            : l10n.monthlyScheduleAt(_monthDay, time),
       ReminderScheduleKind.afterFront =>
         detail.isEmpty
-            ? 'After a selected front starts'
-            : 'After $detail fronts',
+            ? l10n.afterSelectedFrontStarts
+            : l10n.afterFrontLabel(detail),
     };
   }
 
@@ -404,6 +424,31 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     if (time == null) return '';
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
+}
+
+String _reminderScheduleLabel(
+  AppLocalizations l10n,
+  ReminderScheduleKind kind,
+) {
+  return switch (kind) {
+    ReminderScheduleKind.daily => l10n.dailySchedule,
+    ReminderScheduleKind.weekly => l10n.weeklySchedule,
+    ReminderScheduleKind.monthly => l10n.monthlySchedule,
+    ReminderScheduleKind.afterFront => l10n.afterFrontSchedule,
+  };
+}
+
+String _localisedWeekday(AppLocalizations l10n, String weekday) {
+  return switch (weekday) {
+    'Monday' => l10n.monday,
+    'Tuesday' => l10n.tuesday,
+    'Wednesday' => l10n.wednesday,
+    'Thursday' => l10n.thursday,
+    'Friday' => l10n.friday,
+    'Saturday' => l10n.saturday,
+    'Sunday' => l10n.sunday,
+    _ => weekday,
+  };
 }
 
 extension on ReminderSummary {

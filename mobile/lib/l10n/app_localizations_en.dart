@@ -354,6 +354,690 @@ class AppLocalizationsEn extends AppLocalizations {
   String noteCountSubtitle(int count) {
     return '$count notes';
   }
+
+  @override
+  String get serverAccountsUnavailable =>
+      'Server accounts are unavailable in this app session.';
+
+  @override
+  String get optionalServerAccountTitle => 'Optional server account';
+
+  @override
+  String get serverConnectDescription =>
+      'Connect an HTTPS server to use encrypted online backups and account features. Local use stays independent.';
+
+  @override
+  String get serverUrlLabel => 'Server URL';
+
+  @override
+  String get connectServerButton => 'Check and connect';
+
+  @override
+  String get connectedServerFallback => 'Connected server';
+
+  @override
+  String get signInButton => 'Sign in';
+
+  @override
+  String get createAccountButton => 'Create account';
+
+  @override
+  String get disconnectButton => 'Disconnect';
+
+  @override
+  String get accountFallback => 'Account';
+
+  @override
+  String get thisDeviceLabel => 'This device';
+
+  @override
+  String get activeServerSessionLabel => 'Active server session';
+
+  @override
+  String get revokeSessionTooltip => 'Revoke session';
+
+  @override
+  String get refreshButton => 'Refresh';
+
+  @override
+  String get signOutButton => 'Sign out';
+
+  @override
+  String get deleteServerAccountButton => 'Delete server account';
+
+  @override
+  String get deleteServerAccountTitle => 'Delete server account?';
+
+  @override
+  String get deleteServerAccountBody =>
+      'This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.';
+
+  @override
+  String get currentPasswordLabel => 'Current password';
+
+  @override
+  String get deleteAccountButton => 'Delete account';
+
+  @override
+  String get createServerAccountTitle => 'Create server account';
+
+  @override
+  String get displayNameLabel => 'Display name';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get invalidEmailError => 'Enter a valid email address.';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get passwordLengthError => 'Use at least 12 characters.';
+
+  @override
+  String get deviceNameLabel => 'Device name';
+
+  @override
+  String get requiredFieldError => 'This field is required.';
+
+  @override
+  String get onlineBackupUnavailable =>
+      'Online backup is unavailable in this app session.';
+
+  @override
+  String get encryptedOnlineBackupTitle => 'Encrypted online backup';
+
+  @override
+  String get backupEncryptionDescription =>
+      'Snapshots are encrypted on this device before upload.';
+
+  @override
+  String get backupSignInDescription =>
+      'Connect and sign in from Account Settings first.';
+
+  @override
+  String get backupUploadProgressLabel => 'Encrypted backup upload progress';
+
+  @override
+  String backupUploadProgressValue(int completed, int total) {
+    return '$completed of $total chunks';
+  }
+
+  @override
+  String get createUploadSnapshotButton => 'Create and upload snapshot';
+
+  @override
+  String backupSnapshotProgress(
+    int uploadedChunks,
+    int chunkCount,
+    int uploadedBytes,
+    int totalBytes,
+  ) {
+    return '$uploadedChunks/$chunkCount chunks, $uploadedBytes/$totalBytes bytes';
+  }
+
+  @override
+  String get deleteEncryptedBackupTooltip => 'Delete encrypted backup';
+
+  @override
+  String get deleteEncryptedBackupTitle => 'Delete encrypted backup?';
+
+  @override
+  String get deleteEncryptedBackupBody =>
+      'This server copy will be permanently removed.';
+
+  @override
+  String get friendsSignInBody =>
+      'Connect and sign in to a server from Account Settings first.';
+
+  @override
+  String get localDataLabel => 'Local data';
+
+  @override
+  String get notSharedValue => 'not shared';
+
+  @override
+  String get requestsLabel => 'Requests';
+
+  @override
+  String get offValue => 'off';
+
+  @override
+  String get friendsDisabledBody =>
+      'This server has friend connections disabled.';
+
+  @override
+  String get serverDisabledValue => 'server disabled';
+
+  @override
+  String get friendCodeTitle => 'Friend code';
+
+  @override
+  String get rotateFriendCodePrompt => 'Rotate to create a new code';
+
+  @override
+  String get rotateFriendCodeButton => 'Rotate friend code';
+
+  @override
+  String get someoneElsesCodeLabel => 'Someone else’s code';
+
+  @override
+  String get sendRequestButton => 'Send request';
+
+  @override
+  String get pendingRequestsTitle => 'Pending requests';
+
+  @override
+  String get noPendingRequests => 'No pending requests.';
+
+  @override
+  String get acceptRequestTooltip => 'Accept request';
+
+  @override
+  String get declineRequestTooltip => 'Decline request';
+
+  @override
+  String get cancelRequestTooltip => 'Cancel request';
+
+  @override
+  String get noFriendsYet => 'No friends yet.';
+
+  @override
+  String get nothingShared => 'Nothing shared';
+
+  @override
+  String permissionsShared(int count) {
+    return '$count permissions shared';
+  }
+
+  @override
+  String get removeFriendTitle => 'Remove friend?';
+
+  @override
+  String get removeFriendBody =>
+      'The friendship and its sharing permissions will be removed.';
+
+  @override
+  String blockUserTitle(String displayName) {
+    return 'Block $displayName?';
+  }
+
+  @override
+  String get blockUserBody =>
+      'This removes the friendship, pending requests, and every sharing permission in both directions.';
+
+  @override
+  String get sharingPermissionsLabel => 'Sharing permissions';
+
+  @override
+  String get removeFriendButton => 'Remove friend';
+
+  @override
+  String get blockUserButton => 'Block user';
+
+  @override
+  String get blockedUsersTitle => 'Blocked users';
+
+  @override
+  String get noBlockedUsers => 'No blocked users.';
+
+  @override
+  String get unblockButton => 'Unblock';
+
+  @override
+  String shareWithTitle(String displayName) {
+    return 'Share with $displayName';
+  }
+
+  @override
+  String get saveButtonLabel => 'Save';
+
+  @override
+  String get friendGrantCurrentFront => 'Current front';
+
+  @override
+  String get friendGrantMemberList => 'Member list';
+
+  @override
+  String get friendGrantMemberDetails => 'Member details';
+
+  @override
+  String get friendGrantFrontHistory => 'Front history';
+
+  @override
+  String get friendGrantGroups => 'Groups';
+
+  @override
+  String get friendGrantNotes => 'Notes';
+
+  @override
+  String get friendGrantPolls => 'Polls';
+
+  @override
+  String get remindersTitle => 'Reminders';
+
+  @override
+  String get noRemindersYetTitle => 'No reminders yet';
+
+  @override
+  String get noRemindersYetBody =>
+      'Create a daily, weekly, or monthly notification reminder.';
+
+  @override
+  String get addReminderButton => 'Add reminder';
+
+  @override
+  String get notificationSettingsButton => 'Notification settings';
+
+  @override
+  String get onStatus => 'on';
+
+  @override
+  String reminderSemanticLabel(String title) {
+    return 'Reminder $title';
+  }
+
+  @override
+  String get deleteReminderTooltip => 'Delete reminder';
+
+  @override
+  String get deleteReminderTitle => 'Delete reminder?';
+
+  @override
+  String get deleteReminderBody => 'This reminder will be permanently removed.';
+
+  @override
+  String get dailySchedule => 'Daily';
+
+  @override
+  String get weeklySchedule => 'Weekly';
+
+  @override
+  String get monthlySchedule => 'Monthly';
+
+  @override
+  String get afterFrontSchedule => 'After member fronts';
+
+  @override
+  String get titleFieldLabel => 'Title';
+
+  @override
+  String get scheduleFieldLabel => 'Schedule';
+
+  @override
+  String get dayFieldLabel => 'Day';
+
+  @override
+  String get dayOfMonthFieldLabel => 'Day of month';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get saturday => 'Saturday';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String get memberOrFrontLabel => 'Member or front label';
+
+  @override
+  String get memberOrFrontHelper => 'Queued until this member or label fronts';
+
+  @override
+  String get timeFieldLabel => 'Time';
+
+  @override
+  String get timeFieldHelper => '24-hour local time, like 09:00';
+
+  @override
+  String get noteFieldLabel => 'Note';
+
+  @override
+  String dailyScheduleAt(String time) {
+    return 'Daily at $time';
+  }
+
+  @override
+  String weeklyScheduleAt(String weekday, String time) {
+    return 'Weekly on $weekday at $time';
+  }
+
+  @override
+  String monthlyScheduleAt(int day, String time) {
+    return 'Monthly on day $day at $time';
+  }
+
+  @override
+  String get afterSelectedFrontStarts => 'After a selected front starts';
+
+  @override
+  String afterFrontLabel(String detail) {
+    return 'After $detail fronts';
+  }
+
+  @override
+  String get importTitle => 'Import';
+
+  @override
+  String get previewFirstStatus => 'preview first';
+
+  @override
+  String get importDescription =>
+      'Upload an export, check what was found, then import it into local storage.';
+
+  @override
+  String get exportTitle => 'Export';
+
+  @override
+  String get exportLocalArchiveTitle => 'Export local archive';
+
+  @override
+  String get portableJsonValue => 'portable JSON';
+
+  @override
+  String get encryptedExportTitle => 'Encrypted export';
+
+  @override
+  String get passwordProtectedFileValue => 'password protected file';
+
+  @override
+  String get backupFolderTitle => 'Backup folder';
+
+  @override
+  String get manualArchiveSaveValue => 'manual save from archive sheet';
+
+  @override
+  String get waitingForFilePicker => 'Waiting for file picker...';
+
+  @override
+  String get chooseImportFileTitle => 'Choose import file';
+
+  @override
+  String get noFileSelected => 'No file selected.';
+
+  @override
+  String readingFileStatus(String fileName) {
+    return 'Reading $fileName...';
+  }
+
+  @override
+  String couldNotReadImportFile(String fileName) {
+    return 'Could not read an import JSON from $fileName.';
+  }
+
+  @override
+  String get couldNotReadPastedJson => 'Could not read the pasted JSON.';
+
+  @override
+  String get waitingForAvatarZip => 'Waiting for avatar ZIP...';
+
+  @override
+  String get chooseAvatarZipTitle => 'Choose avatar ZIP';
+
+  @override
+  String get noAvatarFileSelected => 'No avatar file selected.';
+
+  @override
+  String readingAvatarsStatus(String fileName) {
+    return 'Reading avatars from $fileName...';
+  }
+
+  @override
+  String noAvatarsFoundStatus(String fileName) {
+    return 'No avatar images found in $fileName.';
+  }
+
+  @override
+  String avatarsAttachedStatus(int count, String fileName, String nextStep) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avatars',
+      one: '1 avatar',
+    );
+    return 'Attached $_temp0 from $fileName. $nextStep';
+  }
+
+  @override
+  String get chooseJsonNext => 'Choose the JSON export next.';
+
+  @override
+  String get refreshOrImportNext => 'Refresh or import when ready.';
+
+  @override
+  String get encryptedArchiveLoaded =>
+      'Encrypted archive loaded. Enter its passphrase, then preview.';
+
+  @override
+  String previewReadyStatus(String summary) {
+    return 'Preview ready: $summary.';
+  }
+
+  @override
+  String get chooseFileBeforePreview =>
+      'Choose or paste a file before previewing.';
+
+  @override
+  String get decryptArchiveFailed =>
+      'Could not decrypt archive. Check the passphrase.';
+
+  @override
+  String get fetchingPluralKitData => 'Fetching PluralKit data...';
+
+  @override
+  String pluralKitImportFailed(String error) {
+    return 'PluralKit import failed: $error';
+  }
+
+  @override
+  String get chooseFileBeforeRehearsal =>
+      'Choose or paste a file before rehearsing restore.';
+
+  @override
+  String get rehearsingRestoreStatus =>
+      'Rehearsing restore in a temporary local database...';
+
+  @override
+  String restoreRehearsalPassedStatus(String summary) {
+    return 'Restore rehearsal passed: $summary.';
+  }
+
+  @override
+  String get restoreRehearsalFailedStatus =>
+      'Restore rehearsal failed. Nothing was imported.';
+
+  @override
+  String preparingImportStatus(String source) {
+    return 'Preparing $source import...';
+  }
+
+  @override
+  String writingImportStatus(String summary) {
+    return 'Writing $summary...';
+  }
+
+  @override
+  String get importCancelledStatus => 'Import cancelled.';
+
+  @override
+  String importingStatus(String summary) {
+    return 'Importing $summary...';
+  }
+
+  @override
+  String importCompleteStatus(String summary) {
+    return 'Import complete: $summary.';
+  }
+
+  @override
+  String get importFailedJobsStatus =>
+      'Import failed. Check recent jobs below.';
+
+  @override
+  String importFailedStatus(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String sourceImportComplete(String source) {
+    return '$source import complete';
+  }
+
+  @override
+  String get enterExportPassphrase => 'Enter the export passphrase first.';
+
+  @override
+  String get importSetupTitle => 'Import setup';
+
+  @override
+  String get uploadFileButton => 'Upload file';
+
+  @override
+  String get chooseAnotherFileButton => 'Choose another file';
+
+  @override
+  String get pasteJsonTooltip => 'Paste JSON';
+
+  @override
+  String get attachAvatarsButton => 'Attach avatars';
+
+  @override
+  String avatarsAttachedButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avatars attached',
+      one: '1 avatar attached',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serviceFieldLabel => 'Service';
+
+  @override
+  String get matchStrategyFieldLabel => 'When a match exists';
+
+  @override
+  String get pluralKitTokenHelper =>
+      'Used for this fetch only. It is not saved or logged.';
+
+  @override
+  String get passphraseFieldLabel => 'Passphrase';
+
+  @override
+  String get importPassphraseHelper =>
+      'Used locally to decrypt the preview and import.';
+
+  @override
+  String get inputLabel => 'Input';
+
+  @override
+  String get jobLabel => 'Job';
+
+  @override
+  String get dedupeLabel => 'Dedupe';
+
+  @override
+  String get previewImportButton => 'Preview import';
+
+  @override
+  String get refreshPreviewButton => 'Refresh preview';
+
+  @override
+  String get chooseServiceStatus => 'Choose service';
+
+  @override
+  String serviceDetectedStatus(String service) {
+    return '$service detected';
+  }
+
+  @override
+  String get waitingForDetection => 'waiting for detection';
+
+  @override
+  String get previewTitle => 'Preview';
+
+  @override
+  String get validShapeStatus => 'valid shape';
+
+  @override
+  String get needsAttentionStatus => 'needs attention';
+
+  @override
+  String get noRecordsFound => 'no records found';
+
+  @override
+  String get rehearsingButton => 'Rehearsing...';
+
+  @override
+  String get runRestoreRehearsalButton => 'Run restore rehearsal';
+
+  @override
+  String get importingButton => 'Importing...';
+
+  @override
+  String get importArchiveButton => 'Import archive';
+
+  @override
+  String get restoreRehearsalPassed => 'Restore rehearsal passed';
+
+  @override
+  String get restoreRehearsalFailed => 'Restore rehearsal failed';
+
+  @override
+  String get restoreRehearsalPassedBody =>
+      'Imported into a temporary local database. Nothing was written to your app data.';
+
+  @override
+  String get restoreRehearsalFailedBody =>
+      'The archive could not be restored safely.';
+
+  @override
+  String restoreStatusSemanticLabel(String title, String body, String counts) {
+    return 'Restore status: $title. $body$counts';
+  }
+
+  @override
+  String get importReadyStatus => 'Import ready.';
+
+  @override
+  String importStatusSemanticLabel(String status) {
+    return 'Import status: $status';
+  }
+
+  @override
+  String get recentJobsTitle => 'Recent jobs';
+
+  @override
+  String get noneStatus => 'none';
+
+  @override
+  String get noImportsQueued => 'No imports queued yet.';
+
+  @override
+  String get tapForDetails => 'tap for details';
+
+  @override
+  String importJobSemanticLabel(String title, String status) {
+    return 'Import job $title, $status. Double tap for details.';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -705,5 +1389,689 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   @override
   String noteCountSubtitle(int count) {
     return '$count notes';
+  }
+
+  @override
+  String get serverAccountsUnavailable =>
+      'Server accounts are unavailable in this app session.';
+
+  @override
+  String get optionalServerAccountTitle => 'Optional server account';
+
+  @override
+  String get serverConnectDescription =>
+      'Connect an HTTPS server to use encrypted online backups and account features. Local use stays independent.';
+
+  @override
+  String get serverUrlLabel => 'Server URL';
+
+  @override
+  String get connectServerButton => 'Check and connect';
+
+  @override
+  String get connectedServerFallback => 'Connected server';
+
+  @override
+  String get signInButton => 'Sign in';
+
+  @override
+  String get createAccountButton => 'Create account';
+
+  @override
+  String get disconnectButton => 'Disconnect';
+
+  @override
+  String get accountFallback => 'Account';
+
+  @override
+  String get thisDeviceLabel => 'This device';
+
+  @override
+  String get activeServerSessionLabel => 'Active server session';
+
+  @override
+  String get revokeSessionTooltip => 'Revoke session';
+
+  @override
+  String get refreshButton => 'Refresh';
+
+  @override
+  String get signOutButton => 'Sign out';
+
+  @override
+  String get deleteServerAccountButton => 'Delete server account';
+
+  @override
+  String get deleteServerAccountTitle => 'Delete server account?';
+
+  @override
+  String get deleteServerAccountBody =>
+      'This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.';
+
+  @override
+  String get currentPasswordLabel => 'Current password';
+
+  @override
+  String get deleteAccountButton => 'Delete account';
+
+  @override
+  String get createServerAccountTitle => 'Create server account';
+
+  @override
+  String get displayNameLabel => 'Display name';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get invalidEmailError => 'Enter a valid email address.';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get passwordLengthError => 'Use at least 12 characters.';
+
+  @override
+  String get deviceNameLabel => 'Device name';
+
+  @override
+  String get requiredFieldError => 'This field is required.';
+
+  @override
+  String get onlineBackupUnavailable =>
+      'Online backup is unavailable in this app session.';
+
+  @override
+  String get encryptedOnlineBackupTitle => 'Encrypted online backup';
+
+  @override
+  String get backupEncryptionDescription =>
+      'Snapshots are encrypted on this device before upload.';
+
+  @override
+  String get backupSignInDescription =>
+      'Connect and sign in from Account Settings first.';
+
+  @override
+  String get backupUploadProgressLabel => 'Encrypted backup upload progress';
+
+  @override
+  String backupUploadProgressValue(int completed, int total) {
+    return '$completed of $total chunks';
+  }
+
+  @override
+  String get createUploadSnapshotButton => 'Create and upload snapshot';
+
+  @override
+  String backupSnapshotProgress(
+    int uploadedChunks,
+    int chunkCount,
+    int uploadedBytes,
+    int totalBytes,
+  ) {
+    return '$uploadedChunks/$chunkCount chunks, $uploadedBytes/$totalBytes bytes';
+  }
+
+  @override
+  String get deleteEncryptedBackupTooltip => 'Delete encrypted backup';
+
+  @override
+  String get deleteEncryptedBackupTitle => 'Delete encrypted backup?';
+
+  @override
+  String get deleteEncryptedBackupBody =>
+      'This server copy will be permanently removed.';
+
+  @override
+  String get friendsSignInBody =>
+      'Connect and sign in to a server from Account Settings first.';
+
+  @override
+  String get localDataLabel => 'Local data';
+
+  @override
+  String get notSharedValue => 'not shared';
+
+  @override
+  String get requestsLabel => 'Requests';
+
+  @override
+  String get offValue => 'off';
+
+  @override
+  String get friendsDisabledBody =>
+      'This server has friend connections disabled.';
+
+  @override
+  String get serverDisabledValue => 'server disabled';
+
+  @override
+  String get friendCodeTitle => 'Friend code';
+
+  @override
+  String get rotateFriendCodePrompt => 'Rotate to create a new code';
+
+  @override
+  String get rotateFriendCodeButton => 'Rotate friend code';
+
+  @override
+  String get someoneElsesCodeLabel => 'Someone else’s code';
+
+  @override
+  String get sendRequestButton => 'Send request';
+
+  @override
+  String get pendingRequestsTitle => 'Pending requests';
+
+  @override
+  String get noPendingRequests => 'No pending requests.';
+
+  @override
+  String get acceptRequestTooltip => 'Accept request';
+
+  @override
+  String get declineRequestTooltip => 'Decline request';
+
+  @override
+  String get cancelRequestTooltip => 'Cancel request';
+
+  @override
+  String get noFriendsYet => 'No friends yet.';
+
+  @override
+  String get nothingShared => 'Nothing shared';
+
+  @override
+  String permissionsShared(int count) {
+    return '$count permissions shared';
+  }
+
+  @override
+  String get removeFriendTitle => 'Remove friend?';
+
+  @override
+  String get removeFriendBody =>
+      'The friendship and its sharing permissions will be removed.';
+
+  @override
+  String blockUserTitle(String displayName) {
+    return 'Block $displayName?';
+  }
+
+  @override
+  String get blockUserBody =>
+      'This removes the friendship, pending requests, and every sharing permission in both directions.';
+
+  @override
+  String get sharingPermissionsLabel => 'Sharing permissions';
+
+  @override
+  String get removeFriendButton => 'Remove friend';
+
+  @override
+  String get blockUserButton => 'Block user';
+
+  @override
+  String get blockedUsersTitle => 'Blocked users';
+
+  @override
+  String get noBlockedUsers => 'No blocked users.';
+
+  @override
+  String get unblockButton => 'Unblock';
+
+  @override
+  String shareWithTitle(String displayName) {
+    return 'Share with $displayName';
+  }
+
+  @override
+  String get saveButtonLabel => 'Save';
+
+  @override
+  String get friendGrantCurrentFront => 'Current front';
+
+  @override
+  String get friendGrantMemberList => 'Member list';
+
+  @override
+  String get friendGrantMemberDetails => 'Member details';
+
+  @override
+  String get friendGrantFrontHistory => 'Front history';
+
+  @override
+  String get friendGrantGroups => 'Groups';
+
+  @override
+  String get friendGrantNotes => 'Notes';
+
+  @override
+  String get friendGrantPolls => 'Polls';
+
+  @override
+  String get remindersTitle => 'Reminders';
+
+  @override
+  String get noRemindersYetTitle => 'No reminders yet';
+
+  @override
+  String get noRemindersYetBody =>
+      'Create a daily, weekly, or monthly notification reminder.';
+
+  @override
+  String get addReminderButton => 'Add reminder';
+
+  @override
+  String get notificationSettingsButton => 'Notification settings';
+
+  @override
+  String get onStatus => 'on';
+
+  @override
+  String reminderSemanticLabel(String title) {
+    return 'Reminder $title';
+  }
+
+  @override
+  String get deleteReminderTooltip => 'Delete reminder';
+
+  @override
+  String get deleteReminderTitle => 'Delete reminder?';
+
+  @override
+  String get deleteReminderBody => 'This reminder will be permanently removed.';
+
+  @override
+  String get dailySchedule => 'Daily';
+
+  @override
+  String get weeklySchedule => 'Weekly';
+
+  @override
+  String get monthlySchedule => 'Monthly';
+
+  @override
+  String get afterFrontSchedule => 'After member fronts';
+
+  @override
+  String get titleFieldLabel => 'Title';
+
+  @override
+  String get scheduleFieldLabel => 'Schedule';
+
+  @override
+  String get dayFieldLabel => 'Day';
+
+  @override
+  String get dayOfMonthFieldLabel => 'Day of month';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get saturday => 'Saturday';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String get memberOrFrontLabel => 'Member or front label';
+
+  @override
+  String get memberOrFrontHelper => 'Queued until this member or label fronts';
+
+  @override
+  String get timeFieldLabel => 'Time';
+
+  @override
+  String get timeFieldHelper => '24-hour local time, like 09:00';
+
+  @override
+  String get noteFieldLabel => 'Note';
+
+  @override
+  String dailyScheduleAt(String time) {
+    return 'Daily at $time';
+  }
+
+  @override
+  String weeklyScheduleAt(String weekday, String time) {
+    return 'Weekly on $weekday at $time';
+  }
+
+  @override
+  String monthlyScheduleAt(int day, String time) {
+    return 'Monthly on day $day at $time';
+  }
+
+  @override
+  String get afterSelectedFrontStarts => 'After a selected front starts';
+
+  @override
+  String afterFrontLabel(String detail) {
+    return 'After $detail fronts';
+  }
+
+  @override
+  String get importTitle => 'Import';
+
+  @override
+  String get previewFirstStatus => 'preview first';
+
+  @override
+  String get importDescription =>
+      'Upload an export, check what was found, then import it into local storage.';
+
+  @override
+  String get exportTitle => 'Export';
+
+  @override
+  String get exportLocalArchiveTitle => 'Export local archive';
+
+  @override
+  String get portableJsonValue => 'portable JSON';
+
+  @override
+  String get encryptedExportTitle => 'Encrypted export';
+
+  @override
+  String get passwordProtectedFileValue => 'password protected file';
+
+  @override
+  String get backupFolderTitle => 'Backup folder';
+
+  @override
+  String get manualArchiveSaveValue => 'manual save from archive sheet';
+
+  @override
+  String get waitingForFilePicker => 'Waiting for file picker...';
+
+  @override
+  String get chooseImportFileTitle => 'Choose import file';
+
+  @override
+  String get noFileSelected => 'No file selected.';
+
+  @override
+  String readingFileStatus(String fileName) {
+    return 'Reading $fileName...';
+  }
+
+  @override
+  String couldNotReadImportFile(String fileName) {
+    return 'Could not read an import JSON from $fileName.';
+  }
+
+  @override
+  String get couldNotReadPastedJson => 'Could not read the pasted JSON.';
+
+  @override
+  String get waitingForAvatarZip => 'Waiting for avatar ZIP...';
+
+  @override
+  String get chooseAvatarZipTitle => 'Choose avatar ZIP';
+
+  @override
+  String get noAvatarFileSelected => 'No avatar file selected.';
+
+  @override
+  String readingAvatarsStatus(String fileName) {
+    return 'Reading avatars from $fileName...';
+  }
+
+  @override
+  String noAvatarsFoundStatus(String fileName) {
+    return 'No avatar images found in $fileName.';
+  }
+
+  @override
+  String avatarsAttachedStatus(int count, String fileName, String nextStep) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avatars',
+      one: '1 avatar',
+    );
+    return 'Attached $_temp0 from $fileName. $nextStep';
+  }
+
+  @override
+  String get chooseJsonNext => 'Choose the JSON export next.';
+
+  @override
+  String get refreshOrImportNext => 'Refresh or import when ready.';
+
+  @override
+  String get encryptedArchiveLoaded =>
+      'Encrypted archive loaded. Enter its passphrase, then preview.';
+
+  @override
+  String previewReadyStatus(String summary) {
+    return 'Preview ready: $summary.';
+  }
+
+  @override
+  String get chooseFileBeforePreview =>
+      'Choose or paste a file before previewing.';
+
+  @override
+  String get decryptArchiveFailed =>
+      'Could not decrypt archive. Check the passphrase.';
+
+  @override
+  String get fetchingPluralKitData => 'Fetching PluralKit data...';
+
+  @override
+  String pluralKitImportFailed(String error) {
+    return 'PluralKit import failed: $error';
+  }
+
+  @override
+  String get chooseFileBeforeRehearsal =>
+      'Choose or paste a file before rehearsing restore.';
+
+  @override
+  String get rehearsingRestoreStatus =>
+      'Rehearsing restore in a temporary local database...';
+
+  @override
+  String restoreRehearsalPassedStatus(String summary) {
+    return 'Restore rehearsal passed: $summary.';
+  }
+
+  @override
+  String get restoreRehearsalFailedStatus =>
+      'Restore rehearsal failed. Nothing was imported.';
+
+  @override
+  String preparingImportStatus(String source) {
+    return 'Preparing $source import...';
+  }
+
+  @override
+  String writingImportStatus(String summary) {
+    return 'Writing $summary...';
+  }
+
+  @override
+  String get importCancelledStatus => 'Import cancelled.';
+
+  @override
+  String importingStatus(String summary) {
+    return 'Importing $summary...';
+  }
+
+  @override
+  String importCompleteStatus(String summary) {
+    return 'Import complete: $summary.';
+  }
+
+  @override
+  String get importFailedJobsStatus =>
+      'Import failed. Check recent jobs below.';
+
+  @override
+  String importFailedStatus(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String sourceImportComplete(String source) {
+    return '$source import complete';
+  }
+
+  @override
+  String get enterExportPassphrase => 'Enter the export passphrase first.';
+
+  @override
+  String get importSetupTitle => 'Import setup';
+
+  @override
+  String get uploadFileButton => 'Upload file';
+
+  @override
+  String get chooseAnotherFileButton => 'Choose another file';
+
+  @override
+  String get pasteJsonTooltip => 'Paste JSON';
+
+  @override
+  String get attachAvatarsButton => 'Attach avatars';
+
+  @override
+  String avatarsAttachedButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avatars attached',
+      one: '1 avatar attached',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serviceFieldLabel => 'Service';
+
+  @override
+  String get matchStrategyFieldLabel => 'When a match exists';
+
+  @override
+  String get pluralKitTokenHelper =>
+      'Used for this fetch only. It is not saved or logged.';
+
+  @override
+  String get passphraseFieldLabel => 'Passphrase';
+
+  @override
+  String get importPassphraseHelper =>
+      'Used locally to decrypt the preview and import.';
+
+  @override
+  String get inputLabel => 'Input';
+
+  @override
+  String get jobLabel => 'Job';
+
+  @override
+  String get dedupeLabel => 'Dedupe';
+
+  @override
+  String get previewImportButton => 'Preview import';
+
+  @override
+  String get refreshPreviewButton => 'Refresh preview';
+
+  @override
+  String get chooseServiceStatus => 'Choose service';
+
+  @override
+  String serviceDetectedStatus(String service) {
+    return '$service detected';
+  }
+
+  @override
+  String get waitingForDetection => 'waiting for detection';
+
+  @override
+  String get previewTitle => 'Preview';
+
+  @override
+  String get validShapeStatus => 'valid shape';
+
+  @override
+  String get needsAttentionStatus => 'needs attention';
+
+  @override
+  String get noRecordsFound => 'no records found';
+
+  @override
+  String get rehearsingButton => 'Rehearsing...';
+
+  @override
+  String get runRestoreRehearsalButton => 'Run restore rehearsal';
+
+  @override
+  String get importingButton => 'Importing...';
+
+  @override
+  String get importArchiveButton => 'Import archive';
+
+  @override
+  String get restoreRehearsalPassed => 'Restore rehearsal passed';
+
+  @override
+  String get restoreRehearsalFailed => 'Restore rehearsal failed';
+
+  @override
+  String get restoreRehearsalPassedBody =>
+      'Imported into a temporary local database. Nothing was written to your app data.';
+
+  @override
+  String get restoreRehearsalFailedBody =>
+      'The archive could not be restored safely.';
+
+  @override
+  String restoreStatusSemanticLabel(String title, String body, String counts) {
+    return 'Restore status: $title. $body$counts';
+  }
+
+  @override
+  String get importReadyStatus => 'Import ready.';
+
+  @override
+  String importStatusSemanticLabel(String status) {
+    return 'Import status: $status';
+  }
+
+  @override
+  String get recentJobsTitle => 'Recent jobs';
+
+  @override
+  String get noneStatus => 'none';
+
+  @override
+  String get noImportsQueued => 'No imports queued yet.';
+
+  @override
+  String get tapForDetails => 'tap for details';
+
+  @override
+  String importJobSemanticLabel(String title, String status) {
+    return 'Import job $title, $status. Double tap for details.';
   }
 }

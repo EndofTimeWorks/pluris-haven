@@ -431,11 +431,13 @@ class AccountSettingsPage extends StatelessWidget {
     super.key,
     required this.snapshot,
     required this.repository,
+    required this.serverAccount,
     required this.onSelect,
   });
 
   final HomeSnapshot? snapshot;
   final HavenRepository repository;
+  final ServerAccountController? serverAccount;
   final ValueChanged<SpSection> onSelect;
 
   @override
@@ -500,14 +502,11 @@ class AccountSettingsPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        ServerAccountPanel(controller: serverAccount),
+        const SizedBox(height: 12),
         SpSettingsGroup(
           title: 'Account',
           rows: [
-            const SpSettingsRow(
-              'Cloud account',
-              'not required',
-              interactive: false,
-            ),
             SpSettingsRow(
               'Import / Export',
               'move data in or out',

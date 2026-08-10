@@ -31,6 +31,11 @@ class MemorySecureValueStore implements SecureValueStore {
   final values = <String, String>{};
 
   @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+
+  @override
   Future<String?> read(String key) async => values[key];
 
   @override

@@ -7,6 +7,7 @@ import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
 import 'data/notifications/notification_service.dart';
 import 'data/security/master_key_store.dart';
+import 'data/server/server_account_controller.dart';
 import 'debug/debug_log.dart';
 import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
@@ -23,15 +24,22 @@ Future<void> main() async {
   await repository.ensureLocalSystem();
   await repository.migrateMemberNamesToEncryption();
   await repository.migrateLocalPrivateContentToEncryption();
+  final serverAccount = ServerAccountController();
+  await serverAccount.initialize();
   appDebugLog('Local repository ready');
 
-  runApp(PlurisHavenApp(repository: repository));
+  runApp(PlurisHavenApp(repository: repository, serverAccount: serverAccount));
 }
 
 class PlurisHavenApp extends StatelessWidget {
-  const PlurisHavenApp({super.key, required this.repository});
+  const PlurisHavenApp({
+    super.key,
+    required this.repository,
+    this.serverAccount,
+  });
 
   final HavenRepository repository;
+  final ServerAccountController? serverAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +79,7 @@ class PlurisHavenApp extends StatelessWidget {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: HomePage(repository: repository),
+          home: HomePage(repository: repository, serverAccount: serverAccount),
         );
       },
     );
