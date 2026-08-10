@@ -9,8 +9,8 @@ Primary pre-alpha builds are GitHub Releases APKs.
 - Repository: `https://github.com/EndofTimeWorks/pluris-haven`
 - Package id: `works.endoftime.plurishaven`
 - Dev APK asset: `pluris-haven-dev.apk`
-- Dev tags: `mobile-v0.2.0-pre-alpha.1.dev.N+BUILD`
-- Versioned tags: `mobile-v0.2.0-pre-alpha.1+BUILD`
+- Dev tags: `mobile-v0.2.0-pre-alpha.N.dev.N+BUILD`
+- Versioned tags: `mobile-v0.2.0-pre-alpha.N+BUILD`
 
 For Obtainium:
 
@@ -25,11 +25,11 @@ build once, then install the current `works.endoftime.plurishaven` build.
 
 ## iOS
 
-The iOS host target exists and uses bundle id `works.endoftime.plurishaven`,
-with an Apple privacy manifest checked in. CI performs an unsigned iOS compile
-on macOS and uploads the `Runner.app` bundle for inspection. It is not a
-supported release channel yet because signed IPA and TestFlight builds still
-need Apple signing credentials and physical-device validation.
+The iOS host target uses bundle id `works.endoftime.plurishaven`, with an Apple
+privacy manifest checked in. Versioned releases include an unsigned IPA built
+on macOS. AltStore, SideStore, or Sideloadly must re-sign it before installation.
+Officially signed IPA and TestFlight builds still need Apple signing credentials
+and physical-device validation.
 
 When the iOS client is ready, prefer a SideStore/AltStore source before assuming
 App Store availability.

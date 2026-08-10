@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-pre-alpha.2 - 2026-08-10
 
-Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
+Android-first alpha release: `0.2.0-pre-alpha.2+2008`.
 
 ### Tooling
 
@@ -28,6 +28,10 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - Local encrypted archives still support restore rehearsal, tamper detection,
   and resumable opaque chunks. The server never sees the archive plaintext or
   the device key.
+- PluralKit live import now fetches bounded account data without storing or
+  logging the token.
+- The release workflow packages the unsigned iOS device build as an IPA for
+  re-signing with AltStore, SideStore, or Sideloadly.
 
 ### Server and CI
 
@@ -47,6 +51,10 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - Friend-request creation is also limited by both client IP and account, so a
   single user cannot flood the endpoint through one or many addresses.
 - Crypto subkey derivation stays at `v1`; changing it needs a migration path.
+- The optional mobile server surface now supports accounts, revocable sessions,
+  encrypted backup upload and deletion, friend requests, grants, and blocking.
+- Server account, import, backup, friend, and reminder surfaces use the typed
+  localisation catalogue.
 
 ### Checks
 
@@ -55,7 +63,7 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The accessibility contract test passes seven checks, including every drawer
   route, status, settings-row, avatar, high-contrast, and import/restore
   progress semantics.
-- The server suite passes: 21 tests, including account deletion, rate-limit,
+- The server suite passes: 24 tests, including account deletion, rate-limit,
   and quota tests.
 - A fresh local Flutter 3.44.4 release build produced a signed universal APK
   for package `works.endoftime.plurishaven`, build `2007`, plus arm64-v8a,
@@ -65,12 +73,12 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - The iOS CI gate now runs on GitHub's Intel Tahoe image with Xcode 26.4.1.
   The deployment target remains iOS 14; this only moves the build check to the
   current SDK line.
-- Flutter passed 149 tests. Two optional fixture tests were skipped because
+- Flutter passed 162 tests. Two optional fixture tests were skipped because
   their fixture paths were not set.
 - Hosted CI run `30185996637` passed the website, mobile, server, repository,
   iOS, and CodeQL jobs. The iOS job uploaded `pluris-haven-ios-unsigned`.
-- That hosted run predates the unpushed local commits listed here. No new
-  Android or iOS release artifact has been published for this local delta.
+- The next hosted release will publish the unsigned iOS IPA alongside the
+  Android APKs and include both in the checksum manifest.
 - The local Flutter cache is read-only, so tests used temporary generated
   directories. No project files were changed by that workaround.
 - `SECURITY.md` now explains private reporting and calls out the remaining
@@ -83,12 +91,10 @@ Android-first alpha work: `0.2.0-pre-alpha.1.dev.9+2007`.
 - TalkBack, VoiceOver, keyboard/switch access, large text, high contrast,
   reduced motion, focus order, and every route/sheet still need device notes.
 - Public server launch still needs distributed rate limits, email verification,
-  account recovery, a user-facing account-deletion flow, HTTPS/proxy
-  operations, moderation, legal pages, and monitoring. Registration and
-  friends remain disabled by default.
-- The mobile account/session UI and network uploader for device-key snapshots
-  are not finished. The password-protected archive remains the portable local
-  recovery path: import it on a new device with its passphrase to create new
-  device-key encryption there.
+  account recovery, HTTPS/proxy operations, moderation, legal pages, and
+  monitoring. Registration and friends remain disabled by default.
+- The password-protected archive remains the portable local recovery path:
+  import it on a new device with its passphrase to create new device-key
+  encryption there.
 - Sync, portable identity, federation, ActivityPub, and signed iOS releases are
   outside this alpha.
