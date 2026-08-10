@@ -1,127 +1,116 @@
-# Mobile Builds
+# Mobile Releases
 
-There are two build tracks.
+There are two release types. Dev builds are automatic. Versioned releases use a
+GPG-signed tag created on your machine.
 
-## Dev Builds
+## Dev prerelease
 
-`Mobile Dev Release` runs on `main` when `mobile/**` changes.
+Use a dev build for routine testing between versioned releases.
 
-It creates one prerelease from the checked-in `mobile/pubspec.yaml` version when
-that version is a dev prerelease:
+1. Set a new version in `mobile/pubspec.yaml`:
 
-- last dev version: `0.2.0-pre-alpha.1.dev.9+2007`
-- last dev tag: `mobile-v0.2.0-pre-alpha.1.dev.9+2007`
-- asset: `pluris-haven-dev.apk`
-- metadata: `BUILD.txt`
-- checksums: `SHA256SUMS.txt`
+   ```yaml
+   version: 0.2.0-pre-alpha.2.dev.1+2009
+   ```
 
-Use this APK for normal phone/emulator testing between releases. It is
-debuggable and uses the configured Android signing key.
+2. Commit and push `main`.
+3. Wait for the `CI` workflow.
+4. Open GitHub Releases and check that the new prerelease contains:
+   - `pluris-haven-dev.apk`
+   - `BUILD.txt`
+   - `SHA256SUMS.txt`
 
-The Android package ID is `works.endoftime.plurishaven`. Android only updates an
-installed app when the downloaded APK has the same package ID and a newer build
-number. If an older pre-alpha was installed as `support.plurishaven`, uninstall
-that old build and install the new one once. Obtainium should then track future
-`works.endoftime.plurishaven` builds normally.
+Nothing else is needed. The publish job reuses the debug APK built and tested by
+`CI`. If the version is not a `.dev.N` version, or its build number is not
+newer than the existing tags, publishing is skipped.
 
-Before publishing another dev prerelease, bump both parts in
-`mobile/pubspec.yaml`:
+## Versioned prerelease
 
-```yaml
-version: 0.2.0-pre-alpha.2.dev.1+2009
-```
+Use this for a named alpha milestone such as `0.2.0-pre-alpha.2+2008`.
 
-The `0.2.0` part is the pre-1.0 feature line. The `pre-alpha.1` part is the
-current prerelease milestone. The `.dev.N` part is for automatic debug builds on
-`main`. The `+N` part is Android's numeric build number. SemVer ignores `+build`
-metadata for precedence, so do not only change the number after `+`.
+1. Set the release version in `mobile/pubspec.yaml`. Remove `.dev.N` and increase
+   the number after `+`.
+2. Move the current changelog notes under a heading for that version and date.
+3. Update the current version shown in the website download, distribution and
+   changelog pages.
+4. Run the release checks:
 
-`0.2.0-pre-alpha.1.dev.9+2007` was the development build line used for this
-alpha work. It
-includes the local encrypted repository, migration coverage, imports, avatars,
-archive handling, member ordering, custom fronts, tags, journals, and the
-alpha repository services.
+   ```sh
+   pnpm lint
+   pnpm test:server
+   pnpm --dir website build
+   cd mobile
+   flutter analyze
+   flutter test
+   cd ..
+   ```
 
-Keep the number after `+` monotonic. A prior published APK used a build code in
-the 2000 range, so later APKs must stay above that or Android and Obtainium will
-treat the download as older even when the SemVer text looks newer.
+5. Review and commit the release files with GPG signing:
 
-Do not reuse a published version. If a normal `main` push still has the current
-published version, the workflow records a successful skip instead of rebuilding
-the same APK. Bump the version and build number when a new dev APK is wanted.
+   ```sh
+   git diff --check
+   git diff
+   git add mobile/pubspec.yaml CHANGELOG.md \
+     website/src/routes/changelog/+page.svelte \
+     website/src/routes/distribution/+page.svelte \
+     website/src/routes/download/+page.svelte
+   git commit -S -m "chore(release): mobile VERSION+BUILD"
+   ```
 
-Old dev builds stay visible in GitHub Releases. For Obtainium, track GitHub
-Releases and allow prereleases. The asset name stays `pluris-haven-dev.apk`, so
-the newest prerelease should be the update target.
+6. Push `main`:
 
-## Versioned Releases
+   ```sh
+   git push origin main
+   ```
 
-`Mobile Release` runs from version tags or manual workflow dispatch. Use this
-for deliberate releases. Drop the `.dev.N` part when cutting one of these.
+   Wait for `CI` to pass. The next command refuses to continue until the exact
+   commit at `HEAD` has a successful CI run.
 
-Tag format:
+7. Create the checked, GPG-signed tag:
 
-```sh
-git tag mobile-v0.2.0-pre-alpha.1+2005
-```
+   ```sh
+   scripts/tag-mobile-release.sh
+   ```
 
-Meaning:
+8. Run the exact `git push origin refs/tags/...` command printed by the script.
+9. Wait for `Mobile Release` to pass.
+10. Open the GitHub prerelease and check for:
+    - universal APK
+    - arm64-v8a, armeabi-v7a and x86_64 APKs
+    - unsigned IPA
+    - `BUILD.txt`
+    - `SHA256SUMS.txt`
 
-- `0.2.0-pre-alpha.1` is the GitHub release version.
-- `0.2.0-pre-alpha.1` is passed to Flutter as `--build-name`.
-- `2005` is passed to Flutter as `--build-number`.
+The tag push is intentionally manual. CI cannot create your GPG signature
+without a copy of your private key, and that key does not belong in GitHub
+Secrets.
 
-Examples:
+## Version rules
 
-```text
-mobile-v0.1.0-pre-alpha.dev.1+18
-mobile-v0.2.0-pre-alpha.1.dev.6+2004
-mobile-v0.2.0-pre-alpha.1+2005
-mobile-v0.2.1-pre-alpha.1+2006
-mobile-v0.3.0-alpha.1+2100
-```
+- `.dev.N` means an automatic debug prerelease.
+- A version without `.dev.N` means a signed, versioned release.
+- The number after `+` is Android's build number and iOS's bundle version.
+- Increase both the prerelease version and the build number. Do not publish a
+  second release with the same values.
+- Keep build numbers above `2000`; older builds already used that range.
 
-Use `0.x.y-pre-alpha.*` while the app is still rough and importer-heavy. Bump
-the minor version when a visible chunk of the alpha surface lands. Bump the
-patch number for fixes on that same feature line. Do not tag `1.0.0` until the
-mobile app, imports, sync, and backups are actually stable.
+The Android package ID is `works.endoftime.plurishaven`. Old experimental builds
+used `support.plurishaven` and must be uninstalled once before upgrading.
 
-## Release Assets
+## What CI does
 
-Versioned releases upload:
-
-- universal APK
-- split per-ABI APKs
-- unsigned IPA for re-signing with a sideloading tool
-- `SHA256SUMS.txt`
-
-Release notes are generated by GitHub from the commits since the previous
-release.
-
-Release APKs use the configured Android signing key. Dev prereleases are
-debuggable and intended for testing.
-
-The tag/manual `Mobile Release` workflow builds an unsigned iOS release on the
-pinned `macos-26-intel` Tahoe runner with Xcode 26.4.1 before Android can
-publish. It packages `Runner.app` as an unsigned IPA and includes it in the
-release checksums. This is not Apple signing or TestFlight distribution; the
-installer must re-sign it.
+`Mobile Release` reads the version from the tag, then builds Android and iOS in
+parallel. Android APKs are release-signed. The IPA is unsigned and must be
+re-signed with AltStore, SideStore or Sideloadly. The final job creates the
+checksums and GitHub prerelease; it is the only release job with write access.
 
 ## iOS support
 
-The alpha targets iOS 14 and newer. That is the deployment target in the
-project and the floor we intend to test for this release. Building with the
-current Tahoe/Xcode toolchain does not raise that floor; it gives us the newer
-SDK and native APIs while older devices stay on the existing Flutter path.
-
-The current Flutter support line starts at iOS 13, but iOS 12 and earlier are
-unsupported. Lowering the app to iOS 12 would mean pinning an older Flutter
-engine and older plugin set, which would make current dependency and Xcode
-updates harder to use. It is not worth that trade for this alpha.
-
-Newer iOS presentation features remain optional. An iOS 26-or-later native
-path can be added behind availability checks while iOS 14 keeps the regular
-Flutter presentation. The older path must remain complete and usable.
+- Deployment target: iOS 14.
+- Build runner: macOS Tahoe with Xcode 26.4.1.
+- Building with a newer SDK does not change the iOS 14 deployment target.
+- iOS 12 and earlier are not supported by the current Flutter line.
+- Features that require a newer iOS version must have an iOS 14 fallback.
 
 ## Local Import Acceptance
 
@@ -135,17 +124,6 @@ PLURIS_SP_AVATARS=/absolute/path/to/avatars.zip \
 flutter test test/local_import_acceptance_test.dart --reporter expanded
 ```
 
-The test uses in-memory databases. It checks members, groups, fronts,
-front-member links, custom fronts, custom fields, attached system avatars,
-re-import stability, encryption, rehearsal, and clean restore.
-
-The local repository also exposes a device-key encrypted snapshot path. It
-builds the archive inside a database transaction, emits independently
-authenticated chunks, and is compatible with the optional server's opaque
-chunk API. The server never receives the archive plaintext or device master
-key.
-
-That snapshot format is tied to the device key. For a portable recovery copy,
-use the password-protected archive export instead: import it on the new device
-with the passphrase and the restored local data will be encrypted with the new
-device key.
+The test uses in-memory databases and checks import, re-import, encryption,
+restore rehearsal and clean restore. Device-key snapshots are not portable to a
+new device. Use the password-protected archive export for that.

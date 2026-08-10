@@ -12,6 +12,10 @@ Primary pre-alpha builds are GitHub Releases APKs.
 - Dev tags: `mobile-v0.2.0-pre-alpha.N.dev.N+BUILD`
 - Versioned tags: `mobile-v0.2.0-pre-alpha.N+BUILD`
 
+Dev prereleases are published automatically after the mobile CI job succeeds.
+Versioned releases require a maintainer-pushed GPG-signed tag; GitHub then
+builds and publishes the Android and iOS artifacts automatically.
+
 For Obtainium:
 
 1. Add `https://github.com/EndofTimeWorks/pluris-haven`.
