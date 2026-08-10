@@ -2,13 +2,15 @@
 
 This service is optional. The mobile app remains usable without an account or a server.
 
-The first server boundary handles accounts, revocable device sessions, friend requests, blocking, and directional sharing grants. Accepting a friend request shares nothing until the owner enables specific grants. Local system data is not uploaded or synchronized yet.
+The first server boundary handles accounts, revocable device sessions, friend requests, blocking, and directional sharing grants. Accepting a friend request shares nothing until the owner enables specific grants. Plaintext local system data is not uploaded or synchronized.
 
 The backup workstream has a tested client-side snapshot contract, an
 authenticated per-user snapshot API, and a filesystem object store. Clients
 upload opaque encrypted chunks through this boundary; the server never
 receives archive plaintext or a device master key, and it never overwrites an
 existing chunk key. This is versioned backup, not bidirectional synchronization.
+The mobile client can create these encrypted snapshots, resume matching partial
+uploads, list recovery points, and explicitly delete server copies.
 
 Set `PLURIS_BACKUP_OBJECT_DIR` to a private filesystem location with enough
 space for user-configured snapshot retention. The application creates the
