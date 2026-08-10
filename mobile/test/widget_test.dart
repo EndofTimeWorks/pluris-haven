@@ -2086,17 +2086,19 @@ void main() {
     );
     addTearDown(repository.close);
 
-    final encrypted = await encryptArchiveJson(
-      archiveJson: jsonEncode({
-        'format': 'pluris_haven.local_archive',
-        'version': 1,
-        'members': [
-          {'id': 'member-1', 'display_name': 'Iris'},
-        ],
-      }),
-      passphrase: 'shared passphrase',
-      iterations: 1200,
-    );
+    final encrypted = (await tester.runAsync(
+      () => encryptArchiveJson(
+        archiveJson: jsonEncode({
+          'format': 'pluris_haven.local_archive',
+          'version': 1,
+          'members': [
+            {'id': 'member-1', 'display_name': 'Iris'},
+          ],
+        }),
+        passphrase: 'shared passphrase',
+        iterations: 1200,
+      ),
+    ))!;
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -2125,6 +2127,11 @@ void main() {
       'shared passphrase',
     );
     await tester.tap(find.text('Refresh preview'));
+    // PBKDF2 intentionally runs outside the UI isolate. Let the worker isolate
+    // make progress before returning to the widget test's fake clock.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

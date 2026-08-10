@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:cryptography/cryptography.dart';
 
 const encryptedArchiveFormat = 'pluris_haven.encrypted_archive';
-const encryptedArchiveVersion = 1;
+const encryptedArchiveVersion = 2;
 const encryptedArchiveKdf = 'PBKDF2-HMAC-SHA256';
 const encryptedArchiveCipher = 'XChaCha20-Poly1305';
 const defaultArchiveKdfIterations = 210000;
@@ -24,6 +25,20 @@ Future<String> encryptArchiveJson({
   required String archiveJson,
   required String passphrase,
   int iterations = defaultArchiveKdfIterations,
+}) {
+  return Isolate.run(
+    () => _encryptArchiveJson(
+      archiveJson: archiveJson,
+      passphrase: passphrase,
+      iterations: iterations,
+    ),
+  );
+}
+
+Future<String> _encryptArchiveJson({
+  required String archiveJson,
+  required String passphrase,
+  required int iterations,
 }) async {
   if (passphrase.isEmpty) {
     throw ArgumentError.value(passphrase, 'passphrase', 'must not be empty');
@@ -43,24 +58,40 @@ Future<String> encryptArchiveJson({
     salt: salt,
     iterations: iterations,
   );
-  final box = await _archiveCipher.encrypt(
-    utf8.encode(archiveJson),
-    secretKey: secretKey,
-    nonce: nonce,
-  );
-  final payload = {
+  final header = <String, Object?>{
     'format': encryptedArchiveFormat,
     'version': encryptedArchiveVersion,
     'cipher': encryptedArchiveCipher,
     'kdf': encryptedArchiveKdf,
     'iterations': iterations,
     'salt': base64Url.encode(salt),
+  };
+  final box = await _archiveCipher.encrypt(
+    utf8.encode(archiveJson),
+    secretKey: secretKey,
+    nonce: nonce,
+    aad: _archiveHeaderAad(header),
+  );
+  final payload = {
+    ...header,
     'ciphertext': base64Url.encode(box.concatenation()),
   };
   return const JsonEncoder.withIndent('  ').convert(payload);
 }
 
 Future<String> decryptArchiveJson({
+  required String encryptedArchiveJson,
+  required String passphrase,
+}) {
+  return Isolate.run(
+    () => _decryptArchiveJson(
+      encryptedArchiveJson: encryptedArchiveJson,
+      passphrase: passphrase,
+    ),
+  );
+}
+
+Future<String> _decryptArchiveJson({
   required String encryptedArchiveJson,
   required String passphrase,
 }) async {
@@ -77,7 +108,8 @@ Future<String> decryptArchiveJson({
       'This is not an encrypted Pluris Haven archive.',
     );
   }
-  if (decoded['version'] != encryptedArchiveVersion) {
+  final version = decoded['version'];
+  if (version != 1 && version != encryptedArchiveVersion) {
     throw FormatException(
       'Unsupported encrypted archive version: ${decoded['version']}.',
     );
@@ -112,9 +144,26 @@ Future<String> decryptArchiveJson({
     macLength: _archiveCipher.macAlgorithm.macLength,
     copy: false,
   );
-  final plain = await _archiveCipher.decrypt(box, secretKey: secretKey);
+  final plain = await _archiveCipher.decrypt(
+    box,
+    secretKey: secretKey,
+    aad: version == encryptedArchiveVersion
+        ? _archiveHeaderAad(decoded)
+        : const [],
+  );
   return utf8.decode(plain);
 }
+
+List<int> _archiveHeaderAad(Map<String, Object?> header) => utf8.encode(
+  jsonEncode({
+    'format': header['format'],
+    'version': header['version'],
+    'cipher': header['cipher'],
+    'kdf': header['kdf'],
+    'iterations': header['iterations'],
+    'salt': header['salt'],
+  }),
+);
 
 Future<SecretKey> _archiveKey({
   required String passphrase,
