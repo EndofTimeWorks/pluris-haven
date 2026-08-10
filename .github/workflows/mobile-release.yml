@@ -48,17 +48,60 @@ jobs:
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
 
+      - name: Resolve iOS version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version_with_build="${GITHUB_REF_NAME#mobile-v}"
+            if [[ "${version_with_build}" != *"+"* ]]; then
+              echo "Mobile release tag must include a numeric build number." >&2
+              exit 1
+            fi
+            version="${version_with_build%%+*}"
+            build="${version_with_build##*+}"
+          else
+            version="${{ inputs.version }}"
+            build="${{ inputs.build_number }}"
+          fi
+
+          if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid iOS build number: ${build}" >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "build=${build}" >> "${GITHUB_OUTPUT}"
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build unsigned iOS app
-        run: flutter build ios --release --no-codesign
+        run: >
+          flutter build ios --release --no-codesign
+          --build-name "${{ steps.version.outputs.version }}"
+          --build-number "${{ steps.version.outputs.build }}"
 
-      - name: Upload unsigned app bundle
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p build/ios/unsigned/Payload
+          ditto build/ios/iphoneos/Runner.app \
+            build/ios/unsigned/Payload/Runner.app
+          (
+            cd build/ios/unsigned
+            ditto -c -k --keepParent Payload ../pluris-haven-ios-unsigned.ipa
+          )
+
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: pluris-haven-ios-unsigned
-          path: mobile/build/ios/iphoneos/Runner.app
+          path: mobile/build/ios/pluris-haven-ios-unsigned.ipa
           if-no-files-found: error
 
   android:
@@ -195,6 +238,12 @@ jobs:
           --build-name "${{ steps.version.outputs.build_name }}"
           --build-number "${{ steps.version.outputs.build }}"
 
+      - name: Download unsigned IPA
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: pluris-haven-ios-unsigned
+          path: release/ios
+
       - name: Collect release artifacts
         shell: bash
         run: |
@@ -208,6 +257,8 @@ jobs:
             abi="${abi%-release.apk}"
             cp "${apk}" "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-${abi}.apk"
           done
+          cp ../release/ios/pluris-haven-ios-unsigned.ipa \
+            "../release/mobile/pluris-haven-${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}-unsigned.ipa"
           {
             echo "version=${{ steps.version.outputs.version }}"
             echo "build=${{ steps.version.outputs.build }}"
@@ -216,7 +267,7 @@ jobs:
             echo "run=${GITHUB_RUN_NUMBER}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > ../release/mobile/BUILD.txt
-          (cd ../release/mobile && sha256sum *.apk BUILD.txt > SHA256SUMS.txt)
+          (cd ../release/mobile && sha256sum *.apk *.ipa BUILD.txt > SHA256SUMS.txt)
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
