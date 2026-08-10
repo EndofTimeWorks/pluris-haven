@@ -1,12 +1,14 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
 import '../security/haven_crypto.dart';
 
 const encryptedBackupFormat = 'pluris_haven.encrypted_backup_snapshot';
-const encryptedBackupVersion = 1;
-const encryptedBackupCiphertextPrefix = 'ph1:';
+const encryptedBackupVersion = 2;
+const encryptedBackupCiphertextPrefix = 'ph2:';
+const _legacyEncryptedBackupCiphertextPrefix = 'ph1:';
 const defaultEncryptedBackupChunkSize = 256 * 1024;
 const minEncryptedBackupChunkSize = 1024;
 const maxEncryptedBackupChunkSize = 4 * 1024 * 1024;
@@ -20,16 +22,18 @@ final _sha256Pattern = RegExp(r'^[a-f0-9]{64}$');
 /// chunks to a backup object store.
 ///
 /// The server must not need this class, the device master key, or the archive
-/// plaintext. Each chunk is independently authenticated so interrupted or
-/// resumable uploads can be checked without trusting server metadata.
+/// plaintext. Version 2 binds each authenticated chunk to its manifest and
+/// position. The unkeyed chunk hash is only an early corruption check.
 class EncryptedBackupSnapshot {
   EncryptedBackupSnapshot({
+    this.version = encryptedBackupVersion,
     required this.snapshotId,
     required this.createdAt,
     required this.chunkSize,
     required this.chunks,
   });
 
+  final int version;
   final String snapshotId;
   final DateTime createdAt;
   final int chunkSize;
@@ -68,19 +72,35 @@ class EncryptedBackupSnapshot {
         'must not exceed $maxEncryptedBackupPlainBytes bytes',
       );
     }
+    final snapshotCreatedAt = (createdAt ?? DateTime.now()).toUtc();
+    final chunkCount = (plainBytes.length + chunkSize - 1) ~/ chunkSize;
+    if (chunkCount > maxEncryptedBackupChunkCount) {
+      throw ArgumentError.value(
+        chunkCount,
+        'archiveJson',
+        'requires too many encrypted backup chunks',
+      );
+    }
     final chunks = <EncryptedBackupChunk>[];
     for (var offset = 0; offset < plainBytes.length; offset += chunkSize) {
       final end = (offset + chunkSize).clamp(0, plainBytes.length);
       final plainChunk = plainBytes.sublist(offset, end);
-      final encodedPlainChunk = base64Url.encode(plainChunk);
-      final ciphertext = await crypto.encrypt(encodedPlainChunk);
-      if (ciphertext == null) {
-        throw StateError('Backup chunk encryption returned no ciphertext.');
-      }
+      final index = chunks.length;
+      final ciphertext = await crypto.encryptBytes(
+        plainChunk,
+        aad: _backupChunkAad(
+          version: encryptedBackupVersion,
+          snapshotId: snapshotId,
+          createdAt: snapshotCreatedAt,
+          chunkSize: chunkSize,
+          chunkCount: chunkCount,
+          index: index,
+        ),
+      );
       final storedCiphertext = '$encryptedBackupCiphertextPrefix$ciphertext';
       chunks.add(
         EncryptedBackupChunk(
-          index: chunks.length,
+          index: index,
           ciphertext: storedCiphertext,
           sha256: await _sha256(utf8.encode(storedCiphertext)),
         ),
@@ -88,16 +108,18 @@ class EncryptedBackupSnapshot {
     }
 
     return EncryptedBackupSnapshot(
+      version: encryptedBackupVersion,
       snapshotId: snapshotId,
-      createdAt: (createdAt ?? DateTime.now()).toUtc(),
+      createdAt: snapshotCreatedAt,
       chunkSize: chunkSize,
       chunks: List.unmodifiable(chunks),
     );
   }
 
   factory EncryptedBackupSnapshot.fromJson(Map<String, dynamic> json) {
+    final version = json['version'];
     if (json['format'] != encryptedBackupFormat ||
-        json['version'] != encryptedBackupVersion) {
+        (version != 1 && version != encryptedBackupVersion)) {
       throw const FormatException('Unsupported encrypted backup snapshot.');
     }
     final snapshotId = json['snapshot_id'];
@@ -127,6 +149,7 @@ class EncryptedBackupSnapshot {
     }
     _validateSnapshotId(snapshotId);
     return EncryptedBackupSnapshot(
+      version: version as int,
       snapshotId: snapshotId,
       createdAt: DateTime.parse(createdAt).toUtc(),
       chunkSize: chunkSize,
@@ -143,7 +166,7 @@ class EncryptedBackupSnapshot {
 
   Map<String, dynamic> toJson() => {
     'format': encryptedBackupFormat,
-    'version': encryptedBackupVersion,
+    'version': version,
     'snapshot_id': snapshotId,
     'created_at': createdAt.toIso8601String(),
     'chunk_size': chunkSize,
@@ -162,7 +185,8 @@ class EncryptedBackupSnapshot {
     if (ordered.isEmpty) {
       throw const FormatException('Encrypted backup snapshot has no chunks.');
     }
-    final plainBytes = <int>[];
+    final plainBytes = BytesBuilder(copy: false);
+    var plainByteCount = 0;
     for (var position = 0; position < ordered.length; position++) {
       final chunk = ordered[position];
       if (chunk.index != position) {
@@ -175,42 +199,60 @@ class EncryptedBackupSnapshot {
           'Encrypted backup chunk failed integrity check.',
         );
       }
-      if (!chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix)) {
-        throw const FormatException('Unsupported encrypted backup chunk.');
-      }
-      String? encodedPlainChunk;
+      late final List<int> plainChunk;
       try {
-        encodedPlainChunk = await crypto.decrypt(
-          chunk.ciphertext.substring(encryptedBackupCiphertextPrefix.length),
-        );
+        if (version == 1) {
+          if (!chunk.ciphertext.startsWith(
+            _legacyEncryptedBackupCiphertextPrefix,
+          )) {
+            throw const FormatException('Unsupported encrypted backup chunk.');
+          }
+          final encodedPlainChunk = await crypto.decrypt(
+            chunk.ciphertext.substring(
+              _legacyEncryptedBackupCiphertextPrefix.length,
+            ),
+          );
+          if (encodedPlainChunk == null) {
+            throw const FormatException(
+              'Encrypted backup chunk has no content.',
+            );
+          }
+          plainChunk = base64Url.decode(encodedPlainChunk);
+        } else {
+          if (!chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix)) {
+            throw const FormatException('Unsupported encrypted backup chunk.');
+          }
+          plainChunk = await crypto.decryptBytes(
+            chunk.ciphertext.substring(encryptedBackupCiphertextPrefix.length),
+            aad: _backupChunkAad(
+              version: version,
+              snapshotId: snapshotId,
+              createdAt: createdAt,
+              chunkSize: chunkSize,
+              chunkCount: chunks.length,
+              index: chunk.index,
+            ),
+          );
+        }
       } on Object {
         throw const FormatException(
           'Encrypted backup chunk could not be authenticated.',
         );
-      }
-      if (encodedPlainChunk == null) {
-        throw const FormatException('Encrypted backup chunk has no content.');
-      }
-      late final List<int> plainChunk;
-      try {
-        plainChunk = base64Url.decode(encodedPlainChunk);
-      } on FormatException {
-        throw const FormatException('Encrypted backup chunk is not valid.');
       }
       if (plainChunk.isEmpty || plainChunk.length > chunkSize) {
         throw const FormatException(
           'Encrypted backup chunk exceeds its declared size.',
         );
       }
-      if (plainBytes.length >
-          maxEncryptedBackupPlainBytes - plainChunk.length) {
+      if (plainByteCount > maxEncryptedBackupPlainBytes - plainChunk.length) {
         throw const FormatException(
           'Encrypted backup snapshot exceeds its size limit.',
         );
       }
-      plainBytes.addAll(plainChunk);
+      plainBytes.add(plainChunk);
+      plainByteCount += plainChunk.length;
     }
-    return utf8.decode(plainBytes);
+    return utf8.decode(plainBytes.takeBytes());
   }
 }
 
@@ -270,7 +312,10 @@ void _validateEncryptedBackupChunk(EncryptedBackupChunk chunk) {
     throw const FormatException('Encrypted backup chunk index is invalid.');
   }
   if (chunk.ciphertext.length > maxEncryptedBackupCiphertextLength ||
-      !chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix)) {
+      (!chunk.ciphertext.startsWith(encryptedBackupCiphertextPrefix) &&
+          !chunk.ciphertext.startsWith(
+            _legacyEncryptedBackupCiphertextPrefix,
+          ))) {
     throw const FormatException(
       'Encrypted backup chunk ciphertext is invalid.',
     );
@@ -279,3 +324,22 @@ void _validateEncryptedBackupChunk(EncryptedBackupChunk chunk) {
     throw const FormatException('Encrypted backup chunk hash is invalid.');
   }
 }
+
+List<int> _backupChunkAad({
+  required int version,
+  required String snapshotId,
+  required DateTime createdAt,
+  required int chunkSize,
+  required int chunkCount,
+  required int index,
+}) => utf8.encode(
+  jsonEncode({
+    'format': encryptedBackupFormat,
+    'version': version,
+    'snapshot_id': snapshotId,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'chunk_size': chunkSize,
+    'chunk_count': chunkCount,
+    'index': index,
+  }),
+);

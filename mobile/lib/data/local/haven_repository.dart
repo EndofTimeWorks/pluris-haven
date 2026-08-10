@@ -14,6 +14,12 @@ import 'app_database.dart';
 import 'supported_language.dart';
 
 const _localEncryptedTextPrefix = 'ph1:';
+const _memberEncryptionSweepPreference =
+    'internal.member_encryption_sweep_version';
+const _localEncryptionSweepPreference =
+    'internal.local_encryption_sweep_version';
+const _memberEncryptionSweepVersion = '2';
+const _localEncryptionSweepVersion = '1';
 
 class HomeSnapshot {
   const HomeSnapshot({
@@ -998,23 +1004,42 @@ class LocalHavenRepository implements HavenRepository {
   final AppDatabase database;
   final HavenCrypto crypto;
 
-  /// Decrypts [ciphertext] using the configured [HavenCrypto].
-  ///
-  /// There is deliberately no plaintext fallback here. A missing key or a
-  /// failed authentication check must stop the read instead of turning
-  /// protected data into apparently valid plaintext.
-  Future<String?> _decrypt(String? ciphertext) async {
-    if (ciphertext == null) return null;
-    return await crypto.decrypt(ciphertext);
+  String _memberAad(String memberId, String field) =>
+      'members:$memberId:$field';
+
+  Future<String?> _encryptMember(
+    String memberId,
+    String field,
+    String? plaintext,
+  ) {
+    return crypto.encrypt(plaintext, aad: _memberAad(memberId, field));
   }
 
-  /// Encrypts [plaintext] using the configured [HavenCrypto].
-  ///
-  /// Encryption errors are intentionally propagated. Silently storing the
-  /// original value would violate the local data protection boundary.
-  Future<String?> _encrypt(String? plaintext) async {
-    if (plaintext == null) return null;
-    return await crypto.encrypt(plaintext);
+  Future<String?> _decryptMember(
+    Member member,
+    String field,
+    String? ciphertext,
+  ) {
+    return _decryptMemberValue(member.id, field, ciphertext);
+  }
+
+  Future<String?> _decryptMemberValue(
+    String memberId,
+    String field,
+    String? ciphertext,
+  ) {
+    return crypto.decrypt(ciphertext, aad: _memberAad(memberId, field));
+  }
+
+  Future<String?> _migrateMemberField(
+    Member member,
+    String field,
+    String? legacyCiphertext,
+  ) async {
+    final plaintext = member.profileEncryptionVersion == 0
+        ? legacyCiphertext
+        : await crypto.decrypt(legacyCiphertext);
+    return _encryptMember(member.id, field, plaintext);
   }
 
   /// Computes a blind index for [plaintext].
@@ -1039,12 +1064,18 @@ class LocalHavenRepository implements HavenRepository {
   }
 
   Future<void> migrateMemberNamesToEncryption() async {
-    final members = await (database.select(
-      database.members,
-    )..where((member) => member.systemId.equals(localSystemId))).get();
+    if (await _preferenceEquals(
+      _memberEncryptionSweepPreference,
+      _memberEncryptionSweepVersion,
+    )) {
+      return;
+    }
     await database.transaction(() async {
+      final members = await (database.select(
+        database.members,
+      )..where((member) => member.systemId.equals(localSystemId))).get();
       for (final member in members) {
-        if (member.profileEncryptionVersion >= 1) {
+        if (member.profileEncryptionVersion >= 2) {
           await _verifyEncryptedMemberProfile(member);
           continue;
         }
@@ -1056,7 +1087,11 @@ class LocalHavenRepository implements HavenRepository {
           throw StateError('Member name could not be migrated: ${member.id}');
         }
 
-        final encrypted = await crypto.encrypt(displayName);
+        final encrypted = await _encryptMember(
+          member.id,
+          'display_name',
+          displayName,
+        );
         if (encrypted == null) {
           throw StateError('Member name encryption returned no value.');
         }
@@ -1067,32 +1102,60 @@ class LocalHavenRepository implements HavenRepository {
           MembersCompanion(
             displayName: Value(encrypted),
             displayNameHash: Value(blindIndex),
-            profileEncryptionVersion: const Value(1),
-            pronouns: Value(await crypto.encrypt(member.pronouns)),
-            colorHex: Value(await crypto.encrypt(member.colorHex)),
-            birthday: Value(await crypto.encrypt(member.birthday)),
-            emoji: Value(await crypto.encrypt(member.emoji)),
-            privacy: Value(await crypto.encrypt(member.privacy)),
-            description: Value(await crypto.encrypt(member.description)),
-            avatarUrl: Value(await crypto.encrypt(member.avatarUrl)),
-            pluralKitId: Value(await crypto.encrypt(member.pluralKitId)),
+            profileEncryptionVersion: const Value(2),
+            pronouns: Value(
+              await _migrateMemberField(member, 'pronouns', member.pronouns),
+            ),
+            colorHex: Value(
+              await _migrateMemberField(member, 'color_hex', member.colorHex),
+            ),
+            birthday: Value(
+              await _migrateMemberField(member, 'birthday', member.birthday),
+            ),
+            emoji: Value(
+              await _migrateMemberField(member, 'emoji', member.emoji),
+            ),
+            privacy: Value(
+              await _migrateMemberField(member, 'privacy', member.privacy),
+            ),
+            description: Value(
+              await _migrateMemberField(
+                member,
+                'description',
+                member.description,
+              ),
+            ),
+            avatarUrl: Value(
+              await _migrateMemberField(member, 'avatar_url', member.avatarUrl),
+            ),
+            pluralKitId: Value(
+              await _migrateMemberField(
+                member,
+                'pluralkit_id',
+                member.pluralKitId,
+              ),
+            ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
       }
+      await _writePreference(
+        _memberEncryptionSweepPreference,
+        _memberEncryptionSweepVersion,
+      );
     });
   }
 
   Future<void> _verifyEncryptedMemberProfile(Member member) async {
-    await crypto.decrypt(member.displayName);
-    await crypto.decrypt(member.pronouns);
-    await crypto.decrypt(member.colorHex);
-    await crypto.decrypt(member.birthday);
-    await crypto.decrypt(member.emoji);
-    await crypto.decrypt(member.privacy);
-    await crypto.decrypt(member.description);
-    await crypto.decrypt(member.avatarUrl);
-    await crypto.decrypt(member.pluralKitId);
+    await _decryptMember(member, 'display_name', member.displayName);
+    await _decryptMember(member, 'pronouns', member.pronouns);
+    await _decryptMember(member, 'color_hex', member.colorHex);
+    await _decryptMember(member, 'birthday', member.birthday);
+    await _decryptMember(member, 'emoji', member.emoji);
+    await _decryptMember(member, 'privacy', member.privacy);
+    await _decryptMember(member, 'description', member.description);
+    await _decryptMember(member, 'avatar_url', member.avatarUrl);
+    await _decryptMember(member, 'pluralkit_id', member.pluralKitId);
   }
 
   Future<String> _encryptLocalText(String value) async {
@@ -1117,50 +1180,67 @@ class LocalHavenRepository implements HavenRepository {
 
   Future<String> _migrateLocalText(String stored) async {
     if (stored.startsWith(_localEncryptedTextPrefix)) {
-      final decrypted = await _decryptLocalText(stored);
-      if (decrypted == null) {
-        throw StateError('Protected local text is unexpectedly null.');
-      }
       return stored;
     }
     return _encryptLocalText(stored);
   }
 
+  bool _needsLocalTextMigration(String? stored) =>
+      stored != null && !stored.startsWith(_localEncryptedTextPrefix);
+
   Future<void> migrateLocalPrivateContentToEncryption() async {
-    final notes = await database.select(database.notes).get();
-    final messages = await database.select(database.messages).get();
-    final fronts = await database.select(database.frontSessions).get();
-    final journals = await database.select(database.journalEntries).get();
-    final reminders = await database.select(database.reminders).get();
-    final polls = await database.select(database.polls).get();
-    final pollOptions = await database.select(database.pollOptions).get();
-    final customFields = await database
-        .select(database.customFieldDefinitions)
-        .get();
-    final customFieldValues = await database
-        .select(database.customFieldValues)
-        .get();
-    final groups = await database.select(database.systemGroups).get();
-    final tags = await database.select(database.tags).get();
-    final namedFronts = await database.select(database.namedFronts).get();
-    final privacyBuckets = await database.select(database.privacyBuckets).get();
-    final systems = await database.select(database.pluralSystems).get();
-    final chatCategories = await database.select(database.chatCategories).get();
-    final chatChannels = await database.select(database.chatChannels).get();
-    final notificationEvents = await database
-        .select(database.notificationEvents)
-        .get();
-    final contentRevisions = await database
-        .select(database.contentRevisions)
-        .get();
-    final frontAuditEvents = await database
-        .select(database.frontAuditEvents)
-        .get();
-    final importRecords = await database.select(database.importRecords).get();
-    final importPayloads = await database.select(database.importPayloads).get();
-    final backgroundJobs = await database.select(database.backgroundJobs).get();
+    if (await _preferenceEquals(
+      _localEncryptionSweepPreference,
+      _localEncryptionSweepVersion,
+    )) {
+      return;
+    }
     await database.transaction(() async {
+      final notes = await database.select(database.notes).get();
+      final messages = await database.select(database.messages).get();
+      final fronts = await database.select(database.frontSessions).get();
+      final journals = await database.select(database.journalEntries).get();
+      final reminders = await database.select(database.reminders).get();
+      final polls = await database.select(database.polls).get();
+      final pollOptions = await database.select(database.pollOptions).get();
+      final customFields = await database
+          .select(database.customFieldDefinitions)
+          .get();
+      final customFieldValues = await database
+          .select(database.customFieldValues)
+          .get();
+      final groups = await database.select(database.systemGroups).get();
+      final tags = await database.select(database.tags).get();
+      final namedFronts = await database.select(database.namedFronts).get();
+      final privacyBuckets = await database
+          .select(database.privacyBuckets)
+          .get();
+      final systems = await database.select(database.pluralSystems).get();
+      final chatCategories = await database
+          .select(database.chatCategories)
+          .get();
+      final chatChannels = await database.select(database.chatChannels).get();
+      final notificationEvents = await database
+          .select(database.notificationEvents)
+          .get();
+      final contentRevisions = await database
+          .select(database.contentRevisions)
+          .get();
+      final frontAuditEvents = await database
+          .select(database.frontAuditEvents)
+          .get();
+      final importRecords = await database.select(database.importRecords).get();
+      final importPayloads = await database
+          .select(database.importPayloads)
+          .get();
+      final backgroundJobs = await database
+          .select(database.backgroundJobs)
+          .get();
       for (final note in notes) {
+        if (!_needsLocalTextMigration(note.title) &&
+            !_needsLocalTextMigration(note.body)) {
+          continue;
+        }
         await (database.update(
           database.notes,
         )..where((row) => row.id.equals(note.id))).write(
@@ -1171,6 +1251,7 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final message in messages) {
+        if (!_needsLocalTextMigration(message.body)) continue;
         await (database.update(
           database.messages,
         )..where((row) => row.id.equals(message.id))).write(
@@ -1178,6 +1259,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final front in fronts) {
+        if (!_needsLocalTextMigration(front.label) &&
+            !_needsLocalTextMigration(front.statusNote)) {
+          continue;
+        }
         await (database.update(
           database.frontSessions,
         )..where((row) => row.id.equals(front.id))).write(
@@ -1190,6 +1275,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final journal in journals) {
+        if (!_needsLocalTextMigration(journal.title) &&
+            !_needsLocalTextMigration(journal.body)) {
+          continue;
+        }
         await (database.update(
           database.journalEntries,
         )..where((row) => row.id.equals(journal.id))).write(
@@ -1200,6 +1289,16 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final reminder in reminders) {
+        if (![
+          reminder.title,
+          reminder.body,
+          reminder.scheduleText,
+          reminder.triggerEvent,
+          reminder.scheduleKind,
+          reminder.scheduleTime,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.reminders,
         )..where((row) => row.id.equals(reminder.id))).write(
@@ -1220,6 +1319,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final poll in polls) {
+        if (!_needsLocalTextMigration(poll.question) &&
+            !_needsLocalTextMigration(poll.description)) {
+          continue;
+        }
         await (database.update(
           database.polls,
         )..where((row) => row.id.equals(poll.id))).write(
@@ -1232,6 +1335,7 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final option in pollOptions) {
+        if (!_needsLocalTextMigration(option.body)) continue;
         await (database.update(
           database.pollOptions,
         )..where((row) => row.id.equals(option.id))).write(
@@ -1241,6 +1345,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final field in customFields) {
+        if (!_needsLocalTextMigration(field.name) &&
+            !_needsLocalTextMigration(field.privacy)) {
+          continue;
+        }
         await (database.update(
           database.customFieldDefinitions,
         )..where((row) => row.id.equals(field.id))).write(
@@ -1251,6 +1359,7 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final value in customFieldValues) {
+        if (!_needsLocalTextMigration(value.value)) continue;
         await (database.update(
           database.customFieldValues,
         )..where((row) => row.id.equals(value.id))).write(
@@ -1260,6 +1369,14 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final group in groups) {
+        if (![
+          group.name,
+          group.colorHex,
+          group.description,
+          group.emoji,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.systemGroups,
         )..where((row) => row.id.equals(group.id))).write(
@@ -1274,6 +1391,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final tag in tags) {
+        if (!_needsLocalTextMigration(tag.name) &&
+            !_needsLocalTextMigration(tag.colorHex)) {
+          continue;
+        }
         await (database.update(
           database.tags,
         )..where((row) => row.id.equals(tag.id))).write(
@@ -1284,6 +1405,15 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final front in namedFronts) {
+        if (![
+          front.name,
+          front.customLabel,
+          front.colorHex,
+          front.avatarUrl,
+          front.description,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.namedFronts,
         )..where((row) => row.id.equals(front.id))).write(
@@ -1301,6 +1431,13 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final bucket in privacyBuckets) {
+        if (![
+          bucket.name,
+          bucket.description,
+          bucket.colorHex,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.privacyBuckets,
         )..where((row) => row.id.equals(bucket.id))).write(
@@ -1314,6 +1451,14 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final system in systems) {
+        if (![
+          system.name,
+          system.colorHex,
+          system.avatarUrl,
+          system.description,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.pluralSystems,
         )..where((row) => row.id.equals(system.id))).write(
@@ -1328,6 +1473,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final category in chatCategories) {
+        if (!_needsLocalTextMigration(category.name) &&
+            !_needsLocalTextMigration(category.description)) {
+          continue;
+        }
         await (database.update(
           database.chatCategories,
         )..where((row) => row.id.equals(category.id))).write(
@@ -1340,6 +1489,13 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final channel in chatChannels) {
+        if (![
+          channel.name,
+          channel.description,
+          channel.colorHex,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.chatChannels,
         )..where((row) => row.id.equals(channel.id))).write(
@@ -1353,6 +1509,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final event in notificationEvents) {
+        if (!_needsLocalTextMigration(event.title) &&
+            !_needsLocalTextMigration(event.body)) {
+          continue;
+        }
         await (database.update(
           database.notificationEvents,
         )..where((row) => row.id.equals(event.id))).write(
@@ -1363,6 +1523,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final revision in contentRevisions) {
+        if (!_needsLocalTextMigration(revision.title) &&
+            !_needsLocalTextMigration(revision.body)) {
+          continue;
+        }
         await (database.update(
           database.contentRevisions,
         )..where((row) => row.id.equals(revision.id))).write(
@@ -1373,6 +1537,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final event in frontAuditEvents) {
+        if (!_needsLocalTextMigration(event.beforeSnapshot) &&
+            !_needsLocalTextMigration(event.afterSnapshot)) {
+          continue;
+        }
         await (database.update(
           database.frontAuditEvents,
         )..where((row) => row.id.equals(event.id))).write(
@@ -1387,6 +1555,10 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final record in importRecords) {
+        if (!_needsLocalTextMigration(record.fileName) &&
+            !_needsLocalTextMigration(record.summaryJson)) {
+          continue;
+        }
         await (database.update(
           database.importRecords,
         )..where((row) => row.id.equals(record.id))).write(
@@ -1399,6 +1571,7 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final payload in importPayloads) {
+        if (!_needsLocalTextMigration(payload.payloadJson)) continue;
         await (database.update(
           database.importPayloads,
         )..where((row) => row.id.equals(payload.id))).write(
@@ -1408,6 +1581,13 @@ class LocalHavenRepository implements HavenRepository {
         );
       }
       for (final job in backgroundJobs) {
+        if (![
+          job.fileName,
+          job.payloadJson,
+          job.error,
+        ].any(_needsLocalTextMigration)) {
+          continue;
+        }
         await (database.update(
           database.backgroundJobs,
         )..where((row) => row.id.equals(job.id))).write(
@@ -1418,6 +1598,10 @@ class LocalHavenRepository implements HavenRepository {
           ),
         );
       }
+      await _writePreference(
+        _localEncryptionSweepPreference,
+        _localEncryptionSweepVersion,
+      );
     });
   }
 
@@ -1531,23 +1715,60 @@ ORDER BY m.lexo_rank ASC
           final summaries = <MemberSummary>[];
           for (final row in rows) {
             final data = row.data;
+            final memberId = data['id'] as String;
             final storedName = data['display_name'] as String;
-            final displayName = await _decrypt(storedName);
+            final displayName = await _decryptMemberValue(
+              memberId,
+              'display_name',
+              storedName,
+            );
             if (displayName == null) {
               throw StateError('Protected member name is unexpectedly null.');
             }
             summaries.add(
               MemberSummary(
-                id: data['id'] as String,
+                id: memberId,
                 displayName: displayName,
-                pronouns: await _decrypt(data['pronouns'] as String?),
-                colorHex: await _decrypt(data['color_hex'] as String?),
-                birthday: await _decrypt(data['birthday'] as String?),
-                emoji: await _decrypt(data['emoji'] as String?),
-                privacy: await _decrypt(data['privacy'] as String?),
-                description: await _decrypt(data['description'] as String?),
-                avatarUrl: await _decrypt(data['avatar_url'] as String?),
-                pluralKitId: await _decrypt(data['plural_kit_id'] as String?),
+                pronouns: await _decryptMemberValue(
+                  memberId,
+                  'pronouns',
+                  data['pronouns'] as String?,
+                ),
+                colorHex: await _decryptMemberValue(
+                  memberId,
+                  'color_hex',
+                  data['color_hex'] as String?,
+                ),
+                birthday: await _decryptMemberValue(
+                  memberId,
+                  'birthday',
+                  data['birthday'] as String?,
+                ),
+                emoji: await _decryptMemberValue(
+                  memberId,
+                  'emoji',
+                  data['emoji'] as String?,
+                ),
+                privacy: await _decryptMemberValue(
+                  memberId,
+                  'privacy',
+                  data['privacy'] as String?,
+                ),
+                description: await _decryptMemberValue(
+                  memberId,
+                  'description',
+                  data['description'] as String?,
+                ),
+                avatarUrl: await _decryptMemberValue(
+                  memberId,
+                  'avatar_url',
+                  data['avatar_url'] as String?,
+                ),
+                pluralKitId: await _decryptMemberValue(
+                  memberId,
+                  'pluralkit_id',
+                  data['plural_kit_id'] as String?,
+                ),
                 archived: _readSqlBool(data['archived']),
                 isCustomFront: _readSqlBool(data['is_custom_front']),
                 frameShape: data['frame_shape'] as String,
@@ -1608,7 +1829,11 @@ ORDER BY m.lexo_rank ASC
         if (row == null) {
           continue;
         }
-        final displayName = await _decrypt(row.displayName);
+        final displayName = await _decryptMember(
+          row,
+          'display_name',
+          row.displayName,
+        );
         if (displayName == null) {
           throw StateError('Protected member name is unexpectedly null.');
         }
@@ -1616,14 +1841,22 @@ ORDER BY m.lexo_rank ASC
           MemberSummary(
             id: row.id,
             displayName: displayName,
-            pronouns: await _decrypt(row.pronouns),
-            colorHex: await _decrypt(row.colorHex),
-            birthday: await _decrypt(row.birthday),
-            emoji: await _decrypt(row.emoji),
-            privacy: await _decrypt(row.privacy),
-            description: await _decrypt(row.description),
-            avatarUrl: await _decrypt(row.avatarUrl),
-            pluralKitId: await _decrypt(row.pluralKitId),
+            pronouns: await _decryptMember(row, 'pronouns', row.pronouns),
+            colorHex: await _decryptMember(row, 'color_hex', row.colorHex),
+            birthday: await _decryptMember(row, 'birthday', row.birthday),
+            emoji: await _decryptMember(row, 'emoji', row.emoji),
+            privacy: await _decryptMember(row, 'privacy', row.privacy),
+            description: await _decryptMember(
+              row,
+              'description',
+              row.description,
+            ),
+            avatarUrl: await _decryptMember(row, 'avatar_url', row.avatarUrl),
+            pluralKitId: await _decryptMember(
+              row,
+              'pluralkit_id',
+              row.pluralKitId,
+            ),
             archived: row.archived,
             isCustomFront: row.isCustomFront,
             frameShape: row.frameShape,
@@ -2032,7 +2265,11 @@ ORDER BY pb.position ASC
     )..where((member) => member.id.isIn(memberIds))).get();
     final namesById = <String, String>{};
     for (final member in members) {
-      final name = (await _decrypt(member.displayName))?.trim();
+      final name = (await _decryptMember(
+        member,
+        'display_name',
+        member.displayName,
+      ))?.trim();
       if (name != null && name.isNotEmpty) {
         namesById[member.id] = name;
       }
@@ -2177,7 +2414,11 @@ SELECT
               .get();
       final namesById = <String, String>{};
       for (final member in members) {
-        final displayName = await _decrypt(member.displayName);
+        final displayName = await _decryptMember(
+          member,
+          'display_name',
+          member.displayName,
+        );
         final name = displayName?.trim() ?? '';
         if (name.isNotEmpty) {
           namesById[member.id] = name;
@@ -2403,7 +2644,11 @@ SELECT
     final memberId = 'member-${now.microsecondsSinceEpoch}';
     final groupIds = _normalizedMemberGroupIds(draft);
     final folderId = _nullIfBlank(draft.folderId) ?? _firstOrNull(groupIds);
-    final encryptedName = await _encrypt(displayName);
+    final encryptedName = await _encryptMember(
+      memberId,
+      'display_name',
+      displayName,
+    );
     final nameHash = await _blindIndex(displayName);
     await database
         .into(database.members)
@@ -2413,15 +2658,63 @@ SELECT
             systemId: localSystemId,
             displayName: encryptedName!,
             displayNameHash: Value(nameHash),
-            profileEncryptionVersion: const Value(1),
-            pronouns: Value(await _encrypt(_nullIfBlank(draft.pronouns))),
-            colorHex: Value(await _encrypt(_nullIfBlank(draft.colorHex))),
-            birthday: Value(await _encrypt(_nullIfBlank(draft.birthday))),
-            emoji: Value(await _encrypt(_nullIfBlank(draft.emoji))),
-            privacy: Value(await _encrypt(_nullIfBlank(draft.privacy))),
-            description: Value(await _encrypt(_nullIfBlank(draft.description))),
-            avatarUrl: Value(await _encrypt(_nullIfBlank(draft.avatarUrl))),
-            pluralKitId: Value(await _encrypt(_nullIfBlank(draft.pluralKitId))),
+            profileEncryptionVersion: const Value(2),
+            pronouns: Value(
+              await _encryptMember(
+                memberId,
+                'pronouns',
+                _nullIfBlank(draft.pronouns),
+              ),
+            ),
+            colorHex: Value(
+              await _encryptMember(
+                memberId,
+                'color_hex',
+                _nullIfBlank(draft.colorHex),
+              ),
+            ),
+            birthday: Value(
+              await _encryptMember(
+                memberId,
+                'birthday',
+                _nullIfBlank(draft.birthday),
+              ),
+            ),
+            emoji: Value(
+              await _encryptMember(
+                memberId,
+                'emoji',
+                _nullIfBlank(draft.emoji),
+              ),
+            ),
+            privacy: Value(
+              await _encryptMember(
+                memberId,
+                'privacy',
+                _nullIfBlank(draft.privacy),
+              ),
+            ),
+            description: Value(
+              await _encryptMember(
+                memberId,
+                'description',
+                _nullIfBlank(draft.description),
+              ),
+            ),
+            avatarUrl: Value(
+              await _encryptMember(
+                memberId,
+                'avatar_url',
+                _nullIfBlank(draft.avatarUrl),
+              ),
+            ),
+            pluralKitId: Value(
+              await _encryptMember(
+                memberId,
+                'pluralkit_id',
+                _nullIfBlank(draft.pluralKitId),
+              ),
+            ),
             folderId: Value(folderId),
             createdAt: now,
             updatedAt: now,
@@ -2466,7 +2759,11 @@ SELECT
     final folderId = preserveGroups
         ? existing?.folderId
         : requestedFolderId ?? _firstOrNull(groupIds);
-    final encryptedName = await _encrypt(displayName);
+    final encryptedName = await _encryptMember(
+      memberId,
+      'display_name',
+      displayName,
+    );
     final nameHash = await _blindIndex(displayName);
     await (database.update(database.members)..where(
           (member) =>
@@ -2477,15 +2774,63 @@ SELECT
           MembersCompanion(
             displayName: Value(encryptedName!),
             displayNameHash: Value(nameHash),
-            profileEncryptionVersion: const Value(1),
-            pronouns: Value(await _encrypt(_nullIfBlank(draft.pronouns))),
-            colorHex: Value(await _encrypt(_nullIfBlank(draft.colorHex))),
-            birthday: Value(await _encrypt(_nullIfBlank(draft.birthday))),
-            emoji: Value(await _encrypt(_nullIfBlank(draft.emoji))),
-            privacy: Value(await _encrypt(_nullIfBlank(draft.privacy))),
-            description: Value(await _encrypt(_nullIfBlank(draft.description))),
-            avatarUrl: Value(await _encrypt(_nullIfBlank(draft.avatarUrl))),
-            pluralKitId: Value(await _encrypt(_nullIfBlank(draft.pluralKitId))),
+            profileEncryptionVersion: const Value(2),
+            pronouns: Value(
+              await _encryptMember(
+                memberId,
+                'pronouns',
+                _nullIfBlank(draft.pronouns),
+              ),
+            ),
+            colorHex: Value(
+              await _encryptMember(
+                memberId,
+                'color_hex',
+                _nullIfBlank(draft.colorHex),
+              ),
+            ),
+            birthday: Value(
+              await _encryptMember(
+                memberId,
+                'birthday',
+                _nullIfBlank(draft.birthday),
+              ),
+            ),
+            emoji: Value(
+              await _encryptMember(
+                memberId,
+                'emoji',
+                _nullIfBlank(draft.emoji),
+              ),
+            ),
+            privacy: Value(
+              await _encryptMember(
+                memberId,
+                'privacy',
+                _nullIfBlank(draft.privacy),
+              ),
+            ),
+            description: Value(
+              await _encryptMember(
+                memberId,
+                'description',
+                _nullIfBlank(draft.description),
+              ),
+            ),
+            avatarUrl: Value(
+              await _encryptMember(
+                memberId,
+                'avatar_url',
+                _nullIfBlank(draft.avatarUrl),
+              ),
+            ),
+            pluralKitId: Value(
+              await _encryptMember(
+                memberId,
+                'pluralkit_id',
+                _nullIfBlank(draft.pluralKitId),
+              ),
+            ),
             folderId: Value(folderId),
             updatedAt: Value(now),
           ),
@@ -3739,6 +4084,13 @@ SELECT
     return cleaned;
   }
 
+  Future<bool> _preferenceEquals(String key, String expectedValue) async {
+    final preference = await (database.select(
+      database.appPreferences,
+    )..where((row) => row.key.equals(key))).getSingleOrNull();
+    return preference?.value == expectedValue;
+  }
+
   Future<void> _writePreference(String key, String value) {
     final now = DateTime.now().toUtc();
 
@@ -3894,7 +4246,8 @@ SELECT
     final preferences = await database.select(database.appPreferences).get();
     final avatarAssets = await _exportLocalAvatarAssets([
       if (systems.isNotEmpty) await _decryptLocalText(systems.single.avatarUrl),
-      for (final member in members) await _decrypt(member.avatarUrl),
+      for (final member in members)
+        await _decryptMember(member, 'avatar_url', member.avatarUrl),
       for (final front in namedFronts) await _decryptLocalText(front.avatarUrl),
     ]);
 
@@ -5228,7 +5581,7 @@ SELECT
   ) async {
     final id = _requiredString(member, 'id');
     final displayName = _requiredString(member, 'display_name');
-    final encryptedName = await _encrypt(displayName);
+    final encryptedName = await _encryptMember(id, 'display_name', displayName);
     if (encryptedName == null) {
       throw StateError('Member name encryption returned no value.');
     }
@@ -5237,18 +5590,48 @@ SELECT
       systemId: localSystemId,
       displayName: encryptedName,
       displayNameHash: Value(await _blindIndex(displayName)),
-      profileEncryptionVersion: const Value(1),
-      pronouns: Value(await _encrypt(_stringValue(member['pronouns']))),
-      colorHex: Value(await _encrypt(_stringValue(member['color_hex']))),
-      birthday: Value(await _encrypt(_stringValue(member['birthday']))),
-      emoji: Value(await _encrypt(_stringValue(member['emoji']))),
-      privacy: Value(await _encrypt(_stringValue(member['privacy']))),
-      folderId: Value(_stringValue(member['folder_id'])),
-      description: Value(await _encrypt(_stringValue(member['description']))),
-      avatarUrl: Value(
-        await _encrypt(localAvatarUrl ?? _stringValue(member['avatar_url'])),
+      profileEncryptionVersion: const Value(2),
+      pronouns: Value(
+        await _encryptMember(id, 'pronouns', _stringValue(member['pronouns'])),
       ),
-      pluralKitId: Value(await _encrypt(_stringValue(member['pluralkit_id']))),
+      colorHex: Value(
+        await _encryptMember(
+          id,
+          'color_hex',
+          _stringValue(member['color_hex']),
+        ),
+      ),
+      birthday: Value(
+        await _encryptMember(id, 'birthday', _stringValue(member['birthday'])),
+      ),
+      emoji: Value(
+        await _encryptMember(id, 'emoji', _stringValue(member['emoji'])),
+      ),
+      privacy: Value(
+        await _encryptMember(id, 'privacy', _stringValue(member['privacy'])),
+      ),
+      folderId: Value(_stringValue(member['folder_id'])),
+      description: Value(
+        await _encryptMember(
+          id,
+          'description',
+          _stringValue(member['description']),
+        ),
+      ),
+      avatarUrl: Value(
+        await _encryptMember(
+          id,
+          'avatar_url',
+          localAvatarUrl ?? _stringValue(member['avatar_url']),
+        ),
+      ),
+      pluralKitId: Value(
+        await _encryptMember(
+          id,
+          'pluralkit_id',
+          _stringValue(member['pluralkit_id']),
+        ),
+      ),
       isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
       createdAt: _dateValue(member['created_at']) ?? now,
@@ -6002,8 +6385,10 @@ SELECT
           database.members,
         )..where((m) => m.id.equals(targetId))).write(
           MembersCompanion(
-            description: Value(await _encrypt(revision.body)),
-            profileEncryptionVersion: const Value(1),
+            description: Value(
+              await _encryptMember(targetId, 'description', revision.body),
+            ),
+            profileEncryptionVersion: const Value(2),
             updatedAt: Value(now),
           ),
         );
@@ -6381,18 +6766,34 @@ SELECT
   };
 
   Future<Map<String, Object?>> _memberToJson(Member member) async {
-    final displayName = await _decrypt(member.displayName);
+    final displayName = await _decryptMember(
+      member,
+      'display_name',
+      member.displayName,
+    );
     if (displayName == null) {
       throw StateError('Protected member name could not be exported.');
     }
-    final pronouns = await _decrypt(member.pronouns);
-    final colorHex = await _decrypt(member.colorHex);
-    final birthday = await _decrypt(member.birthday);
-    final emoji = await _decrypt(member.emoji);
-    final privacy = await _decrypt(member.privacy);
-    final description = await _decrypt(member.description);
-    final avatarUrl = await _decrypt(member.avatarUrl);
-    final pluralKitId = await _decrypt(member.pluralKitId);
+    final pronouns = await _decryptMember(member, 'pronouns', member.pronouns);
+    final colorHex = await _decryptMember(member, 'color_hex', member.colorHex);
+    final birthday = await _decryptMember(member, 'birthday', member.birthday);
+    final emoji = await _decryptMember(member, 'emoji', member.emoji);
+    final privacy = await _decryptMember(member, 'privacy', member.privacy);
+    final description = await _decryptMember(
+      member,
+      'description',
+      member.description,
+    );
+    final avatarUrl = await _decryptMember(
+      member,
+      'avatar_url',
+      member.avatarUrl,
+    );
+    final pluralKitId = await _decryptMember(
+      member,
+      'pluralkit_id',
+      member.pluralKitId,
+    );
     return {
       'id': member.id,
       'display_name': displayName,

@@ -154,14 +154,32 @@ void main() {
           ),
         );
     await encryptedRepository.migrateMemberNamesToEncryption();
+    final changesAfterMigration = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
     await encryptedRepository.migrateMemberNamesToEncryption();
+    final changesAfterNoOp = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
 
     final stored = (await database.select(database.members).get()).single;
     expect(stored.displayName, isNot('River'));
     expect(stored.pronouns, isNot('they/them'));
     expect(stored.description, isNot('Legacy private profile'));
-    expect(stored.profileEncryptionVersion, 1);
+    expect(stored.profileEncryptionVersion, 2);
     expect(stored.displayNameHash, isNotEmpty);
+    expect(
+      changesAfterNoOp.read<int>('count'),
+      changesAfterMigration.read<int>('count'),
+    );
+    expect(
+      await (database.select(database.appPreferences)..where(
+            (row) => row.key.equals('internal.member_encryption_sweep_version'),
+          ))
+          .getSingle()
+          .then((row) => row.value),
+      '2',
+    );
     final member = (await encryptedRepository.watchMembers().first).single;
     expect(member.displayName, 'River');
     expect(member.pronouns, 'they/them');
@@ -269,6 +287,13 @@ void main() {
         );
 
     await repository.migrateLocalPrivateContentToEncryption();
+    final changesAfterMigration = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
+    await repository.migrateLocalPrivateContentToEncryption();
+    final changesAfterNoOp = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
 
     final storedNote = (await database.select(database.notes).get()).single;
     final storedMessage =
@@ -276,6 +301,18 @@ void main() {
     expect(storedNote.title, isNot('Private note'));
     expect(storedNote.body, isNot('Legacy note body'));
     expect(storedMessage.body, isNot('Legacy message body'));
+    expect(
+      changesAfterNoOp.read<int>('count'),
+      changesAfterMigration.read<int>('count'),
+    );
+    expect(
+      await (database.select(database.appPreferences)..where(
+            (row) => row.key.equals('internal.local_encryption_sweep_version'),
+          ))
+          .getSingle()
+          .then((row) => row.value),
+      '1',
+    );
     expect((await repository.watchNotes().first).single.title, 'Private note');
     expect(
       (await repository.watchMessages().first).single.body,
@@ -637,7 +674,6 @@ void main() {
             createdAt: now,
           ),
         );
-    await repository.migrateLocalPrivateContentToEncryption();
     await repository.setFrontMembers([member.id]);
     final front = (await repository.watchFrontHistory().first).single;
     await database
@@ -824,7 +860,6 @@ void main() {
             createdAt: now,
           ),
         );
-    await source.migrateLocalPrivateContentToEncryption();
     await source.setFrontMembers([member.id]);
     final front = (await source.watchFrontHistory().first).single;
     await sourceDatabase

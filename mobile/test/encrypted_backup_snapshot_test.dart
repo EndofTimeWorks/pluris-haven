@@ -65,6 +65,35 @@ void main() {
     );
   });
 
+  test('authenticates manifest identity and chunk position', () async {
+    final crypto = testCrypto();
+    final snapshot = await EncryptedBackupSnapshot.create(
+      snapshotId: 'snapshot-original',
+      archiveJson: jsonEncode({'payload': List.filled(2000, 'private')}),
+      crypto: crypto,
+      createdAt: DateTime.utc(2026, 7, 24),
+      chunkSize: 1024,
+    );
+
+    final renamedJson = snapshot.toJson()..['snapshot_id'] = 'snapshot-renamed';
+    final renamed = EncryptedBackupSnapshot.fromJson(renamedJson);
+    await expectLater(
+      renamed.restoreArchiveJson(crypto),
+      throwsA(isA<FormatException>()),
+    );
+
+    final reorderedJson = snapshot.toJson();
+    final chunks = (reorderedJson['chunks'] as List)
+        .cast<Map<String, dynamic>>();
+    chunks[0] = {...chunks[0], 'index': 1};
+    chunks[1] = {...chunks[1], 'index': 0};
+    final reordered = EncryptedBackupSnapshot.fromJson(reorderedJson);
+    await expectLater(
+      reordered.restoreArchiveJson(crypto),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('rejects manifests outside resource limits', () {
     final oversizedChunkSize = <String, dynamic>{
       'format': encryptedBackupFormat,

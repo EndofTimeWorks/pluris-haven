@@ -73,21 +73,32 @@ void main() {
       expect(crypto.blindIndexEquals(a, 'deadbeef'), isFalse);
     });
 
-    test(
-      'deriveMasterKey produces a 32-byte key from arbitrary input',
-      () async {
-        final key = await deriveMasterKey('any long passphrase'.codeUnits);
-        final extracted = await key.extractBytes();
-        expect(extracted.length, equals(32));
-      },
-    );
+    test('deriveMasterKey accepts only 32 random bytes', () async {
+      final key = await deriveMasterKey(
+        List<int>.generate(32, (index) => index),
+      );
+      expect((await key.extractBytes()).length, equals(32));
+      await expectLater(deriveMasterKey(const [1, 2, 3]), throwsArgumentError);
+    });
 
     test('derived keys decrypt across crypto instances', () async {
-      final key = await deriveMasterKey('shared local secret'.codeUnits);
+      final key = await deriveMasterKey(List<int>.filled(32, 7));
       final first = HavenCrypto(key);
       final second = HavenCrypto(key);
       final cipher = await first.encrypt('portable encrypted note');
       expect(await second.decrypt(cipher), equals('portable encrypted note'));
+    });
+
+    test('AAD binds ciphertext to its storage context', () async {
+      final cipher = await crypto.encrypt('private note', aad: 'notes:1:body');
+      expect(
+        await crypto.decrypt(cipher, aad: 'notes:1:body'),
+        equals('private note'),
+      );
+      await expectLater(
+        crypto.decrypt(cipher, aad: 'notes:2:body'),
+        throwsA(anything),
+      );
     });
   });
 
@@ -143,6 +154,24 @@ void main() {
           passphrase: 'right-password',
         ),
         throwsFormatException,
+      );
+    });
+
+    test('authenticated archive metadata cannot be lowered', () async {
+      final encrypted = await encryptArchiveJson(
+        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
+        passphrase: 'right-password',
+        iterations: 1200,
+      );
+      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
+      decoded['iterations'] = 1000;
+
+      await expectLater(
+        decryptArchiveJson(
+          encryptedArchiveJson: jsonEncode(decoded),
+          passphrase: 'right-password',
+        ),
+        throwsA(anything),
       );
     });
   });
