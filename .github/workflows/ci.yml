@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -70,12 +70,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Cache Flutter pub
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: /opt/hostedtoolcache/flutter
-          key: flutter-${{ runner.os }}-${{ hashFiles('mobile/pubspec.lock') }}
-
       - run: flutter pub get
 
       - run: dart format --set-exit-if-changed lib test
@@ -91,6 +85,102 @@ jobs:
           name: pluris-haven-debug-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+
+  mobile-dev-release:
+    name: Publish mobile dev prerelease
+    needs: mobile
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve dev version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_line="$(awk '/^version:/ {print $2}' mobile/pubspec.yaml)"
+          version="${version_line%%+*}"
+          build="${version_line##*+}"
+          tag="mobile-v${version_line}"
+
+          if [[ -z "${version_line}" || "${version_line}" == "${version}" ]]; then
+            echo "mobile/pubspec.yaml must contain a version with +build metadata." >&2
+            exit 1
+          fi
+          if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid Android build number: ${build}" >&2
+            exit 1
+          fi
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-pre-alpha(\.[0-9]+)?\.dev\.[0-9]+$ ]]; then
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+            echo "Version ${version_line} is not a dev prerelease." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
+          max_tagged_build="${max_tagged_build:-0}"
+          if (( build <= max_tagged_build )) || git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+            echo "Dev prerelease ${version_line} is not newer than the published mobile tags." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          {
+            echo "version=${version}"
+            echo "build=${build}"
+            echo "tag=${tag}"
+            echo "should_publish=true"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Download tested debug APK
+        if: steps.version.outputs.should_publish == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: pluris-haven-debug-apk
+          path: release/mobile-dev/raw
+
+      - name: Collect dev release
+        if: steps.version.outputs.should_publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p release/mobile-dev
+          cp release/mobile-dev/raw/app-debug.apk release/mobile-dev/pluris-haven-dev.apk
+          {
+            echo "version=${{ steps.version.outputs.version }}"
+            echo "build=${{ steps.version.outputs.build }}"
+            echo "tag=${{ steps.version.outputs.tag }}"
+            echo "commit=${GITHUB_SHA}"
+            echo "run=${GITHUB_RUN_NUMBER}"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > release/mobile-dev/BUILD.txt
+          (cd release/mobile-dev && sha256sum pluris-haven-dev.apk BUILD.txt > SHA256SUMS.txt)
+
+      - name: Publish dev prerelease
+        if: steps.version.outputs.should_publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            release/mobile-dev/pluris-haven-dev.apk \
+            release/mobile-dev/BUILD.txt \
+            release/mobile-dev/SHA256SUMS.txt \
+            --target "${GITHUB_SHA}" \
+            --title "Pluris Haven Mobile pre-alpha debug ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+            --notes "Pre-alpha debug build from ${GITHUB_SHA}. This APK is dev-signed and debuggable." \
+            --generate-notes \
+            --prerelease \
+            --latest=false
 
   ios:
     name: iOS (unsigned build)
@@ -187,43 +277,6 @@ jobs:
         run: |
           uv run alembic upgrade head
           uv run alembic check
-
-  dependabot:
-    name: Dependabot review
-    runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-
-      - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: '3.44.4'
-          channel: stable
-          cache: true
-
-      - run: flutter pub get
-        working-directory: mobile
-
-      - run: flutter test
-        working-directory: mobile
-
-      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
-        with:
-          version: 10.33.0
-
-      - run: pnpm install --frozen-lockfile
-        working-directory: website
-
-      - run: pnpm check
-        working-directory: website
 
   codeql:
     name: CodeQL (${{ matrix.language }})

@@ -9,7 +9,7 @@
     "lint:website": "pnpm --dir website check",
     "lint:server:format": "server/.venv/bin/ruff format --check server/pluris_server server/tests",
     "lint:server": "server/.venv/bin/ruff check server/pluris_server server/tests",
-    "lint:shell": "shellcheck scripts/build-mobile.sh server/deploy/*.sh",
+    "lint:shell": "shellcheck scripts/*.sh server/deploy/*.sh",
     "lint:mobile": "cd mobile && dart format --set-exit-if-changed lib test && flutter analyze",
     "test:server": "server/.venv/bin/pytest -q server/tests",
     "test:mobile": "cd mobile && flutter test",

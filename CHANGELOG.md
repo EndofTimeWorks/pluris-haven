@@ -32,6 +32,8 @@ Android-first alpha release: `0.2.0-pre-alpha.2+2008`.
   logging the token.
 - The release workflow packages the unsigned iOS device build as an IPA for
   re-signing with AltStore, SideStore, or Sideloadly.
+- Dev prereleases reuse the debug APK already tested by CI instead of running a
+  second Flutter test and build job.
 
 ### Server and CI
 
@@ -55,6 +57,8 @@ Android-first alpha release: `0.2.0-pre-alpha.2+2008`.
   encrypted backup upload and deletion, friend requests, grants, and blocking.
 - Server account, import, backup, friend, and reminder surfaces use the typed
   localisation catalogue.
+- Versioned releases now validate metadata once, build Android and iOS in
+  parallel, and grant repository write access only to the publishing job.
 
 ### Checks
 
