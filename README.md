@@ -9,15 +9,16 @@ other network features are opt-in.
 
 - `mobile` - Flutter app targeting Android and iOS.
 - `website` - SvelteKit site/app shell.
-- server/sync - later, once the local app and importers are solid.
+- `server` - optional accounts, sessions, friends, and encrypted backup storage.
 
 ## Current Focus
 
 - local member, group, note, and front tracking
 - mobile navigation and dashboard
 - dashboard, theme, and language preferences
-- Simply Plural and PluralKit import paths
-- local export and backup
+- Simply Plural and PluralKit file and live-token import paths
+- local export, password-protected recovery, and encrypted server backup upload
+- optional server accounts, revocable sessions, friends, blocking, and sharing grants
 - dev and tagged mobile builds through GitHub Actions
 
 ## Docs
