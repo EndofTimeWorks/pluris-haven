@@ -160,5 +160,318 @@
         "type": "int"
       }
     }
+  },
+  "serverAccountsUnavailable": "Server accounts are unavailable in this app session.",
+  "optionalServerAccountTitle": "Optional server account",
+  "serverConnectDescription": "Connect an HTTPS server to use encrypted online backups and account features. Local use stays independent.",
+  "serverUrlLabel": "Server URL",
+  "connectServerButton": "Check and connect",
+  "connectedServerFallback": "Connected server",
+  "signInButton": "Sign in",
+  "createAccountButton": "Create account",
+  "disconnectButton": "Disconnect",
+  "accountFallback": "Account",
+  "thisDeviceLabel": "This device",
+  "activeServerSessionLabel": "Active server session",
+  "revokeSessionTooltip": "Revoke session",
+  "refreshButton": "Refresh",
+  "signOutButton": "Sign out",
+  "deleteServerAccountButton": "Delete server account",
+  "deleteServerAccountTitle": "Delete server account?",
+  "deleteServerAccountBody": "This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.",
+  "currentPasswordLabel": "Current password",
+  "deleteAccountButton": "Delete account",
+  "createServerAccountTitle": "Create server account",
+  "displayNameLabel": "Display name",
+  "emailLabel": "Email",
+  "invalidEmailError": "Enter a valid email address.",
+  "passwordLabel": "Password",
+  "passwordLengthError": "Use at least 12 characters.",
+  "deviceNameLabel": "Device name",
+  "requiredFieldError": "This field is required.",
+  "onlineBackupUnavailable": "Online backup is unavailable in this app session.",
+  "encryptedOnlineBackupTitle": "Encrypted online backup",
+  "backupEncryptionDescription": "Snapshots are encrypted on this device before upload.",
+  "backupSignInDescription": "Connect and sign in from Account Settings first.",
+  "backupUploadProgressLabel": "Encrypted backup upload progress",
+  "backupUploadProgressValue": "{completed} of {total} chunks",
+  "@backupUploadProgressValue": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "createUploadSnapshotButton": "Create and upload snapshot",
+  "backupSnapshotProgress": "{uploadedChunks}/{chunkCount} chunks, {uploadedBytes}/{totalBytes} bytes",
+  "@backupSnapshotProgress": {
+    "placeholders": {
+      "uploadedChunks": { "type": "int" },
+      "chunkCount": { "type": "int" },
+      "uploadedBytes": { "type": "int" },
+      "totalBytes": { "type": "int" }
+    }
+  },
+  "deleteEncryptedBackupTooltip": "Delete encrypted backup",
+  "deleteEncryptedBackupTitle": "Delete encrypted backup?",
+  "deleteEncryptedBackupBody": "This server copy will be permanently removed.",
+  "friendsSignInBody": "Connect and sign in to a server from Account Settings first.",
+  "localDataLabel": "Local data",
+  "notSharedValue": "not shared",
+  "requestsLabel": "Requests",
+  "offValue": "off",
+  "friendsDisabledBody": "This server has friend connections disabled.",
+  "serverDisabledValue": "server disabled",
+  "friendCodeTitle": "Friend code",
+  "rotateFriendCodePrompt": "Rotate to create a new code",
+  "rotateFriendCodeButton": "Rotate friend code",
+  "someoneElsesCodeLabel": "Someone else’s code",
+  "sendRequestButton": "Send request",
+  "pendingRequestsTitle": "Pending requests",
+  "noPendingRequests": "No pending requests.",
+  "acceptRequestTooltip": "Accept request",
+  "declineRequestTooltip": "Decline request",
+  "cancelRequestTooltip": "Cancel request",
+  "noFriendsYet": "No friends yet.",
+  "nothingShared": "Nothing shared",
+  "permissionsShared": "{count} permissions shared",
+  "@permissionsShared": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removeFriendTitle": "Remove friend?",
+  "removeFriendBody": "The friendship and its sharing permissions will be removed.",
+  "blockUserTitle": "Block {displayName}?",
+  "@blockUserTitle": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "blockUserBody": "This removes the friendship, pending requests, and every sharing permission in both directions.",
+  "sharingPermissionsLabel": "Sharing permissions",
+  "removeFriendButton": "Remove friend",
+  "blockUserButton": "Block user",
+  "blockedUsersTitle": "Blocked users",
+  "noBlockedUsers": "No blocked users.",
+  "unblockButton": "Unblock",
+  "shareWithTitle": "Share with {displayName}",
+  "@shareWithTitle": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "saveButtonLabel": "Save",
+  "friendGrantCurrentFront": "Current front",
+  "friendGrantMemberList": "Member list",
+  "friendGrantMemberDetails": "Member details",
+  "friendGrantFrontHistory": "Front history",
+  "friendGrantGroups": "Groups",
+  "friendGrantNotes": "Notes",
+  "friendGrantPolls": "Polls",
+  "remindersTitle": "Reminders",
+  "noRemindersYetTitle": "No reminders yet",
+  "noRemindersYetBody": "Create a daily, weekly, or monthly notification reminder.",
+  "addReminderButton": "Add reminder",
+  "notificationSettingsButton": "Notification settings",
+  "onStatus": "on",
+  "reminderSemanticLabel": "Reminder {title}",
+  "@reminderSemanticLabel": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "deleteReminderTooltip": "Delete reminder",
+  "deleteReminderTitle": "Delete reminder?",
+  "deleteReminderBody": "This reminder will be permanently removed.",
+  "dailySchedule": "Daily",
+  "weeklySchedule": "Weekly",
+  "monthlySchedule": "Monthly",
+  "afterFrontSchedule": "After member fronts",
+  "titleFieldLabel": "Title",
+  "scheduleFieldLabel": "Schedule",
+  "dayFieldLabel": "Day",
+  "dayOfMonthFieldLabel": "Day of month",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "memberOrFrontLabel": "Member or front label",
+  "memberOrFrontHelper": "Queued until this member or label fronts",
+  "timeFieldLabel": "Time",
+  "timeFieldHelper": "24-hour local time, like 09:00",
+  "noteFieldLabel": "Note",
+  "dailyScheduleAt": "Daily at {time}",
+  "@dailyScheduleAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "weeklyScheduleAt": "Weekly on {weekday} at {time}",
+  "@weeklyScheduleAt": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "monthlyScheduleAt": "Monthly on day {day} at {time}",
+  "@monthlyScheduleAt": {
+    "placeholders": {
+      "day": { "type": "int" },
+      "time": { "type": "String" }
+    }
+  },
+  "afterSelectedFrontStarts": "After a selected front starts",
+  "afterFrontLabel": "After {detail} fronts",
+  "@afterFrontLabel": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "importTitle": "Import",
+  "previewFirstStatus": "preview first",
+  "importDescription": "Upload an export, check what was found, then import it into local storage.",
+  "exportTitle": "Export",
+  "exportLocalArchiveTitle": "Export local archive",
+  "portableJsonValue": "portable JSON",
+  "encryptedExportTitle": "Encrypted export",
+  "passwordProtectedFileValue": "password protected file",
+  "backupFolderTitle": "Backup folder",
+  "manualArchiveSaveValue": "manual save from archive sheet",
+  "waitingForFilePicker": "Waiting for file picker...",
+  "chooseImportFileTitle": "Choose import file",
+  "noFileSelected": "No file selected.",
+  "readingFileStatus": "Reading {fileName}...",
+  "@readingFileStatus": {
+    "placeholders": { "fileName": { "type": "String" } }
+  },
+  "couldNotReadImportFile": "Could not read an import JSON from {fileName}.",
+  "@couldNotReadImportFile": {
+    "placeholders": { "fileName": { "type": "String" } }
+  },
+  "couldNotReadPastedJson": "Could not read the pasted JSON.",
+  "waitingForAvatarZip": "Waiting for avatar ZIP...",
+  "chooseAvatarZipTitle": "Choose avatar ZIP",
+  "noAvatarFileSelected": "No avatar file selected.",
+  "readingAvatarsStatus": "Reading avatars from {fileName}...",
+  "@readingAvatarsStatus": {
+    "placeholders": { "fileName": { "type": "String" } }
+  },
+  "noAvatarsFoundStatus": "No avatar images found in {fileName}.",
+  "@noAvatarsFoundStatus": {
+    "placeholders": { "fileName": { "type": "String" } }
+  },
+  "avatarsAttachedStatus": "Attached {count, plural, =1{1 avatar} other{{count} avatars}} from {fileName}. {nextStep}",
+  "@avatarsAttachedStatus": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "fileName": { "type": "String" },
+      "nextStep": { "type": "String" }
+    }
+  },
+  "chooseJsonNext": "Choose the JSON export next.",
+  "refreshOrImportNext": "Refresh or import when ready.",
+  "encryptedArchiveLoaded": "Encrypted archive loaded. Enter its passphrase, then preview.",
+  "previewReadyStatus": "Preview ready: {summary}.",
+  "@previewReadyStatus": {
+    "placeholders": { "summary": { "type": "String" } }
+  },
+  "chooseFileBeforePreview": "Choose or paste a file before previewing.",
+  "decryptArchiveFailed": "Could not decrypt archive. Check the passphrase.",
+  "fetchingPluralKitData": "Fetching PluralKit data...",
+  "pluralKitImportFailed": "PluralKit import failed: {error}",
+  "@pluralKitImportFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "chooseFileBeforeRehearsal": "Choose or paste a file before rehearsing restore.",
+  "rehearsingRestoreStatus": "Rehearsing restore in a temporary local database...",
+  "restoreRehearsalPassedStatus": "Restore rehearsal passed: {summary}.",
+  "@restoreRehearsalPassedStatus": {
+    "placeholders": { "summary": { "type": "String" } }
+  },
+  "restoreRehearsalFailedStatus": "Restore rehearsal failed. Nothing was imported.",
+  "preparingImportStatus": "Preparing {source} import...",
+  "@preparingImportStatus": {
+    "placeholders": { "source": { "type": "String" } }
+  },
+  "writingImportStatus": "Writing {summary}...",
+  "@writingImportStatus": {
+    "placeholders": { "summary": { "type": "String" } }
+  },
+  "importCancelledStatus": "Import cancelled.",
+  "importingStatus": "Importing {summary}...",
+  "@importingStatus": {
+    "placeholders": { "summary": { "type": "String" } }
+  },
+  "importCompleteStatus": "Import complete: {summary}.",
+  "@importCompleteStatus": {
+    "placeholders": { "summary": { "type": "String" } }
+  },
+  "importFailedJobsStatus": "Import failed. Check recent jobs below.",
+  "importFailedStatus": "Import failed: {error}",
+  "@importFailedStatus": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "sourceImportComplete": "{source} import complete",
+  "@sourceImportComplete": {
+    "placeholders": { "source": { "type": "String" } }
+  },
+  "enterExportPassphrase": "Enter the export passphrase first.",
+  "importSetupTitle": "Import setup",
+  "uploadFileButton": "Upload file",
+  "chooseAnotherFileButton": "Choose another file",
+  "pasteJsonTooltip": "Paste JSON",
+  "attachAvatarsButton": "Attach avatars",
+  "avatarsAttachedButton": "{count, plural, =1{1 avatar attached} other{{count} avatars attached}}",
+  "@avatarsAttachedButton": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "serviceFieldLabel": "Service",
+  "matchStrategyFieldLabel": "When a match exists",
+  "pluralKitTokenHelper": "Used for this fetch only. It is not saved or logged.",
+  "passphraseFieldLabel": "Passphrase",
+  "importPassphraseHelper": "Used locally to decrypt the preview and import.",
+  "inputLabel": "Input",
+  "jobLabel": "Job",
+  "dedupeLabel": "Dedupe",
+  "previewImportButton": "Preview import",
+  "refreshPreviewButton": "Refresh preview",
+  "chooseServiceStatus": "Choose service",
+  "serviceDetectedStatus": "{service} detected",
+  "@serviceDetectedStatus": {
+    "placeholders": { "service": { "type": "String" } }
+  },
+  "waitingForDetection": "waiting for detection",
+  "previewTitle": "Preview",
+  "validShapeStatus": "valid shape",
+  "needsAttentionStatus": "needs attention",
+  "noRecordsFound": "no records found",
+  "rehearsingButton": "Rehearsing...",
+  "runRestoreRehearsalButton": "Run restore rehearsal",
+  "importingButton": "Importing...",
+  "importArchiveButton": "Import archive",
+  "restoreRehearsalPassed": "Restore rehearsal passed",
+  "restoreRehearsalFailed": "Restore rehearsal failed",
+  "restoreRehearsalPassedBody": "Imported into a temporary local database. Nothing was written to your app data.",
+  "restoreRehearsalFailedBody": "The archive could not be restored safely.",
+  "restoreStatusSemanticLabel": "Restore status: {title}. {body}{counts}",
+  "@restoreStatusSemanticLabel": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "body": { "type": "String" },
+      "counts": { "type": "String" }
+    }
+  },
+  "importReadyStatus": "Import ready.",
+  "importStatusSemanticLabel": "Import status: {status}",
+  "@importStatusSemanticLabel": {
+    "placeholders": { "status": { "type": "String" } }
+  },
+  "recentJobsTitle": "Recent jobs",
+  "noneStatus": "none",
+  "noImportsQueued": "No imports queued yet.",
+  "tapForDetails": "tap for details",
+  "importJobSemanticLabel": "Import job {title}, {status}. Double tap for details.",
+  "@importJobSemanticLabel": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
   }
 }

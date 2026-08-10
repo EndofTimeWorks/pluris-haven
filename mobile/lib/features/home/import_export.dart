@@ -17,6 +17,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   String? _fileText;
   List<ImportAvatarAsset> _fileAvatarAssets = const [];
   String _importPassphrase = '';
+  String _pluralKitToken = '';
   ImportFileGuess? _guess;
   ImportPreview? _preview;
   RestoreRehearsalSummary? _restoreRehearsal;
@@ -34,22 +35,23 @@ class _ImportExportPageState extends State<ImportExportPage> {
   @override
   Widget build(BuildContext context) {
     final plan = _plan;
+    final l10n = AppLocalizations.of(context);
 
     return SpPage(
       children: [
-        const SpCard(
+        SpCard(
           outlined: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Import',
-                trailing: StatusPill(text: 'preview first'),
+                title: l10n.importTitle,
+                trailing: StatusPill(text: l10n.previewFirstStatus),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Upload an export, check what was found, then import it into local storage.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.importDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
@@ -71,9 +73,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
           onPassphraseChanged: (value) {
             _importPassphrase = value;
           },
+          onTokenChanged: (value) => _pluralKitToken = value,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
-          canPreview: _fileText != null,
+          canPreview:
+              _fileText != null ||
+              (_source == ImportSource.pluralKitLive &&
+                  _pluralKitToken.trim().isNotEmpty),
           avatarAssetCount: _fileAvatarAssets.length,
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
@@ -100,22 +106,22 @@ class _ImportExportPageState extends State<ImportExportPage> {
         ImportJobsCard(repository: widget.repository),
         const SizedBox(height: 2),
         SpSettingsGroup(
-          title: 'Export',
+          title: l10n.exportTitle,
           rows: [
             SpSettingsRow(
-              'Export local archive',
-              'portable JSON',
+              l10n.exportLocalArchiveTitle,
+              l10n.portableJsonValue,
               onTap: () => showLocalArchiveSheet(context, widget.repository),
             ),
             SpSettingsRow(
-              'Encrypted export',
-              'password protected file',
+              l10n.encryptedExportTitle,
+              l10n.passwordProtectedFileValue,
               onTap: () =>
                   showEncryptedArchiveSheet(context, widget.repository),
             ),
             SpSettingsRow(
-              'Backup folder',
-              'manual save from archive sheet',
+              l10n.backupFolderTitle,
+              l10n.manualArchiveSaveValue,
               onTap: () => showLocalArchiveSheet(context, widget.repository),
             ),
           ],
@@ -125,12 +131,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   Future<void> _pickImportFile() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _isPickingImport = true;
-      _importStatus = 'Waiting for file picker...';
+      _importStatus = l10n.waitingForFilePicker;
     });
     final result = await NativeFileDialog.pickFiles(
-      dialogTitle: 'Choose import file',
+      dialogTitle: l10n.chooseImportFileTitle,
       type: NativeFileType.custom,
       allowedExtensions: ['json', 'zip', 'prism', 'txt'],
     );
@@ -138,7 +145,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       if (mounted) {
         setState(() {
           _isPickingImport = false;
-          _importStatus = 'No file selected.';
+          _importStatus = l10n.noFileSelected;
         });
       }
       return;
@@ -146,7 +153,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final file = result.files.single;
     setState(() {
-      _importStatus = 'Reading ${file.name}...';
+      _importStatus = l10n.readingFileStatus(file.name);
     });
     final bytes = await _pickedFileBytes(file);
     if (!mounted) return;
@@ -156,11 +163,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
       fileSize: file.size,
       text: decoded?.text,
       avatarAssets: decoded?.avatarAssets ?? const [],
-      unreadableStatus: 'Could not read an import JSON from ${file.name}.',
+      unreadableStatus: l10n.couldNotReadImportFile(file.name),
     );
   }
 
   Future<void> _pasteImportJson() async {
+    final l10n = AppLocalizations.of(context);
     final pasted = await showPasteImportJsonSheet(context);
     if (pasted == null || !mounted) {
       return;
@@ -171,17 +179,18 @@ class _ImportExportPageState extends State<ImportExportPage> {
       fileSize: utf8.encode(pasted).length,
       text: pasted,
       avatarAssets: const [],
-      unreadableStatus: 'Could not read the pasted JSON.',
+      unreadableStatus: l10n.couldNotReadPastedJson,
     );
   }
 
   Future<void> _pickAvatarBundle() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _isPickingImport = true;
-      _importStatus = 'Waiting for avatar ZIP...';
+      _importStatus = l10n.waitingForAvatarZip;
     });
     final result = await NativeFileDialog.pickFiles(
-      dialogTitle: 'Choose avatar ZIP',
+      dialogTitle: l10n.chooseAvatarZipTitle,
       type: NativeFileType.custom,
       allowedExtensions: ['zip'],
     );
@@ -189,7 +198,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       if (mounted) {
         setState(() {
           _isPickingImport = false;
-          _importStatus = 'No avatar file selected.';
+          _importStatus = l10n.noAvatarFileSelected;
         });
       }
       return;
@@ -197,7 +206,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final file = result.files.single;
     setState(() {
-      _importStatus = 'Reading avatars from ${file.name}...';
+      _importStatus = l10n.readingAvatarsStatus(file.name);
     });
     final bytes = await _pickedFileBytes(file);
     if (!mounted) return;
@@ -206,7 +215,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     if (avatars.isEmpty) {
       setState(() {
         _isPickingImport = false;
-        _importStatus = 'No avatar images found in ${file.name}.';
+        _importStatus = l10n.noAvatarsFoundStatus(file.name);
       });
       return;
     }
@@ -225,9 +234,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _fileAvatarAssets = mergedAvatars;
       _preview = preview;
       _isPickingImport = false;
-      _importStatus =
-          'Attached ${avatars.length} ${avatars.length == 1 ? 'avatar' : 'avatars'} from ${file.name}. '
-          '${_fileText == null ? 'Choose the JSON export next.' : 'Refresh or import when ready.'}';
+      _importStatus = l10n.avatarsAttachedStatus(
+        avatars.length,
+        file.name,
+        _fileText == null ? l10n.chooseJsonNext : l10n.refreshOrImportNext,
+      );
     });
     appDebugLog(
       'Attached avatar bundle file=${file.name} added=${avatars.length} '
@@ -242,6 +253,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     required List<ImportAvatarAsset> avatarAssets,
     required String unreadableStatus,
   }) {
+    final l10n = AppLocalizations.of(context);
     final guess = guessImportSourceFromFile(
       fileName: displayName,
       textPreview: text,
@@ -274,14 +286,15 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
       _isPickingImport = false;
       _importStatus = isEncrypted
-          ? 'Encrypted archive loaded. Enter its passphrase, then preview.'
+          ? l10n.encryptedArchiveLoaded
           : preview == null
           ? unreadableStatus
-          : 'Preview ready: ${_countSummary(preview.counts)}.';
+          : l10n.previewReadyStatus(_countSummary(preview.counts));
     });
   }
 
   void _selectImportSource(ImportSource source) {
+    final l10n = AppLocalizations.of(context);
     final fileName = _fileName;
     final text = _fileText;
     final isEncrypted = text != null && archiveTextLooksEncrypted(text);
@@ -303,7 +316,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _restoreRehearsal = null;
       _importStatus = preview == null
           ? _importStatus
-          : 'Preview ready: ${_countSummary(preview.counts)}.';
+          : l10n.previewReadyStatus(_countSummary(preview.counts));
     });
     if (preview != null) {
       appDebugLog(
@@ -325,11 +338,16 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   Future<void> _refreshImportPreview() async {
+    final l10n = AppLocalizations.of(context);
+    if (_source == ImportSource.pluralKitLive) {
+      await _fetchPluralKitPreview();
+      return;
+    }
     final fileName = _fileName;
     final text = _fileText;
     if (fileName == null || text == null) {
       setState(() {
-        _importStatus = 'Choose or paste a file before previewing.';
+        _importStatus = l10n.chooseFileBeforePreview;
       });
       return;
     }
@@ -344,7 +362,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       setState(() {
         _preview = preview;
         _restoreRehearsal = null;
-        _importStatus = 'Preview ready: ${_countSummary(preview.counts)}.';
+        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
       });
       appDebugLog(
         'Import preview refreshed source=${preview.source.name} file=$fileName '
@@ -355,17 +373,55 @@ class _ImportExportPageState extends State<ImportExportPage> {
       setState(() {
         _preview = _encryptedArchiveFailedPreview(fileName, error);
         _restoreRehearsal = null;
-        _importStatus = 'Could not decrypt archive. Check the passphrase.';
+        _importStatus = l10n.decryptArchiveFailed;
+      });
+    }
+  }
+
+  Future<void> _fetchPluralKitPreview() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _isPickingImport = true;
+      _importStatus = l10n.fetchingPluralKitData;
+    });
+    try {
+      final text = await PluralKitLiveClient().fetchArchiveJson(
+        _pluralKitToken,
+      );
+      if (!mounted) return;
+      final preview = previewImportText(
+        fileName: 'pluralkit-live.json',
+        text: text,
+        selectedSource: ImportSource.pluralKitLive,
+      );
+      setState(() {
+        _fileName = 'pluralkit-live.json';
+        _fileSize = utf8.encode(text).length;
+        _fileText = text;
+        _fileAvatarAssets = const [];
+        _guess = null;
+        _preview = preview;
+        _restoreRehearsal = null;
+        _isPickingImport = false;
+        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isPickingImport = false;
+        _preview = null;
+        _importStatus = l10n.pluralKitImportFailed(error.toString());
       });
     }
   }
 
   Future<void> _runRestoreRehearsal() async {
+    final l10n = AppLocalizations.of(context);
     final text = _fileText;
     final fileName = _fileName ?? 'import.json';
     if (text == null) {
       setState(() {
-        _importStatus = 'Choose or paste a file before rehearsing restore.';
+        _importStatus = l10n.chooseFileBeforeRehearsal;
       });
       return;
     }
@@ -373,7 +429,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _isRehearsingRestore = true;
       _restoreRehearsal = null;
-      _importStatus = 'Rehearsing restore in a temporary local database...';
+      _importStatus = l10n.rehearsingRestoreStatus;
     });
 
     try {
@@ -396,8 +452,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
         _isRehearsingRestore = false;
         _restoreRehearsal = summary;
         _importStatus = summary.canRestore
-            ? 'Restore rehearsal passed: ${_countSummary(summary.counts)}.'
-            : 'Restore rehearsal failed. Nothing was imported.';
+            ? l10n.restoreRehearsalPassedStatus(_countSummary(summary.counts))
+            : l10n.restoreRehearsalFailedStatus;
       });
     } on Object catch (error) {
       if (!mounted) return;
@@ -411,12 +467,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
           elapsed: Duration.zero,
           error: error.toString(),
         );
-        _importStatus = 'Restore rehearsal failed. Nothing was imported.';
+        _importStatus = l10n.restoreRehearsalFailedStatus;
       });
     }
   }
 
   Future<void> _applyImportFile() async {
+    final l10n = AppLocalizations.of(context);
     final text = _fileText;
     if (text == null) {
       return;
@@ -424,7 +481,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     setState(() {
       _isApplyingImport = true;
-      _importStatus = 'Preparing ${_source.label} import...';
+      _importStatus = l10n.preparingImportStatus(_source.label);
     });
 
     var importCompleted = false;
@@ -443,7 +500,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       if (mounted) {
         setState(() {
-          _importStatus = 'Writing ${_countSummary(normalized.counts)}...';
+          _importStatus = l10n.writingImportStatus(
+            _countSummary(normalized.counts),
+          );
         });
       }
 
@@ -456,7 +515,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           if (mounted) {
             setState(() {
               _isApplyingImport = false;
-              _importStatus = 'Import cancelled.';
+              _importStatus = l10n.importCancelledStatus;
             });
           }
           return;
@@ -476,7 +535,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       if (mounted) {
         setState(() {
-          _importStatus = 'Importing ${_countSummary(normalized.counts)}...';
+          _importStatus = l10n.importingStatus(
+            _countSummary(normalized.counts),
+          );
         });
       }
 
@@ -486,15 +547,15 @@ class _ImportExportPageState extends State<ImportExportPage> {
         setState(() {
           _isApplyingImport = false;
           _importStatus = importCompleted
-              ? 'Import complete: ${_countSummary(normalized.counts)}.'
-              : 'Import failed. Check recent jobs below.';
+              ? l10n.importCompleteStatus(_countSummary(normalized.counts))
+              : l10n.importFailedJobsStatus;
         });
       }
     } on Object catch (error) {
       if (mounted) {
         setState(() {
           _isApplyingImport = false;
-          _importStatus = 'Import failed: $error';
+          _importStatus = l10n.importFailedStatus(error.toString());
         });
       }
       return;
@@ -502,7 +563,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     if (mounted && importCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_source.label} import complete')),
+        SnackBar(content: Text(l10n.sourceImportComplete(_source.label))),
       );
     }
   }
@@ -512,7 +573,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       return Future.value(text);
     }
     if (_importPassphrase.trim().isEmpty) {
-      throw const FormatException('Enter the export passphrase first.');
+      throw FormatException(AppLocalizations.of(context).enterExportPassphrase);
     }
     return decryptArchiveJson(
       encryptedArchiveJson: text,
@@ -1165,6 +1226,7 @@ class ImportSetupCard extends StatelessWidget {
     required this.onPasteJson,
     required this.onPreview,
     required this.onPassphraseChanged,
+    required this.onTokenChanged,
     required this.onSourceChanged,
     required this.onStrategyChanged,
     required this.canPreview,
@@ -1186,17 +1248,19 @@ class ImportSetupCard extends StatelessWidget {
   final VoidCallback onPasteJson;
   final VoidCallback onPreview;
   final ValueChanged<String> onPassphraseChanged;
+  final ValueChanged<String> onTokenChanged;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SpSectionHeader(
-            title: 'Import setup',
+            title: l10n.importSetupTitle,
             trailing: StatusPill(text: plan.status.label),
           ),
           const SizedBox(height: 10),
@@ -1208,14 +1272,16 @@ class ImportSetupCard extends StatelessWidget {
                   onPressed: onPickFile,
                   icon: const Icon(Icons.upload_file_rounded),
                   label: Text(
-                    fileName == null ? 'Upload file' : 'Choose another file',
+                    fileName == null
+                        ? l10n.uploadFileButton
+                        : l10n.chooseAnotherFileButton,
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               IconButton.filledTonal(
                 key: const ValueKey('paste-import-json-button'),
-                tooltip: 'Paste JSON',
+                tooltip: l10n.pasteJsonTooltip,
                 onPressed: onPasteJson,
                 icon: const Icon(Icons.content_paste_rounded),
               ),
@@ -1236,15 +1302,15 @@ class ImportSetupCard extends StatelessWidget {
             icon: const Icon(Icons.image_rounded),
             label: Text(
               avatarAssetCount == 0
-                  ? 'Attach avatars'
-                  : '$avatarAssetCount ${avatarAssetCount == 1 ? 'avatar' : 'avatars'} attached',
+                  ? l10n.attachAvatarsButton
+                  : l10n.avatarsAttachedButton(avatarAssetCount),
             ),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<ImportSource>(
             key: const ValueKey('import-source-dropdown'),
             initialValue: source,
-            decoration: const InputDecoration(labelText: 'Service'),
+            decoration: InputDecoration(labelText: l10n.serviceFieldLabel),
             items: [
               for (final source in ImportSource.values)
                 DropdownMenuItem(value: source, child: Text(source.label)),
@@ -1258,7 +1324,9 @@ class ImportSetupCard extends StatelessWidget {
           const SizedBox(height: 10),
           DropdownButtonFormField<ImportConflictStrategy>(
             initialValue: strategy,
-            decoration: const InputDecoration(labelText: 'When a match exists'),
+            decoration: InputDecoration(
+              labelText: l10n.matchStrategyFieldLabel,
+            ),
             items: [
               for (final strategy in ImportConflictStrategy.values)
                 DropdownMenuItem(value: strategy, child: Text(strategy.label)),
@@ -1271,14 +1339,15 @@ class ImportSetupCard extends StatelessWidget {
           ),
           if (plan.requiresToken) ...[
             const SizedBox(height: 10),
-            const TextField(
-              enabled: false,
+            TextField(
+              key: const ValueKey('pluralkit-token-field'),
               obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              onChanged: onTokenChanged,
               decoration: InputDecoration(
                 labelText: 'pk;token',
-                helperText:
-                    'Live import is not available yet. Use a file '
-                    'export instead.',
+                helperText: l10n.pluralKitTokenHelper,
               ),
             ),
           ],
@@ -1288,23 +1357,27 @@ class ImportSetupCard extends StatelessWidget {
               key: const ValueKey('import-passphrase-field'),
               obscureText: true,
               onChanged: onPassphraseChanged,
-              decoration: const InputDecoration(
-                labelText: 'Passphrase',
-                helperText: 'Used locally to decrypt the preview and import.',
+              decoration: InputDecoration(
+                labelText: l10n.passphraseFieldLabel,
+                helperText: l10n.importPassphraseHelper,
               ),
             ),
           ],
           const SizedBox(height: 12),
-          ImportMetaRow(label: 'Input', value: source.inputLabel),
+          ImportMetaRow(label: l10n.inputLabel, value: source.inputLabel),
           const SizedBox(height: 8),
-          ImportMetaRow(label: 'Job', value: source.jobSource),
+          ImportMetaRow(label: l10n.jobLabel, value: source.jobSource),
           const SizedBox(height: 8),
-          ImportMetaRow(label: 'Dedupe', value: source.dedupeLabel),
+          ImportMetaRow(label: l10n.dedupeLabel, value: source.dedupeLabel),
           const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: canPreview ? onPreview : null,
             icon: const Icon(Icons.fact_check_rounded),
-            label: Text(preview == null ? 'Preview import' : 'Refresh preview'),
+            label: Text(
+              preview == null
+                  ? l10n.previewImportButton
+                  : l10n.refreshPreviewButton,
+            ),
           ),
         ],
       ),
@@ -1326,10 +1399,11 @@ class ImportFileSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final detected = guess?.source;
     final label = detected == null
-        ? 'Choose service'
-        : '${detected.label} detected';
+        ? l10n.chooseServiceStatus
+        : l10n.serviceDetectedStatus(detected.label);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1346,7 +1420,7 @@ class ImportFileSummary extends StatelessWidget {
           Text(
             [
               if (fileSize != null) _formatBytes(fileSize!),
-              guess?.reason ?? 'waiting for detection',
+              guess?.reason ?? l10n.waitingForDetection,
             ].join(' - '),
             style: const TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
           ),
@@ -1379,6 +1453,7 @@ class ImportPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notableEvents = preview.warningsAndErrors;
+    final l10n = AppLocalizations.of(context);
 
     return SpCard(
       outlined: true,
@@ -1386,9 +1461,11 @@ class ImportPreviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SpSectionHeader(
-            title: 'Preview',
+            title: l10n.previewTitle,
             trailing: StatusPill(
-              text: preview.canApply ? 'valid shape' : 'needs attention',
+              text: preview.canApply
+                  ? l10n.validShapeStatus
+                  : l10n.needsAttentionStatus,
             ),
           ),
           const SizedBox(height: 8),
@@ -1407,7 +1484,7 @@ class ImportPreviewCard extends StatelessWidget {
                     text: _importCountPillLabel(entry.key, entry.value),
                   ),
               if (!preview.counts.values.any((count) => count > 0))
-                const StatusPill(text: 'no records found'),
+                StatusPill(text: l10n.noRecordsFound),
             ],
           ),
           if (notableEvents.isNotEmpty) ...[
@@ -1448,7 +1525,9 @@ class ImportPreviewCard extends StatelessWidget {
                       )
                     : const Icon(Icons.fact_check_rounded),
                 label: Text(
-                  isRehearsing ? 'Rehearsing...' : 'Run restore rehearsal',
+                  isRehearsing
+                      ? l10n.rehearsingButton
+                      : l10n.runRestoreRehearsalButton,
                 ),
               ),
               FilledButton.icon(
@@ -1462,7 +1541,9 @@ class ImportPreviewCard extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.restore_rounded),
-                label: Text(isImporting ? 'Importing...' : 'Import archive'),
+                label: Text(
+                  isImporting ? l10n.importingButton : l10n.importArchiveButton,
+                ),
               ),
             ],
           ),
@@ -1479,13 +1560,14 @@ class RestoreRehearsalResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final visibleCounts = summary.visibleCounts.toList(growable: false);
     final title = summary.canRestore
-        ? 'Restore rehearsal passed'
-        : 'Restore rehearsal failed';
+        ? l10n.restoreRehearsalPassed
+        : l10n.restoreRehearsalFailed;
     final body = summary.canRestore
-        ? 'Imported into a temporary local database. Nothing was written to your app data.'
-        : summary.error ?? 'The archive could not be restored safely.';
+        ? l10n.restoreRehearsalPassedBody
+        : summary.error ?? l10n.restoreRehearsalFailedBody;
     final counts = visibleCounts
         .map((entry) => '${entry.key}: ${entry.value}')
         .join(', ');
@@ -1493,8 +1575,11 @@ class RestoreRehearsalResult extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: true,
-      label:
-          'Restore status: $title. $body${counts.isEmpty ? '' : '. $counts'}',
+      label: l10n.restoreStatusSemanticLabel(
+        title,
+        body,
+        counts.isEmpty ? '' : '. $counts',
+      ),
       child: ExcludeSemantics(
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -1563,14 +1648,15 @@ class ImportProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final normalizedStatus = status?.toLowerCase() ?? '';
     final isQueued = normalizedStatus.contains('queued');
-    final announcement = status ?? 'Import ready.';
+    final announcement = status ?? l10n.importReadyStatus;
 
     return Semantics(
       container: true,
       liveRegion: true,
-      label: 'Import status: $announcement',
+      label: l10n.importStatusSemanticLabel(announcement),
       child: ExcludeSemantics(
         child: SpCard(
           outlined: true,
@@ -1626,22 +1712,23 @@ class ImportJobsCard extends StatelessWidget {
       initialData: const [],
       builder: (context, snapshot) {
         final jobs = snapshot.data ?? const <BackgroundJobSummary>[];
+        final l10n = AppLocalizations.of(context);
         return SpCard(
           outlined: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Recent jobs',
+                title: l10n.recentJobsTitle,
                 trailing: StatusPill(
-                  text: jobs.isEmpty ? 'none' : '${jobs.length}',
+                  text: jobs.isEmpty ? l10n.noneStatus : '${jobs.length}',
                 ),
               ),
               const SizedBox(height: 8),
               if (jobs.isEmpty)
-                const Text(
-                  'No imports queued yet.',
-                  style: TextStyle(color: _spMuted),
+                Text(
+                  l10n.noImportsQueued,
+                  style: const TextStyle(color: _spMuted),
                 )
               else
                 for (final job in jobs) ...[
@@ -1664,14 +1751,15 @@ class ImportJobRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final title = job.fileName ?? job.type;
     final subtitle = job.error == null
         ? '${job.status} - ${_shortDateTime(job.updatedAt)}'
-        : '${_oneLineJobError(job.error!)} - tap for details';
+        : '${_oneLineJobError(job.error!)} - ${l10n.tapForDetails}';
 
     return Semantics(
       button: true,
-      label: 'Import job $title, ${job.status}. Double tap for details.',
+      label: l10n.importJobSemanticLabel(title, job.status),
       child: Material(
         color: Colors.transparent,
         child: ListTile(

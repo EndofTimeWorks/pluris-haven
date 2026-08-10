@@ -42,9 +42,6 @@ void main() {
     'password archive can recover data into a repository with a new device key',
     () async {
       final sourceDatabase = AppDatabase(NativeDatabase.memory());
-      final restoredDatabase = AppDatabase(NativeDatabase.memory());
-      addTearDown(sourceDatabase.close);
-      addTearDown(restoredDatabase.close);
 
       final source = LocalHavenRepository(sourceDatabase, crypto: testCrypto());
       await source.ensureLocalSystem();
@@ -59,7 +56,10 @@ void main() {
         encryptedArchiveJson: encrypted,
         passphrase: 'portable-recovery-passphrase',
       );
+      await sourceDatabase.close();
 
+      final restoredDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(restoredDatabase.close);
       final restored = LocalHavenRepository(
         restoredDatabase,
         crypto: HavenCrypto(

@@ -46,10 +46,6 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   if (source == ImportSource.prism) {
     throw const FormatException('Prism imports need decryption first.');
   }
-  if (source == ImportSource.pluralKitLive) {
-    throw const FormatException('PluralKit live import needs a token.');
-  }
-
   final decoded = source == ImportSource.openPlural
       ? _openPluralEnvelopeToLooseArchive(decodedJson)
       : decodedJson;

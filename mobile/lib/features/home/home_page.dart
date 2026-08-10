@@ -13,12 +13,16 @@ import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/import/member_dedupe.dart';
+import '../../data/import/pluralkit_live_client.dart';
+import '../../data/backup/repository_backup.dart';
 import '../../data/local/app_database.dart'
     show JournalEntry, NamedFront, Tag, localSystemId;
 import '../../data/notifications/notification_service.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
 import '../../data/security/archive_encryption.dart';
+import '../../data/server/server_account_controller.dart';
+import '../../data/server/server_api.dart';
 import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/native_file_dialog.dart';
@@ -46,6 +50,7 @@ part 'dashboard_widgets.dart';
 part 'custom_front.dart';
 part 'custom_fronts_page.dart';
 part 'sp_widgets.dart';
+part 'server_account.dart';
 
 const _spSurface = Color(0xFF232532);
 const _spCard = Color(0xFF2B2E3D);
@@ -87,9 +92,10 @@ enum SpSection {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.repository});
+  const HomePage({super.key, required this.repository, this.serverAccount});
 
   final HavenRepository repository;
+  final ServerAccountController? serverAccount;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -202,15 +208,7 @@ class _HomePageState extends State<HomePage> {
           onImport: () => _selectSection(SpSection.importExport),
         );
       case SpSection.friends:
-        return const OfflineFeaturePage(
-          title: 'Friends',
-          body: 'Friends are disabled until encrypted sync exists.',
-          rows: [
-            SpSettingsRow('Friend list', 'not shared'),
-            SpSettingsRow('Privacy', 'local only'),
-            SpSettingsRow('Requests', 'off'),
-          ],
-        );
+        return ServerFriendsPage(controller: widget.serverAccount);
       case SpSection.reminders:
         return RemindersPage(
           repository: widget.repository,
@@ -239,12 +237,16 @@ class _HomePageState extends State<HomePage> {
         return AccountSettingsPage(
           snapshot: home,
           repository: widget.repository,
+          serverAccount: widget.serverAccount,
           onSelect: _selectSection,
         );
       case SpSection.importExport:
         return ImportExportPage(repository: widget.repository);
       case SpSection.sync:
-        return const SyncPage();
+        return SyncPage(
+          repository: widget.repository,
+          controller: widget.serverAccount,
+        );
       case SpSection.appOptions:
         return AppOptionsPage(
           customization: customization,

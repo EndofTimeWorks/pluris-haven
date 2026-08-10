@@ -101,18 +101,11 @@ ImportPreview previewImportText({
       decoded,
       avatarAssets: avatarAssets,
     ),
-    ImportSource.pluralKitLive => ImportPreview(
+    ImportSource.pluralKitLive => _previewNormalizedSource(
       source: source,
       fileName: fileName,
-      counts: const {},
-      canApply: false,
-      events: const [
-        ImportPreviewEvent(
-          severity: ImportPreviewSeverity.warning,
-          stage: 'input',
-          message: 'PluralKit live import uses a token, not a file.',
-        ),
-      ],
+      decoded: decoded,
+      avatarAssets: avatarAssets,
     ),
     ImportSource.tupperbox => _previewLooseSource(
       source: source,

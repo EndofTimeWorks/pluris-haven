@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
+import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
 
 import 'test_repository.dart';
@@ -139,6 +140,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ListView(
           children: [
             const ImportProgressCard(
