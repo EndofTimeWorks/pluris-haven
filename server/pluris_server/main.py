@@ -4,8 +4,10 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.engine import make_url
 
 from pluris_server import __version__
+from pluris_server.backup_cleanup import sweep_backup_deletions
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
@@ -17,9 +19,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     active_settings = settings or get_settings()
     active_settings.validate_for_startup()
     if active_settings.database_url.startswith("sqlite"):
-        database_path = active_settings.database_url.rsplit("/", 1)[-1]
-        if database_path not in {":memory:", ""}:
-            Path(database_path).parent.mkdir(parents=True, exist_ok=True)
+        database_path = make_url(active_settings.database_url).database
+        if database_path not in {None, ":memory:", ""}:
+            Path(database_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine(active_settings.database_url)
 
     @asynccontextmanager
@@ -27,6 +29,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if active_settings.environment != "production":
             async with engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
+        async with _app.state.session_factory() as cleanup_session:
+            await sweep_backup_deletions(
+                cleanup_session,
+                _app.state.backup_object_store,
+            )
         yield
         await engine.dispose()
 

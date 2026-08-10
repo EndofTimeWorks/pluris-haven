@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import hmac
 import secrets
@@ -61,6 +62,15 @@ def new_friend_code() -> str:
 
 def _new_refresh_token() -> str:
     return secrets.token_urlsafe(48)
+
+
+def _rotated_refresh_token(refresh_token: str, settings: Settings) -> str:
+    digest = hmac.new(
+        settings.jwt_secret.encode(),
+        b"pluris-haven:refresh-rotation:v1\0" + refresh_token.encode(),
+        hashlib.sha384,
+    ).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 
 def _create_access_token(user_id: str, session_id: str, settings: Settings) -> str:
@@ -139,7 +149,33 @@ async def rotate_refresh_token(
     expires_at = token_record.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
+    if (
+        token_record.revoked_at is not None
+        or session.revoked_at is not None
+        or expires_at <= now
+        or user.disabled
+    ):
+        return None
     if token_record.used_at is not None:
+        used_at = token_record.used_at
+        if used_at.tzinfo is None:
+            used_at = used_at.replace(tzinfo=UTC)
+        replacement_token = _rotated_refresh_token(refresh_token, settings)
+        replacement = await db.scalar(
+            select(RefreshToken).where(
+                RefreshToken.session_id == session.id,
+                RefreshToken.token_digest == digest_token(replacement_token),
+                RefreshToken.revoked_at.is_(None),
+            )
+        )
+        if replacement is not None and now - used_at <= timedelta(
+            seconds=settings.refresh_reuse_grace_seconds
+        ):
+            return IssuedTokens(
+                access_token=_create_access_token(user.id, session.id, settings),
+                refresh_token=replacement_token,
+                expires_in=settings.access_token_minutes * 60,
+            )
         session.revoked_at = now
         await db.execute(
             update(RefreshToken)
@@ -148,15 +184,7 @@ async def rotate_refresh_token(
         )
         await db.commit()
         return None
-    if (
-        token_record.revoked_at is not None
-        or session.revoked_at is not None
-        or expires_at <= now
-        or user.disabled
-    ):
-        return None
-
-    new_refresh_token = _new_refresh_token()
+    new_refresh_token = _rotated_refresh_token(refresh_token, settings)
     token_record.used_at = now
     session.last_used_at = now
     session.expires_at = now + timedelta(days=settings.refresh_token_days)

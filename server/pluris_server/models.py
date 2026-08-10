@@ -105,30 +105,6 @@ class Friendship(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
-class FriendGrant(Base):
-    __tablename__ = "friend_grants"
-    __table_args__ = (
-        UniqueConstraint(
-            "friendship_id", "owner_id", "viewer_id", "scope", name="uq_friend_grant_scope"
-        ),
-        CheckConstraint("owner_id <> viewer_id", name="friend_grant_distinct_users"),
-        CheckConstraint(
-            "scope IN ('front_status', 'members', 'member_details', 'front_history', "
-            "'groups', 'notes', 'polls')",
-            name="friend_grant_valid_scope",
-        ),
-    )
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    friendship_id: Mapped[str] = mapped_column(
-        ForeignKey("friendships.id", ondelete="CASCADE"), index=True
-    )
-    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    viewer_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    scope: Mapped[str] = mapped_column(String(40))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-
-
 class UserBlock(Base):
     __tablename__ = "user_blocks"
     __table_args__ = (
@@ -171,3 +147,17 @@ class BackupChunk(Base):
     index: Mapped[int]
     sha256: Mapped[str] = mapped_column(String(64))
     size: Mapped[int]
+
+
+class BackupDeletion(Base):
+    """Durable cleanup work for blobs whose database rows are already gone."""
+
+    __tablename__ = "backup_deletions"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "snapshot_id", name="uq_backup_deletion_owner_snapshot"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id: Mapped[str] = mapped_column(String(128))
+    snapshot_id: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

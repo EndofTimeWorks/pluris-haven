@@ -191,28 +191,15 @@ class ServerFriendRequest {
 }
 
 class ServerFriend {
-  const ServerFriend({
-    required this.friendshipId,
-    required this.user,
-    required this.grantsToThem,
-    required this.grantsFromThem,
-  });
+  const ServerFriend({required this.friendshipId, required this.user});
 
   final String friendshipId;
   final ServerPublicUser user;
-  final Set<String> grantsToThem;
-  final Set<String> grantsFromThem;
 
   factory ServerFriend.fromJson(Map<String, dynamic> json) {
     return ServerFriend(
       friendshipId: _string(json, 'friendship_id'),
       user: ServerPublicUser.fromJson(_object(json, 'user')),
-      grantsToThem: Set.unmodifiable(
-        _list(json, 'grants_to_them').map((value) => value.toString()),
-      ),
-      grantsFromThem: Set.unmodifiable(
-        _list(json, 'grants_from_them').map((value) => value.toString()),
-      ),
     );
   }
 }
@@ -452,20 +439,6 @@ class ServerApi {
       '/v1/friends/requests/$requestId/$action',
       token: token,
     );
-  }
-
-  Future<ServerFriend> updateFriendGrants(
-    String token,
-    String friendshipId,
-    Set<String> scopes,
-  ) async {
-    final response = await _request(
-      'PUT',
-      '/v1/friends/$friendshipId/grants',
-      token: token,
-      jsonBody: {'scopes': scopes.toList()..sort()},
-    );
-    return ServerFriend.fromJson(_decodeObject(response));
   }
 
   Future<void> removeFriend(String token, String friendshipId) async {

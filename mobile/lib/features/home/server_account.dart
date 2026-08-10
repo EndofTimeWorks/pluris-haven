@@ -1,15 +1,5 @@
 part of 'home_page.dart';
 
-Map<String, String> _friendGrantScopes(AppLocalizations l10n) => {
-  'front_status': l10n.friendGrantCurrentFront,
-  'members': l10n.friendGrantMemberList,
-  'member_details': l10n.friendGrantMemberDetails,
-  'front_history': l10n.friendGrantFrontHistory,
-  'groups': l10n.friendGrantGroups,
-  'notes': l10n.friendGrantNotes,
-  'polls': l10n.friendGrantPolls,
-};
-
 class ServerAccountPanel extends StatefulWidget {
   const ServerAccountPanel({super.key, required this.controller});
 
@@ -686,18 +676,9 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(friend.user.displayName),
-                      subtitle: Text(
-                        friend.grantsToThem.isEmpty
-                            ? l10n.nothingShared
-                            : l10n.permissionsShared(
-                                friend.grantsToThem.length,
-                              ),
-                      ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (action) async {
-                          if (action == 'sharing') {
-                            _showSharing(context, friend);
-                          } else if (action == 'remove') {
+                          if (action == 'remove') {
                             await confirmDelete(
                               context,
                               title: l10n.removeFriendTitle,
@@ -718,10 +699,6 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
                           }
                         },
                         itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'sharing',
-                            child: Text(l10n.sharingPermissionsLabel),
-                          ),
                           PopupMenuItem(
                             value: 'remove',
                             child: Text(l10n.removeFriendButton),
@@ -776,53 +753,6 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
         );
       },
     );
-  }
-
-  Future<void> _showSharing(BuildContext context, ServerFriend friend) async {
-    final l10n = AppLocalizations.of(context);
-    final selected = {...friend.grantsToThem};
-    final result = await showDialog<Set<String>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(l10n.shareWithTitle(friend.user.displayName)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final entry in _friendGrantScopes(l10n).entries)
-                  CheckboxListTile(
-                    value: selected.contains(entry.key),
-                    title: Text(entry.value),
-                    onChanged: (checked) {
-                      setDialogState(() {
-                        if (checked == true) {
-                          selected.add(entry.key);
-                        } else {
-                          selected.remove(entry.key);
-                        }
-                      });
-                    },
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.cancelButtonLabel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, selected),
-              child: Text(l10n.saveButtonLabel),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (result != null) {
-      await widget.controller!.updateFriendGrants(friend.friendshipId, result);
-    }
   }
 }
 
