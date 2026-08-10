@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from pluris_server.dependencies import (
@@ -12,7 +12,6 @@ from pluris_server.dependencies import (
     require_friends_enabled,
 )
 from pluris_server.models import (
-    FriendGrant,
     FriendRequest,
     Friendship,
     RequestStatus,
@@ -26,7 +25,6 @@ from pluris_server.schemas import (
     FriendRequestCreate,
     FriendRequestView,
     FriendView,
-    GrantUpdate,
     MessageResponse,
     PublicUserView,
 )
@@ -36,18 +34,6 @@ router = APIRouter(
     prefix="/v1/friends",
     tags=["friends"],
     dependencies=[Depends(require_friends_enabled)],
-)
-
-ALLOWED_GRANT_SCOPES = frozenset(
-    {
-        "front_status",
-        "members",
-        "member_details",
-        "front_history",
-        "groups",
-        "notes",
-        "polls",
-    }
 )
 
 
@@ -95,11 +81,10 @@ async def _friendship_for(db: Db, first: str, second: str) -> Friendship | None:
     )
 
 
-async def _request_view(db: Db, request: FriendRequest, current_id: str) -> FriendRequestView:
+def _request_view(request: FriendRequest, current_id: str, other: User) -> FriendRequestView:
     other_id = request.recipient_id if request.requester_id == current_id else request.requester_id
-    other = await db.get(User, other_id)
-    if other is None:
-        raise HTTPException(status_code=404, detail="Request user no longer exists")
+    if other.id != other_id:
+        raise ValueError("request view user does not match request")
     return FriendRequestView(
         id=request.id,
         direction="outgoing" if request.requester_id == current_id else "incoming",
@@ -195,7 +180,7 @@ async def create_request(
         await db.rollback()
         raise HTTPException(status_code=409, detail="A request is already pending") from error
     await db.refresh(request)
-    return await _request_view(db, request, auth.user.id)
+    return _request_view(request, auth.user.id, recipient)
 
 
 @router.get("/requests", response_model=list[FriendRequestView])
@@ -213,7 +198,26 @@ async def list_requests(auth: CurrentAuth, db: Db) -> list[FriendRequestView]:
             .order_by(FriendRequest.created_at.desc())
         )
     ).all()
-    return [await _request_view(db, request, auth.user.id) for request in requests]
+    other_ids = {
+        request.recipient_id if request.requester_id == auth.user.id else request.requester_id
+        for request in requests
+    }
+    users = await db.scalars(select(User).where(User.id.in_(other_ids))) if other_ids else []
+    users_by_id = {user.id: user for user in users}
+    return [
+        _request_view(
+            request,
+            auth.user.id,
+            users_by_id[
+                request.recipient_id
+                if request.requester_id == auth.user.id
+                else request.requester_id
+            ],
+        )
+        for request in requests
+        if (request.recipient_id if request.requester_id == auth.user.id else request.requester_id)
+        in users_by_id
+    ]
 
 
 @router.post("/requests/{request_id}/accept", response_model=FriendView)
@@ -244,7 +248,9 @@ async def accept_request(request_id: str, auth: CurrentAuth, db: Db) -> FriendVi
 
 @router.post("/requests/{request_id}/decline", response_model=MessageResponse)
 async def decline_request(request_id: str, auth: CurrentAuth, db: Db) -> MessageResponse:
-    request = await db.scalar(select(FriendRequest).where(FriendRequest.id == request_id))
+    request = await db.scalar(
+        select(FriendRequest).where(FriendRequest.id == request_id).with_for_update()
+    )
     if (
         request is None
         or request.recipient_id != auth.user.id
@@ -259,7 +265,9 @@ async def decline_request(request_id: str, auth: CurrentAuth, db: Db) -> Message
 
 @router.post("/requests/{request_id}/cancel", response_model=MessageResponse)
 async def cancel_request(request_id: str, auth: CurrentAuth, db: Db) -> MessageResponse:
-    request = await db.scalar(select(FriendRequest).where(FriendRequest.id == request_id))
+    request = await db.scalar(
+        select(FriendRequest).where(FriendRequest.id == request_id).with_for_update()
+    )
     if (
         request is None
         or request.requester_id != auth.user.id
@@ -277,23 +285,10 @@ async def _friend_view(db: Db, friendship: Friendship, current_id: str) -> Frien
         friendship.user_high_id if friendship.user_low_id == current_id else friendship.user_low_id
     )
     other = await db.get(User, other_id)
-    grants = (
-        await db.scalars(select(FriendGrant).where(FriendGrant.friendship_id == friendship.id))
-    ).all()
     return FriendView(
         friendship_id=friendship.id,
         user=PublicUserView(id=other.id, display_name=other.display_name),
         created_at=friendship.created_at,
-        grants_to_them=sorted(
-            grant.scope
-            for grant in grants
-            if grant.owner_id == current_id and grant.viewer_id == other_id
-        ),
-        grants_from_them=sorted(
-            grant.scope
-            for grant in grants
-            if grant.owner_id == other_id and grant.viewer_id == current_id
-        ),
     )
 
 
@@ -311,49 +306,31 @@ async def list_friends(auth: CurrentAuth, db: Db) -> list[FriendView]:
             .order_by(Friendship.created_at.desc())
         )
     ).all()
-    return [await _friend_view(db, friendship, auth.user.id) for friendship in friendships]
-
-
-@router.put("/{friendship_id}/grants", response_model=FriendView)
-async def update_grants(
-    friendship_id: str,
-    payload: GrantUpdate,
-    auth: CurrentAuth,
-    db: Db,
-) -> FriendView:
-    unknown = payload.scopes - ALLOWED_GRANT_SCOPES
-    if unknown:
-        detail = f"Unknown sharing scopes: {', '.join(sorted(unknown))}"
-        raise HTTPException(status_code=422, detail=detail)
-    friendship = await db.get(Friendship, friendship_id)
-    if friendship is None or auth.user.id not in {
-        friendship.user_low_id,
-        friendship.user_high_id,
-    }:
-        raise HTTPException(status_code=404, detail="Friend not found")
-    viewer_id = (
+    other_ids = {
         friendship.user_high_id
         if friendship.user_low_id == auth.user.id
         else friendship.user_low_id
-    )
-    await db.execute(
-        delete(FriendGrant).where(
-            FriendGrant.friendship_id == friendship.id,
-            FriendGrant.owner_id == auth.user.id,
-            FriendGrant.viewer_id == viewer_id,
-        )
-    )
-    db.add_all(
-        FriendGrant(
+        for friendship in friendships
+    }
+    users = await db.scalars(select(User).where(User.id.in_(other_ids))) if other_ids else []
+    users_by_id = {user.id: user for user in users}
+    return [
+        FriendView(
             friendship_id=friendship.id,
-            owner_id=auth.user.id,
-            viewer_id=viewer_id,
-            scope=scope,
+            user=PublicUserView(
+                id=other_id,
+                display_name=users_by_id[other_id].display_name,
+            ),
+            created_at=friendship.created_at,
         )
-        for scope in sorted(payload.scopes)
-    )
-    await db.commit()
-    return await _friend_view(db, friendship, auth.user.id)
+        for friendship in friendships
+        for other_id in [
+            friendship.user_high_id
+            if friendship.user_low_id == auth.user.id
+            else friendship.user_low_id
+        ]
+        if other_id in users_by_id
+    ]
 
 
 @router.delete("/{friendship_id}", response_model=MessageResponse)
@@ -370,36 +347,52 @@ async def remove_friend(friendship_id: str, auth: CurrentAuth, db: Db) -> Messag
 
 
 @router.post("/blocks", response_model=BlockView, status_code=status.HTTP_201_CREATED)
-async def block_user(payload: BlockCreate, auth: CurrentAuth, db: Db) -> BlockView:
+async def block_user(
+    payload: BlockCreate,
+    request_context: Request,
+    auth: CurrentAuth,
+    db: Db,
+    settings: AppSettings,
+) -> BlockView:
+    await _enforce_request_rate_limit(request_context, auth.user.id)
     if payload.user_id == auth.user.id:
         raise HTTPException(status_code=400, detail="You cannot block yourself")
-    target = await db.get(User, payload.user_id)
-    if target is None:
-        raise HTTPException(status_code=404, detail="User not found")
     existing = await db.scalar(
         select(UserBlock).where(
             UserBlock.blocker_id == auth.user.id,
-            UserBlock.blocked_id == target.id,
+            UserBlock.blocked_id == payload.user_id,
         )
     )
+    low, high = _pair(auth.user.id, payload.user_id)
+    friendship = await _friendship_for(db, auth.user.id, payload.user_id)
+    friend_request = await db.scalar(
+        select(FriendRequest)
+        .where(
+            FriendRequest.pair_low_id == low,
+            FriendRequest.pair_high_id == high,
+        )
+        .with_for_update()
+    )
+    if existing is None and friendship is None and friend_request is None:
+        raise HTTPException(status_code=404, detail="User is not available to block")
+    target = await db.get(User, payload.user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="User is not available to block")
     if existing is None:
+        block_count = await db.scalar(
+            select(func.count(UserBlock.id)).where(UserBlock.blocker_id == auth.user.id)
+        )
+        if int(block_count or 0) >= settings.max_blocks_per_user:
+            raise HTTPException(status_code=413, detail="Block list limit reached")
         existing = UserBlock(blocker_id=auth.user.id, blocked_id=target.id)
         db.add(existing)
         await db.flush()
 
-    friendship = await _friendship_for(db, auth.user.id, target.id)
     if friendship is not None:
         await db.delete(friendship)
-    low, high = _pair(auth.user.id, target.id)
-    request = await db.scalar(
-        select(FriendRequest).where(
-            FriendRequest.pair_low_id == low,
-            FriendRequest.pair_high_id == high,
-        )
-    )
-    if request is not None and request.status == RequestStatus.PENDING.value:
-        request.status = RequestStatus.CANCELLED.value
-        request.responded_at = request.updated_at = datetime.now(UTC)
+    if friend_request is not None and friend_request.status == RequestStatus.PENDING.value:
+        friend_request.status = RequestStatus.CANCELLED.value
+        friend_request.responded_at = friend_request.updated_at = datetime.now(UTC)
     await db.commit()
     return BlockView(
         user=PublicUserView(id=target.id, display_name=target.display_name),
@@ -409,24 +402,21 @@ async def block_user(payload: BlockCreate, auth: CurrentAuth, db: Db) -> BlockVi
 
 @router.get("/blocks", response_model=list[BlockView])
 async def list_blocks(auth: CurrentAuth, db: Db) -> list[BlockView]:
-    blocks = (
-        await db.scalars(
-            select(UserBlock)
+    rows = (
+        await db.execute(
+            select(UserBlock, User)
+            .join(User, User.id == UserBlock.blocked_id)
             .where(UserBlock.blocker_id == auth.user.id)
             .order_by(UserBlock.created_at.desc())
         )
     ).all()
-    views: list[BlockView] = []
-    for block in blocks:
-        target = await db.get(User, block.blocked_id)
-        if target is not None:
-            views.append(
-                BlockView(
-                    user=PublicUserView(id=target.id, display_name=target.display_name),
-                    created_at=block.created_at,
-                )
-            )
-    return views
+    return [
+        BlockView(
+            user=PublicUserView(id=target.id, display_name=target.display_name),
+            created_at=block.created_at,
+        )
+        for block, target in rows
+    ]
 
 
 @router.delete("/blocks/{user_id}", response_model=MessageResponse)

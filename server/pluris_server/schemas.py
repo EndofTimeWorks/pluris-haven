@@ -87,12 +87,6 @@ class FriendView(BaseModel):
     friendship_id: str
     user: PublicUserView
     created_at: datetime
-    grants_to_them: list[str]
-    grants_from_them: list[str]
-
-
-class GrantUpdate(BaseModel):
-    scopes: set[str] = Field(default_factory=set, max_length=16)
 
 
 class BlockCreate(BaseModel):

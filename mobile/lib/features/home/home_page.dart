@@ -22,7 +22,6 @@ import '../../data/local/haven_repository.dart';
 import '../../data/local/supported_language.dart';
 import '../../data/security/archive_encryption.dart';
 import '../../data/server/server_account_controller.dart';
-import '../../data/server/server_api.dart';
 import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/native_file_dialog.dart';

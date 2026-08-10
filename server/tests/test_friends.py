@@ -21,38 +21,15 @@ def connect_users(client: TestClient) -> tuple[dict, dict, dict]:
     return alice, bob, accepted.json()
 
 
-def test_friend_request_and_directional_grants(client: TestClient) -> None:
+def test_friend_request_and_relationship_removal(client: TestClient) -> None:
     alice, bob, friendship = connect_users(client)
 
     assert friendship["user"]["display_name"] == "Alice"
-    assert friendship["grants_to_them"] == []
-    assert friendship["grants_from_them"] == []
 
     alice_list = client.get("/v1/friends", headers=auth(alice["access_token"]))
     assert alice_list.status_code == 200
     assert alice_list.json()[0]["user"]["display_name"] == "Bob"
-    assert alice_list.json()[0]["grants_to_them"] == []
-
     friendship_id = friendship["friendship_id"]
-    grant = client.put(
-        f"/v1/friends/{friendship_id}/grants",
-        headers=auth(alice["access_token"]),
-        json={"scopes": ["front_status", "members"]},
-    )
-    assert grant.status_code == 200, grant.text
-    assert grant.json()["grants_to_them"] == ["front_status", "members"]
-
-    bob_list = client.get("/v1/friends", headers=auth(bob["access_token"]))
-    assert bob_list.json()[0]["grants_from_them"] == ["front_status", "members"]
-    assert bob_list.json()[0]["grants_to_them"] == []
-
-    invalid = client.put(
-        f"/v1/friends/{friendship_id}/grants",
-        headers=auth(alice["access_token"]),
-        json={"scopes": ["everything"]},
-    )
-    assert invalid.status_code == 422
-
     removed = client.delete(f"/v1/friends/{friendship_id}", headers=auth(alice["access_token"]))
     assert removed.status_code == 200
     assert client.get("/v1/friends", headers=auth(bob["access_token"])).json() == []
@@ -134,6 +111,21 @@ def test_block_removes_friendship_and_prevents_new_requests(client: TestClient) 
         f"/v1/friends/blocks/{bob_me['id']}", headers=auth(alice["access_token"])
     )
     assert unblocked.status_code == 200
+
+
+def test_blocking_requires_an_existing_relationship_or_request(client: TestClient) -> None:
+    alice = register(client, "block-alice@example.com", "Alice")
+    bob = register(client, "block-bob@example.com", "Bob")
+    bob_me = client.get("/v1/auth/me", headers=auth(bob["access_token"])).json()
+
+    blocked = client.post(
+        "/v1/friends/blocks",
+        headers=auth(alice["access_token"]),
+        json={"user_id": bob_me["id"]},
+    )
+
+    assert blocked.status_code == 404
+    assert blocked.json()["detail"] == "User is not available to block"
 
 
 def test_friend_request_endpoint_is_rate_limited(client: TestClient) -> None:

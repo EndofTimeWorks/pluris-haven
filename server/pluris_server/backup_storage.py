@@ -49,12 +49,14 @@ class FilesystemBackupObjectStore:
     def put_chunk(
         self,
         *,
+        owner_id: str,
         snapshot_id: str,
         index: int,
         ciphertext: bytes,
         sha256: str,
     ) -> StoredBackupChunk:
-        self._validate_key(snapshot_id, "snapshot_id")
+        snapshot_dir = self._snapshot_dir(owner_id, snapshot_id)
+        self._migrate_legacy_snapshot(owner_id, snapshot_id, snapshot_dir)
         if index < 0:
             raise ValueError("index must be non-negative")
         if len(ciphertext) > self.max_chunk_bytes:
@@ -63,7 +65,7 @@ class FilesystemBackupObjectStore:
         if actual_sha256 != sha256:
             raise BackupChunkIntegrityError("backup chunk digest does not match content")
 
-        destination = self.root / snapshot_id / f"{index:012d}.chunk"
+        destination = snapshot_dir / f"{index:012d}.chunk"
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.exists():
             existing = destination.read_bytes()
@@ -88,26 +90,49 @@ class FilesystemBackupObjectStore:
 
         return StoredBackupChunk(snapshot_id, index, sha256, len(ciphertext))
 
-    def read_chunk(self, *, snapshot_id: str, index: int) -> bytes:
-        self._validate_key(snapshot_id, "snapshot_id")
+    def read_chunk(self, *, owner_id: str, snapshot_id: str, index: int) -> bytes:
+        snapshot_dir = self._snapshot_dir(owner_id, snapshot_id)
+        self._migrate_legacy_snapshot(owner_id, snapshot_id, snapshot_dir)
         if index < 0:
             raise ValueError("index must be non-negative")
-        return (self.root / snapshot_id / f"{index:012d}.chunk").read_bytes()
+        return (snapshot_dir / f"{index:012d}.chunk").read_bytes()
 
-    def delete_snapshot(self, *, snapshot_id: str) -> None:
-        self._validate_key(snapshot_id, "snapshot_id")
-        snapshot_dir = self.root / snapshot_id
-        if not snapshot_dir.exists():
-            return
-        for path in snapshot_dir.iterdir():
-            if path.is_file():
-                path.unlink()
-        snapshot_dir.rmdir()
+    def delete_snapshot(self, *, owner_id: str, snapshot_id: str) -> None:
+        snapshot_dir = self._snapshot_dir(owner_id, snapshot_id)
+        legacy_dir = self._legacy_snapshot_dir(owner_id, snapshot_id)
+        for candidate in (snapshot_dir, legacy_dir):
+            if candidate is None or not candidate.exists():
+                continue
+            for path in candidate.iterdir():
+                if path.is_file():
+                    path.unlink()
+            candidate.rmdir()
+        owner_dir = self.root / owner_id
+        if owner_dir.exists() and not any(owner_dir.iterdir()):
+            owner_dir.rmdir()
 
-    def delete_snapshots(self, *, snapshot_ids: list[str]) -> None:
+    def delete_snapshots(self, *, owner_id: str, snapshot_ids: list[str]) -> None:
         """Delete a known set of snapshot directories during account removal."""
         for snapshot_id in snapshot_ids:
-            self.delete_snapshot(snapshot_id=snapshot_id)
+            self.delete_snapshot(owner_id=owner_id, snapshot_id=snapshot_id)
+
+    def _snapshot_dir(self, owner_id: str, snapshot_id: str) -> Path:
+        self._validate_key(owner_id, "owner_id")
+        self._validate_key(snapshot_id, "snapshot_id")
+        return self.root / owner_id / snapshot_id
+
+    def _legacy_snapshot_dir(self, owner_id: str, snapshot_id: str) -> Path | None:
+        legacy_key = f"{owner_id}_{snapshot_id}"
+        if not _SAFE_KEY.fullmatch(legacy_key):
+            return None
+        return self.root / legacy_key
+
+    def _migrate_legacy_snapshot(self, owner_id: str, snapshot_id: str, destination: Path) -> None:
+        legacy_dir = self._legacy_snapshot_dir(owner_id, snapshot_id)
+        if legacy_dir is None or not legacy_dir.exists() or destination.exists():
+            return
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        legacy_dir.rename(destination)
 
     @staticmethod
     def _validate_key(value: str, name: str) -> None:

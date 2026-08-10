@@ -18,7 +18,7 @@ other network features are opt-in.
 - dashboard, theme, and language preferences
 - Simply Plural and PluralKit file and live-token import paths
 - local export, password-protected recovery, and encrypted server backup upload
-- optional server accounts, revocable sessions, friends, blocking, and sharing grants
+- optional server accounts, revocable sessions, encrypted backups, and experimental friends/blocking
 - dev and tagged mobile builds through GitHub Actions
 
 ## Docs

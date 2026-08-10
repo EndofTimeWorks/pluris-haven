@@ -1,7 +1,11 @@
+import asyncio
 import hashlib
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 
+from pluris_server.backup_cleanup import sweep_backup_deletions
+from pluris_server.models import BackupDeletion, BackupSnapshot
 from tests.conftest import auth, register
 
 
@@ -206,3 +210,87 @@ def test_backup_snapshot_count_quota_blocks_new_manifests(client: TestClient) ->
         else:
             assert response.status_code == 413
             assert "limit" in response.json()["detail"].lower()
+
+
+def test_maximum_length_snapshot_id_uploads_without_storage_key_failure(
+    client: TestClient,
+) -> None:
+    user = register(client, "long-snapshot@example.com", "Long snapshot")
+    headers = auth(user["access_token"])
+    snapshot_id = "s" * 128
+    body = b"opaque"
+
+    created = client.post(
+        "/v1/backups/snapshots",
+        headers=headers,
+        json={
+            "snapshot_id": snapshot_id,
+            "manifest_sha256": "f" * 64,
+            "chunk_count": 1,
+            "total_bytes": len(body),
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    uploaded = client.put(
+        f"/v1/backups/snapshots/{snapshot_id}/chunks/0",
+        headers={**headers, "X-Content-SHA256": hashlib.sha256(body).hexdigest()},
+        content=body,
+    )
+    assert uploaded.status_code == 200, uploaded.text
+
+
+def test_snapshot_delete_commits_before_blob_cleanup_and_retries(
+    client: TestClient, monkeypatch
+) -> None:
+    user = register(client, "delete-retry@example.com", "Delete retry")
+    headers = auth(user["access_token"])
+    snapshot_id = "delete-retry"
+    body = b"opaque"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 1,
+                "total_bytes": len(body),
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.put(
+            f"/v1/backups/snapshots/{snapshot_id}/chunks/0",
+            headers={**headers, "X-Content-SHA256": hashlib.sha256(body).hexdigest()},
+            content=body,
+        ).status_code
+        == 200
+    )
+
+    store = client.app.state.backup_object_store
+    real_delete = store.delete_snapshot
+
+    def fail_cleanup(**_kwargs) -> None:
+        raise OSError("simulated storage outage")
+
+    monkeypatch.setattr(store, "delete_snapshot", fail_cleanup)
+    deleted = client.delete(f"/v1/backups/snapshots/{snapshot_id}", headers=headers)
+    assert deleted.status_code == 200, deleted.text
+
+    async def assert_queued() -> None:
+        async with client.app.state.session_factory() as session:
+            assert await session.scalar(select(func.count(BackupSnapshot.id))) == 0
+            assert await session.scalar(select(func.count(BackupDeletion.id))) == 1
+
+    asyncio.run(assert_queued())
+
+    monkeypatch.setattr(store, "delete_snapshot", real_delete)
+
+    async def retry_cleanup() -> None:
+        async with client.app.state.session_factory() as session:
+            assert await sweep_backup_deletions(session, store) == 1
+            assert await session.scalar(select(func.count(BackupDeletion.id))) == 0
+
+    asyncio.run(retry_cleanup())

@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
+from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.backup_storage import BackupChunkConflict, BackupChunkIntegrityError
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import BackupChunk, BackupSnapshot, User
@@ -16,10 +17,6 @@ from pluris_server.schemas import (
 )
 
 router = APIRouter(prefix="/v1/backups", tags=["backups"])
-
-
-def _storage_snapshot_id(auth: CurrentAuth, snapshot: BackupSnapshot) -> str:
-    return f"{auth.user.id}_{snapshot.snapshot_id}"
 
 
 async def _snapshot_view(db: Db, snapshot: BackupSnapshot) -> BackupSnapshotView:
@@ -103,14 +100,31 @@ async def create_snapshot(
 
 @router.get("/snapshots", response_model=list[BackupSnapshotView])
 async def list_snapshots(auth: CurrentAuth, db: Db) -> list[BackupSnapshotView]:
-    snapshots = (
-        await db.scalars(
-            select(BackupSnapshot)
+    rows = (
+        await db.execute(
+            select(
+                BackupSnapshot,
+                func.count(BackupChunk.id),
+                func.coalesce(func.sum(BackupChunk.size), 0),
+            )
+            .outerjoin(BackupChunk, BackupChunk.snapshot_id == BackupSnapshot.id)
             .where(BackupSnapshot.user_id == auth.user.id)
+            .group_by(BackupSnapshot.id)
             .order_by(BackupSnapshot.created_at.desc())
         )
     ).all()
-    return [await _snapshot_view(db, snapshot) for snapshot in snapshots]
+    return [
+        BackupSnapshotView(
+            snapshot_id=snapshot.snapshot_id,
+            manifest_sha256=snapshot.manifest_sha256,
+            chunk_count=snapshot.chunk_count,
+            uploaded_chunks=int(uploaded_chunks),
+            total_bytes=snapshot.total_bytes,
+            uploaded_bytes=int(uploaded_bytes),
+            created_at=snapshot.created_at,
+        )
+        for snapshot, uploaded_chunks, uploaded_bytes in rows
+    ]
 
 
 @router.put(
@@ -163,7 +177,8 @@ async def put_chunk(
 
     try:
         request.app.state.backup_object_store.put_chunk(
-            snapshot_id=_storage_snapshot_id(auth, snapshot),
+            owner_id=auth.user.id,
+            snapshot_id=snapshot.snapshot_id,
             index=index,
             ciphertext=content,
             sha256=digest,
@@ -204,7 +219,9 @@ async def get_chunk(
         raise HTTPException(status_code=404, detail="Backup chunk not found")
     try:
         content = request.app.state.backup_object_store.read_chunk(
-            snapshot_id=_storage_snapshot_id(auth, snapshot), index=index
+            owner_id=auth.user.id,
+            snapshot_id=snapshot.snapshot_id,
+            index=index,
         )
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail="Backup chunk is not available") from error
@@ -220,9 +237,13 @@ async def delete_snapshot(
     snapshot_id: str, request: Request, auth: CurrentAuth, db: Db
 ) -> MessageResponse:
     snapshot = await _get_snapshot(snapshot_id, auth, db)
-    request.app.state.backup_object_store.delete_snapshot(
-        snapshot_id=_storage_snapshot_id(auth, snapshot)
+    storage_snapshot_id = snapshot.snapshot_id
+    queue_backup_deletions(
+        db,
+        owner_id=auth.user.id,
+        snapshot_ids=[storage_snapshot_id],
     )
     await db.delete(snapshot)
     await db.commit()
+    await sweep_backup_deletions(db, request.app.state.backup_object_store)
     return MessageResponse(detail="Backup snapshot deleted")

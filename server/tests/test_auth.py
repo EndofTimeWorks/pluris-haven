@@ -43,6 +43,7 @@ def test_registration_login_refresh_and_session_revocation(client: TestClient) -
     assert refresh.status_code == 200
     rotated = refresh.json()
     assert rotated["refresh_token"] != second["refresh_token"]
+    client.app.state.settings.refresh_reuse_grace_seconds = 0
     assert (
         client.post("/v1/auth/refresh", json={"refresh_token": second["refresh_token"]}).status_code
         == 401
@@ -100,6 +101,29 @@ def test_refresh_requests_are_rate_limited(client: TestClient) -> None:
     assert all(response.status_code == 401 for response in responses[:10])
     assert responses[-1].status_code == 429
     assert responses[-1].headers["Retry-After"].isdigit()
+
+
+def test_immediate_refresh_retry_returns_the_same_rotated_token(client: TestClient) -> None:
+    registered = register(client, "refresh-retry@example.com", "Refresh retry")
+    payload = {"refresh_token": registered["refresh_token"]}
+
+    first = client.post("/v1/auth/refresh", json=payload)
+    retry = client.post("/v1/auth/refresh", json=payload)
+
+    assert first.status_code == 200, first.text
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["refresh_token"] == first.json()["refresh_token"]
+    assert client.get("/v1/auth/me", headers=auth(retry.json()["access_token"])).status_code == 200
+
+
+def test_refresh_rate_limit_is_not_shared_by_clients_behind_one_ip(
+    client: TestClient,
+) -> None:
+    for _ in range(10):
+        assert client.post("/v1/auth/refresh", json={"refresh_token": "a" * 32}).status_code == 401
+
+    unrelated = client.post("/v1/auth/refresh", json={"refresh_token": "b" * 32})
+    assert unrelated.status_code == 401
 
 
 def test_account_deletion_requires_password_and_removes_server_data(client: TestClient) -> None:

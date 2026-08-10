@@ -40,6 +40,7 @@ class ServerAccountController extends ChangeNotifier {
 
   String? _accessToken;
   String? _refreshToken;
+  Future<void>? _refreshInFlight;
 
   bool get connected => _api != null && descriptor != null;
   bool get signedIn => account != null && _accessToken != null;
@@ -254,19 +255,6 @@ class ServerAccountController extends ChangeNotifier {
     });
   }
 
-  Future<void> updateFriendGrants(
-    String friendshipId,
-    Set<String> scopes,
-  ) async {
-    await _run(() async {
-      await _authenticated(
-        (api, token) => api.updateFriendGrants(token, friendshipId, scopes),
-      );
-      await _refreshFriends();
-      status = 'Sharing permissions updated.';
-    });
-  }
-
   Future<void> removeFriend(String friendshipId) async {
     await _run(() async {
       await _authenticated(
@@ -326,10 +314,27 @@ class ServerAccountController extends ChangeNotifier {
       return await action(api, accessToken);
     } on ServerApiException catch (caught) {
       if (!caught.isUnauthorized || _refreshToken == null) rethrow;
-      final refreshed = await api.refresh(_refreshToken!);
-      await _saveTokens(refreshed);
+      await _refreshTokensOnce(api);
       return action(api, _accessToken!);
     }
+  }
+
+  Future<void> _refreshTokensOnce(ServerApi api) {
+    final existing = _refreshInFlight;
+    if (existing != null) return existing;
+    final refreshToken = _refreshToken;
+    if (refreshToken == null) {
+      return Future<void>.error(
+        const ServerApiException('Sign in first.', statusCode: 401),
+      );
+    }
+    final refresh = api.refresh(refreshToken).then(_saveTokens);
+    _refreshInFlight = refresh;
+    return refresh.whenComplete(() {
+      if (identical(_refreshInFlight, refresh)) {
+        _refreshInFlight = null;
+      }
+    });
   }
 
   Future<void> _saveTokens(ServerTokens tokens) async {

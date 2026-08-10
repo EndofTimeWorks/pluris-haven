@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
+from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import BackupSnapshot, DeviceSession, RefreshToken, User
 from pluris_server.schemas import (
@@ -19,6 +20,7 @@ from pluris_server.schemas import (
 )
 from pluris_server.security import (
     digest_friend_code,
+    digest_token,
     dummy_verify_password,
     hash_password,
     issue_tokens,
@@ -30,17 +32,14 @@ from pluris_server.security import (
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 
-def _storage_snapshot_id(user_id: str, snapshot_id: str) -> str:
-    return f"{user_id}_{snapshot_id}"
-
-
 async def _enforce_rate_limit(
     request: Request,
     endpoint: str,
     subject: str | None = None,
+    include_client: bool = True,
 ) -> None:
     client_host = request.client.host if request.client is not None else "unknown"
-    keys = [f"auth:{endpoint}:ip:{client_host}"]
+    keys = [f"auth:{endpoint}:ip:{client_host}"] if include_client else []
     if subject is not None:
         keys.append(f"auth:{endpoint}:subject:{subject}")
     retry_after = await request.app.state.auth_rate_limiter.retry_after(keys)
@@ -122,7 +121,12 @@ async def login(
 async def refresh(
     request: Request, payload: RefreshRequest, db: Db, settings: AppSettings
 ) -> TokenPair:
-    await _enforce_rate_limit(request, "refresh")
+    await _enforce_rate_limit(
+        request,
+        "refresh",
+        digest_token(payload.refresh_token),
+        include_client=False,
+    )
     tokens = await rotate_refresh_token(db, payload.refresh_token, settings)
     if tokens is None:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
@@ -156,13 +160,12 @@ async def delete_account(
     snapshots = (
         await db.scalars(select(BackupSnapshot).where(BackupSnapshot.user_id == auth.user.id))
     ).all()
-    request.app.state.backup_object_store.delete_snapshots(
-        snapshot_ids=[
-            _storage_snapshot_id(auth.user.id, snapshot.snapshot_id) for snapshot in snapshots
-        ]
-    )
+    snapshot_ids = [snapshot.snapshot_id for snapshot in snapshots]
+    owner_id = auth.user.id
+    queue_backup_deletions(db, owner_id=owner_id, snapshot_ids=snapshot_ids)
     await db.delete(auth.user)
     await db.commit()
+    await sweep_backup_deletions(db, request.app.state.backup_object_store)
     return MessageResponse(detail="Account deleted")
 
 
