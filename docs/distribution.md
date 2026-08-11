@@ -13,6 +13,8 @@ Primary pre-alpha builds are GitHub Releases APKs.
 - Versioned tags: `mobile-v0.2.0-pre-alpha.N+BUILD`
 
 Dev prereleases are published automatically after the mobile CI job succeeds.
+They are release-mode APKs signed with the same Android upload key as versioned
+builds, so Obtainium can update them without exposing Flutter's debug service.
 Versioned releases require a maintainer-pushed GPG-signed tag; GitHub then
 builds and publishes the Android and iOS artifacts automatically.
 
