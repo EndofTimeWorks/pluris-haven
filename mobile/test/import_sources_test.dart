@@ -1104,7 +1104,7 @@ void main() {
       expect(archive.counts['front_members'], 1);
       expect(archive.counts['named_fronts'], 1);
       expect(archive.counts['avatar_assets'], 0);
-      expect(archive.counts['raw_payloads'], 11);
+      expect(archive.counts['raw_payloads'], 0);
       expect(
         archive.archiveJson,
         contains(
@@ -1136,9 +1136,18 @@ void main() {
         archive.archiveJson,
         isNot(contains('"title": "Imported custom fronts"')),
       );
-      expect(archive.archiveJson, contains('"collection": "customFields"'));
-      expect(archive.archiveJson, contains('"collection": "customFronts"'));
-      expect(archive.archiveJson, contains('"collection": "privacyBuckets"'));
+      expect(
+        archive.archiveJson,
+        isNot(contains('"collection": "customFields"')),
+      );
+      expect(
+        archive.archiveJson,
+        isNot(contains('"collection": "customFronts"')),
+      );
+      expect(
+        archive.archiveJson,
+        isNot(contains('"collection": "privacyBuckets"')),
+      );
       expect(archive.archiveJson, contains('"body": "Board\\nCheck supplies"'));
       expect(fronts.single['status_note'], 'front note');
       expect(
@@ -1256,18 +1265,20 @@ void main() {
       selectedSource: ImportSource.simplyPlural,
     );
 
-    expect(archive.counts['raw_payloads'], 6);
+    expect(archive.counts['raw_payloads'], 4);
     expect(preview.canApply, isTrue);
     expect(
       preview.warningsAndErrors.map((event) => event.message),
       contains(
-        'Preserved 6 original source collections as raw payloads for export/debug: users, members, securityLogs, friends, tokens, usage. Mapped records still import normally; raw copies do not create notes, messages, or members.',
+        'Preserved 4 original source collections as raw payloads for export/debug: securityLogs, friends, tokens, usage. Mapped records still import normally; raw copies do not create notes, messages, or members.',
       ),
     );
     expect(archive.archiveJson, contains('"collection": "securityLogs"'));
     expect(archive.archiveJson, contains('"collection": "friends"'));
     expect(archive.archiveJson, contains('"collection": "tokens"'));
     expect(archive.archiveJson, contains('"collection": "usage"'));
+    expect(archive.archiveJson, isNot(contains('"collection": "users"')));
+    expect(archive.archiveJson, isNot(contains('"collection": "members"')));
     expect(
       archive.archiveJson,
       isNot(contains('"collection": "verifiedKeys"')),
@@ -1472,12 +1483,12 @@ void main() {
     expect(archive.counts['polls'], 1);
     expect(archive.counts['poll_options'], 2);
     expect(archive.counts['poll_votes'], 2);
-    expect(archive.counts['raw_payloads'], 1);
+    expect(archive.counts['raw_payloads'], 0);
     expect(archive.archiveJson, contains('"question": "Dinner?"'));
     expect(archive.archiveJson, contains('"kind": "multiple_choice"'));
     expect(archive.archiveJson, contains('"body": "Soup"'));
     expect(archive.archiveJson, contains('"body": "Rice"'));
-    expect(archive.archiveJson, contains('"collection": "polls"'));
+    expect(archive.archiveJson, isNot(contains('"collection": "polls"')));
   });
 
   test('normalizes PluralKit export switches into front intervals', () {

@@ -1149,11 +1149,11 @@ void main() {
     expect(importRecords.single.source, 'simplyplural_file');
 
     final payloads = await database.select(database.importPayloads).get();
-    expect(payloads.map((payload) => payload.collection), contains('members'));
+    expect(payloads, isEmpty);
 
     final reExported = await repository.buildLocalArchiveJson();
     expect(reExported, contains('"raw_payloads"'));
-    expect(reExported, contains('"collection": "members"'));
+    expect(reExported, isNot(contains('"collection": "members"')));
   });
 
   test(
