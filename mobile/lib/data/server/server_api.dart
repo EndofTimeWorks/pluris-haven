@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -219,14 +220,21 @@ class ServerBlock {
 }
 
 class ServerApi {
-  ServerApi({required Uri baseUri, http.Client? client, Duration? timeout})
-    : baseUri = normalizeServerUri(baseUri),
-      _client = client ?? http.Client(),
-      _timeout = timeout ?? const Duration(seconds: 20);
+  ServerApi({
+    required Uri baseUri,
+    http.Client? client,
+    Duration? timeout,
+    int maximumResponseBytes = 16 * 1024 * 1024,
+  }) : assert(maximumResponseBytes > 0),
+       baseUri = normalizeServerUri(baseUri),
+       _client = client ?? http.Client(),
+       _timeout = timeout ?? const Duration(seconds: 20),
+       _maximumResponseBytes = maximumResponseBytes;
 
   final Uri baseUri;
   final http.Client _client;
   final Duration _timeout;
+  final int _maximumResponseBytes;
 
   static Uri normalizeServerUri(Uri value) {
     final isLoopback =
@@ -488,12 +496,36 @@ class ServerApi {
       request.bodyBytes = body;
     }
     late final http.StreamedResponse streamed;
+    late final http.Response response;
     try {
       streamed = await _client.send(request).timeout(_timeout);
+      final declaredLength = streamed.contentLength;
+      if (declaredLength != null && declaredLength > _maximumResponseBytes) {
+        throw const FormatException('Server response exceeds the size limit.');
+      }
+      final builder = BytesBuilder(copy: false);
+      await streamed.stream
+          .forEach((chunk) {
+            if (builder.length > _maximumResponseBytes - chunk.length) {
+              throw const FormatException(
+                'Server response exceeds the size limit.',
+              );
+            }
+            builder.add(chunk);
+          })
+          .timeout(_timeout);
+      response = http.Response.bytes(
+        builder.takeBytes(),
+        streamed.statusCode,
+        headers: streamed.headers,
+        isRedirect: streamed.isRedirect,
+        persistentConnection: streamed.persistentConnection,
+        reasonPhrase: streamed.reasonPhrase,
+        request: streamed.request,
+      );
     } on Object catch (error) {
       throw ServerApiException('Could not reach the server: $error');
     }
-    final response = await http.Response.fromStream(streamed);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final retrySeconds = int.tryParse(response.headers['retry-after'] ?? '');
       throw ServerApiException(
