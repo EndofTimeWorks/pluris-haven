@@ -411,5 +411,21 @@
   "addPollOptionButton": "Add option",
   "savePollButton": "Save poll",
   "singleChoicePollKind": "Single choice",
-  "multipleChoicePollKind": "Multiple choice"
+  "multipleChoicePollKind": "Multiple choice",
+  "searchJournalsHint": "Search journals",
+  "journalsTitle": "Journals",
+  "noJournalEntriesYet": "No journal entries yet",
+  "noMatchingJournals": "No matching journals",
+  "journalsEmptyBody": "Write longer dated entries here. Use Notes for short scratchpad items.",
+  "addJournalEntryButton": "Add journal entry",
+  "untitledEntry": "Untitled entry",
+  "emptyJournal": "empty journal",
+  "deleteJournalEntryTooltip": "Delete journal entry",
+  "deleteJournalEntryTitle": "Delete journal entry?",
+  "deleteJournalEntryBody": "This entry will be permanently removed from this device.",
+  "editJournalEntryTitle": "Edit journal entry",
+  "entryFieldLabel": "Entry",
+  "saveEntryButton": "Save entry",
+  "createEntryButton": "Create entry",
+  "writeBeforeSaving": "Write something before saving."
 }

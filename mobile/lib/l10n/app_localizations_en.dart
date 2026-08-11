@@ -1437,6 +1437,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get multipleChoicePollKind => 'Multiple choice';
+
+  @override
+  String get searchJournalsHint => 'Search journals';
+
+  @override
+  String get journalsTitle => 'Journals';
+
+  @override
+  String get noJournalEntriesYet => 'No journal entries yet';
+
+  @override
+  String get noMatchingJournals => 'No matching journals';
+
+  @override
+  String get journalsEmptyBody =>
+      'Write longer dated entries here. Use Notes for short scratchpad items.';
+
+  @override
+  String get addJournalEntryButton => 'Add journal entry';
+
+  @override
+  String get untitledEntry => 'Untitled entry';
+
+  @override
+  String get emptyJournal => 'empty journal';
+
+  @override
+  String get deleteJournalEntryTooltip => 'Delete journal entry';
+
+  @override
+  String get deleteJournalEntryTitle => 'Delete journal entry?';
+
+  @override
+  String get deleteJournalEntryBody =>
+      'This entry will be permanently removed from this device.';
+
+  @override
+  String get editJournalEntryTitle => 'Edit journal entry';
+
+  @override
+  String get entryFieldLabel => 'Entry';
+
+  @override
+  String get saveEntryButton => 'Save entry';
+
+  @override
+  String get createEntryButton => 'Create entry';
+
+  @override
+  String get writeBeforeSaving => 'Write something before saving.';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2872,4 +2922,54 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get multipleChoicePollKind => 'Multiple choice';
+
+  @override
+  String get searchJournalsHint => 'Search journals';
+
+  @override
+  String get journalsTitle => 'Journals';
+
+  @override
+  String get noJournalEntriesYet => 'No journal entries yet';
+
+  @override
+  String get noMatchingJournals => 'No matching journals';
+
+  @override
+  String get journalsEmptyBody =>
+      'Write longer dated entries here. Use Notes for short scratchpad items.';
+
+  @override
+  String get addJournalEntryButton => 'Add journal entry';
+
+  @override
+  String get untitledEntry => 'Untitled entry';
+
+  @override
+  String get emptyJournal => 'empty journal';
+
+  @override
+  String get deleteJournalEntryTooltip => 'Delete journal entry';
+
+  @override
+  String get deleteJournalEntryTitle => 'Delete journal entry?';
+
+  @override
+  String get deleteJournalEntryBody =>
+      'This entry will be permanently removed from this device.';
+
+  @override
+  String get editJournalEntryTitle => 'Edit journal entry';
+
+  @override
+  String get entryFieldLabel => 'Entry';
+
+  @override
+  String get saveEntryButton => 'Save entry';
+
+  @override
+  String get createEntryButton => 'Create entry';
+
+  @override
+  String get writeBeforeSaving => 'Write something before saving.';
 }
