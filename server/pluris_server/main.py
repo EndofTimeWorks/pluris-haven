@@ -55,16 +55,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory,
         max_attempts=active_settings.auth_rate_limit_attempts,
         window_seconds=active_settings.auth_rate_limit_window_seconds,
+        key_pepper=active_settings.friend_code_pepper,
     )
     app.state.refresh_ip_rate_limiter = DatabaseRateLimiter(
         app.state.session_factory,
         max_attempts=active_settings.refresh_ip_rate_limit_attempts,
         window_seconds=active_settings.auth_rate_limit_window_seconds,
+        key_pepper=active_settings.friend_code_pepper,
     )
     app.state.friend_request_rate_limiter = DatabaseRateLimiter(
         app.state.session_factory,
         max_attempts=active_settings.friend_request_rate_limit_attempts,
         window_seconds=active_settings.friend_request_rate_limit_window_seconds,
+        key_pepper=active_settings.friend_code_pepper,
     )
     app.state.backup_object_store = FilesystemBackupObjectStore(
         Path(active_settings.backup_object_dir),

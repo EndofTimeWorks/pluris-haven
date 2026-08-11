@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from math import ceil
@@ -16,15 +18,17 @@ class DatabaseRateLimiter:
         session_factory: async_sessionmaker[AsyncSession],
         max_attempts: int,
         window_seconds: int,
+        key_pepper: str,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._session_factory = session_factory
         self.max_attempts = max_attempts
         self.window_seconds = window_seconds
+        self._key_pepper = key_pepper.encode()
         self._clock = clock
 
     async def retry_after(self, keys: list[str]) -> int | None:
-        unique_keys = sorted(set(keys))
+        unique_keys = sorted({self._digest_key(key) for key in keys})
         if not unique_keys:
             return None
 
@@ -70,3 +74,10 @@ class DatabaseRateLimiter:
                 for key in unique_keys
             )
         return None
+
+    def _digest_key(self, key: str) -> str:
+        return hmac.new(
+            self._key_pepper,
+            b"pluris-haven:rate-limit-key:v1\0" + key.encode(),
+            hashlib.sha256,
+        ).hexdigest()
