@@ -1953,6 +1953,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Paste JSON'), findsOneWidget);
+    expect(
+      find.text('Paste up to 256 KiB. Choose a file for larger exports.'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('paste-import-json-field')),
+          )
+          .maxLength,
+      256 * 1024,
+    );
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();

@@ -1,5 +1,7 @@
 part of 'home_page.dart';
 
+const _maximumPastedImportCharacters = 256 * 1024;
+
 class ImportExportPage extends StatefulWidget {
   const ImportExportPage({super.key, required this.repository});
 
@@ -1249,6 +1251,7 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -1261,9 +1264,9 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Paste JSON',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.pasteJsonTooltip,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -1273,9 +1276,18 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
               minLines: 8,
               maxLines: 14,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              decoration: const InputDecoration(
+              maxLength: _maximumPastedImportCharacters,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(
+                  _maximumPastedImportCharacters,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                ),
+              ],
+              decoration: InputDecoration(
                 hintText: '{"members": [...]}',
-                labelText: 'Export JSON',
+                labelText: l10n.exportJsonLabel,
+                helperText: l10n.pasteJsonSizeHelp,
                 alignLabelWithHint: true,
               ),
             ),
@@ -1286,7 +1298,7 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
                 Navigator.pop(context, text.isEmpty ? null : text);
               },
               icon: const Icon(Icons.fact_check_rounded),
-              label: const Text('Preview pasted JSON'),
+              label: Text(l10n.previewPastedJson),
             ),
           ],
         ),

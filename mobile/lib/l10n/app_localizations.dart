@@ -1632,6 +1632,24 @@ abstract class AppLocalizations {
   /// **'Could not read the pasted JSON.'**
   String get couldNotReadPastedJson;
 
+  /// No description provided for @exportJsonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON'**
+  String get exportJsonLabel;
+
+  /// No description provided for @pasteJsonSizeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste up to 256 KiB. Choose a file for larger exports.'**
+  String get pasteJsonSizeHelp;
+
+  /// No description provided for @previewPastedJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview pasted JSON'**
+  String get previewPastedJson;
+
   /// No description provided for @waitingForAvatarZip.
   ///
   /// In en, this message translates to:
