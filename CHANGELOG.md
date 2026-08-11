@@ -32,8 +32,8 @@ Android-first alpha release: `0.2.0-pre-alpha.2+2008`.
   logging the token.
 - The release workflow packages the unsigned iOS device build as an IPA for
   re-signing with AltStore, SideStore, or Sideloadly.
-- Dev prereleases reuse the debug APK already tested by CI instead of running a
-  second Flutter test and build job.
+- Dev prereleases reuse the signed release-mode APK already built by CI instead
+  of running a second Flutter test and build job.
 
 ### Server and CI
 

@@ -20,9 +20,10 @@ Use a dev build for routine testing between versioned releases.
    - `BUILD.txt`
    - `SHA256SUMS.txt`
 
-Nothing else is needed. The publish job reuses the debug APK built and tested by
-`CI`. If the version is not a `.dev.N` version, or its build number is not
-newer than the existing tags, publishing is skipped.
+Nothing else is needed. On pushes to `main`, `CI` builds a release-mode APK with
+the configured Android upload key. The publish job reuses that signed artefact.
+If the version is not a `.dev.N` version, or its build number is not newer than
+the existing tags, publishing is skipped.
 
 ## Versioned prerelease
 
@@ -87,7 +88,7 @@ Secrets.
 
 ## Version rules
 
-- `.dev.N` means an automatic debug prerelease.
+- `.dev.N` means an automatic release-mode dev prerelease.
 - A version without `.dev.N` means a signed, versioned release.
 - The number after `+` is Android's build number and iOS's bundle version.
 - Increase both the prerelease version and the build number. Do not publish a

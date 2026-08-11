@@ -175,23 +175,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_KEYSTORE_PASSWORD}" || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
-            echo "Android signing secrets are not configured." >&2
-            exit 1
-          fi
-          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > android/app/pluris-haven-upload.jks
-          if ! keytool -list -keystore android/app/pluris-haven-upload.jks -storepass "${ANDROID_KEYSTORE_PASSWORD}" -alias "${ANDROID_KEY_ALIAS}" >/dev/null 2>&1; then
-            echo "Android signing key alias was not found in the uploaded keystore." >&2
-            echo "Set ANDROID_KEY_ALIAS to the alias used with keytool -genkeypair, usually pluris-haven-upload." >&2
-            exit 1
-          fi
-          {
-            echo "storeFile=pluris-haven-upload.jks"
-            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD}"
-            echo "keyAlias=${ANDROID_KEY_ALIAS}"
-            echo "keyPassword=${ANDROID_KEY_PASSWORD}"
-          } > android/key.properties
+        run: ../scripts/configure-android-signing.sh
 
       - name: Build release APK
         run: >
@@ -225,6 +209,10 @@ jobs:
           name: pluris-haven-android-release
           path: release/android/*
           if-no-files-found: error
+
+      - name: Remove Android signing material
+        if: always()
+        run: rm -f android/key.properties android/app/pluris-haven-upload.jks
 
   publish:
     name: Publish GitHub release
