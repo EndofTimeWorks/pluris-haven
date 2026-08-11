@@ -142,7 +142,12 @@ async def refresh(
         digest_token(payload.refresh_token),
         include_client=False,
     )
-    tokens = await rotate_refresh_token(db, payload.refresh_token, settings)
+    tokens = await rotate_refresh_token(
+        db,
+        payload.refresh_token,
+        settings,
+        rotation_nonce=payload.rotation_nonce,
+    )
     if tokens is None:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
     await db.commit()
