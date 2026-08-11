@@ -664,4 +664,207 @@ void main() {
     expect(member.data['is_custom_front'], 0);
     expect(member.data['profile_encryption_version'], 0);
   });
+
+  test('private content survives the v8 -> v17 upgrade', () async {
+    final dbPath = '${tempDir.path}/legacy_v8_private_data.sqlite';
+    _seedLegacyDatabase(path: dbPath, version: 8, statements: _v8Statements());
+
+    final seedRaw = sqlite3.sqlite3.open(dbPath);
+    const timestamp = 1723300000;
+    try {
+      seedRaw.execute(
+        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?)',
+        ['sys-1', 'Legacy System', timestamp, timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO members (id, system_id, display_name, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['mem-1', 'sys-1', 'River', timestamp, timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO notes (id, system_id, member_id, title, body, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'note-1',
+          'sys-1',
+          'mem-1',
+          'Legacy note',
+          'note body',
+          timestamp,
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO front_sessions (id, system_id, label, started_at, '
+        'ended_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'front-1',
+          'sys-1',
+          'River front',
+          timestamp,
+          timestamp + 60,
+          timestamp,
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO messages (id, system_id, member_id, body, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ['message-1', 'sys-1', 'mem-1', 'message body', timestamp, timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO reminders (id, system_id, title, body, schedule_text, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'reminder-1',
+          'sys-1',
+          'Check in',
+          'reminder body',
+          'daily',
+          timestamp,
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO polls (id, system_id, question, description, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          'poll-1',
+          'sys-1',
+          'Legacy question?',
+          'poll detail',
+          timestamp,
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO poll_options (id, poll_id, body, "position") '
+        'VALUES (?, ?, ?, ?)',
+        ['option-1', 'poll-1', 'Yes', 0],
+      );
+      seedRaw.execute(
+        'INSERT INTO poll_votes (poll_id, option_id, created_at) '
+        'VALUES (?, ?, ?)',
+        ['poll-1', 'option-1', timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO custom_field_definitions (id, system_id, name, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['field-1', 'sys-1', 'Role', timestamp, timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO custom_field_values (id, field_id, member_id, value, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ['value-1', 'field-1', 'mem-1', 'Archivist', timestamp, timestamp],
+      );
+      seedRaw.execute(
+        'INSERT INTO journal_entries (id, system_id, member_id, title, body, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'journal-1',
+          'sys-1',
+          'mem-1',
+          'Legacy journal',
+          'journal body',
+          timestamp,
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO content_revisions (id, target_type, target_id, title, '
+        'body, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          'revision-1',
+          'note',
+          'note-1',
+          'Old note',
+          'old note body',
+          timestamp,
+        ],
+      );
+      seedRaw.execute(
+        'INSERT INTO front_audit_events (id, front_id, before_snapshot, '
+        'after_snapshot, created_at) VALUES (?, ?, ?, ?, ?)',
+        ['audit-1', 'front-1', '{"before":true}', '{"after":true}', timestamp],
+      );
+    } finally {
+      seedRaw.close();
+    }
+
+    final database = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(database.close);
+
+    Future<Object?> value(String query, String column) async {
+      final row = await database.customSelect(query).getSingle();
+      return row.data[column];
+    }
+
+    expect(
+      await value("SELECT body FROM notes WHERE id = 'note-1'", 'body'),
+      'note body',
+    );
+    expect(
+      await value(
+        "SELECT label FROM front_sessions WHERE id = 'front-1'",
+        'label',
+      ),
+      'River front',
+    );
+    expect(
+      await value("SELECT body FROM messages WHERE id = 'message-1'", 'body'),
+      'message body',
+    );
+    expect(
+      await value("SELECT body FROM reminders WHERE id = 'reminder-1'", 'body'),
+      'reminder body',
+    );
+    expect(
+      await value("SELECT question FROM polls WHERE id = 'poll-1'", 'question'),
+      'Legacy question?',
+    );
+    expect(
+      await value(
+        "SELECT body FROM poll_options WHERE id = 'option-1'",
+        'body',
+      ),
+      'Yes',
+    );
+    expect(
+      await value(
+        "SELECT COUNT(*) AS count FROM poll_votes WHERE poll_id = 'poll-1'",
+        'count',
+      ),
+      1,
+    );
+    expect(
+      await value(
+        "SELECT value FROM custom_field_values WHERE id = 'value-1'",
+        'value',
+      ),
+      'Archivist',
+    );
+    expect(
+      await value(
+        "SELECT body FROM journal_entries WHERE id = 'journal-1'",
+        'body',
+      ),
+      'journal body',
+    );
+    expect(
+      await value(
+        "SELECT body FROM content_revisions WHERE id = 'revision-1'",
+        'body',
+      ),
+      'old note body',
+    );
+    expect(
+      await value(
+        "SELECT after_snapshot FROM front_audit_events WHERE id = 'audit-1'",
+        'after_snapshot',
+      ),
+      '{"after":true}',
+    );
+    expect(await value('PRAGMA user_version', 'user_version'), 17);
+  });
 }
