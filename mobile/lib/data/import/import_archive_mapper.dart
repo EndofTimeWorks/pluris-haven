@@ -84,6 +84,7 @@ class _ExternalArchiveNormalizer {
   final _pollOptionIdsByExternalId = <String, String>{};
   final _customFrontLabelsByExternalId = <String, String>{};
   final _frontCommentsByExternalId = <String, List<String>>{};
+  final _consumedRootKeys = <String>{};
   final _clampReport = _ImportClampReport();
 
   late final List<Map<String, Object?>> members;
@@ -110,6 +111,9 @@ class _ExternalArchiveNormalizer {
   late final List<Map<String, Object?>> rawPayloads;
 
   void normalize() {
+    // Mark a dedicated system collection before raw-payload retention runs.
+    // The system record itself is assembled later while building the archive.
+    _systemSource();
     groups = _normalizeGroups();
     _indexGroupMembers();
     _indexMemberNames();
@@ -224,10 +228,48 @@ class _ExternalArchiveNormalizer {
   }
 
   Map<String, Object?> _systemSource() {
-    final users = _firstList(decoded, const ['users']);
-    return _mapValue(decoded['system']) ??
+    final users = _firstRootList(const ['users']);
+    return _rootMap('system') ??
         (users.isEmpty ? null : _mapValue(users.first)) ??
         decoded;
+  }
+
+  Map<String, Object?>? _rootMap(String key) {
+    final value = _mapValue(decoded[key]);
+    if (value != null) {
+      _consumedRootKeys.add(key);
+    }
+    return value;
+  }
+
+  List<Object?> _firstRootList(List<String> keys) {
+    for (final key in keys) {
+      final value = decoded[key];
+      if (value is List) {
+        _consumedRootKeys.add(key);
+        return value;
+      }
+      if (value is Map) {
+        _consumedRootKeys.add(key);
+        return value.values.toList(growable: false);
+      }
+    }
+    return const [];
+  }
+
+  List<Object?> _combinedRootLists(List<String> keys) {
+    final combined = <Object?>[];
+    for (final key in keys) {
+      final value = decoded[key];
+      if (value is List) {
+        _consumedRootKeys.add(key);
+        combined.addAll(value);
+      } else if (value is Map) {
+        _consumedRootKeys.add(key);
+        combined.addAll(value.values);
+      }
+    }
+    return combined;
   }
 
   String? _systemAvatarReference(Map<String, Object?> system) {
@@ -246,8 +288,8 @@ class _ExternalArchiveNormalizer {
 
   List<Map<String, Object?>> _normalizeMembers() {
     final items = switch (source) {
-      ImportSource.tupperbox => _firstList(decoded, const ['tuppers']),
-      _ => _firstList(decoded, const ['members', 'membersList', 'profiles']),
+      ImportSource.tupperbox => _firstRootList(const ['tuppers']),
+      _ => _firstRootList(const ['members', 'membersList', 'profiles']),
     };
 
     final records = <Map<String, Object?>>[];
@@ -273,7 +315,7 @@ class _ExternalArchiveNormalizer {
     if (source != ImportSource.simplyPlural) {
       return const _PrivacyBucketData([], []);
     }
-    final sourceBuckets = _firstList(decoded, const ['privacyBuckets']);
+    final sourceBuckets = _firstRootList(const ['privacyBuckets']);
     final buckets = <Map<String, Object?>>[];
     for (var index = 0; index < sourceBuckets.length; index++) {
       final bucket = _mapValue(sourceBuckets[index]);
@@ -302,7 +344,7 @@ class _ExternalArchiveNormalizer {
     }
 
     final links = <Map<String, Object?>>[];
-    final sourceMembers = _firstList(decoded, const ['members']);
+    final sourceMembers = _firstRootList(const ['members']);
     for (final value in sourceMembers) {
       final member = _mapValue(value);
       if (member == null) continue;
@@ -329,8 +371,8 @@ class _ExternalArchiveNormalizer {
 
   void _indexMemberNames() {
     final items = switch (source) {
-      ImportSource.tupperbox => _firstList(decoded, const ['tuppers']),
-      _ => _firstList(decoded, const ['members', 'membersList', 'profiles']),
+      ImportSource.tupperbox => _firstRootList(const ['tuppers']),
+      _ => _firstRootList(const ['members', 'membersList', 'profiles']),
     };
     for (final item in items) {
       final member = _mapValue(item);
@@ -552,14 +594,14 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Object?> _simplyPluralCustomFrontItems() {
-    final explicit = _combinedLists(decoded, const [
+    final explicit = _combinedRootLists(const [
       'customFronts',
       'custom_fronts',
       'frontStatuses',
       'FrontStatuses',
     ]);
     final memberLike = <Map<String, Object?>>[];
-    for (final value in _firstList(decoded, const [
+    for (final value in _firstRootList(const [
       'members',
       'membersList',
       'profiles',
@@ -583,7 +625,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeCustomFields() {
-    final items = _firstList(decoded, const [
+    final items = _firstRootList(const [
       'customFields',
       'custom_fields',
       'fields',
@@ -628,7 +670,66 @@ class _ExternalArchiveNormalizer {
 
   List<Map<String, Object?>> _normalizeCustomFieldValues() {
     final records = <Map<String, Object?>>[];
-    for (final userValue in _firstList(decoded, const ['users'])) {
+    for (final value in _combinedRootLists(const [
+      'custom_field_values',
+      'customFieldValues',
+      'fieldValues',
+    ])) {
+      final row = _mapValue(value);
+      if (row == null) {
+        continue;
+      }
+      final fieldExternalId = _firstString(row, const [
+        'field_id',
+        'fieldId',
+        'field',
+      ]);
+      if (fieldExternalId == null) {
+        continue;
+      }
+      final fieldId = _customFieldIdsByExternalId[fieldExternalId];
+      if (fieldId == null) {
+        continue;
+      }
+      final memberExternalId = _firstString(row, const [
+        'member_id',
+        'memberId',
+        'subject_id',
+        'subjectId',
+        'member',
+      ]);
+      final memberId = memberExternalId == null
+          ? null
+          : _memberIdsByExternalId[memberExternalId];
+      if (memberExternalId != null && memberId == null) {
+        warnings.add(
+          'Ignored custom field value for missing member "$memberExternalId".',
+        );
+        continue;
+      }
+      final rawValue = row['value'] ?? row['body'] ?? row['text'];
+      if (rawValue == null) {
+        continue;
+      }
+      final ownerExternalId = memberExternalId ?? 'system';
+      records.add({
+        'id': _stableId(
+          'custom-field-value',
+          '$ownerExternalId-$fieldExternalId',
+        ),
+        'field_id': fieldId,
+        'member_id': memberId,
+        'value': _customFieldValueForField(fieldExternalId, rawValue),
+        'created_at': _dateString(row, const ['created_at', 'createdAt']),
+        'updated_at': _dateString(row, const [
+          'updated_at',
+          'updatedAt',
+          'lastOperationTime',
+        ]),
+      });
+    }
+
+    for (final userValue in _firstRootList(const ['users'])) {
       final user = _mapValue(userValue);
       final fields = user == null ? null : _mapValue(user['fields']);
       if (fields == null || fields.isEmpty) {
@@ -644,7 +745,7 @@ class _ExternalArchiveNormalizer {
       );
     }
 
-    for (final memberValue in _firstList(decoded, const ['members'])) {
+    for (final memberValue in _firstRootList(const ['members'])) {
       final member = _mapValue(memberValue);
       final info = member == null ? null : _mapValue(member['info']);
       if (member == null || info == null || info.isEmpty) {
@@ -721,7 +822,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeGroups() {
-    final items = _firstList(decoded, const ['groups', 'folders']);
+    final items = _firstRootList(const ['groups', 'folders']);
     for (final item in items) {
       final group = _mapValue(item);
       if (group == null) {
@@ -754,7 +855,7 @@ class _ExternalArchiveNormalizer {
   }
 
   void _indexGroupMembers() {
-    for (final groupValue in _firstList(decoded, const ['groups', 'folders'])) {
+    for (final groupValue in _firstRootList(const ['groups', 'folders'])) {
       final group = _mapValue(groupValue);
       if (group == null) {
         continue;
@@ -795,7 +896,7 @@ class _ExternalArchiveNormalizer {
     final links = <Map<String, Object?>>[];
     final seen = <String>{};
 
-    for (final groupValue in _firstList(decoded, const ['groups', 'folders'])) {
+    for (final groupValue in _firstRootList(const ['groups', 'folders'])) {
       final group = _mapValue(groupValue);
       if (group == null) {
         continue;
@@ -917,7 +1018,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeNotes() {
-    final items = _firstList(decoded, const ['notes']);
+    final items = _firstRootList(const ['notes']);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
@@ -980,7 +1081,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeJournals() {
-    final items = _combinedLists(decoded, const [
+    final items = _combinedRootLists(const [
       'journals',
       'journalEntries',
       'journal_entries',
@@ -1055,10 +1156,7 @@ class _ExternalArchiveNormalizer {
 
   ({List<Map<String, Object?>> categories, List<Map<String, Object?>> channels})
   _normalizeChatStructure() {
-    final channelItems = _combinedLists(decoded, const [
-      'channels',
-      'chatChannels',
-    ]);
+    final channelItems = _combinedRootLists(const ['channels', 'chatChannels']);
     final channels = <Map<String, Object?>>[];
     final channelsByExternalId = <String, Map<String, Object?>>{};
     for (var index = 0; index < channelItems.length; index++) {
@@ -1102,7 +1200,7 @@ class _ExternalArchiveNormalizer {
       channelsByExternalId[externalId] = record;
     }
 
-    final categoryItems = _combinedLists(decoded, const [
+    final categoryItems = _combinedRootLists(const [
       'channelCategories',
       'chatCategories',
     ]);
@@ -1163,7 +1261,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeMessages() {
-    final items = _combinedLists(decoded, const [
+    final items = _combinedRootLists(const [
       'messages',
       'chat',
       'messageBoard',
@@ -1255,7 +1353,7 @@ class _ExternalArchiveNormalizer {
   }
 
   List<Map<String, Object?>> _normalizeReminders() {
-    final items = _combinedLists(decoded, const [
+    final items = _combinedRootLists(const [
       'reminders',
       'alerts',
       'repeatedReminders',
@@ -1387,7 +1485,7 @@ class _ExternalArchiveNormalizer {
   }
 
   _PollData _normalizePolls() {
-    final items = _firstList(decoded, const ['polls', 'pollList', 'votes']);
+    final items = _firstRootList(const ['polls', 'pollList', 'votes']);
     final pollRecords = <Map<String, Object?>>[];
     final optionRecords = <Map<String, Object?>>[];
     final voteRecords = <Map<String, Object?>>[];
@@ -1630,13 +1728,13 @@ class _ExternalArchiveNormalizer {
 
   List<Map<String, Object?>> _normalizePreferences() {
     Map<String, Object?>? user;
-    for (final value in _firstList(decoded, const ['users'])) {
+    for (final value in _firstRootList(const ['users'])) {
       user = _mapValue(value);
       if (user != null) {
         break;
       }
     }
-    final settings = _mapValue(decoded['settings']);
+    final settings = _rootMap('settings');
     final color = _normalizeColor(
       _firstString(settings ?? const {}, const [
             'color',
@@ -1662,7 +1760,7 @@ class _ExternalArchiveNormalizer {
   }
 
   _FrontData _normalizeFronts() {
-    final items = _firstList(decoded, const [
+    final items = _firstRootList(const [
       'frontHistory',
       'fronthistory',
       'fronts',
@@ -1999,7 +2097,7 @@ class _ExternalArchiveNormalizer {
   }
 
   String? _simplyPluralOwnerId() {
-    final users = _firstList(decoded, const ['users']);
+    final users = _firstRootList(const ['users']);
     final user = users.isEmpty ? null : _mapValue(users.first);
     if (user == null) {
       return null;
@@ -2019,7 +2117,7 @@ class _ExternalArchiveNormalizer {
   }
 
   void _indexFrontHistoryComments() {
-    for (final value in _firstList(decoded, const ['comments'])) {
+    for (final value in _firstRootList(const ['comments'])) {
       final comment = _mapValue(value);
       if (comment == null || !_isFrontHistoryComment(comment)) {
         continue;
@@ -2083,7 +2181,8 @@ class _ExternalArchiveNormalizer {
   List<Map<String, Object?>> _normalizeRawPayloads() {
     return [
       for (final entry in decoded.entries)
-        if (entry.value is! List || (entry.value as List).isNotEmpty)
+        if (!_consumedRootKeys.contains(entry.key) &&
+            (entry.value is! List || (entry.value as List).isNotEmpty))
           {
             'id': _stableId('raw', entry.key),
             'source': source.jobSource,
@@ -2258,17 +2357,6 @@ List<Object?> _firstList(Map<String, Object?> object, List<String> keys) {
     }
   }
   return const [];
-}
-
-List<Object?> _combinedLists(Map<String, Object?> object, List<String> keys) {
-  return [
-    for (final key in keys)
-      ...switch (object[key]) {
-        final List value => value,
-        final Map value => value.values,
-        _ => const <Object?>[],
-      },
-  ];
 }
 
 Map<String, Object?>? _mapValue(Object? value) =>
