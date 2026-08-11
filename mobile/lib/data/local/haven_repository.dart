@@ -14,13 +14,14 @@ import '../security/haven_crypto.dart';
 import 'app_database.dart';
 import 'supported_language.dart';
 
-const _localEncryptedTextPrefix = 'ph1:';
+const _legacyLocalEncryptedTextPrefix = 'ph1:';
+const _localEncryptedTextPrefix = 'ph2:';
 const _memberEncryptionSweepPreference =
     'internal.member_encryption_sweep_version';
 const _localEncryptionSweepPreference =
     'internal.local_encryption_sweep_version';
 const _memberEncryptionSweepVersion = '2';
-const _localEncryptionSweepVersion = '1';
+const _localEncryptionSweepVersion = '2';
 
 class HomeSnapshot {
   const HomeSnapshot({
@@ -1056,7 +1057,12 @@ class LocalHavenRepository implements HavenRepository {
         .insert(
           PluralSystemsCompanion.insert(
             id: localSystemId,
-            name: await _encryptLocalText('Local system'),
+            name: await _encryptLocalText(
+              'Local system',
+              'plural_systems',
+              localSystemId,
+              'name',
+            ),
             createdAt: now,
             updatedAt: now,
           ),
@@ -1159,31 +1165,75 @@ class LocalHavenRepository implements HavenRepository {
     await _decryptMember(member, 'pluralkit_id', member.pluralKitId);
   }
 
-  Future<String> _encryptLocalText(String value) async {
-    final encrypted = await crypto.encrypt(value);
+  String _localTextAad(String table, String rowId, String column) =>
+      'pluris-haven:local-text:v2\u0000$table\u0000$rowId\u0000$column';
+
+  Future<String> _encryptLocalText(
+    String value,
+    String table,
+    String rowId,
+    String column,
+  ) async {
+    final encrypted = await crypto.encrypt(
+      value,
+      aad: _localTextAad(table, rowId, column),
+    );
     if (encrypted == null) {
       throw StateError('Local text encryption returned no value.');
     }
     return '$_localEncryptedTextPrefix$encrypted';
   }
 
-  Future<String?> _encryptNullableLocalText(String? value) async {
-    return value == null ? null : _encryptLocalText(value);
+  Future<String?> _encryptNullableLocalText(
+    String? value,
+    String table,
+    String rowId,
+    String column,
+  ) async {
+    return value == null
+        ? null
+        : _encryptLocalText(value, table, rowId, column);
   }
 
-  Future<String?> _decryptLocalText(String? stored) async {
+  Future<String?> _decryptLocalText(
+    String? stored,
+    String table,
+    String rowId,
+    String column,
+  ) async {
     if (stored == null) return null;
+    if (stored.startsWith(_legacyLocalEncryptedTextPrefix)) {
+      return crypto.decrypt(
+        stored.substring(_legacyLocalEncryptedTextPrefix.length),
+      );
+    }
     if (!stored.startsWith(_localEncryptedTextPrefix)) {
       throw StateError('Protected local text is not encrypted.');
     }
-    return crypto.decrypt(stored.substring(_localEncryptedTextPrefix.length));
+    return crypto.decrypt(
+      stored.substring(_localEncryptedTextPrefix.length),
+      aad: _localTextAad(table, rowId, column),
+    );
   }
 
-  Future<String> _migrateLocalText(String stored) async {
+  Future<String> _migrateLocalText(
+    String stored,
+    String table,
+    String rowId,
+    String column,
+  ) async {
     if (stored.startsWith(_localEncryptedTextPrefix)) {
       return stored;
     }
-    return _encryptLocalText(stored);
+    final plaintext = stored.startsWith(_legacyLocalEncryptedTextPrefix)
+        ? await crypto.decrypt(
+            stored.substring(_legacyLocalEncryptedTextPrefix.length),
+          )
+        : stored;
+    if (plaintext == null) {
+      throw StateError('Legacy local text decryption returned no value.');
+    }
+    return _encryptLocalText(plaintext, table, rowId, column);
   }
 
   bool _needsLocalTextMigration(String? stored) =>
@@ -1246,8 +1296,12 @@ class LocalHavenRepository implements HavenRepository {
           database.notes,
         )..where((row) => row.id.equals(note.id))).write(
           NotesCompanion(
-            title: Value(await _migrateLocalText(note.title)),
-            body: Value(await _migrateLocalText(note.body)),
+            title: Value(
+              await _migrateLocalText(note.title, 'notes', note.id, 'title'),
+            ),
+            body: Value(
+              await _migrateLocalText(note.body, 'notes', note.id, 'body'),
+            ),
           ),
         );
       }
@@ -1256,7 +1310,16 @@ class LocalHavenRepository implements HavenRepository {
         await (database.update(
           database.messages,
         )..where((row) => row.id.equals(message.id))).write(
-          MessagesCompanion(body: Value(await _migrateLocalText(message.body))),
+          MessagesCompanion(
+            body: Value(
+              await _migrateLocalText(
+                message.body,
+                'messages',
+                message.id,
+                'body',
+              ),
+            ),
+          ),
         );
       }
       for (final front in fronts) {
@@ -1268,9 +1331,21 @@ class LocalHavenRepository implements HavenRepository {
           database.frontSessions,
         )..where((row) => row.id.equals(front.id))).write(
           FrontSessionsCompanion(
-            label: Value(await _migrateNullableLocalText(front.label)),
+            label: Value(
+              await _migrateNullableLocalText(
+                front.label,
+                'front_sessions',
+                front.id,
+                'label',
+              ),
+            ),
             statusNote: Value(
-              await _migrateNullableLocalText(front.statusNote),
+              await _migrateNullableLocalText(
+                front.statusNote,
+                'front_sessions',
+                front.id,
+                'status_note',
+              ),
             ),
           ),
         );
@@ -1284,8 +1359,22 @@ class LocalHavenRepository implements HavenRepository {
           database.journalEntries,
         )..where((row) => row.id.equals(journal.id))).write(
           JournalEntriesCompanion(
-            title: Value(await _migrateNullableLocalText(journal.title)),
-            body: Value(await _migrateLocalText(journal.body)),
+            title: Value(
+              await _migrateNullableLocalText(
+                journal.title,
+                'journal_entries',
+                journal.id,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _migrateLocalText(
+                journal.body,
+                'journal_entries',
+                journal.id,
+                'body',
+              ),
+            ),
           ),
         );
       }
@@ -1304,17 +1393,53 @@ class LocalHavenRepository implements HavenRepository {
           database.reminders,
         )..where((row) => row.id.equals(reminder.id))).write(
           RemindersCompanion(
-            title: Value(await _migrateLocalText(reminder.title)),
-            body: Value(await _migrateNullableLocalText(reminder.body)),
-            scheduleText: Value(await _migrateLocalText(reminder.scheduleText)),
+            title: Value(
+              await _migrateLocalText(
+                reminder.title,
+                'reminders',
+                reminder.id,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _migrateNullableLocalText(
+                reminder.body,
+                'reminders',
+                reminder.id,
+                'body',
+              ),
+            ),
+            scheduleText: Value(
+              await _migrateLocalText(
+                reminder.scheduleText,
+                'reminders',
+                reminder.id,
+                'schedule_text',
+              ),
+            ),
             triggerEvent: Value(
-              await _migrateNullableLocalText(reminder.triggerEvent),
+              await _migrateNullableLocalText(
+                reminder.triggerEvent,
+                'reminders',
+                reminder.id,
+                'trigger_event',
+              ),
             ),
             scheduleKind: Value(
-              await _migrateNullableLocalText(reminder.scheduleKind),
+              await _migrateNullableLocalText(
+                reminder.scheduleKind,
+                'reminders',
+                reminder.id,
+                'schedule_kind',
+              ),
             ),
             scheduleTime: Value(
-              await _migrateNullableLocalText(reminder.scheduleTime),
+              await _migrateNullableLocalText(
+                reminder.scheduleTime,
+                'reminders',
+                reminder.id,
+                'schedule_time',
+              ),
             ),
           ),
         );
@@ -1328,9 +1453,21 @@ class LocalHavenRepository implements HavenRepository {
           database.polls,
         )..where((row) => row.id.equals(poll.id))).write(
           PollsCompanion(
-            question: Value(await _migrateLocalText(poll.question)),
+            question: Value(
+              await _migrateLocalText(
+                poll.question,
+                'polls',
+                poll.id,
+                'question',
+              ),
+            ),
             description: Value(
-              await _migrateNullableLocalText(poll.description),
+              await _migrateNullableLocalText(
+                poll.description,
+                'polls',
+                poll.id,
+                'description',
+              ),
             ),
           ),
         );
@@ -1341,7 +1478,14 @@ class LocalHavenRepository implements HavenRepository {
           database.pollOptions,
         )..where((row) => row.id.equals(option.id))).write(
           PollOptionsCompanion(
-            body: Value(await _migrateLocalText(option.body)),
+            body: Value(
+              await _migrateLocalText(
+                option.body,
+                'poll_options',
+                option.id,
+                'body',
+              ),
+            ),
           ),
         );
       }
@@ -1354,8 +1498,22 @@ class LocalHavenRepository implements HavenRepository {
           database.customFieldDefinitions,
         )..where((row) => row.id.equals(field.id))).write(
           CustomFieldDefinitionsCompanion(
-            name: Value(await _migrateLocalText(field.name)),
-            privacy: Value(await _migrateNullableLocalText(field.privacy)),
+            name: Value(
+              await _migrateLocalText(
+                field.name,
+                'custom_field_definitions',
+                field.id,
+                'name',
+              ),
+            ),
+            privacy: Value(
+              await _migrateNullableLocalText(
+                field.privacy,
+                'custom_field_definitions',
+                field.id,
+                'privacy',
+              ),
+            ),
           ),
         );
       }
@@ -1365,7 +1523,14 @@ class LocalHavenRepository implements HavenRepository {
           database.customFieldValues,
         )..where((row) => row.id.equals(value.id))).write(
           CustomFieldValuesCompanion(
-            value: Value(await _migrateLocalText(value.value)),
+            value: Value(
+              await _migrateLocalText(
+                value.value,
+                'custom_field_values',
+                value.id,
+                'value',
+              ),
+            ),
           ),
         );
       }
@@ -1382,12 +1547,38 @@ class LocalHavenRepository implements HavenRepository {
           database.systemGroups,
         )..where((row) => row.id.equals(group.id))).write(
           SystemGroupsCompanion(
-            name: Value(await _migrateLocalText(group.name)),
-            colorHex: Value(await _migrateNullableLocalText(group.colorHex)),
-            description: Value(
-              await _migrateNullableLocalText(group.description),
+            name: Value(
+              await _migrateLocalText(
+                group.name,
+                'system_groups',
+                group.id,
+                'name',
+              ),
             ),
-            emoji: Value(await _migrateNullableLocalText(group.emoji)),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                group.colorHex,
+                'system_groups',
+                group.id,
+                'color_hex',
+              ),
+            ),
+            description: Value(
+              await _migrateNullableLocalText(
+                group.description,
+                'system_groups',
+                group.id,
+                'description',
+              ),
+            ),
+            emoji: Value(
+              await _migrateNullableLocalText(
+                group.emoji,
+                'system_groups',
+                group.id,
+                'emoji',
+              ),
+            ),
           ),
         );
       }
@@ -1400,8 +1591,17 @@ class LocalHavenRepository implements HavenRepository {
           database.tags,
         )..where((row) => row.id.equals(tag.id))).write(
           TagsCompanion(
-            name: Value(await _migrateLocalText(tag.name)),
-            colorHex: Value(await _migrateNullableLocalText(tag.colorHex)),
+            name: Value(
+              await _migrateLocalText(tag.name, 'tags', tag.id, 'name'),
+            ),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                tag.colorHex,
+                'tags',
+                tag.id,
+                'color_hex',
+              ),
+            ),
           ),
         );
       }
@@ -1419,14 +1619,45 @@ class LocalHavenRepository implements HavenRepository {
           database.namedFronts,
         )..where((row) => row.id.equals(front.id))).write(
           NamedFrontsCompanion(
-            name: Value(await _migrateLocalText(front.name)),
-            customLabel: Value(
-              await _migrateNullableLocalText(front.customLabel),
+            name: Value(
+              await _migrateLocalText(
+                front.name,
+                'named_fronts',
+                front.id,
+                'name',
+              ),
             ),
-            colorHex: Value(await _migrateNullableLocalText(front.colorHex)),
-            avatarUrl: Value(await _migrateNullableLocalText(front.avatarUrl)),
+            customLabel: Value(
+              await _migrateNullableLocalText(
+                front.customLabel,
+                'named_fronts',
+                front.id,
+                'custom_label',
+              ),
+            ),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                front.colorHex,
+                'named_fronts',
+                front.id,
+                'color_hex',
+              ),
+            ),
+            avatarUrl: Value(
+              await _migrateNullableLocalText(
+                front.avatarUrl,
+                'named_fronts',
+                front.id,
+                'avatar_url',
+              ),
+            ),
             description: Value(
-              await _migrateNullableLocalText(front.description),
+              await _migrateNullableLocalText(
+                front.description,
+                'named_fronts',
+                front.id,
+                'description',
+              ),
             ),
           ),
         );
@@ -1443,11 +1674,30 @@ class LocalHavenRepository implements HavenRepository {
           database.privacyBuckets,
         )..where((row) => row.id.equals(bucket.id))).write(
           PrivacyBucketsCompanion(
-            name: Value(await _migrateLocalText(bucket.name)),
-            description: Value(
-              await _migrateNullableLocalText(bucket.description),
+            name: Value(
+              await _migrateLocalText(
+                bucket.name,
+                'privacy_buckets',
+                bucket.id,
+                'name',
+              ),
             ),
-            colorHex: Value(await _migrateNullableLocalText(bucket.colorHex)),
+            description: Value(
+              await _migrateNullableLocalText(
+                bucket.description,
+                'privacy_buckets',
+                bucket.id,
+                'description',
+              ),
+            ),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                bucket.colorHex,
+                'privacy_buckets',
+                bucket.id,
+                'color_hex',
+              ),
+            ),
           ),
         );
       }
@@ -1464,11 +1714,37 @@ class LocalHavenRepository implements HavenRepository {
           database.pluralSystems,
         )..where((row) => row.id.equals(system.id))).write(
           PluralSystemsCompanion(
-            name: Value(await _migrateLocalText(system.name)),
-            colorHex: Value(await _migrateNullableLocalText(system.colorHex)),
-            avatarUrl: Value(await _migrateNullableLocalText(system.avatarUrl)),
+            name: Value(
+              await _migrateLocalText(
+                system.name,
+                'plural_systems',
+                system.id,
+                'name',
+              ),
+            ),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                system.colorHex,
+                'plural_systems',
+                system.id,
+                'color_hex',
+              ),
+            ),
+            avatarUrl: Value(
+              await _migrateNullableLocalText(
+                system.avatarUrl,
+                'plural_systems',
+                system.id,
+                'avatar_url',
+              ),
+            ),
             description: Value(
-              await _migrateNullableLocalText(system.description),
+              await _migrateNullableLocalText(
+                system.description,
+                'plural_systems',
+                system.id,
+                'description',
+              ),
             ),
           ),
         );
@@ -1482,9 +1758,21 @@ class LocalHavenRepository implements HavenRepository {
           database.chatCategories,
         )..where((row) => row.id.equals(category.id))).write(
           ChatCategoriesCompanion(
-            name: Value(await _migrateLocalText(category.name)),
+            name: Value(
+              await _migrateLocalText(
+                category.name,
+                'chat_categories',
+                category.id,
+                'name',
+              ),
+            ),
             description: Value(
-              await _migrateNullableLocalText(category.description),
+              await _migrateNullableLocalText(
+                category.description,
+                'chat_categories',
+                category.id,
+                'description',
+              ),
             ),
           ),
         );
@@ -1501,11 +1789,30 @@ class LocalHavenRepository implements HavenRepository {
           database.chatChannels,
         )..where((row) => row.id.equals(channel.id))).write(
           ChatChannelsCompanion(
-            name: Value(await _migrateLocalText(channel.name)),
-            description: Value(
-              await _migrateNullableLocalText(channel.description),
+            name: Value(
+              await _migrateLocalText(
+                channel.name,
+                'chat_channels',
+                channel.id,
+                'name',
+              ),
             ),
-            colorHex: Value(await _migrateNullableLocalText(channel.colorHex)),
+            description: Value(
+              await _migrateNullableLocalText(
+                channel.description,
+                'chat_channels',
+                channel.id,
+                'description',
+              ),
+            ),
+            colorHex: Value(
+              await _migrateNullableLocalText(
+                channel.colorHex,
+                'chat_channels',
+                channel.id,
+                'color_hex',
+              ),
+            ),
           ),
         );
       }
@@ -1518,8 +1825,22 @@ class LocalHavenRepository implements HavenRepository {
           database.notificationEvents,
         )..where((row) => row.id.equals(event.id))).write(
           NotificationEventsCompanion(
-            title: Value(await _migrateLocalText(event.title)),
-            body: Value(await _migrateLocalText(event.body)),
+            title: Value(
+              await _migrateLocalText(
+                event.title,
+                'notification_events',
+                event.id,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _migrateLocalText(
+                event.body,
+                'notification_events',
+                event.id,
+                'body',
+              ),
+            ),
           ),
         );
       }
@@ -1532,8 +1853,22 @@ class LocalHavenRepository implements HavenRepository {
           database.contentRevisions,
         )..where((row) => row.id.equals(revision.id))).write(
           ContentRevisionsCompanion(
-            title: Value(await _migrateNullableLocalText(revision.title)),
-            body: Value(await _migrateLocalText(revision.body)),
+            title: Value(
+              await _migrateNullableLocalText(
+                revision.title,
+                'content_revisions',
+                revision.id,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _migrateLocalText(
+                revision.body,
+                'content_revisions',
+                revision.id,
+                'body',
+              ),
+            ),
           ),
         );
       }
@@ -1547,10 +1882,20 @@ class LocalHavenRepository implements HavenRepository {
         )..where((row) => row.id.equals(event.id))).write(
           FrontAuditEventsCompanion(
             beforeSnapshot: Value(
-              await _migrateNullableLocalText(event.beforeSnapshot),
+              await _migrateNullableLocalText(
+                event.beforeSnapshot,
+                'front_audit_events',
+                event.id,
+                'before_snapshot',
+              ),
             ),
             afterSnapshot: Value(
-              await _migrateNullableLocalText(event.afterSnapshot),
+              await _migrateNullableLocalText(
+                event.afterSnapshot,
+                'front_audit_events',
+                event.id,
+                'after_snapshot',
+              ),
             ),
           ),
         );
@@ -1564,9 +1909,21 @@ class LocalHavenRepository implements HavenRepository {
           database.importRecords,
         )..where((row) => row.id.equals(record.id))).write(
           ImportRecordsCompanion(
-            fileName: Value(await _migrateNullableLocalText(record.fileName)),
+            fileName: Value(
+              await _migrateNullableLocalText(
+                record.fileName,
+                'import_records',
+                record.id,
+                'file_name',
+              ),
+            ),
             summaryJson: Value(
-              await _migrateNullableLocalText(record.summaryJson),
+              await _migrateNullableLocalText(
+                record.summaryJson,
+                'import_records',
+                record.id,
+                'summary_json',
+              ),
             ),
           ),
         );
@@ -1577,7 +1934,14 @@ class LocalHavenRepository implements HavenRepository {
           database.importPayloads,
         )..where((row) => row.id.equals(payload.id))).write(
           ImportPayloadsCompanion(
-            payloadJson: Value(await _migrateLocalText(payload.payloadJson)),
+            payloadJson: Value(
+              await _migrateLocalText(
+                payload.payloadJson,
+                'import_payloads',
+                payload.id,
+                'payload_json',
+              ),
+            ),
           ),
         );
       }
@@ -1593,9 +1957,30 @@ class LocalHavenRepository implements HavenRepository {
           database.backgroundJobs,
         )..where((row) => row.id.equals(job.id))).write(
           BackgroundJobsCompanion(
-            fileName: Value(await _migrateNullableLocalText(job.fileName)),
-            payloadJson: Value(await _migrateLocalText(job.payloadJson)),
-            error: Value(await _migrateNullableLocalText(job.error)),
+            fileName: Value(
+              await _migrateNullableLocalText(
+                job.fileName,
+                'background_jobs',
+                job.id,
+                'file_name',
+              ),
+            ),
+            payloadJson: Value(
+              await _migrateLocalText(
+                job.payloadJson,
+                'background_jobs',
+                job.id,
+                'payload_json',
+              ),
+            ),
+            error: Value(
+              await _migrateNullableLocalText(
+                job.error,
+                'background_jobs',
+                job.id,
+                'error',
+              ),
+            ),
           ),
         );
       }
@@ -1647,8 +2032,18 @@ class LocalHavenRepository implements HavenRepository {
       type: row.type,
       status: row.status,
       source: row.source,
-      fileName: await _decryptLocalText(row.fileName),
-      error: await _decryptLocalText(row.error),
+      fileName: await _decryptLocalText(
+        row.fileName,
+        'background_jobs',
+        row.id,
+        'file_name',
+      ),
+      error: await _decryptLocalText(
+        row.error,
+        'background_jobs',
+        row.id,
+        'error',
+      ),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -1889,9 +2284,21 @@ ORDER BY m.lexo_rank ASC
         for (final field in fields)
           CustomFieldSummary(
             id: field.id,
-            name: (await _decryptLocalText(field.name)) ?? '',
+            name:
+                (await _decryptLocalText(
+                  field.name,
+                  'custom_field_definitions',
+                  field.id,
+                  'name',
+                )) ??
+                '',
             fieldType: field.fieldType,
-            privacy: await _decryptLocalText(field.privacy),
+            privacy: await _decryptLocalText(
+              field.privacy,
+              'custom_field_definitions',
+              field.id,
+              'privacy',
+            ),
             position: field.position,
             valueCount: valueCounts[field.id] ?? 0,
           ),
@@ -1915,7 +2322,14 @@ ORDER BY m.lexo_rank ASC
               id: row.id,
               fieldId: row.fieldId,
               memberId: row.memberId,
-              value: (await _decryptLocalText(row.value)) ?? '',
+              value:
+                  (await _decryptLocalText(
+                    row.value,
+                    'custom_field_values',
+                    row.id,
+                    'value',
+                  )) ??
+                  '',
             ),
       ];
     });
@@ -1951,15 +2365,32 @@ ORDER BY LOWER(g.name) ASC
               GroupSummary(
                 id: row.data['id'] as String,
                 name:
-                    (await _decryptLocalText(row.data['name'] as String)) ?? '',
+                    (await _decryptLocalText(
+                      row.data['name'] as String,
+                      'system_groups',
+                      row.data['id'] as String,
+                      'name',
+                    )) ??
+                    '',
                 parentGroupId: row.data['parent_group_id'] as String?,
                 colorHex: await _decryptLocalText(
                   row.data['color_hex'] as String?,
+                  'system_groups',
+                  row.data['id'] as String,
+                  'color_hex',
                 ),
                 description: await _decryptLocalText(
                   row.data['description'] as String?,
+                  'system_groups',
+                  row.data['id'] as String,
+                  'description',
                 ),
-                emoji: await _decryptLocalText(row.data['emoji'] as String?),
+                emoji: await _decryptLocalText(
+                  row.data['emoji'] as String?,
+                  'system_groups',
+                  row.data['id'] as String,
+                  'emoji',
+                ),
                 isSubsystem: (row.data['is_subsystem'] as int?) == 1,
                 memberCount: row.data['member_count'] as int,
               ),
@@ -1993,12 +2424,25 @@ ORDER BY pb.position ASC
             for (final row in rows)
               PrivacyBucketSummary(
                 id: row.read<String>('id'),
-                name: (await _decryptLocalText(row.read<String>('name'))) ?? '',
+                name:
+                    (await _decryptLocalText(
+                      row.read<String>('name'),
+                      'privacy_buckets',
+                      row.read<String>('id'),
+                      'name',
+                    )) ??
+                    '',
                 description: await _decryptLocalText(
                   row.readNullable<String>('description'),
+                  'privacy_buckets',
+                  row.read<String>('id'),
+                  'description',
                 ),
                 colorHex: await _decryptLocalText(
                   row.readNullable<String>('color_hex'),
+                  'privacy_buckets',
+                  row.read<String>('id'),
+                  'color_hex',
                 ),
                 memberIds: _splitJoinedIds(row.data['member_ids']),
               ),
@@ -2020,8 +2464,17 @@ ORDER BY pb.position ASC
         for (final row in rows)
           NoteSummary(
             id: row.id,
-            title: (await _decryptLocalText(row.title)) ?? '',
-            body: (await _decryptLocalText(row.body)) ?? '',
+            title:
+                (await _decryptLocalText(
+                  row.title,
+                  'notes',
+                  row.id,
+                  'title',
+                )) ??
+                '',
+            body:
+                (await _decryptLocalText(row.body, 'notes', row.id, 'body')) ??
+                '',
             memberId: row.memberId,
             updatedAt: row.updatedAt,
           ),
@@ -2049,7 +2502,14 @@ ORDER BY pb.position ASC
         for (final row in rows)
           MessageSummary(
             id: row.id,
-            body: (await _decryptLocalText(row.body)) ?? '',
+            body:
+                (await _decryptLocalText(
+                  row.body,
+                  'messages',
+                  row.id,
+                  'body',
+                )) ??
+                '',
             memberId: row.memberId,
             boardKind: row.boardKind,
             boardMemberId: row.boardMemberId,
@@ -2072,8 +2532,20 @@ ORDER BY pb.position ASC
         for (final row in rows)
           ChatCategorySummary(
             id: row.id,
-            name: (await _decryptLocalText(row.name)) ?? '',
-            description: await _decryptLocalText(row.description),
+            name:
+                (await _decryptLocalText(
+                  row.name,
+                  'chat_categories',
+                  row.id,
+                  'name',
+                )) ??
+                '',
+            description: await _decryptLocalText(
+              row.description,
+              'chat_categories',
+              row.id,
+              'description',
+            ),
             position: row.position,
           ),
       ],
@@ -2090,10 +2562,27 @@ ORDER BY pb.position ASC
         for (final row in rows)
           ChatChannelSummary(
             id: row.id,
-            name: (await _decryptLocalText(row.name)) ?? '',
+            name:
+                (await _decryptLocalText(
+                  row.name,
+                  'chat_channels',
+                  row.id,
+                  'name',
+                )) ??
+                '',
             categoryId: row.categoryId,
-            description: await _decryptLocalText(row.description),
-            colorHex: await _decryptLocalText(row.colorHex),
+            description: await _decryptLocalText(
+              row.description,
+              'chat_channels',
+              row.id,
+              'description',
+            ),
+            colorHex: await _decryptLocalText(
+              row.colorHex,
+              'chat_channels',
+              row.id,
+              'color_hex',
+            ),
             position: row.position,
           ),
       ],
@@ -2116,11 +2605,40 @@ ORDER BY pb.position ASC
         for (final row in rows)
           ReminderSummary(
             id: row.id,
-            title: (await _decryptLocalText(row.title)) ?? '',
-            body: await _decryptLocalText(row.body),
-            scheduleText: (await _decryptLocalText(row.scheduleText)) ?? '',
-            scheduleKind: await _decryptLocalText(row.scheduleKind),
-            scheduleTime: await _decryptLocalText(row.scheduleTime),
+            title:
+                (await _decryptLocalText(
+                  row.title,
+                  'reminders',
+                  row.id,
+                  'title',
+                )) ??
+                '',
+            body: await _decryptLocalText(
+              row.body,
+              'reminders',
+              row.id,
+              'body',
+            ),
+            scheduleText:
+                (await _decryptLocalText(
+                  row.scheduleText,
+                  'reminders',
+                  row.id,
+                  'schedule_text',
+                )) ??
+                '',
+            scheduleKind: await _decryptLocalText(
+              row.scheduleKind,
+              'reminders',
+              row.id,
+              'schedule_kind',
+            ),
+            scheduleTime: await _decryptLocalText(
+              row.scheduleTime,
+              'reminders',
+              row.id,
+              'schedule_time',
+            ),
             scheduleDowMask: row.scheduleDowMask,
             scheduleDom: row.scheduleDom,
             enabled: row.enabled,
@@ -2159,7 +2677,12 @@ ORDER BY pb.position ASC
         database.pollVotes,
       )..where((vote) => vote.pollId.equals(row.id))).get();
       final selectedOptionIds = votes.map((vote) => vote.optionId).toSet();
-      final question = await _decryptLocalText(row.question);
+      final question = await _decryptLocalText(
+        row.question,
+        'polls',
+        row.id,
+        'question',
+      );
       if (question == null) {
         throw StateError('Protected poll question is unexpectedly null.');
       }
@@ -2168,7 +2691,12 @@ ORDER BY pb.position ASC
         PollSummary(
           id: row.id,
           question: question,
-          description: await _decryptLocalText(row.description),
+          description: await _decryptLocalText(
+            row.description,
+            'polls',
+            row.id,
+            'description',
+          ),
           kind: PollKind.fromStorage(row.kind),
           closed: row.closed,
           updatedAt: row.updatedAt,
@@ -2176,7 +2704,14 @@ ORDER BY pb.position ASC
             for (final option in options)
               PollOptionSummary(
                 id: option.id,
-                body: (await _decryptLocalText(option.body)) ?? '',
+                body:
+                    (await _decryptLocalText(
+                      option.body,
+                      'poll_options',
+                      option.id,
+                      'body',
+                    )) ??
+                    '',
                 position: option.position,
                 selected: selectedOptionIds.contains(option.id),
               ),
@@ -2202,8 +2737,22 @@ ORDER BY pb.position ASC
           NotificationEventSummary(
             id: row.id,
             kind: row.kind,
-            title: (await _decryptLocalText(row.title)) ?? '',
-            body: (await _decryptLocalText(row.body)) ?? '',
+            title:
+                (await _decryptLocalText(
+                  row.title,
+                  'notification_events',
+                  row.id,
+                  'title',
+                )) ??
+                '',
+            body:
+                (await _decryptLocalText(
+                  row.body,
+                  'notification_events',
+                  row.id,
+                  'body',
+                )) ??
+                '',
             readAt: row.readAt,
             createdAt: row.createdAt,
           ),
@@ -2237,7 +2786,12 @@ ORDER BY pb.position ASC
         FrontHistoryEntry(
           id: row.id,
           label: await _frontHistoryLabel(row),
-          statusNote: await _decryptLocalText(row.statusNote),
+          statusNote: await _decryptLocalText(
+            row.statusNote,
+            'front_sessions',
+            row.id,
+            'status_note',
+          ),
           startedAt: row.startedAt,
           endedAt: row.endedAt,
           memberIds: [for (final link in links) link.memberId],
@@ -2248,7 +2802,12 @@ ORDER BY pb.position ASC
   }
 
   Future<String> _frontHistoryLabel(FrontSession row) async {
-    final explicit = (await _decryptLocalText(row.label))?.trim();
+    final explicit = (await _decryptLocalText(
+      row.label,
+      'front_sessions',
+      row.id,
+      'label',
+    ))?.trim();
     if (explicit != null && explicit.isNotEmpty) {
       return explicit;
     }
@@ -2326,8 +2885,16 @@ SELECT
     final storedSystemName = data['system_name'] as String;
 
     return HomeSnapshot(
-      systemName: storedSystemName.startsWith(_localEncryptedTextPrefix)
-          ? (await _decryptLocalText(storedSystemName)) ?? 'Local system'
+      systemName:
+          (storedSystemName.startsWith(_localEncryptedTextPrefix) ||
+              storedSystemName.startsWith(_legacyLocalEncryptedTextPrefix))
+          ? (await _decryptLocalText(
+                  storedSystemName,
+                  'plural_systems',
+                  localSystemId,
+                  'name',
+                )) ??
+                'Local system'
           : storedSystemName,
       memberCount: data['member_count'] as int,
       groupCount: data['group_count'] as int,
@@ -2336,12 +2903,21 @@ SELECT
       currentFrontLabel: await _currentFrontLabel(),
       systemColorHex: await _decryptLocalText(
         data['system_color_hex'] as String?,
+        'plural_systems',
+        localSystemId,
+        'color_hex',
       ),
       systemAvatarUrl: await _decryptLocalText(
         data['system_avatar_url'] as String?,
+        'plural_systems',
+        localSystemId,
+        'avatar_url',
       ),
       systemDescription: await _decryptLocalText(
         data['system_description'] as String?,
+        'plural_systems',
+        localSystemId,
+        'description',
       ),
     );
   }
@@ -2357,15 +2933,37 @@ SELECT
       database.pluralSystems,
     )..where((system) => system.id.equals(localSystemId))).write(
       PluralSystemsCompanion(
-        name: Value(await _encryptLocalText(name)),
+        name: Value(
+          await _encryptLocalText(
+            name,
+            'plural_systems',
+            localSystemId,
+            'name',
+          ),
+        ),
         colorHex: Value(
-          await _encryptNullableLocalText(_normalizeHexColor(draft.colorHex)),
+          await _encryptNullableLocalText(
+            _normalizeHexColor(draft.colorHex),
+            'plural_systems',
+            localSystemId,
+            'color_hex',
+          ),
         ),
         avatarUrl: Value(
-          await _encryptNullableLocalText(_trimToNull(draft.avatarUrl)),
+          await _encryptNullableLocalText(
+            _trimToNull(draft.avatarUrl),
+            'plural_systems',
+            localSystemId,
+            'avatar_url',
+          ),
         ),
         description: Value(
-          await _encryptNullableLocalText(_trimToNull(draft.description)),
+          await _encryptNullableLocalText(
+            _trimToNull(draft.description),
+            'plural_systems',
+            localSystemId,
+            'description',
+          ),
         ),
         updatedAt: Value(now),
       ),
@@ -2393,7 +2991,12 @@ SELECT
 
     final labels = <String>[];
     for (final session in sessions) {
-      final explicit = (await _decryptLocalText(session.label))?.trim();
+      final explicit = (await _decryptLocalText(
+        session.label,
+        'front_sessions',
+        session.id,
+        'label',
+      ))?.trim();
       if (explicit != null && explicit.isNotEmpty) {
         labels.add(explicit);
         continue;
@@ -2884,8 +3487,15 @@ SELECT
     });
   }
 
-  Future<String?> _migrateNullableLocalText(String? stored) async {
-    return stored == null ? null : _migrateLocalText(stored);
+  Future<String?> _migrateNullableLocalText(
+    String? stored,
+    String table,
+    String rowId,
+    String column,
+  ) async {
+    return stored == null
+        ? null
+        : _migrateLocalText(stored, table, rowId, column);
   }
 
   String? _firstOrNull(Set<String> values) {
@@ -3030,7 +3640,12 @@ SELECT
         .write(
           FrontSessionsCompanion(
             statusNote: Value(
-              await _encryptNullableLocalText(_nullIfBlank(statusNote)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(statusNote),
+                'front_sessions',
+                frontId,
+                'status_note',
+              ),
             ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
@@ -3084,11 +3699,17 @@ SELECT
                 label: Value(
                   await _encryptNullableLocalText(
                     memberIds.isEmpty ? label : null,
+                    'front_sessions',
+                    frontId,
+                    'label',
                   ),
                 ),
                 statusNote: Value(
                   await _encryptNullableLocalText(
                     _nullIfBlank(draft.statusNote),
+                    'front_sessions',
+                    frontId,
+                    'status_note',
                   ),
                 ),
                 startedAt: startedAt,
@@ -3108,11 +3729,17 @@ SELECT
                 label: Value(
                   await _encryptNullableLocalText(
                     memberIds.isEmpty ? label : null,
+                    'front_sessions',
+                    frontId,
+                    'label',
                   ),
                 ),
                 statusNote: Value(
                   await _encryptNullableLocalText(
                     _nullIfBlank(draft.statusNote),
+                    'front_sessions',
+                    frontId,
+                    'status_note',
                   ),
                 ),
                 startedAt: Value(startedAt),
@@ -3160,22 +3787,43 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final groupId = 'group-${now.microsecondsSinceEpoch}';
     await database
         .into(database.systemGroups)
         .insert(
           SystemGroupsCompanion.insert(
-            id: 'group-${now.microsecondsSinceEpoch}',
+            id: groupId,
             systemId: localSystemId,
-            name: await _encryptLocalText(name),
+            name: await _encryptLocalText(
+              name,
+              'system_groups',
+              groupId,
+              'name',
+            ),
             parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
             colorHex: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.colorHex)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.colorHex),
+                'system_groups',
+                groupId,
+                'color_hex',
+              ),
             ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'system_groups',
+                groupId,
+                'description',
+              ),
             ),
             emoji: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.emoji)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.emoji),
+                'system_groups',
+                groupId,
+                'emoji',
+              ),
             ),
             isSubsystem: Value(draft.isSubsystem),
             createdAt: now,
@@ -3204,15 +3852,32 @@ SELECT
         .write(
           SystemGroupsCompanion(
             parentGroupId: Value(parentId),
-            name: Value(await _encryptLocalText(name)),
+            name: Value(
+              await _encryptLocalText(name, 'system_groups', groupId, 'name'),
+            ),
             colorHex: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.colorHex)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.colorHex),
+                'system_groups',
+                groupId,
+                'color_hex',
+              ),
             ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'system_groups',
+                groupId,
+                'description',
+              ),
             ),
             emoji: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.emoji)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.emoji),
+                'system_groups',
+                groupId,
+                'emoji',
+              ),
             ),
             isSubsystem: Value(draft.isSubsystem),
             updatedAt: Value(DateTime.now().toUtc()),
@@ -3297,15 +3962,26 @@ SELECT
             PrivacyBucketsCompanion.insert(
               id: bucketId,
               systemId: localSystemId,
-              name: await _encryptLocalText(name),
+              name: await _encryptLocalText(
+                name,
+                'privacy_buckets',
+                bucketId,
+                'name',
+              ),
               description: Value(
                 await _encryptNullableLocalText(
                   _nullIfBlank(draft.description),
+                  'privacy_buckets',
+                  bucketId,
+                  'description',
                 ),
               ),
               colorHex: Value(
                 await _encryptNullableLocalText(
                   _normalizeHexColor(draft.colorHex),
+                  'privacy_buckets',
+                  bucketId,
+                  'color_hex',
                 ),
               ),
               position: Value((maxPosition ?? -1) + 1),
@@ -3332,15 +4008,28 @@ SELECT
           ))
           .write(
             PrivacyBucketsCompanion(
-              name: Value(await _encryptLocalText(name)),
+              name: Value(
+                await _encryptLocalText(
+                  name,
+                  'privacy_buckets',
+                  bucketId,
+                  'name',
+                ),
+              ),
               description: Value(
                 await _encryptNullableLocalText(
                   _nullIfBlank(draft.description),
+                  'privacy_buckets',
+                  bucketId,
+                  'description',
                 ),
               ),
               colorHex: Value(
                 await _encryptNullableLocalText(
                   _normalizeHexColor(draft.colorHex),
+                  'privacy_buckets',
+                  bucketId,
+                  'color_hex',
                 ),
               ),
               updatedAt: Value(DateTime.now().toUtc()),
@@ -3396,6 +4085,7 @@ SELECT
         ? draft.fieldType
         : 'text';
     final now = DateTime.now().toUtc();
+    final fieldId = 'custom-field-${now.microsecondsSinceEpoch}';
     final maxPosition =
         await (database.selectOnly(database.customFieldDefinitions)
               ..addColumns([database.customFieldDefinitions.position.max()])
@@ -3411,12 +4101,22 @@ SELECT
         .into(database.customFieldDefinitions)
         .insert(
           CustomFieldDefinitionsCompanion.insert(
-            id: 'custom-field-${now.microsecondsSinceEpoch}',
+            id: fieldId,
             systemId: localSystemId,
-            name: await _encryptLocalText(name),
+            name: await _encryptLocalText(
+              name,
+              'custom_field_definitions',
+              fieldId,
+              'name',
+            ),
             fieldType: Value(fieldType),
             privacy: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.privacy)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.privacy),
+                'custom_field_definitions',
+                fieldId,
+                'privacy',
+              ),
             ),
             position: Value((maxPosition ?? -1) + 1),
             createdAt: now,
@@ -3441,10 +4141,22 @@ SELECT
         ))
         .write(
           CustomFieldDefinitionsCompanion(
-            name: Value(await _encryptLocalText(name)),
+            name: Value(
+              await _encryptLocalText(
+                name,
+                'custom_field_definitions',
+                fieldId,
+                'name',
+              ),
+            ),
             fieldType: Value(fieldType),
             privacy: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.privacy)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.privacy),
+                'custom_field_definitions',
+                fieldId,
+                'privacy',
+              ),
             ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
@@ -3494,14 +4206,20 @@ SELECT
 
     final now = DateTime.now().toUtc();
     if (existing == null) {
+      final valueId = 'custom-field-value-${now.microsecondsSinceEpoch}';
       await database
           .into(database.customFieldValues)
           .insert(
             CustomFieldValuesCompanion.insert(
-              id: 'custom-field-value-${now.microsecondsSinceEpoch}',
+              id: valueId,
               fieldId: fieldId,
               memberId: Value(ownerId),
-              value: await _encryptLocalText(trimmed),
+              value: await _encryptLocalText(
+                trimmed,
+                'custom_field_values',
+                valueId,
+                'value',
+              ),
               createdAt: now,
               updatedAt: now,
             ),
@@ -3513,7 +4231,14 @@ SELECT
       database.customFieldValues,
     )..where((row) => row.id.equals(existing.id))).write(
       CustomFieldValuesCompanion(
-        value: Value(await _encryptLocalText(trimmed)),
+        value: Value(
+          await _encryptLocalText(
+            trimmed,
+            'custom_field_values',
+            existing.id,
+            'value',
+          ),
+        ),
         updatedAt: Value(now),
       ),
     );
@@ -3528,17 +4253,21 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final noteId = 'note-${now.microsecondsSinceEpoch}';
     await database
         .into(database.notes)
         .insert(
           NotesCompanion.insert(
-            id: 'note-${now.microsecondsSinceEpoch}',
+            id: noteId,
             systemId: localSystemId,
             memberId: Value(_nullIfBlank(draft.memberId)),
             title: await _encryptLocalText(
               title.isEmpty ? 'Untitled note' : title,
+              'notes',
+              noteId,
+              'title',
             ),
-            body: await _encryptLocalText(body),
+            body: await _encryptLocalText(body, 'notes', noteId, 'body'),
             createdAt: now,
             updatedAt: now,
           ),
@@ -3562,9 +4291,14 @@ SELECT
           NotesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
             title: Value(
-              await _encryptLocalText(title.isEmpty ? 'Untitled note' : title),
+              await _encryptLocalText(
+                title.isEmpty ? 'Untitled note' : title,
+                'notes',
+                noteId,
+                'title',
+              ),
             ),
-            body: Value(await _encryptLocalText(body)),
+            body: Value(await _encryptLocalText(body, 'notes', noteId, 'body')),
             updatedAt: Value(now),
           ),
         );
@@ -3587,14 +4321,15 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final messageId = 'message-${now.microsecondsSinceEpoch}';
     await database
         .into(database.messages)
         .insert(
           MessagesCompanion.insert(
-            id: 'message-${now.microsecondsSinceEpoch}',
+            id: messageId,
             systemId: localSystemId,
             memberId: Value(_nullIfBlank(draft.memberId)),
-            body: await _encryptLocalText(body),
+            body: await _encryptLocalText(body, 'messages', messageId, 'body'),
             boardKind: Value(
               draft.boardKind == 'member'
                   ? 'member'
@@ -3635,7 +4370,9 @@ SELECT
         .write(
           MessagesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
-            body: Value(await _encryptLocalText(body)),
+            body: Value(
+              await _encryptLocalText(body, 'messages', messageId, 'body'),
+            ),
             boardKind: Value(
               draft.boardKind == 'member'
                   ? 'member'
@@ -3683,6 +4420,7 @@ SELECT
     final name = draft.name.trim();
     if (name.isEmpty) return;
     final now = DateTime.now().toUtc();
+    final categoryId = 'chat-category-${now.microsecondsSinceEpoch}';
     final maxPosition = database.chatCategories.position.max();
     final position =
         await (database.selectOnly(database.chatCategories)
@@ -3694,11 +4432,21 @@ SELECT
         .into(database.chatCategories)
         .insert(
           ChatCategoriesCompanion.insert(
-            id: 'chat-category-${now.microsecondsSinceEpoch}',
+            id: categoryId,
             systemId: localSystemId,
-            name: await _encryptLocalText(name),
+            name: await _encryptLocalText(
+              name,
+              'chat_categories',
+              categoryId,
+              'name',
+            ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'chat_categories',
+                categoryId,
+                'description',
+              ),
             ),
             position: Value(position + 1),
             createdAt: now,
@@ -3721,9 +4469,21 @@ SELECT
         ))
         .write(
           ChatCategoriesCompanion(
-            name: Value(await _encryptLocalText(name)),
+            name: Value(
+              await _encryptLocalText(
+                name,
+                'chat_categories',
+                categoryId,
+                'name',
+              ),
+            ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'chat_categories',
+                categoryId,
+                'description',
+              ),
             ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
@@ -3750,6 +4510,7 @@ SELECT
     final name = draft.name.trim();
     if (name.isEmpty) return;
     final now = DateTime.now().toUtc();
+    final channelId = 'chat-channel-${now.microsecondsSinceEpoch}';
     final maxPosition = database.chatChannels.position.max();
     final position =
         await (database.selectOnly(database.chatChannels)
@@ -3761,16 +4522,29 @@ SELECT
         .into(database.chatChannels)
         .insert(
           ChatChannelsCompanion.insert(
-            id: 'chat-channel-${now.microsecondsSinceEpoch}',
+            id: channelId,
             systemId: localSystemId,
             categoryId: Value(_nullIfBlank(draft.categoryId)),
-            name: await _encryptLocalText(name),
+            name: await _encryptLocalText(
+              name,
+              'chat_channels',
+              channelId,
+              'name',
+            ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'chat_channels',
+                channelId,
+                'description',
+              ),
             ),
             colorHex: Value(
               await _encryptNullableLocalText(
                 _normalizeHexColor(draft.colorHex),
+                'chat_channels',
+                channelId,
+                'color_hex',
               ),
             ),
             position: Value(position + 1),
@@ -3795,13 +4569,23 @@ SELECT
         .write(
           ChatChannelsCompanion(
             categoryId: Value(_nullIfBlank(draft.categoryId)),
-            name: Value(await _encryptLocalText(name)),
+            name: Value(
+              await _encryptLocalText(name, 'chat_channels', channelId, 'name'),
+            ),
             description: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.description)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.description),
+                'chat_channels',
+                channelId,
+                'description',
+              ),
             ),
             colorHex: Value(
               await _encryptNullableLocalText(
                 _normalizeHexColor(draft.colorHex),
+                'chat_channels',
+                channelId,
+                'color_hex',
               ),
             ),
             updatedAt: Value(DateTime.now().toUtc()),
@@ -3840,16 +4624,36 @@ SELECT
           RemindersCompanion.insert(
             id: id,
             systemId: localSystemId,
-            title: await _encryptLocalText(title),
+            title: await _encryptLocalText(title, 'reminders', id, 'title'),
             body: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.body)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.body),
+                'reminders',
+                id,
+                'body',
+              ),
             ),
-            scheduleText: await _encryptLocalText(scheduleText),
+            scheduleText: await _encryptLocalText(
+              scheduleText,
+              'reminders',
+              id,
+              'schedule_text',
+            ),
             scheduleKind: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.scheduleKind)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.scheduleKind),
+                'reminders',
+                id,
+                'schedule_kind',
+              ),
             ),
             scheduleTime: Value(
-              await _encryptNullableLocalText(_nullIfBlank(draft.scheduleTime)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.scheduleTime),
+                'reminders',
+                id,
+                'schedule_time',
+              ),
             ),
             scheduleDowMask: Value(draft.scheduleDowMask),
             scheduleDom: Value(draft.scheduleDom),
@@ -3903,10 +4707,18 @@ SELECT
             PollsCompanion.insert(
               id: pollId,
               systemId: localSystemId,
-              question: await _encryptLocalText(question),
+              question: await _encryptLocalText(
+                question,
+                'polls',
+                pollId,
+                'question',
+              ),
               description: Value(
                 await _encryptNullableLocalText(
                   _nullIfBlank(draft.description),
+                  'polls',
+                  pollId,
+                  'description',
                 ),
               ),
               kind: Value(draft.kind.storageValue),
@@ -3916,7 +4728,13 @@ SELECT
           );
 
       final encryptedOptions = [
-        for (final option in options) await _encryptLocalText(option),
+        for (var index = 0; index < options.length; index++)
+          await _encryptLocalText(
+            options[index],
+            'poll_options',
+            '$pollId-option-$index',
+            'body',
+          ),
       ];
       await database.batch((batch) {
         batch.insertAll(database.pollOptions, [
@@ -4040,17 +4858,26 @@ SELECT
     }
 
     final now = DateTime.now().toUtc();
+    final eventId = 'notification-${now.microsecondsSinceEpoch}';
     await database
         .into(database.notificationEvents)
         .insert(
           NotificationEventsCompanion.insert(
-            id: 'notification-${now.microsecondsSinceEpoch}',
+            id: eventId,
             systemId: localSystemId,
             kind: draft.kind.trim().isEmpty ? 'general' : draft.kind.trim(),
             title: await _encryptLocalText(
               title.isEmpty ? 'Notification' : title,
+              'notification_events',
+              eventId,
+              'title',
             ),
-            body: await _encryptLocalText(body),
+            body: await _encryptLocalText(
+              body,
+              'notification_events',
+              eventId,
+              'body',
+            ),
             createdAt: now,
           ),
         );
@@ -4124,18 +4951,32 @@ SELECT
               ))
               .get();
       for (final front in existing) {
-        if ((await _decryptLocalText(front.label))?.trim() == trimmed) {
+        if ((await _decryptLocalText(
+              front.label,
+              'front_sessions',
+              front.id,
+              'label',
+            ))?.trim() ==
+            trimmed) {
           return;
         }
       }
 
+      final frontId = 'front-${now.microsecondsSinceEpoch}';
       await database
           .into(database.frontSessions)
           .insert(
             FrontSessionsCompanion.insert(
-              id: 'front-${now.microsecondsSinceEpoch}',
+              id: frontId,
               systemId: localSystemId,
-              label: Value(await _encryptLocalText(trimmed)),
+              label: Value(
+                await _encryptLocalText(
+                  trimmed,
+                  'front_sessions',
+                  frontId,
+                  'label',
+                ),
+              ),
               startedAt: now,
               createdAt: now,
               updatedAt: now,
@@ -4246,10 +5087,22 @@ SELECT
     )..where((event) => event.systemId.equals(localSystemId))).get();
     final preferences = await database.select(database.appPreferences).get();
     final avatarAssets = await _exportLocalAvatarAssets([
-      if (systems.isNotEmpty) await _decryptLocalText(systems.single.avatarUrl),
+      if (systems.isNotEmpty)
+        await _decryptLocalText(
+          systems.single.avatarUrl,
+          'plural_systems',
+          systems.single.id,
+          'avatar_url',
+        ),
       for (final member in members)
         await _decryptMember(member, 'avatar_url', member.avatarUrl),
-      for (final front in namedFronts) await _decryptLocalText(front.avatarUrl),
+      for (final front in namedFronts)
+        await _decryptLocalText(
+          front.avatarUrl,
+          'named_fronts',
+          front.id,
+          'avatar_url',
+        ),
     ]);
 
     final archive = {
@@ -4599,13 +5452,21 @@ SELECT
             status: 'queued',
             source: Value(source.name),
             fileName: Value(
-              await _encryptNullableLocalText(_nullIfBlank(fileName)),
+              await _encryptNullableLocalText(
+                _nullIfBlank(fileName),
+                'background_jobs',
+                jobId,
+                'file_name',
+              ),
             ),
             payloadJson: await _encryptLocalText(
               jsonEncode({
                 'archive_json': archiveJson,
                 'strategy': strategy.name,
               }),
+              'background_jobs',
+              jobId,
+              'payload_json',
             ),
             createdAt: now,
             updatedAt: now,
@@ -4644,7 +5505,13 @@ SELECT
     try {
       if (job.type == 'import_archive') {
         final payload = jsonDecode(
-          (await _decryptLocalText(job.payloadJson)) ?? '',
+          (await _decryptLocalText(
+                job.payloadJson,
+                'background_jobs',
+                job.id,
+                'payload_json',
+              )) ??
+              '',
         );
         if (payload is! Map<String, Object?>) {
           throw const FormatException('Import job payload is invalid.');
@@ -4661,7 +5528,12 @@ SELECT
         await importLocalArchiveJson(
           _requiredString(payload, 'archive_json'),
           strategy: strategy,
-          fileName: await _decryptLocalText(job.fileName),
+          fileName: await _decryptLocalText(
+            job.fileName,
+            'background_jobs',
+            job.id,
+            'file_name',
+          ),
           source: source,
         );
       } else {
@@ -4693,7 +5565,14 @@ SELECT
       )..where((job) => job.id.equals(jobId))).write(
         BackgroundJobsCompanion(
           status: const Value('failed'),
-          error: Value(await _encryptLocalText(errorText)),
+          error: Value(
+            await _encryptLocalText(
+              errorText,
+              'background_jobs',
+              job.id,
+              'error',
+            ),
+          ),
           updatedAt: Value(failed),
           finishedAt: Value(failed),
         ),
@@ -4843,21 +5722,35 @@ SELECT
               .insertOnConflictUpdate(
                 PluralSystemsCompanion.insert(
                   id: localSystemId,
-                  name: await _encryptLocalText(name),
+                  name: await _encryptLocalText(
+                    name,
+                    'plural_systems',
+                    localSystemId,
+                    'name',
+                  ),
                   colorHex: Value(
                     await _encryptNullableLocalText(
                       _stringValue(systemRecord['color_hex']),
+                      'plural_systems',
+                      localSystemId,
+                      'color_hex',
                     ),
                   ),
                   avatarUrl: Value(
                     await _encryptNullableLocalText(
                       localAvatarRefs[localSystemId] ??
                           _stringValue(systemRecord['avatar_url']),
+                      'plural_systems',
+                      localSystemId,
+                      'avatar_url',
                     ),
                   ),
                   description: Value(
                     await _encryptNullableLocalText(
                       _stringValue(systemRecord['description']),
+                      'plural_systems',
+                      localSystemId,
+                      'description',
                     ),
                   ),
                   createdAt: _dateValue(systemRecord['created_at']) ?? now,
@@ -4971,7 +5864,12 @@ SELECT
               systemId: localSystemId,
               source: source.jobSource,
               fileName: Value(
-                await _encryptNullableLocalText(_nullIfBlank(fileName)),
+                await _encryptNullableLocalText(
+                  _nullIfBlank(fileName),
+                  'import_records',
+                  importRecordId,
+                  'file_name',
+                ),
               ),
               summaryJson: Value(
                 await _encryptLocalText(
@@ -5006,6 +5904,9 @@ SELECT
                     'notification_events': notificationEvents.length,
                     'preferences': preferences.length,
                   }),
+                  'import_records',
+                  importRecordId,
+                  'summary_json',
                 ),
               ),
               importedAt: now,
@@ -5570,15 +6471,30 @@ SELECT
       id: id,
       systemId: localSystemId,
       parentGroupId: Value(_stringValue(group['parent_group_id'])),
-      name: await _encryptLocalText(name),
+      name: await _encryptLocalText(name, 'system_groups', id, 'name'),
       colorHex: Value(
-        await _encryptNullableLocalText(_stringValue(group['color_hex'])),
+        await _encryptNullableLocalText(
+          _stringValue(group['color_hex']),
+          'system_groups',
+          id,
+          'color_hex',
+        ),
       ),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(group['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(group['description']),
+          'system_groups',
+          id,
+          'description',
+        ),
       ),
       emoji: Value(
-        await _encryptNullableLocalText(_stringValue(group['emoji'])),
+        await _encryptNullableLocalText(
+          _stringValue(group['emoji']),
+          'system_groups',
+          id,
+          'emoji',
+        ),
       ),
       createdAt: _dateValue(group['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -5680,8 +6596,13 @@ SELECT
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(note['member_id'])),
-      title: await _encryptLocalText(title),
-      body: await _encryptLocalText(_stringValue(note['body']) ?? ''),
+      title: await _encryptLocalText(title, 'notes', id, 'title'),
+      body: await _encryptLocalText(
+        _stringValue(note['body']) ?? '',
+        'notes',
+        id,
+        'body',
+      ),
       createdAt: _dateValue(note['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -5701,7 +6622,7 @@ SELECT
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(message['member_id'])),
-      body: await _encryptLocalText(body),
+      body: await _encryptLocalText(body, 'messages', id, 'body'),
       boardKind: Value(_stringValue(message['board_kind']) ?? 'system'),
       boardMemberId: Value(_stringValue(message['board_member_id'])),
       parentMessageId: Value(_stringValue(message['parent_message_id'])),
@@ -5721,12 +6642,23 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
   ) async {
+    final id = _requiredString(category, 'id');
     final companion = ChatCategoriesCompanion.insert(
-      id: _requiredString(category, 'id'),
+      id: id,
       systemId: localSystemId,
-      name: await _encryptLocalText(_requiredString(category, 'name')),
+      name: await _encryptLocalText(
+        _requiredString(category, 'name'),
+        'chat_categories',
+        id,
+        'name',
+      ),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(category['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(category['description']),
+          'chat_categories',
+          id,
+          'description',
+        ),
       ),
       position: Value(_intValue(category['position']) ?? 0),
       createdAt: _dateValue(category['created_at']) ?? now,
@@ -5742,17 +6674,31 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
   ) async {
+    final id = _requiredString(channel, 'id');
     final companion = ChatChannelsCompanion.insert(
-      id: _requiredString(channel, 'id'),
+      id: id,
       systemId: localSystemId,
       categoryId: Value(_stringValue(channel['category_id'])),
-      name: await _encryptLocalText(_requiredString(channel, 'name')),
+      name: await _encryptLocalText(
+        _requiredString(channel, 'name'),
+        'chat_channels',
+        id,
+        'name',
+      ),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(channel['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(channel['description']),
+          'chat_channels',
+          id,
+          'description',
+        ),
       ),
       colorHex: Value(
         await _encryptNullableLocalText(
           _normalizeHexColor(_stringValue(channel['color_hex'])),
+          'chat_channels',
+          id,
+          'color_hex',
         ),
       ),
       position: Value(_intValue(channel['position']) ?? 0),
@@ -5775,24 +6721,43 @@ SELECT
     final companion = RemindersCompanion.insert(
       id: id,
       systemId: localSystemId,
-      title: await _encryptLocalText(title),
+      title: await _encryptLocalText(title, 'reminders', id, 'title'),
       body: Value(
-        await _encryptNullableLocalText(_stringValue(reminder['body'])),
+        await _encryptNullableLocalText(
+          _stringValue(reminder['body']),
+          'reminders',
+          id,
+          'body',
+        ),
       ),
-      scheduleText: await _encryptLocalText(scheduleText),
+      scheduleText: await _encryptLocalText(
+        scheduleText,
+        'reminders',
+        id,
+        'schedule_text',
+      ),
       triggerEvent: Value(
         await _encryptNullableLocalText(
           _stringValue(reminder['trigger_event']),
+          'reminders',
+          id,
+          'trigger_event',
         ),
       ),
       scheduleKind: Value(
         await _encryptNullableLocalText(
           _stringValue(reminder['schedule_kind']),
+          'reminders',
+          id,
+          'schedule_kind',
         ),
       ),
       scheduleTime: Value(
         await _encryptNullableLocalText(
           _stringValue(reminder['schedule_time']),
+          'reminders',
+          id,
+          'schedule_time',
         ),
       ),
       scheduleDowMask: Value(_intValue(reminder['schedule_dow_mask'])),
@@ -5815,9 +6780,19 @@ SELECT
     final companion = TagsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      name: await _encryptLocalText(_requiredString(tag, 'name')),
+      name: await _encryptLocalText(
+        _requiredString(tag, 'name'),
+        'tags',
+        id,
+        'name',
+      ),
       colorHex: Value(
-        await _encryptNullableLocalText(_stringValue(tag['color_hex'])),
+        await _encryptNullableLocalText(
+          _stringValue(tag['color_hex']),
+          'tags',
+          id,
+          'color_hex',
+        ),
       ),
       createdAt: _dateValue(tag['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -5850,9 +6825,19 @@ SELECT
       systemId: localSystemId,
       memberId: Value(_stringValue(journal['member_id'])),
       title: Value(
-        await _encryptNullableLocalText(_stringValue(journal['title'])),
+        await _encryptNullableLocalText(
+          _stringValue(journal['title']),
+          'journal_entries',
+          id,
+          'title',
+        ),
       ),
-      body: await _encryptLocalText(_stringValue(journal['body']) ?? ''),
+      body: await _encryptLocalText(
+        _stringValue(journal['body']) ?? '',
+        'journal_entries',
+        id,
+        'body',
+      ),
       visibility: Value(_stringValue(journal['visibility']) ?? 'system'),
       createdAt: _dateValue(journal['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -5873,9 +6858,19 @@ SELECT
       targetType: _requiredString(revision, 'target_type'),
       targetId: _requiredString(revision, 'target_id'),
       title: Value(
-        await _encryptNullableLocalText(_stringValue(revision['title'])),
+        await _encryptNullableLocalText(
+          _stringValue(revision['title']),
+          'content_revisions',
+          id,
+          'title',
+        ),
       ),
-      body: await _encryptLocalText(_stringValue(revision['body']) ?? ''),
+      body: await _encryptLocalText(
+        _stringValue(revision['body']) ?? '',
+        'content_revisions',
+        id,
+        'body',
+      ),
       pinnedAt: Value(_dateValue(revision['pinned_at'])),
       createdAt: _dateValue(revision['created_at']) ?? now,
     );
@@ -5892,10 +6887,20 @@ SELECT
     final companion = CustomFieldDefinitionsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      name: await _encryptLocalText(name),
+      name: await _encryptLocalText(
+        name,
+        'custom_field_definitions',
+        id,
+        'name',
+      ),
       fieldType: Value(_stringValue(field['field_type']) ?? 'text'),
       privacy: Value(
-        await _encryptNullableLocalText(_stringValue(field['privacy'])),
+        await _encryptNullableLocalText(
+          _stringValue(field['privacy']),
+          'custom_field_definitions',
+          id,
+          'privacy',
+        ),
       ),
       position: Value(_intValue(field['position']) ?? 0),
       createdAt: _dateValue(field['created_at']) ?? now,
@@ -5921,7 +6926,12 @@ SELECT
       id: id,
       fieldId: fieldId,
       memberId: Value(_stringValue(value['member_id'])),
-      value: await _encryptLocalText(_stringValue(value['value']) ?? ''),
+      value: await _encryptLocalText(
+        _stringValue(value['value']) ?? '',
+        'custom_field_values',
+        id,
+        'value',
+      ),
       createdAt: _dateValue(value['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -5940,9 +6950,14 @@ SELECT
     final companion = PollsCompanion.insert(
       id: id,
       systemId: localSystemId,
-      question: await _encryptLocalText(question),
+      question: await _encryptLocalText(question, 'polls', id, 'question'),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(poll['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(poll['description']),
+          'polls',
+          id,
+          'description',
+        ),
       ),
       kind: Value(
         PollKind.fromStorage(_stringValue(poll['kind'])).storageValue,
@@ -5964,7 +6979,12 @@ SELECT
     final companion = PollOptionsCompanion.insert(
       id: id,
       pollId: _requiredString(option, 'poll_id'),
-      body: await _encryptLocalText(_requiredString(option, 'body')),
+      body: await _encryptLocalText(
+        _requiredString(option, 'body'),
+        'poll_options',
+        id,
+        'body',
+      ),
       position: _intValue(option['position']) ?? 0,
     );
     await _insertArchiveRow(database.pollOptions, companion, strategy);
@@ -6009,10 +7029,20 @@ SELECT
       id: id,
       systemId: localSystemId,
       label: Value(
-        await _encryptNullableLocalText(_stringValue(front['label'])),
+        await _encryptNullableLocalText(
+          _stringValue(front['label']),
+          'front_sessions',
+          id,
+          'label',
+        ),
       ),
       statusNote: Value(
-        await _encryptNullableLocalText(_stringValue(front['status_note'])),
+        await _encryptNullableLocalText(
+          _stringValue(front['status_note']),
+          'front_sessions',
+          id,
+          'status_note',
+        ),
       ),
       startedAt: _dateValue(front['started_at']) ?? now,
       endedAt: Value(_dateValue(front['ended_at'])),
@@ -6046,10 +7076,20 @@ SELECT
       id: id,
       frontId: _requiredString(event, 'front_id'),
       beforeSnapshot: Value(
-        await _encryptNullableLocalText(_stringValue(event['before_snapshot'])),
+        await _encryptNullableLocalText(
+          _stringValue(event['before_snapshot']),
+          'front_audit_events',
+          id,
+          'before_snapshot',
+        ),
       ),
       afterSnapshot: Value(
-        await _encryptNullableLocalText(_stringValue(event['after_snapshot'])),
+        await _encryptNullableLocalText(
+          _stringValue(event['after_snapshot']),
+          'front_audit_events',
+          id,
+          'after_snapshot',
+        ),
       ),
       createdAt: _dateValue(event['created_at']) ?? now,
     );
@@ -6066,20 +7106,43 @@ SELECT
     final companion = NamedFrontsCompanion.insert(
       id: frontId,
       systemId: localSystemId,
-      name: await _encryptLocalText(_requiredString(front, 'name')),
+      name: await _encryptLocalText(
+        _requiredString(front, 'name'),
+        'named_fronts',
+        frontId,
+        'name',
+      ),
       customLabel: Value(
-        await _encryptNullableLocalText(_stringValue(front['custom_label'])),
+        await _encryptNullableLocalText(
+          _stringValue(front['custom_label']),
+          'named_fronts',
+          frontId,
+          'custom_label',
+        ),
       ),
       colorHex: Value(
-        await _encryptNullableLocalText(_stringValue(front['color_hex'])),
+        await _encryptNullableLocalText(
+          _stringValue(front['color_hex']),
+          'named_fronts',
+          frontId,
+          'color_hex',
+        ),
       ),
       avatarUrl: Value(
         await _encryptNullableLocalText(
           localAvatarUrl ?? _stringValue(front['avatar_url']),
+          'named_fronts',
+          frontId,
+          'avatar_url',
         ),
       ),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(front['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(front['description']),
+          'named_fronts',
+          frontId,
+          'description',
+        ),
       ),
       createdAt: _dateValue(front['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -6106,16 +7169,30 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
   ) async {
+    final id = _requiredString(bucket, 'id');
     final companion = PrivacyBucketsCompanion.insert(
-      id: _requiredString(bucket, 'id'),
+      id: id,
       systemId: localSystemId,
-      name: await _encryptLocalText(_requiredString(bucket, 'name')),
+      name: await _encryptLocalText(
+        _requiredString(bucket, 'name'),
+        'privacy_buckets',
+        id,
+        'name',
+      ),
       description: Value(
-        await _encryptNullableLocalText(_stringValue(bucket['description'])),
+        await _encryptNullableLocalText(
+          _stringValue(bucket['description']),
+          'privacy_buckets',
+          id,
+          'description',
+        ),
       ),
       colorHex: Value(
         await _encryptNullableLocalText(
           _normalizeHexColor(_stringValue(bucket['color_hex'])),
+          'privacy_buckets',
+          id,
+          'color_hex',
         ),
       ),
       position: Value(_intValue(bucket['position']) ?? 0),
@@ -6144,12 +7221,23 @@ SELECT
     ImportConflictStrategy strategy,
     DateTime now,
   ) async {
+    final id = _requiredString(event, 'id');
     final companion = NotificationEventsCompanion.insert(
-      id: _requiredString(event, 'id'),
+      id: id,
       systemId: localSystemId,
       kind: _requiredString(event, 'kind'),
-      title: await _encryptLocalText(_requiredString(event, 'title')),
-      body: await _encryptLocalText(_requiredString(event, 'body')),
+      title: await _encryptLocalText(
+        _requiredString(event, 'title'),
+        'notification_events',
+        id,
+        'title',
+      ),
+      body: await _encryptLocalText(
+        _requiredString(event, 'body'),
+        'notification_events',
+        id,
+        'body',
+      ),
       readAt: Value(_dateValue(event['read_at'])),
       createdAt: _dateValue(event['created_at']) ?? now,
     );
@@ -6187,6 +7275,9 @@ SELECT
       collection: _requiredString(payload, 'collection'),
       payloadJson: await _encryptLocalText(
         _requiredString(payload, 'payload_json'),
+        'import_payloads',
+        id,
+        'payload_json',
       ),
       importedAt: _dateValue(payload['imported_at']) ?? now,
     );
@@ -6218,8 +7309,16 @@ SELECT
       (rows) async => [
         for (final row in rows)
           row.copyWith(
-            name: await _decryptLocalText(row.name) ?? '',
-            colorHex: Value(await _decryptLocalText(row.colorHex)),
+            name:
+                await _decryptLocalText(row.name, 'tags', row.id, 'name') ?? '',
+            colorHex: Value(
+              await _decryptLocalText(
+                row.colorHex,
+                'tags',
+                row.id,
+                'color_hex',
+              ),
+            ),
           ),
       ],
     );
@@ -6234,8 +7333,15 @@ SELECT
           TagsCompanion.insert(
             id: tag.id,
             systemId: localSystemId,
-            name: await _encryptLocalText(tag.name),
-            colorHex: Value(await _encryptNullableLocalText(tag.colorHex)),
+            name: await _encryptLocalText(tag.name, 'tags', tag.id, 'name'),
+            colorHex: Value(
+              await _encryptNullableLocalText(
+                tag.colorHex,
+                'tags',
+                tag.id,
+                'color_hex',
+              ),
+            ),
             createdAt: now,
             updatedAt: now,
           ),
@@ -6266,8 +7372,17 @@ SELECT
         final tag = row.readTable(database.tags);
         tags.add(
           tag.copyWith(
-            name: (await _decryptLocalText(tag.name)) ?? '',
-            colorHex: Value(await _decryptLocalText(tag.colorHex)),
+            name:
+                (await _decryptLocalText(tag.name, 'tags', tag.id, 'name')) ??
+                '',
+            colorHex: Value(
+              await _decryptLocalText(
+                tag.colorHex,
+                'tags',
+                tag.id,
+                'color_hex',
+              ),
+            ),
           ),
         );
       }
@@ -6308,8 +7423,22 @@ SELECT
       return [
         for (final row in rows)
           row.copyWith(
-            title: Value(await _decryptLocalText(row.title)),
-            body: (await _decryptLocalText(row.body)) ?? '',
+            title: Value(
+              await _decryptLocalText(
+                row.title,
+                'journal_entries',
+                row.id,
+                'title',
+              ),
+            ),
+            body:
+                (await _decryptLocalText(
+                  row.body,
+                  'journal_entries',
+                  row.id,
+                  'body',
+                )) ??
+                '',
           ),
       ];
     });
@@ -6325,8 +7454,20 @@ SELECT
             id: entry.id,
             systemId: localSystemId,
             memberId: Value(entry.memberId),
-            title: Value(await _encryptNullableLocalText(entry.title)),
-            body: await _encryptLocalText(entry.body),
+            title: Value(
+              await _encryptNullableLocalText(
+                entry.title,
+                'journal_entries',
+                entry.id,
+                'title',
+              ),
+            ),
+            body: await _encryptLocalText(
+              entry.body,
+              'journal_entries',
+              entry.id,
+              'body',
+            ),
             createdAt: entry.createdAt,
             updatedAt: now,
           ),
@@ -6358,8 +7499,22 @@ SELECT
       (rows) async => [
         for (final row in rows)
           row.copyWith(
-            title: Value(await _decryptLocalText(row.title)),
-            body: (await _decryptLocalText(row.body)) ?? '',
+            title: Value(
+              await _decryptLocalText(
+                row.title,
+                'content_revisions',
+                row.id,
+                'title',
+              ),
+            ),
+            body:
+                (await _decryptLocalText(
+                  row.body,
+                  'content_revisions',
+                  row.id,
+                  'body',
+                )) ??
+                '',
           ),
       ],
     );
@@ -6393,6 +7548,21 @@ SELECT
     if (revision == null) return;
 
     final now = DateTime.now().toUtc();
+    final revisionTitle = await _decryptLocalText(
+      revision.title,
+      'content_revisions',
+      revision.id,
+      'title',
+    );
+    final revisionBody = await _decryptLocalText(
+      revision.body,
+      'content_revisions',
+      revision.id,
+      'body',
+    );
+    if (revisionBody == null) {
+      throw StateError('Protected revision body is unexpectedly null.');
+    }
 
     switch (targetType) {
       case 'member_bio':
@@ -6401,7 +7571,7 @@ SELECT
         )..where((m) => m.id.equals(targetId))).write(
           MembersCompanion(
             description: Value(
-              await _encryptMember(targetId, 'description', revision.body),
+              await _encryptMember(targetId, 'description', revisionBody),
             ),
             profileEncryptionVersion: const Value(2),
             updatedAt: Value(now),
@@ -6412,8 +7582,17 @@ SELECT
           database.notes,
         )..where((n) => n.id.equals(targetId))).write(
           NotesCompanion(
-            title: Value(await _encryptLocalText(revision.title ?? '')),
-            body: Value(await _encryptLocalText(revision.body)),
+            title: Value(
+              await _encryptLocalText(
+                revisionTitle ?? '',
+                'notes',
+                targetId,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _encryptLocalText(revisionBody, 'notes', targetId, 'body'),
+            ),
             updatedAt: Value(now),
           ),
         );
@@ -6422,8 +7601,22 @@ SELECT
           database.journalEntries,
         )..where((j) => j.id.equals(targetId))).write(
           JournalEntriesCompanion(
-            title: Value(await _encryptNullableLocalText(revision.title)),
-            body: Value(await _encryptLocalText(revision.body)),
+            title: Value(
+              await _encryptNullableLocalText(
+                revisionTitle,
+                'journal_entries',
+                targetId,
+                'title',
+              ),
+            ),
+            body: Value(
+              await _encryptLocalText(
+                revisionBody,
+                'journal_entries',
+                targetId,
+                'body',
+              ),
+            ),
             updatedAt: Value(now),
           ),
         );
@@ -6432,7 +7625,14 @@ SELECT
           database.messages,
         )..where((m) => m.id.equals(targetId))).write(
           MessagesCompanion(
-            body: Value(await _encryptLocalText(revision.body)),
+            body: Value(
+              await _encryptLocalText(
+                revisionBody,
+                'messages',
+                targetId,
+                'body',
+              ),
+            ),
             updatedAt: Value(now),
           ),
         );
@@ -6452,8 +7652,22 @@ SELECT
       (rows) async => [
         for (final row in rows)
           row.copyWith(
-            beforeSnapshot: Value(await _decryptLocalText(row.beforeSnapshot)),
-            afterSnapshot: Value(await _decryptLocalText(row.afterSnapshot)),
+            beforeSnapshot: Value(
+              await _decryptLocalText(
+                row.beforeSnapshot,
+                'front_audit_events',
+                row.id,
+                'before_snapshot',
+              ),
+            ),
+            afterSnapshot: Value(
+              await _decryptLocalText(
+                row.afterSnapshot,
+                'front_audit_events',
+                row.id,
+                'after_snapshot',
+              ),
+            ),
           ),
       ],
     );
@@ -6482,11 +7696,46 @@ SELECT
       (rows) async => [
         for (final row in rows)
           row.copyWith(
-            name: (await _decryptLocalText(row.name)) ?? '',
-            customLabel: Value(await _decryptLocalText(row.customLabel)),
-            colorHex: Value(await _decryptLocalText(row.colorHex)),
-            avatarUrl: Value(await _decryptLocalText(row.avatarUrl)),
-            description: Value(await _decryptLocalText(row.description)),
+            name:
+                (await _decryptLocalText(
+                  row.name,
+                  'named_fronts',
+                  row.id,
+                  'name',
+                )) ??
+                '',
+            customLabel: Value(
+              await _decryptLocalText(
+                row.customLabel,
+                'named_fronts',
+                row.id,
+                'custom_label',
+              ),
+            ),
+            colorHex: Value(
+              await _decryptLocalText(
+                row.colorHex,
+                'named_fronts',
+                row.id,
+                'color_hex',
+              ),
+            ),
+            avatarUrl: Value(
+              await _decryptLocalText(
+                row.avatarUrl,
+                'named_fronts',
+                row.id,
+                'avatar_url',
+              ),
+            ),
+            description: Value(
+              await _decryptLocalText(
+                row.description,
+                'named_fronts',
+                row.id,
+                'description',
+              ),
+            ),
           ),
       ],
     );
@@ -6502,16 +7751,43 @@ SELECT
             NamedFrontsCompanion.insert(
               id: front.id,
               systemId: localSystemId,
-              name: await _encryptLocalText(front.name),
-              customLabel: Value(
-                await _encryptNullableLocalText(front.customLabel),
+              name: await _encryptLocalText(
+                front.name,
+                'named_fronts',
+                front.id,
+                'name',
               ),
-              colorHex: Value(await _encryptNullableLocalText(front.colorHex)),
+              customLabel: Value(
+                await _encryptNullableLocalText(
+                  front.customLabel,
+                  'named_fronts',
+                  front.id,
+                  'custom_label',
+                ),
+              ),
+              colorHex: Value(
+                await _encryptNullableLocalText(
+                  front.colorHex,
+                  'named_fronts',
+                  front.id,
+                  'color_hex',
+                ),
+              ),
               avatarUrl: Value(
-                await _encryptNullableLocalText(front.avatarUrl),
+                await _encryptNullableLocalText(
+                  front.avatarUrl,
+                  'named_fronts',
+                  front.id,
+                  'avatar_url',
+                ),
               ),
               description: Value(
-                await _encryptNullableLocalText(front.description),
+                await _encryptNullableLocalText(
+                  front.description,
+                  'named_fronts',
+                  front.id,
+                  'description',
+                ),
               ),
               createdAt: front.createdAt,
               updatedAt: now,
@@ -6543,7 +7819,12 @@ SELECT
       database.namedFrontMembers,
     )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).get();
     final label = _nullIfBlank(
-      await _decryptLocalText(namedFront?.customLabel),
+      await _decryptLocalText(
+        namedFront?.customLabel,
+        'named_fronts',
+        namedFrontId,
+        'custom_label',
+      ),
     );
     if (members.isEmpty && label != null) {
       await setCustomFront(label);
@@ -6772,10 +8053,32 @@ SELECT
 
   Future<Map<String, Object?>> _systemToJson(PluralSystem system) async => {
     'id': system.id,
-    'name': (await _decryptLocalText(system.name)) ?? 'Local system',
-    'color_hex': await _decryptLocalText(system.colorHex),
-    'avatar_url': await _decryptLocalText(system.avatarUrl),
-    'description': await _decryptLocalText(system.description),
+    'name':
+        (await _decryptLocalText(
+          system.name,
+          'plural_systems',
+          system.id,
+          'name',
+        )) ??
+        'Local system',
+    'color_hex': await _decryptLocalText(
+      system.colorHex,
+      'plural_systems',
+      system.id,
+      'color_hex',
+    ),
+    'avatar_url': await _decryptLocalText(
+      system.avatarUrl,
+      'plural_systems',
+      system.id,
+      'avatar_url',
+    ),
+    'description': await _decryptLocalText(
+      system.description,
+      'plural_systems',
+      system.id,
+      'description',
+    ),
     'created_at': system.createdAt.toIso8601String(),
     'updated_at': system.updatedAt.toIso8601String(),
   };
@@ -6831,10 +8134,32 @@ SELECT
   Future<Map<String, Object?>> _groupToJson(SystemGroup group) async => {
     'id': group.id,
     'parent_group_id': group.parentGroupId,
-    'name': (await _decryptLocalText(group.name)) ?? '',
-    'color_hex': await _decryptLocalText(group.colorHex),
-    'description': await _decryptLocalText(group.description),
-    'emoji': await _decryptLocalText(group.emoji),
+    'name':
+        (await _decryptLocalText(
+          group.name,
+          'system_groups',
+          group.id,
+          'name',
+        )) ??
+        '',
+    'color_hex': await _decryptLocalText(
+      group.colorHex,
+      'system_groups',
+      group.id,
+      'color_hex',
+    ),
+    'description': await _decryptLocalText(
+      group.description,
+      'system_groups',
+      group.id,
+      'description',
+    ),
+    'emoji': await _decryptLocalText(
+      group.emoji,
+      'system_groups',
+      group.id,
+      'emoji',
+    ),
     'created_at': group.createdAt.toIso8601String(),
     'updated_at': group.updatedAt.toIso8601String(),
   };
@@ -6847,8 +8172,10 @@ SELECT
   Future<Map<String, Object?>> _noteToJson(Note note) async => {
     'id': note.id,
     'member_id': note.memberId,
-    'title': (await _decryptLocalText(note.title)) ?? '',
-    'body': (await _decryptLocalText(note.body)) ?? '',
+    'title':
+        (await _decryptLocalText(note.title, 'notes', note.id, 'title')) ?? '',
+    'body':
+        (await _decryptLocalText(note.body, 'notes', note.id, 'body')) ?? '',
     'created_at': note.createdAt.toIso8601String(),
     'updated_at': note.updatedAt.toIso8601String(),
   };
@@ -6856,7 +8183,14 @@ SELECT
   Future<Map<String, Object?>> _messageToJson(Message message) async => {
     'id': message.id,
     'member_id': message.memberId,
-    'body': (await _decryptLocalText(message.body)) ?? '',
+    'body':
+        (await _decryptLocalText(
+          message.body,
+          'messages',
+          message.id,
+          'body',
+        )) ??
+        '',
     'board_kind': message.boardKind,
     'board_member_id': message.boardMemberId,
     'parent_message_id': message.parentMessageId,
@@ -6871,8 +8205,20 @@ SELECT
     ChatCategory category,
   ) async => {
     'id': category.id,
-    'name': (await _decryptLocalText(category.name)) ?? '',
-    'description': await _decryptLocalText(category.description),
+    'name':
+        (await _decryptLocalText(
+          category.name,
+          'chat_categories',
+          category.id,
+          'name',
+        )) ??
+        '',
+    'description': await _decryptLocalText(
+      category.description,
+      'chat_categories',
+      category.id,
+      'description',
+    ),
     'position': category.position,
     'created_at': category.createdAt.toIso8601String(),
     'updated_at': category.updatedAt.toIso8601String(),
@@ -6882,9 +8228,26 @@ SELECT
       {
         'id': channel.id,
         'category_id': channel.categoryId,
-        'name': (await _decryptLocalText(channel.name)) ?? '',
-        'description': await _decryptLocalText(channel.description),
-        'color_hex': await _decryptLocalText(channel.colorHex),
+        'name':
+            (await _decryptLocalText(
+              channel.name,
+              'chat_channels',
+              channel.id,
+              'name',
+            )) ??
+            '',
+        'description': await _decryptLocalText(
+          channel.description,
+          'chat_channels',
+          channel.id,
+          'description',
+        ),
+        'color_hex': await _decryptLocalText(
+          channel.colorHex,
+          'chat_channels',
+          channel.id,
+          'color_hex',
+        ),
         'position': channel.position,
         'created_at': channel.createdAt.toIso8601String(),
         'updated_at': channel.updatedAt.toIso8601String(),
@@ -6892,12 +8255,46 @@ SELECT
 
   Future<Map<String, Object?>> _reminderToJson(Reminder reminder) async => {
     'id': reminder.id,
-    'title': (await _decryptLocalText(reminder.title)) ?? '',
-    'body': await _decryptLocalText(reminder.body),
-    'schedule_text': (await _decryptLocalText(reminder.scheduleText)) ?? '',
-    'trigger_event': await _decryptLocalText(reminder.triggerEvent),
-    'schedule_kind': await _decryptLocalText(reminder.scheduleKind),
-    'schedule_time': await _decryptLocalText(reminder.scheduleTime),
+    'title':
+        (await _decryptLocalText(
+          reminder.title,
+          'reminders',
+          reminder.id,
+          'title',
+        )) ??
+        '',
+    'body': await _decryptLocalText(
+      reminder.body,
+      'reminders',
+      reminder.id,
+      'body',
+    ),
+    'schedule_text':
+        (await _decryptLocalText(
+          reminder.scheduleText,
+          'reminders',
+          reminder.id,
+          'schedule_text',
+        )) ??
+        '',
+    'trigger_event': await _decryptLocalText(
+      reminder.triggerEvent,
+      'reminders',
+      reminder.id,
+      'trigger_event',
+    ),
+    'schedule_kind': await _decryptLocalText(
+      reminder.scheduleKind,
+      'reminders',
+      reminder.id,
+      'schedule_kind',
+    ),
+    'schedule_time': await _decryptLocalText(
+      reminder.scheduleTime,
+      'reminders',
+      reminder.id,
+      'schedule_time',
+    ),
     'schedule_dow_mask': reminder.scheduleDowMask,
     'schedule_dom': reminder.scheduleDom,
     'enabled': reminder.enabled,
@@ -6907,8 +8304,13 @@ SELECT
 
   Future<Map<String, Object?>> _tagToJson(Tag tag) async => {
     'id': tag.id,
-    'name': (await _decryptLocalText(tag.name)) ?? '',
-    'color_hex': await _decryptLocalText(tag.colorHex),
+    'name': (await _decryptLocalText(tag.name, 'tags', tag.id, 'name')) ?? '',
+    'color_hex': await _decryptLocalText(
+      tag.colorHex,
+      'tags',
+      tag.id,
+      'color_hex',
+    ),
     'created_at': tag.createdAt.toIso8601String(),
     'updated_at': tag.updatedAt.toIso8601String(),
   };
@@ -6921,8 +8323,20 @@ SELECT
   Future<Map<String, Object?>> _journalToJson(JournalEntry journal) async => {
     'id': journal.id,
     'member_id': journal.memberId,
-    'title': await _decryptLocalText(journal.title),
-    'body': (await _decryptLocalText(journal.body)) ?? '',
+    'title': await _decryptLocalText(
+      journal.title,
+      'journal_entries',
+      journal.id,
+      'title',
+    ),
+    'body':
+        (await _decryptLocalText(
+          journal.body,
+          'journal_entries',
+          journal.id,
+          'body',
+        )) ??
+        '',
     'visibility': journal.visibility,
     'created_at': journal.createdAt.toIso8601String(),
     'updated_at': journal.updatedAt.toIso8601String(),
@@ -6934,8 +8348,20 @@ SELECT
     'id': revision.id,
     'target_type': revision.targetType,
     'target_id': revision.targetId,
-    'title': await _decryptLocalText(revision.title),
-    'body': (await _decryptLocalText(revision.body)) ?? '',
+    'title': await _decryptLocalText(
+      revision.title,
+      'content_revisions',
+      revision.id,
+      'title',
+    ),
+    'body':
+        (await _decryptLocalText(
+          revision.body,
+          'content_revisions',
+          revision.id,
+          'body',
+        )) ??
+        '',
     'pinned_at': revision.pinnedAt?.toIso8601String(),
     'created_at': revision.createdAt.toIso8601String(),
   };
@@ -6944,9 +8370,21 @@ SELECT
     CustomFieldDefinition field,
   ) async => {
     'id': field.id,
-    'name': (await _decryptLocalText(field.name)) ?? '',
+    'name':
+        (await _decryptLocalText(
+          field.name,
+          'custom_field_definitions',
+          field.id,
+          'name',
+        )) ??
+        '',
     'field_type': field.fieldType,
-    'privacy': await _decryptLocalText(field.privacy),
+    'privacy': await _decryptLocalText(
+      field.privacy,
+      'custom_field_definitions',
+      field.id,
+      'privacy',
+    ),
     'position': field.position,
     'created_at': field.createdAt.toIso8601String(),
     'updated_at': field.updatedAt.toIso8601String(),
@@ -6958,15 +8396,34 @@ SELECT
     'id': value.id,
     'field_id': value.fieldId,
     'member_id': value.memberId,
-    'value': (await _decryptLocalText(value.value)) ?? '',
+    'value':
+        (await _decryptLocalText(
+          value.value,
+          'custom_field_values',
+          value.id,
+          'value',
+        )) ??
+        '',
     'created_at': value.createdAt.toIso8601String(),
     'updated_at': value.updatedAt.toIso8601String(),
   };
 
   Future<Map<String, Object?>> _pollToJson(Poll poll) async => {
     'id': poll.id,
-    'question': (await _decryptLocalText(poll.question)) ?? '',
-    'description': await _decryptLocalText(poll.description),
+    'question':
+        (await _decryptLocalText(
+          poll.question,
+          'polls',
+          poll.id,
+          'question',
+        )) ??
+        '',
+    'description': await _decryptLocalText(
+      poll.description,
+      'polls',
+      poll.id,
+      'description',
+    ),
     'kind': poll.kind,
     'closed': poll.closed,
     'created_at': poll.createdAt.toIso8601String(),
@@ -6976,7 +8433,14 @@ SELECT
   Future<Map<String, Object?>> _pollOptionToJson(PollOption option) async => {
     'id': option.id,
     'poll_id': option.pollId,
-    'body': (await _decryptLocalText(option.body)) ?? '',
+    'body':
+        (await _decryptLocalText(
+          option.body,
+          'poll_options',
+          option.id,
+          'body',
+        )) ??
+        '',
     'position': option.position,
   };
 
@@ -6996,8 +8460,18 @@ SELECT
 
   Future<Map<String, Object?>> _frontToJson(FrontSession front) async => {
     'id': front.id,
-    'label': await _decryptLocalText(front.label),
-    'status_note': await _decryptLocalText(front.statusNote),
+    'label': await _decryptLocalText(
+      front.label,
+      'front_sessions',
+      front.id,
+      'label',
+    ),
+    'status_note': await _decryptLocalText(
+      front.statusNote,
+      'front_sessions',
+      front.id,
+      'status_note',
+    ),
     'started_at': front.startedAt.toIso8601String(),
     'ended_at': front.endedAt?.toIso8601String(),
     'created_at': front.createdAt.toIso8601String(),
@@ -7014,18 +8488,55 @@ SELECT
   ) async => {
     'id': event.id,
     'front_id': event.frontId,
-    'before_snapshot': await _decryptLocalText(event.beforeSnapshot),
-    'after_snapshot': await _decryptLocalText(event.afterSnapshot),
+    'before_snapshot': await _decryptLocalText(
+      event.beforeSnapshot,
+      'front_audit_events',
+      event.id,
+      'before_snapshot',
+    ),
+    'after_snapshot': await _decryptLocalText(
+      event.afterSnapshot,
+      'front_audit_events',
+      event.id,
+      'after_snapshot',
+    ),
     'created_at': event.createdAt.toIso8601String(),
   };
 
   Future<Map<String, Object?>> _namedFrontToJson(NamedFront front) async => {
     'id': front.id,
-    'name': (await _decryptLocalText(front.name)) ?? '',
-    'custom_label': await _decryptLocalText(front.customLabel),
-    'color_hex': await _decryptLocalText(front.colorHex),
-    'avatar_url': await _decryptLocalText(front.avatarUrl),
-    'description': await _decryptLocalText(front.description),
+    'name':
+        (await _decryptLocalText(
+          front.name,
+          'named_fronts',
+          front.id,
+          'name',
+        )) ??
+        '',
+    'custom_label': await _decryptLocalText(
+      front.customLabel,
+      'named_fronts',
+      front.id,
+      'custom_label',
+    ),
+    'color_hex': await _decryptLocalText(
+      front.colorHex,
+      'named_fronts',
+      front.id,
+      'color_hex',
+    ),
+    'avatar_url': await _decryptLocalText(
+      front.avatarUrl,
+      'named_fronts',
+      front.id,
+      'avatar_url',
+    ),
+    'description': await _decryptLocalText(
+      front.description,
+      'named_fronts',
+      front.id,
+      'description',
+    ),
     'created_at': front.createdAt.toIso8601String(),
     'updated_at': front.updatedAt.toIso8601String(),
   };
@@ -7039,9 +8550,26 @@ SELECT
     PrivacyBucket bucket,
   ) async => {
     'id': bucket.id,
-    'name': (await _decryptLocalText(bucket.name)) ?? '',
-    'description': await _decryptLocalText(bucket.description),
-    'color_hex': await _decryptLocalText(bucket.colorHex),
+    'name':
+        (await _decryptLocalText(
+          bucket.name,
+          'privacy_buckets',
+          bucket.id,
+          'name',
+        )) ??
+        '',
+    'description': await _decryptLocalText(
+      bucket.description,
+      'privacy_buckets',
+      bucket.id,
+      'description',
+    ),
+    'color_hex': await _decryptLocalText(
+      bucket.colorHex,
+      'privacy_buckets',
+      bucket.id,
+      'color_hex',
+    ),
     'position': bucket.position,
     'created_at': bucket.createdAt.toIso8601String(),
     'updated_at': bucket.updatedAt.toIso8601String(),
@@ -7056,8 +8584,18 @@ SELECT
       {
         'id': record.id,
         'source': record.source,
-        'file_name': await _decryptLocalText(record.fileName),
-        'summary_json': await _decryptLocalText(record.summaryJson),
+        'file_name': await _decryptLocalText(
+          record.fileName,
+          'import_records',
+          record.id,
+          'file_name',
+        ),
+        'summary_json': await _decryptLocalText(
+          record.summaryJson,
+          'import_records',
+          record.id,
+          'summary_json',
+        ),
         'imported_at': record.importedAt.toIso8601String(),
       };
 
@@ -7068,7 +8606,14 @@ SELECT
     'import_record_id': payload.importRecordId,
     'source': payload.source,
     'collection': payload.collection,
-    'payload_json': (await _decryptLocalText(payload.payloadJson)) ?? '',
+    'payload_json':
+        (await _decryptLocalText(
+          payload.payloadJson,
+          'import_payloads',
+          payload.id,
+          'payload_json',
+        )) ??
+        '',
     'imported_at': payload.importedAt.toIso8601String(),
   };
 
@@ -7077,8 +8622,22 @@ SELECT
   ) async => {
     'id': event.id,
     'kind': event.kind,
-    'title': (await _decryptLocalText(event.title)) ?? '',
-    'body': (await _decryptLocalText(event.body)) ?? '',
+    'title':
+        (await _decryptLocalText(
+          event.title,
+          'notification_events',
+          event.id,
+          'title',
+        )) ??
+        '',
+    'body':
+        (await _decryptLocalText(
+          event.body,
+          'notification_events',
+          event.id,
+          'body',
+        )) ??
+        '',
     'read_at': event.readAt?.toIso8601String(),
     'created_at': event.createdAt.toIso8601String(),
   };

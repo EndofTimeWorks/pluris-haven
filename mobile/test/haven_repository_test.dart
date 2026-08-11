@@ -298,9 +298,9 @@ void main() {
     final storedNote = (await database.select(database.notes).get()).single;
     final storedMessage =
         (await database.select(database.messages).get()).single;
-    expect(storedNote.title, isNot('Private note'));
-    expect(storedNote.body, isNot('Legacy note body'));
-    expect(storedMessage.body, isNot('Legacy message body'));
+    expect(storedNote.title, startsWith('ph2:'));
+    expect(storedNote.body, startsWith('ph2:'));
+    expect(storedMessage.body, startsWith('ph2:'));
     expect(
       changesAfterNoOp.read<int>('count'),
       changesAfterMigration.read<int>('count'),
@@ -311,13 +311,68 @@ void main() {
           ))
           .getSingle()
           .then((row) => row.value),
-      '1',
+      '2',
     );
     expect((await repository.watchNotes().first).single.title, 'Private note');
     expect(
       (await repository.watchMessages().first).single.body,
       'Legacy message body',
     );
+  });
+
+  test('rejects local ciphertext moved between rows or columns', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveNote(const NoteDraft(title: 'One', body: 'First'));
+    await repository.saveNote(const NoteDraft(title: 'Two', body: 'Second'));
+
+    final stored = await database.select(database.notes).get();
+    expect(stored, hasLength(2));
+    await (database.update(database.notes)
+          ..where((row) => row.id.equals(stored.first.id)))
+        .write(NotesCompanion(title: Value(stored.last.title)));
+    expect(repository.buildLocalArchiveJson(), throwsA(anything));
+
+    await (database.update(database.notes)
+          ..where((row) => row.id.equals(stored.first.id)))
+        .write(NotesCompanion(title: Value(stored.first.body)));
+    expect(repository.buildLocalArchiveJson(), throwsA(anything));
+  });
+
+  test('restores revision plaintext under the target record context', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveNote(
+      const NoteDraft(title: 'Current title', body: 'Current body'),
+    );
+    final note = (await repository.watchNotes().first).single;
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.contentRevisions)
+        .insert(
+          ContentRevisionsCompanion.insert(
+            id: 'revision-restore-test',
+            targetType: 'note',
+            targetId: note.id,
+            title: const Value('Earlier title'),
+            body: 'Earlier body',
+            createdAt: now,
+          ),
+        );
+    await repository.migrateLocalPrivateContentToEncryption();
+
+    await repository.restoreRevision('revision-restore-test', 'note', note.id);
+
+    final restored = (await repository.watchNotes().first).single;
+    expect(restored.title, 'Earlier title');
+    expect(restored.body, 'Earlier body');
+    final raw = (await database.select(database.notes).get()).single;
+    expect(raw.title, startsWith('ph2:'));
+    expect(raw.body, startsWith('ph2:'));
   });
 
   test('migrates and round-trips private custom fields', () async {
