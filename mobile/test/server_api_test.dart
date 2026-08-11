@@ -81,6 +81,34 @@ void main() {
     expect(tokens.friendCode, 'ABCD-EFGH-IJKL-MNPQ');
   });
 
+  test(
+    'password change sends both passwords to the authenticated endpoint',
+    () async {
+      late http.Request captured;
+      final api = ServerApi(
+        baseUri: Uri.parse('https://haven.example'),
+        client: MockClient((request) async {
+          captured = request;
+          return http.Response(jsonEncode({'detail': 'Password changed'}), 200);
+        }),
+      );
+
+      await api.changePassword(
+        'access-token',
+        currentPassword: 'correct horse battery staple',
+        newPassword: 'new correct horse battery staple',
+      );
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/v1/auth/password');
+      expect(captured.headers['authorization'], 'Bearer access-token');
+      expect(jsonDecode(captured.body), {
+        'current_password': 'correct horse battery staple',
+        'new_password': 'new correct horse battery staple',
+      });
+    },
+  );
+
   test('backup upload sends opaque bytes and their declared digest', () async {
     late http.Request captured;
     final api = ServerApi(
@@ -205,6 +233,12 @@ void main() {
       expect(controller.account?.email, 'test@example.com');
       expect(storage.values.values, containsAll(['access', 'refresh']));
 
+      await controller.changePassword(
+        currentPassword: 'correct horse battery staple',
+        newPassword: 'new correct horse battery staple',
+      );
+      expect(api.passwordChanged, isTrue);
+
       await controller.uploadBackup(
         EncryptedBackupSnapshot(
           snapshotId: 'mobile-test',
@@ -254,6 +288,7 @@ class FakeServerApi extends ServerApi {
 
   final uploadedChunks = <List<int>>[];
   final snapshotRows = <ServerBackupSnapshot>[];
+  bool passwordChanged = false;
 
   @override
   Future<ServerDescriptor> descriptor() async => const ServerDescriptor(
@@ -307,6 +342,15 @@ class FakeServerApi extends ServerApi {
 
   @override
   Future<List<ServerBlock>> blocks(String token) async => const [];
+
+  @override
+  Future<void> changePassword(
+    String token, {
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    passwordChanged = true;
+  }
 
   @override
   Future<ServerBackupSnapshot> createBackupSnapshot(

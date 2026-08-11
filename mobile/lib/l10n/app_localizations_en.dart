@@ -442,6 +442,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currentPasswordLabel => 'Current password';
 
   @override
+  String get changePasswordButton => 'Change password';
+
+  @override
+  String get changePasswordTitle => 'Change server password';
+
+  @override
+  String get newPasswordLabel => 'New password';
+
+  @override
+  String get confirmNewPasswordLabel => 'Confirm new password';
+
+  @override
+  String get passwordsDoNotMatchError => 'Passwords do not match.';
+
+  @override
+  String get passwordChangedMessage =>
+      'Password changed. Other device sessions were signed out.';
+
+  @override
   String get deleteAccountButton => 'Delete account';
 
   @override
@@ -1925,6 +1944,25 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get currentPasswordLabel => 'Current password';
+
+  @override
+  String get changePasswordButton => 'Change password';
+
+  @override
+  String get changePasswordTitle => 'Change server password';
+
+  @override
+  String get newPasswordLabel => 'New password';
+
+  @override
+  String get confirmNewPasswordLabel => 'Confirm new password';
+
+  @override
+  String get passwordsDoNotMatchError => 'Passwords do not match.';
+
+  @override
+  String get passwordChangedMessage =>
+      'Password changed. Other device sessions were signed out.';
 
   @override
   String get deleteAccountButton => 'Delete account';

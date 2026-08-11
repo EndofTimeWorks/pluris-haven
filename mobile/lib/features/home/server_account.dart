@@ -153,6 +153,13 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                         child: Text(l10n.refreshButton),
                       ),
                       OutlinedButton(
+                        key: const ValueKey('change-server-password-button'),
+                        onPressed: controller.busy
+                            ? null
+                            : () => _showChangePassword(context),
+                        child: Text(l10n.changePasswordButton),
+                      ),
+                      OutlinedButton(
                         onPressed: controller.busy ? null : controller.logout,
                         child: Text(l10n.signOutButton),
                       ),
@@ -242,6 +249,128 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
     if (password != null && password.isNotEmpty && mounted) {
       await widget.controller!.deleteAccount(password);
     }
+  }
+
+  Future<void> _showChangePassword(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) =>
+          _ChangePasswordSheet(controller: widget.controller!),
+    );
+  }
+}
+
+class _ChangePasswordSheet extends StatefulWidget {
+  const _ChangePasswordSheet({required this.controller});
+
+  final ServerAccountController controller;
+
+  @override
+  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentPassword = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
+
+  @override
+  void dispose() {
+    _currentPassword.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          8,
+          20,
+          MediaQuery.viewInsetsOf(context).bottom + 24,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.changePasswordTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const ValueKey('current-server-password-field'),
+                  controller: _currentPassword,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.currentPasswordLabel,
+                  ),
+                  validator: (value) => value?.isNotEmpty == true
+                      ? null
+                      : l10n.requiredFieldError,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('new-server-password-field'),
+                  controller: _newPassword,
+                  obscureText: true,
+                  decoration: InputDecoration(labelText: l10n.newPasswordLabel),
+                  validator: (value) => (value?.length ?? 0) >= 12
+                      ? null
+                      : l10n.passwordLengthError,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('confirm-server-password-field'),
+                  controller: _confirmPassword,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.confirmNewPasswordLabel,
+                  ),
+                  validator: (value) => value == _newPassword.text
+                      ? null
+                      : l10n.passwordsDoNotMatchError,
+                ),
+                if (widget.controller.error != null) ...[
+                  const SizedBox(height: 10),
+                  _ServerMessage(widget.controller.error!, error: true),
+                ],
+                const SizedBox(height: 14),
+                FilledButton(
+                  key: const ValueKey('submit-change-server-password-button'),
+                  onPressed: widget.controller.busy ? null : _submit,
+                  child: Text(l10n.changePasswordButton),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) return;
+    await widget.controller.changePassword(
+      currentPassword: _currentPassword.text,
+      newPassword: _newPassword.text,
+    );
+    if (!mounted || widget.controller.error != null) return;
+    final message = AppLocalizations.of(context).passwordChangedMessage;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.pop(context);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
