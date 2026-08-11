@@ -175,6 +175,54 @@ abstract class AppLocalizations {
   /// **'keep the current front visible in Android status'**
   String get frontingNotificationSubtitle;
 
+  /// No description provided for @plurisHavenAppName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven'**
+  String get plurisHavenAppName;
+
+  /// No description provided for @privateReminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven reminder'**
+  String get privateReminderNotificationTitle;
+
+  /// No description provided for @privateNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Pluris Haven to view.'**
+  String get privateNotificationBody;
+
+  /// No description provided for @currentlyFrontingNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently fronting'**
+  String get currentlyFrontingNotificationTitle;
+
+  /// No description provided for @remindersChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get remindersChannelName;
+
+  /// No description provided for @remindersChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Front check-ins and custom reminders'**
+  String get remindersChannelDescription;
+
+  /// No description provided for @frontStatusChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Front status'**
+  String get frontStatusChannelName;
+
+  /// No description provided for @frontStatusChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent currently-fronting status'**
+  String get frontStatusChannelDescription;
+
   /// No description provided for @highContrastTitle.
   ///
   /// In en, this message translates to:
@@ -1523,6 +1571,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not read an import JSON from {fileName}.'**
   String couldNotReadImportFile(String fileName);
+
+  /// No description provided for @couldNotOpenFilePicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the file picker.'**
+  String get couldNotOpenFilePicker;
+
+  /// No description provided for @importFileEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected import file is empty.'**
+  String get importFileEmpty;
+
+  /// No description provided for @importFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The import file is larger than the 32 MiB safety limit. If this is a legitimate export, report it so the limit can be reviewed.'**
+  String get importFileTooLarge;
+
+  /// No description provided for @importFileInvalidUtf8.
+  ///
+  /// In en, this message translates to:
+  /// **'The import file is not valid UTF-8 text.'**
+  String get importFileInvalidUtf8;
+
+  /// No description provided for @importFileInvalidZip.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected ZIP file is invalid or damaged.'**
+  String get importFileInvalidZip;
+
+  /// No description provided for @importZipTooManyEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'The ZIP contains too many entries to import safely. If this is a legitimate export, report it so the limit can be reviewed.'**
+  String get importZipTooManyEntries;
+
+  /// No description provided for @importZipExpansionTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The ZIP expands beyond the safe import limit. If this is a legitimate export, report it so the limit can be reviewed.'**
+  String get importZipExpansionTooLarge;
+
+  /// No description provided for @importZipUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'The ZIP contains no supported JSON or avatar files.'**
+  String get importZipUnsupported;
+
+  /// No description provided for @reportImportIssueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Report import issue'**
+  String get reportImportIssueButton;
 
   /// No description provided for @couldNotReadPastedJson.
   ///

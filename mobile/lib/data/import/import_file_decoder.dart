@@ -8,14 +8,28 @@ class DecodedImportFile {
   const DecodedImportFile({
     required this.displayName,
     required this.text,
-    required this.detail,
     this.avatarAssets = const [],
   });
 
   final String displayName;
   final String text;
-  final String detail;
   final List<ImportAvatarAsset> avatarAssets;
+}
+
+enum ImportFileDecodeFailure {
+  empty,
+  tooLarge,
+  invalidUtf8,
+  invalidZip,
+  tooManyZipEntries,
+  zipExpansionTooLarge,
+  unsupportedZip,
+}
+
+class ImportFileDecodeException implements Exception {
+  const ImportFileDecodeException(this.failure);
+
+  final ImportFileDecodeFailure failure;
 }
 
 class ImportAvatarAsset {
@@ -42,20 +56,26 @@ Future<DecodedImportFile> decodeImportFileBytes({
   required Uint8List? bytes,
 }) async {
   if (bytes == null || bytes.isEmpty) {
-    throw const FormatException('The selected import file is empty.');
+    throw const ImportFileDecodeException(ImportFileDecodeFailure.empty);
   }
   if (bytes.length > _maxImportBytes) {
-    throw const FormatException(
-      'The import file is larger than the 32 MiB safety limit. Please raise a github Issue <link> or contact support <email>',
-    );
+    throw const ImportFileDecodeException(ImportFileDecodeFailure.tooLarge);
   }
   final transferable = TransferableTypedData.fromList([bytes]);
-  return Isolate.run(
-    () => _decodeImportFileBytes(
-      fileName: fileName,
-      bytes: transferable.materialize().asUint8List(),
-    ),
-  );
+  try {
+    return await Isolate.run(
+      () => _decodeImportFileBytes(
+        fileName: fileName,
+        bytes: transferable.materialize().asUint8List(),
+      ),
+    );
+  } on ImportFileDecodeException {
+    rethrow;
+  } on ArchiveException {
+    throw const ImportFileDecodeException(ImportFileDecodeFailure.invalidZip);
+  } on FormatException {
+    throw const ImportFileDecodeException(ImportFileDecodeFailure.invalidUtf8);
+  }
 }
 
 DecodedImportFile _decodeImportFileBytes({
@@ -69,7 +89,6 @@ DecodedImportFile _decodeImportFileBytes({
   return DecodedImportFile(
     displayName: fileName,
     text: utf8.decode(bytes, allowMalformed: false),
-    detail: 'Read $fileName.',
   );
 }
 
@@ -94,8 +113,8 @@ DecodedImportFile _decodeZipImport({
 
   for (var entryIndex = 0; entryIndex < archive.length; entryIndex++) {
     if (entryIndex >= _maxZipEntries) {
-      throw const FormatException(
-        'The ZIP contains too many entries. Please raise a github Issue <link> or contact support <email>',
+      throw const ImportFileDecodeException(
+        ImportFileDecodeFailure.tooManyZipEntries,
       );
     }
     final entry = archive[entryIndex];
@@ -112,8 +131,8 @@ DecodedImportFile _decodeZipImport({
     }
     if (entry.size > _maxZipEntryBytes ||
         expandedBytes > _maxZipExpandedBytes - entry.size) {
-      throw const FormatException(
-        'The ZIP expands beyond the safe import limit. Please raise a github Issue <link> or contact support <email>',
+      throw const ImportFileDecodeException(
+        ImportFileDecodeFailure.zipExpansionTooLarge,
       );
     }
     expandedBytes += entry.size;
@@ -154,14 +173,13 @@ DecodedImportFile _decodeZipImport({
   final selected = best;
   if (selected == null) {
     if (avatarAssets.isEmpty) {
-      throw const FormatException(
-        'The ZIP contains no supported JSON or avatar files.',
+      throw const ImportFileDecodeException(
+        ImportFileDecodeFailure.unsupportedZip,
       );
     }
     return DecodedImportFile(
       displayName: fileName,
       text: '{}',
-      detail: 'Read ${avatarAssets.length} avatars from $fileName.',
       avatarAssets: avatarAssets,
     );
   }
@@ -169,9 +187,6 @@ DecodedImportFile _decodeZipImport({
   return DecodedImportFile(
     displayName: '$fileName / ${selected.name}',
     text: selected.text,
-    detail: avatarAssets.isEmpty
-        ? 'Read ${selected.name} from $fileName.'
-        : 'Read ${selected.name} and ${avatarAssets.length} avatars from $fileName.',
     avatarAssets: avatarAssets,
   );
 }

@@ -25,6 +25,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   bool _isApplyingImport = false;
   bool _isRehearsingRestore = false;
   String? _importStatus;
+  bool _canReportImportIssue = false;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
 
@@ -87,6 +88,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ImportProgressCard(
             status: _importStatus,
             isActive: _isPickingImport || _isApplyingImport,
+            onReportIssue: _canReportImportIssue
+                ? () => launchExternalUrl(context, _importIssueUri)
+                : null,
           ),
         ],
         const SizedBox(height: 12),
@@ -135,12 +139,24 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _isPickingImport = true;
       _importStatus = l10n.waitingForFilePicker;
+      _canReportImportIssue = false;
     });
-    final result = await NativeFileDialog.pickFiles(
-      dialogTitle: l10n.chooseImportFileTitle,
-      type: NativeFileType.custom,
-      allowedExtensions: ['json', 'zip', 'prism', 'txt'],
-    );
+    NativeFileResult? result;
+    try {
+      result = await NativeFileDialog.pickFiles(
+        dialogTitle: l10n.chooseImportFileTitle,
+        type: NativeFileType.custom,
+        allowedExtensions: ['json', 'zip', 'prism', 'txt'],
+      );
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = l10n.couldNotOpenFilePicker;
+        });
+      }
+      return;
+    }
     if (result == null || result.files.isEmpty || !mounted) {
       if (mounted) {
         setState(() {
@@ -155,15 +171,17 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _importStatus = l10n.readingFileStatus(file.name);
     });
-    final bytes = await _pickedFileBytes(file);
-    if (!mounted) return;
     DecodedImportFile decoded;
     try {
+      final bytes = await _pickedFileBytes(file);
+      if (!mounted) return;
       decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
     } on Object catch (error) {
+      if (!mounted) return;
       setState(() {
         _isPickingImport = false;
-        _importStatus = '${l10n.couldNotReadImportFile(file.name)} $error';
+        _importStatus = _importReadError(l10n, error, file.name);
+        _canReportImportIssue = _isReportableImportFailure(error);
       });
       return;
     }
@@ -197,12 +215,24 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _isPickingImport = true;
       _importStatus = l10n.waitingForAvatarZip;
+      _canReportImportIssue = false;
     });
-    final result = await NativeFileDialog.pickFiles(
-      dialogTitle: l10n.chooseAvatarZipTitle,
-      type: NativeFileType.custom,
-      allowedExtensions: ['zip'],
-    );
+    NativeFileResult? result;
+    try {
+      result = await NativeFileDialog.pickFiles(
+        dialogTitle: l10n.chooseAvatarZipTitle,
+        type: NativeFileType.custom,
+        allowedExtensions: ['zip'],
+      );
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = l10n.couldNotOpenFilePicker;
+        });
+      }
+      return;
+    }
     if (result == null || result.files.isEmpty || !mounted) {
       if (mounted) {
         setState(() {
@@ -217,15 +247,17 @@ class _ImportExportPageState extends State<ImportExportPage> {
     setState(() {
       _importStatus = l10n.readingAvatarsStatus(file.name);
     });
-    final bytes = await _pickedFileBytes(file);
-    if (!mounted) return;
     DecodedImportFile decoded;
     try {
+      final bytes = await _pickedFileBytes(file);
+      if (!mounted) return;
       decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
     } on Object catch (error) {
+      if (!mounted) return;
       setState(() {
         _isPickingImport = false;
-        _importStatus = '${l10n.couldNotReadImportFile(file.name)} $error';
+        _importStatus = _importReadError(l10n, error, file.name);
+        _canReportImportIssue = _isReportableImportFailure(error);
       });
       return;
     }
@@ -297,6 +329,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _guess = guess;
       _preview = preview;
       _restoreRehearsal = null;
+      _canReportImportIssue = false;
       if (isEncrypted) {
         _source = ImportSource.plurisHavenArchive;
       } else if (guess.source != null) {
@@ -309,6 +342,36 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ? unreadableStatus
           : l10n.previewReadyStatus(_countSummary(preview.counts));
     });
+  }
+
+  String _importReadError(
+    AppLocalizations l10n,
+    Object error,
+    String fileName,
+  ) {
+    if (error is! ImportFileDecodeException) {
+      return l10n.couldNotReadImportFile(fileName);
+    }
+    return switch (error.failure) {
+      ImportFileDecodeFailure.empty => l10n.importFileEmpty,
+      ImportFileDecodeFailure.tooLarge => l10n.importFileTooLarge,
+      ImportFileDecodeFailure.invalidUtf8 => l10n.importFileInvalidUtf8,
+      ImportFileDecodeFailure.invalidZip => l10n.importFileInvalidZip,
+      ImportFileDecodeFailure.tooManyZipEntries => l10n.importZipTooManyEntries,
+      ImportFileDecodeFailure.zipExpansionTooLarge =>
+        l10n.importZipExpansionTooLarge,
+      ImportFileDecodeFailure.unsupportedZip => l10n.importZipUnsupported,
+    };
+  }
+
+  bool _isReportableImportFailure(Object error) {
+    if (error is! ImportFileDecodeException) return false;
+    return switch (error.failure) {
+      ImportFileDecodeFailure.tooLarge ||
+      ImportFileDecodeFailure.tooManyZipEntries ||
+      ImportFileDecodeFailure.zipExpansionTooLarge => true,
+      _ => false,
+    };
   }
 
   void _selectImportSource(ImportSource source) {
@@ -1663,10 +1726,12 @@ class ImportProgressCard extends StatelessWidget {
     super.key,
     required this.status,
     required this.isActive,
+    this.onReportIssue,
   });
 
   final String? status;
   final bool isActive;
+  final VoidCallback? onReportIssue;
 
   @override
   Widget build(BuildContext context) {
@@ -1714,6 +1779,14 @@ class ImportProgressCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 const LinearProgressIndicator(),
               ],
+              if (onReportIssue != null) ...[
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: onReportIssue,
+                  icon: const Icon(Icons.bug_report_outlined),
+                  label: Text(l10n.reportImportIssueButton),
+                ),
+              ],
             ],
           ),
         ),
@@ -1721,6 +1794,10 @@ class ImportProgressCard extends StatelessWidget {
     );
   }
 }
+
+final _importIssueUri = Uri.parse(
+  'https://github.com/EndofTimeWorks/pluris-haven/issues/new',
+);
 
 class ImportJobsCard extends StatelessWidget {
   const ImportJobsCard({super.key, required this.repository});

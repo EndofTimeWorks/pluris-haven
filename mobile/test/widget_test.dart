@@ -7,9 +7,34 @@ import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/features/home/home_page.dart';
+import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
 
 void main() {
+  testWidgets('offers a report action for legitimate rejected imports', (
+    tester,
+  ) async {
+    var reports = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ImportProgressCard(
+            status: 'The import exceeds the safety limit.',
+            isActive: false,
+            onReportIssue: () => reports += 1,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Report import issue'));
+
+    expect(reports, 1);
+  });
+
   testWidgets('shows the offline home dashboard', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
