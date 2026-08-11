@@ -15,6 +15,12 @@ import UniformTypeIdentifiers
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // A killed process cannot run Dart's per-file cleanup. Clear any
+    // plaintext import staging left by an interrupted previous session.
+    try? FileManager.default.removeItem(
+      at: FileManager.default.temporaryDirectory
+        .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
+    )
     BGTaskScheduler.shared.register(
       forTaskWithIdentifier: backgroundTaskIdentifier,
       using: nil
