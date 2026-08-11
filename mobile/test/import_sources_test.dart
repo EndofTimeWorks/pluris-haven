@@ -280,6 +280,47 @@ void main() {
     );
   });
 
+  test('preflights expansion for unsupported ZIP entries', () async {
+    final archive = Archive()
+      ..addFile(ArchiveFile('unused.bin', 50 * 1024 * 1024 + 1, const [0x00]))
+      ..addFile(ArchiveFile.string('export.json', '{"members":[]}'));
+
+    await expectLater(
+      decodeImportFileBytes(
+        fileName: 'oversized-unused-entry.zip',
+        bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+      ),
+      throwsA(
+        isA<ImportFileDecodeException>().having(
+          (error) => error.failure,
+          'failure',
+          ImportFileDecodeFailure.zipExpansionTooLarge,
+        ),
+      ),
+    );
+  });
+
+  test('stops ZIP parsing at the entry-count limit', () async {
+    final archive = Archive();
+    for (var index = 0; index <= 10_000; index++) {
+      archive.addFile(ArchiveFile.string('unused/$index.txt', ''));
+    }
+
+    await expectLater(
+      decodeImportFileBytes(
+        fileName: 'too-many-entries.zip',
+        bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+      ),
+      throwsA(
+        isA<ImportFileDecodeException>().having(
+          (error) => error.failure,
+          'failure',
+          ImportFileDecodeFailure.tooManyZipEntries,
+        ),
+      ),
+    );
+  });
+
   test('rejects malformed UTF-8 instead of replacing private text', () async {
     await expectLater(
       decodeImportFileBytes(

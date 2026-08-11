@@ -106,7 +106,29 @@ DecodedImportFile _decodeZipImport({
   required String fileName,
   required Uint8List bytes,
 }) {
-  final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+  var declaredEntryCount = 0;
+  var declaredExpandedBytes = 0;
+  final archive = ZipDecoder().decodeBytes(
+    bytes,
+    verify: true,
+    callback: (entry) {
+      declaredEntryCount += 1;
+      if (declaredEntryCount > _maxZipEntries) {
+        throw const ImportFileDecodeException(
+          ImportFileDecodeFailure.tooManyZipEntries,
+        );
+      }
+      if (!entry.isFile) return;
+      if (entry.size < 0 ||
+          entry.size > _maxZipEntryBytes ||
+          declaredExpandedBytes > _maxZipExpandedBytes - entry.size) {
+        throw const ImportFileDecodeException(
+          ImportFileDecodeFailure.zipExpansionTooLarge,
+        );
+      }
+      declaredExpandedBytes += entry.size;
+    },
+  );
   _ZipJsonCandidate? best;
   final avatarAssets = <ImportAvatarAsset>[];
   var expandedBytes = 0;
