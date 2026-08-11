@@ -104,6 +104,9 @@ public final class MainActivity extends FlutterFragmentActivity {
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
+        // A killed process cannot run Dart's per-file cleanup. Clear any
+        // plaintext import staging left by an interrupted previous session.
+        purgePickedFiles();
         new MethodChannel(
                 flutterEngine.getDartExecutor().getBinaryMessenger(),
                 FILE_DIALOG_CHANNEL
