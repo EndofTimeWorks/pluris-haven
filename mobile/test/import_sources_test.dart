@@ -10,6 +10,25 @@ import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 
 void main() {
+  test('normalizes and previews imports on background isolates', () async {
+    const text = '{"members":[{"id":"m1","name":"Iris"}]}';
+    final normalized = await normalizeImportTextToLocalArchiveInBackground(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp.json',
+      text: text,
+      importedAt: DateTime.utc(2026),
+    );
+    final preview = await previewImportTextInBackground(
+      fileName: 'sp.json',
+      text: text,
+      selectedSource: ImportSource.simplyPlural,
+    );
+
+    expect(normalized.counts['members'], 1);
+    expect(preview.counts['members'], 1);
+    expect(preview.canApply, isTrue);
+  });
+
   test('defines the initial importer surface', () {
     expect(
       ImportSource.values.map((source) => source.label),

@@ -28,6 +28,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   bool _isRehearsingRestore = false;
   String? _importStatus;
   bool _canReportImportIssue = false;
+  int _previewGeneration = 0;
 
   ImportSourcePlan get _plan => importPlanFor(_source);
 
@@ -187,7 +188,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       });
       return;
     }
-    _setImportText(
+    await _setImportText(
       displayName: decoded.displayName,
       fileSize: file.size,
       text: decoded.text,
@@ -203,7 +204,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       return;
     }
 
-    _setImportText(
+    await _setImportText(
       displayName: 'pasted-import.json',
       fileSize: utf8.encode(pasted).length,
       text: pasted,
@@ -273,14 +274,17 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     final mergedAvatars = _mergeAvatarAssets(_fileAvatarAssets, avatars);
+    final generation = ++_previewGeneration;
     final preview = _fileName == null || _fileText == null
         ? null
-        : previewImportText(
+        : await previewImportTextInBackground(
             fileName: _fileName!,
             text: _fileText!,
             selectedSource: _source,
             avatarAssets: mergedAvatars,
           );
+
+    if (!mounted || generation != _previewGeneration) return;
 
     setState(() {
       _fileAvatarAssets = mergedAvatars;
@@ -298,29 +302,36 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
   }
 
-  void _setImportText({
+  Future<void> _setImportText({
     required String displayName,
     required int? fileSize,
     required String? text,
     required List<ImportAvatarAsset> avatarAssets,
     required String unreadableStatus,
-  }) {
+  }) async {
     final l10n = AppLocalizations.of(context);
     final guess = guessImportSourceFromFile(
       fileName: displayName,
       textPreview: text,
     );
     final isEncrypted = text != null && archiveTextLooksEncrypted(text);
+    final generation = ++_previewGeneration;
+    setState(() {
+      _isPickingImport = true;
+      _importStatus = l10n.preparingImportPreviewStatus;
+    });
     final preview = text == null
         ? null
         : isEncrypted
         ? _encryptedArchiveLockedPreview(displayName)
-        : previewImportText(
+        : await previewImportTextInBackground(
             fileName: displayName,
             text: text,
             selectedSource: guess.source ?? _source,
             avatarAssets: avatarAssets,
           );
+
+    if (!mounted || generation != _previewGeneration) return;
 
     setState(() {
       _fileName = displayName;
@@ -376,22 +387,31 @@ class _ImportExportPageState extends State<ImportExportPage> {
     };
   }
 
-  void _selectImportSource(ImportSource source) {
+  Future<void> _selectImportSource(ImportSource source) async {
     final l10n = AppLocalizations.of(context);
     final fileName = _fileName;
     final text = _fileText;
     final isEncrypted = text != null && archiveTextLooksEncrypted(text);
 
+    final generation = ++_previewGeneration;
+    setState(() {
+      _source = source;
+      _preview = null;
+      _restoreRehearsal = null;
+      _importStatus = l10n.preparingImportPreviewStatus;
+    });
     final preview = fileName == null || text == null
         ? null
         : isEncrypted
         ? _encryptedArchiveLockedPreview(fileName)
-        : previewImportText(
+        : await previewImportTextInBackground(
             fileName: fileName,
             text: text,
             selectedSource: source,
             avatarAssets: _fileAvatarAssets,
           );
+
+    if (!mounted || generation != _previewGeneration) return;
 
     setState(() {
       _source = source;
@@ -438,14 +458,21 @@ class _ImportExportPageState extends State<ImportExportPage> {
       });
       return;
     }
+    final generation = ++_previewGeneration;
+    setState(() {
+      _preview = null;
+      _restoreRehearsal = null;
+      _importStatus = l10n.preparingImportPreviewStatus;
+    });
     try {
       final effectiveText = await _effectiveImportText(text);
-      final preview = previewImportText(
+      final preview = await previewImportTextInBackground(
         fileName: fileName,
         text: effectiveText,
         selectedSource: _source,
         avatarAssets: _fileAvatarAssets,
       );
+      if (!mounted || generation != _previewGeneration) return;
       setState(() {
         _preview = preview;
         _restoreRehearsal = null;
@@ -457,6 +484,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         'events=${preview.events.length} warnings=${preview.warningsAndErrors.length}',
       );
     } on Object catch (error) {
+      if (!mounted || generation != _previewGeneration) return;
       setState(() {
         _preview = _encryptedArchiveFailedPreview(fileName, error);
         _restoreRehearsal = null;
@@ -476,11 +504,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
         _pluralKitToken,
       );
       if (!mounted) return;
-      final preview = previewImportText(
+      final generation = ++_previewGeneration;
+      final preview = await previewImportTextInBackground(
         fileName: 'pluralkit-live.json',
         text: text,
         selectedSource: ImportSource.pluralKitLive,
       );
+      if (!mounted || generation != _previewGeneration) return;
       setState(() {
         _fileName = 'pluralkit-live.json';
         _fileSize = utf8.encode(text).length;
@@ -521,7 +551,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     try {
       final effectiveText = await _effectiveImportText(text);
-      final normalized = normalizeImportTextToLocalArchive(
+      final normalized = await normalizeImportTextToLocalArchiveInBackground(
         source: _source,
         fileName: fileName,
         text: effectiveText,
@@ -574,7 +604,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     var importCompleted = false;
     try {
       final effectiveText = await _effectiveImportText(text);
-      final normalized = normalizeImportTextToLocalArchive(
+      final normalized = await normalizeImportTextToLocalArchiveInBackground(
         source: _source,
         fileName: _fileName ?? 'import.json',
         text: effectiveText,

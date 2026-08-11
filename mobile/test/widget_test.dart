@@ -11,6 +11,17 @@ import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
 
+Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
+  for (var attempt = 0; attempt < 50; attempt++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  fail('Timed out waiting for the requested widget.');
+}
+
 void main() {
   testWidgets('offers a report action for legitimate rejected imports', (
     tester,
@@ -2070,6 +2081,7 @@ void main() {
       }),
     );
     await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -2085,7 +2097,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('restore-rehearsal-button')));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('Restore rehearsal passed'));
 
     expect(find.text('Restore rehearsal passed'), findsOneWidget);
     expect(
@@ -2098,7 +2110,7 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('Refresh preview'), -240);
     await tester.tap(find.text('Refresh preview'));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
@@ -2164,12 +2176,7 @@ void main() {
       'shared passphrase',
     );
     await tester.tap(find.text('Refresh preview'));
-    // PBKDF2 intentionally runs outside the UI isolate. Let the worker isolate
-    // make progress before returning to the widget test's fake clock.
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 250)),
-    );
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
