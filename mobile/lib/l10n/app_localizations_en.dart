@@ -844,6 +844,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get couldNotReadPastedJson => 'Could not read the pasted JSON.';
 
   @override
+  String get exportJsonLabel => 'Export JSON';
+
+  @override
+  String get pasteJsonSizeHelp =>
+      'Paste up to 256 KiB. Choose a file for larger exports.';
+
+  @override
+  String get previewPastedJson => 'Preview pasted JSON';
+
+  @override
   String get waitingForAvatarZip => 'Waiting for avatar ZIP...';
 
   @override
@@ -1937,6 +1947,16 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get couldNotReadPastedJson => 'Could not read the pasted JSON.';
+
+  @override
+  String get exportJsonLabel => 'Export JSON';
+
+  @override
+  String get pasteJsonSizeHelp =>
+      'Paste up to 256 KiB. Choose a file for larger exports.';
+
+  @override
+  String get previewPastedJson => 'Preview pasted JSON';
 
   @override
   String get waitingForAvatarZip => 'Waiting for avatar ZIP...';
