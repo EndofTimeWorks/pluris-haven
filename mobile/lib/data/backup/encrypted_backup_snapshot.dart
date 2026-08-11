@@ -175,7 +175,22 @@ class EncryptedBackupSnapshot {
   };
 
   /// Verifies chunk hashes, decrypts in index order, and returns the archive.
-  Future<String> restoreArchiveJson(HavenCrypto crypto) async {
+  ///
+  /// Version 1 did not authenticate manifest identity or chunk position. It is
+  /// rejected by default, but can still be opened explicitly for offline data
+  /// recovery when the caller trusts the source of the legacy snapshot.
+  Future<String> restoreArchiveJson(
+    HavenCrypto crypto, {
+    bool allowUnauthenticatedLegacyV1 = false,
+  }) async {
+    if (version != 1 && version != encryptedBackupVersion) {
+      throw const FormatException('Unsupported encrypted backup snapshot.');
+    }
+    if (version == 1 && !allowUnauthenticatedLegacyV1) {
+      throw const FormatException(
+        'Legacy encrypted backups require explicit trusted-source recovery.',
+      );
+    }
     if (chunkSize < minEncryptedBackupChunkSize ||
         chunkSize > maxEncryptedBackupChunkSize ||
         chunks.length > maxEncryptedBackupChunkCount) {
