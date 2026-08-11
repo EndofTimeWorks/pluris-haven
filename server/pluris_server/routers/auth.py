@@ -8,6 +8,7 @@ from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_de
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import BackupSnapshot, DeviceSession, RefreshToken, User
 from pluris_server.schemas import (
+    ChangePasswordRequest,
     DeleteAccountRequest,
     LoginRequest,
     MessageResponse,
@@ -158,6 +159,42 @@ async def logout(auth: CurrentAuth, db: Db) -> MessageResponse:
     )
     await db.commit()
     return MessageResponse(detail="Signed out")
+
+
+@router.post("/password", response_model=MessageResponse)
+async def change_password(
+    request: Request,
+    payload: ChangePasswordRequest,
+    auth: CurrentAuth,
+    db: Db,
+) -> MessageResponse:
+    await _enforce_rate_limit(request, "password", auth.user.email)
+    if not await verify_password(payload.current_password, auth.user.password_hash):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    if await verify_password(payload.new_password, auth.user.password_hash):
+        raise HTTPException(status_code=400, detail="New password must be different")
+
+    changed_at = datetime.now(UTC)
+    auth.user.password_hash = await hash_password(payload.new_password)
+    other_session_ids = select(DeviceSession.id).where(
+        DeviceSession.user_id == auth.user.id,
+        DeviceSession.id != auth.session.id,
+    )
+    await db.execute(
+        update(DeviceSession)
+        .where(DeviceSession.id.in_(other_session_ids), DeviceSession.revoked_at.is_(None))
+        .values(revoked_at=changed_at)
+    )
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.session_id.in_(other_session_ids),
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=changed_at)
+    )
+    await db.commit()
+    return MessageResponse(detail="Password changed")
 
 
 @router.delete("/account", response_model=MessageResponse)
