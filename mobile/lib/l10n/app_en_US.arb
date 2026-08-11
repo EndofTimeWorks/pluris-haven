@@ -359,5 +359,15 @@
   "archiveCopied": "Archive copied",
   "saveArchiveDialogTitle": "Save Pluris Haven archive",
   "archiveSaved": "Archive saved",
-  "couldNotSaveArchive": "Could not save archive: {error}"
+  "couldNotSaveArchive": "Could not save archive: {error}",
+  "typeFieldLabel": "Type",
+  "sourceFieldLabel": "Source",
+  "createdFieldLabel": "Created",
+  "updatedFieldLabel": "Updated",
+  "noJobErrorRecorded": "No error recorded for this job.",
+  "errorTitle": "Error",
+  "fullErrorCopied": "Full error copied",
+  "copyFullButton": "Copy full",
+  "jobErrorPreviewTruncated": "Showing a safe preview. The full error is too large to render here.",
+  "truncatedCharacters": "...truncated {count, plural, =1{1 character} other{{count} characters}}"
 }

@@ -1250,6 +1250,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String couldNotSaveArchive(String error) {
     return 'Could not save archive: $error';
   }
+
+  @override
+  String get typeFieldLabel => 'Type';
+
+  @override
+  String get sourceFieldLabel => 'Source';
+
+  @override
+  String get createdFieldLabel => 'Created';
+
+  @override
+  String get updatedFieldLabel => 'Updated';
+
+  @override
+  String get noJobErrorRecorded => 'No error recorded for this job.';
+
+  @override
+  String get errorTitle => 'Error';
+
+  @override
+  String get fullErrorCopied => 'Full error copied';
+
+  @override
+  String get copyFullButton => 'Copy full';
+
+  @override
+  String get jobErrorPreviewTruncated =>
+      'Showing a safe preview. The full error is too large to render here.';
+
+  @override
+  String truncatedCharacters(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count characters',
+      one: '1 character',
+    );
+    return '...truncated $_temp0';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2497,5 +2536,44 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   @override
   String couldNotSaveArchive(String error) {
     return 'Could not save archive: $error';
+  }
+
+  @override
+  String get typeFieldLabel => 'Type';
+
+  @override
+  String get sourceFieldLabel => 'Source';
+
+  @override
+  String get createdFieldLabel => 'Created';
+
+  @override
+  String get updatedFieldLabel => 'Updated';
+
+  @override
+  String get noJobErrorRecorded => 'No error recorded for this job.';
+
+  @override
+  String get errorTitle => 'Error';
+
+  @override
+  String get fullErrorCopied => 'Full error copied';
+
+  @override
+  String get copyFullButton => 'Copy full';
+
+  @override
+  String get jobErrorPreviewTruncated =>
+      'Showing a safe preview. The full error is too large to render here.';
+
+  @override
+  String truncatedCharacters(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count characters',
+      one: '1 character',
+    );
+    return '...truncated $_temp0';
   }
 }

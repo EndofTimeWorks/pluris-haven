@@ -2261,6 +2261,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save archive: {error}'**
   String couldNotSaveArchive(String error);
+
+  /// No description provided for @typeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get typeFieldLabel;
+
+  /// No description provided for @sourceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceFieldLabel;
+
+  /// No description provided for @createdFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get createdFieldLabel;
+
+  /// No description provided for @updatedFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get updatedFieldLabel;
+
+  /// No description provided for @noJobErrorRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No error recorded for this job.'**
+  String get noJobErrorRecorded;
+
+  /// No description provided for @errorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorTitle;
+
+  /// No description provided for @fullErrorCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Full error copied'**
+  String get fullErrorCopied;
+
+  /// No description provided for @copyFullButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy full'**
+  String get copyFullButton;
+
+  /// No description provided for @jobErrorPreviewTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing a safe preview. The full error is too large to render here.'**
+  String get jobErrorPreviewTruncated;
+
+  /// No description provided for @truncatedCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'...truncated {count, plural, =1{1 character} other{{count} characters}}'**
+  String truncatedCharacters(int count);
 }
 
 class _AppLocalizationsDelegate

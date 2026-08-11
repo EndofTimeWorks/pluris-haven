@@ -1943,6 +1943,7 @@ class ImportJobRow extends StatelessWidget {
   }
 
   void _showJobDetails(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -1976,15 +1977,18 @@ class ImportJobRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _JobDetailLine(label: 'Type', value: job.type),
+                _JobDetailLine(label: l10n.typeFieldLabel, value: job.type),
                 if (job.source != null)
-                  _JobDetailLine(label: 'Source', value: job.source!),
+                  _JobDetailLine(
+                    label: l10n.sourceFieldLabel,
+                    value: job.source!,
+                  ),
                 _JobDetailLine(
-                  label: 'Created',
+                  label: l10n.createdFieldLabel,
                   value: _shortDateTime(job.createdAt),
                 ),
                 _JobDetailLine(
-                  label: 'Updated',
+                  label: l10n.updatedFieldLabel,
                   value: _shortDateTime(job.updatedAt),
                 ),
                 if (job.error != null && job.error!.trim().isNotEmpty) ...[
@@ -1992,9 +1996,9 @@ class ImportJobRow extends StatelessWidget {
                   _JobErrorPreview(error: job.error!),
                 ] else ...[
                   const SizedBox(height: 16),
-                  const Text(
-                    'No error recorded for this job.',
-                    style: TextStyle(color: _spMuted),
+                  Text(
+                    l10n.noJobErrorRecorded,
+                    style: const TextStyle(color: _spMuted),
                   ),
                 ],
               ],
@@ -2031,7 +2035,8 @@ class _JobErrorPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _boundedJobError(error);
+    final l10n = AppLocalizations.of(context);
+    final preview = _boundedJobError(error, l10n);
     final isTruncated = preview.length < error.trim().length;
 
     return Column(
@@ -2039,29 +2044,29 @@ class _JobErrorPreview extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Error',
-                style: TextStyle(fontWeight: FontWeight.w900),
+                l10n.errorTitle,
+                style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
             TextButton.icon(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: error.trim()));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Full error copied')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.fullErrorCopied)));
               },
               icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copy full'),
+              label: Text(l10n.copyFullButton),
             ),
           ],
         ),
         const SizedBox(height: 8),
         if (isTruncated) ...[
-          const Text(
-            'Showing a safe preview. The full error is too large to render here.',
-            style: TextStyle(color: _spMuted),
+          Text(
+            l10n.jobErrorPreviewTruncated,
+            style: const TextStyle(color: _spMuted),
           ),
           const SizedBox(height: 8),
         ],
@@ -2083,14 +2088,14 @@ class _JobErrorPreview extends StatelessWidget {
   }
 }
 
-String _boundedJobError(String error) {
+String _boundedJobError(String error, AppLocalizations l10n) {
   final trimmed = error.trim();
   const maxLength = 4000;
   if (trimmed.length <= maxLength) {
     return trimmed;
   }
   return '${trimmed.substring(0, maxLength)}\n\n'
-      '...truncated ${trimmed.length - maxLength} chars';
+      '${l10n.truncatedCharacters(trimmed.length - maxLength)}';
 }
 
 String _oneLineJobError(String error) {
