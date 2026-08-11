@@ -364,7 +364,6 @@ async def block_user(
         )
     )
     low, high = _pair(auth.user.id, payload.user_id)
-    friendship = await _friendship_for(db, auth.user.id, payload.user_id)
     friend_request = await db.scalar(
         select(FriendRequest)
         .where(
@@ -373,6 +372,11 @@ async def block_user(
         )
         .with_for_update()
     )
+    # Acceptance locks the same canonical pair request before creating a
+    # friendship. Re-read the friendship after acquiring that lock so a block
+    # cannot commit alongside a friendship created while this transaction was
+    # waiting.
+    friendship = await _friendship_for(db, auth.user.id, payload.user_id)
     if existing is None and friendship is None and friend_request is None:
         raise HTTPException(status_code=404, detail="User is not available to block")
     target = await db.get(User, payload.user_id)

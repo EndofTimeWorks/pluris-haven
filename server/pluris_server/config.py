@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     friend_code_pepper: str = "development-only-change-me"
     access_token_minutes: int = 15
     refresh_token_days: int = 30
-    refresh_reuse_grace_seconds: int = Field(default=10, ge=0, le=60)
     registration_enabled: bool = False
     friends_enabled: bool = False
     server_id: UUID = UUID(int=0)
@@ -44,9 +43,11 @@ class Settings(BaseSettings):
     max_blocks_per_user: int = Field(default=1_000, ge=1, le=100_000)
     auth_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
     auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
+    refresh_ip_rate_limit_attempts: int = Field(default=120, ge=1, le=10_000)
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ()
+    trusted_hosts: Annotated[tuple[str, ...], NoDecode] = ()
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "trusted_hosts", mode="before")
     @classmethod
     def parse_origins(cls, value: object) -> object:
         if isinstance(value, str):

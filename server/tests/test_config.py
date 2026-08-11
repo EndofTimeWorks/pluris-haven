@@ -22,6 +22,17 @@ def test_comma_separated_cors_origins(monkeypatch) -> None:
     )
 
 
+def test_security_headers_and_host_validation(client: TestClient) -> None:
+    response = client.get("/health")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert "strict-transport-security" not in response.headers
+
+    rejected = client.get("http://untrusted.example/health")
+    assert rejected.status_code == 400
+
+
 def test_friends_feature_is_closed_by_default(tmp_path) -> None:
     settings = Settings(
         environment="test",

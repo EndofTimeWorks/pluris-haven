@@ -1,6 +1,10 @@
 friends.example.com {
     encode zstd gzip
 
+    request_body /v1/backups/snapshots/* {
+        max_size 9MB
+    }
+
     @api path /health /ready /.well-known/pluris-haven /v1/*
     handle @api {
         reverse_proxy 127.0.0.1:8000

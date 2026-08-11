@@ -16,7 +16,7 @@ def build_server_info(settings: AppSettings) -> ServerInfo:
         "encrypted_backup_chunks",
     ]
     if settings.friends_enabled:
-        capabilities.extend(["friend_requests", "directional_sharing_grants"])
+        capabilities.append("friend_requests")
     return ServerInfo(
         server_id=str(settings.server_id),
         name=settings.server_name,
