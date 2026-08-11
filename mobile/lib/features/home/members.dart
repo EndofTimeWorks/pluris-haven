@@ -1543,8 +1543,8 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
 
     try {
-      final bytes = await _readPickedFileBytes(file.path);
-      if (bytes == null || bytes.isEmpty) {
+      final bytes = await file.readBytes();
+      if (bytes.isEmpty) {
         throw const FormatException('Selected image was empty.');
       }
       final ref = await _storeManualAvatar(file.name, bytes);
@@ -1572,13 +1572,6 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
 String _hexFromAccent(HavenAccentColor color) =>
     '#${color.argb.toRadixString(16).substring(2).toUpperCase()}';
-
-Future<List<int>?> _readPickedFileBytes(String? path) async {
-  if (path == null || path.trim().isEmpty) {
-    return null;
-  }
-  return File(path).readAsBytes();
-}
 
 Future<String> _storeManualAvatar(String sourceName, List<int> bytes) async {
   Directory base;

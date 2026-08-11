@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -31,34 +32,43 @@ class ImportAvatarAsset {
   final String? mimeType;
 }
 
-const _maxImportBytes = 100 * 1024 * 1024;
+const _maxImportBytes = 32 * 1024 * 1024;
 const _maxZipEntries = 10_000;
-const _maxZipEntryBytes = 50 * 1024 * 1024;
-const _maxZipExpandedBytes = 100 * 1024 * 1024;
+const _maxZipEntryBytes = 20 * 1024 * 1024;
+const _maxZipExpandedBytes = 50 * 1024 * 1024;
 
-DecodedImportFile? decodeImportFileBytes({
+Future<DecodedImportFile> decodeImportFileBytes({
   required String fileName,
   required Uint8List? bytes,
-}) {
+}) async {
   if (bytes == null || bytes.isEmpty) {
-    return null;
+    throw const FormatException('The selected import file is empty.');
   }
-
   if (bytes.length > _maxImportBytes) {
-    return null;
+    throw const FormatException(
+      'The import file is larger than the 32 MiB safety limit. Please raise a github Issue <link> or contact support <email>',
+    );
   }
+  final transferable = TransferableTypedData.fromList([bytes]);
+  return Isolate.run(
+    () => _decodeImportFileBytes(
+      fileName: fileName,
+      bytes: transferable.materialize().asUint8List(),
+    ),
+  );
+}
 
+DecodedImportFile _decodeImportFileBytes({
+  required String fileName,
+  required Uint8List bytes,
+}) {
   if (_looksLikeZip(fileName, bytes)) {
-    try {
-      return _decodeZipImport(fileName: fileName, bytes: bytes);
-    } on Object {
-      return null;
-    }
+    return _decodeZipImport(fileName: fileName, bytes: bytes);
   }
 
   return DecodedImportFile(
     displayName: fileName,
-    text: utf8.decode(bytes, allowMalformed: true),
+    text: utf8.decode(bytes, allowMalformed: false),
     detail: 'Read $fileName.',
   );
 }
@@ -73,7 +83,7 @@ bool _looksLikeZip(String fileName, Uint8List bytes) {
           bytes[3] == 0x04);
 }
 
-DecodedImportFile? _decodeZipImport({
+DecodedImportFile _decodeZipImport({
   required String fileName,
   required Uint8List bytes,
 }) {
@@ -84,7 +94,9 @@ DecodedImportFile? _decodeZipImport({
 
   for (var entryIndex = 0; entryIndex < archive.length; entryIndex++) {
     if (entryIndex >= _maxZipEntries) {
-      return null;
+      throw const FormatException(
+        'The ZIP contains too many entries. Please raise a github Issue <link> or contact support <email>',
+      );
     }
     final entry = archive[entryIndex];
     final name = entry.name;
@@ -100,7 +112,9 @@ DecodedImportFile? _decodeZipImport({
     }
     if (entry.size > _maxZipEntryBytes ||
         expandedBytes > _maxZipExpandedBytes - entry.size) {
-      return null;
+      throw const FormatException(
+        'The ZIP expands beyond the safe import limit. Please raise a github Issue <link> or contact support <email>',
+      );
     }
     expandedBytes += entry.size;
 
@@ -125,7 +139,7 @@ DecodedImportFile? _decodeZipImport({
       continue;
     }
 
-    final text = utf8.decode(fileBytes, allowMalformed: true);
+    final text = utf8.decode(fileBytes, allowMalformed: false);
     final candidate = _ZipJsonCandidate(
       name: name,
       text: text,
@@ -140,7 +154,9 @@ DecodedImportFile? _decodeZipImport({
   final selected = best;
   if (selected == null) {
     if (avatarAssets.isEmpty) {
-      return null;
+      throw const FormatException(
+        'The ZIP contains no supported JSON or avatar files.',
+      );
     }
     return DecodedImportFile(
       displayName: fileName,

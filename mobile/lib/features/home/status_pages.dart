@@ -713,8 +713,8 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
     final file = result?.files.firstOrNull;
     if (file == null) return;
     try {
-      final bytes = await _readPickedFileBytes(file.path);
-      if (bytes == null || bytes.isEmpty) {
+      final bytes = await file.readBytes();
+      if (bytes.isEmpty) {
         throw const FormatException('Selected image was empty.');
       }
       final ref = await _storeManualAvatar(file.name, bytes);

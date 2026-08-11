@@ -157,12 +157,21 @@ class _ImportExportPageState extends State<ImportExportPage> {
     });
     final bytes = await _pickedFileBytes(file);
     if (!mounted) return;
-    final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
+    DecodedImportFile decoded;
+    try {
+      decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
+    } on Object catch (error) {
+      setState(() {
+        _isPickingImport = false;
+        _importStatus = '${l10n.couldNotReadImportFile(file.name)} $error';
+      });
+      return;
+    }
     _setImportText(
-      displayName: decoded?.displayName ?? file.name,
+      displayName: decoded.displayName,
       fileSize: file.size,
-      text: decoded?.text,
-      avatarAssets: decoded?.avatarAssets ?? const [],
+      text: decoded.text,
+      avatarAssets: decoded.avatarAssets,
       unreadableStatus: l10n.couldNotReadImportFile(file.name),
     );
   }
@@ -210,8 +219,17 @@ class _ImportExportPageState extends State<ImportExportPage> {
     });
     final bytes = await _pickedFileBytes(file);
     if (!mounted) return;
-    final decoded = decodeImportFileBytes(fileName: file.name, bytes: bytes);
-    final avatars = decoded?.avatarAssets ?? const <ImportAvatarAsset>[];
+    DecodedImportFile decoded;
+    try {
+      decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
+    } on Object catch (error) {
+      setState(() {
+        _isPickingImport = false;
+        _importStatus = '${l10n.couldNotReadImportFile(file.name)} $error';
+      });
+      return;
+    }
+    final avatars = decoded.avatarAssets;
     if (avatars.isEmpty) {
       setState(() {
         _isPickingImport = false;
@@ -330,6 +348,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
   Future<Uint8List?> _pickedFileBytes(NativePlatformFile file) async {
     final path = file.path;
     try {
+      if (file.size > maximumNativePickedFileBytes) {
+        await file.dispose();
+        throw const FormatException('Selected file exceeds the 32 MiB limit.');
+      }
       return await file.readBytes();
     } on Object catch (error) {
       appDebugLog('Import file read failed path=$path error=$error');

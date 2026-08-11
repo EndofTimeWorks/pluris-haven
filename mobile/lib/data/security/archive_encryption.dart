@@ -8,6 +8,7 @@ const encryptedArchiveVersion = 2;
 const encryptedArchiveKdf = 'PBKDF2-HMAC-SHA256';
 const encryptedArchiveCipher = 'XChaCha20-Poly1305';
 const defaultArchiveKdfIterations = 210000;
+const maximumArchiveKdfIterations = 1000000;
 
 final _archiveCipher = Xchacha20.poly1305Aead();
 
@@ -43,11 +44,11 @@ Future<String> _encryptArchiveJson({
   if (passphrase.isEmpty) {
     throw ArgumentError.value(passphrase, 'passphrase', 'must not be empty');
   }
-  if (iterations < 1000) {
+  if (iterations < 1000 || iterations > maximumArchiveKdfIterations) {
     throw ArgumentError.value(
       iterations,
       'iterations',
-      'must be at least 1000',
+      'must be between 1000 and $maximumArchiveKdfIterations',
     );
   }
 
@@ -124,7 +125,9 @@ Future<String> _decryptArchiveJson({
   final iterations = decoded['iterations'];
   final salt = decoded['salt'];
   final ciphertext = decoded['ciphertext'];
-  if (iterations is! int || iterations < 1000) {
+  if (iterations is! int ||
+      iterations < 1000 ||
+      iterations > maximumArchiveKdfIterations) {
     throw const FormatException(
       'Encrypted archive has invalid KDF iterations.',
     );

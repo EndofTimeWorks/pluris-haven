@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -80,16 +81,18 @@ class NotificationService {
       channelDescription: 'Front check-in and custom reminders',
       importance: Importance.high,
       priority: Priority.high,
+      visibility: NotificationVisibility.secret,
     );
     const details = NotificationDetails(
       android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
+    final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
 
     await _plugin!.zonedSchedule(
       id: id,
-      title: title,
-      body: body,
+      title: hideAppleContent ? 'Pluris Haven reminder' : title,
+      body: hideAppleContent ? null : body,
       scheduledDate: scheduledDate,
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -124,6 +127,7 @@ class NotificationService {
       showWhen: false,
       silent: true,
       category: AndroidNotificationCategory.status,
+      visibility: NotificationVisibility.secret,
     );
     const details = NotificationDetails(
       android: androidDetails,
@@ -134,10 +138,11 @@ class NotificationService {
       ),
     );
 
+    final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
     await _plugin!.show(
       id: frontStatusNotificationId,
-      title: 'Currently fronting',
-      body: label,
+      title: hideAppleContent ? 'Pluris Haven' : 'Currently fronting',
+      body: hideAppleContent ? 'Open Pluris Haven to view.' : label,
       notificationDetails: details,
     );
   }

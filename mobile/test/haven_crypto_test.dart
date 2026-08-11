@@ -174,5 +174,23 @@ void main() {
         throwsA(anything),
       );
     });
+
+    test('rejects archive KDF work above the supported maximum', () async {
+      final encrypted = await encryptArchiveJson(
+        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
+        passphrase: 'right-password',
+        iterations: 1200,
+      );
+      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
+      decoded['iterations'] = maximumArchiveKdfIterations + 1;
+
+      await expectLater(
+        decryptArchiveJson(
+          encryptedArchiveJson: jsonEncode(decoded),
+          passphrase: 'right-password',
+        ),
+        throwsFormatException,
+      );
+    });
   });
 }

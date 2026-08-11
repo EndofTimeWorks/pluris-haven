@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 enum NativeFileType { custom, image }
 
+const maximumNativePickedFileBytes = 32 * 1024 * 1024;
+
 class NativePlatformFile {
   const NativePlatformFile({
     required this.name,
@@ -14,7 +16,16 @@ class NativePlatformFile {
   final String path;
   final int size;
 
-  Future<Uint8List> readBytes() => File(path).readAsBytes();
+  Future<Uint8List> readBytes() async {
+    final file = File(path);
+    try {
+      return await file.readAsBytes();
+    } finally {
+      await dispose();
+    }
+  }
+
+  Future<void> dispose() => _deleteStagedFile(File(path));
 }
 
 class NativeFileResult {
@@ -35,6 +46,7 @@ class NativeFileDialog {
     List<String> allowedExtensions = const [],
     bool allowMultiple = false,
     String? dialogTitle,
+    int maximumBytes = maximumNativePickedFileBytes,
   }) async {
     final response = await _channel
         .invokeListMethod<Object?>('pickFiles', <String, Object?>{
@@ -42,6 +54,7 @@ class NativeFileDialog {
           'allowedExtensions': allowedExtensions,
           'allowMultiple': allowMultiple,
           'dialogTitle': dialogTitle,
+          'maximumBytes': maximumBytes,
         });
     if (response == null) return null;
     final files = <NativePlatformFile>[];
@@ -79,11 +92,31 @@ class NativeFileDialog {
           }) ??
           false;
     } finally {
+      await _deleteTemporaryDirectory(temporaryDirectory);
+    }
+  }
+
+  static Future<void> _deleteTemporaryDirectory(Directory directory) async {
+    for (var attempt = 0; attempt < 3; attempt++) {
       try {
-        await temporaryDirectory.delete(recursive: true);
+        await directory.delete(recursive: true);
+        return;
       } on FileSystemException {
-        // The platform may still be finishing a coordinated copy.
+        if (attempt == 2) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
       }
+    }
+  }
+}
+
+Future<void> _deleteStagedFile(File file) async {
+  for (var attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (await file.exists()) await file.delete();
+      return;
+    } on FileSystemException {
+      if (attempt == 2) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     }
   }
 }
