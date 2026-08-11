@@ -222,6 +222,63 @@ def test_refresh_replay_revokes_the_device_session(client: TestClient) -> None:
     assert client.get("/v1/auth/me", headers=auth(first.json()["access_token"])).status_code == 401
 
 
+def test_refresh_retry_nonce_allows_one_lost_response_retry(client: TestClient) -> None:
+    registered = register(client, "refresh-grace@example.com", "Refresh grace")
+    payload = {
+        "refresh_token": registered["refresh_token"],
+        "rotation_nonce": "same-client-retry-nonce",
+    }
+
+    first = client.post("/v1/auth/refresh", json=payload)
+    retry = client.post("/v1/auth/refresh", json=payload)
+
+    assert first.status_code == 200, first.text
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["refresh_token"] != first.json()["refresh_token"]
+    assert (
+        client.post(
+            "/v1/auth/refresh",
+            json={"refresh_token": first.json()["refresh_token"]},
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            "/v1/auth/refresh",
+            json={"refresh_token": retry.json()["refresh_token"]},
+        ).status_code
+        == 200
+    )
+
+
+def test_refresh_retry_with_different_nonce_revokes_session(client: TestClient) -> None:
+    registered = register(client, "refresh-mismatch@example.com", "Refresh mismatch")
+    first = client.post(
+        "/v1/auth/refresh",
+        json={
+            "refresh_token": registered["refresh_token"],
+            "rotation_nonce": "original-client-nonce",
+        },
+    )
+    replay = client.post(
+        "/v1/auth/refresh",
+        json={
+            "refresh_token": registered["refresh_token"],
+            "rotation_nonce": "attacker-or-other-client",
+        },
+    )
+
+    assert first.status_code == 200, first.text
+    assert replay.status_code == 401, replay.text
+    assert (
+        client.post(
+            "/v1/auth/refresh",
+            json={"refresh_token": first.json()["refresh_token"]},
+        ).status_code
+        == 401
+    )
+
+
 def test_refresh_rate_limit_is_not_shared_by_clients_behind_one_ip(
     client: TestClient,
 ) -> None:

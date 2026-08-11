@@ -106,11 +106,16 @@ Keep `PLURIS_REGISTRATION_ENABLED=false` and `PLURIS_FRIENDS_ENABLED=false` unti
 - automated PostgreSQL backups and a successful restore rehearsal
 - readiness, authentication-failure, and database-capacity monitoring
 
-The server also applies a small per-process rate limit to registration, login,
-and refresh. Configure `PLURIS_AUTH_RATE_LIMIT_ATTEMPTS` and
-`PLURIS_AUTH_RATE_LIMIT_WINDOW_SECONDS` when needed. This does not replace a
-distributed limiter or a reverse-proxy request policy in a multi-process or
-public deployment.
+The server applies shared database-backed rate limits to registration, login,
+refresh, and friend requests. Configure `PLURIS_AUTH_RATE_LIMIT_ATTEMPTS` and
+`PLURIS_AUTH_RATE_LIMIT_WINDOW_SECONDS` when needed. A separate broad IP limit
+protects refresh from floods of unique invalid tokens.
+
+Updated clients send a random nonce with refresh rotation. One matching retry
+within `PLURIS_REFRESH_RETRY_GRACE_SECONDS` replaces the first response token,
+covering a lost network response without making refresh tokens deterministic.
+Omitting the nonce, changing it, or replaying again keeps strict session
+revocation behaviour.
 
 The container image does not enable Uvicorn's proxy-header trust by default.
 If a reverse proxy is used, keep the trusted proxy boundary explicit and narrow;

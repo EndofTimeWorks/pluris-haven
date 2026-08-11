@@ -67,6 +67,13 @@ class RefreshToken(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rotation_nonce_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    replacement_token_id: Mapped[str | None] = mapped_column(
+        ForeignKey("refresh_tokens.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    rotation_retried_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class FriendRequest(Base):

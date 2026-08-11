@@ -123,6 +123,8 @@ async def rotate_refresh_token(
     db: AsyncSession,
     refresh_token: str,
     settings: Settings,
+    *,
+    rotation_nonce: str | None = None,
 ) -> IssuedTokens | None:
     result = await db.execute(
         select(RefreshToken, DeviceSession, User)
@@ -147,6 +149,41 @@ async def rotate_refresh_token(
     ):
         return None
     if token_record.used_at is not None:
+        used_at = token_record.used_at
+        if used_at.tzinfo is None:
+            used_at = used_at.replace(tzinfo=UTC)
+        nonce_matches = rotation_nonce is not None and hmac.compare_digest(
+            token_record.rotation_nonce_digest or "",
+            digest_token(rotation_nonce),
+        )
+        within_grace = now - used_at <= timedelta(seconds=settings.refresh_retry_grace_seconds)
+        if (
+            nonce_matches
+            and within_grace
+            and token_record.rotation_retried_at is None
+            and token_record.replacement_token_id is not None
+        ):
+            replacement = await db.scalar(
+                select(RefreshToken)
+                .where(RefreshToken.id == token_record.replacement_token_id)
+                .with_for_update()
+            )
+            if (
+                replacement is not None
+                and replacement.used_at is None
+                and replacement.revoked_at is None
+            ):
+                replacement.revoked_at = now
+                token_record.rotation_retried_at = now
+                return await _issue_rotated_tokens(
+                    db,
+                    token_record,
+                    session,
+                    user,
+                    settings,
+                    now,
+                    rotation_nonce=None,
+                )
         session.revoked_at = now
         await db.execute(
             update(RefreshToken)
@@ -155,19 +192,45 @@ async def rotate_refresh_token(
         )
         await db.commit()
         return None
-    new_refresh_token = _new_refresh_token()
     token_record.used_at = now
+    token_record.rotation_nonce_digest = (
+        digest_token(rotation_nonce) if rotation_nonce is not None else None
+    )
+    return await _issue_rotated_tokens(
+        db,
+        token_record,
+        session,
+        user,
+        settings,
+        now,
+        rotation_nonce=rotation_nonce,
+    )
+
+
+async def _issue_rotated_tokens(
+    db: AsyncSession,
+    token_record: RefreshToken,
+    session: DeviceSession,
+    user: User,
+    settings: Settings,
+    now: datetime,
+    *,
+    rotation_nonce: str | None,
+) -> IssuedTokens:
+    new_refresh_token = _new_refresh_token()
     session.last_used_at = now
     session.expires_at = now + timedelta(days=settings.refresh_token_days)
-    db.add(
-        RefreshToken(
-            session_id=session.id,
-            token_digest=digest_token(new_refresh_token),
-            issued_at=now,
-            expires_at=session.expires_at,
-        )
+    replacement = RefreshToken(
+        session_id=session.id,
+        token_digest=digest_token(new_refresh_token),
+        issued_at=now,
+        expires_at=session.expires_at,
     )
+    db.add(replacement)
     await db.flush()
+    token_record.replacement_token_id = replacement.id
+    if rotation_nonce is not None:
+        token_record.rotation_nonce_digest = digest_token(rotation_nonce)
     return IssuedTokens(
         access_token=_create_access_token(user.id, session.id, settings),
         refresh_token=new_refresh_token,
