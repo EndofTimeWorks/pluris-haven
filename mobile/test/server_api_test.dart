@@ -8,6 +8,26 @@ import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/server/server_account_controller.dart';
 import 'package:pluris_haven/data/server/server_api.dart';
 
+class _StreamingClient extends http.BaseClient {
+  _StreamingClient(this._response);
+
+  final http.StreamedResponse _response;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    return http.StreamedResponse(
+      _response.stream,
+      _response.statusCode,
+      contentLength: _response.contentLength,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      persistentConnection: _response.persistentConnection,
+      reasonPhrase: _response.reasonPhrase,
+      request: request,
+    );
+  }
+}
+
 void main() {
   test('server origins require HTTPS except for loopback development', () {
     expect(
@@ -112,6 +132,31 @@ void main() {
       expect(error.statusCode, 429);
       expect(error.retryAfter, const Duration(seconds: 17));
     }
+  });
+
+  test('server responses are rejected before unbounded buffering', () async {
+    final client = _StreamingClient(
+      http.StreamedResponse(
+        Stream<List<int>>.fromIterable([utf8.encode('1234'), utf8.encode('5')]),
+        200,
+      ),
+    );
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: client,
+      maximumResponseBytes: 4,
+    );
+
+    await expectLater(
+      api.descriptor(),
+      throwsA(
+        isA<ServerApiException>().having(
+          (error) => error.message,
+          'message',
+          contains('size limit'),
+        ),
+      ),
+    );
   });
 
   test('blocking uses the authenticated friends endpoint', () async {

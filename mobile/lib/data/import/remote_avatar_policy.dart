@@ -5,22 +5,34 @@ import 'dart:io';
 ///
 /// Imported archives are untrusted input. The caller must also disable
 /// redirect following so a public URL cannot redirect into a private network.
-Future<bool> isAllowedRemoteAvatarUri(Uri uri) async {
+typedef RemoteAvatarLookup =
+    Future<List<InternetAddress>> Function(String host);
+
+Future<List<InternetAddress>?> allowedRemoteAvatarAddresses(
+  Uri uri, {
+  RemoteAvatarLookup lookup = InternetAddress.lookup,
+}) async {
   if (uri.scheme != 'https' ||
       uri.host.trim().isEmpty ||
       uri.userInfo.isNotEmpty ||
       (uri.port != 0 && uri.port != 80 && uri.port != 443) ||
       !uri.hasAbsolutePath) {
-    return false;
+    return null;
   }
 
   try {
-    final addresses = await InternetAddress.lookup(uri.host);
-    return addresses.isNotEmpty && addresses.every(_isPublicAddress);
+    final addresses = await lookup(uri.host);
+    if (addresses.isEmpty || !addresses.every(_isPublicAddress)) {
+      return null;
+    }
+    return List.unmodifiable(addresses);
   } on SocketException {
-    return false;
+    return null;
   }
 }
+
+Future<bool> isAllowedRemoteAvatarUri(Uri uri) async =>
+    await allowedRemoteAvatarAddresses(uri) != null;
 
 bool _isPublicAddress(InternetAddress address) {
   final bytes = address.rawAddress;

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/remote_avatar_policy.dart';
 
@@ -45,5 +47,30 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test(
+    'returns the exact public addresses approved for the connection',
+    () async {
+      final public = InternetAddress('93.184.216.34');
+      final addresses = await allowedRemoteAvatarAddresses(
+        Uri.parse('https://avatars.example/avatar.png'),
+        lookup: (_) async => [public],
+      );
+
+      expect(addresses, [public]);
+    },
+  );
+
+  test('rejects a hostname when any resolved address is private', () async {
+    final addresses = await allowedRemoteAvatarAddresses(
+      Uri.parse('https://avatars.example/avatar.png'),
+      lookup: (_) async => [
+        InternetAddress('93.184.216.34'),
+        InternetAddress('127.0.0.1'),
+      ],
+    );
+
+    expect(addresses, isNull);
   });
 }

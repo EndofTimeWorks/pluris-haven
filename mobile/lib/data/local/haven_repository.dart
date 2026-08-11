@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -5445,12 +5446,30 @@ SELECT
 
   Future<String?> _downloadAndStoreAvatar(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !await isAllowedRemoteAvatarUri(uri)) {
+    final allowedAddresses = uri == null
+        ? null
+        : await allowedRemoteAvatarAddresses(uri);
+    if (uri == null || allowedAddresses == null) {
       appDebugLog('Avatar download skipped unsafe URL');
       return null;
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final pinnedAddress = allowedAddresses.first;
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 8);
+    client.findProxy = (_) => 'DIRECT';
+    client.connectionFactory = (requestUri, proxyHost, proxyPort) async {
+      if (proxyHost != null ||
+          requestUri.host.toLowerCase() != uri.host.toLowerCase() ||
+          requestUri.port != uri.port) {
+        throw const SocketException('Avatar connection target changed.');
+      }
+      final task = await Socket.startConnect(pinnedAddress, requestUri.port);
+      final secureSocket = task.socket.then(
+        (socket) => SecureSocket.secure(socket, host: requestUri.host),
+      );
+      return ConnectionTask.fromSocket(secureSocket, task.cancel);
+    };
     try {
       final request = await client.getUrl(uri);
       request.followRedirects = false;
@@ -5492,22 +5511,18 @@ SELECT
     HttpClientResponse response,
   ) async {
     const maxAvatarBytes = 10 * 1024 * 1024;
-    final chunks = <List<int>>[];
-    var total = 0;
-    await for (final chunk in response) {
-      total += chunk.length;
-      if (total > maxAvatarBytes) {
-        return null;
-      }
-      chunks.add(chunk);
-    }
-    final bytes = Uint8List(total);
-    var offset = 0;
-    for (final chunk in chunks) {
-      bytes.setRange(offset, offset + chunk.length, chunk);
-      offset += chunk.length;
-    }
-    return bytes;
+    final declaredLength = response.contentLength;
+    if (declaredLength > maxAvatarBytes) return null;
+    final bytes = BytesBuilder(copy: false);
+    await response
+        .forEach((chunk) {
+          if (bytes.length > maxAvatarBytes - chunk.length) {
+            throw const FormatException('Avatar response exceeds size limit.');
+          }
+          bytes.add(chunk);
+        })
+        .timeout(const Duration(seconds: 10));
+    return bytes.takeBytes();
   }
 
   Future<String> _storeAvatarBytes({
