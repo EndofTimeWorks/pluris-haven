@@ -110,17 +110,6 @@ class HavenCrypto {
     );
     return mac.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
-
-  /// Constant-time string comparison for blind-index lookups. Reduces the
-  /// timing-oracle surface compared to == on hex strings.
-  bool blindIndexEquals(String a, String b) {
-    if (a.length != b.length) return false;
-    var diff = 0;
-    for (var i = 0; i < a.length; i++) {
-      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
-    }
-    return diff == 0;
-  }
 }
 
 Future<SecretKey> _deriveLegacySubkey(SecretKey masterKey, String label) async {

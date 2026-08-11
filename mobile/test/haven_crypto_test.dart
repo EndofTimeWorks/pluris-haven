@@ -67,12 +67,6 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
-    test('blindIndexEquals is true for matching indexes', () async {
-      final a = await crypto.blindIndex('Alice');
-      expect(crypto.blindIndexEquals(a, a), isTrue);
-      expect(crypto.blindIndexEquals(a, 'deadbeef'), isFalse);
-    });
-
     test('deriveMasterKey accepts only 32 random bytes', () async {
       final key = await deriveMasterKey(
         List<int>.generate(32, (index) => index),
