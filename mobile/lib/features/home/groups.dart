@@ -28,6 +28,7 @@ class _GroupsPageState extends State<GroupsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<GroupSummary>>(
       stream: widget.repository.watchGroups(),
       initialData: const [],
@@ -46,7 +47,7 @@ class _GroupsPageState extends State<GroupsPage> {
         return SpPage(
           children: [
             SpSearchField(
-              hintText: 'Search groups',
+              hintText: l10n.searchGroupsHint,
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
             ),
@@ -56,7 +57,7 @@ class _GroupsPageState extends State<GroupsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Groups',
+                    title: l10n.groupsTitle,
                     trailing: StatusPill(
                       text: '${widget.snapshot?.groupCount ?? 0}',
                     ),
@@ -65,11 +66,11 @@ class _GroupsPageState extends State<GroupsPage> {
                   if (groups.isEmpty)
                     SpEmptyState(
                       title: _query.trim().isEmpty
-                          ? 'No groups yet'
-                          : 'No matching groups',
+                          ? l10n.noGroupsYet
+                          : l10n.noMatchingGroups,
                       body: _query.trim().isEmpty
-                          ? 'Groups keep members organized without needing sync.'
-                          : 'Try another search.',
+                          ? l10n.groupsEmptyBody
+                          : l10n.tryAnotherSearch,
                     )
                   else
                     for (
@@ -88,8 +89,8 @@ class _GroupsPageState extends State<GroupsPage> {
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
-                    primary: 'Add group',
-                    secondary: 'Import',
+                    primary: l10n.addGroupButton,
+                    secondary: l10n.importTitle,
                     onPrimary: () =>
                         showAddGroupSheet(context, widget.repository),
                     onSecondary: widget.onImport,
@@ -163,17 +164,16 @@ class GroupListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasDescription = group.description?.trim().isNotEmpty == true;
-    final countLabel = group.memberCount == 1
-        ? '1 member'
-        : '${group.memberCount} members';
+    final countLabel = l10n.groupMemberCount(group.memberCount);
     final subtitle = hasDescription
         ? '${group.description!.trim()} - $countLabel'
         : countLabel;
     return Semantics(
       label: depth == 0
-          ? '${group.name}, $countLabel'
-          : '${group.name}, nested group level $depth, $countLabel',
+          ? l10n.groupSemanticLabel(group.name, countLabel)
+          : l10n.nestedGroupSemanticLabel(group.name, depth, countLabel),
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: depth * 18.0),
         child: Material(
@@ -197,7 +197,7 @@ class GroupListTile extends StatelessWidget {
                   label: group.emoji?.trim().isNotEmpty == true
                       ? group.emoji!.trim()
                       : _initialFor(group.name),
-                  semanticLabel: 'Avatar for group ${group.name}',
+                  semanticLabel: l10n.groupAvatarSemanticLabel(group.name),
                 ),
               ],
             ),
@@ -224,7 +224,7 @@ class GroupListTile extends StatelessWidget {
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(
-              tooltip: 'Group actions',
+              tooltip: l10n.groupActionsTooltip,
               onSelected: (value) {
                 switch (value) {
                   case 'edit':
@@ -232,16 +232,15 @@ class GroupListTile extends StatelessWidget {
                   case 'delete':
                     confirmDelete(
                       context,
-                      title: 'Delete group?',
-                      body:
-                          'Members stay saved. Child groups move up one level.',
+                      title: l10n.deleteGroupTitle,
+                      body: l10n.deleteGroupBody,
                       onDelete: () => repository.deleteGroup(group.id),
                     );
                 }
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'edit', child: Text(l10n.editButton)),
+                PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
               ],
             ),
           ),
@@ -342,6 +341,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       stream: widget.repository.watchGroups(),
       initialData: widget.initialGroups,
       builder: (context, snapshot) {
+        final l10n = AppLocalizations.of(context);
         final allGroups = snapshot.data ?? widget.initialGroups;
         final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
         if (_parentGroupId != null &&
@@ -361,7 +361,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  _isEditing ? 'Edit group' : 'Add group',
+                  _isEditing ? l10n.editGroupTitle : l10n.addGroupButton,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -373,7 +373,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   controller: _nameController,
                   autofocus: true,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(labelText: 'Name'),
+                  decoration: InputDecoration(labelText: l10n.nameFieldLabel),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -381,17 +381,19 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   controller: _emojiController,
                   maxLength: 4,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(labelText: 'Emoji'),
+                  decoration: InputDecoration(labelText: l10n.emojiFieldLabel),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String?>(
                   key: const ValueKey('group-parent-field'),
                   initialValue: _parentGroupId,
-                  decoration: const InputDecoration(labelText: 'Parent group'),
+                  decoration: InputDecoration(
+                    labelText: l10n.parentGroupFieldLabel,
+                  ),
                   items: [
-                    const DropdownMenuItem<String?>(
+                    DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('No parent'),
+                      child: Text(l10n.noParentOption),
                     ),
                     for (final option in parentOptions)
                       DropdownMenuItem<String?>(
@@ -406,7 +408,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   controller: _descriptionController,
                   minLines: 2,
                   maxLines: 4,
-                  decoration: const InputDecoration(labelText: 'Description'),
+                  decoration: InputDecoration(
+                    labelText: l10n.descriptionFieldLabel,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -414,7 +418,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   children: [
                     for (final color in HavenAccentColor.values)
                       ChoiceChip(
-                        label: Text(color.label),
+                        label: Text(_localizedAccentLabel(color, l10n)),
                         selected:
                             _normalizeUiHexColor(_colorController.text) ==
                             _hexFromAccent(color),
@@ -431,7 +435,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   controller: _colorController,
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
-                    labelText: 'Color hex',
+                    labelText: l10n.colorHexFieldLabel,
                     hintText: '#F2C75C',
                     errorText: _colorError,
                   ),
@@ -443,10 +447,8 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                 ),
                 SwitchListTile(
                   key: const ValueKey('group-subsystem-toggle'),
-                  title: const Text('Subgroup / subsystem'),
-                  subtitle: const Text(
-                    'Subsystem members can overlap with the main group.',
-                  ),
+                  title: Text(l10n.subsystemToggleTitle),
+                  subtitle: Text(l10n.subsystemToggleBody),
                   value: _isSubsystem,
                   onChanged: (value) => setState(() => _isSubsystem = value),
                 ),
@@ -454,7 +456,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                 FilledButton(
                   key: const ValueKey('save-group-button'),
                   onPressed: _save,
-                  child: Text(_isEditing ? 'Save changes' : 'Save group'),
+                  child: Text(
+                    _isEditing ? l10n.saveChangesButton : l10n.saveGroupButton,
+                  ),
                 ),
               ],
             ),
@@ -467,7 +471,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   Future<void> _save() async {
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
-      setState(() => _colorError = 'Use 6 hex digits, like #F2C75C.');
+      setState(
+        () => _colorError = AppLocalizations.of(context).invalidHexColorError,
+      );
       return;
     }
 
@@ -491,6 +497,14 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     }
   }
 }
+
+String _localizedAccentLabel(HavenAccentColor color, AppLocalizations l10n) =>
+    switch (color) {
+      HavenAccentColor.purple => l10n.purpleColorLabel,
+      HavenAccentColor.gold => l10n.goldColorLabel,
+      HavenAccentColor.teal => l10n.tealColorLabel,
+      HavenAccentColor.rose => l10n.roseColorLabel,
+    };
 
 List<GroupSummary> _parentOptionsFor(
   List<GroupSummary> groups,

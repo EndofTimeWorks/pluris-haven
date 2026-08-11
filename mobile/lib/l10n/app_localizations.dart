@@ -2699,6 +2699,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write something before saving.'**
   String get writeBeforeSaving;
+
+  /// No description provided for @searchGroupsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search groups'**
+  String get searchGroupsHint;
+
+  /// No description provided for @groupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get groupsTitle;
+
+  /// No description provided for @noGroupsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups yet'**
+  String get noGroupsYet;
+
+  /// No description provided for @noMatchingGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching groups'**
+  String get noMatchingGroups;
+
+  /// No description provided for @groupsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups keep members organised without needing sync.'**
+  String get groupsEmptyBody;
+
+  /// No description provided for @tryAnotherSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search.'**
+  String get tryAnotherSearch;
+
+  /// No description provided for @addGroupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add group'**
+  String get addGroupButton;
+
+  /// No description provided for @groupMemberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String groupMemberCount(int count);
+
+  /// No description provided for @groupSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, {members}'**
+  String groupSemanticLabel(String name, String members);
+
+  /// No description provided for @nestedGroupSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, nested group level {depth}, {members}'**
+  String nestedGroupSemanticLabel(String name, int depth, String members);
+
+  /// No description provided for @groupAvatarSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar for group {name}'**
+  String groupAvatarSemanticLabel(String name);
+
+  /// No description provided for @groupActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions'**
+  String get groupActionsTooltip;
+
+  /// No description provided for @deleteGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete group?'**
+  String get deleteGroupTitle;
+
+  /// No description provided for @deleteGroupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Members stay saved. Child groups move up one level.'**
+  String get deleteGroupBody;
+
+  /// No description provided for @editButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editButton;
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButton;
+
+  /// No description provided for @editGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit group'**
+  String get editGroupTitle;
+
+  /// No description provided for @nameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameFieldLabel;
+
+  /// No description provided for @emojiFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get emojiFieldLabel;
+
+  /// No description provided for @parentGroupFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent group'**
+  String get parentGroupFieldLabel;
+
+  /// No description provided for @noParentOption.
+  ///
+  /// In en, this message translates to:
+  /// **'No parent'**
+  String get noParentOption;
+
+  /// No description provided for @colorHexFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour hex'**
+  String get colorHexFieldLabel;
+
+  /// No description provided for @subsystemToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subgroup / subsystem'**
+  String get subsystemToggleTitle;
+
+  /// No description provided for @subsystemToggleBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Subsystem members can overlap with the main group.'**
+  String get subsystemToggleBody;
+
+  /// No description provided for @saveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChangesButton;
+
+  /// No description provided for @saveGroupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save group'**
+  String get saveGroupButton;
+
+  /// No description provided for @invalidHexColorError.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 6 hex digits, like #F2C75C.'**
+  String get invalidHexColorError;
+
+  /// No description provided for @purpleColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get purpleColorLabel;
+
+  /// No description provided for @goldColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get goldColorLabel;
+
+  /// No description provided for @tealColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get tealColorLabel;
+
+  /// No description provided for @roseColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rose'**
+  String get roseColorLabel;
 }
 
 class _AppLocalizationsDelegate

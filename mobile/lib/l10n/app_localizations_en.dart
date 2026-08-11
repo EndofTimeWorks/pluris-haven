@@ -1506,6 +1506,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get writeBeforeSaving => 'Write something before saving.';
+
+  @override
+  String get searchGroupsHint => 'Search groups';
+
+  @override
+  String get groupsTitle => 'Groups';
+
+  @override
+  String get noGroupsYet => 'No groups yet';
+
+  @override
+  String get noMatchingGroups => 'No matching groups';
+
+  @override
+  String get groupsEmptyBody =>
+      'Groups keep members organised without needing sync.';
+
+  @override
+  String get tryAnotherSearch => 'Try another search.';
+
+  @override
+  String get addGroupButton => 'Add group';
+
+  @override
+  String groupMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String groupSemanticLabel(String name, String members) {
+    return '$name, $members';
+  }
+
+  @override
+  String nestedGroupSemanticLabel(String name, int depth, String members) {
+    return '$name, nested group level $depth, $members';
+  }
+
+  @override
+  String groupAvatarSemanticLabel(String name) {
+    return 'Avatar for group $name';
+  }
+
+  @override
+  String get groupActionsTooltip => 'Group actions';
+
+  @override
+  String get deleteGroupTitle => 'Delete group?';
+
+  @override
+  String get deleteGroupBody =>
+      'Members stay saved. Child groups move up one level.';
+
+  @override
+  String get editButton => 'Edit';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get editGroupTitle => 'Edit group';
+
+  @override
+  String get nameFieldLabel => 'Name';
+
+  @override
+  String get emojiFieldLabel => 'Emoji';
+
+  @override
+  String get parentGroupFieldLabel => 'Parent group';
+
+  @override
+  String get noParentOption => 'No parent';
+
+  @override
+  String get colorHexFieldLabel => 'Colour hex';
+
+  @override
+  String get subsystemToggleTitle => 'Subgroup / subsystem';
+
+  @override
+  String get subsystemToggleBody =>
+      'Subsystem members can overlap with the main group.';
+
+  @override
+  String get saveChangesButton => 'Save changes';
+
+  @override
+  String get saveGroupButton => 'Save group';
+
+  @override
+  String get invalidHexColorError => 'Use 6 hex digits, like #F2C75C.';
+
+  @override
+  String get purpleColorLabel => 'Purple';
+
+  @override
+  String get goldColorLabel => 'Gold';
+
+  @override
+  String get tealColorLabel => 'Teal';
+
+  @override
+  String get roseColorLabel => 'Rose';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -3010,4 +3120,114 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get writeBeforeSaving => 'Write something before saving.';
+
+  @override
+  String get searchGroupsHint => 'Search groups';
+
+  @override
+  String get groupsTitle => 'Groups';
+
+  @override
+  String get noGroupsYet => 'No groups yet';
+
+  @override
+  String get noMatchingGroups => 'No matching groups';
+
+  @override
+  String get groupsEmptyBody =>
+      'Groups keep members organized without needing sync.';
+
+  @override
+  String get tryAnotherSearch => 'Try another search.';
+
+  @override
+  String get addGroupButton => 'Add group';
+
+  @override
+  String groupMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String groupSemanticLabel(String name, String members) {
+    return '$name, $members';
+  }
+
+  @override
+  String nestedGroupSemanticLabel(String name, int depth, String members) {
+    return '$name, nested group level $depth, $members';
+  }
+
+  @override
+  String groupAvatarSemanticLabel(String name) {
+    return 'Avatar for group $name';
+  }
+
+  @override
+  String get groupActionsTooltip => 'Group actions';
+
+  @override
+  String get deleteGroupTitle => 'Delete group?';
+
+  @override
+  String get deleteGroupBody =>
+      'Members stay saved. Child groups move up one level.';
+
+  @override
+  String get editButton => 'Edit';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get editGroupTitle => 'Edit group';
+
+  @override
+  String get nameFieldLabel => 'Name';
+
+  @override
+  String get emojiFieldLabel => 'Emoji';
+
+  @override
+  String get parentGroupFieldLabel => 'Parent group';
+
+  @override
+  String get noParentOption => 'No parent';
+
+  @override
+  String get colorHexFieldLabel => 'Color hex';
+
+  @override
+  String get subsystemToggleTitle => 'Subgroup / subsystem';
+
+  @override
+  String get subsystemToggleBody =>
+      'Subsystem members can overlap with the main group.';
+
+  @override
+  String get saveChangesButton => 'Save changes';
+
+  @override
+  String get saveGroupButton => 'Save group';
+
+  @override
+  String get invalidHexColorError => 'Use 6 hex digits, like #F2C75C.';
+
+  @override
+  String get purpleColorLabel => 'Purple';
+
+  @override
+  String get goldColorLabel => 'Gold';
+
+  @override
+  String get tealColorLabel => 'Teal';
+
+  @override
+  String get roseColorLabel => 'Rose';
 }
