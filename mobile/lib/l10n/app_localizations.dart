@@ -2051,6 +2051,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import job {title}, {status}. Double tap for details.'**
   String importJobSemanticLabel(String title, String status);
+
+  /// No description provided for @encryptedArchiveLockedPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the export passphrase, then preview the archive.'**
+  String get encryptedArchiveLockedPreview;
+
+  /// No description provided for @couldNotDecryptArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not decrypt archive: {error}'**
+  String couldNotDecryptArchive(String error);
+
+  /// No description provided for @conflictsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflicts found'**
+  String get conflictsFoundTitle;
+
+  /// No description provided for @memberConflictCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String memberConflictCount(int count);
+
+  /// No description provided for @groupConflictCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 group} other{{count} groups}}'**
+  String groupConflictCount(int count);
+
+  /// No description provided for @listAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get listAnd;
+
+  /// No description provided for @importConflictsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{conflicts} from this {source} import already exist in your local data.\n\nHow should Pluris Haven handle them?'**
+  String importConflictsBody(String conflicts, String source);
+
+  /// No description provided for @skipMatchesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip matches'**
+  String get skipMatchesButton;
+
+  /// No description provided for @createDuplicatesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create duplicates'**
+  String get createDuplicatesButton;
+
+  /// No description provided for @updateExistingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update existing'**
+  String get updateExistingButton;
+
+  /// No description provided for @encryptedExportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.'**
+  String get encryptedExportDescription;
+
+  /// No description provided for @confirmPassphraseFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm passphrase'**
+  String get confirmPassphraseFieldLabel;
+
+  /// No description provided for @encryptedExportStatusSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted export status: {status}'**
+  String encryptedExportStatusSemanticLabel(String status);
+
+  /// No description provided for @encryptingArchiveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypting...'**
+  String get encryptingArchiveButton;
+
+  /// No description provided for @saveEncryptedFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save encrypted file'**
+  String get saveEncryptedFileButton;
+
+  /// No description provided for @passphraseMinimumLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters.'**
+  String get passphraseMinimumLength;
+
+  /// No description provided for @passphrasesDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrases do not match.'**
+  String get passphrasesDoNotMatch;
+
+  /// No description provided for @buildingArchiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Building archive...'**
+  String get buildingArchiveStatus;
+
+  /// No description provided for @encryptingArchiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypting archive...'**
+  String get encryptingArchiveStatus;
+
+  /// No description provided for @saveEncryptedArchiveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save encrypted Pluris Haven archive'**
+  String get saveEncryptedArchiveDialogTitle;
+
+  /// No description provided for @encryptedArchiveSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted archive saved.'**
+  String get encryptedArchiveSaved;
+
+  /// No description provided for @saveCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Save cancelled.'**
+  String get saveCancelled;
+
+  /// No description provided for @couldNotSaveEncryptedArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save encrypted archive: {error}'**
+  String couldNotSaveEncryptedArchive(String error);
+
+  /// No description provided for @localArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local archive'**
+  String get localArchiveTitle;
+
+  /// No description provided for @localArchiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.'**
+  String get localArchiveDescription;
+
+  /// No description provided for @buildingLocalArchiveSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Building local archive. Please wait.'**
+  String get buildingLocalArchiveSemanticLabel;
+
+  /// No description provided for @buildingLocalArchiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Building local archive...'**
+  String get buildingLocalArchiveStatus;
+
+  /// No description provided for @archiveErrorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive error: {error}'**
+  String archiveErrorSemanticLabel(String error);
+
+  /// No description provided for @couldNotBuildArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not build archive: {error}'**
+  String couldNotBuildArchive(String error);
+
+  /// No description provided for @saveJsonFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save JSON file'**
+  String get saveJsonFileButton;
+
+  /// No description provided for @copyJsonButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get copyJsonButton;
+
+  /// No description provided for @archiveCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive copied'**
+  String get archiveCopied;
+
+  /// No description provided for @saveArchiveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Pluris Haven archive'**
+  String get saveArchiveDialogTitle;
+
+  /// No description provided for @archiveSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive saved'**
+  String get archiveSaved;
+
+  /// No description provided for @couldNotSaveArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save archive: {error}'**
+  String couldNotSaveArchive(String error);
 }
 
 class _AppLocalizationsDelegate
