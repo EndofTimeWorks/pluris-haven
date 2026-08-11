@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/backup/encrypted_backup_snapshot.dart';
 
@@ -141,6 +142,49 @@ void main() {
     expect(
       () => EncryptedBackupSnapshot.fromJson(json),
       throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('requires explicit trusted-source recovery for legacy v1', () async {
+    final crypto = testCrypto();
+    const archive = '{"legacy":"private"}';
+    final encrypted = await crypto.encrypt(
+      base64Url.encode(utf8.encode(archive)),
+    );
+    final ciphertext = 'ph1:$encrypted';
+    final digest = await Sha256().hash(utf8.encode(ciphertext));
+    final snapshot = EncryptedBackupSnapshot(
+      version: 1,
+      snapshotId: 'legacy-snapshot',
+      createdAt: DateTime.utc(2026, 7, 24),
+      chunkSize: 1024,
+      chunks: [
+        EncryptedBackupChunk(
+          index: 0,
+          ciphertext: ciphertext,
+          sha256: digest.bytes
+              .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+              .join(),
+        ),
+      ],
+    );
+
+    await expectLater(
+      snapshot.restoreArchiveJson(crypto),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('trusted-source recovery'),
+        ),
+      ),
+    );
+    expect(
+      await snapshot.restoreArchiveJson(
+        crypto,
+        allowUnauthenticatedLegacyV1: true,
+      ),
+      archive,
     );
   });
 }
