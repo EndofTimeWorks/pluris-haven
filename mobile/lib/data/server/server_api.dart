@@ -325,6 +325,22 @@ class ServerApi {
     await _request('POST', '/v1/auth/logout', token: token);
   }
 
+  Future<void> changePassword(
+    String token, {
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _request(
+      'POST',
+      '/v1/auth/password',
+      token: token,
+      jsonBody: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+    );
+  }
+
   Future<void> deleteAccount(String token, String password) async {
     await _request(
       'DELETE',

@@ -913,6 +913,42 @@ abstract class AppLocalizations {
   /// **'Current password'**
   String get currentPasswordLabel;
 
+  /// No description provided for @changePasswordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePasswordButton;
+
+  /// No description provided for @changePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change server password'**
+  String get changePasswordTitle;
+
+  /// No description provided for @newPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPasswordLabel;
+
+  /// No description provided for @confirmNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmNewPasswordLabel;
+
+  /// No description provided for @passwordsDoNotMatchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get passwordsDoNotMatchError;
+
+  /// No description provided for @passwordChangedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed. Other device sessions were signed out.'**
+  String get passwordChangedMessage;
+
   /// No description provided for @deleteAccountButton.
   ///
   /// In en, this message translates to:
