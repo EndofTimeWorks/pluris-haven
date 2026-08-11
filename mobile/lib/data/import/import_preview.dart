@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'import_archive_mapper.dart';
 import 'import_file_decoder.dart';
@@ -133,6 +134,22 @@ ImportPreview previewImportText({
       ],
     ),
   };
+}
+
+Future<ImportPreview> previewImportTextInBackground({
+  required String fileName,
+  required String text,
+  ImportSource? selectedSource,
+  List<ImportAvatarAsset> avatarAssets = const [],
+}) {
+  return Isolate.run(
+    () => previewImportText(
+      fileName: fileName,
+      text: text,
+      selectedSource: selectedSource,
+      avatarAssets: avatarAssets,
+    ),
+  );
 }
 
 ImportPreview _previewPlurisArchive(

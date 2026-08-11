@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'import_file_decoder.dart';
 import 'import_sources.dart';
@@ -58,6 +59,24 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
     archiveJson: const JsonEncoder.withIndent('  ').convert(archive),
     counts: _archiveCounts(archive),
     warnings: normalizer.warnings,
+  );
+}
+
+Future<NormalizedImportArchive> normalizeImportTextToLocalArchiveInBackground({
+  required ImportSource source,
+  required String fileName,
+  required String text,
+  List<ImportAvatarAsset> avatarAssets = const [],
+  DateTime? importedAt,
+}) {
+  return Isolate.run(
+    () => normalizeImportTextToLocalArchive(
+      source: source,
+      fileName: fileName,
+      text: text,
+      avatarAssets: avatarAssets,
+      importedAt: importedAt,
+    ),
   );
 }
 

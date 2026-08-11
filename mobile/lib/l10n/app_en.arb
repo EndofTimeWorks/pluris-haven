@@ -334,6 +334,7 @@
   },
   "importTitle": "Import",
   "previewFirstStatus": "preview first",
+  "preparingImportPreviewStatus": "Preparing import preview...",
   "importDescription": "Upload an export, check what was found, then import it into local storage.",
   "exportTitle": "Export",
   "exportLocalArchiveTitle": "Export local archive",

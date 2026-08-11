@@ -764,6 +764,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get previewFirstStatus => 'preview first';
 
   @override
+  String get preparingImportPreviewStatus => 'Preparing import preview...';
+
+  @override
   String get importDescription =>
       'Upload an export, check what was found, then import it into local storage.';
 
@@ -1867,6 +1870,9 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get previewFirstStatus => 'preview first';
+
+  @override
+  String get preparingImportPreviewStatus => 'Preparing import preview...';
 
   @override
   String get importDescription =>

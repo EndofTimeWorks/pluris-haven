@@ -1494,6 +1494,12 @@ abstract class AppLocalizations {
   /// **'preview first'**
   String get previewFirstStatus;
 
+  /// No description provided for @preparingImportPreviewStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing import preview...'**
+  String get preparingImportPreviewStatus;
+
   /// No description provided for @importDescription.
   ///
   /// In en, this message translates to:
