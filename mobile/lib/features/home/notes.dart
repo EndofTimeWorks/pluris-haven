@@ -19,7 +19,7 @@ class NotesPage extends StatefulWidget {
 class _NotesPageState extends State<NotesPage> {
   final _searchController = TextEditingController();
   String _query = '';
-  String _filter = 'All';
+  _NoteFilter _filter = _NoteFilter.all;
 
   @override
   void dispose() {
@@ -29,6 +29,7 @@ class _NotesPageState extends State<NotesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<NoteSummary>>(
       stream: widget.repository.watchNotes(),
       initialData: const [],
@@ -50,15 +51,21 @@ class _NotesPageState extends State<NotesPage> {
             return SpPage(
               children: [
                 SpSearchField(
-                  hintText: 'Search notes',
+                  hintText: l10n.searchNotesHint,
                   controller: _searchController,
                   onChanged: (value) => setState(() => _query = value),
                 ),
                 const SizedBox(height: 12),
                 SpFilterRow(
-                  filters: const ['All', 'Member', 'System'],
-                  selected: _filter,
-                  onSelected: (filter) => setState(() => _filter = filter),
+                  filters: [
+                    for (final filter in _NoteFilter.values) filter.label(l10n),
+                  ],
+                  selected: _filter.label(l10n),
+                  onSelected: (label) => setState(() {
+                    _filter = _NoteFilter.values.firstWhere(
+                      (filter) => filter.label(l10n) == label,
+                    );
+                  }),
                 ),
                 const SizedBox(height: 12),
                 SpCard(
@@ -66,7 +73,7 @@ class _NotesPageState extends State<NotesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SpSectionHeader(
-                        title: 'Notes',
+                        title: l10n.notesTitle,
                         trailing: StatusPill(
                           text: '${widget.snapshot?.noteCount ?? 0}',
                         ),
@@ -74,12 +81,16 @@ class _NotesPageState extends State<NotesPage> {
                       const SizedBox(height: 12),
                       if (notes.isEmpty)
                         SpEmptyState(
-                          title: _query.trim().isEmpty && _filter == 'All'
-                              ? 'No notes yet'
-                              : 'No matching notes',
-                          body: _query.trim().isEmpty && _filter == 'All'
-                              ? 'Local notes can be attached to members or kept general.'
-                              : 'Try another search or filter.',
+                          title:
+                              _query.trim().isEmpty &&
+                                  _filter == _NoteFilter.all
+                              ? l10n.noNotesYet
+                              : l10n.noMatchingNotes,
+                          body:
+                              _query.trim().isEmpty &&
+                                  _filter == _NoteFilter.all
+                              ? l10n.notesEmptyBody
+                              : l10n.tryAnotherSearchOrFilter,
                         )
                       else
                         for (final note in notes) ...[
@@ -95,8 +106,8 @@ class _NotesPageState extends State<NotesPage> {
                         ],
                       const SizedBox(height: 14),
                       SpActionRow(
-                        primary: 'Add note',
-                        secondary: 'Import',
+                        primary: l10n.addNoteButton,
+                        secondary: l10n.importTitle,
                         onPrimary: () =>
                             showNoteSheet(context, widget.repository),
                         onSecondary: widget.onImport,
@@ -121,11 +132,15 @@ class _NotesPageState extends State<NotesPage> {
         if (_matchesQuery(_query, [
               note.title,
               note.body,
-              _noteMemberLabel(note, memberNamesById[note.memberId]),
+              _noteMemberLabel(
+                note,
+                memberNamesById[note.memberId],
+                AppLocalizations.of(context),
+              ),
             ]) &&
             switch (_filter) {
-              'Member' => note.memberId != null,
-              'System' => note.memberId == null,
+              _NoteFilter.member => note.memberId != null,
+              _NoteFilter.system => note.memberId == null,
               _ => true,
             })
           note,
@@ -147,8 +162,9 @@ class NoteListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final body = note.body.trim();
-    final ownerLabel = _noteMemberLabel(note, memberName);
+    final ownerLabel = _noteMemberLabel(note, memberName, l10n);
 
     return Material(
       color: Colors.transparent,
@@ -166,11 +182,11 @@ class NoteListTile extends StatelessWidget {
           style: const TextStyle(color: _spMuted),
         ),
         trailing: IconButton(
-          tooltip: 'Delete note',
+          tooltip: l10n.deleteNoteTooltip,
           onPressed: () => confirmDelete(
             context,
-            title: 'Delete note?',
-            body: 'This note will be permanently removed.',
+            title: l10n.deleteNoteTitle,
+            body: l10n.deleteNoteBody,
             onDelete: () => repository.deleteNote(note.id),
           ),
           icon: const Icon(Icons.delete_outline_rounded),
@@ -181,12 +197,28 @@ class NoteListTile extends StatelessWidget {
   }
 }
 
-String _noteMemberLabel(NoteSummary note, String? memberName) {
+String _noteMemberLabel(
+  NoteSummary note,
+  String? memberName,
+  AppLocalizations l10n,
+) {
   if (note.memberId == null) {
-    return 'System note';
+    return l10n.systemNoteLabel;
   }
   final name = memberName?.trim();
-  return name == null || name.isEmpty ? 'Unknown member note' : '$name note';
+  return name == null || name.isEmpty
+      ? l10n.unknownMemberNoteLabel
+      : l10n.memberNoteLabel(name);
+}
+
+enum _NoteFilter { all, member, system }
+
+extension on _NoteFilter {
+  String label(AppLocalizations l10n) => switch (this) {
+    _NoteFilter.all => l10n.allFilter,
+    _NoteFilter.member => l10n.memberFilter,
+    _NoteFilter.system => l10n.systemFilter,
+  };
 }
 
 void showNoteSheet(
@@ -243,6 +275,7 @@ class _NoteSheetState extends State<NoteSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -255,7 +288,7 @@ class _NoteSheetState extends State<NoteSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _isEditing ? 'Edit note' : 'Add note',
+              _isEditing ? l10n.editNoteTitle : l10n.addNoteButton,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -264,7 +297,7 @@ class _NoteSheetState extends State<NoteSheet> {
               controller: _titleController,
               autofocus: true,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: l10n.titleFieldLabel),
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<MemberSummary>>(
@@ -280,11 +313,11 @@ class _NoteSheetState extends State<NoteSheet> {
                 return DropdownButtonFormField<String>(
                   key: const ValueKey('note-member-field'),
                   initialValue: value,
-                  decoration: const InputDecoration(labelText: 'For'),
+                  decoration: InputDecoration(labelText: l10n.forFieldLabel),
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: _systemNoteValue,
-                      child: Text('System note'),
+                      child: Text(l10n.systemNoteLabel),
                     ),
                     for (final member in members)
                       DropdownMenuItem(
@@ -304,13 +337,13 @@ class _NoteSheetState extends State<NoteSheet> {
               controller: _bodyController,
               minLines: 5,
               maxLines: 8,
-              decoration: const InputDecoration(labelText: 'Note'),
+              decoration: InputDecoration(labelText: l10n.noteFieldLabel),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-note-button'),
               onPressed: _save,
-              child: const Text('Save note'),
+              child: Text(l10n.saveNoteButton),
             ),
           ],
         ),

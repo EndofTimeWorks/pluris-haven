@@ -12,6 +12,7 @@ class PollsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<PollSummary>>(
       stream: repository.watchPolls(),
       initialData: const [],
@@ -26,14 +27,14 @@ class PollsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Polls',
-                    trailing: StatusPill(text: '$openCount open'),
+                    title: l10n.pollsTitle,
+                    trailing: StatusPill(text: l10n.openPollCount(openCount)),
                   ),
                   const SizedBox(height: 12),
                   if (polls.isEmpty)
-                    const SpEmptyState(
-                      title: 'No polls yet',
-                      body: 'Create a local vote for system decisions.',
+                    SpEmptyState(
+                      title: l10n.noPollsYet,
+                      body: l10n.pollsEmptyBody,
                     )
                   else
                     for (final poll in polls) ...[
@@ -43,8 +44,8 @@ class PollsPage extends StatelessWidget {
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
-                    primary: 'Create poll',
-                    secondary: 'Import',
+                    primary: l10n.createPollButton,
+                    secondary: l10n.importTitle,
                     onPrimary: () => showAddPollSheet(context, repository),
                     onSecondary: onImport,
                   ),
@@ -66,6 +67,7 @@ class PollTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -105,8 +107,10 @@ class PollTile extends StatelessWidget {
               button: true,
               selected: option.selected,
               enabled: !poll.closed,
-              label:
-                  '${option.body}, ${option.selected ? 'selected' : 'not selected'}',
+              label: l10n.pollOptionSemanticLabel(
+                option.body,
+                option.selected ? l10n.selectedStatus : l10n.notSelectedStatus,
+              ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: poll.closed
@@ -139,21 +143,24 @@ class PollTile extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${poll.kind.label} - ${poll.selectedCount} selected',
+                l10n.pollSelectionSummary(
+                  _pollKindLabel(poll.kind, l10n),
+                  poll.selectedCount,
+                ),
                 style: const TextStyle(color: _spMuted, fontSize: 12),
               ),
               const Spacer(),
               if (!poll.closed)
                 TextButton(
                   onPressed: () => repository.closePoll(poll.id),
-                  child: const Text('Close'),
+                  child: Text(l10n.closeButton),
                 ),
               IconButton(
-                tooltip: 'Delete poll',
+                tooltip: l10n.deletePollTooltip,
                 onPressed: () => confirmDelete(
                   context,
-                  title: 'Delete poll?',
-                  body: 'This poll and its local responses will be removed.',
+                  title: l10n.deletePollTitle,
+                  body: l10n.deletePollBody,
                   onDelete: () => repository.deletePoll(poll.id),
                 ),
                 icon: const Icon(Icons.delete_outline_rounded),
@@ -203,6 +210,7 @@ class _AddPollSheetState extends State<AddPollSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -215,9 +223,9 @@ class _AddPollSheetState extends State<AddPollSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Create poll',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.createPollButton,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -225,7 +233,7 @@ class _AddPollSheetState extends State<AddPollSheet> {
               controller: _questionController,
               autofocus: true,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Question'),
+              decoration: InputDecoration(labelText: l10n.questionFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -233,19 +241,22 @@ class _AddPollSheetState extends State<AddPollSheet> {
               controller: _descriptionController,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                helperText: 'Optional context for the vote',
+              decoration: InputDecoration(
+                labelText: l10n.descriptionFieldLabel,
+                helperText: l10n.pollDescriptionHelper,
               ),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<PollKind>(
               key: const ValueKey('poll-kind-field'),
               initialValue: _kind,
-              decoration: const InputDecoration(labelText: 'Voting'),
+              decoration: InputDecoration(labelText: l10n.votingFieldLabel),
               items: [
                 for (final kind in PollKind.values)
-                  DropdownMenuItem(value: kind, child: Text(kind.label)),
+                  DropdownMenuItem(
+                    value: kind,
+                    child: Text(_pollKindLabel(kind, l10n)),
+                  ),
               ],
               onChanged: (kind) {
                 if (kind != null) {
@@ -259,20 +270,22 @@ class _AddPollSheetState extends State<AddPollSheet> {
                 key: ValueKey('poll-option-field-$index'),
                 controller: _optionControllers[index],
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                decoration: InputDecoration(
+                  labelText: l10n.pollOptionFieldLabel(index + 1),
+                ),
               ),
               const SizedBox(height: 10),
             ],
             OutlinedButton.icon(
               onPressed: _addOption,
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add option'),
+              label: Text(l10n.addPollOptionButton),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-poll-button'),
               onPressed: _save,
-              child: const Text('Save poll'),
+              child: Text(l10n.savePollButton),
             ),
           ],
         ),
@@ -300,3 +313,8 @@ class _AddPollSheetState extends State<AddPollSheet> {
     }
   }
 }
+
+String _pollKindLabel(PollKind kind, AppLocalizations l10n) => switch (kind) {
+  PollKind.singleChoice => l10n.singleChoicePollKind,
+  PollKind.multipleChoice => l10n.multipleChoicePollKind,
+};
