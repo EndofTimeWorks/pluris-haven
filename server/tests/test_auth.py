@@ -1,11 +1,29 @@
 import asyncio
 import hashlib
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from pluris_server.models import BackupSnapshot, User
+from pluris_server.routers import auth as auth_router
 from tests.conftest import auth, register
+
+
+@pytest.fixture
+def fast_passwords(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def hash_password(password: str) -> str:
+        return f"test-password:{password}"
+
+    async def verify_password(password: str, encoded: str) -> bool:
+        return encoded == f"test-password:{password}"
+
+    async def retry_after(_keys: list[str]) -> None:
+        return None
+
+    monkeypatch.setattr(auth_router, "hash_password", hash_password)
+    monkeypatch.setattr(auth_router, "verify_password", verify_password)
+    monkeypatch.setattr(client.app.state.auth_rate_limiter, "retry_after", retry_after)
 
 
 def test_registration_login_refresh_and_session_revocation(client: TestClient) -> None:
@@ -67,6 +85,89 @@ def test_logout_revokes_access_and_refresh_tokens(client: TestClient) -> None:
         ).status_code
         == 401
     )
+
+
+def test_change_password_revokes_other_sessions(
+    client: TestClient,
+    fast_passwords: None,
+) -> None:
+    first = register(client, "password@example.com", "Password User")
+    second_login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "password@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Second device",
+        },
+    )
+    assert second_login.status_code == 200
+    second = second_login.json()
+
+    changed = client.post(
+        "/v1/auth/password",
+        headers=auth(first["access_token"]),
+        json={
+            "current_password": "correct horse battery staple",
+            "new_password": "new correct horse battery staple",
+        },
+    )
+    assert changed.status_code == 200
+    assert client.get("/v1/auth/me", headers=auth(first["access_token"])).status_code == 200
+    assert client.get("/v1/auth/me", headers=auth(second["access_token"])).status_code == 401
+    assert (
+        client.post(
+            "/v1/auth/refresh",
+            json={"refresh_token": second["refresh_token"]},
+        ).status_code
+        == 401
+    )
+
+    old_login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "password@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Old password",
+        },
+    )
+    assert old_login.status_code == 401
+    new_login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "password@example.com",
+            "password": "new correct horse battery staple",
+            "device_name": "New password",
+        },
+    )
+    assert new_login.status_code == 200
+
+
+def test_change_password_rejects_wrong_or_reused_password(
+    client: TestClient,
+    fast_passwords: None,
+) -> None:
+    registered = register(client, "password-errors@example.com", "Password errors")
+    headers = auth(registered["access_token"])
+
+    wrong = client.post(
+        "/v1/auth/password",
+        headers=headers,
+        json={
+            "current_password": "not the current password",
+            "new_password": "new correct horse battery staple",
+        },
+    )
+    assert wrong.status_code == 401
+
+    reused = client.post(
+        "/v1/auth/password",
+        headers=headers,
+        json={
+            "current_password": "correct horse battery staple",
+            "new_password": "correct horse battery staple",
+        },
+    )
+    assert reused.status_code == 400
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:
