@@ -1,54 +1,72 @@
-import math
-import threading
-import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from math import ceil
+
+from sqlalchemy import delete, func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from pluris_server.models import RateLimitEvent
 
 
-@dataclass
-class _Bucket:
-    count: int
-    reset_at: float
-
-
-class InMemoryRateLimiter:
-    """A small per-process fixed-window limiter for sensitive endpoints."""
+class DatabaseRateLimiter:
+    """A shared sliding-window limiter backed by the application database."""
 
     def __init__(
         self,
+        session_factory: async_sessionmaker[AsyncSession],
         max_attempts: int,
         window_seconds: int,
-        clock: Callable[[], float] = time.monotonic,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
+        self._session_factory = session_factory
         self.max_attempts = max_attempts
         self.window_seconds = window_seconds
         self._clock = clock
-        self._buckets: dict[str, _Bucket] = {}
-        self._lock = threading.Lock()
 
     async def retry_after(self, keys: list[str]) -> int | None:
-        now = self._clock()
-        with self._lock:
-            self._remove_expired(now)
-            retry_at = 0.0
-            for key in set(keys):
-                bucket = self._buckets.get(key)
-                if bucket is not None and bucket.count >= self.max_attempts:
-                    retry_at = max(retry_at, bucket.reset_at)
-
-            if retry_at > now:
-                return max(1, math.ceil(retry_at - now))
-
-            reset_at = now + self.window_seconds
-            for key in set(keys):
-                bucket = self._buckets.get(key)
-                if bucket is None:
-                    self._buckets[key] = _Bucket(count=1, reset_at=reset_at)
-                else:
-                    bucket.count += 1
+        unique_keys = sorted(set(keys))
+        if not unique_keys:
             return None
 
-    def _remove_expired(self, now: float) -> None:
-        expired = [key for key, bucket in self._buckets.items() if bucket.reset_at <= now]
-        for key in expired:
-            del self._buckets[key]
+        now = self._clock()
+        cutoff = now - timedelta(seconds=self.window_seconds)
+        expires_at = now + timedelta(seconds=self.window_seconds)
+        async with self._session_factory() as session, session.begin():
+            if session.bind is not None and session.bind.dialect.name == "postgresql":
+                for key in unique_keys:
+                    await session.execute(
+                        text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                        {"key": key},
+                    )
+
+            await session.execute(delete(RateLimitEvent).where(RateLimitEvent.expires_at <= now))
+            retry_at: datetime | None = None
+            for key in unique_keys:
+                count, earliest_expiry = (
+                    await session.execute(
+                        select(
+                            func.count(RateLimitEvent.id),
+                            func.min(RateLimitEvent.expires_at),
+                        ).where(
+                            RateLimitEvent.bucket_key == key,
+                            RateLimitEvent.occurred_at > cutoff,
+                        )
+                    )
+                ).one()
+                if count >= self.max_attempts and earliest_expiry is not None:
+                    if earliest_expiry.tzinfo is None:
+                        earliest_expiry = earliest_expiry.replace(tzinfo=UTC)
+                    retry_at = max(retry_at or earliest_expiry, earliest_expiry)
+
+            if retry_at is not None:
+                return max(1, ceil((retry_at - now).total_seconds()))
+
+            session.add_all(
+                RateLimitEvent(
+                    bucket_key=key,
+                    occurred_at=now,
+                    expires_at=expires_at,
+                )
+                for key in unique_keys
+            )
+        return None

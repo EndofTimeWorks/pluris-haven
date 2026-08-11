@@ -19,6 +19,24 @@ from pluris_server.schemas import (
 router = APIRouter(prefix="/v1/backups", tags=["backups"])
 
 
+async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail="Invalid Content-Length header") from error
+        if declared_length > maximum_bytes:
+            raise HTTPException(status_code=413, detail="Backup chunk exceeds the server limit")
+
+    content = bytearray()
+    async for chunk in request.stream():
+        if len(content) > maximum_bytes - len(chunk):
+            raise HTTPException(status_code=413, detail="Backup chunk exceeds the server limit")
+        content.extend(chunk)
+    return bytes(content)
+
+
 async def _snapshot_view(db: Db, snapshot: BackupSnapshot) -> BackupSnapshotView:
     result = await db.execute(
         select(
@@ -38,13 +56,20 @@ async def _snapshot_view(db: Db, snapshot: BackupSnapshot) -> BackupSnapshotView
     )
 
 
-async def _get_snapshot(snapshot_id: str, auth: CurrentAuth, db: Db) -> BackupSnapshot:
-    snapshot = await db.scalar(
-        select(BackupSnapshot).where(
-            BackupSnapshot.user_id == auth.user.id,
-            BackupSnapshot.snapshot_id == snapshot_id,
-        )
+async def _get_snapshot(
+    snapshot_id: str,
+    auth: CurrentAuth,
+    db: Db,
+    *,
+    for_update: bool = False,
+) -> BackupSnapshot:
+    query = select(BackupSnapshot).where(
+        BackupSnapshot.user_id == auth.user.id,
+        BackupSnapshot.snapshot_id == snapshot_id,
     )
+    if for_update:
+        query = query.with_for_update()
+    snapshot = await db.scalar(query)
     if snapshot is None:
         raise HTTPException(status_code=404, detail="Backup snapshot not found")
     return snapshot
@@ -139,14 +164,12 @@ async def put_chunk(
     db: Db,
     settings: AppSettings,
 ) -> BackupChunkView:
-    snapshot = await _get_snapshot(snapshot_id, auth, db)
+    snapshot = await _get_snapshot(snapshot_id, auth, db, for_update=True)
     if index < 0 or index >= snapshot.chunk_count:
         raise HTTPException(status_code=422, detail="Backup chunk index is outside the manifest")
-    content = await request.body()
+    content = await _read_limited_body(request, settings.backup_max_chunk_bytes)
     if not content:
         raise HTTPException(status_code=400, detail="Backup chunks must not be empty")
-    if len(content) > settings.backup_max_chunk_bytes:
-        raise HTTPException(status_code=413, detail="Backup chunk exceeds the server limit")
     supplied_digest = request.headers.get("X-Content-SHA256", "").strip().lower()
     digest = hashlib.sha256(content).hexdigest()
     if supplied_digest != digest:

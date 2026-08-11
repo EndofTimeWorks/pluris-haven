@@ -141,6 +141,40 @@ def test_backup_upload_resumes_and_isolated_from_other_users(client: TestClient)
     )
 
 
+def test_backup_upload_rejects_stream_after_chunk_limit(client: TestClient) -> None:
+    user = register(client, "bounded-upload@example.com", "Bounded upload")
+    headers = auth(user["access_token"])
+    settings = client.app.state.settings
+    settings.backup_max_chunk_bytes = 4
+    snapshot_id = "bounded-upload"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 1,
+                "total_bytes": 8,
+            },
+        ).status_code
+        == 201
+    )
+
+    def oversized_body():
+        yield b"1234"
+        yield b"5"
+
+    response = client.put(
+        f"/v1/backups/snapshots/{snapshot_id}/chunks/0",
+        headers={**headers, "X-Content-SHA256": hashlib.sha256(b"12345").hexdigest()},
+        content=oversized_body(),
+    )
+
+    assert response.status_code == 413
+    assert not any(client.app.state.backup_object_store.root.rglob("*.chunk"))
+
+
 def test_backup_snapshot_quotas_reserve_declared_storage(client: TestClient) -> None:
     user = register(client, "quota@example.com", "Quota user")
     headers = auth(user["access_token"])

@@ -1,17 +1,20 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.engine import make_url
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from pluris_server import __version__
 from pluris_server.backup_cleanup import sweep_backup_deletions
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
-from pluris_server.rate_limit import InMemoryRateLimiter
+from pluris_server.http_security import SecurityHeadersMiddleware
+from pluris_server.rate_limit import DatabaseRateLimiter
 from pluris_server.routers import auth, backups, friends, health, server_info
 
 
@@ -48,17 +51,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = active_settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
-    app.state.auth_rate_limiter = InMemoryRateLimiter(
+    app.state.auth_rate_limiter = DatabaseRateLimiter(
+        app.state.session_factory,
         max_attempts=active_settings.auth_rate_limit_attempts,
         window_seconds=active_settings.auth_rate_limit_window_seconds,
     )
-    app.state.friend_request_rate_limiter = InMemoryRateLimiter(
+    app.state.refresh_ip_rate_limiter = DatabaseRateLimiter(
+        app.state.session_factory,
+        max_attempts=active_settings.refresh_ip_rate_limit_attempts,
+        window_seconds=active_settings.auth_rate_limit_window_seconds,
+    )
+    app.state.friend_request_rate_limiter = DatabaseRateLimiter(
+        app.state.session_factory,
         max_attempts=active_settings.friend_request_rate_limit_attempts,
         window_seconds=active_settings.friend_request_rate_limit_window_seconds,
     )
     app.state.backup_object_store = FilesystemBackupObjectStore(
         Path(active_settings.backup_object_dir),
         max_chunk_bytes=active_settings.backup_max_chunk_bytes,
+    )
+
+    public_host = urlsplit(active_settings.public_url).hostname
+    trusted_hosts = set(active_settings.trusted_hosts)
+    if public_host:
+        trusted_hosts.add(public_host)
+    if active_settings.environment != "production":
+        trusted_hosts.update({"localhost", "127.0.0.1", "testserver"})
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=sorted(trusted_hosts),
+    )
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        enable_hsts=active_settings.public_url.startswith("https://"),
     )
 
     if active_settings.cors_origins:

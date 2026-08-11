@@ -51,6 +51,19 @@ async def _enforce_rate_limit(
         )
 
 
+async def _enforce_refresh_ip_limit(request: Request) -> None:
+    client_host = request.client.host if request.client is not None else "unknown"
+    retry_after = await request.app.state.refresh_ip_rate_limiter.retry_after(
+        [f"auth:refresh:ip:{client_host}"]
+    )
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
     for _ in range(10):
         code = new_friend_code()
@@ -121,6 +134,7 @@ async def login(
 async def refresh(
     request: Request, payload: RefreshRequest, db: Db, settings: AppSettings
 ) -> TokenPair:
+    await _enforce_refresh_ip_limit(request)
     await _enforce_rate_limit(
         request,
         "refresh",
