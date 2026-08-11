@@ -47,11 +47,7 @@ android {
 
     buildTypes {
         debug {
-            signingConfig = if (hasUploadSigning) {
-                signingConfigs.getByName("upload")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
 
         release {

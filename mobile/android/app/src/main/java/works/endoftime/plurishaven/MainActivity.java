@@ -41,6 +41,7 @@ public final class MainActivity extends FlutterFragmentActivity {
             "works.endoftime.plurishaven/file_dialog";
 
     private MethodChannel.Result pendingPickResult;
+    private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
     private MethodChannel.Result pendingSaveResult;
     private String pendingSaveSource;
 
@@ -58,7 +59,7 @@ public final class MainActivity extends FlutterFragmentActivity {
                         try {
                             List<Map<String, Object>> files = new ArrayList<>();
                             for (Uri uri : selectedUris(activityResult.getData())) {
-                                files.add(copySelectionToCache(uri));
+                                files.add(copySelectionToCache(uri, pendingPickMaximumBytes));
                             }
                             result.success(files);
                         } catch (Exception error) {
@@ -196,9 +197,18 @@ public final class MainActivity extends FlutterFragmentActivity {
             result.error("picker_busy", "A file picker is already open.", null);
             return;
         }
+        purgePickedFiles();
         String type = call.argument("type");
         List<String> extensions = call.argument("allowedExtensions");
         boolean allowMultiple = Boolean.TRUE.equals(call.argument("allowMultiple"));
+        Number maximumBytes = call.argument("maximumBytes");
+        pendingPickMaximumBytes = maximumBytes == null
+                ? 32L * 1024L * 1024L
+                : maximumBytes.longValue();
+        if (pendingPickMaximumBytes < 1) {
+            result.error("invalid_limit", "File size limit must be positive.", null);
+            return;
+        }
         Set<String> mimeTypeSet = new LinkedHashSet<>();
         if ("image".equals(type)) {
             mimeTypeSet.add("image/*");
@@ -258,9 +268,13 @@ public final class MainActivity extends FlutterFragmentActivity {
         return uris;
     }
 
-    private Map<String, Object> copySelectionToCache(Uri uri) throws Exception {
+    private Map<String, Object> copySelectionToCache(Uri uri, long maximumBytes) throws Exception {
         String displayName = queryDisplayName(uri);
         if (displayName == null) displayName = "selected-file";
+        Long declaredSize = queryFileSize(uri);
+        if (declaredSize != null && declaredSize > maximumBytes) {
+            throw new IllegalArgumentException("Selected file exceeds the size limit.");
+        }
         String safeName = displayName.replaceAll("[^A-Za-z0-9._ -]", "_");
         File directory = new File(getCacheDir(), "picked-files");
         if (!directory.mkdirs() && !directory.isDirectory()) {
@@ -272,13 +286,36 @@ public final class MainActivity extends FlutterFragmentActivity {
             if (input == null) {
                 throw new IllegalStateException("Could not open selected file.");
             }
-            input.transferTo(stream);
+            byte[] buffer = new byte[64 * 1024];
+            long copied = 0;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                if (copied > maximumBytes - read) {
+                    throw new IllegalArgumentException("Selected file exceeds the size limit.");
+                }
+                stream.write(buffer, 0, read);
+                copied += read;
+            }
+        } catch (Exception error) {
+            if (!output.delete() && output.exists()) {
+                output.deleteOnExit();
+            }
+            throw error;
         }
         Map<String, Object> value = new LinkedHashMap<>();
         value.put("name", displayName);
         value.put("path", output.getPath());
         value.put("size", output.length());
         return value;
+    }
+
+    private void purgePickedFiles() {
+        File directory = new File(getCacheDir(), "picked-files");
+        File[] files = directory.listFiles();
+        if (files == null) return;
+        for (File file : files) {
+            if (file.isFile()) file.delete();
+        }
     }
 
     private String queryDisplayName(Uri uri) {
@@ -292,6 +329,21 @@ public final class MainActivity extends FlutterFragmentActivity {
             if (cursor != null && cursor.moveToFirst()) return cursor.getString(0);
         }
         return uri.getLastPathSegment();
+    }
+
+    private Long queryFileSize(Uri uri) {
+        try (Cursor cursor = getContentResolver().query(
+                uri,
+                new String[]{OpenableColumns.SIZE},
+                null,
+                null,
+                null
+        )) {
+            if (cursor != null && cursor.moveToFirst() && !cursor.isNull(0)) {
+                return cursor.getLong(0);
+            }
+        }
+        return null;
     }
 
     private static String mimeTypeForExtension(String extension) {

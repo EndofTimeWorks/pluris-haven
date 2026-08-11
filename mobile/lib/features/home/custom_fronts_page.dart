@@ -495,8 +495,8 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
     }
 
     try {
-      final bytes = await _readPickedFileBytes(file.path);
-      if (bytes == null || bytes.isEmpty) {
+      final bytes = await file.readBytes();
+      if (bytes.isEmpty) {
         throw const FormatException('Selected image was empty.');
       }
       final ref = await _storeManualAvatar(file.name, bytes);

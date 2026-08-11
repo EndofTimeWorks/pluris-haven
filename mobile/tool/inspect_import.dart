@@ -23,12 +23,15 @@ Future<void> main(List<String> args) async {
   }
 
   final bytes = await file.readAsBytes();
-  final decoded = decodeImportFileBytes(
-    fileName: file.uri.pathSegments.last,
-    bytes: bytes,
-  );
-  if (decoded == null) {
+  late final DecodedImportFile decoded;
+  try {
+    decoded = await decodeImportFileBytes(
+      fileName: file.uri.pathSegments.last,
+      bytes: bytes,
+    );
+  } on FormatException catch (error) {
     stderr.writeln('Could not read import JSON from ${args.first}');
+    stderr.writeln(error.message);
     exit(65);
   }
 

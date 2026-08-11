@@ -133,7 +133,7 @@ void main() {
     expect(preview.counts['preferences'], 1);
   });
 
-  test('extracts the import JSON from a zipped backup', () {
+  test('extracts the import JSON from a zipped backup', () async {
     final archive = Archive()
       ..addFile(ArchiveFile.string('avatars/avatar-1.png', 'not json'))
       ..addFile(
@@ -149,20 +149,19 @@ void main() {
       );
 
     final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
-    final decoded = decodeImportFileBytes(
+    final decoded = await decodeImportFileBytes(
       fileName: 'Simply Plural Backup.zip',
       bytes: bytes,
     );
 
-    expect(decoded, isNotNull);
-    expect(decoded!.displayName, contains('export.json'));
+    expect(decoded.displayName, contains('export.json'));
     expect(decoded.text, contains('"Iris"'));
     expect(decoded.avatarAssets, hasLength(1));
     expect(decoded.avatarAssets.single.id, 'avatar-1');
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
-  test('extracts avatar-only Simply Plural backup zips', () {
+  test('extracts avatar-only Simply Plural backup zips', () async {
     final archive = Archive()
       ..addFile(
         ArchiveFile(
@@ -173,13 +172,12 @@ void main() {
       );
 
     final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
-    final decoded = decodeImportFileBytes(
+    final decoded = await decodeImportFileBytes(
       fileName: 'Avatars_system.zip',
       bytes: bytes,
     );
 
-    expect(decoded, isNotNull);
-    expect(decoded!.text, '{}');
+    expect(decoded.text, '{}');
     expect(decoded.avatarAssets, hasLength(1));
     expect(
       decoded.avatarAssets.single.id,
@@ -188,25 +186,37 @@ void main() {
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
   });
 
-  test('rejects malformed ZIP input without throwing', () {
-    final decoded = decodeImportFileBytes(
-      fileName: 'broken.zip',
-      bytes: Uint8List.fromList([0x50, 0x4b, 0x03, 0x04, 0x00]),
+  test('reports malformed ZIP input', () async {
+    await expectLater(
+      decodeImportFileBytes(
+        fileName: 'broken.zip',
+        bytes: Uint8List.fromList([0x50, 0x4b, 0x03, 0x04, 0x00]),
+      ),
+      throwsA(anything),
     );
-
-    expect(decoded, isNull);
   });
 
-  test('rejects ZIP entries whose declared expansion is too large', () {
+  test('rejects ZIP entries whose declared expansion is too large', () async {
     final archive = Archive()
       ..addFile(ArchiveFile('export.json', 50 * 1024 * 1024 + 1, [0x7b, 0x7d]));
 
-    final decoded = decodeImportFileBytes(
-      fileName: 'oversized.zip',
-      bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+    await expectLater(
+      decodeImportFileBytes(
+        fileName: 'oversized.zip',
+        bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+      ),
+      throwsFormatException,
     );
+  });
 
-    expect(decoded, isNull);
+  test('rejects malformed UTF-8 instead of replacing private text', () async {
+    await expectLater(
+      decodeImportFileBytes(
+        fileName: 'invalid.json',
+        bytes: Uint8List.fromList([0x7b, 0x22, 0xff, 0x22, 0x7d]),
+      ),
+      throwsFormatException,
+    );
   });
 
   test('previews invalid archive as not applyable', () {

@@ -151,6 +151,7 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
   private let presenter: () -> UIViewController?
   private var pendingResult: FlutterResult?
   private var operation: Operation?
+  private var maximumBytes = 32 * 1024 * 1024
 
   init(presenter: @escaping () -> UIViewController?) {
     self.presenter = presenter
@@ -177,7 +178,13 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
         let resolved = extensions.compactMap { UTType(filenameExtension: $0) }
         contentTypes = resolved.isEmpty ? [.data] : resolved
       }
-      let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: true)
+      maximumBytes = (arguments?["maximumBytes"] as? NSNumber)?.intValue ?? 32 * 1024 * 1024
+      guard maximumBytes > 0 else {
+        result(FlutterError(code: "invalid_limit", message: "File size limit must be positive.", details: nil))
+        return
+      }
+      try? FileManager.default.removeItem(at: pickedFilesDirectory)
+      let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: false)
       picker.allowsMultipleSelection = arguments?["allowMultiple"] as? Bool ?? false
       picker.delegate = self
       pendingResult = result
@@ -234,18 +241,73 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
     defer {
       if accessed { source.stopAccessingSecurityScopedResource() }
     }
-    let directory = FileManager.default.temporaryDirectory
-      .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
+    let directory = pickedFilesDirectory
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let destination = directory.appendingPathComponent(
       "\(UUID().uuidString)-\(source.lastPathComponent)"
     )
-    try FileManager.default.copyItem(at: source, to: destination)
+    let sourceValues = try source.resourceValues(forKeys: [.fileSizeKey])
+    if let declaredSize = sourceValues.fileSize, declaredSize > maximumBytes {
+      throw NSError(
+        domain: "PlurisHavenImport",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "Selected file exceeds the size limit."]
+      )
+    }
+    guard
+      let input = InputStream(url: source),
+      let output = OutputStream(url: destination, append: false)
+    else {
+      throw NSError(
+        domain: "PlurisHavenImport",
+        code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "Could not open the selected file."]
+      )
+    }
+    input.open()
+    output.open()
+    defer {
+      input.close()
+      output.close()
+    }
+    var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+    var copied = 0
+    do {
+      while true {
+        let read = input.read(&buffer, maxLength: buffer.count)
+        if read < 0 { throw input.streamError ?? CocoaError(.fileReadUnknown) }
+        if read == 0 { break }
+        if copied > maximumBytes - read {
+          throw NSError(
+            domain: "PlurisHavenImport",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "Selected file exceeds the size limit."]
+          )
+        }
+        var written = 0
+        while written < read {
+          let count = buffer.withUnsafeBufferPointer { pointer in
+            output.write(pointer.baseAddress!.advanced(by: written), maxLength: read - written)
+          }
+          if count <= 0 { throw output.streamError ?? CocoaError(.fileWriteUnknown) }
+          written += count
+        }
+        copied += read
+      }
+    } catch {
+      try? FileManager.default.removeItem(at: destination)
+      throw error
+    }
     let values = try destination.resourceValues(forKeys: [.fileSizeKey])
     return [
       "name": source.lastPathComponent,
       "path": destination.path,
       "size": values.fileSize ?? 0,
     ]
+  }
+
+  private var pickedFilesDirectory: URL {
+    FileManager.default.temporaryDirectory
+      .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
   }
 }

@@ -22,17 +22,15 @@ void main() {
     () async {
       final sourceText = await File(exportPath!).readAsString();
       final source = jsonDecode(sourceText) as Map<String, dynamic>;
-      final avatarBundle = decodeImportFileBytes(
+      final avatarBundle = await decodeImportFileBytes(
         fileName: File(avatarsPath!).uri.pathSegments.last,
         bytes: Uint8List.fromList(await File(avatarsPath).readAsBytes()),
       );
-      expect(avatarBundle, isNotNull);
-
       final normalized = normalizeImportTextToLocalArchive(
         source: ImportSource.simplyPlural,
         fileName: File(exportPath).uri.pathSegments.last,
         text: sourceText,
-        avatarAssets: avatarBundle!.avatarAssets,
+        avatarAssets: avatarBundle.avatarAssets,
         importedAt: DateTime.utc(2026, 7, 12),
       );
       final normalizedJson = _decodeArchive(normalized.archiveJson);
