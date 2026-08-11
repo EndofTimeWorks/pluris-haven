@@ -4,6 +4,28 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
+class NotificationCopy {
+  const NotificationCopy({
+    required this.appName,
+    required this.privateReminderTitle,
+    required this.privateBody,
+    required this.currentlyFrontingTitle,
+    required this.remindersChannelName,
+    required this.remindersChannelDescription,
+    required this.frontStatusChannelName,
+    required this.frontStatusChannelDescription,
+  });
+
+  final String appName;
+  final String privateReminderTitle;
+  final String privateBody;
+  final String currentlyFrontingTitle;
+  final String remindersChannelName;
+  final String remindersChannelDescription;
+  final String frontStatusChannelName;
+  final String frontStatusChannelDescription;
+}
+
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -55,6 +77,7 @@ class NotificationService {
     DateTimeComponents repeat = DateTimeComponents.time,
     int? weekday,
     int? monthDay,
+    required NotificationCopy copy,
   }) async {
     if (_plugin == null) return;
     await _requestPermission();
@@ -75,23 +98,23 @@ class NotificationService {
       _ => _nextDailyDate(now, time),
     };
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'reminders',
-      'Reminders',
-      channelDescription: 'Front check-in and custom reminders',
+      copy.remindersChannelName,
+      channelDescription: copy.remindersChannelDescription,
       importance: Importance.high,
       priority: Priority.high,
       visibility: NotificationVisibility.secret,
     );
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
     );
     final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
 
     await _plugin!.zonedSchedule(
       id: id,
-      title: hideAppleContent ? 'Pluris Haven reminder' : title,
+      title: hideAppleContent ? copy.privateReminderTitle : title,
       body: hideAppleContent ? null : body,
       scheduledDate: scheduledDate,
       notificationDetails: details,
@@ -106,6 +129,7 @@ class NotificationService {
 
   Future<void> showFrontStatusNotification({
     required String? frontLabel,
+    required NotificationCopy copy,
   }) async {
     if (_plugin == null) return;
     final label = frontLabel?.trim();
@@ -115,10 +139,10 @@ class NotificationService {
     }
     await _requestPermission();
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'front_status',
-      'Front status',
-      channelDescription: 'Persistent currently-fronting status',
+      copy.frontStatusChannelName,
+      channelDescription: copy.frontStatusChannelDescription,
       importance: Importance.low,
       priority: Priority.low,
       ongoing: true,
@@ -129,9 +153,9 @@ class NotificationService {
       category: AndroidNotificationCategory.status,
       visibility: NotificationVisibility.secret,
     );
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: false,
         presentBadge: false,
         presentSound: false,
@@ -141,8 +165,8 @@ class NotificationService {
     final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
     await _plugin!.show(
       id: frontStatusNotificationId,
-      title: hideAppleContent ? 'Pluris Haven' : 'Currently fronting',
-      body: hideAppleContent ? 'Open Pluris Haven to view.' : label,
+      title: hideAppleContent ? copy.appName : copy.currentlyFrontingTitle,
+      body: hideAppleContent ? copy.privateBody : label,
       notificationDetails: details,
     );
   }

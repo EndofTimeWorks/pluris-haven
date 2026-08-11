@@ -226,13 +226,19 @@ void main() {
     expect(decoded.avatarAssets, hasLength(1));
   });
 
-  test('reports malformed ZIP input', () async {
+  test('reports an empty malformed ZIP as unsupported', () async {
     await expectLater(
       decodeImportFileBytes(
         fileName: 'broken.zip',
         bytes: Uint8List.fromList([0x50, 0x4b, 0x03, 0x04, 0x00]),
       ),
-      throwsA(anything),
+      throwsA(
+        isA<ImportFileDecodeException>().having(
+          (error) => error.failure,
+          'failure',
+          ImportFileDecodeFailure.unsupportedZip,
+        ),
+      ),
     );
   });
 
@@ -245,7 +251,13 @@ void main() {
         fileName: 'oversized.zip',
         bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
       ),
-      throwsFormatException,
+      throwsA(
+        isA<ImportFileDecodeException>().having(
+          (error) => error.failure,
+          'failure',
+          ImportFileDecodeFailure.zipExpansionTooLarge,
+        ),
+      ),
     );
   });
 
@@ -255,7 +267,13 @@ void main() {
         fileName: 'invalid.json',
         bytes: Uint8List.fromList([0x7b, 0x22, 0xff, 0x22, 0x7d]),
       ),
-      throwsFormatException,
+      throwsA(
+        isA<ImportFileDecodeException>().having(
+          (error) => error.failure,
+          'failure',
+          ImportFileDecodeFailure.invalidUtf8,
+        ),
+      ),
     );
   });
 

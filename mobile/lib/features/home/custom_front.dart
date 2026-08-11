@@ -399,11 +399,13 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   Future<void> _syncFrontNotification(String? label) async {
     final frontLabel = label?.trim();
     final hasFront = frontLabel != null && frontLabel.isNotEmpty;
+    final notificationCopy = _notificationCopy(AppLocalizations.of(context));
     try {
       final customization = await widget.repository.loadCustomization();
       if (customization.frontStatusNotification) {
         await NotificationService.instance.showFrontStatusNotification(
           frontLabel: hasFront ? frontLabel : null,
+          copy: notificationCopy,
         );
       } else {
         await NotificationService.instance.cancelFrontStatusNotification();

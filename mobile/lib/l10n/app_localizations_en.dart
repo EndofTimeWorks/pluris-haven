@@ -49,6 +49,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'keep the current front visible in Android status';
 
   @override
+  String get plurisHavenAppName => 'Pluris Haven';
+
+  @override
+  String get privateReminderNotificationTitle => 'Pluris Haven reminder';
+
+  @override
+  String get privateNotificationBody => 'Open Pluris Haven to view.';
+
+  @override
+  String get currentlyFrontingNotificationTitle => 'Currently fronting';
+
+  @override
+  String get remindersChannelName => 'Reminders';
+
+  @override
+  String get remindersChannelDescription =>
+      'Front check-ins and custom reminders';
+
+  @override
+  String get frontStatusChannelName => 'Front status';
+
+  @override
+  String get frontStatusChannelDescription =>
+      'Persistent currently-fronting status';
+
+  @override
   String get highContrastTitle => 'High contrast';
 
   @override
@@ -782,6 +808,39 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get couldNotOpenFilePicker => 'Could not open the file picker.';
+
+  @override
+  String get importFileEmpty => 'The selected import file is empty.';
+
+  @override
+  String get importFileTooLarge =>
+      'The import file is larger than the 32 MiB safety limit. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importFileInvalidUtf8 =>
+      'The import file is not valid UTF-8 text.';
+
+  @override
+  String get importFileInvalidZip =>
+      'The selected ZIP file is invalid or damaged.';
+
+  @override
+  String get importZipTooManyEntries =>
+      'The ZIP contains too many entries to import safely. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importZipExpansionTooLarge =>
+      'The ZIP expands beyond the safe import limit. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importZipUnsupported =>
+      'The ZIP contains no supported JSON or avatar files.';
+
+  @override
+  String get reportImportIssueButton => 'Report import issue';
+
+  @override
   String get couldNotReadPastedJson => 'Could not read the pasted JSON.';
 
   @override
@@ -1083,6 +1142,32 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   @override
   String get frontingNotificationSubtitle =>
       'keep the current front visible in Android status';
+
+  @override
+  String get plurisHavenAppName => 'Pluris Haven';
+
+  @override
+  String get privateReminderNotificationTitle => 'Pluris Haven reminder';
+
+  @override
+  String get privateNotificationBody => 'Open Pluris Haven to view.';
+
+  @override
+  String get currentlyFrontingNotificationTitle => 'Currently fronting';
+
+  @override
+  String get remindersChannelName => 'Reminders';
+
+  @override
+  String get remindersChannelDescription =>
+      'Front check-ins and custom reminders';
+
+  @override
+  String get frontStatusChannelName => 'Front status';
+
+  @override
+  String get frontStatusChannelDescription =>
+      'Persistent currently-fronting status';
 
   @override
   String get highContrastTitle => 'High contrast';
@@ -1816,6 +1901,39 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String couldNotReadImportFile(String fileName) {
     return 'Could not read an import JSON from $fileName.';
   }
+
+  @override
+  String get couldNotOpenFilePicker => 'Could not open the file picker.';
+
+  @override
+  String get importFileEmpty => 'The selected import file is empty.';
+
+  @override
+  String get importFileTooLarge =>
+      'The import file is larger than the 32 MiB safety limit. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importFileInvalidUtf8 =>
+      'The import file is not valid UTF-8 text.';
+
+  @override
+  String get importFileInvalidZip =>
+      'The selected ZIP file is invalid or damaged.';
+
+  @override
+  String get importZipTooManyEntries =>
+      'The ZIP contains too many entries to import safely. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importZipExpansionTooLarge =>
+      'The ZIP expands beyond the safe import limit. If this is a legitimate export, report it so the limit can be reviewed.';
+
+  @override
+  String get importZipUnsupported =>
+      'The ZIP contains no supported JSON or avatar files.';
+
+  @override
+  String get reportImportIssueButton => 'Report import issue';
 
   @override
   String get couldNotReadPastedJson => 'Could not read the pasted JSON.';

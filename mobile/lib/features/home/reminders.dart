@@ -1,5 +1,18 @@
 part of 'home_page.dart';
 
+NotificationCopy _notificationCopy(AppLocalizations l10n) {
+  return NotificationCopy(
+    appName: l10n.plurisHavenAppName,
+    privateReminderTitle: l10n.privateReminderNotificationTitle,
+    privateBody: l10n.privateNotificationBody,
+    currentlyFrontingTitle: l10n.currentlyFrontingNotificationTitle,
+    remindersChannelName: l10n.remindersChannelName,
+    remindersChannelDescription: l10n.remindersChannelDescription,
+    frontStatusChannelName: l10n.frontStatusChannelName,
+    frontStatusChannelDescription: l10n.frontStatusChannelDescription,
+  );
+}
+
 class RemindersPage extends StatelessWidget {
   const RemindersPage({
     super.key,
@@ -117,7 +130,10 @@ class ReminderTile extends StatelessWidget {
                   onChanged: (enabled) async {
                     await repository.setReminderEnabled(reminder.id, enabled);
                     if (enabled) {
-                      await scheduleReminderSummary(reminder.copyWithEnabled());
+                      await scheduleReminderSummary(
+                        reminder.copyWithEnabled(),
+                        l10n,
+                      );
                     } else {
                       await NotificationService.instance
                           .cancelReminderNotification(reminder.id);
@@ -382,6 +398,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           monthDay: _scheduleKind == ReminderScheduleKind.monthly
               ? _monthDay
               : null,
+          copy: _notificationCopy(l10n),
         );
       }
       Navigator.pop(context);
@@ -468,7 +485,10 @@ extension on ReminderSummary {
   }
 }
 
-Future<void> scheduleReminderSummary(ReminderSummary reminder) async {
+Future<void> scheduleReminderSummary(
+  ReminderSummary reminder,
+  AppLocalizations l10n,
+) async {
   if (!reminder.enabled) return;
   final kind =
       ReminderScheduleKind.fromStorage(reminder.scheduleKind) ??
@@ -498,6 +518,7 @@ Future<void> scheduleReminderSummary(ReminderSummary reminder) async {
         ? reminder.scheduleDom ??
               _monthDayFromScheduleText(reminder.scheduleText)
         : null,
+    copy: _notificationCopy(l10n),
   );
 }
 
