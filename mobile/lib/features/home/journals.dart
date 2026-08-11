@@ -12,7 +12,7 @@ class JournalsPage extends StatefulWidget {
 class _JournalsPageState extends State<JournalsPage> {
   final _searchController = TextEditingController();
   String _query = '';
-  String _filter = 'All';
+  _JournalFilter _filter = _JournalFilter.all;
 
   @override
   void dispose() {
@@ -22,6 +22,7 @@ class _JournalsPageState extends State<JournalsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<JournalEntry>>(
       stream: widget.repository.watchJournals(),
       initialData: const [],
@@ -33,15 +34,21 @@ class _JournalsPageState extends State<JournalsPage> {
         return SpPage(
           children: [
             SpSearchField(
-              hintText: 'Search journals',
+              hintText: l10n.searchJournalsHint,
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
             SpFilterRow(
-              filters: const ['All', 'Member', 'System'],
-              selected: _filter,
-              onSelected: (filter) => setState(() => _filter = filter),
+              filters: [
+                for (final filter in _JournalFilter.values) filter.label(l10n),
+              ],
+              selected: _filter.label(l10n),
+              onSelected: (label) => setState(() {
+                _filter = _JournalFilter.values.firstWhere(
+                  (filter) => filter.label(l10n) == label,
+                );
+              }),
             ),
             const SizedBox(height: 12),
             SpCard(
@@ -49,18 +56,20 @@ class _JournalsPageState extends State<JournalsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Journals',
+                    title: l10n.journalsTitle,
                     trailing: StatusPill(text: '${entries.length}'),
                   ),
                   const SizedBox(height: 12),
                   if (entries.isEmpty)
                     SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'All'
-                          ? 'No journal entries yet'
-                          : 'No matching journals',
-                      body: _query.trim().isEmpty && _filter == 'All'
-                          ? 'Write longer dated entries here. Use Notes for short scratchpad items.'
-                          : 'Try another search or filter.',
+                      title:
+                          _query.trim().isEmpty && _filter == _JournalFilter.all
+                          ? l10n.noJournalEntriesYet
+                          : l10n.noMatchingJournals,
+                      body:
+                          _query.trim().isEmpty && _filter == _JournalFilter.all
+                          ? l10n.journalsEmptyBody
+                          : l10n.tryAnotherSearchOrFilter,
                     )
                   else
                     for (final entry in entries) ...[
@@ -77,7 +86,7 @@ class _JournalsPageState extends State<JournalsPage> {
                     onPressed: () =>
                         showJournalEntrySheet(context, widget.repository),
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add journal entry'),
+                    label: Text(l10n.addJournalEntryButton),
                   ),
                 ],
               ),
@@ -93,13 +102,23 @@ class _JournalsPageState extends State<JournalsPage> {
       for (final entry in entries)
         if (_matchesQuery(_query, [entry.title, entry.body]) &&
             switch (_filter) {
-              'Member' => entry.memberId != null,
-              'System' => entry.memberId == null,
+              _JournalFilter.member => entry.memberId != null,
+              _JournalFilter.system => entry.memberId == null,
               _ => true,
             })
           entry,
     ];
   }
+}
+
+enum _JournalFilter { all, member, system }
+
+extension on _JournalFilter {
+  String label(AppLocalizations l10n) => switch (this) {
+    _JournalFilter.all => l10n.allFilter,
+    _JournalFilter.member => l10n.memberFilter,
+    _JournalFilter.system => l10n.systemFilter,
+  };
 }
 
 class JournalEntryTile extends StatelessWidget {
@@ -114,6 +133,7 @@ class JournalEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final title = entry.title?.trim();
     final body = entry.body.trim();
 
@@ -123,14 +143,14 @@ class JournalEntryTile extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
         leading: const SpIconBubble(icon: Icons.menu_book_outlined),
         title: Text(
-          title == null || title.isEmpty ? 'Untitled entry' : title,
+          title == null || title.isEmpty ? l10n.untitledEntry : title,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              body.isEmpty ? 'empty journal' : body,
+              body.isEmpty ? l10n.emptyJournal : body,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: _spMuted),
@@ -143,11 +163,11 @@ class JournalEntryTile extends StatelessWidget {
           ],
         ),
         trailing: IconButton(
-          tooltip: 'Delete journal entry',
+          tooltip: l10n.deleteJournalEntryTooltip,
           onPressed: () => confirmDelete(
             context,
-            title: 'Delete journal entry?',
-            body: 'This entry will be permanently removed from this device.',
+            title: l10n.deleteJournalEntryTitle,
+            body: l10n.deleteJournalEntryBody,
             onDelete: () => repository.deleteJournal(entry.id),
           ),
           icon: const Icon(Icons.delete_outline_rounded),
@@ -209,6 +229,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -221,7 +242,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _isEditing ? 'Edit journal entry' : 'Add journal entry',
+              _isEditing
+                  ? l10n.editJournalEntryTitle
+                  : l10n.addJournalEntryButton,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -230,7 +253,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               controller: _titleController,
               autofocus: !_isEditing,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: l10n.titleFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -239,13 +262,15 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               minLines: 8,
               maxLines: 12,
               textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(labelText: 'Entry'),
+              decoration: InputDecoration(labelText: l10n.entryFieldLabel),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-journal-entry-button'),
               onPressed: _save,
-              child: Text(_isEditing ? 'Save entry' : 'Create entry'),
+              child: Text(
+                _isEditing ? l10n.saveEntryButton : l10n.createEntryButton,
+              ),
             ),
           ],
         ),
@@ -257,7 +282,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     final body = _bodyController.text.trim();
     if (body.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Write something before saving.')),
+        SnackBar(content: Text(AppLocalizations.of(context).writeBeforeSaving)),
       );
       return;
     }

@@ -2567,6 +2567,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Multiple choice'**
   String get multipleChoicePollKind;
+
+  /// No description provided for @searchJournalsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search journals'**
+  String get searchJournalsHint;
+
+  /// No description provided for @journalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Journals'**
+  String get journalsTitle;
+
+  /// No description provided for @noJournalEntriesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No journal entries yet'**
+  String get noJournalEntriesYet;
+
+  /// No description provided for @noMatchingJournals.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching journals'**
+  String get noMatchingJournals;
+
+  /// No description provided for @journalsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Write longer dated entries here. Use Notes for short scratchpad items.'**
+  String get journalsEmptyBody;
+
+  /// No description provided for @addJournalEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add journal entry'**
+  String get addJournalEntryButton;
+
+  /// No description provided for @untitledEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled entry'**
+  String get untitledEntry;
+
+  /// No description provided for @emptyJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'empty journal'**
+  String get emptyJournal;
+
+  /// No description provided for @deleteJournalEntryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry'**
+  String get deleteJournalEntryTooltip;
+
+  /// No description provided for @deleteJournalEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry?'**
+  String get deleteJournalEntryTitle;
+
+  /// No description provided for @deleteJournalEntryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry will be permanently removed from this device.'**
+  String get deleteJournalEntryBody;
+
+  /// No description provided for @editJournalEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit journal entry'**
+  String get editJournalEntryTitle;
+
+  /// No description provided for @entryFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry'**
+  String get entryFieldLabel;
+
+  /// No description provided for @saveEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save entry'**
+  String get saveEntryButton;
+
+  /// No description provided for @createEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create entry'**
+  String get createEntryButton;
+
+  /// No description provided for @writeBeforeSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Write something before saving.'**
+  String get writeBeforeSaving;
 }
 
 class _AppLocalizationsDelegate
