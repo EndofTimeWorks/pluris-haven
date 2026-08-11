@@ -699,22 +699,24 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   ImportPreview _encryptedArchiveLockedPreview(String fileName) {
+    final l10n = AppLocalizations.of(context);
     return ImportPreview(
       source: ImportSource.plurisHavenArchive,
       fileName: fileName,
       counts: const {},
       canApply: false,
-      events: const [
+      events: [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
           stage: 'decrypt',
-          message: 'Enter the export passphrase, then preview the archive.',
+          message: l10n.encryptedArchiveLockedPreview,
         ),
       ],
     );
   }
 
   ImportPreview _encryptedArchiveFailedPreview(String fileName, Object error) {
+    final l10n = AppLocalizations.of(context);
     return ImportPreview(
       source: ImportSource.plurisHavenArchive,
       fileName: fileName,
@@ -724,7 +726,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.error,
           stage: 'decrypt',
-          message: 'Could not decrypt archive: $error',
+          message: l10n.couldNotDecryptArchive(error.toString()),
         ),
       ],
     );
@@ -883,35 +885,34 @@ class _ConflictPromptDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final parts = <String>[];
     if (memberCount > 0) {
-      parts.add('$memberCount ${memberCount == 1 ? 'member' : 'members'}');
+      parts.add(l10n.memberConflictCount(memberCount));
     }
     if (groupCount > 0) {
-      parts.add('$groupCount ${groupCount == 1 ? 'group' : 'groups'}');
+      parts.add(l10n.groupConflictCount(groupCount));
     }
 
     return AlertDialog(
-      title: const Text('Conflicts found'),
+      title: Text(l10n.conflictsFoundTitle),
       content: Text(
-        '${parts.join(' and ')} from this $sourceLabel import already '
-        'exist in your local data.\n\n'
-        'How should Pluris Haven handle them?',
+        l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, ImportConflictStrategy.skip),
-          child: const Text('Skip matches'),
+          child: Text(l10n.skipMatchesButton),
         ),
         TextButton(
           onPressed: () =>
               Navigator.pop(context, ImportConflictStrategy.create),
-          child: const Text('Create duplicates'),
+          child: Text(l10n.createDuplicatesButton),
         ),
         FilledButton(
           onPressed: () =>
               Navigator.pop(context, ImportConflictStrategy.update),
-          child: const Text('Update existing'),
+          child: Text(l10n.updateExistingButton),
         ),
       ],
     );
@@ -978,6 +979,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -989,29 +991,29 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Encrypted export',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.encryptedExportTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.',
-              style: TextStyle(color: _spMuted, height: 1.35),
+            Text(
+              l10n.encryptedExportDescription,
+              style: const TextStyle(color: _spMuted, height: 1.35),
             ),
             const SizedBox(height: 14),
             TextField(
               key: const ValueKey('encrypted-export-passphrase-field'),
               controller: _passphraseController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Passphrase'),
+              decoration: InputDecoration(labelText: l10n.passphraseFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('encrypted-export-confirm-field'),
               controller: _confirmController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirm passphrase',
+              decoration: InputDecoration(
+                labelText: l10n.confirmPassphraseFieldLabel,
               ),
             ),
             if (_status != null) ...[
@@ -1019,7 +1021,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
               Semantics(
                 container: true,
                 liveRegion: true,
-                label: 'Encrypted export status: $_status',
+                label: l10n.encryptedExportStatusSemanticLabel(_status!),
                 child: ExcludeSemantics(
                   child: Text(
                     _status!,
@@ -1038,7 +1040,11 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.lock_rounded),
-              label: Text(_isSaving ? 'Encrypting...' : 'Save encrypted file'),
+              label: Text(
+                _isSaving
+                    ? l10n.encryptingArchiveButton
+                    : l10n.saveEncryptedFileButton,
+              ),
             ),
           ],
         ),
@@ -1047,24 +1053,25 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
   }
 
   Future<void> _saveEncryptedArchive() async {
+    final l10n = AppLocalizations.of(context);
     final passphrase = _passphraseController.text;
     final confirm = _confirmController.text;
     if (passphrase.trim().length < 8) {
       setState(() {
-        _status = 'Use at least 8 characters.';
+        _status = l10n.passphraseMinimumLength;
       });
       return;
     }
     if (passphrase != confirm) {
       setState(() {
-        _status = 'Passphrases do not match.';
+        _status = l10n.passphrasesDoNotMatch;
       });
       return;
     }
 
     setState(() {
       _isSaving = true;
-      _status = 'Building archive...';
+      _status = l10n.buildingArchiveStatus;
     });
 
     final messenger = ScaffoldMessenger.of(context);
@@ -1072,20 +1079,20 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       final archiveJson = await widget.repository.buildLocalArchiveJson();
       if (!mounted) return;
       setState(() {
-        _status = 'Encrypting archive...';
+        _status = l10n.encryptingArchiveStatus;
       });
       final encrypted = await encryptArchiveJson(
         archiveJson: archiveJson,
         passphrase: passphrase,
       );
       final saved = await NativeFileDialog.saveBytes(
-        dialogTitle: 'Save encrypted Pluris Haven archive',
+        dialogTitle: l10n.saveEncryptedArchiveDialogTitle,
         fileName: _encryptedArchiveFileName(),
         bytes: Uint8List.fromList(utf8.encode(encrypted)),
         mimeType: 'application/json',
       );
       if (!mounted) return;
-      final message = saved ? 'Encrypted archive saved.' : 'Save canceled.';
+      final message = saved ? l10n.encryptedArchiveSaved : l10n.saveCancelled;
       setState(() {
         _isSaving = false;
         _status = message;
@@ -1095,7 +1102,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       if (!mounted) return;
       setState(() {
         _isSaving = false;
-        _status = 'Could not save encrypted archive: $error';
+        _status = l10n.couldNotSaveEncryptedArchive(error.toString());
       });
     }
   }
@@ -1116,6 +1123,7 @@ class LocalArchiveSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: FutureBuilder<String>(
         future: repository.buildLocalArchiveJson(),
@@ -1132,27 +1140,30 @@ class LocalArchiveSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Local archive',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                Text(
+                  l10n.localArchiveTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.',
-                  style: TextStyle(color: _spMuted, height: 1.35),
+                Text(
+                  l10n.localArchiveDescription,
+                  style: const TextStyle(color: _spMuted, height: 1.35),
                 ),
                 const SizedBox(height: 14),
                 if (snapshot.connectionState != ConnectionState.done)
                   Semantics(
                     container: true,
                     liveRegion: true,
-                    label: 'Building local archive. Please wait.',
+                    label: l10n.buildingLocalArchiveSemanticLabel,
                     child: ExcludeSemantics(
                       child: Column(
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 10),
-                          Text('Building local archive...'),
+                          Text(l10n.buildingLocalArchiveStatus),
                         ],
                       ),
                     ),
@@ -1161,10 +1172,12 @@ class LocalArchiveSheet extends StatelessWidget {
                   Semantics(
                     container: true,
                     liveRegion: true,
-                    label: 'Archive error: ${snapshot.error}',
+                    label: l10n.archiveErrorSemanticLabel(
+                      snapshot.error.toString(),
+                    ),
                     child: ExcludeSemantics(
                       child: Text(
-                        'Could not build archive: ${snapshot.error}',
+                        l10n.couldNotBuildArchive(snapshot.error.toString()),
                         style: const TextStyle(color: _spMuted),
                       ),
                     ),
@@ -1174,14 +1187,14 @@ class LocalArchiveSheet extends StatelessWidget {
                     key: const ValueKey('save-local-archive-button'),
                     onPressed: () => _saveArchiveJson(context, archive!),
                     icon: const Icon(Icons.save_rounded),
-                    label: const Text('Save JSON file'),
+                    label: Text(l10n.saveJsonFileButton),
                   ),
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     key: const ValueKey('copy-local-archive-button'),
                     onPressed: () => _copyArchiveJson(context, archive!),
                     icon: const Icon(Icons.copy_rounded),
-                    label: const Text('Copy JSON'),
+                    label: Text(l10n.copyJsonButton),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -1216,14 +1229,17 @@ class LocalArchiveSheet extends StatelessWidget {
   void _copyArchiveJson(BuildContext context, String archive) {
     final messenger = ScaffoldMessenger.of(context);
     Clipboard.setData(ClipboardData(text: archive));
-    messenger.showSnackBar(const SnackBar(content: Text('Archive copied')));
+    messenger.showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).archiveCopied)),
+    );
   }
 
   Future<void> _saveArchiveJson(BuildContext context, String archive) async {
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
       final saved = await NativeFileDialog.saveBytes(
-        dialogTitle: 'Save Pluris Haven archive',
+        dialogTitle: l10n.saveArchiveDialogTitle,
         fileName: _archiveFileName(),
         bytes: Uint8List.fromList(utf8.encode(archive)),
         mimeType: 'application/json',
@@ -1232,14 +1248,14 @@ class LocalArchiveSheet extends StatelessWidget {
         return;
       }
       messenger.showSnackBar(
-        SnackBar(content: Text(saved ? 'Archive saved' : 'Save canceled')),
+        SnackBar(content: Text(saved ? l10n.archiveSaved : l10n.saveCancelled)),
       );
     } on Object catch (error) {
       if (!messenger.mounted) {
         return;
       }
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not save archive: $error')),
+        SnackBar(content: Text(l10n.couldNotSaveArchive(error.toString()))),
       );
     }
   }

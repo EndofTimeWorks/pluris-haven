@@ -1110,6 +1110,146 @@ class AppLocalizationsEn extends AppLocalizations {
   String importJobSemanticLabel(String title, String status) {
     return 'Import job $title, $status. Double tap for details.';
   }
+
+  @override
+  String get encryptedArchiveLockedPreview =>
+      'Enter the export passphrase, then preview the archive.';
+
+  @override
+  String couldNotDecryptArchive(String error) {
+    return 'Could not decrypt archive: $error';
+  }
+
+  @override
+  String get conflictsFoundTitle => 'Conflicts found';
+
+  @override
+  String memberConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String groupConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count groups',
+      one: '1 group',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listAnd => ' and ';
+
+  @override
+  String importConflictsBody(String conflicts, String source) {
+    return '$conflicts from this $source import already exist in your local data.\n\nHow should Pluris Haven handle them?';
+  }
+
+  @override
+  String get skipMatchesButton => 'Skip matches';
+
+  @override
+  String get createDuplicatesButton => 'Create duplicates';
+
+  @override
+  String get updateExistingButton => 'Update existing';
+
+  @override
+  String get encryptedExportDescription =>
+      'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.';
+
+  @override
+  String get confirmPassphraseFieldLabel => 'Confirm passphrase';
+
+  @override
+  String encryptedExportStatusSemanticLabel(String status) {
+    return 'Encrypted export status: $status';
+  }
+
+  @override
+  String get encryptingArchiveButton => 'Encrypting...';
+
+  @override
+  String get saveEncryptedFileButton => 'Save encrypted file';
+
+  @override
+  String get passphraseMinimumLength => 'Use at least 8 characters.';
+
+  @override
+  String get passphrasesDoNotMatch => 'Passphrases do not match.';
+
+  @override
+  String get buildingArchiveStatus => 'Building archive...';
+
+  @override
+  String get encryptingArchiveStatus => 'Encrypting archive...';
+
+  @override
+  String get saveEncryptedArchiveDialogTitle =>
+      'Save encrypted Pluris Haven archive';
+
+  @override
+  String get encryptedArchiveSaved => 'Encrypted archive saved.';
+
+  @override
+  String get saveCancelled => 'Save cancelled.';
+
+  @override
+  String couldNotSaveEncryptedArchive(String error) {
+    return 'Could not save encrypted archive: $error';
+  }
+
+  @override
+  String get localArchiveTitle => 'Local archive';
+
+  @override
+  String get localArchiveDescription =>
+      'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.';
+
+  @override
+  String get buildingLocalArchiveSemanticLabel =>
+      'Building local archive. Please wait.';
+
+  @override
+  String get buildingLocalArchiveStatus => 'Building local archive...';
+
+  @override
+  String archiveErrorSemanticLabel(String error) {
+    return 'Archive error: $error';
+  }
+
+  @override
+  String couldNotBuildArchive(String error) {
+    return 'Could not build archive: $error';
+  }
+
+  @override
+  String get saveJsonFileButton => 'Save JSON file';
+
+  @override
+  String get copyJsonButton => 'Copy JSON';
+
+  @override
+  String get archiveCopied => 'Archive copied';
+
+  @override
+  String get saveArchiveDialogTitle => 'Save Pluris Haven archive';
+
+  @override
+  String get archiveSaved => 'Archive saved';
+
+  @override
+  String couldNotSaveArchive(String error) {
+    return 'Could not save archive: $error';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2217,5 +2357,145 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   @override
   String importJobSemanticLabel(String title, String status) {
     return 'Import job $title, $status. Double tap for details.';
+  }
+
+  @override
+  String get encryptedArchiveLockedPreview =>
+      'Enter the export passphrase, then preview the archive.';
+
+  @override
+  String couldNotDecryptArchive(String error) {
+    return 'Could not decrypt archive: $error';
+  }
+
+  @override
+  String get conflictsFoundTitle => 'Conflicts found';
+
+  @override
+  String memberConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String groupConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count groups',
+      one: '1 group',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listAnd => ' and ';
+
+  @override
+  String importConflictsBody(String conflicts, String source) {
+    return '$conflicts from this $source import already exist in your local data.\n\nHow should Pluris Haven handle them?';
+  }
+
+  @override
+  String get skipMatchesButton => 'Skip matches';
+
+  @override
+  String get createDuplicatesButton => 'Create duplicates';
+
+  @override
+  String get updateExistingButton => 'Update existing';
+
+  @override
+  String get encryptedExportDescription =>
+      'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.';
+
+  @override
+  String get confirmPassphraseFieldLabel => 'Confirm passphrase';
+
+  @override
+  String encryptedExportStatusSemanticLabel(String status) {
+    return 'Encrypted export status: $status';
+  }
+
+  @override
+  String get encryptingArchiveButton => 'Encrypting...';
+
+  @override
+  String get saveEncryptedFileButton => 'Save encrypted file';
+
+  @override
+  String get passphraseMinimumLength => 'Use at least 8 characters.';
+
+  @override
+  String get passphrasesDoNotMatch => 'Passphrases do not match.';
+
+  @override
+  String get buildingArchiveStatus => 'Building archive...';
+
+  @override
+  String get encryptingArchiveStatus => 'Encrypting archive...';
+
+  @override
+  String get saveEncryptedArchiveDialogTitle =>
+      'Save encrypted Pluris Haven archive';
+
+  @override
+  String get encryptedArchiveSaved => 'Encrypted archive saved.';
+
+  @override
+  String get saveCancelled => 'Save canceled.';
+
+  @override
+  String couldNotSaveEncryptedArchive(String error) {
+    return 'Could not save encrypted archive: $error';
+  }
+
+  @override
+  String get localArchiveTitle => 'Local archive';
+
+  @override
+  String get localArchiveDescription =>
+      'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.';
+
+  @override
+  String get buildingLocalArchiveSemanticLabel =>
+      'Building local archive. Please wait.';
+
+  @override
+  String get buildingLocalArchiveStatus => 'Building local archive...';
+
+  @override
+  String archiveErrorSemanticLabel(String error) {
+    return 'Archive error: $error';
+  }
+
+  @override
+  String couldNotBuildArchive(String error) {
+    return 'Could not build archive: $error';
+  }
+
+  @override
+  String get saveJsonFileButton => 'Save JSON file';
+
+  @override
+  String get copyJsonButton => 'Copy JSON';
+
+  @override
+  String get archiveCopied => 'Archive copied';
+
+  @override
+  String get saveArchiveDialogTitle => 'Save Pluris Haven archive';
+
+  @override
+  String get archiveSaved => 'Archive saved';
+
+  @override
+  String couldNotSaveArchive(String error) {
+    return 'Could not save archive: $error';
   }
 }
