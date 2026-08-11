@@ -1289,6 +1289,154 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '...truncated $_temp0';
   }
+
+  @override
+  String get searchNotesHint => 'Search notes';
+
+  @override
+  String get notesTitle => 'Notes';
+
+  @override
+  String get allFilter => 'All';
+
+  @override
+  String get memberFilter => 'Member';
+
+  @override
+  String get systemFilter => 'System';
+
+  @override
+  String get noNotesYet => 'No notes yet';
+
+  @override
+  String get noMatchingNotes => 'No matching notes';
+
+  @override
+  String get notesEmptyBody =>
+      'Local notes can be attached to members or kept general.';
+
+  @override
+  String get tryAnotherSearchOrFilter => 'Try another search or filter.';
+
+  @override
+  String get addNoteButton => 'Add note';
+
+  @override
+  String get deleteNoteTooltip => 'Delete note';
+
+  @override
+  String get deleteNoteTitle => 'Delete note?';
+
+  @override
+  String get deleteNoteBody => 'This note will be permanently removed.';
+
+  @override
+  String get systemNoteLabel => 'System note';
+
+  @override
+  String get unknownMemberNoteLabel => 'Unknown member note';
+
+  @override
+  String memberNoteLabel(String name) {
+    return '$name note';
+  }
+
+  @override
+  String get editNoteTitle => 'Edit note';
+
+  @override
+  String get forFieldLabel => 'For';
+
+  @override
+  String get saveNoteButton => 'Save note';
+
+  @override
+  String get pollsTitle => 'Polls';
+
+  @override
+  String openPollCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open',
+      one: '1 open',
+      zero: 'none open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noPollsYet => 'No polls yet';
+
+  @override
+  String get pollsEmptyBody => 'Create a local vote for system decisions.';
+
+  @override
+  String get createPollButton => 'Create poll';
+
+  @override
+  String pollOptionSemanticLabel(String option, String status) {
+    return '$option, $status';
+  }
+
+  @override
+  String get selectedStatus => 'selected';
+
+  @override
+  String get notSelectedStatus => 'not selected';
+
+  @override
+  String pollSelectionSummary(String kind, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$kind - $_temp0';
+  }
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get deletePollTooltip => 'Delete poll';
+
+  @override
+  String get deletePollTitle => 'Delete poll?';
+
+  @override
+  String get deletePollBody =>
+      'This poll and its local responses will be removed.';
+
+  @override
+  String get questionFieldLabel => 'Question';
+
+  @override
+  String get descriptionFieldLabel => 'Description';
+
+  @override
+  String get pollDescriptionHelper => 'Optional context for the vote';
+
+  @override
+  String get votingFieldLabel => 'Voting';
+
+  @override
+  String pollOptionFieldLabel(int number) {
+    return 'Option $number';
+  }
+
+  @override
+  String get addPollOptionButton => 'Add option';
+
+  @override
+  String get savePollButton => 'Save poll';
+
+  @override
+  String get singleChoicePollKind => 'Single choice';
+
+  @override
+  String get multipleChoicePollKind => 'Multiple choice';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2576,4 +2724,152 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
     );
     return '...truncated $_temp0';
   }
+
+  @override
+  String get searchNotesHint => 'Search notes';
+
+  @override
+  String get notesTitle => 'Notes';
+
+  @override
+  String get allFilter => 'All';
+
+  @override
+  String get memberFilter => 'Member';
+
+  @override
+  String get systemFilter => 'System';
+
+  @override
+  String get noNotesYet => 'No notes yet';
+
+  @override
+  String get noMatchingNotes => 'No matching notes';
+
+  @override
+  String get notesEmptyBody =>
+      'Local notes can be attached to members or kept general.';
+
+  @override
+  String get tryAnotherSearchOrFilter => 'Try another search or filter.';
+
+  @override
+  String get addNoteButton => 'Add note';
+
+  @override
+  String get deleteNoteTooltip => 'Delete note';
+
+  @override
+  String get deleteNoteTitle => 'Delete note?';
+
+  @override
+  String get deleteNoteBody => 'This note will be permanently removed.';
+
+  @override
+  String get systemNoteLabel => 'System note';
+
+  @override
+  String get unknownMemberNoteLabel => 'Unknown member note';
+
+  @override
+  String memberNoteLabel(String name) {
+    return '$name note';
+  }
+
+  @override
+  String get editNoteTitle => 'Edit note';
+
+  @override
+  String get forFieldLabel => 'For';
+
+  @override
+  String get saveNoteButton => 'Save note';
+
+  @override
+  String get pollsTitle => 'Polls';
+
+  @override
+  String openPollCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open',
+      one: '1 open',
+      zero: 'none open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noPollsYet => 'No polls yet';
+
+  @override
+  String get pollsEmptyBody => 'Create a local vote for system decisions.';
+
+  @override
+  String get createPollButton => 'Create poll';
+
+  @override
+  String pollOptionSemanticLabel(String option, String status) {
+    return '$option, $status';
+  }
+
+  @override
+  String get selectedStatus => 'selected';
+
+  @override
+  String get notSelectedStatus => 'not selected';
+
+  @override
+  String pollSelectionSummary(String kind, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$kind - $_temp0';
+  }
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get deletePollTooltip => 'Delete poll';
+
+  @override
+  String get deletePollTitle => 'Delete poll?';
+
+  @override
+  String get deletePollBody =>
+      'This poll and its local responses will be removed.';
+
+  @override
+  String get questionFieldLabel => 'Question';
+
+  @override
+  String get descriptionFieldLabel => 'Description';
+
+  @override
+  String get pollDescriptionHelper => 'Optional context for the vote';
+
+  @override
+  String get votingFieldLabel => 'Voting';
+
+  @override
+  String pollOptionFieldLabel(int number) {
+    return 'Option $number';
+  }
+
+  @override
+  String get addPollOptionButton => 'Add option';
+
+  @override
+  String get savePollButton => 'Save poll';
+
+  @override
+  String get singleChoicePollKind => 'Single choice';
+
+  @override
+  String get multipleChoicePollKind => 'Multiple choice';
 }

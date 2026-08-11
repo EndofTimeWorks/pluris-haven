@@ -2321,6 +2321,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'...truncated {count, plural, =1{1 character} other{{count} characters}}'**
   String truncatedCharacters(int count);
+
+  /// No description provided for @searchNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search notes'**
+  String get searchNotesHint;
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesTitle;
+
+  /// No description provided for @allFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allFilter;
+
+  /// No description provided for @memberFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get memberFilter;
+
+  /// No description provided for @systemFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get systemFilter;
+
+  /// No description provided for @noNotesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet'**
+  String get noNotesYet;
+
+  /// No description provided for @noMatchingNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching notes'**
+  String get noMatchingNotes;
+
+  /// No description provided for @notesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Local notes can be attached to members or kept general.'**
+  String get notesEmptyBody;
+
+  /// No description provided for @tryAnotherSearchOrFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or filter.'**
+  String get tryAnotherSearchOrFilter;
+
+  /// No description provided for @addNoteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get addNoteButton;
+
+  /// No description provided for @deleteNoteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note'**
+  String get deleteNoteTooltip;
+
+  /// No description provided for @deleteNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note?'**
+  String get deleteNoteTitle;
+
+  /// No description provided for @deleteNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This note will be permanently removed.'**
+  String get deleteNoteBody;
+
+  /// No description provided for @systemNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System note'**
+  String get systemNoteLabel;
+
+  /// No description provided for @unknownMemberNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown member note'**
+  String get unknownMemberNoteLabel;
+
+  /// No description provided for @memberNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} note'**
+  String memberNoteLabel(String name);
+
+  /// No description provided for @editNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get editNoteTitle;
+
+  /// No description provided for @forFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'For'**
+  String get forFieldLabel;
+
+  /// No description provided for @saveNoteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save note'**
+  String get saveNoteButton;
+
+  /// No description provided for @pollsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls'**
+  String get pollsTitle;
+
+  /// No description provided for @openPollCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{none open} =1{1 open} other{{count} open}}'**
+  String openPollCount(int count);
+
+  /// No description provided for @noPollsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No polls yet'**
+  String get noPollsYet;
+
+  /// No description provided for @pollsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a local vote for system decisions.'**
+  String get pollsEmptyBody;
+
+  /// No description provided for @createPollButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create poll'**
+  String get createPollButton;
+
+  /// No description provided for @pollOptionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{option}, {status}'**
+  String pollOptionSemanticLabel(String option, String status);
+
+  /// No description provided for @selectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'selected'**
+  String get selectedStatus;
+
+  /// No description provided for @notSelectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'not selected'**
+  String get notSelectedStatus;
+
+  /// No description provided for @pollSelectionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} - {count, plural, =1{1 selected} other{{count} selected}}'**
+  String pollSelectionSummary(String kind, int count);
+
+  /// No description provided for @closeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
+  /// No description provided for @deletePollTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete poll'**
+  String get deletePollTooltip;
+
+  /// No description provided for @deletePollTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete poll?'**
+  String get deletePollTitle;
+
+  /// No description provided for @deletePollBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This poll and its local responses will be removed.'**
+  String get deletePollBody;
+
+  /// No description provided for @questionFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get questionFieldLabel;
+
+  /// No description provided for @descriptionFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionFieldLabel;
+
+  /// No description provided for @pollDescriptionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional context for the vote'**
+  String get pollDescriptionHelper;
+
+  /// No description provided for @votingFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voting'**
+  String get votingFieldLabel;
+
+  /// No description provided for @pollOptionFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Option {number}'**
+  String pollOptionFieldLabel(int number);
+
+  /// No description provided for @addPollOptionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add option'**
+  String get addPollOptionButton;
+
+  /// No description provided for @savePollButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save poll'**
+  String get savePollButton;
+
+  /// No description provided for @singleChoicePollKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Single choice'**
+  String get singleChoicePollKind;
+
+  /// No description provided for @multipleChoicePollKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple choice'**
+  String get multipleChoicePollKind;
 }
 
 class _AppLocalizationsDelegate
