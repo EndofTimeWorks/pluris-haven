@@ -1167,7 +1167,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('select - 1 values - private'), findsOneWidget);
+    expect(find.text('select - 1 value - private'), findsOneWidget);
 
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
     final field = repository._customFields.single;

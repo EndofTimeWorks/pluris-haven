@@ -12,6 +12,7 @@ class CustomFieldsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<CustomFieldSummary>>(
       stream: repository.watchCustomFields(),
       initialData: const [],
@@ -38,14 +39,14 @@ class CustomFieldsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SpSectionHeader(
-                            title: 'Custom Fields',
+                            title: l10n.navigationCustomFields,
                             trailing: StatusPill(text: '${fields.length}'),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             fields.isEmpty
-                                ? 'Import a Simply Plural export to bring custom profile fields into the local archive.'
-                                : '$fieldsWithValues fields have imported values.',
+                                ? l10n.customFieldsImportDescription
+                                : l10n.customFieldsWithValues(fieldsWithValues),
                             style: const TextStyle(
                               color: _spMuted,
                               height: 1.35,
@@ -53,10 +54,9 @@ class CustomFieldsPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 14),
                           if (fields.isEmpty)
-                            const SpEmptyState(
-                              title: 'No custom fields yet',
-                              body:
-                                  'SP custom fields will show here after import.',
+                            SpEmptyState(
+                              title: l10n.noCustomFieldsYet,
+                              body: l10n.customFieldsEmptyBody,
                             )
                           else
                             for (
@@ -80,8 +80,8 @@ class CustomFieldsPage extends StatelessWidget {
                             ],
                           const SizedBox(height: 14),
                           SpActionRow(
-                            primary: 'Import',
-                            secondary: 'Add field',
+                            primary: l10n.importTitle,
+                            secondary: l10n.addFieldButton,
                             onPrimary: onImport,
                             onSecondary: () =>
                                 showAddCustomFieldSheet(context, repository),
@@ -116,6 +116,7 @@ class CustomFieldTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final privacy = field.privacy?.trim();
     return Material(
       color: Colors.transparent,
@@ -136,29 +137,28 @@ class CustomFieldTile extends StatelessWidget {
         subtitle: Text(
           [
             field.fieldType,
-            '${field.valueCount} values',
+            l10n.valueCount(field.valueCount),
             if (privacy != null && privacy.isNotEmpty) privacy,
           ].join(' - '),
           style: const TextStyle(color: _spMuted),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: 'Custom field actions',
+          tooltip: l10n.customFieldActionsTooltip,
           onSelected: (value) {
             if (value == 'edit') {
               showCustomFieldSheet(context, repository, field: field);
             } else if (value == 'delete') {
               confirmDelete(
                 context,
-                title: 'Delete custom field?',
-                body:
-                    'This removes "${field.name}" and ${field.valueCount} saved values from this device.',
+                title: l10n.deleteCustomFieldTitle,
+                body: l10n.deleteCustomFieldBody(field.name, field.valueCount),
                 onDelete: () => repository.deleteCustomField(field.id),
               );
             }
           },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'edit', child: Text('Edit')),
-            PopupMenuItem(value: 'delete', child: Text('Delete')),
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'edit', child: Text(l10n.editButton)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
           ],
         ),
       ),
@@ -208,97 +208,103 @@ void showCustomFieldDetailSheet(
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: _spSurface,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const SpIconBubble(icon: Icons.view_list_rounded),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        field.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const SpIconBubble(icon: Icons.view_list_rounded),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          field.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${field.fieldType} - ${values.length} values',
-                        style: const TextStyle(color: _spMuted),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.customFieldValueSummary(
+                            field.fieldType,
+                            values.length,
+                          ),
+                          style: const TextStyle(color: _spMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                key: const ValueKey('custom-field-system-value-row'),
+                contentPadding: EdgeInsets.zero,
+                leading: const SpIconBubble(icon: Icons.home_work_rounded),
+                title: Text(
+                  l10n.systemLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(
+                  systemValue == null || systemValue.value.trim().isEmpty
+                      ? l10n.notSetLabel
+                      : systemValue.value,
+                  style: const TextStyle(color: _spMuted),
+                ),
+                trailing: const Icon(Icons.edit_rounded, size: 18),
+                onTap: () => openValueEditor(systemValue, null),
+              ),
+              if (memberValues.isNotEmpty)
+                const Divider(height: 1, color: _spLine),
+              if (memberValues.isEmpty)
+                SpEmptyState(
+                  title: l10n.noMemberValuesYet,
+                  body: l10n.memberValuesEmptyBody,
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 360),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: memberValues.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1, color: _spLine),
+                    itemBuilder: (context, index) {
+                      final value = memberValues[index];
+                      final memberId = value.memberId;
+                      final owner =
+                          namesById[memberId] ?? l10n.unknownMemberLabel;
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const SpIconBubble(icon: Icons.person_rounded),
+                        title: Text(
+                          owner,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        subtitle: Text(
+                          value.value,
+                          style: const TextStyle(color: _spMuted),
+                        ),
+                        trailing: const Icon(Icons.edit_rounded, size: 18),
+                        onTap: () => openValueEditor(value, memberId),
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              key: const ValueKey('custom-field-system-value-row'),
-              contentPadding: EdgeInsets.zero,
-              leading: const SpIconBubble(icon: Icons.home_work_rounded),
-              title: const Text(
-                'System',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: Text(
-                systemValue == null || systemValue.value.trim().isEmpty
-                    ? 'not set'
-                    : systemValue.value,
-                style: const TextStyle(color: _spMuted),
-              ),
-              trailing: const Icon(Icons.edit_rounded, size: 18),
-              onTap: () => openValueEditor(systemValue, null),
-            ),
-            if (memberValues.isNotEmpty)
-              const Divider(height: 1, color: _spLine),
-            if (memberValues.isEmpty)
-              const SpEmptyState(
-                title: 'No member values yet',
-                body:
-                    'Imported per-alter values for this field will show here.',
-              )
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: memberValues.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1, color: _spLine),
-                  itemBuilder: (context, index) {
-                    final value = memberValues[index];
-                    final memberId = value.memberId;
-                    final owner = namesById[memberId] ?? 'Unknown member';
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const SpIconBubble(icon: Icons.person_rounded),
-                      title: Text(
-                        owner,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Text(
-                        value.value,
-                        style: const TextStyle(color: _spMuted),
-                      ),
-                      trailing: const Icon(Icons.edit_rounded, size: 18),
-                      onTap: () => openValueEditor(value, memberId),
-                    );
-                  },
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
@@ -358,6 +364,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -370,15 +377,15 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Custom field',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.customFieldTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
             Text(
               _isEditing
-                  ? 'Edit the field definition. Existing values stay attached.'
-                  : 'Create a field that can hold member or system data.',
+                  ? l10n.editCustomFieldDescription
+                  : l10n.createCustomFieldDescription,
               style: const TextStyle(color: _spMuted, height: 1.35),
             ),
             const SizedBox(height: 12),
@@ -386,19 +393,22 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
               key: const ValueKey('custom-field-name-field'),
               controller: _nameController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               key: const ValueKey('custom-field-type-field'),
               initialValue: _fieldType,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: const [
-                DropdownMenuItem(value: 'text', child: Text('Text')),
-                DropdownMenuItem(value: 'number', child: Text('Number')),
-                DropdownMenuItem(value: 'date', child: Text('Date')),
-                DropdownMenuItem(value: 'boolean', child: Text('Boolean')),
-                DropdownMenuItem(value: 'select', child: Text('Select')),
+              decoration: InputDecoration(labelText: l10n.typeFieldLabel),
+              items: [
+                DropdownMenuItem(value: 'text', child: Text(l10n.textType)),
+                DropdownMenuItem(value: 'number', child: Text(l10n.numberType)),
+                DropdownMenuItem(value: 'date', child: Text(l10n.dateType)),
+                DropdownMenuItem(
+                  value: 'boolean',
+                  child: Text(l10n.booleanType),
+                ),
+                DropdownMenuItem(value: 'select', child: Text(l10n.selectType)),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -411,9 +421,9 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
               key: const ValueKey('custom-field-privacy-field'),
               controller: _privacyController,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Privacy',
-                hintText: 'private, friends, public',
+              decoration: InputDecoration(
+                labelText: l10n.privacyFieldLabel,
+                hintText: l10n.privacyOptionsHint,
               ),
               onSubmitted: (_) => _save(),
             ),
@@ -422,7 +432,9 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
               key: const ValueKey('save-custom-field-button'),
               onPressed: _save,
               icon: Icon(_isEditing ? Icons.save_outlined : Icons.add_rounded),
-              label: Text(_isEditing ? 'Save field' : 'Create field'),
+              label: Text(
+                _isEditing ? l10n.saveFieldButton : l10n.createFieldButton,
+              ),
             ),
           ],
         ),

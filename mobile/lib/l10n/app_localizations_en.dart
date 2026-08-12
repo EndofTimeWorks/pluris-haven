@@ -2088,6 +2088,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String endedFrontTiming(String started, String ended) {
     return 'started $started - ended $ended';
   }
+
+  @override
+  String get customFieldsImportDescription =>
+      'Import a Simply Plural export to bring custom profile fields into the local archive.';
+
+  @override
+  String customFieldsWithValues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields have imported values.',
+      one: '1 field has imported values.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noCustomFieldsYet => 'No custom fields yet';
+
+  @override
+  String get customFieldsEmptyBody =>
+      'SP custom fields will show here after import.';
+
+  @override
+  String get addFieldButton => 'Add field';
+
+  @override
+  String valueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count values',
+      one: '1 value',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get customFieldActionsTooltip => 'Custom field actions';
+
+  @override
+  String get deleteCustomFieldTitle => 'Delete custom field?';
+
+  @override
+  String deleteCustomFieldBody(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved values',
+      one: '1 saved value',
+    );
+    return 'This removes “$name” and $_temp0 from this device.';
+  }
+
+  @override
+  String customFieldValueSummary(String type, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count values',
+      one: '1 value',
+    );
+    return '$type - $_temp0';
+  }
+
+  @override
+  String get systemLabel => 'System';
+
+  @override
+  String get noMemberValuesYet => 'No member values yet';
+
+  @override
+  String get memberValuesEmptyBody =>
+      'Imported per-alter values for this field will show here.';
+
+  @override
+  String get customFieldTitle => 'Custom field';
+
+  @override
+  String get editCustomFieldDescription =>
+      'Edit the field definition. Existing values stay attached.';
+
+  @override
+  String get createCustomFieldDescription =>
+      'Create a field that can hold member or system data.';
+
+  @override
+  String get textType => 'Text';
+
+  @override
+  String get numberType => 'Number';
+
+  @override
+  String get dateType => 'Date';
+
+  @override
+  String get booleanType => 'Boolean';
+
+  @override
+  String get selectType => 'Select';
+
+  @override
+  String get privacyOptionsHint => 'private, friends, public';
+
+  @override
+  String get saveFieldButton => 'Save field';
+
+  @override
+  String get createFieldButton => 'Create field';
 }
 
 /// The translations for English, as used in the United States (`en_US`).

@@ -3742,6 +3742,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'started {started} - ended {ended}'**
   String endedFrontTiming(String started, String ended);
+
+  /// No description provided for @customFieldsImportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a Simply Plural export to bring custom profile fields into the local archive.'**
+  String get customFieldsImportDescription;
+
+  /// No description provided for @customFieldsWithValues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field has imported values.} other{{count} fields have imported values.}}'**
+  String customFieldsWithValues(int count);
+
+  /// No description provided for @noCustomFieldsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No custom fields yet'**
+  String get noCustomFieldsYet;
+
+  /// No description provided for @customFieldsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'SP custom fields will show here after import.'**
+  String get customFieldsEmptyBody;
+
+  /// No description provided for @addFieldButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add field'**
+  String get addFieldButton;
+
+  /// No description provided for @valueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 value} other{{count} values}}'**
+  String valueCount(int count);
+
+  /// No description provided for @customFieldActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom field actions'**
+  String get customFieldActionsTooltip;
+
+  /// No description provided for @deleteCustomFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete custom field?'**
+  String get deleteCustomFieldTitle;
+
+  /// No description provided for @deleteCustomFieldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes “{name}” and {count, plural, =1{1 saved value} other{{count} saved values}} from this device.'**
+  String deleteCustomFieldBody(String name, int count);
+
+  /// No description provided for @customFieldValueSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} - {count, plural, =1{1 value} other{{count} values}}'**
+  String customFieldValueSummary(String type, int count);
+
+  /// No description provided for @systemLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get systemLabel;
+
+  /// No description provided for @noMemberValuesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No member values yet'**
+  String get noMemberValuesYet;
+
+  /// No description provided for @memberValuesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported per-alter values for this field will show here.'**
+  String get memberValuesEmptyBody;
+
+  /// No description provided for @customFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom field'**
+  String get customFieldTitle;
+
+  /// No description provided for @editCustomFieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the field definition. Existing values stay attached.'**
+  String get editCustomFieldDescription;
+
+  /// No description provided for @createCustomFieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a field that can hold member or system data.'**
+  String get createCustomFieldDescription;
+
+  /// No description provided for @textType.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get textType;
+
+  /// No description provided for @numberType.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get numberType;
+
+  /// No description provided for @dateType.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateType;
+
+  /// No description provided for @booleanType.
+  ///
+  /// In en, this message translates to:
+  /// **'Boolean'**
+  String get booleanType;
+
+  /// No description provided for @selectType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectType;
+
+  /// No description provided for @privacyOptionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'private, friends, public'**
+  String get privacyOptionsHint;
+
+  /// No description provided for @saveFieldButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save field'**
+  String get saveFieldButton;
+
+  /// No description provided for @createFieldButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create field'**
+  String get createFieldButton;
 }
 
 class _AppLocalizationsDelegate

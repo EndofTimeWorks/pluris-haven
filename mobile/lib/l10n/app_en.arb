@@ -851,5 +851,46 @@
       "started": { "type": "String" },
       "ended": { "type": "String" }
     }
-  }
+  },
+  "customFieldsImportDescription": "Import a Simply Plural export to bring custom profile fields into the local archive.",
+  "customFieldsWithValues": "{count, plural, =1{1 field has imported values.} other{{count} fields have imported values.}}",
+  "@customFieldsWithValues": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "noCustomFieldsYet": "No custom fields yet",
+  "customFieldsEmptyBody": "SP custom fields will show here after import.",
+  "addFieldButton": "Add field",
+  "valueCount": "{count, plural, =1{1 value} other{{count} values}}",
+  "@valueCount": { "placeholders": { "count": { "type": "int" } } },
+  "customFieldActionsTooltip": "Custom field actions",
+  "deleteCustomFieldTitle": "Delete custom field?",
+  "deleteCustomFieldBody": "This removes “{name}” and {count, plural, =1{1 saved value} other{{count} saved values}} from this device.",
+  "@deleteCustomFieldBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "customFieldValueSummary": "{type} - {count, plural, =1{1 value} other{{count} values}}",
+  "@customFieldValueSummary": {
+    "placeholders": {
+      "type": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "systemLabel": "System",
+  "noMemberValuesYet": "No member values yet",
+  "memberValuesEmptyBody": "Imported per-alter values for this field will show here.",
+  "customFieldTitle": "Custom field",
+  "editCustomFieldDescription": "Edit the field definition. Existing values stay attached.",
+  "createCustomFieldDescription": "Create a field that can hold member or system data.",
+  "typeFieldLabel": "Type",
+  "textType": "Text",
+  "numberType": "Number",
+  "dateType": "Date",
+  "booleanType": "Boolean",
+  "selectType": "Select",
+  "privacyOptionsHint": "private, friends, public",
+  "saveFieldButton": "Save field",
+  "createFieldButton": "Create field"
 }
