@@ -2885,6 +2885,161 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rose'**
   String get roseColorLabel;
+
+  /// No description provided for @searchMessagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search messages'**
+  String get searchMessagesHint;
+
+  /// No description provided for @messagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get messagesTitle;
+
+  /// No description provided for @noMessagesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get noMessagesYet;
+
+  /// No description provided for @noMatchingMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching messages'**
+  String get noMatchingMessages;
+
+  /// No description provided for @messagesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave local notes for the system here.'**
+  String get messagesEmptyBody;
+
+  /// No description provided for @addMessageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add message'**
+  String get addMessageButton;
+
+  /// No description provided for @systemMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System message'**
+  String get systemMessageLabel;
+
+  /// No description provided for @unknownSenderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown sender'**
+  String get unknownSenderLabel;
+
+  /// No description provided for @unknownMemberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown member'**
+  String get unknownMemberLabel;
+
+  /// No description provided for @messageMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'{sender} - {date}{replyMarker}'**
+  String messageMetadata(String sender, String date, String replyMarker);
+
+  /// No description provided for @memberBoardMessageMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'{board} board - {sender} - {date}{replyMarker}'**
+  String memberBoardMessageMetadata(
+    String board,
+    String sender,
+    String date,
+    String replyMarker,
+  );
+
+  /// No description provided for @messageReplyMarker.
+  ///
+  /// In en, this message translates to:
+  /// **' - reply'**
+  String get messageReplyMarker;
+
+  /// No description provided for @messageActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get messageActionsTooltip;
+
+  /// No description provided for @replyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get replyButton;
+
+  /// No description provided for @deleteMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete message?'**
+  String get deleteMessageTitle;
+
+  /// No description provided for @deleteMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This message will be hidden from the local board.'**
+  String get deleteMessageBody;
+
+  /// No description provided for @editMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit message'**
+  String get editMessageTitle;
+
+  /// No description provided for @fromFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get fromFieldLabel;
+
+  /// No description provided for @boardFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get boardFieldLabel;
+
+  /// No description provided for @systemBoardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System board'**
+  String get systemBoardLabel;
+
+  /// No description provided for @memberBoardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Member board'**
+  String get memberBoardLabel;
+
+  /// No description provided for @replyingToMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to: {message}'**
+  String replyingToMessage(String message);
+
+  /// No description provided for @messageFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get messageFieldLabel;
+
+  /// No description provided for @saveMessageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save message'**
+  String get saveMessageButton;
+
+  /// No description provided for @chooseMemberBoardFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a member board first.'**
+  String get chooseMemberBoardFirst;
 }
 
 class _AppLocalizationsDelegate

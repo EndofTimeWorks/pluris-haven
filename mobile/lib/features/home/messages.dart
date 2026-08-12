@@ -27,6 +27,7 @@ class _MessagesPageState extends State<MessagesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<MessageSummary>>(
       stream: widget.repository.watchMessages(),
       initialData: const [],
@@ -48,6 +49,7 @@ class _MessagesPageState extends State<MessagesPage> {
                       _matchesQuery(_query, [
                         message.body,
                         _messageSenderLabel(
+                          l10n,
                           message,
                           memberNamesById[message.memberId],
                         ),
@@ -59,16 +61,22 @@ class _MessagesPageState extends State<MessagesPage> {
             return SpPage(
               children: [
                 SpSearchField(
-                  hintText: 'Search messages',
+                  hintText: l10n.searchMessagesHint,
                   controller: _searchController,
                   onChanged: (value) => setState(() => _query = value),
                 ),
                 const SizedBox(height: 10),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'all', label: Text('All')),
-                    ButtonSegment(value: 'system', label: Text('System')),
-                    ButtonSegment(value: 'member', label: Text('Member')),
+                  segments: [
+                    ButtonSegment(value: 'all', label: Text(l10n.allFilter)),
+                    ButtonSegment(
+                      value: 'system',
+                      label: Text(l10n.systemFilter),
+                    ),
+                    ButtonSegment(
+                      value: 'member',
+                      label: Text(l10n.memberFilter),
+                    ),
                   ],
                   selected: {_boardFilter},
                   onSelectionChanged: (value) =>
@@ -80,18 +88,18 @@ class _MessagesPageState extends State<MessagesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SpSectionHeader(
-                        title: 'Messages',
+                        title: l10n.messagesTitle,
                         trailing: StatusPill(text: '${messages.length}'),
                       ),
                       const SizedBox(height: 12),
                       if (messages.isEmpty)
                         SpEmptyState(
                           title: _query.trim().isEmpty
-                              ? 'No messages yet'
-                              : 'No matching messages',
+                              ? l10n.noMessagesYet
+                              : l10n.noMatchingMessages,
                           body: _query.trim().isEmpty
-                              ? 'Leave local notes for the system here.'
-                              : 'Try another search.',
+                              ? l10n.messagesEmptyBody
+                              : l10n.tryAnotherSearch,
                         )
                       else
                         for (final message in messages) ...[
@@ -110,8 +118,8 @@ class _MessagesPageState extends State<MessagesPage> {
                         ],
                       const SizedBox(height: 14),
                       SpActionRow(
-                        primary: 'Add message',
-                        secondary: 'Import',
+                        primary: l10n.addMessageButton,
+                        secondary: l10n.importTitle,
                         onPrimary: () =>
                             showMessageSheet(context, widget.repository),
                         onSecondary: widget.onImport,
@@ -144,7 +152,8 @@ class MessageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final senderLabel = _messageSenderLabel(message, memberName);
+    final l10n = AppLocalizations.of(context);
+    final senderLabel = _messageSenderLabel(l10n, message, memberName);
 
     return Material(
       color: Colors.transparent,
@@ -158,26 +167,41 @@ class MessageTile extends StatelessWidget {
           style: const TextStyle(height: 1.35),
         ),
         subtitle: Text(
-          '${message.boardKind == 'member' ? '${boardMemberName ?? 'Unknown'} board - ' : ''}$senderLabel - ${_shortDateTime(message.createdAt)}${message.parentMessageId == null ? '' : ' - reply'}',
+          message.boardKind == 'member'
+              ? l10n.memberBoardMessageMetadata(
+                  boardMemberName ?? l10n.unknownMemberLabel,
+                  senderLabel,
+                  _shortDateTime(message.createdAt),
+                  message.parentMessageId == null
+                      ? ''
+                      : l10n.messageReplyMarker,
+                )
+              : l10n.messageMetadata(
+                  senderLabel,
+                  _shortDateTime(message.createdAt),
+                  message.parentMessageId == null
+                      ? ''
+                      : l10n.messageReplyMarker,
+                ),
           style: const TextStyle(color: _spMuted, fontSize: 12),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: 'Message actions',
+          tooltip: l10n.messageActionsTooltip,
           onSelected: (action) {
             if (action == 'reply') {
               showMessageSheet(context, repository, parentMessage: message);
             } else if (action == 'delete') {
               confirmDelete(
                 context,
-                title: 'Delete message?',
-                body: 'This message will be hidden from the local board.',
+                title: l10n.deleteMessageTitle,
+                body: l10n.deleteMessageBody,
                 onDelete: () => repository.deleteMessage(message.id),
               );
             }
           },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'reply', child: Text('Reply')),
-            PopupMenuItem(value: 'delete', child: Text('Delete')),
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'reply', child: Text(l10n.replyButton)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
           ],
         ),
         onTap: () => showMessageSheet(context, repository, message: message),
@@ -221,12 +245,16 @@ class MessageSheet extends StatefulWidget {
   State<MessageSheet> createState() => _MessageSheetState();
 }
 
-String _messageSenderLabel(MessageSummary message, String? memberName) {
+String _messageSenderLabel(
+  AppLocalizations l10n,
+  MessageSummary message,
+  String? memberName,
+) {
   if (message.memberId == null) {
-    return 'System message';
+    return l10n.systemMessageLabel;
   }
   final name = memberName?.trim();
-  return name == null || name.isEmpty ? 'Unknown sender' : name;
+  return name == null || name.isEmpty ? l10n.unknownSenderLabel : name;
 }
 
 class _MessageSheetState extends State<MessageSheet> {
@@ -259,6 +287,7 @@ class _MessageSheetState extends State<MessageSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -272,7 +301,7 @@ class _MessageSheetState extends State<MessageSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _isEditing ? 'Edit message' : 'Add message',
+              _isEditing ? l10n.editMessageTitle : l10n.addMessageButton,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -289,11 +318,11 @@ class _MessageSheetState extends State<MessageSheet> {
                 return DropdownButtonFormField<String>(
                   key: const ValueKey('message-member-field'),
                   initialValue: value,
-                  decoration: const InputDecoration(labelText: 'From'),
+                  decoration: InputDecoration(labelText: l10n.fromFieldLabel),
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: _systemMessageValue,
-                      child: Text('System message'),
+                      child: Text(l10n.systemMessageLabel),
                     ),
                     for (final member in members)
                       DropdownMenuItem(
@@ -311,10 +340,16 @@ class _MessageSheetState extends State<MessageSheet> {
             DropdownButtonFormField<String>(
               key: const ValueKey('message-board-kind-field'),
               initialValue: _boardKind,
-              decoration: const InputDecoration(labelText: 'Board'),
-              items: const [
-                DropdownMenuItem(value: 'system', child: Text('System board')),
-                DropdownMenuItem(value: 'member', child: Text('Member board')),
+              decoration: InputDecoration(labelText: l10n.boardFieldLabel),
+              items: [
+                DropdownMenuItem(
+                  value: 'system',
+                  child: Text(l10n.systemBoardLabel),
+                ),
+                DropdownMenuItem(
+                  value: 'member',
+                  child: Text(l10n.memberBoardLabel),
+                ),
               ],
               onChanged: (value) => setState(() {
                 _boardKind = value ?? 'system';
@@ -334,8 +369,8 @@ class _MessageSheetState extends State<MessageSheet> {
                         members.any((member) => member.id == _boardMemberId)
                         ? _boardMemberId
                         : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Member board',
+                    decoration: InputDecoration(
+                      labelText: l10n.memberBoardLabel,
                     ),
                     items: [
                       for (final member in members)
@@ -353,7 +388,7 @@ class _MessageSheetState extends State<MessageSheet> {
             if (widget.parentMessage != null) ...[
               const SizedBox(height: 10),
               Text(
-                'Replying to: ${widget.parentMessage!.body}',
+                l10n.replyingToMessage(widget.parentMessage!.body),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: _spMuted),
@@ -365,13 +400,15 @@ class _MessageSheetState extends State<MessageSheet> {
               controller: _bodyController,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(labelText: 'Message'),
+              decoration: InputDecoration(labelText: l10n.messageFieldLabel),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-message-button'),
               onPressed: _save,
-              child: Text(_isEditing ? 'Save message' : 'Save'),
+              child: Text(
+                _isEditing ? l10n.saveMessageButton : l10n.saveButtonLabel,
+              ),
             ),
           ],
         ),
@@ -382,7 +419,9 @@ class _MessageSheetState extends State<MessageSheet> {
   Future<void> _save() async {
     if (_boardKind == 'member' && _boardMemberId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choose a member board first.')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).chooseMemberBoardFirst),
+        ),
       );
       return;
     }

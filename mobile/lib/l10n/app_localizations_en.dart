@@ -1616,6 +1616,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roseColorLabel => 'Rose';
+
+  @override
+  String get searchMessagesHint => 'Search messages';
+
+  @override
+  String get messagesTitle => 'Messages';
+
+  @override
+  String get noMessagesYet => 'No messages yet';
+
+  @override
+  String get noMatchingMessages => 'No matching messages';
+
+  @override
+  String get messagesEmptyBody => 'Leave local notes for the system here.';
+
+  @override
+  String get addMessageButton => 'Add message';
+
+  @override
+  String get systemMessageLabel => 'System message';
+
+  @override
+  String get unknownSenderLabel => 'Unknown sender';
+
+  @override
+  String get unknownMemberLabel => 'Unknown member';
+
+  @override
+  String messageMetadata(String sender, String date, String replyMarker) {
+    return '$sender - $date$replyMarker';
+  }
+
+  @override
+  String memberBoardMessageMetadata(
+    String board,
+    String sender,
+    String date,
+    String replyMarker,
+  ) {
+    return '$board board - $sender - $date$replyMarker';
+  }
+
+  @override
+  String get messageReplyMarker => ' - reply';
+
+  @override
+  String get messageActionsTooltip => 'Message actions';
+
+  @override
+  String get replyButton => 'Reply';
+
+  @override
+  String get deleteMessageTitle => 'Delete message?';
+
+  @override
+  String get deleteMessageBody =>
+      'This message will be hidden from the local board.';
+
+  @override
+  String get editMessageTitle => 'Edit message';
+
+  @override
+  String get fromFieldLabel => 'From';
+
+  @override
+  String get boardFieldLabel => 'Board';
+
+  @override
+  String get systemBoardLabel => 'System board';
+
+  @override
+  String get memberBoardLabel => 'Member board';
+
+  @override
+  String replyingToMessage(String message) {
+    return 'Replying to: $message';
+  }
+
+  @override
+  String get messageFieldLabel => 'Message';
+
+  @override
+  String get saveMessageButton => 'Save message';
+
+  @override
+  String get chooseMemberBoardFirst => 'Choose a member board first.';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -3230,4 +3317,91 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get roseColorLabel => 'Rose';
+
+  @override
+  String get searchMessagesHint => 'Search messages';
+
+  @override
+  String get messagesTitle => 'Messages';
+
+  @override
+  String get noMessagesYet => 'No messages yet';
+
+  @override
+  String get noMatchingMessages => 'No matching messages';
+
+  @override
+  String get messagesEmptyBody => 'Leave local notes for the system here.';
+
+  @override
+  String get addMessageButton => 'Add message';
+
+  @override
+  String get systemMessageLabel => 'System message';
+
+  @override
+  String get unknownSenderLabel => 'Unknown sender';
+
+  @override
+  String get unknownMemberLabel => 'Unknown member';
+
+  @override
+  String messageMetadata(String sender, String date, String replyMarker) {
+    return '$sender - $date$replyMarker';
+  }
+
+  @override
+  String memberBoardMessageMetadata(
+    String board,
+    String sender,
+    String date,
+    String replyMarker,
+  ) {
+    return '$board board - $sender - $date$replyMarker';
+  }
+
+  @override
+  String get messageReplyMarker => ' - reply';
+
+  @override
+  String get messageActionsTooltip => 'Message actions';
+
+  @override
+  String get replyButton => 'Reply';
+
+  @override
+  String get deleteMessageTitle => 'Delete message?';
+
+  @override
+  String get deleteMessageBody =>
+      'This message will be hidden from the local board.';
+
+  @override
+  String get editMessageTitle => 'Edit message';
+
+  @override
+  String get fromFieldLabel => 'From';
+
+  @override
+  String get boardFieldLabel => 'Board';
+
+  @override
+  String get systemBoardLabel => 'System board';
+
+  @override
+  String get memberBoardLabel => 'Member board';
+
+  @override
+  String replyingToMessage(String message) {
+    return 'Replying to: $message';
+  }
+
+  @override
+  String get messageFieldLabel => 'Message';
+
+  @override
+  String get saveMessageButton => 'Save message';
+
+  @override
+  String get chooseMemberBoardFirst => 'Choose a member board first.';
 }

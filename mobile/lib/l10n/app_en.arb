@@ -511,7 +511,9 @@
   "@groupConflictCount": { "placeholders": { "count": { "type": "int" } } },
   "listAnd": " and ",
   "importConflictsBody": "{conflicts} from this {source} import already exist in your local data.\n\nHow should Pluris Haven handle them?",
-  "@importConflictsBody": { "placeholders": { "conflicts": { "type": "String" }, "source": { "type": "String" } } },
+  "@importConflictsBody": {
+    "placeholders": { "conflicts": { "type": "String" }, "source": { "type": "String" } }
+  },
   "skipMatchesButton": "Skip matches",
   "createDuplicatesButton": "Create duplicates",
   "updateExistingButton": "Update existing",
@@ -584,11 +586,15 @@
   "pollsEmptyBody": "Create a local vote for system decisions.",
   "createPollButton": "Create poll",
   "pollOptionSemanticLabel": "{option}, {status}",
-  "@pollOptionSemanticLabel": { "placeholders": { "option": { "type": "String" }, "status": { "type": "String" } } },
+  "@pollOptionSemanticLabel": {
+    "placeholders": { "option": { "type": "String" }, "status": { "type": "String" } }
+  },
   "selectedStatus": "selected",
   "notSelectedStatus": "not selected",
   "pollSelectionSummary": "{kind} - {count, plural, =1{1 selected} other{{count} selected}}",
-  "@pollSelectionSummary": { "placeholders": { "kind": { "type": "String" }, "count": { "type": "int" } } },
+  "@pollSelectionSummary": {
+    "placeholders": { "kind": { "type": "String" }, "count": { "type": "int" } }
+  },
   "closeButton": "Close",
   "deletePollTooltip": "Delete poll",
   "deletePollTitle": "Delete poll?",
@@ -629,9 +635,17 @@
   "groupMemberCount": "{count, plural, =1{1 member} other{{count} members}}",
   "@groupMemberCount": { "placeholders": { "count": { "type": "int" } } },
   "groupSemanticLabel": "{name}, {members}",
-  "@groupSemanticLabel": { "placeholders": { "name": { "type": "String" }, "members": { "type": "String" } } },
+  "@groupSemanticLabel": {
+    "placeholders": { "name": { "type": "String" }, "members": { "type": "String" } }
+  },
   "nestedGroupSemanticLabel": "{name}, nested group level {depth}, {members}",
-  "@nestedGroupSemanticLabel": { "placeholders": { "name": { "type": "String" }, "depth": { "type": "int" }, "members": { "type": "String" } } },
+  "@nestedGroupSemanticLabel": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "depth": { "type": "int" },
+      "members": { "type": "String" }
+    }
+  },
   "groupAvatarSemanticLabel": "Avatar for group {name}",
   "@groupAvatarSemanticLabel": { "placeholders": { "name": { "type": "String" } } },
   "groupActionsTooltip": "Group actions",
@@ -653,5 +667,46 @@
   "purpleColorLabel": "Purple",
   "goldColorLabel": "Gold",
   "tealColorLabel": "Teal",
-  "roseColorLabel": "Rose"
+  "roseColorLabel": "Rose",
+  "searchMessagesHint": "Search messages",
+  "messagesTitle": "Messages",
+  "noMessagesYet": "No messages yet",
+  "noMatchingMessages": "No matching messages",
+  "messagesEmptyBody": "Leave local notes for the system here.",
+  "addMessageButton": "Add message",
+  "systemMessageLabel": "System message",
+  "unknownSenderLabel": "Unknown sender",
+  "unknownMemberLabel": "Unknown member",
+  "messageMetadata": "{sender} - {date}{replyMarker}",
+  "@messageMetadata": {
+    "placeholders": {
+      "sender": { "type": "String" },
+      "date": { "type": "String" },
+      "replyMarker": { "type": "String" }
+    }
+  },
+  "memberBoardMessageMetadata": "{board} board - {sender} - {date}{replyMarker}",
+  "@memberBoardMessageMetadata": {
+    "placeholders": {
+      "board": { "type": "String" },
+      "sender": { "type": "String" },
+      "date": { "type": "String" },
+      "replyMarker": { "type": "String" }
+    }
+  },
+  "messageReplyMarker": " - reply",
+  "messageActionsTooltip": "Message actions",
+  "replyButton": "Reply",
+  "deleteMessageTitle": "Delete message?",
+  "deleteMessageBody": "This message will be hidden from the local board.",
+  "editMessageTitle": "Edit message",
+  "fromFieldLabel": "From",
+  "boardFieldLabel": "Board",
+  "systemBoardLabel": "System board",
+  "memberBoardLabel": "Member board",
+  "replyingToMessage": "Replying to: {message}",
+  "@replyingToMessage": { "placeholders": { "message": { "type": "String" } } },
+  "messageFieldLabel": "Message",
+  "saveMessageButton": "Save message",
+  "chooseMemberBoardFirst": "Choose a member board first."
 }
