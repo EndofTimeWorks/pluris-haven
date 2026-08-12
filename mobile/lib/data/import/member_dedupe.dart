@@ -18,6 +18,10 @@ class ImportMemberCandidate {
   final bool isCustomFront;
 
   String get normalizedName => normalizeImportName(displayName);
+
+  bool get hasStrongId =>
+      (pluralKitId?.trim().isNotEmpty ?? false) ||
+      (sourceMemberId?.trim().isNotEmpty ?? false);
 }
 
 class ExistingMemberIdentity {
@@ -107,6 +111,10 @@ class MemberDedupeIndex {
       if (match != null) {
         return match;
       }
+    }
+
+    if (candidate.hasStrongId) {
+      return null;
     }
 
     return _byName[_NameKey(candidate.isCustomFront, candidate.normalizedName)];

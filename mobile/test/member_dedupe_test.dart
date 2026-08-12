@@ -48,6 +48,51 @@ void main() {
     expect(resolution.match?.localId, 'local-sp');
   });
 
+  test('does not merge equal names with different strong IDs', () {
+    final index = MemberDedupeIndex([
+      const ExistingMemberIdentity(
+        localId: 'local-a',
+        displayName: 'River',
+        pluralKitId: 'pk-a',
+      ),
+    ]);
+
+    final resolution = index.resolve(
+      const ImportMemberCandidate(
+        source: ImportSource.pluralKitFile,
+        displayName: 'River',
+        pluralKitId: 'pk-b',
+      ),
+      strategy: ImportConflictStrategy.update,
+    );
+
+    expect(resolution.disposition, ImportDedupeDisposition.created);
+    expect(resolution.match, isNull);
+  });
+
+  test('does not merge equal names with unmatched source IDs', () {
+    final index = MemberDedupeIndex([
+      const ExistingMemberIdentity(
+        localId: 'local-sp',
+        displayName: 'River',
+        source: ImportSource.simplyPlural,
+        sourceMemberId: 'sp-a',
+      ),
+    ]);
+
+    final resolution = index.resolve(
+      const ImportMemberCandidate(
+        source: ImportSource.simplyPlural,
+        displayName: 'River',
+        sourceMemberId: 'sp-b',
+      ),
+      strategy: ImportConflictStrategy.update,
+    );
+
+    expect(resolution.disposition, ImportDedupeDisposition.created);
+    expect(resolution.match, isNull);
+  });
+
   test('scopes fallback name matches by custom front flag', () {
     final index = MemberDedupeIndex([
       const ExistingMemberIdentity(localId: 'member', displayName: 'Asleep'),
