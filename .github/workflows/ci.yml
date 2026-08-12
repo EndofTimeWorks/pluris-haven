@@ -41,6 +41,9 @@ jobs:
 
       - run: pnpm format:check
 
+      - name: Check localisation catalogues
+        run: pnpm check:l10n
+
       - name: Lint pull request commit messages
         if: github.event_name == 'pull_request'
         run: >-
