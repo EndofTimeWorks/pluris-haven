@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,8 @@ class ServerAccountController extends ChangeNotifier {
   static const _serverUrlKey = 'pluris_haven.server.url.v1';
   static const _accessTokenKey = 'pluris_haven.server.access_token.v1';
   static const _refreshTokenKey = 'pluris_haven.server.refresh_token.v1';
+  static const _refreshRetryStateKey =
+      'pluris_haven.server.refresh_retry_state.v1';
 
   final SecureValueStore _storage;
   final ServerApiFactory _apiFactory;
@@ -41,6 +44,8 @@ class ServerAccountController extends ChangeNotifier {
   String? _accessToken;
   String? _refreshToken;
   Future<void>? _refreshInFlight;
+  String? _refreshRetryToken;
+  String? _refreshRetryNonce;
 
   bool get connected => _api != null && descriptor != null;
   bool get signedIn => account != null && _accessToken != null;
@@ -50,6 +55,7 @@ class ServerAccountController extends ChangeNotifier {
     final rawUrl = await _storage.read(_serverUrlKey);
     _accessToken = await _storage.read(_accessTokenKey);
     _refreshToken = await _storage.read(_refreshTokenKey);
+    await _loadRefreshRetryState();
     if (rawUrl == null || rawUrl.isEmpty) {
       return;
     }
@@ -344,7 +350,7 @@ class ServerAccountController extends ChangeNotifier {
         const ServerApiException('Sign in first.', statusCode: 401),
       );
     }
-    final refresh = api.refresh(refreshToken).then(_saveTokens);
+    final refresh = _refreshWithRetryNonce(api, refreshToken);
     _refreshInFlight = refresh;
     return refresh.whenComplete(() {
       if (identical(_refreshInFlight, refresh)) {
@@ -358,11 +364,14 @@ class ServerAccountController extends ChangeNotifier {
     _refreshToken = tokens.refreshToken;
     await _storage.write(_accessTokenKey, tokens.accessToken);
     await _storage.write(_refreshTokenKey, tokens.refreshToken);
+    await _clearRefreshRetryState();
   }
 
   Future<void> _clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
+    _refreshRetryToken = null;
+    _refreshRetryNonce = null;
     account = null;
     sessions = const [];
     backups = const [];
@@ -372,6 +381,59 @@ class ServerAccountController extends ChangeNotifier {
     friendCode = null;
     await _storage.delete(_accessTokenKey);
     await _storage.delete(_refreshTokenKey);
+    await _storage.delete(_refreshRetryStateKey);
+  }
+
+  Future<void> _refreshWithRetryNonce(
+    ServerApi api,
+    String refreshToken,
+  ) async {
+    final rotationNonce = await _rotationNonceFor(refreshToken);
+    final tokens = await api.refresh(
+      refreshToken,
+      rotationNonce: rotationNonce,
+    );
+    await _saveTokens(tokens);
+  }
+
+  Future<String> _rotationNonceFor(String refreshToken) async {
+    if (_refreshRetryToken == refreshToken && _refreshRetryNonce != null) {
+      return _refreshRetryNonce!;
+    }
+    final random = Random.secure();
+    final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+    final nonce = base64UrlEncode(bytes).replaceAll('=', '');
+    _refreshRetryToken = refreshToken;
+    _refreshRetryNonce = nonce;
+    await _storage.write(
+      _refreshRetryStateKey,
+      jsonEncode({'refresh_token': refreshToken, 'rotation_nonce': nonce}),
+    );
+    return nonce;
+  }
+
+  Future<void> _loadRefreshRetryState() async {
+    final stored = await _storage.read(_refreshRetryStateKey);
+    if (stored == null) return;
+    try {
+      final decoded = jsonDecode(stored);
+      if (decoded is! Map<String, dynamic>) throw const FormatException();
+      final token = decoded['refresh_token'];
+      final nonce = decoded['rotation_nonce'];
+      if (token is! String || nonce is! String || token != _refreshToken) {
+        throw const FormatException();
+      }
+      _refreshRetryToken = token;
+      _refreshRetryNonce = nonce;
+    } on FormatException {
+      await _clearRefreshRetryState();
+    }
+  }
+
+  Future<void> _clearRefreshRetryState() async {
+    await _storage.delete(_refreshRetryStateKey);
+    _refreshRetryToken = null;
+    _refreshRetryNonce = null;
   }
 
   ServerApi _requireApi() {
