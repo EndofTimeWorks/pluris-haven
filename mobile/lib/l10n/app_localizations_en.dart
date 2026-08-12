@@ -2197,6 +2197,96 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createFieldButton => 'Create field';
+
+  @override
+  String get searchCustomFrontsHint => 'Search custom fronts';
+
+  @override
+  String get customFrontsTitle => 'Custom fronts';
+
+  @override
+  String get customFrontsDescription =>
+      'Statuses like Asleep, Away, or Lost time live here. They can front without becoming members.';
+
+  @override
+  String get addCustomFrontButton => 'Add custom front';
+
+  @override
+  String get noCustomFronts => 'No custom fronts';
+
+  @override
+  String get noMatches => 'No matches';
+
+  @override
+  String get customFrontsEmptyBody =>
+      'Add one here, or import them from SimplyPlural.';
+
+  @override
+  String get tryDifferentSearch => 'Try a different search.';
+
+  @override
+  String get namedCombinationsTitle => 'Named combinations';
+
+  @override
+  String get memberShortcutLabel => 'member shortcut';
+
+  @override
+  String get setNamedFrontTooltip => 'Set named front';
+
+  @override
+  String get deleteNamedFrontTooltip => 'Delete named front';
+
+  @override
+  String setFrontConfirmation(String name) {
+    return 'Set $name as front';
+  }
+
+  @override
+  String get deleteCustomFrontTitle => 'Delete custom front?';
+
+  @override
+  String get deleteNamedFrontTitle => 'Delete named front?';
+
+  @override
+  String get deleteSavedFrontBody =>
+      'This only removes the saved shortcut. Front history stays.';
+
+  @override
+  String customFrontSemanticLabel(String name) {
+    return 'Custom front $name';
+  }
+
+  @override
+  String get customFrontLabel => 'custom front';
+
+  @override
+  String get setCustomFrontTooltip => 'Set custom front';
+
+  @override
+  String get editCustomFrontTooltip => 'Edit custom front';
+
+  @override
+  String get deleteCustomFrontTooltip => 'Delete custom front';
+
+  @override
+  String get editCustomFrontTitle => 'Edit custom front';
+
+  @override
+  String get customFrontEditorDescription =>
+      'Custom fronts can be used from the front picker without changing member counts.';
+
+  @override
+  String get colourFieldLabel => 'Colour';
+
+  @override
+  String get importedAvatarReferenceFieldLabel =>
+      'Avatar URL or imported local reference';
+
+  @override
+  String get createButton => 'Create';
+
+  @override
+  String get chooseCustomFrontAvatarTitle => 'Choose custom front avatar';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2234,4 +2324,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get tagColourFieldLabel => 'Tag color';
+
+  @override
+  String get colourFieldLabel => 'Color';
 }

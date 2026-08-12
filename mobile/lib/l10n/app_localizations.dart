@@ -3886,6 +3886,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create field'**
   String get createFieldButton;
+
+  /// No description provided for @searchCustomFrontsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search custom fronts'**
+  String get searchCustomFrontsHint;
+
+  /// No description provided for @customFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fronts'**
+  String get customFrontsTitle;
+
+  /// No description provided for @customFrontsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Statuses like Asleep, Away, or Lost time live here. They can front without becoming members.'**
+  String get customFrontsDescription;
+
+  /// No description provided for @addCustomFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add custom front'**
+  String get addCustomFrontButton;
+
+  /// No description provided for @noCustomFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'No custom fronts'**
+  String get noCustomFronts;
+
+  /// No description provided for @noMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get noMatches;
+
+  /// No description provided for @customFrontsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one here, or import them from SimplyPlural.'**
+  String get customFrontsEmptyBody;
+
+  /// No description provided for @tryDifferentSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search.'**
+  String get tryDifferentSearch;
+
+  /// No description provided for @namedCombinationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Named combinations'**
+  String get namedCombinationsTitle;
+
+  /// No description provided for @memberShortcutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'member shortcut'**
+  String get memberShortcutLabel;
+
+  /// No description provided for @setNamedFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Set named front'**
+  String get setNamedFrontTooltip;
+
+  /// No description provided for @deleteNamedFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete named front'**
+  String get deleteNamedFrontTooltip;
+
+  /// No description provided for @setFrontConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {name} as front'**
+  String setFrontConfirmation(String name);
+
+  /// No description provided for @deleteCustomFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete custom front?'**
+  String get deleteCustomFrontTitle;
+
+  /// No description provided for @deleteNamedFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete named front?'**
+  String get deleteNamedFrontTitle;
+
+  /// No description provided for @deleteSavedFrontBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This only removes the saved shortcut. Front history stays.'**
+  String get deleteSavedFrontBody;
+
+  /// No description provided for @customFrontSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom front {name}'**
+  String customFrontSemanticLabel(String name);
+
+  /// No description provided for @customFrontLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'custom front'**
+  String get customFrontLabel;
+
+  /// No description provided for @setCustomFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Set custom front'**
+  String get setCustomFrontTooltip;
+
+  /// No description provided for @editCustomFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit custom front'**
+  String get editCustomFrontTooltip;
+
+  /// No description provided for @deleteCustomFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete custom front'**
+  String get deleteCustomFrontTooltip;
+
+  /// No description provided for @editCustomFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit custom front'**
+  String get editCustomFrontTitle;
+
+  /// No description provided for @customFrontEditorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fronts can be used from the front picker without changing member counts.'**
+  String get customFrontEditorDescription;
+
+  /// No description provided for @colourFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour'**
+  String get colourFieldLabel;
+
+  /// No description provided for @importedAvatarReferenceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar URL or imported local reference'**
+  String get importedAvatarReferenceFieldLabel;
+
+  /// No description provided for @createButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createButton;
+
+  /// No description provided for @chooseCustomFrontAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose custom front avatar'**
+  String get chooseCustomFrontAvatarTitle;
 }
 
 class _AppLocalizationsDelegate

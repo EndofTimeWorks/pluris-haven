@@ -9,5 +9,6 @@
   "saveCancelled": "Save canceled.",
   "groupsEmptyBody": "Groups keep members organized without needing sync.",
   "colorHexFieldLabel": "Color hex",
-  "tagColourFieldLabel": "Tag color"
+  "tagColourFieldLabel": "Tag color",
+  "colourFieldLabel": "Color"
 }

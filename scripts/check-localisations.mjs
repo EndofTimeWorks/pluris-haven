@@ -6,6 +6,7 @@ const usPath = 'mobile/lib/l10n/app_en_US.arb';
 const expectedUsOverrides = new Set([
   'accentColorLabel',
   'colorHexFieldLabel',
+  'colourFieldLabel',
   'copyHexColorTooltip',
   'currentColorLabel',
   'customizeTitle',
