@@ -8,5 +8,6 @@
   "noDashboardShortcutsBody": "Open Customize to add shortcuts back.",
   "saveCancelled": "Save canceled.",
   "groupsEmptyBody": "Groups keep members organized without needing sync.",
-  "colorHexFieldLabel": "Color hex"
+  "colorHexFieldLabel": "Color hex",
+  "tagColourFieldLabel": "Tag color"
 }

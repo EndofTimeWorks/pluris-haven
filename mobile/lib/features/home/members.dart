@@ -19,7 +19,7 @@ class MembersPage extends StatefulWidget {
 class _MembersPageState extends State<MembersPage> {
   final _searchController = TextEditingController();
   String _query = '';
-  String _filter = 'All';
+  String _filter = 'all';
 
   @override
   void dispose() {
@@ -29,6 +29,12 @@ class _MembersPageState extends State<MembersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final filters = <String, String>{
+      'all': l10n.allFilter,
+      'fronting': l10n.frontingFilter,
+      'archived': l10n.archivedFilter,
+    };
     return StreamBuilder<List<MemberSummary>>(
       stream: widget.repository.watchMembers(includeArchived: true),
       initialData: const [],
@@ -40,15 +46,19 @@ class _MembersPageState extends State<MembersPage> {
         return SpPage(
           children: [
             SpSearchField(
-              hintText: 'Search members',
+              hintText: l10n.searchMembersHint,
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
             SpFilterRow(
-              filters: const ['All', 'Fronting', 'Archived'],
-              selected: _filter,
-              onSelected: (filter) => setState(() => _filter = filter),
+              filters: filters.values.toList(growable: false),
+              selected: filters[_filter]!,
+              onSelected: (label) => setState(
+                () => _filter = filters.entries
+                    .firstWhere((entry) => entry.value == label)
+                    .key,
+              ),
             ),
             const SizedBox(height: 12),
             SpCard(
@@ -56,7 +66,7 @@ class _MembersPageState extends State<MembersPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Members',
+                    title: l10n.navigationMembers,
                     trailing: StatusPill(
                       text: '${widget.snapshot?.memberCount ?? 0}',
                     ),
@@ -64,12 +74,12 @@ class _MembersPageState extends State<MembersPage> {
                   const SizedBox(height: 12),
                   if (members.isEmpty)
                     SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'All'
-                          ? 'No members saved locally'
-                          : 'No matching members',
-                      body: _query.trim().isEmpty && _filter == 'All'
-                          ? 'Add members here or import a Simply Plural export.'
-                          : 'Try another search or filter.',
+                      title: _query.trim().isEmpty && _filter == 'all'
+                          ? l10n.noMembersSavedLocally
+                          : l10n.noMatchingMembers,
+                      body: _query.trim().isEmpty && _filter == 'all'
+                          ? l10n.membersEmptyBody
+                          : l10n.tryAnotherSearchOrFilter,
                     )
                   else
                     for (final member in members) ...[
@@ -82,8 +92,8 @@ class _MembersPageState extends State<MembersPage> {
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
-                    primary: 'Add member',
-                    secondary: 'Import',
+                    primary: l10n.addMemberButton,
+                    secondary: l10n.importTitle,
                     onPrimary: () =>
                         showAddMemberSheet(context, widget.repository),
                     onSecondary: widget.onImport,
@@ -112,8 +122,8 @@ class _MembersPageState extends State<MembersPage> {
               member.description,
             ]) &&
             switch (_filter) {
-              'Archived' => member.archived,
-              'Fronting' => frontNames.contains(
+              'archived' => member.archived,
+              'fronting' => frontNames.contains(
                 member.displayName.toLowerCase(),
               ),
               _ => true,
@@ -135,6 +145,7 @@ class MemberListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: ListTile(
@@ -148,10 +159,13 @@ class MemberListTile extends StatelessWidget {
           member.displayName,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        subtitle: Text(_subtitle, style: const TextStyle(color: _spMuted)),
+        subtitle: Text(
+          _subtitle(l10n),
+          style: const TextStyle(color: _spMuted),
+        ),
         onTap: () => showMemberProfileSheet(context, repository, member),
         trailing: PopupMenuButton<String>(
-          tooltip: 'Member actions',
+          tooltip: l10n.memberActionsTooltip,
           onSelected: (value) {
             if (value == 'front') {
               repository.setFrontMembers([member.id]);
@@ -161,7 +175,7 @@ class MemberListTile extends StatelessWidget {
               showMemberSheet(
                 context,
                 repository,
-                initialDraft: _duplicateMemberDraft(member),
+                initialDraft: _duplicateMemberDraft(member, l10n),
               );
             } else if (value == 'archive') {
               repository.archiveMember(member.id);
@@ -170,38 +184,40 @@ class MemberListTile extends StatelessWidget {
             } else if (value == 'delete') {
               confirmDelete(
                 context,
-                title: 'Delete member?',
-                body:
-                    '${member.displayName} will be permanently removed from this local system.',
+                title: l10n.deleteMemberTitle,
+                body: l10n.deleteMemberBody(member.displayName),
                 onDelete: () => repository.deleteMember(member.id),
               );
             }
           },
           itemBuilder: (context) => [
             if (!member.archived)
-              const PopupMenuItem(value: 'front', child: Text('Set front')),
-            const PopupMenuItem(value: 'edit', child: Text('Edit')),
-            const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
+              PopupMenuItem(value: 'front', child: Text(l10n.setFrontButton)),
+            PopupMenuItem(value: 'edit', child: Text(l10n.editButton)),
+            PopupMenuItem(
+              value: 'duplicate',
+              child: Text(l10n.duplicateButton),
+            ),
             if (member.archived)
-              const PopupMenuItem(value: 'restore', child: Text('Restore'))
+              PopupMenuItem(value: 'restore', child: Text(l10n.restoreButton))
             else
-              const PopupMenuItem(value: 'archive', child: Text('Archive')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete')),
+              PopupMenuItem(value: 'archive', child: Text(l10n.archiveButton)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
           ],
         ),
       ),
     );
   }
 
-  String get _subtitle {
+  String _subtitle(AppLocalizations l10n) {
     final pronouns = member.pronouns?.isNotEmpty == true
         ? member.pronouns!
-        : 'no pronouns';
+        : l10n.noPronounsLabel;
     final privacy = member.privacy?.trim();
     final parts = [
       pronouns,
       if (privacy != null && privacy.isNotEmpty) privacy,
-      if (member.archived) 'archived',
+      if (member.archived) l10n.archivedStatus,
     ];
     return parts.join(' - ');
   }
@@ -243,6 +259,7 @@ class MemberProfileSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = _colorFromHex(member.colorHex);
     final description = member.description?.trim();
     final pluralKitId = member.pluralKitId?.trim();
@@ -281,7 +298,7 @@ class MemberProfileSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _memberPronouns(member),
+                        _memberPronouns(member, l10n),
                         style: const TextStyle(color: _spMuted, fontSize: 15),
                       ),
                       const SizedBox(height: 8),
@@ -290,7 +307,9 @@ class MemberProfileSheet extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           StatusPill(
-                            text: member.archived ? 'archived' : 'active',
+                            text: member.archived
+                                ? l10n.archivedStatus
+                                : l10n.activeStatus,
                           ),
                           if (member.colorHex?.trim().isNotEmpty == true)
                             StatusPill(text: member.colorHex!.toUpperCase()),
@@ -309,10 +328,10 @@ class MemberProfileSheet extends StatelessWidget {
                 child: Text(description, style: const TextStyle(height: 1.4)),
               )
             else
-              const SpCard(
+              SpCard(
                 child: Text(
-                  'No description yet.',
-                  style: TextStyle(color: _spMuted),
+                  l10n.noDescriptionYet,
+                  style: const TextStyle(color: _spMuted),
                 ),
               ),
             const SizedBox(height: 12),
@@ -321,48 +340,49 @@ class MemberProfileSheet extends StatelessWidget {
               initialData: const [],
               builder: (context, groupsSnapshot) {
                 return SpSettingsGroup(
-                  title: 'Profile',
+                  title: l10n.profileTitle,
                   rows: [
                     SpSettingsRow(
-                      'Pronouns',
-                      _memberPronouns(member),
+                      l10n.pronounsFieldLabel,
+                      _memberPronouns(member, l10n),
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'Birthday',
-                      _emptyLabel(member.birthday),
+                      l10n.birthdayFieldLabel,
+                      _emptyLabel(member.birthday, l10n),
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'Emoji',
-                      _emptyLabel(member.emoji),
+                      l10n.emojiFieldLabel,
+                      _emptyLabel(member.emoji, l10n),
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'Privacy',
-                      _emptyLabel(member.privacy),
+                      l10n.privacyFieldLabel,
+                      _emptyLabel(member.privacy, l10n),
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'PluralKit ID',
+                      l10n.pluralKitIdFieldLabel,
                       pluralKitId == null || pluralKitId.isEmpty
-                          ? 'not linked'
+                          ? l10n.notLinkedLabel
                           : pluralKitId,
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'Groups',
+                      l10n.navigationGroups,
                       _memberGroupLabel(
                         member,
                         groupsSnapshot.data ?? const <GroupSummary>[],
+                        l10n,
                       ),
                       interactive: false,
                     ),
                     SpSettingsRow(
-                      'Avatar',
+                      l10n.avatarFieldLabel,
                       member.avatarUrl?.trim().isNotEmpty == true
                           ? member.avatarUrl!
-                          : 'default',
+                          : l10n.defaultLabel,
                       interactive: false,
                     ),
                   ],
@@ -388,7 +408,7 @@ class MemberProfileSheet extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.radio_button_checked_rounded),
-                    label: const Text('Set front'),
+                    label: Text(l10n.setFrontButton),
                   ),
                 OutlinedButton.icon(
                   onPressed: () {
@@ -396,7 +416,7 @@ class MemberProfileSheet extends StatelessWidget {
                     showMemberSheet(context, repository, member: member);
                   },
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Edit'),
+                  label: Text(l10n.editButton),
                 ),
                 OutlinedButton.icon(
                   onPressed: () {
@@ -408,12 +428,12 @@ class MemberProfileSheet extends StatelessWidget {
                       showMemberSheet(
                         hostContext,
                         repository,
-                        initialDraft: _duplicateMemberDraft(member),
+                        initialDraft: _duplicateMemberDraft(member, l10n),
                       );
                     });
                   },
                   icon: const Icon(Icons.content_copy_rounded),
-                  label: const Text('Duplicate'),
+                  label: Text(l10n.duplicateButton),
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -431,7 +451,9 @@ class MemberProfileSheet extends StatelessWidget {
                         ? Icons.unarchive_outlined
                         : Icons.archive_outlined,
                   ),
-                  label: Text(member.archived ? 'Restore' : 'Archive'),
+                  label: Text(
+                    member.archived ? l10n.restoreButton : l10n.archiveButton,
+                  ),
                 ),
               ],
             ),
@@ -454,6 +476,7 @@ class MemberTagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<Tag>>(
       stream: repository.watchTagsForMember(memberId),
       initialData: const [],
@@ -462,11 +485,11 @@ class MemberTagsSection extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(top: 12),
           child: SpSettingsGroup(
-            title: 'Tags',
+            title: l10n.tagsTitle,
             rows: [
               SpSettingsRow(
-                'Member tags',
-                _tagSummary(tags),
+                l10n.memberTagsTitle,
+                _tagSummary(tags, l10n),
                 trailing: const Icon(Icons.sell_outlined, color: _spMuted),
                 onTap: () => showMemberTagsSheet(
                   context,
@@ -482,9 +505,9 @@ class MemberTagsSection extends StatelessWidget {
   }
 }
 
-String _tagSummary(List<Tag> tags) {
+String _tagSummary(List<Tag> tags, AppLocalizations l10n) {
   if (tags.isEmpty) {
-    return 'none';
+    return l10n.noneLabel;
   }
   return tags.map((tag) => tag.name).join(', ');
 }
@@ -534,6 +557,7 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -562,23 +586,23 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Member tags',
-                      style: TextStyle(
+                    Text(
+                      l10n.memberTagsTitle,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.',
-                      style: TextStyle(color: _spMuted, height: 1.35),
+                    Text(
+                      l10n.memberTagsDescription,
+                      style: const TextStyle(color: _spMuted, height: 1.35),
                     ),
                     const SizedBox(height: 14),
                     if (allTags.isEmpty)
-                      const Text(
-                        'No tags yet.',
-                        style: TextStyle(color: _spMuted),
+                      Text(
+                        l10n.noTagsYet,
+                        style: const TextStyle(color: _spMuted),
                       )
                     else
                       Wrap(
@@ -610,7 +634,9 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                       key: const ValueKey('member-tag-name-field'),
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'New tag'),
+                      decoration: InputDecoration(
+                        labelText: l10n.newTagFieldLabel,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     TextField(
@@ -618,7 +644,7 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                       controller: _colorController,
                       textInputAction: TextInputAction.done,
                       decoration: InputDecoration(
-                        labelText: 'Tag color',
+                        labelText: l10n.tagColourFieldLabel,
                         hintText: '#F2C75C',
                         errorText: _error,
                         prefixIcon: Center(
@@ -654,13 +680,13 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                           key: const ValueKey('create-member-tag-button'),
                           onPressed: _createTag,
                           icon: const Icon(Icons.add_rounded),
-                          label: const Text('Create tag'),
+                          label: Text(l10n.createTagButton),
                         ),
                         FilledButton.icon(
                           key: const ValueKey('save-member-tags-button'),
                           onPressed: _save,
                           icon: const Icon(Icons.save_outlined),
-                          label: const Text('Save tags'),
+                          label: Text(l10n.saveTagsButton),
                         ),
                       ],
                     ),
@@ -677,12 +703,14 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   Future<void> _createTag() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Name the tag first.');
+      setState(() => _error = AppLocalizations.of(context).nameTagFirstError);
       return;
     }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
-      setState(() => _error = 'Use 6 hex digits, like #F2C75C.');
+      setState(
+        () => _error = AppLocalizations.of(context).invalidHexColorError,
+      );
       return;
     }
     final now = DateTime.now().toUtc();
@@ -752,6 +780,7 @@ class MemberCustomFieldsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<CustomFieldSummary>>(
       stream: repository.watchCustomFields(),
       initialData: const [],
@@ -776,7 +805,7 @@ class MemberCustomFieldsSection extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(top: 12),
               child: SpSettingsGroup(
-                title: 'Data',
+                title: l10n.dataTitle,
                 rows: [
                   for (final field in fields)
                     Builder(
@@ -785,7 +814,7 @@ class MemberCustomFieldsSection extends StatelessWidget {
                         return SpSettingsRow(
                           field.name,
                           value == null || value.value.trim().isEmpty
-                              ? 'not set'
+                              ? l10n.notSetLabel
                               : value.value,
                           trailing: _customFieldPrivacyPill(field),
                           onTap: () => showCustomFieldValueSheet(
@@ -872,6 +901,7 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final privacy = widget.field.privacy?.trim();
     return SafeArea(
       child: SingleChildScrollView(
@@ -904,9 +934,9 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
               minLines: 1,
               maxLines: 5,
               textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(
-                labelText: 'Value',
-                hintText: 'Leave blank to clear',
+              decoration: InputDecoration(
+                labelText: l10n.valueFieldLabel,
+                hintText: l10n.leaveBlankToClearHint,
               ),
             ),
             const SizedBox(height: 14),
@@ -918,12 +948,12 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
                   key: const ValueKey('save-custom-field-value-button'),
                   onPressed: _save,
                   icon: const Icon(Icons.save_outlined),
-                  label: const Text('Save value'),
+                  label: Text(l10n.saveValueButton),
                 ),
                 OutlinedButton.icon(
                   onPressed: _clear,
                   icon: const Icon(Icons.backspace_outlined),
-                  label: const Text('Clear'),
+                  label: Text(l10n.clearButton),
                 ),
               ],
             ),
@@ -956,31 +986,38 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
   }
 }
 
-String _memberPronouns(MemberSummary member) {
+String _memberPronouns(MemberSummary member, AppLocalizations l10n) {
   final pronouns = member.pronouns?.trim();
-  return pronouns == null || pronouns.isEmpty ? 'no pronouns' : pronouns;
+  return pronouns == null || pronouns.isEmpty ? l10n.noPronounsLabel : pronouns;
 }
 
-String _emptyLabel(String? value) {
+String _emptyLabel(String? value, AppLocalizations l10n) {
   final trimmed = value?.trim();
-  return trimmed == null || trimmed.isEmpty ? 'not set' : trimmed;
+  return trimmed == null || trimmed.isEmpty ? l10n.notSetLabel : trimmed;
 }
 
-String _memberGroupLabel(MemberSummary member, List<GroupSummary> groups) {
+String _memberGroupLabel(
+  MemberSummary member,
+  List<GroupSummary> groups,
+  AppLocalizations l10n,
+) {
   final namesById = {for (final group in groups) group.id: group.name};
   final ids = <String>{
     ...member.groupIds,
     if (member.groupIds.isEmpty && member.folderId != null) member.folderId!,
   };
   if (ids.isEmpty) {
-    return 'none';
+    return l10n.noneLabel;
   }
 
   return [for (final id in ids) namesById[id] ?? id].join(', ');
 }
 
-MemberDraft _duplicateMemberDraft(MemberSummary member) {
-  return _memberDraft(member, displayName: '${member.displayName} copy');
+MemberDraft _duplicateMemberDraft(MemberSummary member, AppLocalizations l10n) {
+  return _memberDraft(
+    member,
+    displayName: l10n.duplicateMemberName(member.displayName),
+  );
 }
 
 MemberDraft _memberDraft(MemberSummary member, {required String displayName}) {
@@ -1021,13 +1058,17 @@ class MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final avatarSemanticLabel = l10n.memberAvatarSemanticLabel(
+      member.displayName,
+    );
     final avatarUrl = member.avatarUrl;
     if (avatarUrl == null || avatarUrl.trim().isEmpty) {
       return SpAvatar(
         size: size,
         color: color,
         label: label,
-        semanticLabel: 'Avatar for ${member.displayName}',
+        semanticLabel: avatarSemanticLabel,
       );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
@@ -1040,7 +1081,7 @@ class MemberAvatar extends StatelessWidget {
             color: color,
             label: label,
             image: file == null ? null : FileImage(file),
-            semanticLabel: 'Avatar for ${member.displayName}',
+            semanticLabel: avatarSemanticLabel,
           );
         },
       );
@@ -1051,14 +1092,14 @@ class MemberAvatar extends StatelessWidget {
         color: color,
         label: label,
         image: NetworkImage(avatarUrl),
-        semanticLabel: 'Avatar for ${member.displayName}',
+        semanticLabel: avatarSemanticLabel,
       );
     }
     return SpAvatar(
       size: size,
       color: color,
       label: label,
-      semanticLabel: 'Avatar for ${member.displayName}',
+      semanticLabel: avatarSemanticLabel,
     );
   }
 }
@@ -1237,6 +1278,10 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final previewName = _nameController.text.trim().isEmpty
+        ? l10n.memberPreviewName
+        : _nameController.text;
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -1248,9 +1293,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Alter profile',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.alterProfileTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -1258,23 +1303,23 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _nameController,
               autofocus: true,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('member-pronouns-field'),
               controller: _pronounsController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Pronouns'),
+              decoration: InputDecoration(labelText: l10n.pronounsFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('member-birthday-field'),
               controller: _birthdayController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Birthday',
-                hintText: 'YYYY-MM-DD, MM-DD, or free text',
+              decoration: InputDecoration(
+                labelText: l10n.birthdayFieldLabel,
+                hintText: l10n.birthdayFieldHint,
               ),
             ),
             const SizedBox(height: 10),
@@ -1282,16 +1327,16 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               key: const ValueKey('member-emoji-field'),
               controller: _emojiController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Emoji'),
+              decoration: InputDecoration(labelText: l10n.emojiFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('member-privacy-field'),
               controller: _privacyController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Privacy',
-                hintText: 'private, friends, public, or bucket name',
+              decoration: InputDecoration(
+                labelText: l10n.privacyFieldLabel,
+                hintText: l10n.privacyFieldHint,
               ),
             ),
             const SizedBox(height: 10),
@@ -1299,7 +1344,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _descriptionController,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: InputDecoration(
+                labelText: l10n.descriptionFieldLabel,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -1307,8 +1354,8 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _avatarController,
               keyboardType: TextInputType.url,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Avatar URL or local ref',
+              decoration: InputDecoration(
+                labelText: l10n.avatarReferenceFieldLabel,
                 hintText: 'https://... or local-avatar:...',
               ),
             ),
@@ -1318,9 +1365,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                 MemberAvatar(
                   member: MemberSummary(
                     id: 'member-editor-preview',
-                    displayName: _nameController.text.trim().isEmpty
-                        ? 'Preview'
-                        : _nameController.text,
+                    displayName: previewName,
                     colorHex: _normalizeUiHexColor(_colorController.text),
                     emoji: _emojiController.text,
                     avatarUrl: _nullIfBlank(_avatarController.text),
@@ -1329,11 +1374,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                     _normalizeUiHexColor(_colorController.text),
                   ),
                   label: _emojiController.text.trim().isEmpty
-                      ? _initialFor(
-                          _nameController.text.trim().isEmpty
-                              ? 'Preview'
-                              : _nameController.text,
-                        )
+                      ? _initialFor(previewName)
                       : _emojiController.text.trim(),
                   size: 52,
                 ),
@@ -1347,13 +1388,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                         key: const ValueKey('pick-member-avatar-button'),
                         onPressed: _chooseAvatar,
                         icon: const Icon(Icons.image_outlined),
-                        label: const Text('Choose image'),
+                        label: Text(l10n.chooseImageButton),
                       ),
                       OutlinedButton.icon(
                         key: const ValueKey('clear-member-avatar-button'),
                         onPressed: _clearAvatar,
                         icon: const Icon(Icons.close_rounded),
-                        label: const Text('Clear'),
+                        label: Text(l10n.clearButton),
                       ),
                     ],
                   ),
@@ -1372,7 +1413,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               key: const ValueKey('member-pluralkit-field'),
               controller: _pluralKitController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'PluralKit ID'),
+              decoration: InputDecoration(
+                labelText: l10n.pluralKitIdFieldLabel,
+              ),
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<GroupSummary>>(
@@ -1392,13 +1435,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                   children: [
                     DropdownButtonFormField<String?>(
                       initialValue: _folderId,
-                      decoration: const InputDecoration(
-                        labelText: 'Primary group',
+                      decoration: InputDecoration(
+                        labelText: l10n.primaryGroupFieldLabel,
                       ),
                       items: [
-                        const DropdownMenuItem<String?>(
+                        DropdownMenuItem<String?>(
                           value: null,
-                          child: Text('No primary group'),
+                          child: Text(l10n.noPrimaryGroupOption),
                         ),
                         for (final group in groups)
                           DropdownMenuItem<String?>(
@@ -1416,7 +1459,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                     if (groups.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Text(
-                        'Member groups',
+                        l10n.memberGroupsTitle,
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                       const SizedBox(height: 8),
@@ -1472,7 +1515,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _colorController,
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
-                labelText: 'Color hex',
+                labelText: l10n.colorHexFieldLabel,
                 hintText: '#7B61FF',
                 errorText: _colorError,
               ),
@@ -1486,7 +1529,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             FilledButton(
               key: const ValueKey('save-member-button'),
               onPressed: _save,
-              child: Text(_isEditing ? 'Save alter' : 'Create alter'),
+              child: Text(
+                _isEditing ? l10n.saveAlterButton : l10n.createAlterButton,
+              ),
             ),
           ],
         ),
@@ -1497,7 +1542,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   Future<void> _save() async {
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
-      setState(() => _colorError = 'Use 6 hex digits, like #7B61FF.');
+      setState(
+        () => _colorError = AppLocalizations.of(context).hexDigitsErrorText,
+      );
       return;
     }
 
@@ -1527,17 +1574,18 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   Future<void> _chooseAvatar() async {
-    setState(() => _avatarMessage = 'Opening image picker...');
+    final l10n = AppLocalizations.of(context);
+    setState(() => _avatarMessage = l10n.openingImagePickerStatus);
     final result = await NativeFileDialog.pickFiles(
       type: NativeFileType.image,
       allowMultiple: false,
-      dialogTitle: 'Choose member avatar',
+      dialogTitle: l10n.chooseMemberAvatarTitle,
     );
     final files = result?.files ?? const <NativePlatformFile>[];
     final file = files.isEmpty ? null : files.first;
     if (file == null) {
       if (mounted) {
-        setState(() => _avatarMessage = 'No image selected.');
+        setState(() => _avatarMessage = l10n.noImageSelectedStatus);
       }
       return;
     }
@@ -1545,7 +1593,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     try {
       final bytes = await file.readBytes();
       if (bytes.isEmpty) {
-        throw const FormatException('Selected image was empty.');
+        throw FormatException(l10n.selectedImageEmptyError);
       }
       final ref = await _storeManualAvatar(file.name, bytes);
       if (!mounted) {
@@ -1553,11 +1601,11 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       }
       setState(() {
         _avatarController.text = ref;
-        _avatarMessage = 'Avatar saved on device.';
+        _avatarMessage = l10n.avatarSavedStatus;
       });
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _avatarMessage = 'Could not save avatar: $error');
+        setState(() => _avatarMessage = l10n.couldNotSaveAvatar(error));
       }
     }
   }
@@ -1565,7 +1613,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   void _clearAvatar() {
     setState(() {
       _avatarController.clear();
-      _avatarMessage = 'Avatar cleared.';
+      _avatarMessage = AppLocalizations.of(context).avatarClearedStatus;
     });
   }
 }

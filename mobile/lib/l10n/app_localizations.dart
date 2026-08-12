@@ -3208,6 +3208,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get navigationAbout;
+
+  /// No description provided for @frontingFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Fronting'**
+  String get frontingFilter;
+
+  /// No description provided for @archivedFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get archivedFilter;
+
+  /// No description provided for @searchMembersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search members'**
+  String get searchMembersHint;
+
+  /// No description provided for @noMembersSavedLocally.
+  ///
+  /// In en, this message translates to:
+  /// **'No members saved locally'**
+  String get noMembersSavedLocally;
+
+  /// No description provided for @noMatchingMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching members'**
+  String get noMatchingMembers;
+
+  /// No description provided for @membersEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add members here or import a Simply Plural export.'**
+  String get membersEmptyBody;
+
+  /// No description provided for @addMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add member'**
+  String get addMemberButton;
+
+  /// No description provided for @memberActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Member actions'**
+  String get memberActionsTooltip;
+
+  /// No description provided for @deleteMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete member?'**
+  String get deleteMemberTitle;
+
+  /// No description provided for @deleteMemberBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be permanently removed from this local system.'**
+  String deleteMemberBody(String name);
+
+  /// No description provided for @setFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set front'**
+  String get setFrontButton;
+
+  /// No description provided for @duplicateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateButton;
+
+  /// No description provided for @restoreButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreButton;
+
+  /// No description provided for @archiveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archiveButton;
+
+  /// No description provided for @noPronounsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'no pronouns'**
+  String get noPronounsLabel;
+
+  /// No description provided for @archivedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'archived'**
+  String get archivedStatus;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'active'**
+  String get activeStatus;
+
+  /// No description provided for @noDescriptionYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No description yet.'**
+  String get noDescriptionYet;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @pronounsFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pronouns'**
+  String get pronounsFieldLabel;
+
+  /// No description provided for @birthdayFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get birthdayFieldLabel;
+
+  /// No description provided for @privacyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacyFieldLabel;
+
+  /// No description provided for @pluralKitIdFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit ID'**
+  String get pluralKitIdFieldLabel;
+
+  /// No description provided for @notLinkedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'not linked'**
+  String get notLinkedLabel;
+
+  /// No description provided for @avatarFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar'**
+  String get avatarFieldLabel;
+
+  /// No description provided for @defaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'default'**
+  String get defaultLabel;
+
+  /// No description provided for @tagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsTitle;
+
+  /// No description provided for @memberTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member tags'**
+  String get memberTagsTitle;
+
+  /// No description provided for @noneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get noneLabel;
+
+  /// No description provided for @memberTagsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.'**
+  String get memberTagsDescription;
+
+  /// No description provided for @noTagsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags yet.'**
+  String get noTagsYet;
+
+  /// No description provided for @newTagFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag'**
+  String get newTagFieldLabel;
+
+  /// No description provided for @tagColourFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag colour'**
+  String get tagColourFieldLabel;
+
+  /// No description provided for @createTagButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tag'**
+  String get createTagButton;
+
+  /// No description provided for @saveTagsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save tags'**
+  String get saveTagsButton;
+
+  /// No description provided for @nameTagFirstError.
+  ///
+  /// In en, this message translates to:
+  /// **'Name the tag first.'**
+  String get nameTagFirstError;
+
+  /// No description provided for @dataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get dataTitle;
+
+  /// No description provided for @notSetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'not set'**
+  String get notSetLabel;
+
+  /// No description provided for @valueFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get valueFieldLabel;
+
+  /// No description provided for @leaveBlankToClearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to clear'**
+  String get leaveBlankToClearHint;
+
+  /// No description provided for @saveValueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save value'**
+  String get saveValueButton;
+
+  /// No description provided for @clearButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearButton;
+
+  /// No description provided for @duplicateMemberName.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} copy'**
+  String duplicateMemberName(String name);
+
+  /// No description provided for @memberAvatarSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar for {name}'**
+  String memberAvatarSemanticLabel(String name);
+
+  /// No description provided for @memberPreviewName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get memberPreviewName;
+
+  /// No description provided for @alterProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alter profile'**
+  String get alterProfileTitle;
+
+  /// No description provided for @birthdayFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DD, MM-DD, or free text'**
+  String get birthdayFieldHint;
+
+  /// No description provided for @privacyFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'private, friends, public, or bucket name'**
+  String get privacyFieldHint;
+
+  /// No description provided for @avatarReferenceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar URL or local ref'**
+  String get avatarReferenceFieldLabel;
+
+  /// No description provided for @chooseImageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose image'**
+  String get chooseImageButton;
+
+  /// No description provided for @primaryGroupFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary group'**
+  String get primaryGroupFieldLabel;
+
+  /// No description provided for @noPrimaryGroupOption.
+  ///
+  /// In en, this message translates to:
+  /// **'No primary group'**
+  String get noPrimaryGroupOption;
+
+  /// No description provided for @memberGroupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member groups'**
+  String get memberGroupsTitle;
+
+  /// No description provided for @saveAlterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save alter'**
+  String get saveAlterButton;
+
+  /// No description provided for @createAlterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create alter'**
+  String get createAlterButton;
+
+  /// No description provided for @openingImagePickerStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening image picker...'**
+  String get openingImagePickerStatus;
+
+  /// No description provided for @chooseMemberAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose member avatar'**
+  String get chooseMemberAvatarTitle;
+
+  /// No description provided for @noImageSelectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No image selected.'**
+  String get noImageSelectedStatus;
+
+  /// No description provided for @selectedImageEmptyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected image was empty.'**
+  String get selectedImageEmptyError;
+
+  /// No description provided for @avatarSavedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar saved on device.'**
+  String get avatarSavedStatus;
+
+  /// No description provided for @couldNotSaveAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save avatar: {error}'**
+  String couldNotSaveAvatar(Object error);
+
+  /// No description provided for @avatarClearedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar cleared.'**
+  String get avatarClearedStatus;
 }
 
 class _AppLocalizationsDelegate

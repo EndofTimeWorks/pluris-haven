@@ -12,6 +12,7 @@ const expectedUsOverrides = new Set([
   'groupsEmptyBody',
   'noDashboardShortcutsBody',
   'saveCancelled',
+  'tagColourFieldLabel',
   'useCustomColorLabel',
 ]);
 

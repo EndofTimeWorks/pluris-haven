@@ -1803,6 +1803,202 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navigationAbout => 'About';
+
+  @override
+  String get frontingFilter => 'Fronting';
+
+  @override
+  String get archivedFilter => 'Archived';
+
+  @override
+  String get searchMembersHint => 'Search members';
+
+  @override
+  String get noMembersSavedLocally => 'No members saved locally';
+
+  @override
+  String get noMatchingMembers => 'No matching members';
+
+  @override
+  String get membersEmptyBody =>
+      'Add members here or import a Simply Plural export.';
+
+  @override
+  String get addMemberButton => 'Add member';
+
+  @override
+  String get memberActionsTooltip => 'Member actions';
+
+  @override
+  String get deleteMemberTitle => 'Delete member?';
+
+  @override
+  String deleteMemberBody(String name) {
+    return '$name will be permanently removed from this local system.';
+  }
+
+  @override
+  String get setFrontButton => 'Set front';
+
+  @override
+  String get duplicateButton => 'Duplicate';
+
+  @override
+  String get restoreButton => 'Restore';
+
+  @override
+  String get archiveButton => 'Archive';
+
+  @override
+  String get noPronounsLabel => 'no pronouns';
+
+  @override
+  String get archivedStatus => 'archived';
+
+  @override
+  String get activeStatus => 'active';
+
+  @override
+  String get noDescriptionYet => 'No description yet.';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get pronounsFieldLabel => 'Pronouns';
+
+  @override
+  String get birthdayFieldLabel => 'Birthday';
+
+  @override
+  String get privacyFieldLabel => 'Privacy';
+
+  @override
+  String get pluralKitIdFieldLabel => 'PluralKit ID';
+
+  @override
+  String get notLinkedLabel => 'not linked';
+
+  @override
+  String get avatarFieldLabel => 'Avatar';
+
+  @override
+  String get defaultLabel => 'default';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
+  String get memberTagsTitle => 'Member tags';
+
+  @override
+  String get noneLabel => 'none';
+
+  @override
+  String get memberTagsDescription =>
+      'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.';
+
+  @override
+  String get noTagsYet => 'No tags yet.';
+
+  @override
+  String get newTagFieldLabel => 'New tag';
+
+  @override
+  String get tagColourFieldLabel => 'Tag colour';
+
+  @override
+  String get createTagButton => 'Create tag';
+
+  @override
+  String get saveTagsButton => 'Save tags';
+
+  @override
+  String get nameTagFirstError => 'Name the tag first.';
+
+  @override
+  String get dataTitle => 'Data';
+
+  @override
+  String get notSetLabel => 'not set';
+
+  @override
+  String get valueFieldLabel => 'Value';
+
+  @override
+  String get leaveBlankToClearHint => 'Leave blank to clear';
+
+  @override
+  String get saveValueButton => 'Save value';
+
+  @override
+  String get clearButton => 'Clear';
+
+  @override
+  String duplicateMemberName(String name) {
+    return '$name copy';
+  }
+
+  @override
+  String memberAvatarSemanticLabel(String name) {
+    return 'Avatar for $name';
+  }
+
+  @override
+  String get memberPreviewName => 'Preview';
+
+  @override
+  String get alterProfileTitle => 'Alter profile';
+
+  @override
+  String get birthdayFieldHint => 'YYYY-MM-DD, MM-DD, or free text';
+
+  @override
+  String get privacyFieldHint => 'private, friends, public, or bucket name';
+
+  @override
+  String get avatarReferenceFieldLabel => 'Avatar URL or local ref';
+
+  @override
+  String get chooseImageButton => 'Choose image';
+
+  @override
+  String get primaryGroupFieldLabel => 'Primary group';
+
+  @override
+  String get noPrimaryGroupOption => 'No primary group';
+
+  @override
+  String get memberGroupsTitle => 'Member groups';
+
+  @override
+  String get saveAlterButton => 'Save alter';
+
+  @override
+  String get createAlterButton => 'Create alter';
+
+  @override
+  String get openingImagePickerStatus => 'Opening image picker...';
+
+  @override
+  String get chooseMemberAvatarTitle => 'Choose member avatar';
+
+  @override
+  String get noImageSelectedStatus => 'No image selected.';
+
+  @override
+  String get selectedImageEmptyError => 'Selected image was empty.';
+
+  @override
+  String get avatarSavedStatus => 'Avatar saved on device.';
+
+  @override
+  String couldNotSaveAvatar(Object error) {
+    return 'Could not save avatar: $error';
+  }
+
+  @override
+  String get avatarClearedStatus => 'Avatar cleared.';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -1837,4 +2033,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get colorHexFieldLabel => 'Color hex';
+
+  @override
+  String get tagColourFieldLabel => 'Tag color';
 }
