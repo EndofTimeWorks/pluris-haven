@@ -409,16 +409,11 @@ class _ExternalArchiveNormalizer {
       if (name == null || name.isEmpty) {
         continue;
       }
-      final externalId =
-          _firstString(member, const [
-            '_id',
-            'id',
-            'uuid',
-            'memberId',
-            'uid',
-          ]) ??
-          _slug(name);
-      _memberNamesByExternalId[externalId] = name;
+      final sourceMemberId = _memberSourceId(member);
+      final externalId = sourceMemberId ?? _slug(name);
+      for (final alias in _memberSourceAliases(member, externalId)) {
+        _memberNamesByExternalId[alias] = name;
+      }
     }
   }
 
@@ -441,12 +436,14 @@ class _ExternalArchiveNormalizer {
     }
     final displayName = _clamp(name, _capMemberName)!;
 
-    final externalId =
-        _firstString(member, const ['_id', 'id', 'uuid', 'memberId', 'uid']) ??
-        _slug(name);
+    final sourceMemberId = _memberSourceId(member);
+    final externalId = sourceMemberId ?? _slug(name);
     final id = _stableId('member', externalId);
-    _memberIdsByExternalId[externalId] = id;
-    _memberNamesByExternalId[externalId] = displayName;
+    final sourceAliases = _memberSourceAliases(member, externalId);
+    for (final alias in sourceAliases) {
+      _memberIdsByExternalId[alias] = id;
+      _memberNamesByExternalId[alias] = displayName;
+    }
 
     final groupExternalId = _firstString(member, const [
       'folder',
@@ -457,7 +454,10 @@ class _ExternalArchiveNormalizer {
       'group_id',
     ]);
     final groupId = groupExternalId == null
-        ? _groupIdsByExternalId['member:$externalId']
+        ? sourceAliases
+              .map((alias) => _groupIdsByExternalId['member:$alias'])
+              .whereType<String>()
+              .firstOrNull
         : _groupIdsByExternalId[groupExternalId];
     if (groupExternalId != null && groupId == null) {
       warnings.add('Member "$name" ignored missing group "$groupExternalId".');
@@ -465,6 +465,7 @@ class _ExternalArchiveNormalizer {
 
     return {
       'id': id,
+      'source_member_id': sourceMemberId == null ? null : id,
       'display_name': displayName,
       'pronouns': _clamp(
         _firstString(member, const ['pronouns', 'pronoun']),
@@ -511,13 +512,17 @@ class _ExternalArchiveNormalizer {
         _capMemberDescription,
       ),
       'avatar_url': _clamp(_avatarReference(member), _capAvatarUrl),
-      'pluralkit_id': _firstString(member, const [
-        'pluralkit_id',
-        'pluralKitId',
-        'pkId',
-        'pk_id',
-        'uuid',
-      ]),
+      'pluralkit_id':
+          _firstString(member, const [
+            'pluralkit_id',
+            'pluralKitId',
+            'pkId',
+            'pk_id',
+          ]) ??
+          (source == ImportSource.pluralKitFile ||
+                  source == ImportSource.pluralKitLive
+              ? _firstString(member, const ['uuid'])
+              : null),
       'archived': member['archived'] == true,
       'is_custom_front': isCustomFront || member['is_custom_front'] == true,
       'created_at': _dateString(member, const ['created_at', 'createdAt']),
@@ -2085,6 +2090,20 @@ class _ExternalArchiveNormalizer {
 
   String _stableId(String kind, String externalId) =>
       '${source.jobSource}-$kind-${_slug(externalId)}';
+
+  String? _memberSourceId(Map<String, Object?> member) => _firstString(
+    member,
+    const ['source_member_id', '_id', 'id', 'uuid', 'memberId', 'uid'],
+  );
+
+  Set<String> _memberSourceAliases(
+    Map<String, Object?> member,
+    String externalId,
+  ) => {
+    externalId,
+    for (final key in const ['_id', 'id', 'uuid', 'memberId', 'uid'])
+      ?_firstString(member, [key]),
+  };
 
   String? _avatarReference(Map<String, Object?> object) {
     final uuid = _firstString(object, const ['avatarUuid', 'avatar_uuid']);

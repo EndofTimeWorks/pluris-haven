@@ -2116,6 +2116,61 @@ void main() {
     expect(find.textContaining('Preview ready'), findsOneWidget);
   });
 
+  testWidgets('detects renamed import members by their mapped source ID', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 1,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    repository.seedMember(
+      const MemberSummary(
+        id: 'simplyplural_file-member-sp-member-1',
+        displayName: 'Old name',
+      ),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'members': [
+          {'_id': 'sp-member-1', 'name': 'Renamed member'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    await tester.pumpAndSettle();
+    final importButton = find.text('Import archive');
+    final button = tester.widget<FilledButton>(
+      find.ancestor(of: importButton, matching: find.byType(FilledButton)),
+    );
+    button.onPressed!();
+    await _pumpUntilFound(tester, find.text('Conflicts found'));
+
+    expect(find.text('Conflicts found'), findsOneWidget);
+    expect(
+      find.textContaining('1 member from this Simply Plural import'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('pasted encrypted archive decrypts before preview', (
     tester,
   ) async {
@@ -2357,6 +2412,11 @@ class FakeHavenRepository implements HavenRepository {
     );
   }
 
+  void seedMember(MemberSummary member) {
+    _members = [..._members, member];
+    _emitMembers();
+  }
+
   HomeSnapshot _snapshot;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
@@ -2441,8 +2501,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<GroupSummary>> watchGroups() {
-    return _groupsController.stream.map(List.unmodifiable);
+  Stream<List<GroupSummary>> watchGroups() async* {
+    yield List.unmodifiable(_groupsWithCounts());
+    await for (final groups in _groupsController.stream) {
+      yield List.unmodifiable(groups);
+    }
   }
 
   @override

@@ -1638,4 +1638,18 @@ void main() {
     expect(archive.archiveJson, contains('"parent_group_id"'));
     expect(archive.archiveJson, contains('"source": "pluralspace_file"'));
   });
+  test('does not treat another import source UUID as a PluralKit ID', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.pluralSpace,
+      fileName: 'pluralspace.json',
+      importedAt: DateTime.utc(2026),
+      text: '{"members":[{"uuid":"member-uuid","name":"River"}]}',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final members = decoded['members']! as List<Object?>;
+    final member = members.single! as Map<String, Object?>;
+    expect(member['source_member_id'], 'pluralspace_file-member-member-uuid');
+    expect(member['pluralkit_id'], isNull);
+  });
 }

@@ -753,7 +753,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ExistingMemberIdentity(
             localId: member.id,
             displayName: member.displayName,
+            source: _source,
+            sourceMemberId: member.id,
             pluralKitId: member.pluralKitId,
+            isCustomFront: member.isCustomFront,
           ),
       ]);
       for (final candidate in importMembers) {
@@ -761,7 +764,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ImportMemberCandidate(
             source: _source,
             displayName: _stringValue(candidate['display_name']) ?? '',
+            sourceMemberId:
+                _stringValue(candidate['source_member_id']) ??
+                (_source == ImportSource.plurisHavenArchive
+                    ? _stringValue(candidate['id'])
+                    : null),
             pluralKitId: _stringValue(candidate['pluralkit_id']),
+            isCustomFront: candidate['is_custom_front'] == true,
           ),
           strategy: ImportConflictStrategy.prompt,
         );
@@ -1674,6 +1683,7 @@ class ImportPreviewCard extends StatelessWidget {
                 ),
               ),
               FilledButton.icon(
+                key: const ValueKey('import-archive-button'),
                 onPressed: preview.canApply && onApply != null
                     ? () async => onApply!()
                     : null,
