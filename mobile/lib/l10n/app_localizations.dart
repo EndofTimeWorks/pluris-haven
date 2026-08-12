@@ -3580,6 +3580,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avatar cleared.'**
   String get avatarClearedStatus;
+
+  /// No description provided for @todayFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayFilter;
+
+  /// No description provided for @weekFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get weekFilter;
+
+  /// No description provided for @monthFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get monthFilter;
+
+  /// No description provided for @searchFrontHistoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search front history'**
+  String get searchFrontHistoryHint;
+
+  /// No description provided for @frontHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front history'**
+  String get frontHistoryTitle;
+
+  /// No description provided for @noFrontHistoryYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No front history yet'**
+  String get noFrontHistoryYet;
+
+  /// No description provided for @frontHistoryEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a front or import an archive to fill this in.'**
+  String get frontHistoryEmptyBody;
+
+  /// No description provided for @noMatchingFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching fronts'**
+  String get noMatchingFronts;
+
+  /// No description provided for @noMatchingFrontsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a wider date range or a shorter search.'**
+  String get noMatchingFrontsBody;
+
+  /// No description provided for @addEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get addEntryButton;
+
+  /// No description provided for @resetButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetButton;
+
+  /// No description provided for @statusNoteFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status note'**
+  String get statusNoteFieldLabel;
+
+  /// No description provided for @statusNoteFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add context for this front'**
+  String get statusNoteFieldHint;
+
+  /// No description provided for @editEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get editEntryButton;
+
+  /// No description provided for @deleteFrontEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete front entry?'**
+  String get deleteFrontEntryTitle;
+
+  /// No description provided for @deleteFrontEntryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes this front history entry from the archive.'**
+  String get deleteFrontEntryBody;
+
+  /// No description provided for @deleteEntryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry'**
+  String get deleteEntryButton;
+
+  /// No description provided for @addFrontHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add front history'**
+  String get addFrontHistoryTitle;
+
+  /// No description provided for @editFrontHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit front history'**
+  String get editFrontHistoryTitle;
+
+  /// No description provided for @startedFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get startedFieldLabel;
+
+  /// No description provided for @endedFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get endedFieldLabel;
+
+  /// No description provided for @customLabelFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom label'**
+  String get customLabelFieldLabel;
+
+  /// No description provided for @customLabelFieldHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when no members are selected'**
+  String get customLabelFieldHelp;
+
+  /// No description provided for @endBeforeStartError.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after the start time.'**
+  String get endBeforeStartError;
+
+  /// No description provided for @chooseMembersOrLabelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose members or enter a custom label.'**
+  String get chooseMembersOrLabelError;
+
+  /// No description provided for @activeFrontTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'started {started} - active'**
+  String activeFrontTiming(String started);
+
+  /// No description provided for @endedFrontTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'started {started} - ended {ended}'**
+  String endedFrontTiming(String started, String ended);
 }
 
 class _AppLocalizationsDelegate

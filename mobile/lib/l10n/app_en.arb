@@ -815,5 +815,41 @@
   "@couldNotSaveAvatar": {
     "placeholders": { "error": { "type": "Object" } }
   },
-  "avatarClearedStatus": "Avatar cleared."
+  "avatarClearedStatus": "Avatar cleared.",
+  "todayFilter": "Today",
+  "weekFilter": "Week",
+  "monthFilter": "Month",
+  "searchFrontHistoryHint": "Search front history",
+  "frontHistoryTitle": "Front history",
+  "noFrontHistoryYet": "No front history yet",
+  "frontHistoryEmptyBody": "Set a front or import an archive to fill this in.",
+  "noMatchingFronts": "No matching fronts",
+  "noMatchingFrontsBody": "Try a wider date range or a shorter search.",
+  "addEntryButton": "Add entry",
+  "resetButton": "Reset",
+  "statusNoteFieldLabel": "Status note",
+  "statusNoteFieldHint": "Add context for this front",
+  "editEntryButton": "Edit entry",
+  "deleteFrontEntryTitle": "Delete front entry?",
+  "deleteFrontEntryBody": "This removes this front history entry from the archive.",
+  "deleteEntryButton": "Delete entry",
+  "addFrontHistoryTitle": "Add front history",
+  "editFrontHistoryTitle": "Edit front history",
+  "startedFieldLabel": "Started",
+  "endedFieldLabel": "Ended",
+  "customLabelFieldLabel": "Custom label",
+  "customLabelFieldHelp": "Used when no members are selected",
+  "endBeforeStartError": "End time must be after the start time.",
+  "chooseMembersOrLabelError": "Choose members or enter a custom label.",
+  "activeFrontTiming": "started {started} - active",
+  "@activeFrontTiming": {
+    "placeholders": { "started": { "type": "String" } }
+  },
+  "endedFrontTiming": "started {started} - ended {ended}",
+  "@endedFrontTiming": {
+    "placeholders": {
+      "started": { "type": "String" },
+      "ended": { "type": "String" }
+    }
+  }
 }

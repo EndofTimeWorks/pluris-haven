@@ -16,7 +16,7 @@ class FrontHistoryPage extends StatefulWidget {
 
 class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
-  String _filter = 'All';
+  String _filter = 'all';
   String _query = '';
 
   @override
@@ -27,6 +27,13 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final filters = <String, String>{
+      'all': l10n.allFilter,
+      'today': l10n.todayFilter,
+      'week': l10n.weekFilter,
+      'month': l10n.monthFilter,
+    };
     return StreamBuilder<List<FrontHistoryEntry>>(
       stream: widget.repository.watchFrontHistory(),
       initialData: const [],
@@ -43,15 +50,19 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
             const SizedBox(height: 12),
             SpSearchField(
               key: const ValueKey('front-history-search-field'),
-              hintText: 'Search front history',
+              hintText: l10n.searchFrontHistoryHint,
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
             SpFilterRow(
-              filters: const ['All', 'Today', 'Week', 'Month'],
-              selected: _filter,
-              onSelected: (value) => setState(() => _filter = value),
+              filters: filters.values.toList(growable: false),
+              selected: filters[_filter]!,
+              onSelected: (label) => setState(
+                () => _filter = filters.entries
+                    .firstWhere((entry) => entry.value == label)
+                    .key,
+              ),
             ),
             const SizedBox(height: 12),
             SpCard(
@@ -59,21 +70,21 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Front history',
+                    title: l10n.frontHistoryTitle,
                     trailing: StatusPill(
                       text: '${filteredEntries.length}/${entries.length}',
                     ),
                   ),
                   const SizedBox(height: 12),
                   if (entries.isEmpty)
-                    const SpEmptyState(
-                      title: 'No front history yet',
-                      body: 'Set a front or import an archive to fill this in.',
+                    SpEmptyState(
+                      title: l10n.noFrontHistoryYet,
+                      body: l10n.frontHistoryEmptyBody,
                     )
                   else if (filteredEntries.isEmpty)
-                    const SpEmptyState(
-                      title: 'No matching fronts',
-                      body: 'Try a wider date range or a shorter search.',
+                    SpEmptyState(
+                      title: l10n.noMatchingFronts,
+                      body: l10n.noMatchingFrontsBody,
                     )
                   else
                     for (final entry in filteredEntries) ...[
@@ -86,8 +97,8 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
-                    primary: 'Add entry',
-                    secondary: 'Reset',
+                    primary: l10n.addEntryButton,
+                    secondary: l10n.resetButton,
                     onPrimary: () => showFrontHistoryEditor(
                       context,
                       repository: widget.repository,
@@ -96,7 +107,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                       _searchController.clear();
                       setState(() {
                         _query = '';
-                        _filter = 'All';
+                        _filter = 'all';
                       });
                     },
                   ),
@@ -116,12 +127,12 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     return _matchesQuery(_query, [
       entry.label,
       entry.statusNote,
-      _frontTimingLabel(entry),
+      _frontTimingLabel(entry, AppLocalizations.of(context)),
     ]);
   }
 
   bool _matchesFrontDateFilter(FrontHistoryEntry entry) {
-    if (_filter == 'All') {
+    if (_filter == 'all') {
       return true;
     }
 
@@ -129,9 +140,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     final local = entry.startedAt.toLocal();
     final today = DateTime(now.year, now.month, now.day);
     final start = switch (_filter) {
-      'Today' => today,
-      'Week' => today.subtract(const Duration(days: 7)),
-      'Month' => DateTime(now.year, now.month - 1, now.day),
+      'today' => today,
+      'week' => today.subtract(const Duration(days: 7)),
+      'month' => DateTime(now.year, now.month - 1, now.day),
       _ => DateTime.fromMillisecondsSinceEpoch(0),
     };
     return !local.isBefore(start);
@@ -150,6 +161,7 @@ class FrontHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: ListTile(
@@ -168,7 +180,7 @@ class FrontHistoryTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _frontTimingLabel(entry),
+              _frontTimingLabel(entry, l10n),
               style: const TextStyle(color: _spMuted),
             ),
             if ((entry.statusNote ?? '').trim().isNotEmpty) ...[
@@ -233,6 +245,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       child: Padding(
@@ -262,7 +275,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _frontTimingLabel(widget.entry),
+                        _frontTimingLabel(widget.entry, l10n),
                         style: const TextStyle(color: _spMuted),
                       ),
                     ],
@@ -276,9 +289,9 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
               controller: _noteController,
               minLines: 2,
               maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Status note',
-                hintText: 'Add context for this front',
+              decoration: InputDecoration(
+                labelText: l10n.statusNoteFieldLabel,
+                hintText: l10n.statusNoteFieldHint,
               ),
             ),
             const SizedBox(height: 16),
@@ -294,7 +307,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                 }
               },
               icon: const Icon(Icons.save_outlined),
-              label: const Text('Save note'),
+              label: Text(l10n.saveNoteButton),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -307,14 +320,14 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                 );
               },
               icon: const Icon(Icons.edit_calendar_outlined),
-              label: const Text('Edit entry'),
+              label: Text(l10n.editEntryButton),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => confirmDelete(
                 context,
-                title: 'Delete front entry?',
-                body: 'This removes this front history entry from the archive.',
+                title: l10n.deleteFrontEntryTitle,
+                body: l10n.deleteFrontEntryBody,
                 onDelete: () async {
                   await widget.repository.deleteFrontSession(widget.entry.id);
                   if (context.mounted) {
@@ -323,7 +336,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                 },
               ),
               icon: const Icon(Icons.delete_outline_rounded),
-              label: const Text('Delete entry'),
+              label: Text(l10n.deleteEntryButton),
             ),
           ],
         ),
@@ -394,6 +407,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -407,28 +421,30 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.entry == null ? 'Add front history' : 'Edit front history',
+              widget.entry == null
+                  ? l10n.addFrontHistoryTitle
+                  : l10n.editFrontHistoryTitle,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Started'),
+              title: Text(l10n.startedFieldLabel),
               subtitle: Text(_shortDateTime(_startedAt)),
               trailing: const Icon(Icons.event_outlined),
               onTap: () => _pickDateTime(start: true),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Ended'),
+              title: Text(l10n.endedFieldLabel),
               subtitle: Text(_shortDateTime(_endedAt)),
               trailing: const Icon(Icons.event_available_outlined),
               onTap: () => _pickDateTime(start: false),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Members',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            Text(
+              l10n.navigationMembers,
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
@@ -454,9 +470,9 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             TextField(
               key: const ValueKey('front-history-label-field'),
               controller: _labelController,
-              decoration: const InputDecoration(
-                labelText: 'Custom label',
-                helperText: 'Used when no members are selected',
+              decoration: InputDecoration(
+                labelText: l10n.customLabelFieldLabel,
+                helperText: l10n.customLabelFieldHelp,
               ),
             ),
             const SizedBox(height: 10),
@@ -465,7 +481,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
               controller: _noteController,
               minLines: 2,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Status note'),
+              decoration: InputDecoration(labelText: l10n.statusNoteFieldLabel),
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
@@ -476,7 +492,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
               key: const ValueKey('save-front-history-button'),
               onPressed: _save,
               icon: const Icon(Icons.save_outlined),
-              label: const Text('Save entry'),
+              label: Text(l10n.saveEntryButton),
             ),
           ],
         ),
@@ -516,11 +532,13 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
 
   Future<void> _save() async {
     if (_endedAt.isBefore(_startedAt)) {
-      setState(() => _error = 'End time must be after the start time.');
+      setState(() => _error = AppLocalizations.of(context).endBeforeStartError);
       return;
     }
     if (_memberIds.isEmpty && _labelController.text.trim().isEmpty) {
-      setState(() => _error = 'Choose members or enter a custom label.');
+      setState(
+        () => _error = AppLocalizations.of(context).chooseMembersOrLabelError,
+      );
       return;
     }
     final draft = FrontHistoryDraft(
@@ -539,13 +557,13 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 }
 
-String _frontTimingLabel(FrontHistoryEntry entry) {
+String _frontTimingLabel(FrontHistoryEntry entry, AppLocalizations l10n) {
   final started = _shortDateTime(entry.startedAt);
   if (entry.endedAt == null) {
-    return 'started $started - active';
+    return l10n.activeFrontTiming(started);
   }
 
-  return 'started $started - ended ${_shortDateTime(entry.endedAt!)}';
+  return l10n.endedFrontTiming(started, _shortDateTime(entry.endedAt!));
 }
 
 String _shortDateTime(DateTime value) {

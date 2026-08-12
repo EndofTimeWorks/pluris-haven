@@ -1999,6 +1999,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get avatarClearedStatus => 'Avatar cleared.';
+
+  @override
+  String get todayFilter => 'Today';
+
+  @override
+  String get weekFilter => 'Week';
+
+  @override
+  String get monthFilter => 'Month';
+
+  @override
+  String get searchFrontHistoryHint => 'Search front history';
+
+  @override
+  String get frontHistoryTitle => 'Front history';
+
+  @override
+  String get noFrontHistoryYet => 'No front history yet';
+
+  @override
+  String get frontHistoryEmptyBody =>
+      'Set a front or import an archive to fill this in.';
+
+  @override
+  String get noMatchingFronts => 'No matching fronts';
+
+  @override
+  String get noMatchingFrontsBody =>
+      'Try a wider date range or a shorter search.';
+
+  @override
+  String get addEntryButton => 'Add entry';
+
+  @override
+  String get resetButton => 'Reset';
+
+  @override
+  String get statusNoteFieldLabel => 'Status note';
+
+  @override
+  String get statusNoteFieldHint => 'Add context for this front';
+
+  @override
+  String get editEntryButton => 'Edit entry';
+
+  @override
+  String get deleteFrontEntryTitle => 'Delete front entry?';
+
+  @override
+  String get deleteFrontEntryBody =>
+      'This removes this front history entry from the archive.';
+
+  @override
+  String get deleteEntryButton => 'Delete entry';
+
+  @override
+  String get addFrontHistoryTitle => 'Add front history';
+
+  @override
+  String get editFrontHistoryTitle => 'Edit front history';
+
+  @override
+  String get startedFieldLabel => 'Started';
+
+  @override
+  String get endedFieldLabel => 'Ended';
+
+  @override
+  String get customLabelFieldLabel => 'Custom label';
+
+  @override
+  String get customLabelFieldHelp => 'Used when no members are selected';
+
+  @override
+  String get endBeforeStartError => 'End time must be after the start time.';
+
+  @override
+  String get chooseMembersOrLabelError =>
+      'Choose members or enter a custom label.';
+
+  @override
+  String activeFrontTiming(String started) {
+    return 'started $started - active';
+  }
+
+  @override
+  String endedFrontTiming(String started, String ended) {
+    return 'started $started - ended $ended';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).
