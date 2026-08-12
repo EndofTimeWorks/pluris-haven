@@ -60,34 +60,57 @@ const _spPurple = Color(0xFF7B61FF);
 const _spGold = Color(0xFFF2C75C);
 
 enum SpSection {
-  dashboard('Dashboard'),
-  members('Members'),
-  frontHistory('Front History'),
-  customFronts('Custom Fronts'),
-  groups('Groups'),
-  notes('Notes'),
-  journals('Journals'),
-  analytics('Analytics'),
-  chat('Chat'),
-  polls('Polls'),
-  friends('Friends'),
-  usefulLinks('Useful Links'),
-  reminders('Reminders'),
-  privacyBuckets('Privacy buckets'),
-  tokens('Tokens'),
-  userReport('User Report'),
-  notificationHistory('Notification History'),
-  howtos("How-to's"),
-  customFields('Custom Fields'),
-  accountSettings('Account Settings'),
-  importExport('Import / Export'),
-  sync('Sync'),
-  appOptions('App options'),
-  about('About');
+  dashboard,
+  members,
+  frontHistory,
+  customFronts,
+  groups,
+  notes,
+  journals,
+  analytics,
+  chat,
+  polls,
+  friends,
+  usefulLinks,
+  reminders,
+  privacyBuckets,
+  tokens,
+  userReport,
+  notificationHistory,
+  howtos,
+  customFields,
+  accountSettings,
+  importExport,
+  sync,
+  appOptions,
+  about;
 
-  const SpSection(this.label);
-
-  final String label;
+  String label(AppLocalizations l10n) => switch (this) {
+    SpSection.dashboard => l10n.navigationDashboard,
+    SpSection.members => l10n.navigationMembers,
+    SpSection.frontHistory => l10n.navigationFrontHistory,
+    SpSection.customFronts => l10n.navigationCustomFronts,
+    SpSection.groups => l10n.navigationGroups,
+    SpSection.notes => l10n.navigationNotes,
+    SpSection.journals => l10n.navigationJournals,
+    SpSection.analytics => l10n.navigationAnalytics,
+    SpSection.chat => l10n.navigationChat,
+    SpSection.polls => l10n.navigationPolls,
+    SpSection.friends => l10n.navigationFriends,
+    SpSection.usefulLinks => l10n.navigationUsefulLinks,
+    SpSection.reminders => l10n.navigationReminders,
+    SpSection.privacyBuckets => l10n.navigationPrivacyBuckets,
+    SpSection.tokens => l10n.navigationTokens,
+    SpSection.userReport => l10n.navigationUserReport,
+    SpSection.notificationHistory => l10n.navigationNotificationHistory,
+    SpSection.howtos => l10n.navigationHowTos,
+    SpSection.customFields => l10n.navigationCustomFields,
+    SpSection.accountSettings => l10n.navigationAccountSettings,
+    SpSection.importExport => l10n.navigationImportExport,
+    SpSection.sync => l10n.navigationSync,
+    SpSection.appOptions => l10n.navigationAppOptions,
+    SpSection.about => l10n.navigationAbout,
+  };
 }
 
 class HomePage extends StatefulWidget {
@@ -109,6 +132,7 @@ class _HomePageState extends State<HomePage> {
       stream: widget.repository.watchHomeSnapshot(),
       builder: (context, snapshot) {
         final home = snapshot.data;
+        final l10n = AppLocalizations.of(context);
 
         return PopScope(
           canPop: _section == SpSection.dashboard,
@@ -127,7 +151,7 @@ class _HomePageState extends State<HomePage> {
               toolbarHeight: 48,
               titleSpacing: 0,
               title: Text(
-                _section.label,
+                _section.label(l10n),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

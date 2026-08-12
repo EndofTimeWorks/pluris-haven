@@ -708,5 +708,42 @@
   "@replyingToMessage": { "placeholders": { "message": { "type": "String" } } },
   "messageFieldLabel": "Message",
   "saveMessageButton": "Save message",
-  "chooseMemberBoardFirst": "Choose a member board first."
+  "chooseMemberBoardFirst": "Choose a member board first.",
+  "offlineStatusPill": "offline",
+  "localSystemName": "Local system",
+  "systemAvatarSemanticLabel": "System avatar for {systemName}",
+  "@systemAvatarSemanticLabel": {
+    "placeholders": { "systemName": { "type": "String" } }
+  },
+  "systemMemberGroupCount": "{memberCount, plural, =1{1 member} other{{memberCount} members}} - {groupCount, plural, =1{1 group} other{{groupCount} groups}}",
+  "@systemMemberGroupCount": {
+    "placeholders": {
+      "memberCount": { "type": "int" },
+      "groupCount": { "type": "int" }
+    }
+  },
+  "navigationDashboard": "Dashboard",
+  "navigationMembers": "Members",
+  "navigationFrontHistory": "Front History",
+  "navigationCustomFronts": "Custom Fronts",
+  "navigationGroups": "Groups",
+  "navigationNotes": "Notes",
+  "navigationJournals": "Journals",
+  "navigationAnalytics": "Analytics",
+  "navigationChat": "Chat",
+  "navigationPolls": "Polls",
+  "navigationFriends": "Friends",
+  "navigationUsefulLinks": "Useful Links",
+  "navigationReminders": "Reminders",
+  "navigationPrivacyBuckets": "Privacy buckets",
+  "navigationTokens": "Tokens",
+  "navigationUserReport": "User Report",
+  "navigationNotificationHistory": "Notification History",
+  "navigationHowTos": "How-tos",
+  "navigationCustomFields": "Custom Fields",
+  "navigationAccountSettings": "Account Settings",
+  "navigationImportExport": "Import / Export",
+  "navigationSync": "Sync",
+  "navigationAppOptions": "App options",
+  "navigationAbout": "About"
 }

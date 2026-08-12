@@ -1703,6 +1703,106 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chooseMemberBoardFirst => 'Choose a member board first.';
+
+  @override
+  String get offlineStatusPill => 'offline';
+
+  @override
+  String get localSystemName => 'Local system';
+
+  @override
+  String systemAvatarSemanticLabel(String systemName) {
+    return 'System avatar for $systemName';
+  }
+
+  @override
+  String systemMemberGroupCount(int memberCount, int groupCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      memberCount,
+      locale: localeName,
+      other: '$memberCount members',
+      one: '1 member',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      groupCount,
+      locale: localeName,
+      other: '$groupCount groups',
+      one: '1 group',
+    );
+    return '$_temp0 - $_temp1';
+  }
+
+  @override
+  String get navigationDashboard => 'Dashboard';
+
+  @override
+  String get navigationMembers => 'Members';
+
+  @override
+  String get navigationFrontHistory => 'Front History';
+
+  @override
+  String get navigationCustomFronts => 'Custom Fronts';
+
+  @override
+  String get navigationGroups => 'Groups';
+
+  @override
+  String get navigationNotes => 'Notes';
+
+  @override
+  String get navigationJournals => 'Journals';
+
+  @override
+  String get navigationAnalytics => 'Analytics';
+
+  @override
+  String get navigationChat => 'Chat';
+
+  @override
+  String get navigationPolls => 'Polls';
+
+  @override
+  String get navigationFriends => 'Friends';
+
+  @override
+  String get navigationUsefulLinks => 'Useful Links';
+
+  @override
+  String get navigationReminders => 'Reminders';
+
+  @override
+  String get navigationPrivacyBuckets => 'Privacy buckets';
+
+  @override
+  String get navigationTokens => 'Tokens';
+
+  @override
+  String get navigationUserReport => 'User Report';
+
+  @override
+  String get navigationNotificationHistory => 'Notification History';
+
+  @override
+  String get navigationHowTos => 'How-tos';
+
+  @override
+  String get navigationCustomFields => 'Custom Fields';
+
+  @override
+  String get navigationAccountSettings => 'Account Settings';
+
+  @override
+  String get navigationImportExport => 'Import / Export';
+
+  @override
+  String get navigationSync => 'Sync';
+
+  @override
+  String get navigationAppOptions => 'App options';
+
+  @override
+  String get navigationAbout => 'About';
 }
 
 /// The translations for English, as used in the United States (`en_US`).

@@ -14,6 +14,7 @@ class OfflineFeaturePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
         SpCard(
@@ -23,7 +24,7 @@ class OfflineFeaturePage extends StatelessWidget {
             children: [
               SpSectionHeader(
                 title: title,
-                trailing: const StatusPill(text: 'offline'),
+                trailing: StatusPill(text: l10n.offlineStatusPill),
               ),
               const SizedBox(height: 8),
               Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
@@ -52,6 +53,10 @@ class SpDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = snapshot;
+    final l10n = AppLocalizations.of(context);
+    final systemName = (home?.systemName ?? '').trim().isEmpty
+        ? l10n.localSystemName
+        : home!.systemName.trim();
 
     return Drawer(
       child: SafeArea(
@@ -72,8 +77,7 @@ class SpDrawer extends StatelessWidget {
                     label: (home?.systemName ?? '').trim().isEmpty
                         ? 'PH'
                         : home!.systemName.trim().substring(0, 1),
-                    semanticLabel:
-                        'System avatar for ${home?.systemName ?? 'Local system'}',
+                    semanticLabel: l10n.systemAvatarSemanticLabel(systemName),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -81,7 +85,7 @@ class SpDrawer extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          home?.systemName ?? 'Local system',
+                          systemName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -89,7 +93,10 @@ class SpDrawer extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
+                          l10n.systemMemberGroupCount(
+                            home?.memberCount ?? 0,
+                            home?.groupCount ?? 0,
+                          ),
                           style: const TextStyle(color: _spMuted, fontSize: 13),
                         ),
                       ],
@@ -100,146 +107,146 @@ class SpDrawer extends StatelessWidget {
             ),
             const Divider(height: 1),
             DrawerEntry(
-              label: 'Dashboard',
+              label: SpSection.dashboard.label(l10n),
               section: SpSection.dashboard,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Members',
+              label: SpSection.members.label(l10n),
               section: SpSection.members,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Front History',
+              label: SpSection.frontHistory.label(l10n),
               section: SpSection.frontHistory,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Custom Fronts',
+              label: SpSection.customFronts.label(l10n),
               section: SpSection.customFronts,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Groups',
+              label: SpSection.groups.label(l10n),
               section: SpSection.groups,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Notes',
+              label: SpSection.notes.label(l10n),
               section: SpSection.notes,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Journals',
+              label: SpSection.journals.label(l10n),
               section: SpSection.journals,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Analytics',
+              label: SpSection.analytics.label(l10n),
               section: SpSection.analytics,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Chat',
+              label: SpSection.chat.label(l10n),
               section: SpSection.chat,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Polls',
+              label: SpSection.polls.label(l10n),
               section: SpSection.polls,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Custom Fields',
+              label: SpSection.customFields.label(l10n),
               section: SpSection.customFields,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Friends',
+              label: SpSection.friends.label(l10n),
               section: SpSection.friends,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Useful Links',
+              label: SpSection.usefulLinks.label(l10n),
               section: SpSection.usefulLinks,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Privacy buckets',
+              label: SpSection.privacyBuckets.label(l10n),
               section: SpSection.privacyBuckets,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Tokens',
+              label: SpSection.tokens.label(l10n),
               section: SpSection.tokens,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'User Report',
+              label: SpSection.userReport.label(l10n),
               section: SpSection.userReport,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Notification History',
+              label: SpSection.notificationHistory.label(l10n),
               section: SpSection.notificationHistory,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: "How-to's",
+              label: SpSection.howtos.label(l10n),
               section: SpSection.howtos,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Reminders',
+              label: SpSection.reminders.label(l10n),
               section: SpSection.reminders,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Import / Export',
+              label: SpSection.importExport.label(l10n),
               section: SpSection.importExport,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Sync',
+              label: SpSection.sync.label(l10n),
               section: SpSection.sync,
               selected: selected,
               onSelect: onSelect,
             ),
             const Divider(height: 24),
             DrawerEntry(
-              label: 'App options',
+              label: SpSection.appOptions.label(l10n),
               section: SpSection.appOptions,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'Account Settings',
+              label: SpSection.accountSettings.label(l10n),
               section: SpSection.accountSettings,
               selected: selected,
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: 'About',
+              label: SpSection.about.label(l10n),
               section: SpSection.about,
               selected: selected,
               onSelect: onSelect,

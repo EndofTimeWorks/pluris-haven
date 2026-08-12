@@ -107,6 +107,8 @@ void main() {
   testWidgets('every drawer route has a semantic label', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SpDrawer(
           snapshot: null,
           selected: SpSection.dashboard,
@@ -115,12 +117,14 @@ void main() {
       ),
     );
 
+    final l10n = AppLocalizations.of(tester.element(find.byType(SpDrawer)));
     final drawerList = find.byType(Scrollable);
     for (final section in SpSection.values) {
-      final text = find.text(section.label);
+      final label = section.label(l10n);
+      final text = find.text(label);
       await tester.scrollUntilVisible(text, 180, scrollable: drawerList);
       expect(
-        find.bySemanticsLabel(RegExp('^${RegExp.escape(section.label)}')),
+        find.bySemanticsLabel(RegExp('^${RegExp.escape(label)}')),
         findsOneWidget,
       );
     }

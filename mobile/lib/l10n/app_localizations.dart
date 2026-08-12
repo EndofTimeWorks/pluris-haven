@@ -3040,6 +3040,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a member board first.'**
   String get chooseMemberBoardFirst;
+
+  /// No description provided for @offlineStatusPill.
+  ///
+  /// In en, this message translates to:
+  /// **'offline'**
+  String get offlineStatusPill;
+
+  /// No description provided for @localSystemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Local system'**
+  String get localSystemName;
+
+  /// No description provided for @systemAvatarSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System avatar for {systemName}'**
+  String systemAvatarSemanticLabel(String systemName);
+
+  /// No description provided for @systemMemberGroupCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{memberCount, plural, =1{1 member} other{{memberCount} members}} - {groupCount, plural, =1{1 group} other{{groupCount} groups}}'**
+  String systemMemberGroupCount(int memberCount, int groupCount);
+
+  /// No description provided for @navigationDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get navigationDashboard;
+
+  /// No description provided for @navigationMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get navigationMembers;
+
+  /// No description provided for @navigationFrontHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Front History'**
+  String get navigationFrontHistory;
+
+  /// No description provided for @navigationCustomFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Fronts'**
+  String get navigationCustomFronts;
+
+  /// No description provided for @navigationGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get navigationGroups;
+
+  /// No description provided for @navigationNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get navigationNotes;
+
+  /// No description provided for @navigationJournals.
+  ///
+  /// In en, this message translates to:
+  /// **'Journals'**
+  String get navigationJournals;
+
+  /// No description provided for @navigationAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get navigationAnalytics;
+
+  /// No description provided for @navigationChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get navigationChat;
+
+  /// No description provided for @navigationPolls.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls'**
+  String get navigationPolls;
+
+  /// No description provided for @navigationFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get navigationFriends;
+
+  /// No description provided for @navigationUsefulLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful Links'**
+  String get navigationUsefulLinks;
+
+  /// No description provided for @navigationReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get navigationReminders;
+
+  /// No description provided for @navigationPrivacyBuckets.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy buckets'**
+  String get navigationPrivacyBuckets;
+
+  /// No description provided for @navigationTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get navigationTokens;
+
+  /// No description provided for @navigationUserReport.
+  ///
+  /// In en, this message translates to:
+  /// **'User Report'**
+  String get navigationUserReport;
+
+  /// No description provided for @navigationNotificationHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification History'**
+  String get navigationNotificationHistory;
+
+  /// No description provided for @navigationHowTos.
+  ///
+  /// In en, this message translates to:
+  /// **'How-tos'**
+  String get navigationHowTos;
+
+  /// No description provided for @navigationCustomFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Fields'**
+  String get navigationCustomFields;
+
+  /// No description provided for @navigationAccountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get navigationAccountSettings;
+
+  /// No description provided for @navigationImportExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import / Export'**
+  String get navigationImportExport;
+
+  /// No description provided for @navigationSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get navigationSync;
+
+  /// No description provided for @navigationAppOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'App options'**
+  String get navigationAppOptions;
+
+  /// No description provided for @navigationAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get navigationAbout;
 }
 
 class _AppLocalizationsDelegate
