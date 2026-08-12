@@ -109,6 +109,36 @@ void main() {
     },
   );
 
+  test('refresh sends the retry nonce with the old token', () async {
+    late http.Request captured;
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: MockClient((request) async {
+        captured = request;
+        return http.Response(
+          jsonEncode({
+            'access_token': 'new-access',
+            'refresh_token': 'new-refresh',
+            'expires_in': 900,
+          }),
+          200,
+        );
+      }),
+    );
+
+    await api.refresh(
+      'old-refresh-token-that-is-long-enough',
+      rotationNonce: 'stable-client-retry-nonce',
+    );
+
+    expect(captured.method, 'POST');
+    expect(captured.url.path, '/v1/auth/refresh');
+    expect(jsonDecode(captured.body), {
+      'refresh_token': 'old-refresh-token-that-is-long-enough',
+      'rotation_nonce': 'stable-client-retry-nonce',
+    });
+  });
+
   test('backup upload sends opaque bytes and their declared digest', () async {
     late http.Request captured;
     final api = ServerApi(
@@ -258,8 +288,24 @@ void main() {
       expect(api.uploadedChunks, [utf8.encode('ph1:ciphertext')]);
       expect(controller.uploadCompletedChunks, 1);
 
-      await controller.logout();
-      expect(controller.signedIn, isFalse);
+      api
+        ..rejectAccess = true
+        ..failNextRefresh = true;
+      await controller.refreshAll();
+      expect(controller.error, isNotNull);
+
+      final recovered = ServerAccountController(
+        storage: storage,
+        apiFactory: (_) => api,
+      );
+      await recovered.initialize();
+      expect(recovered.error, isNull);
+      expect(recovered.signedIn, isTrue);
+      expect(api.refreshNonces, hasLength(2));
+      expect(api.refreshNonces[1], api.refreshNonces[0]);
+
+      await recovered.logout();
+      expect(recovered.signedIn, isFalse);
       expect(storage.values.values, isNot(contains('access')));
       expect(storage.values.values, isNot(contains('refresh')));
     },
@@ -288,7 +334,10 @@ class FakeServerApi extends ServerApi {
 
   final uploadedChunks = <List<int>>[];
   final snapshotRows = <ServerBackupSnapshot>[];
+  final refreshNonces = <String?>[];
   bool passwordChanged = false;
+  bool rejectAccess = false;
+  bool failNextRefresh = false;
 
   @override
   Future<ServerDescriptor> descriptor() async => const ServerDescriptor(
@@ -311,12 +360,34 @@ class FakeServerApi extends ServerApi {
   );
 
   @override
-  Future<ServerAccount> me(String token) async => ServerAccount(
-    id: 'user',
-    email: 'test@example.com',
-    displayName: 'Test',
-    createdAt: DateTime.utc(2026, 8, 9),
-  );
+  Future<ServerAccount> me(String token) async {
+    if (rejectAccess && token != 'access-refreshed') {
+      throw const ServerApiException('Expired', statusCode: 401);
+    }
+    return ServerAccount(
+      id: 'user',
+      email: 'test@example.com',
+      displayName: 'Test',
+      createdAt: DateTime.utc(2026, 8, 9),
+    );
+  }
+
+  @override
+  Future<ServerTokens> refresh(
+    String refreshToken, {
+    String? rotationNonce,
+  }) async {
+    refreshNonces.add(rotationNonce);
+    if (failNextRefresh) {
+      failNextRefresh = false;
+      throw const ServerApiException('Network response was lost.');
+    }
+    return const ServerTokens(
+      accessToken: 'access-refreshed',
+      refreshToken: 'refresh-refreshed',
+      expiresIn: 900,
+    );
+  }
 
   @override
   Future<List<ServerSession>> sessions(String token) async => [

@@ -295,11 +295,17 @@ class ServerApi {
     return ServerTokens.fromJson(_decodeObject(response));
   }
 
-  Future<ServerTokens> refresh(String refreshToken) async {
+  Future<ServerTokens> refresh(
+    String refreshToken, {
+    String? rotationNonce,
+  }) async {
     final response = await _request(
       'POST',
       '/v1/auth/refresh',
-      jsonBody: {'refresh_token': refreshToken},
+      jsonBody: {
+        'refresh_token': refreshToken,
+        'rotation_nonce': ?rotationNonce,
+      },
     );
     return ServerTokens.fromJson(_decodeObject(response));
   }
