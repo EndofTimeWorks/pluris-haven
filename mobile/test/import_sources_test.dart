@@ -385,6 +385,35 @@ void main() {
     expect(archive.archiveJson, contains('"source": "simplyplural_file"'));
   });
 
+  test('keeps distinct non-ASCII source member IDs distinct', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'unicode-ids.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"id": "猫", "name": "Mochi"},
+    {"id": "犬", "name": "Kuma"}
+  ]
+}
+''',
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final members = decoded['members'] as List<Object?>;
+    final memberIds = members
+        .cast<Map<String, Object?>>()
+        .map((member) => member['id'])
+        .toSet();
+
+    expect(archive.counts['members'], 2);
+    expect(memberIds, hasLength(2));
+    expect(
+      memberIds.any((id) => id != 'simplyplural_file-member-unknown'),
+      isTrue,
+    );
+  });
+
   test('normalizes Simply Plural map-keyed collections', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

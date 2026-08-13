@@ -105,6 +105,7 @@ class _ExternalArchiveNormalizer {
   final _frontCommentsByExternalId = <String, List<String>>{};
   final _consumedRootKeys = <String>{};
   final _clampReport = _ImportClampReport();
+  final _externalIdByStableId = <String, String>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -2088,8 +2089,26 @@ class _ExternalArchiveNormalizer {
     }
   }
 
-  String _stableId(String kind, String externalId) =>
-      '${source.jobSource}-$kind-${_slug(externalId)}';
+  String _stableId(String kind, String externalId) {
+    final canonicalExternalId = externalId.trim();
+    final stableId = '${source.jobSource}-$kind-${_slug(canonicalExternalId)}';
+    final existingExternalId = _externalIdByStableId[stableId];
+    if (existingExternalId == null ||
+        existingExternalId == canonicalExternalId) {
+      _externalIdByStableId[stableId] = canonicalExternalId;
+      return stableId;
+    }
+
+    // Slugs are deliberately lossy. Preserve already-established IDs where
+    // there is no collision, but disambiguate a second distinct external ID so
+    // Unicode or punctuation-only source IDs cannot corrupt a valid import.
+    final encodedExternalId = base64Url
+        .encode(utf8.encode(canonicalExternalId))
+        .replaceAll('=', '');
+    final disambiguatedId = '$stableId-$encodedExternalId';
+    _externalIdByStableId[disambiguatedId] = canonicalExternalId;
+    return disambiguatedId;
+  }
 
   String? _memberSourceId(Map<String, Object?> member) => _firstString(
     member,
