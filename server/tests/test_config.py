@@ -23,9 +23,7 @@ def _production_settings(**overrides: object) -> Settings:
 
 
 def test_production_requires_postgresql() -> None:
-    settings = _production_settings(
-        database_url="mysql+aiomysql://pluris:password@db/pluris"
-    )
+    settings = _production_settings(database_url="mysql+aiomysql://pluris:password@db/pluris")
     with pytest.raises(RuntimeError, match="PostgreSQL"):
         settings.validate_for_startup()
 
