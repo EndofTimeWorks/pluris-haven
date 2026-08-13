@@ -18,6 +18,11 @@ An optional account layer exists for backup, and friends are in early developmen
 
 - Local use never requires an account, a server, or a network connection.
 - Anything that leaves the device is encrypted end to end by default. The server routes and stores ciphertext; it does not read private content.
+- Local private text is encrypted with the device key, but the current
+  field-level design leaves database structure visible to someone who obtains
+  the raw SQLite file: row counts, relationships, timestamps, and status
+  flags. It is not a substitute for device encryption or a full-database
+  encryption design.
 - Import and export are core functionality, maintained to the same standard as everything else, not a one-time migration tool.
 - Self-hosting is a first-class path, not a downgraded one. Self-hosters get the same protocol, migration rights, and encryption guarantees as the official server.
 - Accessibility is a release requirement, not a follow-up task.
@@ -80,7 +85,9 @@ permanently offline.
 - Federation between servers, and the portable-identity migration path it depends on.
 - A desktop client and a browser client sharing the same core logic. Browser access to private data requires JavaScript or WebAssembly, since decryption has to happen on the client; public pages work without it.
 - A scoped local API for third-party integrations and automations, with explicit permissions and revocation.
-- An optional stronger-privacy transport mode for people who want to obscure metadata patterns as well as content, at a cost in battery and latency.
+- An optional full-database encryption design for people who need to reduce
+  local metadata exposure as well as content exposure, with a clear migration,
+  performance, and portability plan.
 
 ## Deliberately not doing
 

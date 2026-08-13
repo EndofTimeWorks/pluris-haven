@@ -24,6 +24,21 @@
   </section>
 
   <section>
+    <h2>What local encryption does and does not hide</h2>
+    <p>
+      Private text is encrypted with a key held in the device secure store. The current local
+      database still needs unencrypted structure to work, including timestamps, row counts,
+      relationship links, and status flags. Someone who obtains the raw database could infer
+      activity patterns even without reading encrypted names or journal text.
+    </p>
+    <p>
+      Keep device encryption and a screen lock enabled. Android cloud and device-transfer backups
+      are disabled for app data, but a full-database encryption design is a separate future project
+      rather than a claim this pre-alpha makes today.
+    </p>
+  </section>
+
+  <section>
     <h2>Minors</h2>
     <p>
       Plural system tools can hold sensitive identity, journal, health-adjacent, and relationship
