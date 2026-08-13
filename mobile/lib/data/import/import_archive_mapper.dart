@@ -1011,13 +1011,16 @@ class _ExternalArchiveNormalizer {
     ]);
 
     final normalizedParentId = parentId == 'root' ? null : parentId;
-    final parentGroupId = normalizedParentId == null
+    var parentGroupId = normalizedParentId == null
         ? null
         : _groupIdsByExternalId[normalizedParentId];
     if (normalizedParentId != null && parentGroupId == null) {
       warnings.add(
         'Group "$name" ignored missing parent "$normalizedParentId".',
       );
+    } else if (parentGroupId == id) {
+      warnings.add('Group "$name" ignored itself as its parent.');
+      parentGroupId = null;
     }
 
     return {

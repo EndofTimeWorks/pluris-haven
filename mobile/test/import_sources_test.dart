@@ -764,6 +764,30 @@ void main() {
     expect(message['member_id'], isNull);
   });
 
+  test('does not create a self-parenting imported group', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'self-parent-group.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "groups": [
+    {"id": "same-group", "name": "Loop", "parentId": "same-group"}
+  ]
+}
+''',
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final groups = decoded['groups']! as List<Object?>;
+    final group = groups.single! as Map<String, Object?>;
+
+    expect(group['parent_group_id'], isNull);
+    expect(
+      archive.warnings,
+      contains('Group "Loop" ignored itself as its parent.'),
+    );
+  });
+
   test('keeps custom-labeled fronts and swaps backwards intervals', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,
