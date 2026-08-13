@@ -2241,7 +2241,7 @@ abstract class AppLocalizations {
   /// No description provided for @localArchiveDescription.
   ///
   /// In en, this message translates to:
-  /// **'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.'**
+  /// **'Unencrypted JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.'**
   String get localArchiveDescription;
 
   /// No description provided for @buildingLocalArchiveSemanticLabel.
@@ -2297,6 +2297,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy unencrypted archive'**
   String get copyPlainArchiveConfirmButton;
+
+  /// No description provided for @savePlainArchiveWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save unencrypted archive?'**
+  String get savePlainArchiveWarningTitle;
+
+  /// No description provided for @savePlainArchiveWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone who gets this file can read your local data. Save an encrypted file instead if you need to keep it private.'**
+  String get savePlainArchiveWarningBody;
+
+  /// No description provided for @savePlainArchiveConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save unencrypted archive'**
+  String get savePlainArchiveConfirmButton;
 
   /// No description provided for @archiveCopied.
   ///

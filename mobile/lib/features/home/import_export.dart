@@ -1264,6 +1264,26 @@ class LocalArchiveSheet extends StatelessWidget {
 
   Future<void> _saveArchiveJson(BuildContext context, String archive) async {
     final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.savePlainArchiveWarningTitle),
+        content: Text(l10n.savePlainArchiveWarningBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.savePlainArchiveConfirmButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
     final messenger = ScaffoldMessenger.of(context);
     try {
       final saved = await NativeFileDialog.saveBytes(

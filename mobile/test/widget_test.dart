@@ -2291,6 +2291,7 @@ void main() {
     expect(find.text('Local archive'), findsOneWidget);
     expect(find.text('Save JSON file'), findsOneWidget);
     expect(find.text('Copy JSON'), findsOneWidget);
+    expect(find.textContaining('Unencrypted JSON export'), findsOneWidget);
     expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
     expect(find.textContaining('Caretakers'), findsOneWidget);
 
@@ -2299,6 +2300,16 @@ void main() {
     expect(find.text('Copy unencrypted archive?'), findsOneWidget);
     expect(
       find.textContaining('Clipboard history, keyboards, and other apps'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Save JSON file'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save unencrypted archive?'), findsOneWidget);
+    expect(
+      find.textContaining('Anyone who gets this file can read your local data'),
       findsOneWidget,
     );
     await tester.tap(find.text('Cancel'));

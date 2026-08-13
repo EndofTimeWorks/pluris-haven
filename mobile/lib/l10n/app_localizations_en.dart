@@ -1236,7 +1236,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localArchiveDescription =>
-      'JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.';
+      'Unencrypted JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.';
 
   @override
   String get buildingLocalArchiveSemanticLabel =>
@@ -1270,6 +1270,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copyPlainArchiveConfirmButton => 'Copy unencrypted archive';
+
+  @override
+  String get savePlainArchiveWarningTitle => 'Save unencrypted archive?';
+
+  @override
+  String get savePlainArchiveWarningBody =>
+      'Anyone who gets this file can read your local data. Save an encrypted file instead if you need to keep it private.';
+
+  @override
+  String get savePlainArchiveConfirmButton => 'Save unencrypted archive';
 
   @override
   String get archiveCopied => 'Archive copied';
