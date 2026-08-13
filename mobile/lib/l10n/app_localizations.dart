@@ -2187,7 +2187,7 @@ abstract class AppLocalizations {
   /// No description provided for @passphraseMinimumLength.
   ///
   /// In en, this message translates to:
-  /// **'Use at least 8 characters.'**
+  /// **'Use at least 14 characters.'**
   String get passphraseMinimumLength;
 
   /// No description provided for @passphrasesDoNotMatch.
@@ -2279,6 +2279,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy JSON'**
   String get copyJsonButton;
+
+  /// No description provided for @copyPlainArchiveWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy unencrypted archive?'**
+  String get copyPlainArchiveWarningTitle;
+
+  /// No description provided for @copyPlainArchiveWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This archive contains your local data in plain text. Clipboard history, keyboards, and other apps may retain it. Save an encrypted file instead if you need to keep it private.'**
+  String get copyPlainArchiveWarningBody;
+
+  /// No description provided for @copyPlainArchiveConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy unencrypted archive'**
+  String get copyPlainArchiveConfirmButton;
 
   /// No description provided for @archiveCopied.
   ///

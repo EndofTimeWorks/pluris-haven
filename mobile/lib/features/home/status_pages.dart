@@ -361,7 +361,7 @@ class UserReportPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'A small local snapshot you can copy before filing a bug.',
+                'A small local snapshot you can copy before filing a bug. It excludes system and front names.',
                 style: TextStyle(color: _spMuted, height: 1.35),
               ),
               const SizedBox(height: 12),
@@ -405,12 +405,10 @@ class UserReportPage extends StatelessWidget {
     return [
       'Pluris Haven local report',
       'stage: pre-alpha',
-      'system: ${home?.systemName ?? 'Local system'}',
       'members: ${home?.memberCount ?? 0}',
       'groups: ${home?.groupCount ?? 0}',
       'notes: ${home?.noteCount ?? 0}',
       'front history: ${home?.frontHistoryCount ?? 0}',
-      'current front: ${home?.currentFrontLabel ?? 'none'}',
       'storage: device',
       'sync: off by default',
     ].join('\n');

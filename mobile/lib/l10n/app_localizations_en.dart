@@ -1262,6 +1262,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyJsonButton => 'Copy JSON';
 
   @override
+  String get copyPlainArchiveWarningTitle => 'Copy unencrypted archive?';
+
+  @override
+  String get copyPlainArchiveWarningBody =>
+      'This archive contains your local data in plain text. Clipboard history, keyboards, and other apps may retain it. Save an encrypted file instead if you need to keep it private.';
+
+  @override
+  String get copyPlainArchiveConfirmButton => 'Copy unencrypted archive';
+
+  @override
   String get archiveCopied => 'Archive copied';
 
   @override

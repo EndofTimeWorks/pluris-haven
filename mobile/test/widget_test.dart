@@ -975,6 +975,12 @@ void main() {
     await openDrawerSection(tester, 'User Report');
     expect(find.text('User Report'), findsWidgets);
     expect(find.widgetWithText(FilledButton, 'Copy report'), findsOneWidget);
+    final report = tester
+        .widgetList<SelectableText>(find.byType(SelectableText))
+        .map((text) => text.data)
+        .firstWhere((text) => text?.contains('Pluris Haven local report') ?? false);
+    expect(report, isNot(contains('Night Garden')));
+    expect(report, isNot(contains('current front:')));
   });
 
   testWidgets('adds a local group from the groups section', (tester) async {
@@ -2287,6 +2293,16 @@ void main() {
     expect(find.text('Copy JSON'), findsOneWidget);
     expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
     expect(find.textContaining('Caretakers'), findsOneWidget);
+
+    await tester.tap(find.text('Copy JSON'));
+    await tester.pumpAndSettle();
+    expect(find.text('Copy unencrypted archive?'), findsOneWidget);
+    expect(
+      find.textContaining('Clipboard history, keyboards, and other apps'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
 
     Navigator.of(tester.element(find.text('Local archive'))).pop();
     await tester.pumpAndSettle();

@@ -1235,12 +1235,31 @@ class LocalArchiveSheet extends StatelessWidget {
     );
   }
 
-  void _copyArchiveJson(BuildContext context, String archive) {
-    final messenger = ScaffoldMessenger.of(context);
-    Clipboard.setData(ClipboardData(text: archive));
-    messenger.showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).archiveCopied)),
+  Future<void> _copyArchiveJson(BuildContext context, String archive) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.copyPlainArchiveWarningTitle),
+        content: Text(l10n.copyPlainArchiveWarningBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.copyPlainArchiveConfirmButton),
+          ),
+        ],
+      ),
     );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: archive));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.archiveCopied)));
   }
 
   Future<void> _saveArchiveJson(BuildContext context, String archive) async {
