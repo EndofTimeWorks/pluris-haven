@@ -879,6 +879,32 @@ void main() {
     );
   });
 
+  test('does not invent ends for overlapping Simply Plural fronts', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'sp-co-fronting.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"id": "m1", "name": "Iris"},
+    {"id": "m2", "name": "River"}
+  ],
+  "frontHistory": [
+    {"id": "f1", "member": "m1", "startedAt": "2026-01-01T10:00:00Z"},
+    {"id": "f2", "member": "m2", "startedAt": "2026-01-01T11:00:00Z"}
+  ]
+}
+''',
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final fronts = (decoded['fronts'] as List<Object?>)
+        .cast<Map<String, Object?>>();
+
+    expect(fronts, hasLength(2));
+    expect(fronts.every((front) => front['ended_at'] == null), isTrue);
+  });
+
   test(
     'keeps Simply Plural front status notes separate from custom fronts',
     () {

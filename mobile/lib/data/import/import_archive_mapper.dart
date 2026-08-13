@@ -2118,6 +2118,15 @@ class _ExternalArchiveNormalizer {
       return (left ?? importedAt).compareTo(right ?? importedAt);
     });
 
+    // PluralKit switches describe the complete fronting state at a point in
+    // time, so the next switch closes the previous state. Other import formats
+    // store independent, potentially overlapping sessions; inferring ends
+    // from their next row would corrupt co-fronting history.
+    if (source != ImportSource.pluralKitFile &&
+        source != ImportSource.pluralKitLive) {
+      return;
+    }
+
     for (var index = 0; index < sessions.length - 1; index++) {
       if (sessions[index]['ended_at'] == null) {
         sessions[index]['ended_at'] = sessions[index + 1]['started_at'];
