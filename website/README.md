@@ -32,6 +32,10 @@ Point nginx, Caddy, or another static file server at:
 
 The build uses `@sveltejs/adapter-static` with precompressed `.gz` and `.br`
 files. Configure the web server to serve those compressed files when supported.
+It also publishes a `_headers` file for static hosts that recognise that
+convention. For nginx, Caddy, or another generic server, configure the same
+response headers at the server layer; serving `_headers` as a normal file does
+not enable them.
 
 ## Routes
 
