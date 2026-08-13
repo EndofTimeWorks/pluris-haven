@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import Field, field_validator
@@ -69,6 +70,14 @@ class Settings(BaseSettings):
             raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must contain at least 32 characters")
         if not self.database_url.startswith(("postgresql://", "postgresql+")):
             raise RuntimeError("Production requires PostgreSQL")
+        public_url = urlsplit(self.public_url)
+        if (
+            public_url.scheme != "https"
+            or public_url.hostname is None
+            or public_url.username is not None
+            or public_url.password is not None
+        ):
+            raise RuntimeError("PLURIS_PUBLIC_URL must be an HTTPS URL in production")
         if self.registration_enabled:
             raise RuntimeError(
                 "Production registration requires verified email, which is not implemented yet"

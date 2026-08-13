@@ -17,6 +17,7 @@ def _production_settings(**overrides: object) -> Settings:
         "jwt_secret": "test-jwt-secret-that-is-long-and-unique",
         "friend_code_pepper": "test-friend-code-pepper-that-is-different",
         "server_id": "019ff449-469e-7630-8fb6-d295796ccb0a",
+        "public_url": "https://api.example.test",
     }
     values.update(overrides)
     return Settings(**values)
@@ -25,6 +26,12 @@ def _production_settings(**overrides: object) -> Settings:
 def test_production_requires_postgresql() -> None:
     settings = _production_settings(database_url="mysql+aiomysql://pluris:password@db/pluris")
     with pytest.raises(RuntimeError, match="PostgreSQL"):
+        settings.validate_for_startup()
+
+
+def test_production_requires_https_public_url() -> None:
+    settings = _production_settings(public_url="http://api.example.test")
+    with pytest.raises(RuntimeError, match="HTTPS URL"):
         settings.validate_for_startup()
 
 
