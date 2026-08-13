@@ -13,6 +13,7 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  text-size-adjust: 100%;
 }
 
 a {
@@ -33,6 +34,10 @@ main {
 }
 
 .back:hover {
+  text-decoration: underline;
+}
+
+.back:focus-visible {
   text-decoration: underline;
 }
 
@@ -112,6 +117,15 @@ ul {
   background: #6750f0;
 }
 
+.button:hover {
+  border-color: #8e7bff;
+  background: #2d3240;
+}
+
+.button.primary:hover {
+  background: #7863ff;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
@@ -131,6 +145,10 @@ ul {
 
 .card:hover {
   border-color: #6750f0;
+}
+
+.card:focus-visible {
+  border-color: #8e7bff;
 }
 
 .card span,
@@ -200,5 +218,15 @@ pre code {
 
   .button {
     width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .button,
+  .card,
+  .data-list li,
+  code,
+  pre {
+    border: 1px solid ButtonText;
   }
 }

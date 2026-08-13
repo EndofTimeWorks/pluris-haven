@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { mobileRelease } from '$lib/release';
+</script>
+
 <svelte:head>
   <title>Pluris Haven Distribution</title>
   <meta name="description" content="Install channels and update notes for Pluris Haven." />
@@ -21,12 +25,11 @@
       <li>Dev APK asset: <code>pluris-haven-dev.apk</code></li>
       <li>Dev tags: <code>mobile-v0.2.0-pre-alpha.N.dev.N+BUILD</code></li>
       <li>Versioned tags: <code>mobile-v0.2.0-pre-alpha.N+BUILD</code></li>
-      <li>Current release: <code>0.2.0-pre-alpha.2+2008</code></li>
+      <li>Current release: <code>{mobileRelease.version}</code></li>
     </ul>
     <div class="actions">
-      <a class="button primary" href="https://github.com/EndofTimeWorks/pluris-haven/releases">
-        GitHub Releases
-      </a>
+      <a class="button primary" href={mobileRelease.universalApk.url}> Download signed APK </a>
+      <a class="button" href={mobileRelease.releaseUrl}>Release files</a>
       <a class="button" href="https://obtainium.imranr.dev">Obtainium</a>
     </div>
   </section>
@@ -36,7 +39,7 @@
     <ol>
       <li>Add <code>https://github.com/EndofTimeWorks/pluris-haven</code>.</li>
       <li>Enable prereleases for dev builds.</li>
-      <li>Use the APK asset named <code>pluris-haven-dev.apk</code>.</li>
+      <li>Filter APK assets to files ending in <code>-universal.apk</code>.</li>
       <li>Sort releases by date.</li>
     </ol>
     <p>
@@ -52,7 +55,8 @@
   <section>
     <h2>iOS</h2>
     <p>
-      Versioned releases include an unsigned IPA for bundle id
+      Versioned releases include an <a href={mobileRelease.unsignedIpaUrl}>unsigned IPA</a> for
+      bundle id
       <code>works.endoftime.plurishaven</code>. AltStore, SideStore, or Sideloadly must re-sign it
       before installation. Signed IPA and TestFlight builds still need Apple credentials and
       physical-device validation.

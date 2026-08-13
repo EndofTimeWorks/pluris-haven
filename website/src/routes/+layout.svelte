@@ -10,7 +10,7 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 
-<div id="main-content" role="presentation">
+<div id="main-content" tabindex="-1">
   {@render children()}
 </div>
 
@@ -42,8 +42,8 @@
     outline-offset: 2px;
   }
 
-  :global(*) {
-    -webkit-tap-highlight-color: transparent;
+  :global(html) {
+    color-scheme: dark;
   }
 
   @media (prefers-reduced-motion: reduce) {

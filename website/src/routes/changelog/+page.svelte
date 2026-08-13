@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { mobileRelease } from '$lib/release';
+</script>
+
 <svelte:head>
   <title>Pluris Haven Changelog</title>
   <meta name="description" content="Current Pluris Haven pre-alpha changes and release notes." />
@@ -13,9 +17,7 @@
       source for APK files and exact tags.
     </p>
     <div class="actions">
-      <a class="button primary" href="https://github.com/EndofTimeWorks/pluris-haven/releases">
-        GitHub Releases
-      </a>
+      <a class="button primary" href={mobileRelease.releaseUrl}> Current release </a>
       <a class="button" href="https://github.com/EndofTimeWorks/pluris-haven/commits/main">
         Commit history
       </a>
@@ -25,7 +27,7 @@
   <section>
     <h2>0.2.0 pre-alpha</h2>
     <ul>
-      <li>Current release: <code>0.2.0-pre-alpha.2+2008</code>.</li>
+      <li>Current release: <code>{mobileRelease.version}</code>.</li>
       <li>
         Local Android app with encrypted storage, encrypted backup snapshots, and a restore
         rehearsal before archive imports.
