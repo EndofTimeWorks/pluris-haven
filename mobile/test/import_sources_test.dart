@@ -414,6 +414,61 @@ void main() {
     );
   });
 
+  test('keeps same-name records that have no source IDs', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'same-name-no-ids.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"name": "Alex", "description": "First member"},
+    {"name": "Alex", "description": "Second member"}
+  ],
+  "groups": [
+    {"name": "Shared", "description": "First group"},
+    {"name": "Shared", "description": "Second group"}
+  ],
+  "customFields": [
+    {"name": "Role", "type": "text", "description": "First field"},
+    {"name": "Role", "type": "text", "description": "Second field"}
+  ],
+  "customFronts": [
+    {"name": "Blurry", "description": "First front"},
+    {"name": "Blurry", "description": "Second front"}
+  ]
+}
+''',
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+
+    List<Map<String, Object?>> records(String key) =>
+        (decoded[key] as List<Object?>).cast<Map<String, Object?>>();
+
+    for (final key in const [
+      'members',
+      'groups',
+      'custom_fields',
+      'named_fronts',
+    ]) {
+      final values = records(key);
+      expect(values, hasLength(2), reason: key);
+      expect(values.map((value) => value['id']).toSet(), hasLength(2));
+    }
+    expect(
+      records('members').map((member) => member['description']),
+      containsAll(['First member', 'Second member']),
+    );
+    expect(
+      records('groups').map((group) => group['description']),
+      containsAll(['First group', 'Second group']),
+    );
+    expect(
+      records('named_fronts').map((front) => front['description']),
+      containsAll(['First front', 'Second front']),
+    );
+  });
+
   test('normalizes Simply Plural map-keyed collections', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

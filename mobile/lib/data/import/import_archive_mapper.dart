@@ -106,6 +106,8 @@ class _ExternalArchiveNormalizer {
   final _consumedRootKeys = <String>{};
   final _clampReport = _ImportClampReport();
   final _externalIdByStableId = <String, String>{};
+  final _anonymousExternalIdCounts = <String, int>{};
+  final _groupExternalIdsByIndex = <int, String>{};
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -438,7 +440,7 @@ class _ExternalArchiveNormalizer {
     final displayName = _clamp(name, _capMemberName)!;
 
     final sourceMemberId = _memberSourceId(member);
-    final externalId = sourceMemberId ?? _slug(name);
+    final externalId = sourceMemberId ?? _anonymousExternalId('member', name);
     final id = _stableId('member', externalId);
     final sourceAliases = _memberSourceAliases(member, externalId);
     for (final alias in sourceAliases) {
@@ -561,9 +563,14 @@ class _ExternalArchiveNormalizer {
       }
       final name = _clamp(label, _capMemberName)!;
 
+      final sourceExternalId = _firstString(customFront, const [
+        '_id',
+        'id',
+        'uuid',
+        'uid',
+      ]);
       final externalId =
-          _firstString(customFront, const ['_id', 'id', 'uuid', 'uid']) ??
-          _slug(label);
+          sourceExternalId ?? _anonymousExternalId('named-front', label);
       if (!seenExternalIds.add(externalId)) {
         continue;
       }
@@ -672,9 +679,14 @@ class _ExternalArchiveNormalizer {
         continue;
       }
       final clampedName = _clamp(name, _capCustomFieldName)!;
+      final sourceExternalId = _firstString(field, const [
+        '_id',
+        'id',
+        'uuid',
+        'fieldId',
+      ]);
       final externalId =
-          _firstString(field, const ['_id', 'id', 'uuid', 'fieldId']) ??
-          _slug(name);
+          sourceExternalId ?? _anonymousExternalId('custom-field', name);
       final id = _stableId('custom-field', externalId);
       final rawType = field['type'] ?? field['field_type'];
       _customFieldIdsByExternalId[externalId] = id;
@@ -848,19 +860,35 @@ class _ExternalArchiveNormalizer {
 
   List<Map<String, Object?>> _normalizeGroups() {
     final items = _firstRootList(const ['groups', 'folders']);
-    for (final item in items) {
-      final group = _mapValue(item);
+    for (var index = 0; index < items.length; index++) {
+      final group = _mapValue(items[index]);
       if (group == null) {
         continue;
       }
+      final sourceExternalId = _firstString(group, const [
+        '_id',
+        'id',
+        'uuid',
+        'folderId',
+        'uid',
+      ]);
+      final name = _firstString(group, const ['name', 'displayName', 'title']);
       final externalId =
-          _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
-          _firstString(group, const ['name', 'displayName', 'title']);
+          sourceExternalId ??
+          (name == null ? null : _anonymousExternalId('group', name));
       if (externalId != null) {
-        _groupIdsByExternalId.putIfAbsent(
+        _groupExternalIdsByIndex[index] = externalId;
+        final id = _groupIdsByExternalId.putIfAbsent(
           externalId,
           () => _stableId('group', externalId),
         );
+        if (sourceExternalId == null && name != null) {
+          // Some exports use a group's name as a parent reference when they
+          // omit IDs. Such references are ambiguous for duplicate names, so
+          // retain the first matching group while still preserving every row.
+          _groupIdsByExternalId.putIfAbsent(name, () => id);
+          _groupIdsByExternalId.putIfAbsent(_slug(name), () => id);
+        }
       }
     }
 
@@ -880,12 +908,14 @@ class _ExternalArchiveNormalizer {
   }
 
   void _indexGroupMembers() {
-    for (final groupValue in _firstRootList(const ['groups', 'folders'])) {
-      final group = _mapValue(groupValue);
+    final groups = _firstRootList(const ['groups', 'folders']);
+    for (var index = 0; index < groups.length; index++) {
+      final group = _mapValue(groups[index]);
       if (group == null) {
         continue;
       }
       final groupExternalId =
+          _groupExternalIdsByIndex[index] ??
           _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
           _firstString(group, const ['name', 'displayName', 'title']);
       if (groupExternalId == null) {
@@ -921,12 +951,14 @@ class _ExternalArchiveNormalizer {
     final links = <Map<String, Object?>>[];
     final seen = <String>{};
 
-    for (final groupValue in _firstRootList(const ['groups', 'folders'])) {
-      final group = _mapValue(groupValue);
+    final groups = _firstRootList(const ['groups', 'folders']);
+    for (var index = 0; index < groups.length; index++) {
+      final group = _mapValue(groups[index]);
       if (group == null) {
         continue;
       }
       final groupExternalId =
+          _groupExternalIdsByIndex[index] ??
           _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
           _firstString(group, const ['name', 'displayName', 'title']);
       if (groupExternalId == null) {
@@ -997,8 +1029,9 @@ class _ExternalArchiveNormalizer {
     final clampedName = _clamp(name, _capGroupName)!;
 
     final externalId =
+        _groupExternalIdsByIndex[index] ??
         _firstString(group, const ['_id', 'id', 'uuid', 'folderId', 'uid']) ??
-        _slug(name);
+        _anonymousExternalId('group', name);
     final id =
         _groupIdsByExternalId[externalId] ?? _stableId('group', externalId);
     _groupIdsByExternalId[externalId] = id;
@@ -2111,6 +2144,14 @@ class _ExternalArchiveNormalizer {
     final disambiguatedId = '$stableId-$encodedExternalId';
     _externalIdByStableId[disambiguatedId] = canonicalExternalId;
     return disambiguatedId;
+  }
+
+  String _anonymousExternalId(String kind, String name) {
+    final base = _slug(name);
+    final key = '$kind:$base';
+    final occurrence = (_anonymousExternalIdCounts[key] ?? 0) + 1;
+    _anonymousExternalIdCounts[key] = occurrence;
+    return occurrence == 1 ? base : '$base-anonymous-$occurrence';
   }
 
   String? _memberSourceId(Map<String, Object?> member) => _firstString(
