@@ -4804,6 +4804,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avatar for {name}'**
   String avatarForLabel(String name);
+
+  /// No description provided for @privacyBucketsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Group members by who may see them. Sharing stays off until sync is configured.'**
+  String get privacyBucketsDescription;
+
+  /// No description provided for @noPrivacyBucketsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No privacy buckets'**
+  String get noPrivacyBucketsTitle;
+
+  /// No description provided for @noPrivacyBucketsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create one to prepare member visibility rules.'**
+  String get noPrivacyBucketsBody;
+
+  /// No description provided for @memberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String memberCount(int count);
+
+  /// No description provided for @bucketDescriptionMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'{description} - {count, plural, =1{1 member} other{{count} members}}'**
+  String bucketDescriptionMembers(String description, int count);
+
+  /// No description provided for @deleteNamedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String deleteNamedItem(String name);
+
+  /// No description provided for @deletePrivacyBucketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete privacy bucket?'**
+  String get deletePrivacyBucketTitle;
+
+  /// No description provided for @deletePrivacyBucketBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Member assignments to {name} will be removed.'**
+  String deletePrivacyBucketBody(String name);
+
+  /// No description provided for @addBucketButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bucket'**
+  String get addBucketButton;
+
+  /// No description provided for @relatedVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related visibility'**
+  String get relatedVisibilityTitle;
+
+  /// No description provided for @memberVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member visibility'**
+  String get memberVisibilityTitle;
+
+  /// No description provided for @memberVisibilitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'edit privacy on member profiles'**
+  String get memberVisibilitySubtitle;
+
+  /// No description provided for @customFieldsPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields privacy'**
+  String get customFieldsPrivacyTitle;
+
+  /// No description provided for @customFieldsPrivacySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'edit field-level labels'**
+  String get customFieldsPrivacySubtitle;
+
+  /// No description provided for @addPrivacyBucketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add privacy bucket'**
+  String get addPrivacyBucketTitle;
+
+  /// No description provided for @editPrivacyBucketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit privacy bucket'**
+  String get editPrivacyBucketTitle;
+
+  /// No description provided for @membersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get membersTitle;
+
+  /// No description provided for @nameRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required.'**
+  String get nameRequiredError;
+
+  /// No description provided for @disabledStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get disabledStatusLabel;
+
+  /// No description provided for @tokensDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no local API token surface yet. Imports do not need a Pluris Haven token.'**
+  String get tokensDescription;
+
+  /// No description provided for @tokenStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token status'**
+  String get tokenStatusTitle;
+
+  /// No description provided for @localTokenStoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local token store'**
+  String get localTokenStoreTitle;
+
+  /// No description provided for @emptyStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'empty'**
+  String get emptyStatusLabel;
+
+  /// No description provided for @pluralKitLiveImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit live import'**
+  String get pluralKitLiveImportTitle;
+
+  /// No description provided for @pasteTokenDuringImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'paste a token during import'**
+  String get pasteTokenDuringImportSubtitle;
+
+  /// No description provided for @syncTokensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync tokens'**
+  String get syncTokensTitle;
+
+  /// No description provided for @requiresSyncSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'requires sync setup'**
+  String get requiresSyncSetupSubtitle;
+
+  /// No description provided for @userReportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A small local snapshot you can copy before filing a bug. It excludes system and front names.'**
+  String get userReportDescription;
+
+  /// No description provided for @copyReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get copyReportButton;
+
+  /// No description provided for @relatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related'**
+  String get relatedTitle;
+
+  /// No description provided for @importJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import jobs'**
+  String get importJobsTitle;
+
+  /// No description provided for @importJobsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'open import details and errors'**
+  String get importJobsSubtitle;
+
+  /// No description provided for @localEventLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'local event log'**
+  String get localEventLogSubtitle;
+
+  /// No description provided for @localReportHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven local report'**
+  String get localReportHeading;
+
+  /// No description provided for @localReportStage.
+  ///
+  /// In en, this message translates to:
+  /// **'stage: pre-alpha'**
+  String get localReportStage;
+
+  /// No description provided for @localReportMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'members: {count}'**
+  String localReportMembers(int count);
+
+  /// No description provided for @localReportGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'groups: {count}'**
+  String localReportGroups(int count);
+
+  /// No description provided for @localReportNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'notes: {count}'**
+  String localReportNotes(int count);
+
+  /// No description provided for @localReportFrontHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'front history: {count}'**
+  String localReportFrontHistory(int count);
+
+  /// No description provided for @localReportStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'storage: device'**
+  String get localReportStorage;
+
+  /// No description provided for @localReportSync.
+  ///
+  /// In en, this message translates to:
+  /// **'sync: off by default'**
+  String get localReportSync;
+
+  /// No description provided for @reportCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Report copied'**
+  String get reportCopiedMessage;
+
+  /// No description provided for @localSystemFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Local system'**
+  String get localSystemFallback;
+
+  /// No description provided for @systemAvatarFor.
+  ///
+  /// In en, this message translates to:
+  /// **'System avatar for {name}'**
+  String systemAvatarFor(String name);
+
+  /// No description provided for @savedOnDeviceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'saved on device'**
+  String get savedOnDeviceSubtitle;
+
+  /// No description provided for @editSystemProfileTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit system profile'**
+  String get editSystemProfileTooltip;
+
+  /// No description provided for @moveDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'move data in or out'**
+  String get moveDataSubtitle;
+
+  /// No description provided for @appOptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'theme, language, dashboard'**
+  String get appOptionsSubtitle;
+
+  /// No description provided for @offByDefaultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'off by default'**
+  String get offByDefaultSubtitle;
+
+  /// No description provided for @deviceDatabaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'device database'**
+  String get deviceDatabaseSubtitle;
+
+  /// No description provided for @memberNameEncryptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member name encryption'**
+  String get memberNameEncryptionTitle;
+
+  /// No description provided for @secureStorageKeySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'key stored in device secure storage'**
+  String get secureStorageKeySubtitle;
+
+  /// No description provided for @destructiveActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Destructive actions'**
+  String get destructiveActionsTitle;
+
+  /// No description provided for @confirmedWithDialogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'confirmed with dialogs'**
+  String get confirmedWithDialogsSubtitle;
+
+  /// No description provided for @systemProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System profile'**
+  String get systemProfileTitle;
+
+  /// No description provided for @removeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeButton;
+
+  /// No description provided for @systemNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System name'**
+  String get systemNameFieldLabel;
+
+  /// No description provided for @savingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get savingStatus;
+
+  /// No description provided for @chooseSystemAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose system avatar'**
+  String get chooseSystemAvatarTitle;
+
+  /// No description provided for @couldNotSaveImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save image: {error}'**
+  String couldNotSaveImage(String error);
 }
 
 class _AppLocalizationsDelegate

@@ -2734,6 +2734,222 @@ class AppLocalizationsEn extends AppLocalizations {
   String avatarForLabel(String name) {
     return 'Avatar for $name';
   }
+
+  @override
+  String get privacyBucketsDescription =>
+      'Group members by who may see them. Sharing stays off until sync is configured.';
+
+  @override
+  String get noPrivacyBucketsTitle => 'No privacy buckets';
+
+  @override
+  String get noPrivacyBucketsBody =>
+      'Create one to prepare member visibility rules.';
+
+  @override
+  String memberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bucketDescriptionMembers(String description, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$description - $_temp0';
+  }
+
+  @override
+  String deleteNamedItem(String name) {
+    return 'Delete $name';
+  }
+
+  @override
+  String get deletePrivacyBucketTitle => 'Delete privacy bucket?';
+
+  @override
+  String deletePrivacyBucketBody(String name) {
+    return 'Member assignments to $name will be removed.';
+  }
+
+  @override
+  String get addBucketButton => 'Add bucket';
+
+  @override
+  String get relatedVisibilityTitle => 'Related visibility';
+
+  @override
+  String get memberVisibilityTitle => 'Member visibility';
+
+  @override
+  String get memberVisibilitySubtitle => 'edit privacy on member profiles';
+
+  @override
+  String get customFieldsPrivacyTitle => 'Custom fields privacy';
+
+  @override
+  String get customFieldsPrivacySubtitle => 'edit field-level labels';
+
+  @override
+  String get addPrivacyBucketTitle => 'Add privacy bucket';
+
+  @override
+  String get editPrivacyBucketTitle => 'Edit privacy bucket';
+
+  @override
+  String get membersTitle => 'Members';
+
+  @override
+  String get nameRequiredError => 'Name is required.';
+
+  @override
+  String get disabledStatusLabel => 'disabled';
+
+  @override
+  String get tokensDescription =>
+      'There is no local API token surface yet. Imports do not need a Pluris Haven token.';
+
+  @override
+  String get tokenStatusTitle => 'Token status';
+
+  @override
+  String get localTokenStoreTitle => 'Local token store';
+
+  @override
+  String get emptyStatusLabel => 'empty';
+
+  @override
+  String get pluralKitLiveImportTitle => 'PluralKit live import';
+
+  @override
+  String get pasteTokenDuringImportSubtitle => 'paste a token during import';
+
+  @override
+  String get syncTokensTitle => 'Sync tokens';
+
+  @override
+  String get requiresSyncSetupSubtitle => 'requires sync setup';
+
+  @override
+  String get userReportDescription =>
+      'A small local snapshot you can copy before filing a bug. It excludes system and front names.';
+
+  @override
+  String get copyReportButton => 'Copy report';
+
+  @override
+  String get relatedTitle => 'Related';
+
+  @override
+  String get importJobsTitle => 'Import jobs';
+
+  @override
+  String get importJobsSubtitle => 'open import details and errors';
+
+  @override
+  String get localEventLogSubtitle => 'local event log';
+
+  @override
+  String get localReportHeading => 'Pluris Haven local report';
+
+  @override
+  String get localReportStage => 'stage: pre-alpha';
+
+  @override
+  String localReportMembers(int count) {
+    return 'members: $count';
+  }
+
+  @override
+  String localReportGroups(int count) {
+    return 'groups: $count';
+  }
+
+  @override
+  String localReportNotes(int count) {
+    return 'notes: $count';
+  }
+
+  @override
+  String localReportFrontHistory(int count) {
+    return 'front history: $count';
+  }
+
+  @override
+  String get localReportStorage => 'storage: device';
+
+  @override
+  String get localReportSync => 'sync: off by default';
+
+  @override
+  String get reportCopiedMessage => 'Report copied';
+
+  @override
+  String get localSystemFallback => 'Local system';
+
+  @override
+  String systemAvatarFor(String name) {
+    return 'System avatar for $name';
+  }
+
+  @override
+  String get savedOnDeviceSubtitle => 'saved on device';
+
+  @override
+  String get editSystemProfileTooltip => 'Edit system profile';
+
+  @override
+  String get moveDataSubtitle => 'move data in or out';
+
+  @override
+  String get appOptionsSubtitle => 'theme, language, dashboard';
+
+  @override
+  String get offByDefaultSubtitle => 'off by default';
+
+  @override
+  String get deviceDatabaseSubtitle => 'device database';
+
+  @override
+  String get memberNameEncryptionTitle => 'Member name encryption';
+
+  @override
+  String get secureStorageKeySubtitle => 'key stored in device secure storage';
+
+  @override
+  String get destructiveActionsTitle => 'Destructive actions';
+
+  @override
+  String get confirmedWithDialogsSubtitle => 'confirmed with dialogs';
+
+  @override
+  String get systemProfileTitle => 'System profile';
+
+  @override
+  String get removeButton => 'Remove';
+
+  @override
+  String get systemNameFieldLabel => 'System name';
+
+  @override
+  String get savingStatus => 'Saving...';
+
+  @override
+  String get chooseSystemAvatarTitle => 'Choose system avatar';
+
+  @override
+  String couldNotSaveImage(String error) {
+    return 'Could not save image: $error';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).

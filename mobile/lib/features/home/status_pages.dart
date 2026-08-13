@@ -16,6 +16,7 @@ class LocalPrivacyPage extends StatelessWidget {
       stream: repository.watchPrivacyBuckets(),
       initialData: const [],
       builder: (context, snapshot) {
+        final l10n = AppLocalizations.of(context);
         final buckets = snapshot.data ?? const <PrivacyBucketSummary>[];
         return SpPage(
           children: [
@@ -25,19 +26,19 @@ class LocalPrivacyPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Privacy buckets',
+                    title: l10n.navigationPrivacyBuckets,
                     trailing: StatusPill(text: '${buckets.length}'),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Group members by who may see them. Sharing stays off until sync is configured.',
-                    style: TextStyle(color: _spMuted, height: 1.35),
+                  Text(
+                    l10n.privacyBucketsDescription,
+                    style: const TextStyle(color: _spMuted, height: 1.35),
                   ),
                   const SizedBox(height: 12),
                   if (buckets.isEmpty)
-                    const SpEmptyState(
-                      title: 'No privacy buckets',
-                      body: 'Create one to prepare member visibility rules.',
+                    SpEmptyState(
+                      title: l10n.noPrivacyBucketsTitle,
+                      body: l10n.noPrivacyBucketsBody,
                     )
                   else
                     for (final bucket in buckets) ...[
@@ -55,17 +56,19 @@ class LocalPrivacyPage extends StatelessWidget {
                           title: Text(bucket.name),
                           subtitle: Text(
                             bucket.description?.trim().isNotEmpty == true
-                                ? '${bucket.description} - ${bucket.memberIds.length} members'
-                                : '${bucket.memberIds.length} members',
+                                ? l10n.bucketDescriptionMembers(
+                                    bucket.description!,
+                                    bucket.memberIds.length,
+                                  )
+                                : l10n.memberCount(bucket.memberIds.length),
                           ),
                           trailing: IconButton(
-                            tooltip: 'Delete ${bucket.name}',
+                            tooltip: l10n.deleteNamedItem(bucket.name),
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () => confirmDelete(
                               context,
-                              title: 'Delete privacy bucket?',
-                              body:
-                                  'Member assignments to ${bucket.name} will be removed.',
+                              title: l10n.deletePrivacyBucketTitle,
+                              body: l10n.deletePrivacyBucketBody(bucket.name),
                               onDelete: () =>
                                   repository.deletePrivacyBucket(bucket.id),
                             ),
@@ -88,23 +91,23 @@ class LocalPrivacyPage extends StatelessWidget {
                       repository: repository,
                     ),
                     icon: const Icon(Icons.add),
-                    label: const Text('Add bucket'),
+                    label: Text(l10n.addBucketButton),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
             SpSettingsGroup(
-              title: 'Related visibility',
+              title: l10n.relatedVisibilityTitle,
               rows: [
                 SpSettingsRow(
-                  'Member visibility',
-                  'edit privacy on member profiles',
+                  l10n.memberVisibilityTitle,
+                  l10n.memberVisibilitySubtitle,
                   onTap: () => onSelect(SpSection.members),
                 ),
                 SpSettingsRow(
-                  'Custom fields privacy',
-                  'edit field-level labels',
+                  l10n.customFieldsPrivacyTitle,
+                  l10n.customFieldsPrivacySubtitle,
                   onTap: () => onSelect(SpSection.customFields),
                 ),
               ],
@@ -176,6 +179,7 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -190,35 +194,37 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
           children: [
             Text(
               widget.bucket == null
-                  ? 'Add privacy bucket'
-                  : 'Edit privacy bucket',
+                  ? l10n.addPrivacyBucketTitle
+                  : l10n.editPrivacyBucketTitle,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             TextField(
               key: const ValueKey('privacy-bucket-name-field'),
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _descriptionController,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: InputDecoration(
+                labelText: l10n.descriptionFieldLabel,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _colorController,
-              decoration: const InputDecoration(
-                labelText: 'Color hex',
+              decoration: InputDecoration(
+                labelText: l10n.colorHexFieldLabel,
                 hintText: '#F2C75C',
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Members',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            Text(
+              l10n.membersTitle,
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
@@ -248,7 +254,7 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
               key: const ValueKey('save-privacy-bucket-button'),
               onPressed: _save,
               icon: const Icon(Icons.save_outlined),
-              label: const Text('Save'),
+              label: Text(l10n.saveButtonLabel),
             ),
           ],
         ),
@@ -260,11 +266,13 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
     final name = _nameController.text.trim();
     final color = _colorController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Name is required.');
+      setState(() => _error = AppLocalizations.of(context).nameRequiredError);
       return;
     }
     if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) {
-      setState(() => _error = 'Use a six-digit hex color such as #F2C75C.');
+      setState(
+        () => _error = AppLocalizations.of(context).invalidHexColorError,
+      );
       return;
     }
     final draft = PrivacyBucketDraft(
@@ -289,42 +297,43 @@ class LocalTokensPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
-        const SpCard(
+        SpCard(
           outlined: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Tokens',
-                trailing: StatusPill(text: 'disabled'),
+                title: l10n.navigationTokens,
+                trailing: StatusPill(text: l10n.disabledStatusLabel),
               ),
               SizedBox(height: 8),
               Text(
-                'There is no local API token surface yet. Imports do not need a Pluris Haven token.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.tokensDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Token status',
+          title: l10n.tokenStatusTitle,
           rows: [
-            const SpSettingsRow(
-              'Local token store',
-              'empty',
+            SpSettingsRow(
+              l10n.localTokenStoreTitle,
+              l10n.emptyStatusLabel,
               interactive: false,
             ),
             SpSettingsRow(
-              'PluralKit live import',
-              'paste a token during import',
+              l10n.pluralKitLiveImportTitle,
+              l10n.pasteTokenDuringImportSubtitle,
               onTap: () => onSelect(SpSection.importExport),
             ),
             SpSettingsRow(
-              'Sync tokens',
-              'requires sync setup',
+              l10n.syncTokensTitle,
+              l10n.requiresSyncSetupSubtitle,
               onTap: () => onSelect(SpSection.sync),
             ),
           ],
@@ -346,7 +355,8 @@ class UserReportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final report = _buildReport(snapshot);
+    final l10n = AppLocalizations.of(context);
+    final report = _buildReport(snapshot, l10n);
 
     return SpPage(
       children: [
@@ -355,20 +365,20 @@ class UserReportPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SpSectionHeader(
-                title: 'User Report',
-                trailing: StatusPill(text: 'local'),
+              SpSectionHeader(
+                title: l10n.navigationUserReport,
+                trailing: StatusPill(text: l10n.localStatusLabel),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'A small local snapshot you can copy before filing a bug. It excludes system and front names.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+              Text(
+                l10n.userReportDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: () => _copyReport(context, report),
                 icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copy report'),
+                label: Text(l10n.copyReportButton),
               ),
             ],
           ),
@@ -382,16 +392,16 @@ class UserReportPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Related',
+          title: l10n.relatedTitle,
           rows: [
             SpSettingsRow(
-              'Import jobs',
-              'open import details and errors',
+              l10n.importJobsTitle,
+              l10n.importJobsSubtitle,
               onTap: () => onSelect(SpSection.importExport),
             ),
             SpSettingsRow(
-              'Notification history',
-              'local event log',
+              l10n.notificationHistoryTitle,
+              l10n.localEventLogSubtitle,
               onTap: () => onSelect(SpSection.notificationHistory),
             ),
           ],
@@ -400,26 +410,28 @@ class UserReportPage extends StatelessWidget {
     );
   }
 
-  String _buildReport(HomeSnapshot? snapshot) {
+  String _buildReport(HomeSnapshot? snapshot, AppLocalizations l10n) {
     final home = snapshot;
     return [
-      'Pluris Haven local report',
-      'stage: pre-alpha',
-      'members: ${home?.memberCount ?? 0}',
-      'groups: ${home?.groupCount ?? 0}',
-      'notes: ${home?.noteCount ?? 0}',
-      'front history: ${home?.frontHistoryCount ?? 0}',
-      'storage: device',
-      'sync: off by default',
+      l10n.localReportHeading,
+      l10n.localReportStage,
+      l10n.localReportMembers(home?.memberCount ?? 0),
+      l10n.localReportGroups(home?.groupCount ?? 0),
+      l10n.localReportNotes(home?.noteCount ?? 0),
+      l10n.localReportFrontHistory(home?.frontHistoryCount ?? 0),
+      l10n.localReportStorage,
+      l10n.localReportSync,
     ].join('\n');
   }
 
   Future<void> _copyReport(BuildContext context, String report) async {
     await Clipboard.setData(ClipboardData(text: report));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Report copied')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).reportCopiedMessage),
+        ),
+      );
     }
   }
 }
@@ -440,6 +452,7 @@ class AccountSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final home = snapshot;
 
     return SpPage(
@@ -458,8 +471,9 @@ class AccountSettingsPage extends StatelessWidget {
                     ? 'PH'
                     : home!.systemName.trim().substring(0, 1),
                 avatarUrl: home?.systemAvatarUrl,
-                semanticLabel:
-                    'System avatar for ${home?.systemName ?? 'Local system'}',
+                semanticLabel: l10n.systemAvatarFor(
+                  home?.systemName ?? l10n.localSystemFallback,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -467,7 +481,7 @@ class AccountSettingsPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      home?.systemName ?? 'Local system',
+                      home?.systemName ?? l10n.localSystemFallback,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -477,7 +491,7 @@ class AccountSettingsPage extends StatelessWidget {
                     Text(
                       home?.systemDescription?.trim().isNotEmpty == true
                           ? home!.systemDescription!.trim()
-                          : 'saved on device',
+                          : l10n.savedOnDeviceSubtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: _spMuted),
@@ -486,7 +500,7 @@ class AccountSettingsPage extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Edit system profile',
+                tooltip: l10n.editSystemProfileTooltip,
                 onPressed: home == null
                     ? null
                     : () => showSystemProfileEditor(
@@ -503,38 +517,42 @@ class AccountSettingsPage extends StatelessWidget {
         ServerAccountPanel(controller: serverAccount),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Account',
+          title: l10n.accountFallback,
           rows: [
             SpSettingsRow(
-              'Import / Export',
-              'move data in or out',
+              l10n.navigationImportExport,
+              l10n.moveDataSubtitle,
               onTap: () => onSelect(SpSection.importExport),
             ),
             SpSettingsRow(
-              'App options',
-              'theme, language, dashboard',
+              l10n.navigationAppOptions,
+              l10n.appOptionsSubtitle,
               onTap: () => onSelect(SpSection.appOptions),
             ),
             SpSettingsRow(
-              'Sync',
-              'off by default',
+              l10n.navigationSync,
+              l10n.offByDefaultSubtitle,
               onTap: () => onSelect(SpSection.sync),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        const SpSettingsGroup(
-          title: 'Security',
+        SpSettingsGroup(
+          title: l10n.securityRowTitle,
           rows: [
-            SpSettingsRow('Storage', 'device database', interactive: false),
             SpSettingsRow(
-              'Member name encryption',
-              'key stored in device secure storage',
+              l10n.storageLabel,
+              l10n.deviceDatabaseSubtitle,
               interactive: false,
             ),
             SpSettingsRow(
-              'Destructive actions',
-              'confirmed with dialogs',
+              l10n.memberNameEncryptionTitle,
+              l10n.secureStorageKeySubtitle,
+              interactive: false,
+            ),
+            SpSettingsRow(
+              l10n.destructiveActionsTitle,
+              l10n.confirmedWithDialogsSubtitle,
               interactive: false,
             ),
           ],
@@ -605,6 +623,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final previewColor = _colorFromHex(
       _colorController.text,
       fallback: Theme.of(context).colorScheme.primary,
@@ -621,9 +640,9 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'System profile',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            Text(
+              l10n.systemProfileTitle,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 16),
             Center(
@@ -634,8 +653,11 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
                     ? 'PH'
                     : _nameController.text.trim().substring(0, 1),
                 avatarUrl: _avatarUrl,
-                semanticLabel:
-                    'System avatar for ${_nameController.text.trim().isEmpty ? 'Local system' : _nameController.text.trim()}',
+                semanticLabel: l10n.systemAvatarFor(
+                  _nameController.text.trim().isEmpty
+                      ? l10n.localSystemFallback
+                      : _nameController.text.trim(),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -645,13 +667,13 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
                 TextButton.icon(
                   onPressed: _pickAvatar,
                   icon: const Icon(Icons.image_outlined),
-                  label: const Text('Choose image'),
+                  label: Text(l10n.chooseImageButton),
                 ),
                 if (_avatarUrl != null)
                   TextButton.icon(
                     onPressed: () => setState(() => _avatarUrl = null),
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remove'),
+                    label: Text(l10n.removeButton),
                   ),
               ],
             ),
@@ -659,7 +681,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
               key: const ValueKey('system-name-field'),
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'System name'),
+              decoration: InputDecoration(labelText: l10n.systemNameFieldLabel),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
@@ -667,7 +689,9 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
               controller: _descriptionController,
               minLines: 2,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: InputDecoration(
+                labelText: l10n.descriptionFieldLabel,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -676,7 +700,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
               autocorrect: false,
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: 'Color hex',
+                labelText: l10n.colorHexFieldLabel,
                 hintText: '#7B61FF',
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
@@ -694,7 +718,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
               key: const ValueKey('save-system-profile-button'),
               onPressed: _saving ? null : _save,
               icon: const Icon(Icons.save_outlined),
-              label: Text(_saving ? 'Saving...' : 'Save'),
+              label: Text(_saving ? l10n.savingStatus : l10n.saveButtonLabel),
             ),
           ],
         ),
@@ -703,29 +727,32 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
   }
 
   Future<void> _pickAvatar() async {
+    final l10n = AppLocalizations.of(context);
     final result = await NativeFileDialog.pickFiles(
       type: NativeFileType.image,
       allowMultiple: false,
-      dialogTitle: 'Choose system avatar',
+      dialogTitle: l10n.chooseSystemAvatarTitle,
     );
     final file = result?.files.firstOrNull;
     if (file == null) return;
     try {
       final bytes = await file.readBytes();
       if (bytes.isEmpty) {
-        throw const FormatException('Selected image was empty.');
+        throw FormatException(l10n.selectedImageEmptyError);
       }
       final ref = await _storeManualAvatar(file.name, bytes);
       if (mounted) setState(() => _avatarUrl = ref);
     } on Object catch (error) {
-      if (mounted) setState(() => _error = 'Could not save image: $error');
+      if (mounted) {
+        setState(() => _error = l10n.couldNotSaveImage(error.toString()));
+      }
     }
   }
 
   Future<void> _save() async {
     final color = _colorController.text.trim();
     if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) {
-      setState(() => _error = 'Use a six-digit hex color such as #7B61FF.');
+      setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
       return;
     }
     setState(() {
