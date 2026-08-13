@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 enum NativeFileType { custom, image }
 
 const maximumNativePickedFileBytes = 32 * 1024 * 1024;
+const _exportTemporaryDirectoryPrefix = 'pluris-haven-export-';
 
 class NativePlatformFile {
   const NativePlatformFile({
@@ -40,6 +41,37 @@ class NativeFileDialog {
   static const _channel = MethodChannel(
     'works.endoftime.plurishaven/file_dialog',
   );
+
+  /// Removes plaintext export staging left behind if the app was interrupted
+  /// while Android or iOS was copying a file selected by the user.
+  ///
+  /// This is deliberately best-effort: a cache-cleanup failure must not stop
+  /// the app from starting, and the operating system can still evict its cache.
+  static Future<int> clearStaleExportTemporaryDirectories() async {
+    var removed = 0;
+    try {
+      await for (final entity in Directory.systemTemp.list(
+        followLinks: false,
+      )) {
+        if (entity is! Directory ||
+            !entity.uri.pathSegments
+                .where((segment) => segment.isNotEmpty)
+                .last
+                .startsWith(_exportTemporaryDirectoryPrefix)) {
+          continue;
+        }
+        try {
+          await entity.delete(recursive: true);
+          removed += 1;
+        } on FileSystemException {
+          // A concurrent platform copy may still hold the directory open.
+        }
+      }
+    } on FileSystemException {
+      // The app remains usable if the platform's temporary directory is gone.
+    }
+    return removed;
+  }
 
   static Future<NativeFileResult?> pickFiles({
     NativeFileType type = NativeFileType.custom,
@@ -79,7 +111,7 @@ class NativeFileDialog {
     String mimeType = 'application/octet-stream',
   }) async {
     final temporaryDirectory = await Directory.systemTemp.createTemp(
-      'pluris-haven-export-',
+      _exportTemporaryDirectoryPrefix,
     );
     final source = File('${temporaryDirectory.path}/$fileName');
     try {

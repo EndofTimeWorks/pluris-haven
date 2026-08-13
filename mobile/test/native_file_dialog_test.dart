@@ -24,4 +24,28 @@ void main() {
     expect(String.fromCharCodes(bytes), '{"private":true}');
     expect(await staged.exists(), isFalse);
   });
+
+  test('startup cleanup removes stale plaintext export staging', () async {
+    final staleDirectory = await Directory.systemTemp.createTemp(
+      'pluris-haven-export-test-',
+    );
+    final unrelatedDirectory = await Directory.systemTemp.createTemp(
+      'pluris-haven-unrelated-test-',
+    );
+    addTearDown(() async {
+      if (await unrelatedDirectory.exists()) {
+        await unrelatedDirectory.delete(recursive: true);
+      }
+    });
+    await File(
+      '${staleDirectory.path}/archive.json',
+    ).writeAsString('{"private":true}', flush: true);
+
+    final removed =
+        await NativeFileDialog.clearStaleExportTemporaryDirectories();
+
+    expect(removed, greaterThanOrEqualTo(1));
+    expect(await staleDirectory.exists(), isFalse);
+    expect(await unrelatedDirectory.exists(), isTrue);
+  });
 }

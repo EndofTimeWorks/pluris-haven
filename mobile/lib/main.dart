@@ -11,10 +11,16 @@ import 'data/server/server_account_controller.dart';
 import 'debug/debug_log.dart';
 import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
+import 'platform/native_file_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   appDebugLog('App startup');
+  final staleExports =
+      await NativeFileDialog.clearStaleExportTemporaryDirectories();
+  if (staleExports > 0) {
+    appDebugLog('Removed stale export staging directories count=$staleExports');
+  }
   await initializeBackgroundTasks();
   await NotificationService.instance.initialize();
 
