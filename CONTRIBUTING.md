@@ -4,6 +4,21 @@ Pluris Haven is an offline-first project with separate mobile, server, and
 website toolchains. Keep changes reviewable and preserve the repository's
 actual provenance.
 
+## Inclusion
+
+Pluris Haven is made by systems and welcomes systems, other collectives,
+individuals, and anyone else who finds the project useful.
+
+Respect each contributor's and account holder's chosen name, pronouns,
+terminology, identity, and boundaries. Do not require anyone to disclose or
+justify their gender, orientation, plurality, origin, diagnosis, disability,
+body, culture, or spiritual framework. Do not assume one mind, one identity, or
+one set of pronouns per body or account.
+
+Product-facing changes must follow the language rules in
+[`docs/product-goals.md`](docs/product-goals.md). If a technical or legal context
+requires a narrower term, explain why and keep that assumption local.
+
 ## Checks
 
 From the repository root:

@@ -1,6 +1,10 @@
 # Product goals
 
-Pluris Haven is a local-first application for plural systems: an offline-capable home for members, fronting, journals, and the rest of day-to-day system life, with an optional online layer for sync, backup, and connecting with other people.
+Pluris Haven is a local-first application made by systems for systems,
+collectives, individuals, and anyone else who finds its tools useful. It is an
+offline-capable home for members, identities, fronting, journals, and day-to-day
+life, with an optional online layer for sync, backup, and connection. None of
+those concepts is required simply to use the app.
 
 ## What it is today
 
@@ -17,10 +21,51 @@ An optional account layer exists for backup, and friends are in early developmen
 - Import and export are core functionality, maintained to the same standard as everything else, not a one-time migration tool.
 - Self-hosting is a first-class path, not a downgraded one. Self-hosters get the same protocol, migration rights, and encryption guarantees as the official server.
 - Accessibility is a release requirement, not a follow-up task.
+- The app welcomes every gender, orientation, culture, body, ability, origin,
+  spiritual framework, diagnostic status, and understanding of self. It does
+  not ask anyone to prove or medicalise their identity.
+
+## Inclusion and language
+
+Pluris Haven is made by systems. That informs the care put into plurality
+features; it does not make the app exclusive to systems.
+
+Product copy, schemas, protocols, and moderation rules must follow these rules:
+
+- Do not assume one mind, one identity, one name, one gender, or one set of
+  pronouns per body or account.
+- Do not assume plurality, singlet identity, fronting, switching, amnesia,
+  communication, origin, diagnosis, or a particular relationship between
+  members.
+- Let an entity choose its own collective and individual terminology. “System”,
+  “member”, “front”, and similar words are defaults, not labels imposed on
+  everyone.
+- Store and display chosen names and pronouns. Avoid legal names and gendered
+  language unless they are specifically required and clearly explained.
+- Never use singular grammar to imply that an entity must be an individual.
+  Neutral “they” is the default in natural-language copy.
+- Use **entity** for the portable identity represented by the app. An entity may
+  be a plural system, another collective, or an individual.
+- Use **account holder** for account ownership and consent. Use **user** only
+  when describing interaction with software. Use **person** or **people** when a
+  legal, bodily, or human context genuinely requires it.
+- Accessibility, localisation, safety, and privacy needs are part of inclusion,
+  not separate polish.
+- Compatibility with another plurality tool must preserve source terminology
+  and data without forcing that tool's worldview onto every entity.
+
+When a feature cannot remain neutral, its UI must explain the assumption, make
+the feature optional where possible, and provide a way to correct or decline it.
 
 ## Identity and connection
 
-A Pluris Haven identity is portable: held by the person, not owned by whichever server they registered on. Friends, sharing, and messaging work the same way whether both people are on the official server, a self-hosted server, or different servers entirely, over a purpose-built protocol designed for this rather than adapted from something else. Moving to a new server is a real migration, not a fresh start, and works even if the old server has gone permanently offline.
+A Pluris Haven identity is portable: held by the entity, not owned by whichever
+server it is registered on. Friends, sharing, and messaging work the same way
+whether both entities are on the official server, a self-hosted server, or
+different servers entirely, over a purpose-built protocol designed for this
+rather than adapted from something else. Moving to a new server is a real
+migration, not a fresh start, and works even if the old server has gone
+permanently offline.
 
 ## Near-term goals
 

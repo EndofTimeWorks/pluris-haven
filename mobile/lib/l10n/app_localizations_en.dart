@@ -202,7 +202,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newStatusPill => 'new';
 
   @override
-  String get appTagline => 'Offline-first plural system tracker.';
+  String get appTagline =>
+      'Offline-first system, identity, and journaling tools.';
+
+  @override
+  String get madeBySystemsStatement =>
+      'Made by systems. Welcoming systems, collectives, individuals, and anyone who finds these tools useful.';
 
   @override
   String get aboutGroupTitle => 'About';

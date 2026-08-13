@@ -21,6 +21,11 @@ class AboutPage extends StatelessWidget {
                 l10n.appTagline,
                 style: const TextStyle(color: _spMuted, height: 1.35),
               ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.madeBySystemsStatement,
+                style: const TextStyle(color: _spMuted, height: 1.35),
+              ),
             ],
           ),
         ),

@@ -35,7 +35,7 @@
   <title>Pluris Haven</title>
   <meta
     name="description"
-    content="Pluris Haven is a pre-alpha, offline-first app for plural systems."
+    content="Pluris Haven is a pre-alpha, offline-first app made by systems for systems, collectives, individuals, and anyone who finds it useful."
   />
 </svelte:head>
 
@@ -59,10 +59,10 @@
   <section class="intro">
     <div class="intro-copy">
       <p class="label">Pre-alpha</p>
-      <h1>Offline-first plural system app.</h1>
+      <h1>Offline-first, without assumptions about who you are.</h1>
       <p class="lede">
-        Android first. No account required for local use. Built around importing from Simply Plural,
-        keeping data on-device, and adding sync only when it is ready.
+        Made by systems. Welcoming systems, collectives, individuals, and anyone who finds the tools
+        useful. No account is required for local use, and your data stays on your device by default.
       </p>
       <div class="actions">
         <a class="button primary" href="/download">Download Android build</a>
@@ -126,8 +126,9 @@
     <div>
       <h2>Why it exists</h2>
       <p>
-        Pluris Haven is meant to be a practical replacement path for people who need their data
-        available without depending on someone else’s hosted app.
+        Pluris Haven is meant to be a practical replacement path for anyone who needs their data
+        available without depending on another operator’s hosted app. Its words and features should
+        adapt to an entity, not force an identity or experience onto them.
       </p>
     </div>
     <div>

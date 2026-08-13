@@ -1,6 +1,11 @@
 # Pluris Haven
 
-Offline-first app for tracking systems, members, groups, notes, and fronting.
+Offline-first app for systems, collectives, and individuals to organise members,
+groups, identities, notes, journals, and fronting if those concepts fit them.
+
+Made by systems. Designed to welcome everyone without assuming how many are
+present, which words they use for themselves, or what their experience looks
+like.
 
 The app works locally without an account. Sync, friends, hosted imports, and
 other network features are opt-in.
@@ -25,6 +30,8 @@ other network features are opt-in.
 
 - `docs/release/mobile.md` - mobile dev builds and releases
 - `docs/mobile-accessibility.md` - mobile accessibility rules and alpha gate
+- `docs/product-goals.md` - product boundaries and inclusive language rules
+- `docs/protocol/federation-v1.md` - proposed federation protocol; not implemented
 - `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 
 ## Mobile

@@ -28,7 +28,8 @@ This defines the architecture and policy for the first public-server release. Ch
 
 ## Friends and federation
 
-- Friends, sharing, and messaging work the same way whether both people are on the same server or different servers, over a purpose-built Pluris protocol. This is not Mastodon, ActivityPub, or the Fediverse.
+- Friends, sharing, and messaging work the same way whether both entities are on the same server or different servers, over a purpose-built Pluris protocol. This is not Mastodon, ActivityPub, or the Fediverse.
+- The proposed wire protocol, trust model, state machines, and rollout gates are specified in [`docs/protocol/federation-v1.md`](../docs/protocol/federation-v1.md). It is a design contract, not a claim that federation is currently implemented.
 - ActivityPub support is deferred until the private protocol is designed; if it's ever added, it covers deliberately public content only.
 - Accepting a friend request grants no access by itself. Sharing grants are directional and revocable independently.
 - Blocking removes the friendship and every grant in both directions immediately.
@@ -37,13 +38,13 @@ This defines the architecture and policy for the first public-server release. Ch
 ## Migration
 
 - Migrating to a new server is a complete, cryptographically signed transfer. It works even if the old server is permanently offline.
-- The device and the signed portable identity are the authority for migration, not any server.
+- The root-signed portable identity is the authority for migration, not any device or server by itself.
 - If an old server comes back online with divergent data from after a migration, that data is quarantined and reviewed rather than silently merged or discarded.
 - Automatic standby replication is on by default for the official server. Self-hosters choose their own standby or opt out.
 
 ## Data and encryption
 
-- Account identity, device-session records, friend relationships, blocks, and grants are server data.
+- Server-local account identity, device-session records, friend relationships, blocks, and grants are server data.
 - Passwords use Argon2 hashes. Refresh tokens are one-time records; replay revokes the device session.
 - All non-public synchronised or shared content is end-to-end encrypted. The server stores and routes ciphertext for member profiles, fronts, notes, messages, polls, and journals, never plaintext.
 - A feature may request one plaintext value from a user with explicit, specific, opt-in consent and a clear warning that it breaks encryption for that value. This is never silent or blanket.

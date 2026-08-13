@@ -873,7 +873,17 @@ void main() {
 
     await openDrawerSection(tester, 'About');
 
-    expect(find.text('Offline-first plural system tracker.'), findsOneWidget);
+    expect(
+      find.text('Offline-first system, identity, and journaling tools.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Made by systems. Welcoming systems, collectives, individuals, '
+        'and anyone who finds these tools useful.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Simply Plural and PluralKit'), findsOneWidget);
     expect(find.text('github.com/EndofTimeWorks/pluris-haven'), findsOneWidget);
     expect(find.text('Optional support'), findsOneWidget);

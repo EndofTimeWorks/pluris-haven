@@ -466,8 +466,14 @@ abstract class AppLocalizations {
   /// No description provided for @appTagline.
   ///
   /// In en, this message translates to:
-  /// **'Offline-first plural system tracker.'**
+  /// **'Offline-first system, identity, and journaling tools.'**
   String get appTagline;
+
+  /// No description provided for @madeBySystemsStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Made by systems. Welcoming systems, collectives, individuals, and anyone who finds these tools useful.'**
+  String get madeBySystemsStatement;
 
   /// No description provided for @aboutGroupTitle.
   ///
