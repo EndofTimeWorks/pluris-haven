@@ -273,6 +273,9 @@ jobs:
 
       - run: pnpm build
 
+      - name: Check generated-page accessibility contract
+        run: pnpm check:a11y
+
   server:
     name: Server (lint + test + migration)
     runs-on: ubuntu-latest
