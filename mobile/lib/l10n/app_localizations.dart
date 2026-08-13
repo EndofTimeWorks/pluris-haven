@@ -4642,6 +4642,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days}d {hours}h'**
   String durationDaysHours(int days, int hours);
+
+  /// No description provided for @noMembersYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet'**
+  String get noMembersYetTitle;
+
+  /// No description provided for @noMembersFrontPickerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add members first, or set a custom front below.'**
+  String get noMembersFrontPickerBody;
+
+  /// No description provided for @selectedMembersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {names}'**
+  String selectedMembersSummary(String names);
+
+  /// No description provided for @noMatchingMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching members'**
+  String get noMatchingMembersTitle;
+
+  /// No description provided for @noMatchingMembersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name, pronoun, or PluralKit ID.'**
+  String get noMatchingMembersBody;
+
+  /// No description provided for @clearSelectionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get clearSelectionButton;
+
+  /// No description provided for @setSelectedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set selected'**
+  String get setSelectedButton;
+
+  /// No description provided for @setCofrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set co-front'**
+  String get setCofrontButton;
+
+  /// No description provided for @saveSelectedNamedFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save selected as named front'**
+  String get saveSelectedNamedFrontButton;
+
+  /// No description provided for @savedFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved fronts'**
+  String get savedFrontsTitle;
+
+  /// No description provided for @searchSavedFrontsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search saved fronts'**
+  String get searchSavedFrontsHint;
+
+  /// No description provided for @noMatchingSavedFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching saved fronts'**
+  String get noMatchingSavedFrontsTitle;
+
+  /// No description provided for @noMatchingSavedFrontsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another saved front name or status.'**
+  String get noMatchingSavedFrontsBody;
+
+  /// No description provided for @namedCombinationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'named combination'**
+  String get namedCombinationLabel;
+
+  /// No description provided for @setSavedFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Set saved front'**
+  String get setSavedFrontTooltip;
+
+  /// No description provided for @deleteSavedFrontTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved front'**
+  String get deleteSavedFrontTooltip;
+
+  /// No description provided for @labelFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get labelFieldLabel;
+
+  /// No description provided for @setButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get setButtonLabel;
+
+  /// No description provided for @frontChangedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front changed'**
+  String get frontChangedTitle;
+
+  /// No description provided for @frontClearedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front cleared'**
+  String get frontClearedTitle;
+
+  /// No description provided for @memberIsFronting.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is fronting.'**
+  String memberIsFronting(String name);
+
+  /// No description provided for @noOneFrontingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No one is marked as fronting.'**
+  String get noOneFrontingBody;
+
+  /// No description provided for @saveNamedFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save named front'**
+  String get saveNamedFrontTitle;
+
+  /// No description provided for @frontingDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Fronting'**
+  String get frontingDefaultName;
+
+  /// No description provided for @cofrontDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-front'**
+  String get cofrontDefaultName;
+
+  /// No description provided for @savedNamedFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved “{name}”'**
+  String savedNamedFront(String name);
+
+  /// No description provided for @avatarForLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar for {name}'**
+  String avatarForLabel(String name);
 }
 
 class _AppLocalizationsDelegate

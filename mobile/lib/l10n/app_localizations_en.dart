@@ -2642,6 +2642,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String durationDaysHours(int days, int hours) {
     return '${days}d ${hours}h';
   }
+
+  @override
+  String get noMembersYetTitle => 'No members yet';
+
+  @override
+  String get noMembersFrontPickerBody =>
+      'Add members first, or set a custom front below.';
+
+  @override
+  String selectedMembersSummary(String names) {
+    return 'Selected: $names';
+  }
+
+  @override
+  String get noMatchingMembersTitle => 'No matching members';
+
+  @override
+  String get noMatchingMembersBody =>
+      'Try a different name, pronoun, or PluralKit ID.';
+
+  @override
+  String get clearSelectionButton => 'Clear selection';
+
+  @override
+  String get setSelectedButton => 'Set selected';
+
+  @override
+  String get setCofrontButton => 'Set co-front';
+
+  @override
+  String get saveSelectedNamedFrontButton => 'Save selected as named front';
+
+  @override
+  String get savedFrontsTitle => 'Saved fronts';
+
+  @override
+  String get searchSavedFrontsHint => 'Search saved fronts';
+
+  @override
+  String get noMatchingSavedFrontsTitle => 'No matching saved fronts';
+
+  @override
+  String get noMatchingSavedFrontsBody =>
+      'Try another saved front name or status.';
+
+  @override
+  String get namedCombinationLabel => 'named combination';
+
+  @override
+  String get setSavedFrontTooltip => 'Set saved front';
+
+  @override
+  String get deleteSavedFrontTooltip => 'Delete saved front';
+
+  @override
+  String get labelFieldLabel => 'Label';
+
+  @override
+  String get setButtonLabel => 'Set';
+
+  @override
+  String get frontChangedTitle => 'Front changed';
+
+  @override
+  String get frontClearedTitle => 'Front cleared';
+
+  @override
+  String memberIsFronting(String name) {
+    return '$name is fronting.';
+  }
+
+  @override
+  String get noOneFrontingBody => 'No one is marked as fronting.';
+
+  @override
+  String get saveNamedFrontTitle => 'Save named front';
+
+  @override
+  String get frontingDefaultName => 'Fronting';
+
+  @override
+  String get cofrontDefaultName => 'Co-front';
+
+  @override
+  String savedNamedFront(String name) {
+    return 'Saved “$name”';
+  }
+
+  @override
+  String avatarForLabel(String name) {
+    return 'Avatar for $name';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).

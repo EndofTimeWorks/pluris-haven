@@ -31,6 +31,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -43,9 +44,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Set front',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              l10n.setFrontButton,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<MemberSummary>>(
@@ -69,9 +70,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       member.displayName,
                 ];
                 if (members.isEmpty) {
-                  return const SpEmptyState(
-                    title: 'No members yet',
-                    body: 'Add members first, or set a custom front below.',
+                  return SpEmptyState(
+                    title: l10n.noMembersYetTitle,
+                    body: l10n.noMembersFrontPickerBody,
                   );
                 }
 
@@ -80,7 +81,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                   children: [
                     SpSearchField(
                       key: const ValueKey('front-member-search-field'),
-                      hintText: 'Search members',
+                      hintText: l10n.searchMembersHint,
                       controller: _memberSearchController,
                       onChanged: (value) =>
                           setState(() => _memberQuery = value),
@@ -88,7 +89,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                     if (selectedNames.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Text(
-                        'Selected: ${selectedNames.join(', ')}',
+                        l10n.selectedMembersSummary(selectedNames.join(', ')),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -99,9 +100,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                     ],
                     const SizedBox(height: 10),
                     if (visibleMembers.isEmpty)
-                      const SpEmptyState(
-                        title: 'No matching members',
-                        body: 'Try a different name, pronoun, or PK ID.',
+                      SpEmptyState(
+                        title: l10n.noMatchingMembersTitle,
+                        body: l10n.noMatchingMembersBody,
                       )
                     else
                       Wrap(
@@ -131,7 +132,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       children: [
                         ActionChip(
                           avatar: const Icon(Icons.clear_all_rounded),
-                          label: const Text('Clear selection'),
+                          label: Text(l10n.clearSelectionButton),
                           onPressed: _selectedMemberIds.isEmpty
                               ? null
                               : () => setState(_selectedMemberIds.clear),
@@ -146,8 +147,8 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                           : _setMemberFront,
                       child: Text(
                         _selectedMemberIds.length <= 1
-                            ? 'Set selected'
-                            : 'Set co-front',
+                            ? l10n.setSelectedButton
+                            : l10n.setCofrontButton,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -156,7 +157,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       onPressed: _selectedMemberIds.isEmpty
                           ? null
                           : _showSaveSelectedFrontSheet,
-                      child: const Text('Save selected as named front'),
+                      child: Text(l10n.saveSelectedNamedFrontButton),
                     ),
                   ],
                 );
@@ -187,9 +188,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Saved fronts',
-                      style: TextStyle(
+                    Text(
+                      l10n.savedFrontsTitle,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
@@ -197,16 +198,16 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                     const SizedBox(height: 10),
                     SpSearchField(
                       key: const ValueKey('saved-front-search-field'),
-                      hintText: 'Search saved fronts',
+                      hintText: l10n.searchSavedFrontsHint,
                       controller: _savedFrontSearchController,
                       onChanged: (value) =>
                           setState(() => _savedFrontQuery = value),
                     ),
                     const SizedBox(height: 10),
                     if (namedFronts.isEmpty)
-                      const SpEmptyState(
-                        title: 'No matching saved fronts',
-                        body: 'Try another saved front name or status.',
+                      SpEmptyState(
+                        title: l10n.noMatchingSavedFrontsTitle,
+                        body: l10n.noMatchingSavedFrontsBody,
                       ),
                     for (final front in namedFronts)
                       Padding(
@@ -236,8 +237,8 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                               children: [
                                 Text(
                                   front.customLabel?.trim().isNotEmpty == true
-                                      ? 'custom front'
-                                      : 'named combination',
+                                      ? l10n.customFrontLabel
+                                      : l10n.namedCombinationLabel,
                                 ),
                                 if (front.description?.trim().isNotEmpty ==
                                     true)
@@ -253,12 +254,12 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  tooltip: 'Set saved front',
+                                  tooltip: l10n.setSavedFrontTooltip,
                                   onPressed: () => _applyNamedFront(front),
                                   icon: const Icon(Icons.play_arrow_rounded),
                                 ),
                                 IconButton(
-                                  tooltip: 'Delete saved front',
+                                  tooltip: l10n.deleteSavedFrontTooltip,
                                   onPressed: () => _deleteNamedFront(front),
                                   icon: const Icon(Icons.delete_outline),
                                 ),
@@ -274,16 +275,16 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                 );
               },
             ),
-            const Text(
-              'Custom front',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+            Text(
+              l10n.customFrontLabel,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('custom-front-label-field'),
               controller: _controller,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Label'),
+              decoration: InputDecoration(labelText: l10n.labelFieldLabel),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -292,7 +293,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _setFront(_controller.text),
               decoration: InputDecoration(
-                labelText: 'Color',
+                labelText: l10n.colourFieldLabel,
                 hintText: '#F2C75C',
                 prefixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _customFrontColorController,
@@ -323,7 +324,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                 Expanded(
                   child: FilledButton(
                     onPressed: () => _setFront(_controller.text),
-                    child: const Text('Set'),
+                    child: Text(l10n.setButtonLabel),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -331,14 +332,14 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                   child: OutlinedButton(
                     key: const ValueKey('save-custom-front-button'),
                     onPressed: () => _saveCustomFront(_controller.text),
-                    child: const Text('Save'),
+                    child: Text(l10n.saveButtonLabel),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _clearFront,
-                    child: const Text('Clear'),
+                    child: Text(l10n.clearButton),
                   ),
                 ),
               ],
@@ -397,9 +398,10 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _syncFrontNotification(String? label) async {
+    final l10n = AppLocalizations.of(context);
     final frontLabel = label?.trim();
     final hasFront = frontLabel != null && frontLabel.isNotEmpty;
-    final notificationCopy = _notificationCopy(AppLocalizations.of(context));
+    final notificationCopy = _notificationCopy(l10n);
     try {
       final customization = await widget.repository.loadCustomization();
       if (customization.frontStatusNotification) {
@@ -421,19 +423,22 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     await widget.repository.recordNotificationEvent(
       NotificationEventDraft(
         kind: 'front',
-        title: hasFront ? 'Front changed' : 'Front cleared',
+        title: hasFront ? l10n.frontChangedTitle : l10n.frontClearedTitle,
         body: hasFront
-            ? '$frontLabel is fronting.'
-            : 'No one is marked as fronting.',
+            ? l10n.memberIsFronting(frontLabel)
+            : l10n.noOneFrontingBody,
       ),
     );
   }
 
   Future<void> _showSaveSelectedFrontSheet() async {
+    final l10n = AppLocalizations.of(context);
     final name = await _askForFrontName(
-      title: 'Save named front',
-      label: 'Name',
-      initialValue: _selectedMemberIds.length <= 1 ? 'Fronting' : 'Co-front',
+      title: l10n.saveNamedFrontTitle,
+      label: l10n.nameFieldLabel,
+      initialValue: _selectedMemberIds.length <= 1
+          ? l10n.frontingDefaultName
+          : l10n.cofrontDefaultName,
     );
     if (name == null) {
       return;
@@ -450,7 +455,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     final colorHex = _normalizeUiHexColor(_customFrontColorController.text);
     if (colorHex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Use 6 hex digits, like #F2C75C.')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).invalidHexColorError),
+        ),
       );
       return;
     }
@@ -461,9 +468,13 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       memberIds: const [],
     );
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Saved "$normalized"')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).savedNamedFront(normalized),
+          ),
+        ),
+      );
     }
   }
 
@@ -493,10 +504,11 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _deleteNamedFront(NamedFront front) async {
+    final l10n = AppLocalizations.of(context);
     await confirmDelete(
       context,
-      title: 'Delete saved front?',
-      body: 'This only removes the shortcut. Front history stays untouched.',
+      title: l10n.deleteNamedFrontTitle,
+      body: l10n.deleteSavedFrontBody,
       onDelete: () => widget.repository.deleteNamedFront(front.id),
     );
   }
@@ -553,7 +565,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                     Navigator.pop(context, trimmed);
                   }
                 },
-                child: const Text('Save'),
+                child: Text(AppLocalizations.of(context).saveButtonLabel),
               ),
             ],
           ),
@@ -570,6 +582,7 @@ class _NamedFrontAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = _colorFromHex(
       front.colorHex,
       fallback: front.customLabel?.trim().isNotEmpty == true
@@ -586,7 +599,7 @@ class _NamedFrontAvatar extends StatelessWidget {
         size: 34,
         color: color,
         label: _initialFor(label),
-        semanticLabel: 'Avatar for $label',
+        semanticLabel: l10n.avatarForLabel(label),
       );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
@@ -598,7 +611,7 @@ class _NamedFrontAvatar extends StatelessWidget {
             color: color,
             label: _initialFor(label),
             image: snapshot.data == null ? null : FileImage(snapshot.data!),
-            semanticLabel: 'Avatar for $label',
+            semanticLabel: l10n.avatarForLabel(label),
           );
         },
       );
@@ -609,14 +622,14 @@ class _NamedFrontAvatar extends StatelessWidget {
         color: color,
         label: _initialFor(label),
         image: NetworkImage(avatarUrl),
-        semanticLabel: 'Avatar for $label',
+        semanticLabel: l10n.avatarForLabel(label),
       );
     }
     return SpAvatar(
       size: 34,
       color: color,
       label: _initialFor(label),
-      semanticLabel: 'Avatar for $label',
+      semanticLabel: l10n.avatarForLabel(label),
     );
   }
 }
