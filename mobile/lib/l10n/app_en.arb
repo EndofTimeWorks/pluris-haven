@@ -524,7 +524,7 @@
   "@encryptedExportStatusSemanticLabel": { "placeholders": { "status": { "type": "String" } } },
   "encryptingArchiveButton": "Encrypting...",
   "saveEncryptedFileButton": "Save encrypted file",
-  "passphraseMinimumLength": "Use at least 8 characters.",
+  "passphraseMinimumLength": "Use at least 14 characters.",
   "passphrasesDoNotMatch": "Passphrases do not match.",
   "buildingArchiveStatus": "Building archive...",
   "encryptingArchiveStatus": "Encrypting archive...",

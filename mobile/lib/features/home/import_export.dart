@@ -1065,7 +1065,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
     final l10n = AppLocalizations.of(context);
     final passphrase = _passphraseController.text;
     final confirm = _confirmController.text;
-    if (passphrase.trim().length < 8) {
+    if (!isArchivePassphraseValid(passphrase)) {
       setState(() {
         _status = l10n.passphraseMinimumLength;
       });

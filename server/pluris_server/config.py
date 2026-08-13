@@ -67,8 +67,12 @@ class Settings(BaseSettings):
             raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must be set in production")
         if len(self.friend_code_pepper) < 32:
             raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must contain at least 32 characters")
-        if self.database_url.startswith("sqlite"):
+        if not self.database_url.startswith(("postgresql://", "postgresql+")):
             raise RuntimeError("Production requires PostgreSQL")
+        if self.registration_enabled:
+            raise RuntimeError(
+                "Production registration requires verified email, which is not implemented yet"
+            )
         if self.server_id.int == 0:
             raise RuntimeError("PLURIS_SERVER_ID must be a stable, non-zero UUID")
         if self.registration_enabled or self.friends_enabled:

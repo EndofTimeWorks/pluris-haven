@@ -103,11 +103,14 @@ void main() {
       final encrypted = await encryptArchiveJson(
         archiveJson: archive,
         passphrase: 'correct horse battery staple',
-        iterations: 1200,
       );
 
       expect(encrypted, isNot(contains('local_archive')));
       expect(archiveTextLooksEncrypted(encrypted), isTrue);
+      expect(
+        (jsonDecode(encrypted) as Map<String, Object?>)['iterations'],
+        defaultArchiveKdfIterations,
+      );
       expect(
         await decryptArchiveJson(
           encryptedArchiveJson: encrypted,
@@ -184,6 +187,16 @@ void main() {
           passphrase: 'right-password',
         ),
         throwsFormatException,
+      );
+    });
+
+    test('refuses a weak passphrase before writing an archive', () async {
+      await expectLater(
+        encryptArchiveJson(
+          archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
+          passphrase: 'too short',
+        ),
+        throwsArgumentError,
       );
     });
   });

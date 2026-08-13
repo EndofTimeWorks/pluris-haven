@@ -10,6 +10,32 @@ def test_production_rejects_placeholder_secrets() -> None:
         create_app(Settings(environment="production"))
 
 
+def _production_settings(**overrides: object) -> Settings:
+    values: dict[str, object] = {
+        "environment": "production",
+        "database_url": "postgresql+asyncpg://pluris:password@db/pluris",
+        "jwt_secret": "test-jwt-secret-that-is-long-and-unique",
+        "friend_code_pepper": "test-friend-code-pepper-that-is-different",
+        "server_id": "019ff449-469e-7630-8fb6-d295796ccb0a",
+    }
+    values.update(overrides)
+    return Settings(**values)
+
+
+def test_production_requires_postgresql() -> None:
+    settings = _production_settings(
+        database_url="mysql+aiomysql://pluris:password@db/pluris"
+    )
+    with pytest.raises(RuntimeError, match="PostgreSQL"):
+        settings.validate_for_startup()
+
+
+def test_production_registration_is_closed_until_email_verification_exists() -> None:
+    settings = _production_settings(registration_enabled=True)
+    with pytest.raises(RuntimeError, match="verified email"):
+        settings.validate_for_startup()
+
+
 def test_comma_separated_cors_origins(monkeypatch) -> None:
     monkeypatch.setenv(
         "PLURIS_CORS_ORIGINS",

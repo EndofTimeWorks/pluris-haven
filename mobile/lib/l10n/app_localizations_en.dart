@@ -1205,7 +1205,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveEncryptedFileButton => 'Save encrypted file';
 
   @override
-  String get passphraseMinimumLength => 'Use at least 8 characters.';
+  String get passphraseMinimumLength => 'Use at least 14 characters.';
 
   @override
   String get passphrasesDoNotMatch => 'Passphrases do not match.';

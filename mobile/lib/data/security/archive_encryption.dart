@@ -7,8 +7,13 @@ const encryptedArchiveFormat = 'pluris_haven.encrypted_archive';
 const encryptedArchiveVersion = 2;
 const encryptedArchiveKdf = 'PBKDF2-HMAC-SHA256';
 const encryptedArchiveCipher = 'XChaCha20-Poly1305';
-const defaultArchiveKdfIterations = 210000;
+
+/// A recovery archive can be copied anywhere and attacked offline. Keep the
+/// creation cost deliberately high; existing archives retain their recorded
+/// value so they can still be recovered.
+const defaultArchiveKdfIterations = 600000;
 const maximumArchiveKdfIterations = 1000000;
+const minimumArchivePassphraseCharacters = 14;
 
 final _archiveCipher = Xchacha20.poly1305Aead();
 
@@ -41,8 +46,12 @@ Future<String> _encryptArchiveJson({
   required String passphrase,
   required int iterations,
 }) async {
-  if (passphrase.isEmpty) {
-    throw ArgumentError.value(passphrase, 'passphrase', 'must not be empty');
+  if (!isArchivePassphraseValid(passphrase)) {
+    throw ArgumentError.value(
+      passphrase,
+      'passphrase',
+      'must contain at least $minimumArchivePassphraseCharacters characters',
+    );
   }
   if (iterations < 1000 || iterations > maximumArchiveKdfIterations) {
     throw ArgumentError.value(
@@ -79,6 +88,9 @@ Future<String> _encryptArchiveJson({
   };
   return const JsonEncoder.withIndent('  ').convert(payload);
 }
+
+bool isArchivePassphraseValid(String passphrase) =>
+    passphrase.trim().runes.length >= minimumArchivePassphraseCharacters;
 
 Future<String> decryptArchiveJson({
   required String encryptedArchiveJson,
