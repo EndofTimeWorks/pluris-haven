@@ -2312,6 +2312,238 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chooseCustomFrontAvatarTitle => 'Choose custom front avatar';
+
+  @override
+  String get localStatusLabel => 'local';
+
+  @override
+  String get offlineStatusLabel => 'offline';
+
+  @override
+  String get usefulLinksDescription =>
+      'Quick places for importing, backing up, support, and project links.';
+
+  @override
+  String get inThisAppTitle => 'In this app';
+
+  @override
+  String get importFromSimplyPluralTitle => 'Import from Simply Plural';
+
+  @override
+  String get openImportSetupSubtitle => 'open import setup';
+
+  @override
+  String get backUpLocalDataTitle => 'Back up local data';
+
+  @override
+  String get exportDeviceArchiveSubtitle => 'export a device archive';
+
+  @override
+  String get customizeDashboardTitle => 'Customise dashboard';
+
+  @override
+  String get dashboardOptionsSubtitle => 'tiles, theme, and language';
+
+  @override
+  String get howToGuidesTitle => 'How-to guides';
+
+  @override
+  String get shortOfflineNotesSubtitle => 'short offline notes';
+
+  @override
+  String get projectTitle => 'Project';
+
+  @override
+  String get sourceTitle => 'Source';
+
+  @override
+  String get whatsNewTitle => 'What\'s new';
+
+  @override
+  String get apkReleasesTitle => 'APK releases';
+
+  @override
+  String get githubSponsorsTitle => 'GitHub Sponsors';
+
+  @override
+  String get patreonTitle => 'Patreon';
+
+  @override
+  String get howTosDescription =>
+      'Short local notes for the flows people usually need first.';
+
+  @override
+  String get howToImportSimplyPluralStep1 =>
+      'Export your Simply Plural data as JSON.';
+
+  @override
+  String get howToImportSimplyPluralStep2 =>
+      'Open Import / Export and choose the file or paste JSON.';
+
+  @override
+  String get howToImportSimplyPluralStep3 =>
+      'Review the preview, then apply it to the local archive.';
+
+  @override
+  String get howToImportSimplyPluralStep4 =>
+      'Check members, groups, fronts, notes, and avatars after import.';
+
+  @override
+  String get openImportAction => 'Open import';
+
+  @override
+  String get trackFrontTitle => 'Track a front';
+
+  @override
+  String get howToTrackFrontStep1 => 'Open Dashboard or Front History.';
+
+  @override
+  String get howToTrackFrontStep2 =>
+      'Use Set front to pick members or a saved custom front.';
+
+  @override
+  String get howToTrackFrontStep3 =>
+      'Use Clear when nobody is fronting or the state ended.';
+
+  @override
+  String get howToTrackFrontStep4 => 'Front History keeps the local timeline.';
+
+  @override
+  String get openHistoryAction => 'Open history';
+
+  @override
+  String get saveCustomFrontsTitle => 'Save custom fronts';
+
+  @override
+  String get howToCustomFrontsStep1 => 'Open Custom Fronts.';
+
+  @override
+  String get howToCustomFrontsStep2 =>
+      'Add statuses like Asleep, Away, or blended front states.';
+
+  @override
+  String get howToCustomFrontsStep3 =>
+      'Set them from the dashboard without creating extra members.';
+
+  @override
+  String get openCustomFrontsAction => 'Open custom fronts';
+
+  @override
+  String get backUpDeviceTitle => 'Back up this device';
+
+  @override
+  String get howToBackupStep1 => 'Open Import / Export.';
+
+  @override
+  String get howToBackupStep2 => 'Create a Pluris Haven archive.';
+
+  @override
+  String get howToBackupStep3 =>
+      'Keep the file somewhere outside this phone too.';
+
+  @override
+  String get openExportAction => 'Open export';
+
+  @override
+  String get useCustomFieldsTitle => 'Use custom fields';
+
+  @override
+  String get howToCustomFieldsStep1 => 'Open Custom Fields.';
+
+  @override
+  String get howToCustomFieldsStep2 =>
+      'Add a field like “age”, “role”, or “species”.';
+
+  @override
+  String get howToCustomFieldsStep3 =>
+      'Set values per member from their profile.';
+
+  @override
+  String get howToCustomFieldsStep4 =>
+      'Fields import from Simply Plural automatically.';
+
+  @override
+  String get openCustomFieldsAction => 'Open custom fields';
+
+  @override
+  String get setRemindersTitle => 'Set reminders';
+
+  @override
+  String get howToRemindersStep1 => 'Open Reminders.';
+
+  @override
+  String get howToRemindersStep2 =>
+      'Pick a daily, weekly, or monthly schedule.';
+
+  @override
+  String get howToRemindersStep3 => 'Notifications will fire at the set time.';
+
+  @override
+  String get howToRemindersStep4 =>
+      'Turn any reminder off without deleting it.';
+
+  @override
+  String get openRemindersAction => 'Open reminders';
+
+  @override
+  String get voteOnDecisionsTitle => 'Vote on system decisions';
+
+  @override
+  String get howToPollsStep1 => 'Open Polls and create a new poll.';
+
+  @override
+  String get howToPollsStep2 =>
+      'Add options and choose single or multiple choice.';
+
+  @override
+  String get howToPollsStep3 =>
+      'Share the poll with members in the same space.';
+
+  @override
+  String get howToPollsStep4 =>
+      'Results stay on this device until you delete them.';
+
+  @override
+  String get openPollsAction => 'Open polls';
+
+  @override
+  String get importOtherAppsTitle => 'Import from other apps';
+
+  @override
+  String get howToOtherImportsStep1 =>
+      'Export JSON from PluralKit, Tupperbox, or PluralSpace.';
+
+  @override
+  String get howToOtherImportsStep2 =>
+      'Open Import / Export and upload the file.';
+
+  @override
+  String get howToOtherImportsStep3 =>
+      'Select the matching service from the dropdown.';
+
+  @override
+  String get howToOtherImportsStep4 =>
+      'Preview the records, then import into local storage.';
+
+  @override
+  String get useSubsystemsTitle => 'Use subsystems';
+
+  @override
+  String get howToSubsystemsStep1 => 'Open Groups and add or edit a group.';
+
+  @override
+  String get howToSubsystemsStep2 => 'Turn on “Subgroup / subsystem”.';
+
+  @override
+  String get howToSubsystemsStep3 =>
+      'Members in subsystems can also be in the main group.';
+
+  @override
+  String get howToSubsystemsStep4 =>
+      'The layers icon shows which groups are subsystems.';
+
+  @override
+  String get openGroupsAction => 'Open groups';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -2352,4 +2584,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get colourFieldLabel => 'Color';
+
+  @override
+  String get customizeDashboardTitle => 'Customize dashboard';
 }

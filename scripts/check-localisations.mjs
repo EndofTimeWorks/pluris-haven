@@ -10,6 +10,7 @@ const expectedUsOverrides = new Set([
   'copyHexColorTooltip',
   'currentColorLabel',
   'customizeTitle',
+  'customizeDashboardTitle',
   'groupsEmptyBody',
   'noDashboardShortcutsBody',
   'saveCancelled',

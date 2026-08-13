@@ -7,57 +7,58 @@ class UsefulLinksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
-        const SpCard(
+        SpCard(
           outlined: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: 'Useful Links',
-                trailing: StatusPill(text: 'local'),
+                title: l10n.navigationUsefulLinks,
+                trailing: StatusPill(text: l10n.localStatusLabel),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Quick places for importing, backing up, support, and project links.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.usefulLinksDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'In this app',
+          title: l10n.inThisAppTitle,
           rows: [
             SpSettingsRow(
-              'Import from Simply Plural',
-              'open import setup',
+              l10n.importFromSimplyPluralTitle,
+              l10n.openImportSetupSubtitle,
               onTap: () => onSelect(SpSection.importExport),
             ),
             SpSettingsRow(
-              'Back up local data',
-              'export a device archive',
+              l10n.backUpLocalDataTitle,
+              l10n.exportDeviceArchiveSubtitle,
               onTap: () => onSelect(SpSection.importExport),
             ),
             SpSettingsRow(
-              'Customize dashboard',
-              'tiles, theme, and language',
+              l10n.customizeDashboardTitle,
+              l10n.dashboardOptionsSubtitle,
               onTap: () => onSelect(SpSection.appOptions),
             ),
             SpSettingsRow(
-              'How-to guides',
-              'short offline notes',
+              l10n.howToGuidesTitle,
+              l10n.shortOfflineNotesSubtitle,
               onTap: () => onSelect(SpSection.howtos),
             ),
           ],
         ),
         const SizedBox(height: 12),
         SpSettingsGroup(
-          title: 'Project',
+          title: l10n.projectTitle,
           rows: [
             SpSettingsRow(
-              'Source',
+              l10n.sourceTitle,
               'github.com/EndofTimeWorks/pluris-haven',
               onTap: () => launchExternalUrl(
                 context,
@@ -65,7 +66,7 @@ class UsefulLinksPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
-              "What's new",
+              l10n.whatsNewTitle,
               'pluris.endoftime.works/changelog',
               onTap: () => launchExternalUrl(
                 context,
@@ -73,7 +74,7 @@ class UsefulLinksPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
-              'APK releases',
+              l10n.apkReleasesTitle,
               'github.com/EndofTimeWorks/pluris-haven/releases',
               onTap: () => launchExternalUrl(
                 context,
@@ -84,7 +85,7 @@ class UsefulLinksPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
-              'GitHub Sponsors',
+              l10n.githubSponsorsTitle,
               'EndofTimeWorks',
               onTap: () => launchExternalUrl(
                 context,
@@ -92,7 +93,7 @@ class UsefulLinksPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
-              'Patreon',
+              l10n.patreonTitle,
               'patreon.com/EndofTimeWorks',
               onTap: () => launchExternalUrl(
                 context,
@@ -113,129 +114,130 @@ class HowTosPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpPage(
       children: [
-        const SpCard(
+        SpCard(
           outlined: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SpSectionHeader(
-                title: "How-to's",
-                trailing: StatusPill(text: 'offline'),
+                title: l10n.navigationHowTos,
+                trailing: StatusPill(text: l10n.offlineStatusLabel),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Short local notes for the flows people usually need first.',
-                style: TextStyle(color: _spMuted, height: 1.35),
+                l10n.howTosDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
         HowToCard(
-          title: 'Import from Simply Plural',
+          title: l10n.importFromSimplyPluralTitle,
           steps: [
-            'Export your Simply Plural data as JSON.',
-            'Open Import / Export and choose the file or paste JSON.',
-            'Review the preview, then apply it to the local archive.',
-            'Check members, groups, fronts, notes, and avatars after import.',
+            l10n.howToImportSimplyPluralStep1,
+            l10n.howToImportSimplyPluralStep2,
+            l10n.howToImportSimplyPluralStep3,
+            l10n.howToImportSimplyPluralStep4,
           ],
-          actionLabel: 'Open import',
+          actionLabel: l10n.openImportAction,
           onAction: () => onSelect(SpSection.importExport),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Track a front',
+          title: l10n.trackFrontTitle,
           steps: [
-            'Open Dashboard or Front History.',
-            'Use Set front to pick members or a saved custom front.',
-            'Use Clear when nobody is fronting or the state ended.',
-            'Front History keeps the local timeline.',
+            l10n.howToTrackFrontStep1,
+            l10n.howToTrackFrontStep2,
+            l10n.howToTrackFrontStep3,
+            l10n.howToTrackFrontStep4,
           ],
-          actionLabel: 'Open history',
+          actionLabel: l10n.openHistoryAction,
           onAction: () => onSelect(SpSection.frontHistory),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Save custom fronts',
+          title: l10n.saveCustomFrontsTitle,
           steps: [
-            'Open Custom Fronts.',
-            'Add statuses like Asleep, Away, or blended front states.',
-            'Set them from the dashboard without creating extra members.',
+            l10n.howToCustomFrontsStep1,
+            l10n.howToCustomFrontsStep2,
+            l10n.howToCustomFrontsStep3,
           ],
-          actionLabel: 'Open custom fronts',
+          actionLabel: l10n.openCustomFrontsAction,
           onAction: () => onSelect(SpSection.customFronts),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Back up this device',
+          title: l10n.backUpDeviceTitle,
           steps: [
-            'Open Import / Export.',
-            'Create a Pluris Haven archive.',
-            'Keep the file somewhere outside this phone too.',
+            l10n.howToBackupStep1,
+            l10n.howToBackupStep2,
+            l10n.howToBackupStep3,
           ],
-          actionLabel: 'Open export',
+          actionLabel: l10n.openExportAction,
           onAction: () => onSelect(SpSection.importExport),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Use custom fields',
+          title: l10n.useCustomFieldsTitle,
           steps: [
-            'Open Custom Fields.',
-            'Add a field like "age", "role", or "species".',
-            'Set values per member from their profile.',
-            'Fields import from Simply Plural automatically.',
+            l10n.howToCustomFieldsStep1,
+            l10n.howToCustomFieldsStep2,
+            l10n.howToCustomFieldsStep3,
+            l10n.howToCustomFieldsStep4,
           ],
-          actionLabel: 'Open custom fields',
+          actionLabel: l10n.openCustomFieldsAction,
           onAction: () => onSelect(SpSection.customFields),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Set reminders',
+          title: l10n.setRemindersTitle,
           steps: [
-            'Open Reminders.',
-            'Pick a daily, weekly, or monthly schedule.',
-            'Notifications will fire at the set time.',
-            'Turn any reminder off without deleting it.',
+            l10n.howToRemindersStep1,
+            l10n.howToRemindersStep2,
+            l10n.howToRemindersStep3,
+            l10n.howToRemindersStep4,
           ],
-          actionLabel: 'Open reminders',
+          actionLabel: l10n.openRemindersAction,
           onAction: () => onSelect(SpSection.reminders),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Vote on system decisions',
+          title: l10n.voteOnDecisionsTitle,
           steps: [
-            'Open Polls and create a new poll.',
-            'Add options and choose single or multiple choice.',
-            'Share the poll with members in the same space.',
-            'Results stay on this device until you delete them.',
+            l10n.howToPollsStep1,
+            l10n.howToPollsStep2,
+            l10n.howToPollsStep3,
+            l10n.howToPollsStep4,
           ],
-          actionLabel: 'Open polls',
+          actionLabel: l10n.openPollsAction,
           onAction: () => onSelect(SpSection.polls),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Import from other apps',
+          title: l10n.importOtherAppsTitle,
           steps: [
-            'Export JSON from PluralKit, Tupperbox, or PluralSpace.',
-            'Open Import / Export and upload the file.',
-            'Select the matching service from the dropdown.',
-            'Preview the records, then import into local storage.',
+            l10n.howToOtherImportsStep1,
+            l10n.howToOtherImportsStep2,
+            l10n.howToOtherImportsStep3,
+            l10n.howToOtherImportsStep4,
           ],
-          actionLabel: 'Open import',
+          actionLabel: l10n.openImportAction,
           onAction: () => onSelect(SpSection.importExport),
         ),
         const SizedBox(height: 10),
         HowToCard(
-          title: 'Use subsystems',
+          title: l10n.useSubsystemsTitle,
           steps: [
-            'Open Groups and add or edit a group.',
-            'Turn on "Subgroup / subsystem".',
-            'Members in subsystems can also be in the main group.',
-            'The layers icon shows which groups are subsystems.',
+            l10n.howToSubsystemsStep1,
+            l10n.howToSubsystemsStep2,
+            l10n.howToSubsystemsStep3,
+            l10n.howToSubsystemsStep4,
           ],
-          actionLabel: 'Open groups',
+          actionLabel: l10n.openGroupsAction,
           onAction: () => onSelect(SpSection.groups),
         ),
       ],

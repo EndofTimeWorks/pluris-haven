@@ -847,7 +847,7 @@ void main() {
     await tester.tap(find.text('How-to guides'));
     await tester.pumpAndSettle();
 
-    expect(find.text("How-to's"), findsWidgets);
+    expect(find.text('How-tos'), findsWidgets);
     expect(find.text('Track a front'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Save custom fronts'), 220);
     expect(find.text('Save custom fronts'), findsOneWidget);
@@ -978,7 +978,9 @@ void main() {
     final report = tester
         .widgetList<SelectableText>(find.byType(SelectableText))
         .map((text) => text.data)
-        .firstWhere((text) => text?.contains('Pluris Haven local report') ?? false);
+        .firstWhere(
+          (text) => text?.contains('Pluris Haven local report') ?? false,
+        );
     expect(report, isNot(contains('Night Garden')));
     expect(report, isNot(contains('current front:')));
   });

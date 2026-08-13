@@ -1,6 +1,7 @@
 {
   "@@locale": "en_US",
   "customizeTitle": "Customize",
+  "customizeDashboardTitle": "Customize dashboard",
   "accentColorLabel": "Accent color",
   "currentColorLabel": "Current color",
   "copyHexColorTooltip": "Copy hex color",

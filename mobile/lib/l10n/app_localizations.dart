@@ -4090,6 +4090,420 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose custom front avatar'**
   String get chooseCustomFrontAvatarTitle;
+
+  /// No description provided for @localStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'local'**
+  String get localStatusLabel;
+
+  /// No description provided for @offlineStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'offline'**
+  String get offlineStatusLabel;
+
+  /// No description provided for @usefulLinksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick places for importing, backing up, support, and project links.'**
+  String get usefulLinksDescription;
+
+  /// No description provided for @inThisAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In this app'**
+  String get inThisAppTitle;
+
+  /// No description provided for @importFromSimplyPluralTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from Simply Plural'**
+  String get importFromSimplyPluralTitle;
+
+  /// No description provided for @openImportSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'open import setup'**
+  String get openImportSetupSubtitle;
+
+  /// No description provided for @backUpLocalDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up local data'**
+  String get backUpLocalDataTitle;
+
+  /// No description provided for @exportDeviceArchiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'export a device archive'**
+  String get exportDeviceArchiveSubtitle;
+
+  /// No description provided for @customizeDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customise dashboard'**
+  String get customizeDashboardTitle;
+
+  /// No description provided for @dashboardOptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'tiles, theme, and language'**
+  String get dashboardOptionsSubtitle;
+
+  /// No description provided for @howToGuidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How-to guides'**
+  String get howToGuidesTitle;
+
+  /// No description provided for @shortOfflineNotesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'short offline notes'**
+  String get shortOfflineNotesSubtitle;
+
+  /// No description provided for @projectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectTitle;
+
+  /// No description provided for @sourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceTitle;
+
+  /// No description provided for @whatsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get whatsNewTitle;
+
+  /// No description provided for @apkReleasesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'APK releases'**
+  String get apkReleasesTitle;
+
+  /// No description provided for @githubSponsorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Sponsors'**
+  String get githubSponsorsTitle;
+
+  /// No description provided for @patreonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Patreon'**
+  String get patreonTitle;
+
+  /// No description provided for @howTosDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Short local notes for the flows people usually need first.'**
+  String get howTosDescription;
+
+  /// No description provided for @howToImportSimplyPluralStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Export your Simply Plural data as JSON.'**
+  String get howToImportSimplyPluralStep1;
+
+  /// No description provided for @howToImportSimplyPluralStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Import / Export and choose the file or paste JSON.'**
+  String get howToImportSimplyPluralStep2;
+
+  /// No description provided for @howToImportSimplyPluralStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the preview, then apply it to the local archive.'**
+  String get howToImportSimplyPluralStep3;
+
+  /// No description provided for @howToImportSimplyPluralStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Check members, groups, fronts, notes, and avatars after import.'**
+  String get howToImportSimplyPluralStep4;
+
+  /// No description provided for @openImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open import'**
+  String get openImportAction;
+
+  /// No description provided for @trackFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track a front'**
+  String get trackFrontTitle;
+
+  /// No description provided for @howToTrackFrontStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Dashboard or Front History.'**
+  String get howToTrackFrontStep1;
+
+  /// No description provided for @howToTrackFrontStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Set front to pick members or a saved custom front.'**
+  String get howToTrackFrontStep2;
+
+  /// No description provided for @howToTrackFrontStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Clear when nobody is fronting or the state ended.'**
+  String get howToTrackFrontStep3;
+
+  /// No description provided for @howToTrackFrontStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Front History keeps the local timeline.'**
+  String get howToTrackFrontStep4;
+
+  /// No description provided for @openHistoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open history'**
+  String get openHistoryAction;
+
+  /// No description provided for @saveCustomFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save custom fronts'**
+  String get saveCustomFrontsTitle;
+
+  /// No description provided for @howToCustomFrontsStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Custom Fronts.'**
+  String get howToCustomFrontsStep1;
+
+  /// No description provided for @howToCustomFrontsStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Add statuses like Asleep, Away, or blended front states.'**
+  String get howToCustomFrontsStep2;
+
+  /// No description provided for @howToCustomFrontsStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Set them from the dashboard without creating extra members.'**
+  String get howToCustomFrontsStep3;
+
+  /// No description provided for @openCustomFrontsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open custom fronts'**
+  String get openCustomFrontsAction;
+
+  /// No description provided for @backUpDeviceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up this device'**
+  String get backUpDeviceTitle;
+
+  /// No description provided for @howToBackupStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Import / Export.'**
+  String get howToBackupStep1;
+
+  /// No description provided for @howToBackupStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Pluris Haven archive.'**
+  String get howToBackupStep2;
+
+  /// No description provided for @howToBackupStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the file somewhere outside this phone too.'**
+  String get howToBackupStep3;
+
+  /// No description provided for @openExportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open export'**
+  String get openExportAction;
+
+  /// No description provided for @useCustomFieldsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use custom fields'**
+  String get useCustomFieldsTitle;
+
+  /// No description provided for @howToCustomFieldsStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Custom Fields.'**
+  String get howToCustomFieldsStep1;
+
+  /// No description provided for @howToCustomFieldsStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a field like “age”, “role”, or “species”.'**
+  String get howToCustomFieldsStep2;
+
+  /// No description provided for @howToCustomFieldsStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Set values per member from their profile.'**
+  String get howToCustomFieldsStep3;
+
+  /// No description provided for @howToCustomFieldsStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields import from Simply Plural automatically.'**
+  String get howToCustomFieldsStep4;
+
+  /// No description provided for @openCustomFieldsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open custom fields'**
+  String get openCustomFieldsAction;
+
+  /// No description provided for @setRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminders'**
+  String get setRemindersTitle;
+
+  /// No description provided for @howToRemindersStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Reminders.'**
+  String get howToRemindersStep1;
+
+  /// No description provided for @howToRemindersStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a daily, weekly, or monthly schedule.'**
+  String get howToRemindersStep2;
+
+  /// No description provided for @howToRemindersStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications will fire at the set time.'**
+  String get howToRemindersStep3;
+
+  /// No description provided for @howToRemindersStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn any reminder off without deleting it.'**
+  String get howToRemindersStep4;
+
+  /// No description provided for @openRemindersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open reminders'**
+  String get openRemindersAction;
+
+  /// No description provided for @voteOnDecisionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote on system decisions'**
+  String get voteOnDecisionsTitle;
+
+  /// No description provided for @howToPollsStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Polls and create a new poll.'**
+  String get howToPollsStep1;
+
+  /// No description provided for @howToPollsStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Add options and choose single or multiple choice.'**
+  String get howToPollsStep2;
+
+  /// No description provided for @howToPollsStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the poll with members in the same space.'**
+  String get howToPollsStep3;
+
+  /// No description provided for @howToPollsStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Results stay on this device until you delete them.'**
+  String get howToPollsStep4;
+
+  /// No description provided for @openPollsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open polls'**
+  String get openPollsAction;
+
+  /// No description provided for @importOtherAppsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from other apps'**
+  String get importOtherAppsTitle;
+
+  /// No description provided for @howToOtherImportsStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON from PluralKit, Tupperbox, or PluralSpace.'**
+  String get howToOtherImportsStep1;
+
+  /// No description provided for @howToOtherImportsStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Import / Export and upload the file.'**
+  String get howToOtherImportsStep2;
+
+  /// No description provided for @howToOtherImportsStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the matching service from the dropdown.'**
+  String get howToOtherImportsStep3;
+
+  /// No description provided for @howToOtherImportsStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the records, then import into local storage.'**
+  String get howToOtherImportsStep4;
+
+  /// No description provided for @useSubsystemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use subsystems'**
+  String get useSubsystemsTitle;
+
+  /// No description provided for @howToSubsystemsStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Groups and add or edit a group.'**
+  String get howToSubsystemsStep1;
+
+  /// No description provided for @howToSubsystemsStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on “Subgroup / subsystem”.'**
+  String get howToSubsystemsStep2;
+
+  /// No description provided for @howToSubsystemsStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Members in subsystems can also be in the main group.'**
+  String get howToSubsystemsStep3;
+
+  /// No description provided for @howToSubsystemsStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'The layers icon shows which groups are subsystems.'**
+  String get howToSubsystemsStep4;
+
+  /// No description provided for @openGroupsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open groups'**
+  String get openGroupsAction;
 }
 
 class _AppLocalizationsDelegate
