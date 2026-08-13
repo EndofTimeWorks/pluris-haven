@@ -4504,6 +4504,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open groups'**
   String get openGroupsAction;
+
+  /// No description provided for @analyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get analyticsTitle;
+
+  /// No description provided for @analyticsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fronting patterns from local history.'**
+  String get analyticsDescription;
+
+  /// No description provided for @noAnalyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No analytics yet'**
+  String get noAnalyticsTitle;
+
+  /// No description provided for @noAnalyticsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set fronts or import Simply Plural front history to fill this in.'**
+  String get noAnalyticsBody;
+
+  /// No description provided for @totalFrontTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total front time'**
+  String get totalFrontTimeLabel;
+
+  /// No description provided for @sessionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionsLabel;
+
+  /// No description provided for @averageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get averageLabel;
+
+  /// No description provided for @longestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest'**
+  String get longestLabel;
+
+  /// No description provided for @topFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top fronts'**
+  String get topFrontsTitle;
+
+  /// No description provided for @hourOfDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hour of day'**
+  String get hourOfDayTitle;
+
+  /// No description provided for @unknownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknownLabel;
+
+  /// No description provided for @analyticsSevenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'7d'**
+  String get analyticsSevenDays;
+
+  /// No description provided for @analyticsThirtyDays.
+  ///
+  /// In en, this message translates to:
+  /// **'30d'**
+  String get analyticsThirtyDays;
+
+  /// No description provided for @analyticsNinetyDays.
+  ///
+  /// In en, this message translates to:
+  /// **'90d'**
+  String get analyticsNinetyDays;
+
+  /// No description provided for @analyticsOneYear.
+  ///
+  /// In en, this message translates to:
+  /// **'1y'**
+  String get analyticsOneYear;
+
+  /// No description provided for @sessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 session} other{{count} sessions}}'**
+  String sessionCount(int count);
+
+  /// No description provided for @frontAnalyticsSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, {duration}, {count, plural, =1{1 session} other{{count} sessions}}'**
+  String frontAnalyticsSemantic(String label, String duration, int count);
+
+  /// No description provided for @hourAnalyticsSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00, {duration}'**
+  String hourAnalyticsSemantic(int hour, String duration);
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String durationMinutes(int minutes);
+
+  /// No description provided for @durationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h'**
+  String durationHours(int hours);
+
+  /// No description provided for @durationDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d'**
+  String durationDays(int days);
+
+  /// No description provided for @durationHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h {minutes}m'**
+  String durationHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @durationDaysHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d {hours}h'**
+  String durationDaysHours(int days, int hours);
 }
 
 class _AppLocalizationsDelegate

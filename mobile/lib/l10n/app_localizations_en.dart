@@ -2544,6 +2544,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openGroupsAction => 'Open groups';
+
+  @override
+  String get analyticsTitle => 'Analytics';
+
+  @override
+  String get analyticsDescription => 'Fronting patterns from local history.';
+
+  @override
+  String get noAnalyticsTitle => 'No analytics yet';
+
+  @override
+  String get noAnalyticsBody =>
+      'Set fronts or import Simply Plural front history to fill this in.';
+
+  @override
+  String get totalFrontTimeLabel => 'Total front time';
+
+  @override
+  String get sessionsLabel => 'Sessions';
+
+  @override
+  String get averageLabel => 'Average';
+
+  @override
+  String get longestLabel => 'Longest';
+
+  @override
+  String get topFrontsTitle => 'Top fronts';
+
+  @override
+  String get hourOfDayTitle => 'Hour of day';
+
+  @override
+  String get unknownLabel => 'Unknown';
+
+  @override
+  String get analyticsSevenDays => '7d';
+
+  @override
+  String get analyticsThirtyDays => '30d';
+
+  @override
+  String get analyticsNinetyDays => '90d';
+
+  @override
+  String get analyticsOneYear => '1y';
+
+  @override
+  String sessionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessions',
+      one: '1 session',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String frontAnalyticsSemantic(String label, String duration, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessions',
+      one: '1 session',
+    );
+    return '$label, $duration, $_temp0';
+  }
+
+  @override
+  String hourAnalyticsSemantic(int hour, String duration) {
+    return '$hour:00, $duration';
+  }
+
+  @override
+  String durationMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String durationHours(int hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String durationDays(int days) {
+    return '${days}d';
+  }
+
+  @override
+  String durationHoursMinutes(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String durationDaysHours(int days, int hours) {
+    return '${days}d ${hours}h';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).

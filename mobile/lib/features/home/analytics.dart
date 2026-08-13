@@ -18,8 +18,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       stream: widget.repository.watchFrontHistory(),
       initialData: const [],
       builder: (context, snapshot) {
+        final l10n = AppLocalizations.of(context);
         final entries = snapshot.data ?? const <FrontHistoryEntry>[];
-        final stats = _buildAnalytics(entries, _window);
+        final stats = _buildAnalytics(entries, _window, l10n.unknownLabel);
 
         return SpPage(
           children: [
@@ -29,13 +30,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SpSectionHeader(
-                    title: 'Analytics',
-                    trailing: StatusPill(text: _window.label),
+                    title: l10n.analyticsTitle,
+                    trailing: StatusPill(text: _window.label(l10n)),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Fronting patterns from local history.',
-                    style: TextStyle(color: _spMuted, height: 1.35),
+                  Text(
+                    l10n.analyticsDescription,
+                    style: const TextStyle(color: _spMuted, height: 1.35),
                   ),
                 ],
               ),
@@ -47,7 +48,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 children: [
                   for (final window in _AnalyticsWindow.values) ...[
                     FilterChip(
-                      label: Text(window.label),
+                      label: Text(window.label(l10n)),
                       selected: _window == window,
                       onSelected: (_) => setState(() => _window = window),
                     ),
@@ -58,9 +59,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
             const SizedBox(height: 12),
             if (stats.sessions == 0)
-              const SpEmptyState(
-                title: 'No analytics yet',
-                body: 'Set fronts or import SP front history to fill this in.',
+              SpEmptyState(
+                title: l10n.noAnalyticsTitle,
+                body: l10n.noAnalyticsBody,
               )
             else ...[
               _AnalyticsSummary(stats: stats),
@@ -83,6 +84,7 @@ class _AnalyticsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpCard(
       child: Column(
         children: [
@@ -90,13 +92,13 @@ class _AnalyticsSummary extends StatelessWidget {
             children: [
               Expanded(
                 child: _MetricBlock(
-                  label: 'Total front time',
-                  value: _formatAnalyticsDuration(stats.totalSeconds),
+                  label: l10n.totalFrontTimeLabel,
+                  value: _formatAnalyticsDuration(l10n, stats.totalSeconds),
                 ),
               ),
               Expanded(
                 child: _MetricBlock(
-                  label: 'Sessions',
+                  label: l10n.sessionsLabel,
                   value: '${stats.sessions}',
                 ),
               ),
@@ -107,14 +109,14 @@ class _AnalyticsSummary extends StatelessWidget {
             children: [
               Expanded(
                 child: _MetricBlock(
-                  label: 'Average',
-                  value: _formatAnalyticsDuration(stats.averageSeconds),
+                  label: l10n.averageLabel,
+                  value: _formatAnalyticsDuration(l10n, stats.averageSeconds),
                 ),
               ),
               Expanded(
                 child: _MetricBlock(
-                  label: 'Longest',
-                  value: _formatAnalyticsDuration(stats.longestSeconds),
+                  label: l10n.longestLabel,
+                  value: _formatAnalyticsDuration(l10n, stats.longestSeconds),
                 ),
               ),
             ],
@@ -164,6 +166,7 @@ class _TopFrontsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final top = stats.topLabels.take(8).toList(growable: false);
     final maxSeconds = top.isEmpty ? 1 : top.first.totalSeconds;
 
@@ -171,12 +174,15 @@ class _TopFrontsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SpSectionHeader(title: 'Top fronts'),
+          SpSectionHeader(title: l10n.topFrontsTitle),
           const SizedBox(height: 12),
           for (final item in top) ...[
             Semantics(
-              label:
-                  '${item.label}, ${_formatAnalyticsDuration(item.totalSeconds)}, ${item.sessions} sessions',
+              label: l10n.frontAnalyticsSemantic(
+                item.label,
+                _formatAnalyticsDuration(l10n, item.totalSeconds),
+                item.sessions,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -192,7 +198,7 @@ class _TopFrontsCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        _formatAnalyticsDuration(item.totalSeconds),
+                        _formatAnalyticsDuration(l10n, item.totalSeconds),
                         style: const TextStyle(color: _spMuted, fontSize: 13),
                       ),
                     ],
@@ -207,7 +213,7 @@ class _TopFrontsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${item.sessions} sessions',
+                    l10n.sessionCount(item.sessions),
                     style: const TextStyle(color: _spMuted, fontSize: 12),
                   ),
                 ],
@@ -228,6 +234,7 @@ class _HourChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final maxSeconds = stats.hourSeconds.fold<int>(
       1,
       (current, value) => value > current ? value : current,
@@ -237,7 +244,7 @@ class _HourChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SpSectionHeader(title: 'Hour of day'),
+          SpSectionHeader(title: l10n.hourOfDayTitle),
           const SizedBox(height: 12),
           SizedBox(
             height: 120,
@@ -247,8 +254,10 @@ class _HourChartCard extends StatelessWidget {
                 for (var hour = 0; hour < 24; hour++)
                   Expanded(
                     child: Semantics(
-                      label:
-                          '$hour:00, ${_formatAnalyticsDuration(stats.hourSeconds[hour])}',
+                      label: l10n.hourAnalyticsSemantic(
+                        hour,
+                        _formatAnalyticsDuration(l10n, stats.hourSeconds[hour]),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 1.5),
                         child: Align(
@@ -287,16 +296,23 @@ class _HourChartCard extends StatelessWidget {
 }
 
 enum _AnalyticsWindow {
-  sevenDays('7d', Duration(days: 7)),
-  thirtyDays('30d', Duration(days: 30)),
-  ninetyDays('90d', Duration(days: 90)),
-  oneYear('1y', Duration(days: 365)),
-  all('All', null);
+  sevenDays(Duration(days: 7)),
+  thirtyDays(Duration(days: 30)),
+  ninetyDays(Duration(days: 90)),
+  oneYear(Duration(days: 365)),
+  all(null);
 
-  const _AnalyticsWindow(this.label, this.duration);
+  const _AnalyticsWindow(this.duration);
 
-  final String label;
   final Duration? duration;
+
+  String label(AppLocalizations l10n) => switch (this) {
+    sevenDays => l10n.analyticsSevenDays,
+    thirtyDays => l10n.analyticsThirtyDays,
+    ninetyDays => l10n.analyticsNinetyDays,
+    oneYear => l10n.analyticsOneYear,
+    all => l10n.allFilter,
+  };
 }
 
 class _FrontAnalytics {
@@ -337,6 +353,7 @@ class _LabelAccumulator {
 _FrontAnalytics _buildAnalytics(
   List<FrontHistoryEntry> entries,
   _AnalyticsWindow window,
+  String unknownLabel,
 ) {
   final now = DateTime.now();
   final since = window.duration == null ? null : now.subtract(window.duration!);
@@ -362,7 +379,9 @@ _FrontAnalytics _buildAnalytics(
       longestSeconds = seconds;
     }
 
-    final label = entry.label.trim().isEmpty ? 'Unknown' : entry.label.trim();
+    final label = entry.label.trim().isEmpty
+        ? unknownLabel
+        : entry.label.trim();
     final labelStats = labels.putIfAbsent(label, _LabelAccumulator.new);
     labelStats.sessions += 1;
     labelStats.totalSeconds += seconds;
@@ -433,18 +452,22 @@ void _addHourBuckets(List<int> buckets, DateTime start, DateTime end) {
   }
 }
 
-String _formatAnalyticsDuration(int seconds) {
+String _formatAnalyticsDuration(AppLocalizations l10n, int seconds) {
   if (seconds <= 0) {
-    return '0m';
+    return l10n.durationMinutes(0);
   }
   final days = seconds ~/ 86400;
   final hours = (seconds % 86400) ~/ 3600;
   final minutes = (seconds % 3600) ~/ 60;
   if (days > 0) {
-    return hours > 0 ? '${days}d ${hours}h' : '${days}d';
+    return hours > 0
+        ? l10n.durationDaysHours(days, hours)
+        : l10n.durationDays(days);
   }
   if (hours > 0) {
-    return minutes > 0 ? '${hours}h ${minutes}m' : '${hours}h';
+    return minutes > 0
+        ? l10n.durationHoursMinutes(hours, minutes)
+        : l10n.durationHours(hours);
   }
-  return '${minutes}m';
+  return l10n.durationMinutes(minutes);
 }
