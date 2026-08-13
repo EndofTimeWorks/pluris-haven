@@ -1434,9 +1434,16 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     DropdownButtonFormField<String?>(
-                      initialValue: _folderId,
+                      initialValue: null,
                       decoration: InputDecoration(
                         labelText: l10n.primaryGroupFieldLabel,
+                      ),
+                      hint: Text(
+                        groups
+                                .where((group) => group.id == _folderId)
+                                .firstOrNull
+                                ?.name ??
+                            l10n.noPrimaryGroupOption,
                       ),
                       items: [
                         DropdownMenuItem<String?>(
@@ -1451,8 +1458,8 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                       ],
                       onChanged: (value) => setState(() {
                         _folderId = value;
-                        if (value != null) {
-                          _groupIds.add(value);
+                        if (_folderId != null) {
+                          _groupIds.add(_folderId!);
                         }
                       }),
                     ),
