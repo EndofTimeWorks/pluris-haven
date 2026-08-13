@@ -1652,6 +1652,38 @@ void main() {
     expect(archive.archiveJson, contains('"color_hex": "#3366ff"'));
   });
 
+  test('uses stable PluralKit UUIDs while retaining short-ID aliases', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.pluralKitFile,
+      fileName: 'pk-identities.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "members": [
+    {"id": "abcde", "uuid": "stable-member-uuid", "name": "Blue"}
+  ],
+  "switches": [
+    {"id": "switch-1", "timestamp": "2026-01-01T10:00:00Z", "members": ["abcde"]}
+  ]
+}
+''',
+    );
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final member =
+        (decoded['members'] as List<Object?>).single as Map<String, Object?>;
+    final frontMember =
+        (decoded['front_members'] as List<Object?>).single
+            as Map<String, Object?>;
+
+    expect(member['id'], 'pluralkit_file-member-stable-member-uuid');
+    expect(
+      member['source_member_id'],
+      'pluralkit_file-member-stable-member-uuid',
+    );
+    expect(member['pluralkit_id'], 'stable-member-uuid');
+    expect(frontMember['member_id'], member['id']);
+  });
+
   test('uses Simply Plural document IDs instead of shared account UID', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

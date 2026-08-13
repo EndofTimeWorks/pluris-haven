@@ -2156,7 +2156,9 @@ class _ExternalArchiveNormalizer {
 
   String? _memberSourceId(Map<String, Object?> member) => _firstString(
     member,
-    const ['source_member_id', '_id', 'id', 'uuid', 'memberId', 'uid'],
+    source == ImportSource.pluralKitFile || source == ImportSource.pluralKitLive
+        ? const ['source_member_id', 'uuid', 'id', '_id', 'memberId', 'uid']
+        : const ['source_member_id', '_id', 'id', 'uuid', 'memberId', 'uid'],
   );
 
   Set<String> _memberSourceAliases(
