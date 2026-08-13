@@ -1133,5 +1133,16 @@
   "savingStatus": "Saving...",
   "chooseSystemAvatarTitle": "Choose system avatar",
   "couldNotSaveImage": "Could not save image: {error}",
-  "@couldNotSaveImage": { "placeholders": { "error": { "type": "String" } } }
+  "@couldNotSaveImage": { "placeholders": { "error": { "type": "String" } } },
+  "plannedFeatureBody": "{detail}\n\nThis part is not built yet. It is planned for a later pre-alpha build.",
+  "@plannedFeatureBody": { "placeholders": { "detail": { "type": "String" } } },
+  "okButtonLabel": "OK",
+  "statusSemanticLabel": "Status {status}",
+  "@statusSemanticLabel": { "placeholders": { "status": { "type": "String" } } },
+  "appName": "Pluris Haven",
+  "importCompatibilityValue": "Simply Plural and PluralKit",
+  "moneroTitle": "Monero",
+  "noneTitle": "None",
+  "systemCounts": "{members, plural, =1{1 member} other{{members} members}} - {groups, plural, =1{1 group} other{{groups} groups}}",
+  "@systemCounts": { "placeholders": { "members": { "type": "int" }, "groups": { "type": "int" } } }
 }

@@ -2950,6 +2950,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String couldNotSaveImage(String error) {
     return 'Could not save image: $error';
   }
+
+  @override
+  String plannedFeatureBody(String detail) {
+    return '$detail\n\nThis part is not built yet. It is planned for a later pre-alpha build.';
+  }
+
+  @override
+  String get okButtonLabel => 'OK';
+
+  @override
+  String statusSemanticLabel(String status) {
+    return 'Status $status';
+  }
+
+  @override
+  String get appName => 'Pluris Haven';
+
+  @override
+  String get importCompatibilityValue => 'Simply Plural and PluralKit';
+
+  @override
+  String get moneroTitle => 'Monero';
+
+  @override
+  String get noneTitle => 'None';
+
+  @override
+  String systemCounts(int members, int groups) {
+    String _temp0 = intl.Intl.pluralLogic(
+      members,
+      locale: localeName,
+      other: '$members members',
+      one: '1 member',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      groups,
+      locale: localeName,
+      other: '$groups groups',
+      one: '1 group',
+    );
+    return '$_temp0 - $_temp1';
+  }
 }
 
 /// The translations for English, as used in the United States (`en_US`).

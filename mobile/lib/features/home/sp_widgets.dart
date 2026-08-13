@@ -359,13 +359,11 @@ Future<void> showPlannedFeaturePopup(
     builder: (context) => AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Text(title),
-      content: Text(
-        '$detail\n\nThis part is not built yet. It is planned for a later pre-alpha build.',
-      ),
+      content: Text(AppLocalizations.of(context).plannedFeatureBody(detail)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('OK'),
+          child: Text(AppLocalizations.of(context).okButtonLabel),
         ),
       ],
     ),
@@ -592,7 +590,7 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Status $text',
+      label: AppLocalizations.of(context).statusSemanticLabel(text),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _spSurface,

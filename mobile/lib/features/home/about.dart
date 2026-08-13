@@ -12,9 +12,12 @@ class AboutPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Pluris Haven',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              Text(
+                l10n.appName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -36,7 +39,7 @@ class AboutPage extends StatelessWidget {
             SpSettingsRow(l10n.storageLabel, l10n.storageValue),
             SpSettingsRow(
               l10n.compatibilityLabel,
-              'Simply Plural and PluralKit',
+              l10n.importCompatibilityValue,
               trailing: const SizedBox.shrink(),
               interactive: false,
             ),
@@ -55,7 +58,7 @@ class AboutPage extends StatelessWidget {
           title: l10n.optionalSupportTitle,
           rows: [
             SpSettingsRow(
-              'GitHub Sponsors',
+              l10n.githubSponsorsTitle,
               'EndofTimeWorks',
               onTap: () => launchExternalUrl(
                 context,
@@ -63,7 +66,7 @@ class AboutPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
-              'Patreon',
+              l10n.patreonTitle,
               'patreon.com/EndofTimeWorks',
               onTap: () => launchExternalUrl(
                 context,
@@ -79,10 +82,10 @@ class AboutPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Monero',
-                      style: TextStyle(
+                      l10n.moneroTitle,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),

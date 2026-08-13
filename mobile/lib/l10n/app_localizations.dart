@@ -5164,6 +5164,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save image: {error}'**
   String couldNotSaveImage(String error);
+
+  /// No description provided for @plannedFeatureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{detail}\n\nThis part is not built yet. It is planned for a later pre-alpha build.'**
+  String plannedFeatureBody(String detail);
+
+  /// No description provided for @okButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get okButtonLabel;
+
+  /// No description provided for @statusSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status {status}'**
+  String statusSemanticLabel(String status);
+
+  /// No description provided for @appName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven'**
+  String get appName;
+
+  /// No description provided for @importCompatibilityValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Simply Plural and PluralKit'**
+  String get importCompatibilityValue;
+
+  /// No description provided for @moneroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero'**
+  String get moneroTitle;
+
+  /// No description provided for @noneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneTitle;
+
+  /// No description provided for @systemCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{members, plural, =1{1 member} other{{members} members}} - {groups, plural, =1{1 group} other{{groups} groups}}'**
+  String systemCounts(int members, int groups);
 }
 
 class _AppLocalizationsDelegate

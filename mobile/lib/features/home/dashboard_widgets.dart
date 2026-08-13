@@ -159,6 +159,7 @@ class SystemListEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final home = snapshot;
 
     return SpCard(
@@ -168,8 +169,9 @@ class SystemListEntry extends StatelessWidget {
             size: 52,
             color: Theme.of(context).colorScheme.primary,
             label: 'PH',
-            semanticLabel:
-                'System avatar for ${home?.systemName ?? 'Local system'}',
+            semanticLabel: l10n.systemAvatarFor(
+              home?.systemName ?? l10n.localSystemFallback,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -177,7 +179,7 @@ class SystemListEntry extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  home?.systemName ?? 'Local system',
+                  home?.systemName ?? l10n.localSystemFallback,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -185,7 +187,10 @@ class SystemListEntry extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${home?.memberCount ?? 0} members - ${home?.groupCount ?? 0} groups',
+                  l10n.systemCounts(
+                    home?.memberCount ?? 0,
+                    home?.groupCount ?? 0,
+                  ),
                   style: const TextStyle(color: _spMuted, fontSize: 15),
                 ),
               ],
@@ -209,6 +214,7 @@ class CurrentFrontEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final home = snapshot;
 
     return SpCard(
@@ -229,16 +235,16 @@ class CurrentFrontEntry extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Currently fronting',
-                  style: TextStyle(
+                Text(
+                  l10n.currentlyFrontingNotificationTitle,
+                  style: const TextStyle(
                     color: _spMuted,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  home?.currentFrontText ?? 'None',
+                  home?.currentFrontText ?? l10n.noneTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -267,8 +273,9 @@ class CurrentFrontEntry extends StatelessWidget {
                               child: Semantics(
                                 container: true,
                                 excludeSemantics: true,
-                                label:
-                                    '${member.displayName} is currently fronting',
+                                label: l10n.memberIsFronting(
+                                  member.displayName,
+                                ),
                                 child: MemberAvatar(
                                   member: member,
                                   color: _colorFromHex(member.colorHex),
@@ -292,9 +299,12 @@ class CurrentFrontEntry extends StatelessWidget {
             children: [
               StatusPill(text: home?.currentFrontStatus ?? 'none'),
               const SizedBox(height: 8),
-              const Text(
-                'set front',
-                style: TextStyle(color: _spMuted, fontWeight: FontWeight.w700),
+              Text(
+                l10n.setFrontButton,
+                style: const TextStyle(
+                  color: _spMuted,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
