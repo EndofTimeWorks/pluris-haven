@@ -33,10 +33,6 @@
     top: 12px;
   }
 
-  :global(.no-js .skip-link) {
-    position: static;
-  }
-
   :global(:focus-visible) {
     outline: 3px solid #f0ca63;
     outline-offset: 2px;

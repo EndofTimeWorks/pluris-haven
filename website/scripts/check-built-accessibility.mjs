@@ -46,6 +46,16 @@ for (const path of await htmlFiles(buildDirectory)) {
   if (!/<title>\s*[^<\s][^<]*<\/title>/i.test(html)) {
     fail('the page needs a non-empty title');
   }
+  if (/\bclass=(?:"[^"]*\bno-js\b[^"]*"|'[^']*\bno-js\b[^']*')/i.test(html)) {
+    fail('the no-js class makes the skip link permanently visible');
+  }
+  if (
+    !/<a\b[^>]*\bclass=(?:"[^"]*\bskip-link\b[^"]*"|'[^']*\bskip-link\b[^']*')[^>]*\bhref=(?:"#main-content"|'#main-content')/i.test(
+      html,
+    )
+  ) {
+    fail('the page needs a skip link targeting #main-content');
+  }
   if (count(html, /<main\b/gi) !== 1) fail('expected exactly one main landmark');
   if (count(html, /<h1\b/gi) !== 1) fail('expected exactly one h1');
   if (/\btabindex=(?:"[1-9][0-9]*"|'[1-9][0-9]*')/i.test(html)) {
