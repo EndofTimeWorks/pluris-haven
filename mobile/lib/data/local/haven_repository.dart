@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
@@ -13,6 +12,7 @@ import '../import/import_sources.dart';
 import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
 import 'app_database.dart';
+import 'rehearsal_database_connection.dart';
 import 'supported_language.dart';
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
@@ -5459,7 +5459,7 @@ SELECT
     late final AppDatabase rehearsalDatabase;
     try {
       driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-      rehearsalDatabase = AppDatabase(NativeDatabase.memory());
+      rehearsalDatabase = AppDatabase(await openRehearsalDatabaseConnection());
     } finally {
       driftRuntimeOptions.dontWarnAboutMultipleDatabases =
           previousMultipleDatabaseWarning;
