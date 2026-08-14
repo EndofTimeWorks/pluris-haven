@@ -237,5 +237,19 @@ void main() {
       );
       expect(archivePassphraseIssue('violet river 92! lantern'), isNull);
     });
+
+    test('generates unique high-entropy recovery passphrases', () async {
+      final generated = <String>{};
+      for (var index = 0; index < 8; index++) {
+        final passphrase = await generateArchivePassphrase();
+        expect(
+          passphrase,
+          matches(RegExp(r'^[A-Za-z0-9_-]{4}(\.[A-Za-z0-9_-]{4}){7}$')),
+        );
+        expect(archivePassphraseIssue(passphrase), isNull);
+        generated.add(passphrase);
+      }
+      expect(generated, hasLength(8));
+    });
   });
 }

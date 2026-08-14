@@ -1201,6 +1201,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmPassphraseFieldLabel => 'Confirm passphrase';
 
   @override
+  String get generateStrongPassphraseButton => 'Generate strong passphrase';
+
+  @override
+  String get generatedPassphraseStatus =>
+      'Generated locally with 192 bits of randomness. Save it in your password manager; Pluris Haven cannot recover it.';
+
+  @override
+  String get showPassphraseTooltip => 'Show passphrase';
+
+  @override
+  String get hidePassphraseTooltip => 'Hide passphrase';
+
+  @override
   String encryptedExportStatusSemanticLabel(String status) {
     return 'Encrypted export status: $status';
   }
@@ -1212,7 +1225,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveEncryptedFileButton => 'Save encrypted file';
 
   @override
-  String get passphraseMinimumLength => 'Use at least 14 characters.';
+  String get passphraseMinimumLength => 'Use at least 16 characters.';
 
   @override
   String get passphraseTooCommon => 'Choose a less common passphrase.';

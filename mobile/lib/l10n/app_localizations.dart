@@ -2178,6 +2178,30 @@ abstract class AppLocalizations {
   /// **'Confirm passphrase'**
   String get confirmPassphraseFieldLabel;
 
+  /// No description provided for @generateStrongPassphraseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate strong passphrase'**
+  String get generateStrongPassphraseButton;
+
+  /// No description provided for @generatedPassphraseStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated locally with 192 bits of randomness. Save it in your password manager; Pluris Haven cannot recover it.'**
+  String get generatedPassphraseStatus;
+
+  /// No description provided for @showPassphraseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show passphrase'**
+  String get showPassphraseTooltip;
+
+  /// No description provided for @hidePassphraseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide passphrase'**
+  String get hidePassphraseTooltip;
+
   /// No description provided for @encryptedExportStatusSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -2199,7 +2223,7 @@ abstract class AppLocalizations {
   /// No description provided for @passphraseMinimumLength.
   ///
   /// In en, this message translates to:
-  /// **'Use at least 14 characters.'**
+  /// **'Use at least 16 characters.'**
   String get passphraseMinimumLength;
 
   /// No description provided for @passphraseTooCommon.

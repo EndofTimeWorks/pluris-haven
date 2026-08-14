@@ -2328,6 +2328,23 @@ void main() {
       find.byKey(const ValueKey('encrypted-export-passphrase-field')),
       findsOneWidget,
     );
+    await tester.tap(
+      find.byKey(const ValueKey('generate-archive-passphrase-button')),
+    );
+    await tester.pumpAndSettle();
+    final passphraseField = tester.widget<TextField>(
+      find.byKey(const ValueKey('encrypted-export-passphrase-field')),
+    );
+    final confirmationField = tester.widget<TextField>(
+      find.byKey(const ValueKey('encrypted-export-confirm-field')),
+    );
+    expect(passphraseField.controller!.text, isNotEmpty);
+    expect(
+      confirmationField.controller!.text,
+      passphraseField.controller!.text,
+    );
+    expect(passphraseField.obscureText, isFalse);
+    expect(find.textContaining('192 bits of randomness'), findsOneWidget);
     expect(find.text('Save encrypted file'), findsOneWidget);
   });
 }

@@ -994,10 +994,13 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
   final _passphraseController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _isSaving = false;
+  bool _obscurePassphrases = true;
   String? _status;
 
   @override
   void dispose() {
+    _passphraseController.clear();
+    _confirmController.clear();
     _passphraseController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -1030,17 +1033,45 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
             TextField(
               key: const ValueKey('encrypted-export-passphrase-field'),
               controller: _passphraseController,
-              obscureText: true,
-              decoration: InputDecoration(labelText: l10n.passphraseFieldLabel),
+              obscureText: _obscurePassphrases,
+              autocorrect: false,
+              enableSuggestions: false,
+              keyboardType: TextInputType.visiblePassword,
+              autofillHints: const [AutofillHints.newPassword],
+              decoration: InputDecoration(
+                labelText: l10n.passphraseFieldLabel,
+                suffixIcon: IconButton(
+                  onPressed: _togglePassphraseVisibility,
+                  tooltip: _obscurePassphrases
+                      ? l10n.showPassphraseTooltip
+                      : l10n.hidePassphraseTooltip,
+                  icon: Icon(
+                    _obscurePassphrases
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('encrypted-export-confirm-field'),
               controller: _confirmController,
-              obscureText: true,
+              obscureText: _obscurePassphrases,
+              autocorrect: false,
+              enableSuggestions: false,
+              keyboardType: TextInputType.visiblePassword,
+              autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 labelText: l10n.confirmPassphraseFieldLabel,
               ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              key: const ValueKey('generate-archive-passphrase-button'),
+              onPressed: _isSaving ? null : _generatePassphrase,
+              icon: const Icon(Icons.password_rounded),
+              label: Text(l10n.generateStrongPassphraseButton),
             ),
             if (_status != null) ...[
               const SizedBox(height: 10),
@@ -1076,6 +1107,23 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
         ),
       ),
     );
+  }
+
+  void _togglePassphraseVisibility() {
+    setState(() {
+      _obscurePassphrases = !_obscurePassphrases;
+    });
+  }
+
+  Future<void> _generatePassphrase() async {
+    final generated = await generateArchivePassphrase();
+    if (!mounted) return;
+    setState(() {
+      _passphraseController.text = generated;
+      _confirmController.text = generated;
+      _obscurePassphrases = false;
+      _status = AppLocalizations.of(context).generatedPassphraseStatus;
+    });
   }
 
   Future<void> _saveEncryptedArchive() async {

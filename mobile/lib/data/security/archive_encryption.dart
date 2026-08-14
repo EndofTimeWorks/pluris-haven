@@ -115,6 +115,21 @@ ArchivePassphraseIssue? archivePassphraseIssue(String passphrase) {
 bool isArchivePassphraseValid(String passphrase) =>
     archivePassphraseIssue(passphrase) == null;
 
+/// Generates a 192-bit recovery passphrase locally using the platform CSPRNG.
+Future<String> generateArchivePassphrase() async {
+  for (var attempt = 0; attempt < 8; attempt++) {
+    final bytes = await SecretKeyData.random(length: 24).extractBytes();
+    final encoded = base64Url.encode(bytes).replaceAll('=', '');
+    final grouped = List.generate(
+      encoded.length ~/ 4,
+      (index) => encoded.substring(index * 4, index * 4 + 4),
+      growable: false,
+    ).join('.');
+    if (isArchivePassphraseValid(grouped)) return grouped;
+  }
+  throw StateError('Could not generate a recovery passphrase.');
+}
+
 bool _isRepeatedPassphrase(List<int> runes) {
   for (var unitLength = 1; unitLength <= runes.length ~/ 2; unitLength++) {
     if (runes.length % unitLength != 0) continue;
