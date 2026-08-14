@@ -42,6 +42,15 @@ void _seedLegacyDatabase({
   }
 }
 
+Future<Object?> _value(
+  AppDatabase database,
+  String query,
+  String column,
+) async {
+  final row = await database.customSelect(query).getSingle();
+  return row.data[column];
+}
+
 /// Version-1 schema: the tables that were never touched by any
 /// `migrator.createTable` call in onUpgrade (so they must predate it), each
 /// stripped of every column added later by `migrator.addColumn`.
@@ -442,6 +451,129 @@ List<String> _v8Statements() => [
   ''',
 ];
 
+/// Version 3 is the first schema with messages, reminders, and notification
+/// events. These tables had not yet received their structured v8 columns.
+List<String> _v3Statements() => [
+  ..._v1Statements(),
+  '''
+  CREATE TABLE app_preferences (
+    "key" TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  '''
+  CREATE TABLE messages (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    member_id TEXT,
+    body TEXT NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  '''
+  CREATE TABLE reminders (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT,
+    schedule_text TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  '''
+  CREATE TABLE notification_events (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    read_at INTEGER,
+    created_at INTEGER NOT NULL
+  )
+  ''',
+];
+
+/// Version 12 follows the member/profile and front-status shape changes and
+/// introduces the many-to-many group membership table.
+List<String> _v12Statements() => [
+  ..._v8Statements(),
+  'ALTER TABLE named_fronts ADD COLUMN color_hex TEXT',
+  'ALTER TABLE named_fronts ADD COLUMN avatar_url TEXT',
+  'ALTER TABLE named_fronts ADD COLUMN description TEXT',
+  'ALTER TABLE front_sessions ADD COLUMN status_note TEXT',
+  'ALTER TABLE members ADD COLUMN birthday TEXT',
+  'ALTER TABLE members ADD COLUMN emoji TEXT',
+  'ALTER TABLE members ADD COLUMN privacy TEXT',
+  '''
+  CREATE TABLE group_members (
+    group_id TEXT NOT NULL,
+    member_id TEXT NOT NULL,
+    PRIMARY KEY (group_id, member_id)
+  )
+  ''',
+];
+
+/// Version 16 is the final pre-v17 shape. The only remaining migration should
+/// add members.profile_encryption_version without disturbing chat or privacy
+/// relationships.
+List<String> _v16Statements() => [
+  ..._v12Statements(),
+  'ALTER TABLE system_groups ADD COLUMN is_subsystem INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE plural_systems ADD COLUMN color_hex TEXT',
+  'ALTER TABLE plural_systems ADD COLUMN avatar_url TEXT',
+  'ALTER TABLE plural_systems ADD COLUMN description TEXT',
+  '''
+  CREATE TABLE privacy_buckets (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    color_hex TEXT,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  '''
+  CREATE TABLE privacy_bucket_members (
+    bucket_id TEXT NOT NULL,
+    member_id TEXT NOT NULL,
+    PRIMARY KEY (bucket_id, member_id)
+  )
+  ''',
+  '''
+  CREATE TABLE chat_categories (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    color_hex TEXT,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  '''
+  CREATE TABLE chat_channels (
+    id TEXT NOT NULL PRIMARY KEY,
+    system_id TEXT NOT NULL,
+    category_id TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    color_hex TEXT,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+  ''',
+  'ALTER TABLE messages ADD COLUMN channel_id TEXT',
+];
+
 void main() {
   late Directory tempDir;
 
@@ -663,6 +795,249 @@ void main() {
     expect(member.data['lexo_rank'], '0|zzzzzz');
     expect(member.data['is_custom_front'], 0);
     expect(member.data['profile_encryption_version'], 0);
+  });
+
+  test('v3 message and reminder rows survive their v8 shape expansion', () async {
+    final dbPath = '${tempDir.path}/legacy_v3_data.sqlite';
+    _seedLegacyDatabase(path: dbPath, version: 3, statements: _v3Statements());
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    const timestamp = 1723300000;
+    try {
+      raw.execute(
+        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?)',
+        ['sys-1', 'Legacy System', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO members (id, system_id, display_name, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['mem-1', 'sys-1', 'River', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO messages (id, system_id, member_id, body, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ['message-1', 'sys-1', 'mem-1', 'legacy message', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO reminders (id, system_id, title, body, schedule_text, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'reminder-1',
+          'sys-1',
+          'Check in',
+          'legacy reminder',
+          'Daily',
+          timestamp,
+          timestamp,
+        ],
+      );
+    } finally {
+      raw.close();
+    }
+
+    final database = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(database.close);
+
+    final message = await database
+        .customSelect(
+          "SELECT body, board_kind, channel_id FROM messages WHERE id = 'message-1'",
+        )
+        .getSingle();
+    final reminder = await database
+        .customSelect(
+          "SELECT body, trigger_type, schedule_kind FROM reminders WHERE id = 'reminder-1'",
+        )
+        .getSingle();
+
+    expect(message.data['body'], 'legacy message');
+    expect(message.data['board_kind'], 'system');
+    expect(message.data['channel_id'], isNull);
+    expect(reminder.data['body'], 'legacy reminder');
+    expect(reminder.data['trigger_type'], 'repeated');
+    expect(reminder.data['schedule_kind'], isNull);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
+  });
+
+  test('v12 member, front, and group relationships survive to v17', () async {
+    final dbPath = '${tempDir.path}/legacy_v12_data.sqlite';
+    _seedLegacyDatabase(
+      path: dbPath,
+      version: 12,
+      statements: _v12Statements(),
+    );
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    const timestamp = 1723300000;
+    try {
+      raw.execute(
+        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?)',
+        ['sys-1', 'Legacy System', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO system_groups (id, system_id, name, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?, ?)',
+        ['group-1', 'sys-1', 'Caretakers', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO members (id, system_id, display_name, birthday, emoji, '
+        'privacy, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          'mem-1',
+          'sys-1',
+          'River',
+          '02-03',
+          '🌊',
+          'private',
+          timestamp,
+          timestamp,
+        ],
+      );
+      raw.execute(
+        'INSERT INTO group_members (group_id, member_id) VALUES (?, ?)',
+        ['group-1', 'mem-1'],
+      );
+      raw.execute(
+        'INSERT INTO front_sessions (id, system_id, label, status_note, '
+        'started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'front-1',
+          'sys-1',
+          'River front',
+          'Grounded',
+          timestamp,
+          timestamp,
+          timestamp,
+        ],
+      );
+    } finally {
+      raw.close();
+    }
+
+    final database = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(database.close);
+
+    final member = await database
+        .customSelect(
+          "SELECT birthday, emoji, privacy, profile_encryption_version FROM members WHERE id = 'mem-1'",
+        )
+        .getSingle();
+    expect(member.data['birthday'], '02-03');
+    expect(member.data['emoji'], '🌊');
+    expect(member.data['privacy'], 'private');
+    expect(member.data['profile_encryption_version'], 0);
+    expect(
+      await _value(
+        database,
+        "SELECT COUNT(*) AS count FROM group_members WHERE group_id = 'group-1' AND member_id = 'mem-1'",
+        'count',
+      ),
+      1,
+    );
+    expect(
+      await _value(
+        database,
+        "SELECT status_note FROM front_sessions WHERE id = 'front-1'",
+        'status_note',
+      ),
+      'Grounded',
+    );
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
+  });
+
+  test('v16 chat and privacy relationships survive the final migration', () async {
+    final dbPath = '${tempDir.path}/legacy_v16_data.sqlite';
+    _seedLegacyDatabase(
+      path: dbPath,
+      version: 16,
+      statements: _v16Statements(),
+    );
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    const timestamp = 1723300000;
+    try {
+      raw.execute(
+        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?)',
+        ['sys-1', 'Legacy System', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO members (id, system_id, display_name, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['mem-1', 'sys-1', 'River', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO privacy_buckets (id, system_id, name, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['bucket-1', 'sys-1', 'Trusted', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO privacy_bucket_members (bucket_id, member_id) VALUES (?, ?)',
+        ['bucket-1', 'mem-1'],
+      );
+      raw.execute(
+        'INSERT INTO chat_categories (id, system_id, name, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        ['category-1', 'sys-1', 'Internal', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO chat_channels (id, system_id, category_id, name, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ['channel-1', 'sys-1', 'category-1', 'Check-ins', timestamp, timestamp],
+      );
+      raw.execute(
+        'INSERT INTO messages (id, system_id, body, channel_id, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          'message-1',
+          'sys-1',
+          'legacy channel message',
+          'channel-1',
+          timestamp,
+          timestamp,
+        ],
+      );
+    } finally {
+      raw.close();
+    }
+
+    final database = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(database.close);
+
+    expect(
+      await _value(
+        database,
+        "SELECT channel_id FROM messages WHERE id = 'message-1'",
+        'channel_id',
+      ),
+      'channel-1',
+    );
+    expect(
+      await _value(
+        database,
+        "SELECT category_id FROM chat_channels WHERE id = 'channel-1'",
+        'category_id',
+      ),
+      'category-1',
+    );
+    expect(
+      await _value(
+        database,
+        "SELECT COUNT(*) AS count FROM privacy_bucket_members WHERE bucket_id = 'bucket-1' AND member_id = 'mem-1'",
+        'count',
+      ),
+      1,
+    );
+    expect(
+      await _value(
+        database,
+        "SELECT profile_encryption_version FROM members WHERE id = 'mem-1'",
+        'profile_encryption_version',
+      ),
+      0,
+    );
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
   });
 
   test('private content survives the v8 -> v17 upgrade', () async {
