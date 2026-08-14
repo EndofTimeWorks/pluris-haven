@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
+import '../avatar/avatar_file_policy.dart';
 import '../import/remote_avatar_policy.dart';
 import '../import/import_sources.dart';
 import '../ordering/lexorank.dart';
@@ -6400,7 +6401,7 @@ SELECT
   }
 
   String? _avatarMimeType(String fileName, Uint8List bytes) {
-    final detected = _sniffAvatarMimeType(bytes);
+    final detected = sniffAvatarMimeType(bytes);
     if (detected != null) return detected;
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
@@ -6479,13 +6480,12 @@ SELECT
   Future<Uint8List?> _readAvatarResponseBytes(
     HttpClientResponse response,
   ) async {
-    const maxAvatarBytes = 10 * 1024 * 1024;
     final declaredLength = response.contentLength;
-    if (declaredLength > maxAvatarBytes) return null;
+    if (declaredLength > maximumAvatarBytes) return null;
     final bytes = BytesBuilder(copy: false);
     await response
         .forEach((chunk) {
-          if (bytes.length > maxAvatarBytes - chunk.length) {
+          if (bytes.length > maximumAvatarBytes - chunk.length) {
             throw const FormatException('Avatar response exceeds size limit.');
           }
           bytes.add(chunk);
@@ -6501,7 +6501,7 @@ SELECT
     required Uint8List bytes,
   }) async {
     final root = await _avatarRootDirectory();
-    final detectedMimeType = _sniffAvatarMimeType(bytes) ?? mimeType;
+    final detectedMimeType = sniffAvatarMimeType(bytes) ?? mimeType;
     final extension = _avatarExtension(sourceName, detectedMimeType);
     final safeId = _safeFilePart(id);
     final digest = base64Url
@@ -8762,47 +8762,6 @@ String _avatarExtension(String sourceName, String? mimeType) {
   }
 
   return '.bin';
-}
-
-String? _sniffAvatarMimeType(Uint8List bytes) {
-  if (bytes.length >= 8 &&
-      bytes[0] == 0x89 &&
-      bytes[1] == 0x50 &&
-      bytes[2] == 0x4e &&
-      bytes[3] == 0x47 &&
-      bytes[4] == 0x0d &&
-      bytes[5] == 0x0a &&
-      bytes[6] == 0x1a &&
-      bytes[7] == 0x0a) {
-    return 'image/png';
-  }
-  if (bytes.length >= 3 &&
-      bytes[0] == 0xff &&
-      bytes[1] == 0xd8 &&
-      bytes[2] == 0xff) {
-    return 'image/jpeg';
-  }
-  if (bytes.length >= 6) {
-    final signature = String.fromCharCodes(bytes.take(6));
-    if (signature == 'GIF87a' || signature == 'GIF89a') {
-      return 'image/gif';
-    }
-  }
-  if (bytes.length >= 12 &&
-      String.fromCharCodes(bytes.take(4)) == 'RIFF' &&
-      String.fromCharCodes(bytes.skip(8).take(4)) == 'WEBP') {
-    return 'image/webp';
-  }
-  if (bytes.isNotEmpty) {
-    final prefix = String.fromCharCodes(
-      bytes.take(512),
-    ).trimLeft().toLowerCase();
-    if (prefix.startsWith('<svg') ||
-        (prefix.startsWith('<?xml') && prefix.contains('<svg'))) {
-      return 'image/svg+xml';
-    }
-  }
-  return null;
 }
 
 String _safeFilePart(String value) {

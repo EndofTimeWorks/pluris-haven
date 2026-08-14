@@ -2038,6 +2038,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectedImageEmptyError => 'Selected image was empty.';
 
   @override
+  String get selectedImageTooLargeError =>
+      'Choose an image smaller than 10 MB.';
+
+  @override
+  String get selectedImageUnsupportedTypeError =>
+      'Choose a PNG, JPEG, WebP, or GIF image.';
+
+  @override
   String get avatarSavedStatus => 'Avatar saved on device.';
 
   @override

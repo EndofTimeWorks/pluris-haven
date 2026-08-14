@@ -3647,6 +3647,18 @@ abstract class AppLocalizations {
   /// **'Selected image was empty.'**
   String get selectedImageEmptyError;
 
+  /// No description provided for @selectedImageTooLargeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an image smaller than 10 MB.'**
+  String get selectedImageTooLargeError;
+
+  /// No description provided for @selectedImageUnsupportedTypeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a PNG, JPEG, WebP, or GIF image.'**
+  String get selectedImageUnsupportedTypeError;
+
   /// No description provided for @avatarSavedStatus.
   ///
   /// In en, this message translates to:

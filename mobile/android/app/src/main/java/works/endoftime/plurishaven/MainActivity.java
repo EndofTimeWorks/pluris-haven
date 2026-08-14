@@ -63,7 +63,10 @@ public final class MainActivity extends FlutterFragmentActivity {
                             }
                             result.success(files);
                         } catch (Exception error) {
-                            result.error("pick_failed", error.getMessage(), null);
+                            String code = error instanceof IllegalArgumentException
+                                    ? "pick_too_large"
+                                    : "pick_failed";
+                            result.error(code, error.getMessage(), null);
                         }
                     });
 

@@ -1,9 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pluris_haven/data/avatar/avatar_file_policy.dart';
 import 'package:pluris_haven/platform/native_file_dialog.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('reading a staged picker file removes the plaintext copy', () async {
     final directory = await Directory.systemTemp.createTemp(
       'pluris-haven-picker-test-',
@@ -47,5 +51,23 @@ void main() {
     expect(removed, greaterThanOrEqualTo(1));
     expect(await staleDirectory.exists(), isFalse);
     expect(await unrelatedDirectory.exists(), isTrue);
+  });
+
+  test('maps the native size rejection to a typed exception', () async {
+    const channel = MethodChannel('works.endoftime.plurishaven/file_dialog');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      throw PlatformException(code: 'pick_too_large');
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    await expectLater(
+      NativeFileDialog.pickFiles(
+        type: NativeFileType.image,
+        maximumBytes: maximumAvatarBytes,
+      ),
+      throwsA(isA<NativePickedFileTooLargeException>()),
+    );
   });
 }

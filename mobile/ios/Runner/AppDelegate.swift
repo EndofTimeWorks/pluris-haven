@@ -229,8 +229,11 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
     do {
       let files = try urls.map(copySelectionToTemporaryDirectory)
       result?(files)
-    } catch {
-      result?(FlutterError(code: "pick_failed", message: error.localizedDescription, details: nil))
+    } catch let error as NSError {
+      let code = error.domain == "PlurisHavenImport" && error.code == 1
+        ? "pick_too_large"
+        : "pick_failed"
+      result?(FlutterError(code: code, message: error.localizedDescription, details: nil))
     }
   }
 

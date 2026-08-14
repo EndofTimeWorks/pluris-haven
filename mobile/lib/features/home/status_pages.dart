@@ -728,23 +728,25 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
 
   Future<void> _pickAvatar() async {
     final l10n = AppLocalizations.of(context);
-    final result = await NativeFileDialog.pickFiles(
-      type: NativeFileType.image,
-      allowMultiple: false,
-      dialogTitle: l10n.chooseSystemAvatarTitle,
-    );
-    final file = result?.files.firstOrNull;
-    if (file == null) return;
     try {
-      final bytes = await file.readBytes();
-      if (bytes.isEmpty) {
-        throw FormatException(l10n.selectedImageEmptyError);
-      }
+      final result = await NativeFileDialog.pickFiles(
+        type: NativeFileType.image,
+        allowMultiple: false,
+        dialogTitle: l10n.chooseSystemAvatarTitle,
+        maximumBytes: maximumAvatarBytes,
+      );
+      final file = result?.files.firstOrNull;
+      if (file == null) return;
+      final bytes = await _readManualAvatarFile(file);
       final ref = await _storeManualAvatar(file.name, bytes);
       if (mounted) setState(() => _avatarUrl = ref);
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _error = l10n.couldNotSaveImage(error.toString()));
+        setState(
+          () => _error =
+              _manualAvatarValidationMessage(l10n, error) ??
+              l10n.couldNotSaveImage(error.toString()),
+        );
       }
     }
   }

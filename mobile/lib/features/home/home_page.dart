@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/avatar/avatar_file_policy.dart';
 import '../../data/import/import_archive_mapper.dart';
 import '../../data/import/import_file_decoder.dart';
 import '../../data/import/import_plan.dart';

@@ -6,6 +6,10 @@ enum NativeFileType { custom, image }
 const maximumNativePickedFileBytes = 32 * 1024 * 1024;
 const _exportTemporaryDirectoryPrefix = 'pluris-haven-export-';
 
+final class NativePickedFileTooLargeException implements Exception {
+  const NativePickedFileTooLargeException();
+}
+
 class NativePlatformFile {
   const NativePlatformFile({
     required this.name,
@@ -80,14 +84,22 @@ class NativeFileDialog {
     String? dialogTitle,
     int maximumBytes = maximumNativePickedFileBytes,
   }) async {
-    final response = await _channel
-        .invokeListMethod<Object?>('pickFiles', <String, Object?>{
-          'type': type.name,
-          'allowedExtensions': allowedExtensions,
-          'allowMultiple': allowMultiple,
-          'dialogTitle': dialogTitle,
-          'maximumBytes': maximumBytes,
-        });
+    final List<Object?>? response;
+    try {
+      response = await _channel
+          .invokeListMethod<Object?>('pickFiles', <String, Object?>{
+            'type': type.name,
+            'allowedExtensions': allowedExtensions,
+            'allowMultiple': allowMultiple,
+            'dialogTitle': dialogTitle,
+            'maximumBytes': maximumBytes,
+          });
+    } on PlatformException catch (error) {
+      if (error.code == 'pick_too_large') {
+        throw const NativePickedFileTooLargeException();
+      }
+      rethrow;
+    }
     if (response == null) return null;
     final files = <NativePlatformFile>[];
     for (final item in response) {

@@ -1583,25 +1583,22 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   Future<void> _chooseAvatar() async {
     final l10n = AppLocalizations.of(context);
     setState(() => _avatarMessage = l10n.openingImagePickerStatus);
-    final result = await NativeFileDialog.pickFiles(
-      type: NativeFileType.image,
-      allowMultiple: false,
-      dialogTitle: l10n.chooseMemberAvatarTitle,
-    );
-    final files = result?.files ?? const <NativePlatformFile>[];
-    final file = files.isEmpty ? null : files.first;
-    if (file == null) {
-      if (mounted) {
-        setState(() => _avatarMessage = l10n.noImageSelectedStatus);
-      }
-      return;
-    }
-
     try {
-      final bytes = await file.readBytes();
-      if (bytes.isEmpty) {
-        throw FormatException(l10n.selectedImageEmptyError);
+      final result = await NativeFileDialog.pickFiles(
+        type: NativeFileType.image,
+        allowMultiple: false,
+        dialogTitle: l10n.chooseMemberAvatarTitle,
+        maximumBytes: maximumAvatarBytes,
+      );
+      final files = result?.files ?? const <NativePlatformFile>[];
+      final file = files.isEmpty ? null : files.first;
+      if (file == null) {
+        if (mounted) {
+          setState(() => _avatarMessage = l10n.noImageSelectedStatus);
+        }
+        return;
       }
+      final bytes = await _readManualAvatarFile(file);
       final ref = await _storeManualAvatar(file.name, bytes);
       if (!mounted) {
         return;
@@ -1612,7 +1609,11 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       });
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _avatarMessage = l10n.couldNotSaveAvatar(error));
+        setState(
+          () => _avatarMessage =
+              _manualAvatarValidationMessage(l10n, error) ??
+              l10n.couldNotSaveAvatar(error),
+        );
       }
     }
   }
@@ -1628,7 +1629,34 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 String _hexFromAccent(HavenAccentColor color) =>
     '#${color.argb.toRadixString(16).substring(2).toUpperCase()}';
 
-Future<String> _storeManualAvatar(String sourceName, List<int> bytes) async {
+Future<Uint8List> _readManualAvatarFile(NativePlatformFile file) async {
+  if (file.size <= 0) {
+    await file.dispose();
+    throw const AvatarFileException(AvatarFileIssue.empty);
+  }
+  if (file.size > maximumAvatarBytes) {
+    await file.dispose();
+    throw const AvatarFileException(AvatarFileIssue.tooLarge);
+  }
+  final bytes = await file.readBytes();
+  validateRasterAvatarBytes(bytes);
+  return bytes;
+}
+
+String? _manualAvatarValidationMessage(AppLocalizations l10n, Object error) {
+  if (error is NativePickedFileTooLargeException) {
+    return l10n.selectedImageTooLargeError;
+  }
+  if (error is! AvatarFileException) return null;
+  return switch (error.issue) {
+    AvatarFileIssue.empty => l10n.selectedImageEmptyError,
+    AvatarFileIssue.tooLarge => l10n.selectedImageTooLargeError,
+    AvatarFileIssue.unsupportedType => l10n.selectedImageUnsupportedTypeError,
+  };
+}
+
+Future<String> _storeManualAvatar(String sourceName, Uint8List bytes) async {
+  final mimeType = validateRasterAvatarBytes(bytes);
   Directory base;
   try {
     base = await getApplicationDocumentsDirectory();
@@ -1639,27 +1667,17 @@ Future<String> _storeManualAvatar(String sourceName, List<int> bytes) async {
   if (!await avatars.exists()) {
     await avatars.create(recursive: true);
   }
-  final extension = _manualAvatarExtension(sourceName);
+  final extension = switch (mimeType) {
+    'image/jpeg' => 'jpg',
+    'image/webp' => 'webp',
+    'image/gif' => 'gif',
+    _ => 'png',
+  };
   final stem = _manualAvatarStem(sourceName);
   final fileName =
       'manual_${DateTime.now().toUtc().microsecondsSinceEpoch}_$stem.$extension';
   await File('${avatars.path}/$fileName').writeAsBytes(bytes, flush: true);
   return 'local-avatar:$fileName';
-}
-
-String _manualAvatarExtension(String sourceName) {
-  final lower = sourceName.toLowerCase();
-  final dot = lower.lastIndexOf('.');
-  if (dot == -1 || dot == lower.length - 1) {
-    return 'png';
-  }
-  final extension = lower
-      .substring(dot + 1)
-      .replaceAll(RegExp(r'[^a-z0-9]'), '');
-  return switch (extension) {
-    'jpg' || 'jpeg' || 'png' || 'webp' || 'gif' => extension,
-    _ => 'png',
-  };
 }
 
 String _manualAvatarStem(String sourceName) {

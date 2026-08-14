@@ -824,6 +824,8 @@
   "chooseMemberAvatarTitle": "Choose member avatar",
   "noImageSelectedStatus": "No image selected.",
   "selectedImageEmptyError": "Selected image was empty.",
+  "selectedImageTooLargeError": "Choose an image smaller than 10 MB.",
+  "selectedImageUnsupportedTypeError": "Choose a PNG, JPEG, WebP, or GIF image.",
   "avatarSavedStatus": "Avatar saved on device.",
   "couldNotSaveAvatar": "Could not save avatar: {error}",
   "@couldNotSaveAvatar": {

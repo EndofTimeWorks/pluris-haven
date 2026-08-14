@@ -492,25 +492,22 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   Future<void> _chooseAvatar() async {
     final l10n = AppLocalizations.of(context);
     setState(() => _avatarMessage = l10n.openingImagePickerStatus);
-    final result = await NativeFileDialog.pickFiles(
-      type: NativeFileType.image,
-      allowMultiple: false,
-      dialogTitle: l10n.chooseCustomFrontAvatarTitle,
-    );
-    final files = result?.files ?? const <NativePlatformFile>[];
-    final file = files.isEmpty ? null : files.first;
-    if (file == null) {
-      if (mounted) {
-        setState(() => _avatarMessage = l10n.noImageSelectedStatus);
-      }
-      return;
-    }
-
     try {
-      final bytes = await file.readBytes();
-      if (bytes.isEmpty) {
-        throw FormatException(l10n.selectedImageEmptyError);
+      final result = await NativeFileDialog.pickFiles(
+        type: NativeFileType.image,
+        allowMultiple: false,
+        dialogTitle: l10n.chooseCustomFrontAvatarTitle,
+        maximumBytes: maximumAvatarBytes,
+      );
+      final files = result?.files ?? const <NativePlatformFile>[];
+      final file = files.isEmpty ? null : files.first;
+      if (file == null) {
+        if (mounted) {
+          setState(() => _avatarMessage = l10n.noImageSelectedStatus);
+        }
+        return;
       }
+      final bytes = await _readManualAvatarFile(file);
       final ref = await _storeManualAvatar(file.name, bytes);
       if (!mounted) {
         return;
@@ -521,7 +518,11 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
       });
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _avatarMessage = l10n.couldNotSaveAvatar(error));
+        setState(
+          () => _avatarMessage =
+              _manualAvatarValidationMessage(l10n, error) ??
+              l10n.couldNotSaveAvatar(error),
+        );
       }
     }
   }
