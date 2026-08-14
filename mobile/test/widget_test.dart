@@ -90,7 +90,7 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('set front'));
+    await tester.tap(find.text('Set front'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -111,7 +111,7 @@ void main() {
       'blurry co-con is fronting.',
     );
 
-    await tester.tap(find.text('set front'));
+    await tester.tap(find.text('Set front'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Clear'));
@@ -250,7 +250,7 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('set front'));
+    await tester.tap(find.text('Set front'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -331,13 +331,10 @@ void main() {
     await tester.tap(find.byTooltip('Set saved front').last);
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
-    expect(
-      find.bySemanticsLabel('River is currently fronting'),
-      findsOneWidget,
-    );
-    expect(find.bySemanticsLabel('Sage is currently fronting'), findsOneWidget);
+    expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
 
-    await tester.tap(find.text('set front'));
+    await tester.tap(find.text('Set front'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Delete saved front').first);
     await tester.pumpAndSettle();

@@ -589,8 +589,9 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     return Semantics(
-      label: AppLocalizations.of(context).statusSemanticLabel(text),
+      label: l10n?.statusSemanticLabel(text) ?? 'Status $text',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _spSurface,
