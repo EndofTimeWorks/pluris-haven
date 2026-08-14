@@ -2169,38 +2169,50 @@ abstract class AppLocalizations {
   /// No description provided for @encryptedExportDescription.
   ///
   /// In en, this message translates to:
-  /// **'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.'**
+  /// **'Saves an encrypted archive protected by a recovery code generated on this device. The code is not stored, so a lost code cannot be recovered.'**
   String get encryptedExportDescription;
 
-  /// No description provided for @confirmPassphraseFieldLabel.
+  /// No description provided for @generatedRecoveryCodeFieldLabel.
   ///
   /// In en, this message translates to:
-  /// **'Confirm passphrase'**
-  String get confirmPassphraseFieldLabel;
+  /// **'Generated recovery code'**
+  String get generatedRecoveryCodeFieldLabel;
 
-  /// No description provided for @generateStrongPassphraseButton.
+  /// No description provided for @confirmRecoveryCodeFieldLabel.
   ///
   /// In en, this message translates to:
-  /// **'Generate strong passphrase'**
-  String get generateStrongPassphraseButton;
+  /// **'Re-enter recovery code'**
+  String get confirmRecoveryCodeFieldLabel;
 
-  /// No description provided for @generatedPassphraseStatus.
+  /// No description provided for @generateRecoveryCodeButton.
   ///
   /// In en, this message translates to:
-  /// **'Generated locally with 192 bits of randomness. Save it in your password manager; Pluris Haven cannot recover it.'**
-  String get generatedPassphraseStatus;
+  /// **'Generate recovery code'**
+  String get generateRecoveryCodeButton;
 
-  /// No description provided for @showPassphraseTooltip.
+  /// No description provided for @generateRecoveryCodeFirst.
   ///
   /// In en, this message translates to:
-  /// **'Show passphrase'**
-  String get showPassphraseTooltip;
+  /// **'Generate a recovery code first.'**
+  String get generateRecoveryCodeFirst;
 
-  /// No description provided for @hidePassphraseTooltip.
+  /// No description provided for @generatedRecoveryCodeStatus.
   ///
   /// In en, this message translates to:
-  /// **'Hide passphrase'**
-  String get hidePassphraseTooltip;
+  /// **'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.'**
+  String get generatedRecoveryCodeStatus;
+
+  /// No description provided for @showRecoveryCodeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show recovery code'**
+  String get showRecoveryCodeTooltip;
+
+  /// No description provided for @hideRecoveryCodeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide recovery code'**
+  String get hideRecoveryCodeTooltip;
 
   /// No description provided for @encryptedExportStatusSemanticLabel.
   ///
@@ -2220,29 +2232,11 @@ abstract class AppLocalizations {
   /// **'Save encrypted file'**
   String get saveEncryptedFileButton;
 
-  /// No description provided for @passphraseMinimumLength.
+  /// No description provided for @recoveryCodesDoNotMatch.
   ///
   /// In en, this message translates to:
-  /// **'Use at least 16 characters.'**
-  String get passphraseMinimumLength;
-
-  /// No description provided for @passphraseTooCommon.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a less common passphrase.'**
-  String get passphraseTooCommon;
-
-  /// No description provided for @passphraseTooRepetitive.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a passphrase with less repetition.'**
-  String get passphraseTooRepetitive;
-
-  /// No description provided for @passphrasesDoNotMatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Passphrases do not match.'**
-  String get passphrasesDoNotMatch;
+  /// **'Recovery codes do not match.'**
+  String get recoveryCodesDoNotMatch;
 
   /// No description provided for @buildingArchiveStatus.
   ///

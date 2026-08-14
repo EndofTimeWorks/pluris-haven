@@ -993,6 +993,7 @@ class EncryptedArchiveSheet extends StatefulWidget {
 class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
   final _passphraseController = TextEditingController();
   final _confirmController = TextEditingController();
+  ArchiveRecoveryCode? _recoveryCode;
   bool _isSaving = false;
   bool _obscurePassphrases = true;
   String? _status;
@@ -1033,18 +1034,19 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
             TextField(
               key: const ValueKey('encrypted-export-passphrase-field'),
               controller: _passphraseController,
+              readOnly: true,
               obscureText: _obscurePassphrases,
               autocorrect: false,
               enableSuggestions: false,
               keyboardType: TextInputType.visiblePassword,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
-                labelText: l10n.passphraseFieldLabel,
+                labelText: l10n.generatedRecoveryCodeFieldLabel,
                 suffixIcon: IconButton(
                   onPressed: _togglePassphraseVisibility,
                   tooltip: _obscurePassphrases
-                      ? l10n.showPassphraseTooltip
-                      : l10n.hidePassphraseTooltip,
+                      ? l10n.showRecoveryCodeTooltip
+                      : l10n.hideRecoveryCodeTooltip,
                   icon: Icon(
                     _obscurePassphrases
                         ? Icons.visibility_rounded
@@ -1063,7 +1065,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
               keyboardType: TextInputType.visiblePassword,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
-                labelText: l10n.confirmPassphraseFieldLabel,
+                labelText: l10n.confirmRecoveryCodeFieldLabel,
               ),
             ),
             const SizedBox(height: 10),
@@ -1071,7 +1073,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
               key: const ValueKey('generate-archive-passphrase-button'),
               onPressed: _isSaving ? null : _generatePassphrase,
               icon: const Icon(Icons.password_rounded),
-              label: Text(l10n.generateStrongPassphraseButton),
+              label: Text(l10n.generateRecoveryCodeButton),
             ),
             if (_status != null) ...[
               const SizedBox(height: 10),
@@ -1116,34 +1118,30 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
   }
 
   Future<void> _generatePassphrase() async {
-    final generated = await generateArchivePassphrase();
+    final generated = await generateArchiveRecoveryCode();
     if (!mounted) return;
     setState(() {
-      _passphraseController.text = generated;
-      _confirmController.text = generated;
+      _recoveryCode = generated;
+      _passphraseController.text = generated.value;
+      _confirmController.clear();
       _obscurePassphrases = false;
-      _status = AppLocalizations.of(context).generatedPassphraseStatus;
+      _status = AppLocalizations.of(context).generatedRecoveryCodeStatus;
     });
   }
 
   Future<void> _saveEncryptedArchive() async {
     final l10n = AppLocalizations.of(context);
-    final passphrase = _passphraseController.text;
-    final confirm = _confirmController.text;
-    final passphraseIssue = archivePassphraseIssue(passphrase);
-    if (passphraseIssue != null) {
+    final recoveryCode = _recoveryCode;
+    if (recoveryCode == null) {
       setState(() {
-        _status = switch (passphraseIssue) {
-          ArchivePassphraseIssue.tooShort => l10n.passphraseMinimumLength,
-          ArchivePassphraseIssue.common => l10n.passphraseTooCommon,
-          ArchivePassphraseIssue.repetitive => l10n.passphraseTooRepetitive,
-        };
+        _status = l10n.generateRecoveryCodeFirst;
       });
       return;
     }
-    if (passphrase != confirm) {
+    final confirm = _confirmController.text;
+    if (recoveryCode.value != confirm) {
       setState(() {
-        _status = l10n.passphrasesDoNotMatch;
+        _status = l10n.recoveryCodesDoNotMatch;
       });
       return;
     }
@@ -1162,7 +1160,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       });
       final encrypted = await encryptArchiveJson(
         archiveJson: archiveJson,
-        passphrase: passphrase,
+        recoveryCode: recoveryCode,
       );
       final saved = await NativeFileDialog.saveBytes(
         dialogTitle: l10n.saveEncryptedArchiveDialogTitle,

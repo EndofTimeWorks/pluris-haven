@@ -34,6 +34,12 @@ const _commonArchivePassphraseFragments = {
 
 final _archiveCipher = Xchacha20.poly1305Aead();
 
+final class ArchiveRecoveryCode {
+  const ArchiveRecoveryCode._(this.value);
+
+  final String value;
+}
+
 bool archiveTextLooksEncrypted(String text) {
   try {
     final decoded = jsonDecode(text);
@@ -46,10 +52,13 @@ bool archiveTextLooksEncrypted(String text) {
 
 Future<String> encryptArchiveJson({
   required String archiveJson,
-  required String passphrase,
+  required ArchiveRecoveryCode recoveryCode,
 }) {
   return Isolate.run(
-    () => _encryptArchiveJson(archiveJson: archiveJson, passphrase: passphrase),
+    () => _encryptArchiveJson(
+      archiveJson: archiveJson,
+      passphrase: recoveryCode.value,
+    ),
   );
 }
 
@@ -115,8 +124,8 @@ ArchivePassphraseIssue? archivePassphraseIssue(String passphrase) {
 bool isArchivePassphraseValid(String passphrase) =>
     archivePassphraseIssue(passphrase) == null;
 
-/// Generates a 192-bit recovery passphrase locally using the platform CSPRNG.
-Future<String> generateArchivePassphrase() async {
+/// Generates a 192-bit recovery code locally using the platform CSPRNG.
+Future<ArchiveRecoveryCode> generateArchiveRecoveryCode() async {
   for (var attempt = 0; attempt < 8; attempt++) {
     final bytes = await SecretKeyData.random(length: 24).extractBytes();
     final encoded = base64Url.encode(bytes).replaceAll('=', '');
@@ -125,7 +134,9 @@ Future<String> generateArchivePassphrase() async {
       (index) => encoded.substring(index * 4, index * 4 + 4),
       growable: false,
     ).join('.');
-    if (isArchivePassphraseValid(grouped)) return grouped;
+    if (isArchivePassphraseValid(grouped)) {
+      return ArchiveRecoveryCode._(grouped);
+    }
   }
   throw StateError('Could not generate a recovery passphrase.');
 }

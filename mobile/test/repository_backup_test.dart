@@ -47,13 +47,14 @@ void main() {
       await source.ensureLocalSystem();
       await source.saveMember(const MemberDraft(displayName: 'River'));
 
+      final recoveryCode = await generateArchiveRecoveryCode();
       final encrypted = await encryptArchiveJson(
         archiveJson: await source.buildLocalArchiveJson(),
-        passphrase: 'portable-recovery-passphrase',
+        recoveryCode: recoveryCode,
       );
       final archiveJson = await decryptArchiveJson(
         encryptedArchiveJson: encrypted,
-        passphrase: 'portable-recovery-passphrase',
+        passphrase: recoveryCode.value,
       );
       await sourceDatabase.close();
 

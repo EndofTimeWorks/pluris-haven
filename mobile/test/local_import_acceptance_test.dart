@@ -104,13 +104,14 @@ void main() {
         reason: 'Re-importing the same external IDs must not duplicate data.',
       );
 
+      final recoveryCode = await generateArchiveRecoveryCode();
       final encrypted = await encryptArchiveJson(
         archiveJson: secondExport,
-        passphrase: 'local-acceptance-test-passphrase',
+        recoveryCode: recoveryCode,
       );
       final decrypted = await decryptArchiveJson(
         encryptedArchiveJson: encrypted,
-        passphrase: 'local-acceptance-test-passphrase',
+        passphrase: recoveryCode.value,
       );
       expect(_archiveCollectionCounts(_decodeArchive(decrypted)), firstCounts);
       await importedAvatar.delete();

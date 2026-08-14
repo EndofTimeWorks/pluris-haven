@@ -99,13 +99,16 @@ void main() {
   group('archive encryption', () {
     const archive =
         '{"format":"pluris_haven.local_archive","version":1,"members":[]}';
-    const passphrase = 'violet river 92! lantern';
+    late String passphrase;
+    late ArchiveRecoveryCode recoveryCode;
     late String encrypted;
 
     setUpAll(() async {
+      recoveryCode = await generateArchiveRecoveryCode();
+      passphrase = recoveryCode.value;
       encrypted = await encryptArchiveJson(
         archiveJson: archive,
-        passphrase: passphrase,
+        recoveryCode: recoveryCode,
       );
     });
 
@@ -195,26 +198,9 @@ void main() {
       expect(
         await decryptArchiveJson(
           encryptedArchiveJson: legacy,
-          passphrase: passphrase,
+          passphrase: 'violet river 92! lantern',
         ),
         '{"format":"pluris_haven.local_archive","version":1}',
-      );
-    });
-
-    test('refuses a weak passphrase before writing an archive', () async {
-      const rejected = 'too short';
-      await expectLater(
-        encryptArchiveJson(
-          archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-          passphrase: rejected,
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.toString(),
-            'message',
-            isNot(contains(rejected)),
-          ),
-        ),
       );
     });
 
@@ -241,7 +227,7 @@ void main() {
     test('generates unique high-entropy recovery passphrases', () async {
       final generated = <String>{};
       for (var index = 0; index < 8; index++) {
-        final passphrase = await generateArchivePassphrase();
+        final passphrase = (await generateArchiveRecoveryCode()).value;
         expect(
           passphrase,
           matches(RegExp(r'^[A-Za-z0-9_-]{4}(\.[A-Za-z0-9_-]{4}){7}$')),

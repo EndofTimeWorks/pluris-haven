@@ -1195,23 +1195,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get encryptedExportDescription =>
-      'Saves a password-protected archive file. The password is not stored, so a lost password cannot be recovered.';
+      'Saves an encrypted archive protected by a recovery code generated on this device. The code is not stored, so a lost code cannot be recovered.';
 
   @override
-  String get confirmPassphraseFieldLabel => 'Confirm passphrase';
+  String get generatedRecoveryCodeFieldLabel => 'Generated recovery code';
 
   @override
-  String get generateStrongPassphraseButton => 'Generate strong passphrase';
+  String get confirmRecoveryCodeFieldLabel => 'Re-enter recovery code';
 
   @override
-  String get generatedPassphraseStatus =>
-      'Generated locally with 192 bits of randomness. Save it in your password manager; Pluris Haven cannot recover it.';
+  String get generateRecoveryCodeButton => 'Generate recovery code';
 
   @override
-  String get showPassphraseTooltip => 'Show passphrase';
+  String get generateRecoveryCodeFirst => 'Generate a recovery code first.';
 
   @override
-  String get hidePassphraseTooltip => 'Hide passphrase';
+  String get generatedRecoveryCodeStatus =>
+      'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.';
+
+  @override
+  String get showRecoveryCodeTooltip => 'Show recovery code';
+
+  @override
+  String get hideRecoveryCodeTooltip => 'Hide recovery code';
 
   @override
   String encryptedExportStatusSemanticLabel(String status) {
@@ -1225,17 +1231,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveEncryptedFileButton => 'Save encrypted file';
 
   @override
-  String get passphraseMinimumLength => 'Use at least 16 characters.';
-
-  @override
-  String get passphraseTooCommon => 'Choose a less common passphrase.';
-
-  @override
-  String get passphraseTooRepetitive =>
-      'Choose a passphrase with less repetition.';
-
-  @override
-  String get passphrasesDoNotMatch => 'Passphrases do not match.';
+  String get recoveryCodesDoNotMatch => 'Recovery codes do not match.';
 
   @override
   String get buildingArchiveStatus => 'Building archive...';

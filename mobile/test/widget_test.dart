@@ -2209,8 +2209,11 @@ void main() {
     );
     addTearDown(repository.close);
 
-    final encrypted = (await tester.runAsync(
-      () => encryptArchiveJson(
+    late String recoveryPassphrase;
+    final encrypted = (await tester.runAsync(() async {
+      final recoveryCode = await generateArchiveRecoveryCode();
+      recoveryPassphrase = recoveryCode.value;
+      return encryptArchiveJson(
         archiveJson: jsonEncode({
           'format': 'pluris_haven.local_archive',
           'version': 1,
@@ -2218,9 +2221,9 @@ void main() {
             {'id': 'member-1', 'display_name': 'Iris'},
           ],
         }),
-        passphrase: 'shared passphrase',
-      ),
-    ))!;
+        recoveryCode: recoveryCode,
+      );
+    }))!;
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -2246,7 +2249,7 @@ void main() {
 
     await tester.enterText(
       find.byKey(const ValueKey('import-passphrase-field')),
-      'shared passphrase',
+      recoveryPassphrase,
     );
     await tester.tap(find.text('Refresh preview'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
@@ -2329,6 +2332,12 @@ void main() {
       findsOneWidget,
     );
     await tester.tap(
+      find.byKey(const ValueKey('save-encrypted-archive-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Generate a recovery code first.'), findsOneWidget);
+
+    await tester.tap(
       find.byKey(const ValueKey('generate-archive-passphrase-button')),
     );
     await tester.pumpAndSettle();
@@ -2339,12 +2348,19 @@ void main() {
       find.byKey(const ValueKey('encrypted-export-confirm-field')),
     );
     expect(passphraseField.controller!.text, isNotEmpty);
-    expect(
-      confirmationField.controller!.text,
-      passphraseField.controller!.text,
-    );
+    expect(passphraseField.readOnly, isTrue);
+    expect(confirmationField.controller!.text, isEmpty);
     expect(passphraseField.obscureText, isFalse);
     expect(find.textContaining('192 bits of randomness'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('encrypted-export-confirm-field')),
+      'not-the-generated-code',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-encrypted-archive-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Recovery codes do not match.'), findsOneWidget);
     expect(find.text('Save encrypted file'), findsOneWidget);
   });
 }
