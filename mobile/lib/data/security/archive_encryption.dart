@@ -15,6 +15,19 @@ const defaultArchiveKdfIterations = 600000;
 const maximumArchiveKdfIterations = 1000000;
 const minimumArchivePassphraseCharacters = 14;
 
+enum ArchivePassphraseIssue { tooShort, common, repetitive }
+
+const _commonArchivePassphrases = {
+  '12345678901234',
+  'correcthorsebatterystaple',
+  'iloveyouiloveyou',
+  'letmeinletmein',
+  'password123456',
+  'passwordpassword',
+  'qwertyuiopasdfgh',
+  'thisismypassword',
+};
+
 final _archiveCipher = Xchacha20.poly1305Aead();
 
 bool archiveTextLooksEncrypted(String text) {
@@ -89,8 +102,40 @@ Future<String> _encryptArchiveJson({
   return const JsonEncoder.withIndent('  ').convert(payload);
 }
 
+ArchivePassphraseIssue? archivePassphraseIssue(String passphrase) {
+  final trimmed = passphrase.trim();
+  final runes = trimmed.runes.toList(growable: false);
+  if (runes.length < minimumArchivePassphraseCharacters) {
+    return ArchivePassphraseIssue.tooShort;
+  }
+
+  final normalized = trimmed.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  if (_commonArchivePassphrases.contains(normalized)) {
+    return ArchivePassphraseIssue.common;
+  }
+  if (runes.toSet().length < 4 || _isRepeatedPassphrase(runes)) {
+    return ArchivePassphraseIssue.repetitive;
+  }
+  return null;
+}
+
 bool isArchivePassphraseValid(String passphrase) =>
-    passphrase.trim().runes.length >= minimumArchivePassphraseCharacters;
+    archivePassphraseIssue(passphrase) == null;
+
+bool _isRepeatedPassphrase(List<int> runes) {
+  for (var unitLength = 1; unitLength <= runes.length ~/ 2; unitLength++) {
+    if (runes.length % unitLength != 0) continue;
+    var matches = true;
+    for (var index = unitLength; index < runes.length; index++) {
+      if (runes[index] != runes[index % unitLength]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return true;
+  }
+  return false;
+}
 
 Future<String> decryptArchiveJson({
   required String encryptedArchiveJson,

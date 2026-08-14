@@ -1065,9 +1065,14 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
     final l10n = AppLocalizations.of(context);
     final passphrase = _passphraseController.text;
     final confirm = _confirmController.text;
-    if (!isArchivePassphraseValid(passphrase)) {
+    final passphraseIssue = archivePassphraseIssue(passphrase);
+    if (passphraseIssue != null) {
       setState(() {
-        _status = l10n.passphraseMinimumLength;
+        _status = switch (passphraseIssue) {
+          ArchivePassphraseIssue.tooShort => l10n.passphraseMinimumLength,
+          ArchivePassphraseIssue.common => l10n.passphraseTooCommon,
+          ArchivePassphraseIssue.repetitive => l10n.passphraseTooRepetitive,
+        };
       });
       return;
     }

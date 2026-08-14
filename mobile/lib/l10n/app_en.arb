@@ -525,6 +525,8 @@
   "encryptingArchiveButton": "Encrypting...",
   "saveEncryptedFileButton": "Save encrypted file",
   "passphraseMinimumLength": "Use at least 14 characters.",
+  "passphraseTooCommon": "Choose a less common passphrase.",
+  "passphraseTooRepetitive": "Choose a passphrase with less repetition.",
   "passphrasesDoNotMatch": "Passphrases do not match.",
   "buildingArchiveStatus": "Building archive...",
   "encryptingArchiveStatus": "Encrypting archive...",

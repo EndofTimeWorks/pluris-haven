@@ -2190,6 +2190,18 @@ abstract class AppLocalizations {
   /// **'Use at least 14 characters.'**
   String get passphraseMinimumLength;
 
+  /// No description provided for @passphraseTooCommon.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a less common passphrase.'**
+  String get passphraseTooCommon;
+
+  /// No description provided for @passphraseTooRepetitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a passphrase with less repetition.'**
+  String get passphraseTooRepetitive;
+
   /// No description provided for @passphrasesDoNotMatch.
   ///
   /// In en, this message translates to:

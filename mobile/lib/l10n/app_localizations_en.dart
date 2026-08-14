@@ -1208,6 +1208,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passphraseMinimumLength => 'Use at least 14 characters.';
 
   @override
+  String get passphraseTooCommon => 'Choose a less common passphrase.';
+
+  @override
+  String get passphraseTooRepetitive =>
+      'Choose a passphrase with less repetition.';
+
+  @override
   String get passphrasesDoNotMatch => 'Passphrases do not match.';
 
   @override

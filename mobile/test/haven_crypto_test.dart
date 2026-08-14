@@ -102,7 +102,7 @@ void main() {
           '{"format":"pluris_haven.local_archive","version":1,"members":[]}';
       final encrypted = await encryptArchiveJson(
         archiveJson: archive,
-        passphrase: 'correct horse battery staple',
+        passphrase: 'violet river 92! lantern',
       );
 
       expect(encrypted, isNot(contains('local_archive')));
@@ -114,7 +114,7 @@ void main() {
       expect(
         await decryptArchiveJson(
           encryptedArchiveJson: encrypted,
-          passphrase: 'correct horse battery staple',
+          passphrase: 'violet river 92! lantern',
         ),
         equals(archive),
       );
@@ -198,6 +198,18 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+
+    test('refuses common and repetitive recovery passphrases', () {
+      expect(
+        archivePassphraseIssue('passwordpassword'),
+        ArchivePassphraseIssue.common,
+      );
+      expect(
+        archivePassphraseIssue('abcdabcdabcdabcd'),
+        ArchivePassphraseIssue.repetitive,
+      );
+      expect(archivePassphraseIssue('violet river 92! lantern'), isNull);
     });
   });
 }
