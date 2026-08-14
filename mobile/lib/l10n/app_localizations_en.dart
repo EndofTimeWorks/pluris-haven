@@ -1042,6 +1042,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Used locally to decrypt the preview and import.';
 
   @override
+  String get retainRawImportPayloadsTitle => 'Keep original source collections';
+
+  @override
+  String get retainRawImportPayloadsDescription =>
+      'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.';
+
+  @override
   String get inputLabel => 'Input';
 
   @override
@@ -2861,6 +2868,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importJobsSubtitle => 'open import details and errors';
+
+  @override
+  String get retainedImportPayloadsTitle => 'Retained import sources';
+
+  @override
+  String get retainedImportPayloadsDescription =>
+      'These encrypted source collections are not used by the app. You can remove them without deleting mapped members, notes, or other imported records.';
+
+  @override
+  String retainedImportPayloadSummary(String source, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collections',
+      one: '1 collection',
+    );
+    return '$source: $_temp0';
+  }
+
+  @override
+  String get deleteRetainedImportPayloadsTooltip =>
+      'Delete retained source collections';
+
+  @override
+  String get deleteRetainedImportPayloadsTitle =>
+      'Delete retained source collections?';
+
+  @override
+  String deleteRetainedImportPayloadsDescription(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count encrypted source collections',
+      one: '1 encrypted source collection',
+    );
+    return 'This permanently removes $_temp0. Mapped imported records stay in the app.';
+  }
+
+  @override
+  String get retainedImportPayloadsDeleted =>
+      'Retained source collections deleted';
 
   @override
   String get localEventLogSubtitle => 'local event log';

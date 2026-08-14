@@ -2115,6 +2115,10 @@ void main() {
     await _pumpUntilFound(tester, find.text('Restore rehearsal passed'));
 
     expect(find.text('Restore rehearsal passed'), findsOneWidget);
+    final rehearsedArchive =
+        jsonDecode(repository.lastRehearsedArchiveJson!)
+            as Map<String, dynamic>;
+    expect(rehearsedArchive['raw_payloads'], isEmpty);
     expect(
       find.textContaining('Nothing was written to your app data'),
       findsOneWidget,
@@ -2473,6 +2477,7 @@ class FakeHavenRepository implements HavenRepository {
   List<Tag> _tags = const [];
   List<JournalEntry> _journals = const [];
   List<String> _currentFrontMemberIds = const [];
+  String? lastRehearsedArchiveJson;
   final Map<String, List<String>> _namedFrontMembers = {};
   Map<String, List<String>> _memberTagIds = const {};
   late final StreamController<HomeSnapshot> _controller;
@@ -2603,6 +2608,14 @@ class FakeHavenRepository implements HavenRepository {
   Stream<List<BackgroundJobSummary>> watchBackgroundJobs() {
     return _backgroundJobsController.stream.map(List.unmodifiable);
   }
+
+  @override
+  Stream<List<RetainedImportPayloadSummary>> watchRetainedImportPayloads() {
+    return Stream.value(const []);
+  }
+
+  @override
+  Future<void> deleteRetainedImportPayloads(String importRecordId) async {}
 
   @override
   Stream<AppCustomization> watchCustomization() async* {
@@ -3711,6 +3724,7 @@ class FakeHavenRepository implements HavenRepository {
     String? fileName,
     ImportSource source = ImportSource.plurisHavenArchive,
   }) async {
+    lastRehearsedArchiveJson = archiveJson;
     final decoded = jsonDecode(archiveJson);
     final archive = decoded is Map<String, Object?> ? decoded : const {};
     int countList(String key) =>

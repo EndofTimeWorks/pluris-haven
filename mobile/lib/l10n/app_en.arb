@@ -455,6 +455,8 @@
   "pluralKitTokenHelper": "Used for this fetch only. It is not saved or logged.",
   "passphraseFieldLabel": "Passphrase",
   "importPassphraseHelper": "Used locally to decrypt the preview and import.",
+  "retainRawImportPayloadsTitle": "Keep original source collections",
+  "retainRawImportPayloadsDescription": "Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.",
   "inputLabel": "Input",
   "jobLabel": "Job",
   "dedupeLabel": "Dedupe",
@@ -1101,6 +1103,22 @@
   "relatedTitle": "Related",
   "importJobsTitle": "Import jobs",
   "importJobsSubtitle": "open import details and errors",
+  "retainedImportPayloadsTitle": "Retained import sources",
+  "retainedImportPayloadsDescription": "These encrypted source collections are not used by the app. You can remove them without deleting mapped members, notes, or other imported records.",
+  "retainedImportPayloadSummary": "{source}: {count, plural, =1{1 collection} other{{count} collections}}",
+  "@retainedImportPayloadSummary": {
+    "placeholders": {
+      "source": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "deleteRetainedImportPayloadsTooltip": "Delete retained source collections",
+  "deleteRetainedImportPayloadsTitle": "Delete retained source collections?",
+  "deleteRetainedImportPayloadsDescription": "This permanently removes {count, plural, =1{1 encrypted source collection} other{{count} encrypted source collections}}. Mapped imported records stay in the app.",
+  "@deleteRetainedImportPayloadsDescription": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "retainedImportPayloadsDeleted": "Retained source collections deleted",
   "notificationHistoryTitle": "Notification history",
   "localEventLogSubtitle": "local event log",
   "localReportHeading": "Pluris Haven local report",

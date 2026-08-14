@@ -1926,6 +1926,18 @@ abstract class AppLocalizations {
   /// **'Used locally to decrypt the preview and import.'**
   String get importPassphraseHelper;
 
+  /// No description provided for @retainRawImportPayloadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep original source collections'**
+  String get retainRawImportPayloadsTitle;
+
+  /// No description provided for @retainRawImportPayloadsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.'**
+  String get retainRawImportPayloadsDescription;
+
   /// No description provided for @inputLabel.
   ///
   /// In en, this message translates to:
@@ -5008,6 +5020,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'open import details and errors'**
   String get importJobsSubtitle;
+
+  /// No description provided for @retainedImportPayloadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retained import sources'**
+  String get retainedImportPayloadsTitle;
+
+  /// No description provided for @retainedImportPayloadsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These encrypted source collections are not used by the app. You can remove them without deleting mapped members, notes, or other imported records.'**
+  String get retainedImportPayloadsDescription;
+
+  /// No description provided for @retainedImportPayloadSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{source}: {count, plural, =1{1 collection} other{{count} collections}}'**
+  String retainedImportPayloadSummary(String source, int count);
+
+  /// No description provided for @deleteRetainedImportPayloadsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete retained source collections'**
+  String get deleteRetainedImportPayloadsTooltip;
+
+  /// No description provided for @deleteRetainedImportPayloadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete retained source collections?'**
+  String get deleteRetainedImportPayloadsTitle;
+
+  /// No description provided for @deleteRetainedImportPayloadsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently removes {count, plural, =1{1 encrypted source collection} other{{count} encrypted source collections}}. Mapped imported records stay in the app.'**
+  String deleteRetainedImportPayloadsDescription(int count);
+
+  /// No description provided for @retainedImportPayloadsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Retained source collections deleted'**
+  String get retainedImportPayloadsDeleted;
 
   /// No description provided for @localEventLogSubtitle.
   ///

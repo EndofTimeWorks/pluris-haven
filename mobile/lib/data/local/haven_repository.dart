@@ -78,6 +78,22 @@ class BackgroundJobSummary {
   bool get isActive => status == 'queued' || status == 'running';
 }
 
+class RetainedImportPayloadSummary {
+  const RetainedImportPayloadSummary({
+    required this.importRecordId,
+    required this.source,
+    required this.collections,
+    required this.payloadCount,
+    required this.importedAt,
+  });
+
+  final String importRecordId;
+  final String source;
+  final List<String> collections;
+  final int payloadCount;
+  final DateTime importedAt;
+}
+
 class PrivacyBucketSummary {
   const PrivacyBucketSummary({
     required this.id,
@@ -910,6 +926,10 @@ abstract interface class HavenRepository {
   });
 
   Stream<List<BackgroundJobSummary>> watchBackgroundJobs();
+
+  Stream<List<RetainedImportPayloadSummary>> watchRetainedImportPayloads();
+
+  Future<void> deleteRetainedImportPayloads(String importRecordId);
 
   Future<String> enqueueImportArchiveJob(
     String archiveJson, {
@@ -2024,6 +2044,54 @@ class LocalHavenRepository implements HavenRepository {
         for (final row in rows) await _backgroundJobSummary(row),
       ],
     );
+  }
+
+  @override
+  Stream<List<RetainedImportPayloadSummary>> watchRetainedImportPayloads() {
+    return database
+        .customSelect(
+          '''
+SELECT
+  import_record_id,
+  source,
+  imported_at,
+  COUNT(*) AS payload_count,
+  GROUP_CONCAT(collection, char(31)) AS collections
+FROM import_payloads
+WHERE system_id = ?
+GROUP BY import_record_id, source, imported_at
+ORDER BY imported_at DESC
+''',
+          variables: [Variable(localSystemId)],
+          readsFrom: {database.importPayloads},
+        )
+        .watch()
+        .map(
+          (rows) => [
+            for (final row in rows)
+              RetainedImportPayloadSummary(
+                importRecordId: row.read<String>('import_record_id'),
+                source: row.read<String>('source'),
+                collections:
+                    row
+                        .read<String>('collections')
+                        .split(String.fromCharCode(31))
+                      ..sort(),
+                payloadCount: row.read<int>('payload_count'),
+                importedAt: row.read<DateTime>('imported_at'),
+              ),
+          ],
+        );
+  }
+
+  @override
+  Future<void> deleteRetainedImportPayloads(String importRecordId) {
+    return (database.delete(database.importPayloads)..where(
+          (payload) =>
+              payload.systemId.equals(localSystemId) &
+              payload.importRecordId.equals(importRecordId),
+        ))
+        .go();
   }
 
   Future<BackgroundJobSummary> _backgroundJobSummary(BackgroundJob row) async {

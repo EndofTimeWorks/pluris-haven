@@ -2,6 +2,12 @@ part of 'home_page.dart';
 
 const _maximumPastedImportCharacters = 256 * 1024;
 
+String _withoutRawImportPayloads(String archiveJson) {
+  final decoded = jsonDecode(archiveJson);
+  if (decoded is! Map<String, Object?>) return archiveJson;
+  return jsonEncode({...decoded, 'raw_payloads': const <Object?>[]});
+}
+
 class ImportExportPage extends StatefulWidget {
   const ImportExportPage({super.key, required this.repository});
 
@@ -26,6 +32,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   bool _isPickingImport = false;
   bool _isApplyingImport = false;
   bool _isRehearsingRestore = false;
+  bool _retainRawPayloads = false;
   String? _importStatus;
   bool _canReportImportIssue = false;
   int _previewGeneration = 0;
@@ -85,6 +92,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
               (_source == ImportSource.pluralKitLive &&
                   _pluralKitToken.trim().isNotEmpty),
           avatarAssetCount: _fileAvatarAssets.length,
+          retainRawPayloads: _retainRawPayloads,
+          onRetainRawPayloadsChanged: (value) {
+            setState(() => _retainRawPayloads = value);
+          },
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
           const SizedBox(height: 12),
@@ -111,6 +122,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
         ],
         const SizedBox(height: 12),
         ImportJobsCard(repository: widget.repository),
+        const SizedBox(height: 12),
+        RetainedImportPayloadsCard(repository: widget.repository),
         const SizedBox(height: 2),
         SpSettingsGroup(
           title: l10n.exportTitle,
@@ -557,8 +570,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
         text: effectiveText,
         avatarAssets: _fileAvatarAssets,
       );
+      final archiveJson = _retainRawPayloads
+          ? normalized.archiveJson
+          : _withoutRawImportPayloads(normalized.archiveJson);
       final summary = await widget.repository.rehearseLocalArchiveRestore(
-        normalized.archiveJson,
+        archiveJson,
         strategy: _strategy,
         fileName: _fileName,
         source: _source,
@@ -610,6 +626,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
         text: effectiveText,
         avatarAssets: _fileAvatarAssets,
       );
+      final archiveJson = _retainRawPayloads
+          ? normalized.archiveJson
+          : _withoutRawImportPayloads(normalized.archiveJson);
       appDebugLog(
         'Apply import source=${_source.name} file=${_fileName ?? 'import.json'} '
         'counts=${normalized.counts} warnings=${normalized.warnings.length}',
@@ -625,9 +644,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
       var effectiveStrategy = _strategy;
       if (effectiveStrategy == ImportConflictStrategy.prompt) {
-        final conflictResult = await _promptForConflicts(
-          normalized.archiveJson,
-        );
+        final conflictResult = await _promptForConflicts(archiveJson);
         if (conflictResult.cancelled) {
           if (mounted) {
             setState(() {
@@ -643,7 +660,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
 
       final jobId = await widget.repository.enqueueImportArchiveJob(
-        normalized.archiveJson,
+        archiveJson,
         strategy: effectiveStrategy,
         fileName: _fileName,
         source: _source,
@@ -1427,6 +1444,8 @@ class ImportSetupCard extends StatelessWidget {
     required this.onStrategyChanged,
     required this.canPreview,
     required this.avatarAssetCount,
+    required this.retainRawPayloads,
+    required this.onRetainRawPayloadsChanged,
   });
 
   final ImportSource source;
@@ -1439,6 +1458,7 @@ class ImportSetupCard extends StatelessWidget {
   final bool needsPassphrase;
   final bool canPreview;
   final int avatarAssetCount;
+  final bool retainRawPayloads;
   final VoidCallback onPickFile;
   final VoidCallback onPickAvatars;
   final VoidCallback onPasteJson;
@@ -1447,6 +1467,7 @@ class ImportSetupCard extends StatelessWidget {
   final ValueChanged<String> onTokenChanged;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
+  final ValueChanged<bool> onRetainRawPayloadsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1556,6 +1577,19 @@ class ImportSetupCard extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: l10n.passphraseFieldLabel,
                 helperText: l10n.importPassphraseHelper,
+              ),
+            ),
+          ],
+          if ((preview?.counts['raw_payloads'] ?? 0) > 0) ...[
+            const SizedBox(height: 10),
+            Material(
+              color: Colors.transparent,
+              child: SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: retainRawPayloads,
+                onChanged: onRetainRawPayloadsChanged,
+                title: Text(l10n.retainRawImportPayloadsTitle),
+                subtitle: Text(l10n.retainRawImportPayloadsDescription),
               ),
             ),
           ],
@@ -1910,6 +1944,90 @@ class ImportProgressCard extends StatelessWidget {
 final _importIssueUri = Uri.parse(
   'https://github.com/EndofTimeWorks/pluris-haven/issues/new',
 );
+
+class RetainedImportPayloadsCard extends StatelessWidget {
+  const RetainedImportPayloadsCard({super.key, required this.repository});
+
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return StreamBuilder<List<RetainedImportPayloadSummary>>(
+      stream: repository.watchRetainedImportPayloads(),
+      builder: (context, snapshot) {
+        final retained = snapshot.data ?? const [];
+        if (retained.isEmpty) return const SizedBox.shrink();
+        return SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(title: l10n.retainedImportPayloadsTitle),
+              const SizedBox(height: 6),
+              Text(
+                l10n.retainedImportPayloadsDescription,
+                style: const TextStyle(color: _spMuted, height: 1.35),
+              ),
+              const SizedBox(height: 10),
+              for (final item in retained)
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.retainedImportPayloadSummary(
+                        item.source,
+                        item.payloadCount,
+                      ),
+                    ),
+                    subtitle: Text(item.collections.join(', ')),
+                    trailing: IconButton(
+                      tooltip: l10n.deleteRetainedImportPayloadsTooltip,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      onPressed: () => _confirmDelete(context, item),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    RetainedImportPayloadSummary item,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteRetainedImportPayloadsTitle),
+        content: Text(
+          l10n.deleteRetainedImportPayloadsDescription(item.payloadCount),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.deleteButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await repository.deleteRetainedImportPayloads(item.importRecordId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.retainedImportPayloadsDeleted)));
+  }
+}
 
 class ImportJobsCard extends StatelessWidget {
   const ImportJobsCard({super.key, required this.repository});

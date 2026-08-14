@@ -1243,6 +1243,13 @@ void main() {
         payloads.map((payload) => payload.collection),
         contains('securityLogs'),
       );
+      final retained = await repository.watchRetainedImportPayloads().first;
+      expect(retained, hasLength(1));
+      expect(retained.single.collections, contains('securityLogs'));
+      await repository.deleteRetainedImportPayloads(
+        retained.single.importRecordId,
+      );
+      expect(await database.select(database.importPayloads).get(), isEmpty);
     },
   );
 
