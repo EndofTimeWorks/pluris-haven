@@ -1550,6 +1550,59 @@ void main() {
     expect(preview.canApply, isTrue);
   });
 
+  test('maps after-front reminder targets to imported member IDs', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'reminders.json',
+      importedAt: DateTime.utc(2026),
+      text: jsonEncode({
+        'members': [
+          {'_id': 'm1', 'name': 'Iris'},
+        ],
+        'repeatedReminders': [
+          {
+            '_id': 'r1',
+            'name': 'Check in',
+            'schedule': 'After Iris fronts',
+            'schedule_kind': 'after_front',
+            'trigger_member_id': 'm1',
+          },
+          {
+            '_id': 'r2',
+            'name': 'Missing target',
+            'schedule': 'After someone fronts',
+            'schedule_kind': 'after_front',
+            'trigger_member_id': 'missing',
+          },
+        ],
+      }),
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final members = (decoded['members'] as List).cast<Map<String, dynamic>>();
+    final reminders = (decoded['reminders'] as List)
+        .cast<Map<String, dynamic>>();
+    final mapped = reminders.singleWhere(
+      (reminder) => reminder['title'] == 'Check in',
+    );
+    final missing = reminders.singleWhere(
+      (reminder) => reminder['title'] == 'Missing target',
+    );
+
+    expect(mapped['trigger_member_id'], members.single['id']);
+    expect(mapped['trigger_type'], 'event');
+    expect(mapped['trigger_event'], 'front_started');
+    expect(mapped['enabled'], isTrue);
+    expect(missing['trigger_member_id'], isNull);
+    expect(missing['enabled'], isFalse);
+    expect(
+      archive.warnings,
+      contains(
+        'Reminder #2 references a member that was not imported; the reminder was disabled.',
+      ),
+    );
+  });
+
   test('normalizes Simply Plural colors and avatar UUID fallbacks', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

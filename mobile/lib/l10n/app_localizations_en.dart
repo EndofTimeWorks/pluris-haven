@@ -750,6 +750,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberOrFrontHelper => 'Queued until this member or label fronts';
 
   @override
+  String get afterFrontTargetLabel => 'Who should trigger it?';
+
+  @override
+  String get afterFrontTargetHelper =>
+      'Choose one member, or trigger for any newly started front.';
+
+  @override
+  String get anyFrontStartsOption => 'Any front starts';
+
+  @override
   String get timeFieldLabel => 'Time';
 
   @override

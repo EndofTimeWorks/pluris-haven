@@ -148,7 +148,11 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
   }
 
   Future<void> _applyFront(NamedFront front) async {
-    await widget.repository.applyNamedFront(front.id);
+    final reminders = await widget.repository.applyNamedFront(front.id);
+    if (!mounted) {
+      return;
+    }
+    await deliverAfterFrontReminders(context, widget.repository, reminders);
     if (!mounted) {
       return;
     }

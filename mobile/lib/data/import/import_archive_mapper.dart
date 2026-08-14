@@ -1466,6 +1466,21 @@ class _ExternalArchiveNormalizer {
       return null;
     }
     final structuredSchedule = _structuredReminderSchedule(reminder, schedule);
+    final triggerMemberId = _firstString(reminder, const [
+      'trigger_member_id',
+      'triggerMemberId',
+      'member_id',
+      'memberId',
+    ]);
+    final mappedTriggerMemberId = triggerMemberId == null
+        ? null
+        : _memberIdsByExternalId[triggerMemberId];
+    if (triggerMemberId != null && mappedTriggerMemberId == null) {
+      warnings.add(
+        'Reminder #${index + 1} references a member that was not imported; '
+        'the reminder was disabled.',
+      );
+    }
 
     final externalId =
         _firstString(reminder, const ['_id', 'id', 'uuid', 'uid']) ??
@@ -1490,7 +1505,24 @@ class _ExternalArchiveNormalizer {
       'schedule_time': structuredSchedule.time,
       'schedule_dow_mask': structuredSchedule.dowMask,
       'schedule_dom': structuredSchedule.dom,
-      'enabled': reminder['enabled'] != false,
+      'trigger_type': structuredSchedule.kind == 'after_front'
+          ? 'event'
+          : (_firstString(reminder, const ['trigger_type', 'triggerType']) ??
+                'repeated'),
+      'trigger_member_id': mappedTriggerMemberId,
+      'trigger_event': structuredSchedule.kind == 'after_front'
+          ? 'front_started'
+          : _firstString(reminder, const ['trigger_event', 'triggerEvent']),
+      'delay_seconds': _intValue(
+        reminder['delay_seconds'] ?? reminder['delaySeconds'],
+      ),
+      'last_fired_at': _dateString(reminder, const [
+        'last_fired_at',
+        'lastFiredAt',
+      ]),
+      'enabled':
+          reminder['enabled'] != false &&
+          (triggerMemberId == null || mappedTriggerMemberId != null),
       'created_at': _dateString(reminder, const ['created_at', 'createdAt']),
       'updated_at': _dateString(reminder, const ['updated_at', 'updatedAt']),
     };

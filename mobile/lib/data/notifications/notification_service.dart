@@ -127,6 +127,55 @@ class NotificationService {
     return cancelNotification(reminderNotificationId(reminderId));
   }
 
+  Future<void> showTriggeredReminderNotification({
+    required String reminderId,
+    required String title,
+    String? body,
+    Duration delay = Duration.zero,
+    required NotificationCopy copy,
+  }) async {
+    if (_plugin == null) return;
+    await _requestPermission();
+
+    final androidDetails = AndroidNotificationDetails(
+      'reminders',
+      copy.remindersChannelName,
+      channelDescription: copy.remindersChannelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      visibility: NotificationVisibility.secret,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(),
+    );
+    final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
+    final notificationTitle = hideAppleContent
+        ? copy.privateReminderTitle
+        : title;
+    final notificationBody = hideAppleContent ? null : body;
+    final id = reminderNotificationId(reminderId);
+
+    if (delay <= Duration.zero) {
+      await _plugin!.show(
+        id: id,
+        title: notificationTitle,
+        body: notificationBody,
+        notificationDetails: details,
+      );
+      return;
+    }
+
+    await _plugin!.zonedSchedule(
+      id: id,
+      title: notificationTitle,
+      body: notificationBody,
+      scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
   Future<void> showFrontStatusNotification({
     required String? frontLabel,
     required NotificationCopy copy,

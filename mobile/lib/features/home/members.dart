@@ -166,9 +166,16 @@ class MemberListTile extends StatelessWidget {
         onTap: () => showMemberProfileSheet(context, repository, member),
         trailing: PopupMenuButton<String>(
           tooltip: l10n.memberActionsTooltip,
-          onSelected: (value) {
+          onSelected: (value) async {
             if (value == 'front') {
-              repository.setFrontMembers([member.id]);
+              final reminders = await repository.setFrontMembers([member.id]);
+              if (context.mounted) {
+                await deliverAfterFrontReminders(
+                  context,
+                  repository,
+                  reminders,
+                );
+              }
             } else if (value == 'edit') {
               showMemberSheet(context, repository, member: member);
             } else if (value == 'duplicate') {
@@ -402,7 +409,16 @@ class MemberProfileSheet extends StatelessWidget {
                 if (!member.archived)
                   FilledButton.icon(
                     onPressed: () async {
-                      await repository.setFrontMembers([member.id]);
+                      final reminders = await repository.setFrontMembers([
+                        member.id,
+                      ]);
+                      if (context.mounted) {
+                        await deliverAfterFrontReminders(
+                          context,
+                          repository,
+                          reminders,
+                        );
+                      }
                       if (context.mounted) {
                         Navigator.pop(context);
                       }

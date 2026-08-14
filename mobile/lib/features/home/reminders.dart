@@ -204,17 +204,17 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   final _timeController = TextEditingController(text: '09:00');
-  final _detailController = TextEditingController();
   ReminderScheduleKind _scheduleKind = ReminderScheduleKind.daily;
   String _weekday = 'Monday';
   int _monthDay = 1;
+  String? _triggerMemberId;
+  String? _triggerMemberName;
 
   @override
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
     _timeController.dispose();
-    _detailController.dispose();
     super.dispose();
   }
 
@@ -313,13 +313,43 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               const SizedBox(height: 10),
             ],
             if (_scheduleKind == ReminderScheduleKind.afterFront) ...[
-              TextField(
-                key: const ValueKey('reminder-front-detail-field'),
-                controller: _detailController,
-                decoration: InputDecoration(
-                  labelText: l10n.memberOrFrontLabel,
-                  helperText: l10n.memberOrFrontHelper,
-                ),
+              StreamBuilder<List<MemberSummary>>(
+                stream: widget.repository.watchMembers(),
+                initialData: const [],
+                builder: (context, snapshot) {
+                  final members = snapshot.data ?? const <MemberSummary>[];
+                  return DropdownButtonFormField<String?>(
+                    key: const ValueKey('reminder-front-detail-field'),
+                    initialValue: _triggerMemberId,
+                    decoration: InputDecoration(
+                      labelText: l10n.afterFrontTargetLabel,
+                      helperText: l10n.afterFrontTargetHelper,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(l10n.anyFrontStartsOption),
+                      ),
+                      for (final member in members)
+                        DropdownMenuItem<String?>(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (memberId) {
+                      setState(() {
+                        _triggerMemberId = memberId;
+                        _triggerMemberName = null;
+                        for (final member in members) {
+                          if (member.id == memberId) {
+                            _triggerMemberName = member.displayName;
+                            break;
+                          }
+                        }
+                      });
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 10),
             ],
@@ -374,6 +404,18 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         scheduleDom: _scheduleKind == ReminderScheduleKind.monthly
             ? _monthDay
             : null,
+        triggerType: _scheduleKind == ReminderScheduleKind.afterFront
+            ? 'event'
+            : 'repeated',
+        triggerMemberId: _scheduleKind == ReminderScheduleKind.afterFront
+            ? _triggerMemberId
+            : null,
+        triggerEvent: _scheduleKind == ReminderScheduleKind.afterFront
+            ? 'front_started'
+            : null,
+        delaySeconds: _scheduleKind == ReminderScheduleKind.afterFront
+            ? 0
+            : null,
       ),
     );
     if (mounted) {
@@ -417,7 +459,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   String _scheduleText(AppLocalizations l10n) {
     final time = _normalizedTimeText;
-    final detail = _detailController.text.trim();
+    final detail = _triggerMemberName?.trim() ?? '';
     return switch (_scheduleKind) {
       ReminderScheduleKind.daily =>
         time.isEmpty ? l10n.dailySchedule : l10n.dailyScheduleAt(time),
@@ -479,6 +521,11 @@ extension on ReminderSummary {
       scheduleTime: scheduleTime,
       scheduleDowMask: scheduleDowMask,
       scheduleDom: scheduleDom,
+      triggerType: triggerType,
+      triggerMemberId: triggerMemberId,
+      triggerEvent: triggerEvent,
+      delaySeconds: delaySeconds,
+      lastFiredAt: lastFiredAt,
       enabled: true,
       updatedAt: updatedAt,
     );
@@ -520,6 +567,32 @@ Future<void> scheduleReminderSummary(
         : null,
     copy: _notificationCopy(l10n),
   );
+}
+
+Future<void> deliverAfterFrontReminders(
+  BuildContext context,
+  HavenRepository repository,
+  List<ReminderSummary> reminders,
+) async {
+  if (reminders.isEmpty) return;
+  final l10n = AppLocalizations.of(context);
+  final copy = _notificationCopy(l10n);
+  for (final reminder in reminders) {
+    await NotificationService.instance.showTriggeredReminderNotification(
+      reminderId: reminder.id,
+      title: reminder.title,
+      body: reminder.body,
+      delay: Duration(seconds: reminder.delaySeconds ?? 0),
+      copy: copy,
+    );
+    await repository.recordNotificationEvent(
+      NotificationEventDraft(
+        kind: 'reminder',
+        title: reminder.title,
+        body: reminder.body ?? reminder.scheduleText,
+      ),
+    );
+  }
 }
 
 ReminderScheduleKind? _kindFromScheduleText(String text) {

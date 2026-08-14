@@ -1476,6 +1476,24 @@ abstract class AppLocalizations {
   /// **'Queued until this member or label fronts'**
   String get memberOrFrontHelper;
 
+  /// No description provided for @afterFrontTargetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Who should trigger it?'**
+  String get afterFrontTargetLabel;
+
+  /// No description provided for @afterFrontTargetHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one member, or trigger for any newly started front.'**
+  String get afterFrontTargetHelper;
+
+  /// No description provided for @anyFrontStartsOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Any front starts'**
+  String get anyFrontStartsOption;
+
   /// No description provided for @timeFieldLabel.
   ///
   /// In en, this message translates to:

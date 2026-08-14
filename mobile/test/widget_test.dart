@@ -1621,6 +1621,55 @@ void main() {
     expect(find.text('No reminders yet'), findsOneWidget);
   });
 
+  testWidgets('stores an after-front reminder with a stable member target', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Check in',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('reminder-schedule-kind-field')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('After member fronts').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reminder-front-detail-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Iris').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    final reminder = repository._reminders.single;
+    expect(reminder.scheduleKind, 'after_front');
+    expect(reminder.triggerType, 'event');
+    expect(reminder.triggerMemberId, 'fake-member-1');
+    expect(reminder.triggerEvent, 'front_started');
+    expect(reminder.delaySeconds, 0);
+    expect(find.text('After Iris fronts'), findsOneWidget);
+  });
+
   testWidgets('creates and votes on a local poll', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -2924,14 +2973,15 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> setFrontMembers(List<String> memberIds) async {
+  Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) async {
     final ids = memberIds.toSet();
     final selected = _visibleMembers
         .where((member) => ids.contains(member.id))
         .toList(growable: false);
 
     if (selected.isEmpty) {
-      return clearCurrentFront();
+      await clearCurrentFront();
+      return const [];
     }
 
     _emitSnapshot(
@@ -2943,6 +2993,7 @@ class FakeHavenRepository implements HavenRepository {
     _currentFrontMemberIds = [for (final member in selected) member.id];
     _emitCurrentFrontMembers();
     _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
+    return const [];
   }
 
   @override
@@ -3522,6 +3573,10 @@ class FakeHavenRepository implements HavenRepository {
         scheduleTime: draft.scheduleTime,
         scheduleDowMask: draft.scheduleDowMask,
         scheduleDom: draft.scheduleDom,
+        triggerType: draft.triggerType,
+        triggerMemberId: draft.triggerMemberId,
+        triggerEvent: draft.triggerEvent,
+        delaySeconds: draft.delaySeconds,
         enabled: draft.enabled,
         updatedAt: DateTime(2026),
       ),
@@ -3545,6 +3600,11 @@ class FakeHavenRepository implements HavenRepository {
             scheduleTime: reminder.scheduleTime,
             scheduleDowMask: reminder.scheduleDowMask,
             scheduleDom: reminder.scheduleDom,
+            triggerType: reminder.triggerType,
+            triggerMemberId: reminder.triggerMemberId,
+            triggerEvent: reminder.triggerEvent,
+            delaySeconds: reminder.delaySeconds,
+            lastFiredAt: reminder.lastFiredAt,
             enabled: enabled,
             updatedAt: DateTime(2026),
           )
@@ -3675,7 +3735,7 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> setCustomFront(String label) async {
+  Future<List<ReminderSummary>> setCustomFront(String label) async {
     _currentFrontMemberIds = const [];
     _emitCurrentFrontMembers();
     _emitSnapshot(
@@ -3683,6 +3743,7 @@ class FakeHavenRepository implements HavenRepository {
       currentFrontLabel: label,
     );
     _addFrontHistoryEntry(label);
+    return const [];
   }
 
   @override
@@ -3966,7 +4027,7 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> applyNamedFront(String namedFrontId) async {
+  Future<List<ReminderSummary>> applyNamedFront(String namedFrontId) async {
     NamedFront? front;
     for (final candidate in _namedFronts) {
       if (candidate.id == namedFrontId) {
@@ -3975,14 +4036,13 @@ class FakeHavenRepository implements HavenRepository {
       }
     }
     if (front == null) {
-      return;
+      return const [];
     }
     final customLabel = front.customLabel?.trim();
     if (customLabel != null && customLabel.isNotEmpty) {
-      await setCustomFront(customLabel);
-      return;
+      return setCustomFront(customLabel);
     }
-    await setFrontMembers(_namedFrontMembers[namedFrontId] ?? const []);
+    return setFrontMembers(_namedFrontMembers[namedFrontId] ?? const []);
   }
 
   @override

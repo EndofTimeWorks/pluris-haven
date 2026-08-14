@@ -620,6 +620,73 @@ void main() {
     expect(events.single.title, 'Front changed');
   });
 
+  test(
+    'after-front reminders fire only for newly started matching fronts',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+      await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
+      final members = await repository.watchMembers().first;
+      final iris = members.singleWhere(
+        (member) => member.displayName == 'Iris',
+      );
+      final juniper = members.singleWhere(
+        (member) => member.displayName == 'Juniper',
+      );
+
+      Future<void> saveAfterFront({
+        required String title,
+        String? memberId,
+        bool enabled = true,
+      }) async {
+        await repository.saveReminder(
+          ReminderDraft(
+            title: title,
+            scheduleText: 'After a selected front starts',
+            scheduleKind: 'after_front',
+            triggerType: 'event',
+            triggerMemberId: memberId,
+            triggerEvent: 'front_started',
+            delaySeconds: 30,
+            enabled: enabled,
+          ),
+        );
+      }
+
+      await saveAfterFront(title: 'Any front');
+      await saveAfterFront(title: 'Iris only', memberId: iris.id);
+      await saveAfterFront(title: 'Juniper only', memberId: juniper.id);
+      await saveAfterFront(title: 'Disabled', enabled: false);
+      await repository.saveReminder(
+        const ReminderDraft(
+          title: 'Daily reminder',
+          scheduleText: 'Daily',
+          scheduleKind: 'daily',
+        ),
+      );
+
+      final first = await repository.setFrontMembers([iris.id]);
+      expect(first.map((reminder) => reminder.title).toSet(), {
+        'Any front',
+        'Iris only',
+      });
+      expect(first.every((reminder) => reminder.lastFiredAt != null), isTrue);
+      expect(first.every((reminder) => reminder.delaySeconds == 30), isTrue);
+
+      expect(await repository.setFrontMembers([iris.id]), isEmpty);
+
+      final second = await repository.setFrontMembers([juniper.id]);
+      expect(second.map((reminder) => reminder.title).toSet(), {
+        'Any front',
+        'Juniper only',
+      });
+    },
+  );
+
   test('stores and updates local polls', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -868,6 +935,17 @@ void main() {
       ),
     );
     final member = (await source.watchMembers().first).single;
+    await source.saveReminder(
+      ReminderDraft(
+        title: 'Check in after fronting',
+        scheduleText: 'After Iris fronts',
+        scheduleKind: 'after_front',
+        triggerType: 'event',
+        triggerMemberId: member.id,
+        triggerEvent: 'front_started',
+        delaySeconds: 45,
+      ),
+    );
     final group = (await source.watchGroups().first).single;
     final note = (await source.watchNotes().first).single;
     final now = DateTime.utc(2026, 1, 2, 3, 4, 5);
@@ -969,7 +1047,15 @@ void main() {
     expect(importedGroups.single.memberCount, 1);
     expect(await target.watchNotes().first, hasLength(1));
     expect(await target.watchMessages().first, hasLength(1));
-    expect(await target.watchReminders().first, hasLength(1));
+    final importedReminders = await target.watchReminders().first;
+    expect(importedReminders, hasLength(2));
+    final afterFrontReminder = importedReminders.singleWhere(
+      (reminder) => reminder.scheduleKind == 'after_front',
+    );
+    expect(afterFrontReminder.triggerType, 'event');
+    expect(afterFrontReminder.triggerMemberId, member.id);
+    expect(afterFrontReminder.triggerEvent, 'front_started');
+    expect(afterFrontReminder.delaySeconds, 45);
     final importedMembers = await target.watchMembers().first;
     final importedMember = importedMembers.single;
     expect(await target.watchTags().first, hasLength(1));

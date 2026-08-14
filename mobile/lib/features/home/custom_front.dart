@@ -351,7 +351,10 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _setFront(String label) async {
-    await widget.repository.setCustomFront(label);
+    final reminders = await widget.repository.setCustomFront(label);
+    if (mounted) {
+      await deliverAfterFrontReminders(context, widget.repository, reminders);
+    }
     await _syncFrontNotification(label.trim());
     if (mounted) {
       Navigator.pop(context);
@@ -360,7 +363,12 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<void> _setMemberFront() async {
     final label = await _selectedMemberFrontLabel();
-    await widget.repository.setFrontMembers(_selectedMemberIds.toList());
+    final reminders = await widget.repository.setFrontMembers(
+      _selectedMemberIds.toList(),
+    );
+    if (mounted) {
+      await deliverAfterFrontReminders(context, widget.repository, reminders);
+    }
     await _syncFrontNotification(label);
     if (mounted) {
       Navigator.pop(context);
@@ -368,7 +376,10 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _applyNamedFront(NamedFront front) async {
-    await widget.repository.applyNamedFront(front.id);
+    final reminders = await widget.repository.applyNamedFront(front.id);
+    if (mounted) {
+      await deliverAfterFrontReminders(context, widget.repository, reminders);
+    }
     await _syncFrontNotification(
       front.customLabel?.trim().isNotEmpty == true
           ? front.customLabel!.trim()

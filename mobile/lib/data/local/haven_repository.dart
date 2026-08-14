@@ -384,6 +384,11 @@ class ReminderSummary {
     this.scheduleTime,
     this.scheduleDowMask,
     this.scheduleDom,
+    this.triggerType,
+    this.triggerMemberId,
+    this.triggerEvent,
+    this.delaySeconds,
+    this.lastFiredAt,
     required this.enabled,
     required this.updatedAt,
   });
@@ -396,6 +401,11 @@ class ReminderSummary {
   final String? scheduleTime;
   final int? scheduleDowMask;
   final int? scheduleDom;
+  final String? triggerType;
+  final String? triggerMemberId;
+  final String? triggerEvent;
+  final int? delaySeconds;
+  final DateTime? lastFiredAt;
   final bool enabled;
   final DateTime updatedAt;
 }
@@ -409,6 +419,10 @@ class ReminderDraft {
     this.scheduleTime,
     this.scheduleDowMask,
     this.scheduleDom,
+    this.triggerType,
+    this.triggerMemberId,
+    this.triggerEvent,
+    this.delaySeconds,
     this.enabled = true,
   });
 
@@ -419,6 +433,10 @@ class ReminderDraft {
   final String? scheduleTime;
   final int? scheduleDowMask;
   final int? scheduleDom;
+  final String? triggerType;
+  final String? triggerMemberId;
+  final String? triggerEvent;
+  final int? delaySeconds;
   final bool enabled;
 }
 
@@ -839,7 +857,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteMember(String memberId);
 
-  Future<void> setFrontMembers(List<String> memberIds);
+  Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds);
 
   Future<void> updateFrontStatusNote(String frontId, String? statusNote);
 
@@ -913,7 +931,7 @@ abstract interface class HavenRepository {
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
-  Future<void> setCustomFront(String label);
+  Future<List<ReminderSummary>> setCustomFront(String label);
 
   Future<void> clearCurrentFront();
 
@@ -1000,7 +1018,7 @@ abstract interface class HavenRepository {
 
   Future<void> saveNamedFront(NamedFront front, List<String> memberIds);
 
-  Future<void> applyNamedFront(String namedFrontId);
+  Future<List<ReminderSummary>> applyNamedFront(String namedFrontId);
 
   Future<void> deleteNamedFront(String namedFrontId);
 
@@ -2670,51 +2688,52 @@ ORDER BY pb.position ASC
       ]);
 
     return query.watch().asyncMap((rows) async {
-      return [
-        for (final row in rows)
-          ReminderSummary(
-            id: row.id,
-            title:
-                (await _decryptLocalText(
-                  row.title,
-                  'reminders',
-                  row.id,
-                  'title',
-                )) ??
-                '',
-            body: await _decryptLocalText(
-              row.body,
-              'reminders',
-              row.id,
-              'body',
-            ),
-            scheduleText:
-                (await _decryptLocalText(
-                  row.scheduleText,
-                  'reminders',
-                  row.id,
-                  'schedule_text',
-                )) ??
-                '',
-            scheduleKind: await _decryptLocalText(
-              row.scheduleKind,
-              'reminders',
-              row.id,
-              'schedule_kind',
-            ),
-            scheduleTime: await _decryptLocalText(
-              row.scheduleTime,
-              'reminders',
-              row.id,
-              'schedule_time',
-            ),
-            scheduleDowMask: row.scheduleDowMask,
-            scheduleDom: row.scheduleDom,
-            enabled: row.enabled,
-            updatedAt: row.updatedAt,
-          ),
-      ];
+      return [for (final row in rows) await _reminderSummary(row)];
     });
+  }
+
+  Future<ReminderSummary> _reminderSummary(Reminder row) async {
+    return ReminderSummary(
+      id: row.id,
+      title:
+          (await _decryptLocalText(row.title, 'reminders', row.id, 'title')) ??
+          '',
+      body: await _decryptLocalText(row.body, 'reminders', row.id, 'body'),
+      scheduleText:
+          (await _decryptLocalText(
+            row.scheduleText,
+            'reminders',
+            row.id,
+            'schedule_text',
+          )) ??
+          '',
+      scheduleKind: await _decryptLocalText(
+        row.scheduleKind,
+        'reminders',
+        row.id,
+        'schedule_kind',
+      ),
+      scheduleTime: await _decryptLocalText(
+        row.scheduleTime,
+        'reminders',
+        row.id,
+        'schedule_time',
+      ),
+      scheduleDowMask: row.scheduleDowMask,
+      scheduleDom: row.scheduleDom,
+      triggerType: row.triggerType,
+      triggerMemberId: row.triggerMemberId,
+      triggerEvent: await _decryptLocalText(
+        row.triggerEvent,
+        'reminders',
+        row.id,
+        'trigger_event',
+      ),
+      delaySeconds: row.delaySeconds,
+      lastFiredAt: row.lastFiredAt,
+      enabled: row.enabled,
+      updatedAt: row.updatedAt,
+    );
   }
 
   @override
@@ -3603,14 +3622,15 @@ SELECT
   }
 
   @override
-  Future<void> setFrontMembers(List<String> memberIds) async {
+  Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) async {
     final ids = memberIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList();
     if (ids.isEmpty) {
-      return clearCurrentFront();
+      await clearCurrentFront();
+      return const [];
     }
 
     final members =
@@ -3623,12 +3643,13 @@ SELECT
             ))
             .get();
     if (members.isEmpty) {
-      return clearCurrentFront();
+      await clearCurrentFront();
+      return const [];
     }
 
     final now = DateTime.now().toUtc();
 
-    await database.transaction(() async {
+    return database.transaction(() async {
       final openSessions =
           await (database.select(database.frontSessions)..where(
                 (front) =>
@@ -3671,6 +3692,7 @@ SELECT
       }
 
       var offset = 0;
+      final newlyStartedMemberIds = <String>{};
       for (final member in members) {
         if (remainingActiveMemberIds.contains(member.id)) {
           continue;
@@ -3696,8 +3718,66 @@ SELECT
                 memberId: member.id,
               ),
             );
+        newlyStartedMemberIds.add(member.id);
       }
+
+      return _claimAfterFrontReminders(
+        newlyStartedMemberIds: newlyStartedMemberIds,
+        frontStarted: newlyStartedMemberIds.isNotEmpty,
+        firedAt: now,
+      );
     });
+  }
+
+  Future<List<ReminderSummary>> _claimAfterFrontReminders({
+    required Set<String> newlyStartedMemberIds,
+    required bool frontStarted,
+    required DateTime firedAt,
+  }) async {
+    if (!frontStarted) return const [];
+
+    final rows =
+        await (database.select(database.reminders)..where(
+              (reminder) =>
+                  reminder.systemId.equals(localSystemId) &
+                  reminder.enabled.equals(true),
+            ))
+            .get();
+    final claimed = <ReminderSummary>[];
+    for (final row in rows) {
+      final kind = await _decryptLocalText(
+        row.scheduleKind,
+        'reminders',
+        row.id,
+        'schedule_kind',
+      );
+      final event = await _decryptLocalText(
+        row.triggerEvent,
+        'reminders',
+        row.id,
+        'trigger_event',
+      );
+      final isAfterFront =
+          kind == 'after_front' ||
+          (row.triggerType == 'event' && event == 'front_started');
+      final targetMatches =
+          row.triggerMemberId == null ||
+          newlyStartedMemberIds.contains(row.triggerMemberId);
+      if (!isAfterFront || !targetMatches) continue;
+
+      await (database.update(
+        database.reminders,
+      )..where((reminder) => reminder.id.equals(row.id))).write(
+        RemindersCompanion(
+          lastFiredAt: Value(firedAt),
+          updatedAt: Value(firedAt),
+        ),
+      );
+      claimed.add(
+        await _reminderSummary(row.copyWith(lastFiredAt: Value(firedAt))),
+      );
+    }
+    return claimed;
   }
 
   @override
@@ -4726,6 +4806,17 @@ SELECT
             ),
             scheduleDowMask: Value(draft.scheduleDowMask),
             scheduleDom: Value(draft.scheduleDom),
+            triggerType: Value(_nullIfBlank(draft.triggerType) ?? 'repeated'),
+            triggerMemberId: Value(_nullIfBlank(draft.triggerMemberId)),
+            triggerEvent: Value(
+              await _encryptNullableLocalText(
+                _nullIfBlank(draft.triggerEvent),
+                'reminders',
+                id,
+                'trigger_event',
+              ),
+            ),
+            delaySeconds: Value(draft.delaySeconds),
             enabled: Value(draft.enabled),
             createdAt: now,
             updatedAt: now,
@@ -5003,15 +5094,16 @@ SELECT
   }
 
   @override
-  Future<void> setCustomFront(String label) async {
+  Future<List<ReminderSummary>> setCustomFront(String label) async {
     final trimmed = label.trim();
     if (trimmed.isEmpty) {
-      return clearCurrentFront();
+      await clearCurrentFront();
+      return const [];
     }
 
     final now = DateTime.now().toUtc();
 
-    await database.transaction(() async {
+    return database.transaction(() async {
       final existing =
           await (database.select(database.frontSessions)..where(
                 (front) =>
@@ -5027,7 +5119,7 @@ SELECT
               'label',
             ))?.trim() ==
             trimmed) {
-          return;
+          return const <ReminderSummary>[];
         }
       }
 
@@ -5051,6 +5143,11 @@ SELECT
               updatedAt: now,
             ),
           );
+      return _claimAfterFrontReminders(
+        newlyStartedMemberIds: const {},
+        frontStarted: true,
+        firedAt: now,
+      );
     });
   }
 
@@ -6804,6 +6901,8 @@ SELECT
         id,
         'schedule_text',
       ),
+      triggerType: Value(_stringValue(reminder['trigger_type']) ?? 'repeated'),
+      triggerMemberId: Value(_stringValue(reminder['trigger_member_id'])),
       triggerEvent: Value(
         await _encryptNullableLocalText(
           _stringValue(reminder['trigger_event']),
@@ -6830,7 +6929,9 @@ SELECT
       ),
       scheduleDowMask: Value(_intValue(reminder['schedule_dow_mask'])),
       scheduleDom: Value(_intValue(reminder['schedule_dom'])),
+      delaySeconds: Value(_intValue(reminder['delay_seconds'])),
       enabled: Value(reminder['enabled'] != false),
+      lastFiredAt: Value(_dateValue(reminder['last_fired_at'])),
       createdAt: _dateValue(reminder['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -7879,7 +7980,7 @@ SELECT
   }
 
   @override
-  Future<void> applyNamedFront(String namedFrontId) async {
+  Future<List<ReminderSummary>> applyNamedFront(String namedFrontId) async {
     final namedFront = await (database.select(
       database.namedFronts,
     )..where((front) => front.id.equals(namedFrontId))).getSingleOrNull();
@@ -7895,10 +7996,9 @@ SELECT
       ),
     );
     if (members.isEmpty && label != null) {
-      await setCustomFront(label);
-      return;
+      return setCustomFront(label);
     }
-    await setFrontMembers(members.map((m) => m.memberId).toList());
+    return setFrontMembers(members.map((m) => m.memberId).toList());
   }
 
   @override
@@ -8345,6 +8445,8 @@ SELECT
           'schedule_text',
         )) ??
         '',
+    'trigger_type': reminder.triggerType,
+    'trigger_member_id': reminder.triggerMemberId,
     'trigger_event': await _decryptLocalText(
       reminder.triggerEvent,
       'reminders',
@@ -8365,7 +8467,9 @@ SELECT
     ),
     'schedule_dow_mask': reminder.scheduleDowMask,
     'schedule_dom': reminder.scheduleDom,
+    'delay_seconds': reminder.delaySeconds,
     'enabled': reminder.enabled,
+    'last_fired_at': reminder.lastFiredAt?.toIso8601String(),
     'created_at': reminder.createdAt.toIso8601String(),
     'updated_at': reminder.updatedAt.toIso8601String(),
   };
