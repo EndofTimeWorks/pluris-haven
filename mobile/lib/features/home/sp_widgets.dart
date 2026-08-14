@@ -479,6 +479,7 @@ class SpAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final boundedImage = _boundedImage(context);
     return Semantics(
       label: semanticLabel?.trim().isNotEmpty == true
           ? semanticLabel!.trim()
@@ -491,9 +492,9 @@ class SpAvatar extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          image: image == null
+          image: boundedImage == null
               ? null
-              : DecorationImage(image: image!, fit: BoxFit.cover),
+              : DecorationImage(image: boundedImage, fit: BoxFit.cover),
         ),
         alignment: Alignment.center,
         child: image != null || label == null
@@ -509,6 +510,21 @@ class SpAvatar extends StatelessWidget {
                 ),
               ),
       ),
+    );
+  }
+
+  ImageProvider<Object>? _boundedImage(BuildContext context) {
+    final source = image;
+    if (source == null) return null;
+    const maximumDecodeDimension = 512;
+    final physicalSize = (size * MediaQuery.devicePixelRatioOf(context))
+        .ceil()
+        .clamp(1, maximumDecodeDimension);
+    return ResizeImage(
+      source,
+      width: physicalSize,
+      height: physicalSize,
+      policy: ResizeImagePolicy.fit,
     );
   }
 }
