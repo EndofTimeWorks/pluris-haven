@@ -123,14 +123,14 @@ void main() {
     test('wrong passphrase does not decrypt an archive', () async {
       final encrypted = await encryptArchiveJson(
         archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'right-password',
+        passphrase: 'violet river 92! lantern',
         iterations: 1200,
       );
 
       expect(
         () => decryptArchiveJson(
           encryptedArchiveJson: encrypted,
-          passphrase: 'wrong-password',
+          passphrase: 'copper cloud 51! maple',
         ),
         throwsA(anything),
       );
@@ -139,7 +139,7 @@ void main() {
     test('tampered archive metadata is rejected before decrypting', () async {
       final encrypted = await encryptArchiveJson(
         archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'right-password',
+        passphrase: 'violet river 92! lantern',
         iterations: 1200,
       );
       final decoded = jsonDecode(encrypted) as Map<String, Object?>;
@@ -148,7 +148,7 @@ void main() {
       expect(
         () => decryptArchiveJson(
           encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: 'right-password',
+          passphrase: 'violet river 92! lantern',
         ),
         throwsFormatException,
       );
@@ -157,7 +157,7 @@ void main() {
     test('authenticated archive metadata cannot be lowered', () async {
       final encrypted = await encryptArchiveJson(
         archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'right-password',
+        passphrase: 'violet river 92! lantern',
         iterations: 1200,
       );
       final decoded = jsonDecode(encrypted) as Map<String, Object?>;
@@ -166,7 +166,7 @@ void main() {
       await expectLater(
         decryptArchiveJson(
           encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: 'right-password',
+          passphrase: 'violet river 92! lantern',
         ),
         throwsA(anything),
       );
@@ -175,7 +175,7 @@ void main() {
     test('rejects archive KDF work above the supported maximum', () async {
       final encrypted = await encryptArchiveJson(
         archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'right-password',
+        passphrase: 'violet river 92! lantern',
         iterations: 1200,
       );
       final decoded = jsonDecode(encrypted) as Map<String, Object?>;
@@ -184,7 +184,7 @@ void main() {
       await expectLater(
         decryptArchiveJson(
           encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: 'right-password',
+          passphrase: 'violet river 92! lantern',
         ),
         throwsFormatException,
       );
@@ -203,6 +203,14 @@ void main() {
     test('refuses common and repetitive recovery passphrases', () {
       expect(
         archivePassphraseIssue('passwordpassword'),
+        ArchivePassphraseIssue.common,
+      );
+      expect(
+        archivePassphraseIssue('PasswordPassword1!'),
+        ArchivePassphraseIssue.common,
+      );
+      expect(
+        archivePassphraseIssue('qwerty-forest-92'),
         ArchivePassphraseIssue.common,
       );
       expect(

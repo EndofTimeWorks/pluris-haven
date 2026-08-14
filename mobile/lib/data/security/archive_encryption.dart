@@ -17,15 +17,13 @@ const minimumArchivePassphraseCharacters = 14;
 
 enum ArchivePassphraseIssue { tooShort, common, repetitive }
 
-const _commonArchivePassphrases = {
-  '12345678901234',
+const _commonArchivePassphraseFragments = {
+  '123456',
   'correcthorsebatterystaple',
-  'iloveyouiloveyou',
-  'letmeinletmein',
-  'password123456',
-  'passwordpassword',
-  'qwertyuiopasdfgh',
-  'thisismypassword',
+  'iloveyou',
+  'letmein',
+  'password',
+  'qwerty',
 };
 
 final _archiveCipher = Xchacha20.poly1305Aead();
@@ -110,7 +108,7 @@ ArchivePassphraseIssue? archivePassphraseIssue(String passphrase) {
   }
 
   final normalized = trimmed.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  if (_commonArchivePassphrases.contains(normalized)) {
+  if (_commonArchivePassphraseFragments.any(normalized.contains)) {
     return ArchivePassphraseIssue.common;
   }
   if (runes.toSet().length < 4 || _isRepeatedPassphrase(runes)) {
