@@ -50,7 +50,6 @@ void main() {
       final encrypted = await encryptArchiveJson(
         archiveJson: await source.buildLocalArchiveJson(),
         passphrase: 'portable-recovery-passphrase',
-        iterations: 1000,
       );
       final archiveJson = await decryptArchiveJson(
         encryptedArchiveJson: encrypted,

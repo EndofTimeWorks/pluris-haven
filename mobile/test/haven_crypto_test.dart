@@ -97,36 +97,38 @@ void main() {
   });
 
   group('archive encryption', () {
-    test('encrypts and decrypts a local archive JSON payload', () async {
-      const archive =
-          '{"format":"pluris_haven.local_archive","version":1,"members":[]}';
-      final encrypted = await encryptArchiveJson(
+    const archive =
+        '{"format":"pluris_haven.local_archive","version":1,"members":[]}';
+    const passphrase = 'violet river 92! lantern';
+    late String encrypted;
+
+    setUpAll(() async {
+      encrypted = await encryptArchiveJson(
         archiveJson: archive,
-        passphrase: 'violet river 92! lantern',
+        passphrase: passphrase,
       );
+    });
+
+    test('encrypts and decrypts a local archive JSON payload', () async {
+      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
 
       expect(encrypted, isNot(contains('local_archive')));
       expect(archiveTextLooksEncrypted(encrypted), isTrue);
-      expect(
-        (jsonDecode(encrypted) as Map<String, Object?>)['iterations'],
-        defaultArchiveKdfIterations,
-      );
+      expect(decoded['version'], encryptedArchiveVersion);
+      expect(decoded['kdf'], encryptedArchiveKdf);
+      expect(decoded['memory_kib'], defaultArchiveKdfMemoryKib);
+      expect(decoded['iterations'], defaultArchiveKdfIterations);
+      expect(decoded['parallelism'], defaultArchiveKdfParallelism);
       expect(
         await decryptArchiveJson(
           encryptedArchiveJson: encrypted,
-          passphrase: 'violet river 92! lantern',
+          passphrase: passphrase,
         ),
         equals(archive),
       );
     });
 
     test('wrong passphrase does not decrypt an archive', () async {
-      final encrypted = await encryptArchiveJson(
-        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'violet river 92! lantern',
-        iterations: 1200,
-      );
-
       expect(
         () => decryptArchiveJson(
           encryptedArchiveJson: encrypted,
@@ -137,11 +139,6 @@ void main() {
     });
 
     test('tampered archive metadata is rejected before decrypting', () async {
-      final encrypted = await encryptArchiveJson(
-        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'violet river 92! lantern',
-        iterations: 1200,
-      );
       final decoded = jsonDecode(encrypted) as Map<String, Object?>;
       decoded['cipher'] = 'AES-GCM';
 
@@ -154,49 +151,70 @@ void main() {
       );
     });
 
-    test('authenticated archive metadata cannot be lowered', () async {
-      final encrypted = await encryptArchiveJson(
-        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'violet river 92! lantern',
-        iterations: 1200,
-      );
+    test('authenticated Argon2id metadata cannot be altered', () async {
       final decoded = jsonDecode(encrypted) as Map<String, Object?>;
-      decoded['iterations'] = 1000;
+      decoded['memory_kib'] = defaultArchiveKdfMemoryKib - 1;
 
       await expectLater(
         decryptArchiveJson(
           encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: 'violet river 92! lantern',
+          passphrase: passphrase,
         ),
         throwsA(anything),
       );
     });
 
-    test('rejects archive KDF work above the supported maximum', () async {
-      final encrypted = await encryptArchiveJson(
-        archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-        passphrase: 'violet river 92! lantern',
-        iterations: 1200,
-      );
-      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
-      decoded['iterations'] = maximumArchiveKdfIterations + 1;
+    test('rejects unsafe Argon2id parameters before deriving a key', () async {
+      for (final parameters in [
+        {'memory_kib': maximumArchiveKdfMemoryKib + 1},
+        {'iterations': maximumArchiveKdfIterations + 1},
+        {'parallelism': maximumArchiveKdfParallelism + 1},
+        {'memory_kib': 7},
+      ]) {
+        final decoded = jsonDecode(encrypted) as Map<String, Object?>;
+        decoded.addAll(parameters);
 
-      await expectLater(
-        decryptArchiveJson(
-          encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: 'violet river 92! lantern',
+        await expectLater(
+          decryptArchiveJson(
+            encryptedArchiveJson: jsonEncode(decoded),
+            passphrase: passphrase,
+          ),
+          throwsFormatException,
+        );
+      }
+    });
+
+    test('decrypts a fixed version 2 PBKDF2 archive', () async {
+      const legacy =
+          '{"format":"pluris_haven.encrypted_archive","version":2,'
+          '"cipher":"XChaCha20-Poly1305","kdf":"PBKDF2-HMAC-SHA256",'
+          '"iterations":1200,'
+          '"salt":"Er7__b-nwpv705a-J2P62-Cgb3bLQfIw",'
+          '"ciphertext":"Sm5fJ7Ta7kAqEO-tYO48ytw8XKcNtG-ddc4FRSagSMRrOmuhKYZpEvLH6lnKkyeWBEMrTdjKWLQngbzbzWZj_F7ct_JM7vO-caxAHS3aR-xsYEyxNJDk1VpOUA=="}';
+
+      expect(
+        await decryptArchiveJson(
+          encryptedArchiveJson: legacy,
+          passphrase: passphrase,
         ),
-        throwsFormatException,
+        '{"format":"pluris_haven.local_archive","version":1}',
       );
     });
 
     test('refuses a weak passphrase before writing an archive', () async {
+      const rejected = 'too short';
       await expectLater(
         encryptArchiveJson(
           archiveJson: '{"format":"pluris_haven.local_archive","version":1}',
-          passphrase: 'too short',
+          passphrase: rejected,
         ),
-        throwsArgumentError,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.toString(),
+            'message',
+            isNot(contains(rejected)),
+          ),
+        ),
       );
     });
 

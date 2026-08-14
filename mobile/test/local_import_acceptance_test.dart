@@ -107,7 +107,6 @@ void main() {
       final encrypted = await encryptArchiveJson(
         archiveJson: secondExport,
         passphrase: 'local-acceptance-test-passphrase',
-        iterations: 1000,
       );
       final decrypted = await decryptArchiveJson(
         encryptedArchiveJson: encrypted,

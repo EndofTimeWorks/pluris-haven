@@ -4,16 +4,22 @@ import 'dart:isolate';
 import 'package:cryptography/cryptography.dart';
 
 const encryptedArchiveFormat = 'pluris_haven.encrypted_archive';
-const encryptedArchiveVersion = 2;
-const encryptedArchiveKdf = 'PBKDF2-HMAC-SHA256';
+const encryptedArchiveVersion = 3;
+const encryptedArchiveKdf = 'Argon2id';
 const encryptedArchiveCipher = 'XChaCha20-Poly1305';
 
 /// A recovery archive can be copied anywhere and attacked offline. Keep the
-/// creation cost deliberately high; existing archives retain their recorded
-/// value so they can still be recovered.
-const defaultArchiveKdfIterations = 600000;
-const maximumArchiveKdfIterations = 1000000;
-const minimumArchivePassphraseCharacters = 14;
+/// creation cost deliberately high. These are OWASP's Argon2id minimums.
+const defaultArchiveKdfMemoryKib = 19456;
+const defaultArchiveKdfIterations = 2;
+const defaultArchiveKdfParallelism = 1;
+const maximumArchiveKdfMemoryKib = 65536;
+const maximumArchiveKdfIterations = 10;
+const maximumArchiveKdfParallelism = 4;
+const minimumArchivePassphraseCharacters = 16;
+
+const _legacyArchiveKdf = 'PBKDF2-HMAC-SHA256';
+const _maximumLegacyArchiveKdfIterations = 1000000;
 
 enum ArchivePassphraseIssue { tooShort, common, repetitive }
 
@@ -41,50 +47,39 @@ bool archiveTextLooksEncrypted(String text) {
 Future<String> encryptArchiveJson({
   required String archiveJson,
   required String passphrase,
-  int iterations = defaultArchiveKdfIterations,
 }) {
   return Isolate.run(
-    () => _encryptArchiveJson(
-      archiveJson: archiveJson,
-      passphrase: passphrase,
-      iterations: iterations,
-    ),
+    () => _encryptArchiveJson(archiveJson: archiveJson, passphrase: passphrase),
   );
 }
 
 Future<String> _encryptArchiveJson({
   required String archiveJson,
   required String passphrase,
-  required int iterations,
 }) async {
   if (!isArchivePassphraseValid(passphrase)) {
-    throw ArgumentError.value(
-      passphrase,
-      'passphrase',
-      'must contain at least $minimumArchivePassphraseCharacters characters',
-    );
-  }
-  if (iterations < 1000 || iterations > maximumArchiveKdfIterations) {
-    throw ArgumentError.value(
-      iterations,
-      'iterations',
-      'must be between 1000 and $maximumArchiveKdfIterations',
+    throw ArgumentError(
+      'Recovery passphrase does not meet the safety requirements.',
     );
   }
 
   final salt = _archiveCipher.newNonce();
   final nonce = _archiveCipher.newNonce();
-  final secretKey = await _archiveKey(
+  final secretKey = await _argon2ArchiveKey(
     passphrase: passphrase,
     salt: salt,
-    iterations: iterations,
+    memoryKib: defaultArchiveKdfMemoryKib,
+    iterations: defaultArchiveKdfIterations,
+    parallelism: defaultArchiveKdfParallelism,
   );
   final header = <String, Object?>{
     'format': encryptedArchiveFormat,
     'version': encryptedArchiveVersion,
     'cipher': encryptedArchiveCipher,
     'kdf': encryptedArchiveKdf,
-    'iterations': iterations,
+    'memory_kib': defaultArchiveKdfMemoryKib,
+    'iterations': defaultArchiveKdfIterations,
+    'parallelism': defaultArchiveKdfParallelism,
     'salt': base64Url.encode(salt),
   };
   final box = await _archiveCipher.encrypt(
@@ -165,7 +160,7 @@ Future<String> _decryptArchiveJson({
     );
   }
   final version = decoded['version'];
-  if (version != 1 && version != encryptedArchiveVersion) {
+  if (version != 1 && version != 2 && version != encryptedArchiveVersion) {
     throw FormatException(
       'Unsupported encrypted archive version: ${decoded['version']}.',
     );
@@ -173,29 +168,62 @@ Future<String> _decryptArchiveJson({
   if (decoded['cipher'] != encryptedArchiveCipher) {
     throw FormatException('Unsupported archive cipher: ${decoded['cipher']}.');
   }
-  if (decoded['kdf'] != encryptedArchiveKdf) {
-    throw FormatException('Unsupported archive KDF: ${decoded['kdf']}.');
-  }
-
-  final iterations = decoded['iterations'];
   final salt = decoded['salt'];
   final ciphertext = decoded['ciphertext'];
-  if (iterations is! int ||
-      iterations < 1000 ||
-      iterations > maximumArchiveKdfIterations) {
-    throw const FormatException(
-      'Encrypted archive has invalid KDF iterations.',
-    );
-  }
   if (salt is! String || ciphertext is! String) {
     throw const FormatException('Encrypted archive is missing salt or data.');
   }
+  final saltBytes = base64Url.decode(salt);
+  if (saltBytes.length != _archiveCipher.nonceLength) {
+    throw const FormatException('Encrypted archive has an invalid salt.');
+  }
 
-  final secretKey = await _archiveKey(
-    passphrase: passphrase,
-    salt: base64Url.decode(salt),
-    iterations: iterations,
-  );
+  final SecretKey secretKey;
+  if (version == encryptedArchiveVersion) {
+    if (decoded['kdf'] != encryptedArchiveKdf) {
+      throw FormatException('Unsupported archive KDF: ${decoded['kdf']}.');
+    }
+    final memoryKib = decoded['memory_kib'];
+    final iterations = decoded['iterations'];
+    final parallelism = decoded['parallelism'];
+    if (memoryKib is! int ||
+        iterations is! int ||
+        parallelism is! int ||
+        parallelism < 1 ||
+        parallelism > maximumArchiveKdfParallelism ||
+        memoryKib < 8 * parallelism ||
+        memoryKib > maximumArchiveKdfMemoryKib ||
+        iterations < 1 ||
+        iterations > maximumArchiveKdfIterations) {
+      throw const FormatException(
+        'Encrypted archive has invalid Argon2id parameters.',
+      );
+    }
+    secretKey = await _argon2ArchiveKey(
+      passphrase: passphrase,
+      salt: saltBytes,
+      memoryKib: memoryKib,
+      iterations: iterations,
+      parallelism: parallelism,
+    );
+  } else {
+    if (decoded['kdf'] != _legacyArchiveKdf) {
+      throw FormatException('Unsupported archive KDF: ${decoded['kdf']}.');
+    }
+    final iterations = decoded['iterations'];
+    if (iterations is! int ||
+        iterations < 1000 ||
+        iterations > _maximumLegacyArchiveKdfIterations) {
+      throw const FormatException(
+        'Encrypted archive has invalid KDF iterations.',
+      );
+    }
+    secretKey = await _legacyArchiveKey(
+      passphrase: passphrase,
+      salt: saltBytes,
+      iterations: iterations,
+    );
+  }
   final box = SecretBox.fromConcatenation(
     base64Url.decode(ciphertext),
     nonceLength: _archiveCipher.nonceLength,
@@ -205,25 +233,47 @@ Future<String> _decryptArchiveJson({
   final plain = await _archiveCipher.decrypt(
     box,
     secretKey: secretKey,
-    aad: version == encryptedArchiveVersion
-        ? _archiveHeaderAad(decoded)
-        : const [],
+    aad: version == 1 ? const [] : _archiveHeaderAad(decoded),
   );
   return utf8.decode(plain);
 }
 
-List<int> _archiveHeaderAad(Map<String, Object?> header) => utf8.encode(
-  jsonEncode({
+List<int> _archiveHeaderAad(Map<String, Object?> header) {
+  final aad = <String, Object?>{
     'format': header['format'],
     'version': header['version'],
     'cipher': header['cipher'],
     'kdf': header['kdf'],
-    'iterations': header['iterations'],
-    'salt': header['salt'],
-  }),
-);
+  };
+  if (header['version'] == encryptedArchiveVersion) {
+    aad.addAll({
+      'memory_kib': header['memory_kib'],
+      'iterations': header['iterations'],
+      'parallelism': header['parallelism'],
+    });
+  } else {
+    aad['iterations'] = header['iterations'];
+  }
+  aad['salt'] = header['salt'];
+  return utf8.encode(jsonEncode(aad));
+}
 
-Future<SecretKey> _archiveKey({
+Future<SecretKey> _argon2ArchiveKey({
+  required String passphrase,
+  required List<int> salt,
+  required int memoryKib,
+  required int iterations,
+  required int parallelism,
+}) {
+  return Argon2id(
+    memory: memoryKib,
+    iterations: iterations,
+    parallelism: parallelism,
+    hashLength: 32,
+  ).deriveKey(secretKey: SecretKey(utf8.encode(passphrase)), nonce: salt);
+}
+
+Future<SecretKey> _legacyArchiveKey({
   required String passphrase,
   required List<int> salt,
   required int iterations,

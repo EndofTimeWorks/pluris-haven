@@ -2219,7 +2219,6 @@ void main() {
           ],
         }),
         passphrase: 'shared passphrase',
-        iterations: 1200,
       ),
     ))!;
 
