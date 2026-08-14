@@ -13,9 +13,6 @@ const encryptedArchiveCipher = 'XChaCha20-Poly1305';
 const defaultArchiveKdfMemoryKib = 19456;
 const defaultArchiveKdfIterations = 2;
 const defaultArchiveKdfParallelism = 1;
-const maximumArchiveKdfMemoryKib = 65536;
-const maximumArchiveKdfIterations = 10;
-const maximumArchiveKdfParallelism = 4;
 const minimumArchivePassphraseCharacters = 16;
 
 const _legacyArchiveKdf = 'PBKDF2-HMAC-SHA256';
@@ -212,25 +209,19 @@ Future<String> _decryptArchiveJson({
     final memoryKib = decoded['memory_kib'];
     final iterations = decoded['iterations'];
     final parallelism = decoded['parallelism'];
-    if (memoryKib is! int ||
-        iterations is! int ||
-        parallelism is! int ||
-        parallelism < 1 ||
-        parallelism > maximumArchiveKdfParallelism ||
-        memoryKib < 8 * parallelism ||
-        memoryKib > maximumArchiveKdfMemoryKib ||
-        iterations < 1 ||
-        iterations > maximumArchiveKdfIterations) {
+    if (memoryKib != defaultArchiveKdfMemoryKib ||
+        iterations != defaultArchiveKdfIterations ||
+        parallelism != defaultArchiveKdfParallelism) {
       throw const FormatException(
-        'Encrypted archive has invalid Argon2id parameters.',
+        'Encrypted archive uses an unsupported Argon2id profile.',
       );
     }
     secretKey = await _argon2ArchiveKey(
       passphrase: passphrase,
       salt: saltBytes,
-      memoryKib: memoryKib,
-      iterations: iterations,
-      parallelism: parallelism,
+      memoryKib: defaultArchiveKdfMemoryKib,
+      iterations: defaultArchiveKdfIterations,
+      parallelism: defaultArchiveKdfParallelism,
     );
   } else {
     if (decoded['kdf'] != _legacyArchiveKdf) {

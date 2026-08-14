@@ -154,38 +154,30 @@ void main() {
       );
     });
 
-    test('authenticated Argon2id metadata cannot be altered', () async {
-      final decoded = jsonDecode(encrypted) as Map<String, Object?>;
-      decoded['memory_kib'] = defaultArchiveKdfMemoryKib - 1;
+    test(
+      'rejects every non-default Argon2id profile before deriving',
+      () async {
+        for (final parameters in [
+          {'memory_kib': defaultArchiveKdfMemoryKib - 1},
+          {'memory_kib': defaultArchiveKdfMemoryKib + 1},
+          {'iterations': defaultArchiveKdfIterations - 1},
+          {'iterations': defaultArchiveKdfIterations + 1},
+          {'parallelism': defaultArchiveKdfParallelism + 1},
+          {'memory_kib': 65536, 'iterations': 10, 'parallelism': 4},
+        ]) {
+          final decoded = jsonDecode(encrypted) as Map<String, Object?>;
+          decoded.addAll(parameters);
 
-      await expectLater(
-        decryptArchiveJson(
-          encryptedArchiveJson: jsonEncode(decoded),
-          passphrase: passphrase,
-        ),
-        throwsA(anything),
-      );
-    });
-
-    test('rejects unsafe Argon2id parameters before deriving a key', () async {
-      for (final parameters in [
-        {'memory_kib': maximumArchiveKdfMemoryKib + 1},
-        {'iterations': maximumArchiveKdfIterations + 1},
-        {'parallelism': maximumArchiveKdfParallelism + 1},
-        {'memory_kib': 7},
-      ]) {
-        final decoded = jsonDecode(encrypted) as Map<String, Object?>;
-        decoded.addAll(parameters);
-
-        await expectLater(
-          decryptArchiveJson(
-            encryptedArchiveJson: jsonEncode(decoded),
-            passphrase: passphrase,
-          ),
-          throwsFormatException,
-        );
-      }
-    });
+          await expectLater(
+            decryptArchiveJson(
+              encryptedArchiveJson: jsonEncode(decoded),
+              passphrase: passphrase,
+            ),
+            throwsFormatException,
+          );
+        }
+      },
+    );
 
     test('decrypts a fixed version 2 PBKDF2 archive', () async {
       const legacy =
