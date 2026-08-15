@@ -279,6 +279,9 @@ jobs:
       - name: Check generated-page accessibility contract
         run: pnpm check:a11y
 
+      - name: Check generated security-header contract
+        run: pnpm check:headers
+
   server:
     name: Server (lint + test + migration)
     runs-on: ubuntu-latest
