@@ -9,6 +9,7 @@ def test_well_known_descriptor(client: TestClient) -> None:
     assert body["registration_enabled"] is True
     assert body["friends_enabled"] is True
     assert "friend_requests" in body["capabilities"]
+    assert "security_events_v1" in body["capabilities"]
     assert "directional_sharing_grants" not in body["capabilities"]
 
 

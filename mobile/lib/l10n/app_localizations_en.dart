@@ -428,6 +428,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get revokeSessionTooltip => 'Revoke session';
 
   @override
+  String get securityHistoryTitle => 'Security history';
+
+  @override
+  String get securityHistoryDescription =>
+      'Recent security-sensitive account actions. This history never includes IP addresses, email addresses, device names, tokens, backup names, or archive content.';
+
+  @override
+  String get securityHistoryEmpty => 'No security actions recorded yet.';
+
+  @override
+  String get securityEventSignedOut => 'A device signed out';
+
+  @override
+  String get securityEventPasswordChanged => 'Password changed';
+
+  @override
+  String get securityEventSessionRevoked => 'A device session was revoked';
+
+  @override
+  String get securityEventBackupRecoveryStarted =>
+      'Encrypted backup recovery started';
+
+  @override
+  String get securityEventBackupDeleted => 'Encrypted backup deleted';
+
+  @override
+  String get securityEventAccountDeleted => 'Server account deleted';
+
+  @override
+  String get securityEventUnknown => 'Security action recorded';
+
+  @override
   String get refreshButton => 'Refresh';
 
   @override

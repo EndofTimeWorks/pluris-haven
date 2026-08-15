@@ -14,6 +14,7 @@ def build_server_info(settings: AppSettings) -> ServerInfo:
         "friend_codes",
         "blocks",
         "encrypted_backup_chunks",
+        "security_events_v1",
     ]
     if settings.friends_enabled:
         capabilities.append("friend_requests")

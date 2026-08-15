@@ -30,6 +30,7 @@ class ServerAccountController extends ChangeNotifier {
   ServerDescriptor? descriptor;
   ServerAccount? account;
   List<ServerSession> sessions = const [];
+  List<ServerSecurityEvent> securityEvents = const [];
   List<ServerBackupSnapshot> backups = const [];
   List<ServerFriendRequest> friendRequests = const [];
   List<ServerFriend> friends = const [];
@@ -306,6 +307,10 @@ class ServerAccountController extends ChangeNotifier {
   Future<void> _refreshAllAuthenticated() async {
     account = await _authenticated((api, token) => api.me(token));
     sessions = await _authenticated((api, token) => api.sessions(token));
+    securityEvents =
+        descriptor?.capabilities.contains('security_events_v1') == true
+        ? await _authenticated((api, token) => api.securityEvents(token))
+        : const [];
     backups = await _authenticated((api, token) => api.backupSnapshots(token));
     if (descriptor?.friendsEnabled == true) {
       await _refreshFriends();
@@ -374,6 +379,7 @@ class ServerAccountController extends ChangeNotifier {
     _refreshRetryNonce = null;
     account = null;
     sessions = const [];
+    securityEvents = const [];
     backups = const [];
     friendRequests = const [];
     friends = const [];

@@ -883,6 +883,66 @@ abstract class AppLocalizations {
   /// **'Revoke session'**
   String get revokeSessionTooltip;
 
+  /// No description provided for @securityHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security history'**
+  String get securityHistoryTitle;
+
+  /// No description provided for @securityHistoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent security-sensitive account actions. This history never includes IP addresses, email addresses, device names, tokens, backup names, or archive content.'**
+  String get securityHistoryDescription;
+
+  /// No description provided for @securityHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No security actions recorded yet.'**
+  String get securityHistoryEmpty;
+
+  /// No description provided for @securityEventSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'A device signed out'**
+  String get securityEventSignedOut;
+
+  /// No description provided for @securityEventPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get securityEventPasswordChanged;
+
+  /// No description provided for @securityEventSessionRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'A device session was revoked'**
+  String get securityEventSessionRevoked;
+
+  /// No description provided for @securityEventBackupRecoveryStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup recovery started'**
+  String get securityEventBackupRecoveryStarted;
+
+  /// No description provided for @securityEventBackupDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup deleted'**
+  String get securityEventBackupDeleted;
+
+  /// No description provided for @securityEventAccountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Server account deleted'**
+  String get securityEventAccountDeleted;
+
+  /// No description provided for @securityEventUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Security action recorded'**
+  String get securityEventUnknown;
+
   /// No description provided for @refreshButton.
   ///
   /// In en, this message translates to:

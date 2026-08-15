@@ -109,6 +109,38 @@ void main() {
     },
   );
 
+  test('security history uses cursor query parameters', () async {
+    late http.Request captured;
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: MockClient((request) async {
+        captured = request;
+        return http.Response(
+          jsonEncode([
+            {
+              'id': 7,
+              'event_type': 'password_changed',
+              'occurred_at': '2026-08-15T20:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }),
+    );
+
+    final events = await api.securityEvents(
+      'access-token',
+      limit: 5,
+      beforeId: 9,
+    );
+
+    expect(captured.url.path, '/v1/auth/security-events');
+    expect(captured.url.queryParameters, {'limit': '5', 'before_id': '9'});
+    expect(captured.headers['authorization'], 'Bearer access-token');
+    expect(events.single.id, 7);
+    expect(events.single.eventType, 'password_changed');
+  });
+
   test('refresh sends the retry nonce with the old token', () async {
     late http.Request captured;
     final api = ServerApi(
@@ -345,7 +377,12 @@ class FakeServerApi extends ServerApi {
     publicUrl: 'https://haven.example',
     registrationEnabled: true,
     friendsEnabled: true,
-    capabilities: {'accounts', 'encrypted_backup_chunks', 'friend_requests'},
+    capabilities: {
+      'accounts',
+      'encrypted_backup_chunks',
+      'friend_requests',
+      'security_events_v1',
+    },
   );
 
   @override
@@ -397,6 +434,19 @@ class FakeServerApi extends ServerApi {
       lastUsedAt: DateTime.utc(2026, 8, 9),
       expiresAt: DateTime.utc(2026, 9, 9),
       current: true,
+    ),
+  ];
+
+  @override
+  Future<List<ServerSecurityEvent>> securityEvents(
+    String token, {
+    int limit = 20,
+    int? beforeId,
+  }) async => [
+    ServerSecurityEvent(
+      id: 1,
+      eventType: 'password_changed',
+      occurredAt: DateTime.utc(2026, 8, 15),
     ),
   ];
 

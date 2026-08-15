@@ -142,6 +142,32 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                               icon: const Icon(Icons.logout),
                             ),
                     ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.securityHistoryTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.securityHistoryDescription,
+                    style: const TextStyle(color: _spMuted, height: 1.35),
+                  ),
+                  if (controller.securityEvents.isEmpty)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.verified_user_outlined),
+                      title: Text(l10n.securityHistoryEmpty),
+                    )
+                  else
+                    for (final event in controller.securityEvents)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.shield_outlined),
+                        title: Text(_securityEventLabel(l10n, event.eventType)),
+                        subtitle: Text(
+                          _securityEventTime(context, event.occurredAt),
+                        ),
+                      ),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -260,6 +286,25 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
           _ChangePasswordSheet(controller: widget.controller!),
     );
   }
+}
+
+String _securityEventLabel(AppLocalizations l10n, String eventType) {
+  return switch (eventType) {
+    'signed_out' => l10n.securityEventSignedOut,
+    'password_changed' => l10n.securityEventPasswordChanged,
+    'session_revoked' => l10n.securityEventSessionRevoked,
+    'backup_recovery_started' => l10n.securityEventBackupRecoveryStarted,
+    'backup_deleted' => l10n.securityEventBackupDeleted,
+    'account_deleted' => l10n.securityEventAccountDeleted,
+    _ => l10n.securityEventUnknown,
+  };
+}
+
+String _securityEventTime(BuildContext context, DateTime occurredAt) {
+  final local = occurredAt.toLocal();
+  final material = MaterialLocalizations.of(context);
+  return '${material.formatShortDate(local)} '
+      '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
 }
 
 class _ChangePasswordSheet extends StatefulWidget {

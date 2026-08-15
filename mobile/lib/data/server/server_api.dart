@@ -116,6 +116,26 @@ class ServerSession {
   }
 }
 
+class ServerSecurityEvent {
+  const ServerSecurityEvent({
+    required this.id,
+    required this.eventType,
+    required this.occurredAt,
+  });
+
+  final int id;
+  final String eventType;
+  final DateTime occurredAt;
+
+  factory ServerSecurityEvent.fromJson(Map<String, dynamic> json) {
+    return ServerSecurityEvent(
+      id: _integer(json, 'id'),
+      eventType: _string(json, 'event_type'),
+      occurredAt: DateTime.parse(_string(json, 'occurred_at')),
+    );
+  }
+}
+
 class ServerBackupSnapshot {
   const ServerBackupSnapshot({
     required this.snapshotId,
@@ -320,6 +340,26 @@ class ServerApi {
     return [
       for (final row in _decodeList(response))
         ServerSession.fromJson(_asObject(row)),
+    ];
+  }
+
+  Future<List<ServerSecurityEvent>> securityEvents(
+    String token, {
+    int limit = 20,
+    int? beforeId,
+  }) async {
+    final query = <String, String>{'limit': '$limit'};
+    if (beforeId != null) {
+      query['before_id'] = '$beforeId';
+    }
+    final response = await _request(
+      'GET',
+      Uri(path: '/v1/auth/security-events', queryParameters: query).toString(),
+      token: token,
+    );
+    return [
+      for (final row in _decodeList(response))
+        ServerSecurityEvent.fromJson(_asObject(row)),
     ];
   }
 
