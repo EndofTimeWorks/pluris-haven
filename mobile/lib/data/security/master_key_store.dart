@@ -15,8 +15,15 @@ abstract interface class SecureValueStore {
 class PlatformSecureValueStore implements SecureValueStore {
   const PlatformSecureValueStore();
 
+  static const androidOptions = AndroidOptions(
+    resetOnError: false,
+    keyCipherAlgorithm:
+        KeyCipherAlgorithm.RSA_ECB_OAEPwithSHA_256andMGF1Padding,
+    storageCipherAlgorithm: StorageCipherAlgorithm.AES_GCM_NoPadding,
+  );
+
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(),
+    aOptions: androidOptions,
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),

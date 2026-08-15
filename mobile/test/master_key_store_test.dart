@@ -2,6 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 
 void main() {
+  test('fails closed instead of deleting secure Android values on error', () {
+    expect(
+      PlatformSecureValueStore.androidOptions.toMap(),
+      containsPair('resetOnError', 'false'),
+    );
+    expect(
+      PlatformSecureValueStore.androidOptions.toMap(),
+      containsPair(
+        'keyCipherAlgorithm',
+        'RSA_ECB_OAEPwithSHA_256andMGF1Padding',
+      ),
+    );
+    expect(
+      PlatformSecureValueStore.androidOptions.toMap(),
+      containsPair('storageCipherAlgorithm', 'AES_GCM_NoPadding'),
+    );
+  });
+
   test('creates and reuses the same secure master key', () async {
     final storage = MemorySecureValueStore();
     final first = await HavenMasterKeyStore(
