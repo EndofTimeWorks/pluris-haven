@@ -851,6 +851,16 @@ void main() {
     expect(archive.counts['fronts'], 1);
     expect(archive.counts['front_members'], 0);
     expect(archive.counts['reminders'], 0);
+    final missingRelation = archive.warnings.firstWhere(
+      (warning) =>
+          warning.code == ImportDiagnosticCode.ignoredMissingRelation &&
+          warning.arguments['ownerKind'] == ImportDiagnosticTerm.member,
+    );
+    expect(missingRelation.arguments['ownerKind'], ImportDiagnosticTerm.member);
+    expect(
+      missingRelation.arguments['relationKind'],
+      ImportDiagnosticTerm.group,
+    );
     expect(
       _messages(archive.warnings),
       contains('Member "Iris" ignored missing group "missing-group".'),
@@ -1585,6 +1595,11 @@ void main() {
     final options = (decoded['poll_options'] as List)
         .cast<Map<String, dynamic>>();
     final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
+
+    final clampedName = archive.warnings.firstWhere(
+      (warning) => warning.code == ImportDiagnosticCode.stringClamped,
+    );
+    expect(clampedName.arguments['field'], isA<ImportDiagnosticTerm>());
 
     expect(
       _messages(archive.warnings),

@@ -1664,6 +1664,158 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String importDiagnosticNamedRecord(String kind, String name) {
+    return '$kind \"$name\"';
+  }
+
+  @override
+  String get importTermMember => 'member';
+
+  @override
+  String get importTermMemberSentenceStart => 'Member';
+
+  @override
+  String get importTermPrivacyBucket => 'privacy bucket';
+
+  @override
+  String get importTermIdOrName => 'ID or name';
+
+  @override
+  String get importTermName => 'name';
+
+  @override
+  String get importTermGroup => 'group';
+
+  @override
+  String get importTermGroupSentenceStart => 'Group';
+
+  @override
+  String get importTermCustomFront => 'custom front';
+
+  @override
+  String get importTermLabel => 'label';
+
+  @override
+  String get importTermCustomField => 'custom field';
+
+  @override
+  String get importTermCustomFieldValue => 'custom field value';
+
+  @override
+  String get importTermNote => 'note';
+
+  @override
+  String get importTermTitleAndBody => 'title and body';
+
+  @override
+  String get importTermJournal => 'journal';
+
+  @override
+  String get importTermChatChannel => 'chat channel';
+
+  @override
+  String get importTermChatCategory => 'chat category';
+
+  @override
+  String get importTermMessage => 'message';
+
+  @override
+  String get importTermBody => 'body';
+
+  @override
+  String get importTermReminder => 'reminder';
+
+  @override
+  String get importTermTitleOrSchedule => 'title or schedule';
+
+  @override
+  String get importTermPoll => 'poll';
+
+  @override
+  String get importTermQuestion => 'question';
+
+  @override
+  String get importTermFront => 'front';
+
+  @override
+  String get importTermFrontSentenceStart => 'Front';
+
+  @override
+  String get importTermStartTime => 'start time';
+
+  @override
+  String get importTermMemberIdsOrCustomLabel => 'member IDs or custom label';
+
+  @override
+  String get importTermImportedRecord => 'the imported record';
+
+  @override
+  String get importTermParent => 'parent';
+
+  @override
+  String get importTermSystemName => 'system name';
+
+  @override
+  String get importTermMemberName => 'member name';
+
+  @override
+  String get importTermMemberPronouns => 'member pronouns';
+
+  @override
+  String get importTermMemberBirthday => 'member birthday';
+
+  @override
+  String get importTermMemberEmoji => 'member emoji';
+
+  @override
+  String get importTermMemberDescription => 'member description';
+
+  @override
+  String get importTermAvatarUrl => 'avatar URL';
+
+  @override
+  String get importTermGroupName => 'group name';
+
+  @override
+  String get importTermCustomFieldName => 'custom field name';
+
+  @override
+  String get importTermContentTitle => 'content title';
+
+  @override
+  String get importTermLongTextField => 'long text field';
+
+  @override
+  String get importTermJournalBody => 'journal body';
+
+  @override
+  String get importTermMessageBody => 'message body';
+
+  @override
+  String get importTermReminderTitle => 'reminder title';
+
+  @override
+  String get importTermReminderBody => 'reminder body';
+
+  @override
+  String get importTermReminderSchedule => 'reminder schedule';
+
+  @override
+  String get importTermPollQuestion => 'poll question';
+
+  @override
+  String get importTermPollDescription => 'poll description';
+
+  @override
+  String get importTermPollOption => 'poll option';
+
+  @override
+  String get importTermPollOptionList => 'poll option list';
+
+  @override
+  String get importTermFrontStatusNote => 'front status note';
+
+  @override
   String importDiagnosticFrontReversed(int index) {
     return 'Front #$index ended before it started; swapped start and end.';
   }

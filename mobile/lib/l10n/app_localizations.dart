@@ -2953,6 +2953,306 @@ abstract class AppLocalizations {
     String value,
   );
 
+  /// No description provided for @importDiagnosticNamedRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} \"{name}\"'**
+  String importDiagnosticNamedRecord(String kind, String name);
+
+  /// No description provided for @importTermMember.
+  ///
+  /// In en, this message translates to:
+  /// **'member'**
+  String get importTermMember;
+
+  /// No description provided for @importTermMemberSentenceStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get importTermMemberSentenceStart;
+
+  /// No description provided for @importTermPrivacyBucket.
+  ///
+  /// In en, this message translates to:
+  /// **'privacy bucket'**
+  String get importTermPrivacyBucket;
+
+  /// No description provided for @importTermIdOrName.
+  ///
+  /// In en, this message translates to:
+  /// **'ID or name'**
+  String get importTermIdOrName;
+
+  /// No description provided for @importTermName.
+  ///
+  /// In en, this message translates to:
+  /// **'name'**
+  String get importTermName;
+
+  /// No description provided for @importTermGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'group'**
+  String get importTermGroup;
+
+  /// No description provided for @importTermGroupSentenceStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get importTermGroupSentenceStart;
+
+  /// No description provided for @importTermCustomFront.
+  ///
+  /// In en, this message translates to:
+  /// **'custom front'**
+  String get importTermCustomFront;
+
+  /// No description provided for @importTermLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'label'**
+  String get importTermLabel;
+
+  /// No description provided for @importTermCustomField.
+  ///
+  /// In en, this message translates to:
+  /// **'custom field'**
+  String get importTermCustomField;
+
+  /// No description provided for @importTermCustomFieldValue.
+  ///
+  /// In en, this message translates to:
+  /// **'custom field value'**
+  String get importTermCustomFieldValue;
+
+  /// No description provided for @importTermNote.
+  ///
+  /// In en, this message translates to:
+  /// **'note'**
+  String get importTermNote;
+
+  /// No description provided for @importTermTitleAndBody.
+  ///
+  /// In en, this message translates to:
+  /// **'title and body'**
+  String get importTermTitleAndBody;
+
+  /// No description provided for @importTermJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'journal'**
+  String get importTermJournal;
+
+  /// No description provided for @importTermChatChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'chat channel'**
+  String get importTermChatChannel;
+
+  /// No description provided for @importTermChatCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'chat category'**
+  String get importTermChatCategory;
+
+  /// No description provided for @importTermMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'message'**
+  String get importTermMessage;
+
+  /// No description provided for @importTermBody.
+  ///
+  /// In en, this message translates to:
+  /// **'body'**
+  String get importTermBody;
+
+  /// No description provided for @importTermReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'reminder'**
+  String get importTermReminder;
+
+  /// No description provided for @importTermTitleOrSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'title or schedule'**
+  String get importTermTitleOrSchedule;
+
+  /// No description provided for @importTermPoll.
+  ///
+  /// In en, this message translates to:
+  /// **'poll'**
+  String get importTermPoll;
+
+  /// No description provided for @importTermQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'question'**
+  String get importTermQuestion;
+
+  /// No description provided for @importTermFront.
+  ///
+  /// In en, this message translates to:
+  /// **'front'**
+  String get importTermFront;
+
+  /// No description provided for @importTermFrontSentenceStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get importTermFrontSentenceStart;
+
+  /// No description provided for @importTermStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'start time'**
+  String get importTermStartTime;
+
+  /// No description provided for @importTermMemberIdsOrCustomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'member IDs or custom label'**
+  String get importTermMemberIdsOrCustomLabel;
+
+  /// No description provided for @importTermImportedRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'the imported record'**
+  String get importTermImportedRecord;
+
+  /// No description provided for @importTermParent.
+  ///
+  /// In en, this message translates to:
+  /// **'parent'**
+  String get importTermParent;
+
+  /// No description provided for @importTermSystemName.
+  ///
+  /// In en, this message translates to:
+  /// **'system name'**
+  String get importTermSystemName;
+
+  /// No description provided for @importTermMemberName.
+  ///
+  /// In en, this message translates to:
+  /// **'member name'**
+  String get importTermMemberName;
+
+  /// No description provided for @importTermMemberPronouns.
+  ///
+  /// In en, this message translates to:
+  /// **'member pronouns'**
+  String get importTermMemberPronouns;
+
+  /// No description provided for @importTermMemberBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'member birthday'**
+  String get importTermMemberBirthday;
+
+  /// No description provided for @importTermMemberEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'member emoji'**
+  String get importTermMemberEmoji;
+
+  /// No description provided for @importTermMemberDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'member description'**
+  String get importTermMemberDescription;
+
+  /// No description provided for @importTermAvatarUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'avatar URL'**
+  String get importTermAvatarUrl;
+
+  /// No description provided for @importTermGroupName.
+  ///
+  /// In en, this message translates to:
+  /// **'group name'**
+  String get importTermGroupName;
+
+  /// No description provided for @importTermCustomFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'custom field name'**
+  String get importTermCustomFieldName;
+
+  /// No description provided for @importTermContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'content title'**
+  String get importTermContentTitle;
+
+  /// No description provided for @importTermLongTextField.
+  ///
+  /// In en, this message translates to:
+  /// **'long text field'**
+  String get importTermLongTextField;
+
+  /// No description provided for @importTermJournalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'journal body'**
+  String get importTermJournalBody;
+
+  /// No description provided for @importTermMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'message body'**
+  String get importTermMessageBody;
+
+  /// No description provided for @importTermReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'reminder title'**
+  String get importTermReminderTitle;
+
+  /// No description provided for @importTermReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'reminder body'**
+  String get importTermReminderBody;
+
+  /// No description provided for @importTermReminderSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'reminder schedule'**
+  String get importTermReminderSchedule;
+
+  /// No description provided for @importTermPollQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'poll question'**
+  String get importTermPollQuestion;
+
+  /// No description provided for @importTermPollDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'poll description'**
+  String get importTermPollDescription;
+
+  /// No description provided for @importTermPollOption.
+  ///
+  /// In en, this message translates to:
+  /// **'poll option'**
+  String get importTermPollOption;
+
+  /// No description provided for @importTermPollOptionList.
+  ///
+  /// In en, this message translates to:
+  /// **'poll option list'**
+  String get importTermPollOptionList;
+
+  /// No description provided for @importTermFrontStatusNote.
+  ///
+  /// In en, this message translates to:
+  /// **'front status note'**
+  String get importTermFrontStatusNote;
+
   /// No description provided for @importDiagnosticFrontReversed.
   ///
   /// In en, this message translates to:

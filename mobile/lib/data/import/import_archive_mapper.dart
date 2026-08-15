@@ -114,7 +114,10 @@ class _ExternalArchiveNormalizer {
   final _anonymousExternalIdCounts = <String, int>{};
   final _groupExternalIdsByIndex = <int, String>{};
 
-  void _warnSkippedExpectedObject(String record, int zeroBasedIndex) {
+  void _warnSkippedExpectedObject(
+    ImportDiagnosticTerm record,
+    int zeroBasedIndex,
+  ) {
     warnings.add(
       ImportDiagnostic(ImportDiagnosticCode.skippedExpectedObject, {
         'record': record,
@@ -124,9 +127,9 @@ class _ExternalArchiveNormalizer {
   }
 
   void _warnSkippedMissingFields(
-    String record,
+    ImportDiagnosticTerm record,
     int zeroBasedIndex,
-    String fields,
+    ImportDiagnosticTerm fields,
   ) {
     warnings.add(
       ImportDiagnostic(ImportDiagnosticCode.skippedMissingFields, {
@@ -138,9 +141,9 @@ class _ExternalArchiveNormalizer {
   }
 
   void _warnMissingRelation(
-    String ownerKind,
+    ImportDiagnosticTerm ownerKind,
     String owner,
-    String relationKind,
+    ImportDiagnosticTerm relationKind,
     String relation,
   ) {
     warnings.add(
@@ -362,7 +365,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final member = _mapValue(items[index]);
       if (member == null) {
-        _warnSkippedExpectedObject('member', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.member, index);
         continue;
       }
       if (source == ImportSource.simplyPlural &&
@@ -389,7 +392,11 @@ class _ExternalArchiveNormalizer {
       final externalId = _firstString(bucket, const ['_id', 'id', 'uuid']);
       final name = _firstString(bucket, const ['name'])?.trim();
       if (externalId == null || name == null || name.isEmpty) {
-        _warnSkippedMissingFields('privacy bucket', index, 'ID or name');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.privacyBucket,
+          index,
+          ImportDiagnosticTerm.idOrName,
+        );
         continue;
       }
       final id = _stableId('privacy-bucket', externalId);
@@ -476,7 +483,11 @@ class _ExternalArchiveNormalizer {
       'tupper',
     ])?.trim();
     if (name == null || name.isEmpty) {
-      _warnSkippedMissingFields('member', index, 'name');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.member,
+        index,
+        ImportDiagnosticTerm.name,
+      );
       return null;
     }
     final displayName = _clamp(name, _capMemberName)!;
@@ -505,7 +516,12 @@ class _ExternalArchiveNormalizer {
               .firstOrNull
         : _groupIdsByExternalId[groupExternalId];
     if (groupExternalId != null && groupId == null) {
-      _warnMissingRelation('Member', name, 'group', groupExternalId);
+      _warnMissingRelation(
+        ImportDiagnosticTerm.member,
+        name,
+        ImportDiagnosticTerm.group,
+        groupExternalId,
+      );
     }
 
     return {
@@ -587,7 +603,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final customFront = _mapValue(items[index]);
       if (customFront == null) {
-        _warnSkippedExpectedObject('custom front', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.customFront, index);
         continue;
       }
       final label = _firstString(customFront, const [
@@ -600,7 +616,11 @@ class _ExternalArchiveNormalizer {
         'custom_status',
       ])?.trim();
       if (label == null || label.isEmpty) {
-        _warnSkippedMissingFields('custom front', index, 'label');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.customFront,
+          index,
+          ImportDiagnosticTerm.label,
+        );
         continue;
       }
       final name = _clamp(label, _capMemberName)!;
@@ -708,7 +728,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final field = _mapValue(items[index]);
       if (field == null) {
-        _warnSkippedExpectedObject('custom field', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.customField, index);
         continue;
       }
       final name = _firstString(field, const [
@@ -717,7 +737,11 @@ class _ExternalArchiveNormalizer {
         'title',
       ])?.trim();
       if (name == null || name.isEmpty) {
-        _warnSkippedMissingFields('custom field', index, 'name');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.customField,
+          index,
+          ImportDiagnosticTerm.name,
+        );
         continue;
       }
       final clampedName = _clamp(name, _capCustomFieldName)!;
@@ -783,8 +807,8 @@ class _ExternalArchiveNormalizer {
       if (memberExternalId != null && memberId == null) {
         warnings.add(
           ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
-            'record': 'custom field value',
-            'relation': 'member',
+            'record': ImportDiagnosticTerm.customFieldValue,
+            'relation': ImportDiagnosticTerm.member,
             'value': memberExternalId,
           }),
         );
@@ -942,7 +966,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final group = _mapValue(items[index]);
       if (group == null) {
-        _warnSkippedExpectedObject('group', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.group, index);
         continue;
       }
       final record = _groupRecord(group, index);
@@ -1036,9 +1060,9 @@ class _ExternalArchiveNormalizer {
         final memberId = _memberIdsByExternalId[memberExternalId];
         if (memberId == null) {
           _warnMissingRelation(
-            'Group',
+            ImportDiagnosticTerm.group,
             groupExternalId,
-            'member',
+            ImportDiagnosticTerm.member,
             memberExternalId,
           );
           continue;
@@ -1072,7 +1096,11 @@ class _ExternalArchiveNormalizer {
       'title',
     ])?.trim();
     if (name == null || name.isEmpty) {
-      _warnSkippedMissingFields('group', index, 'name');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.group,
+        index,
+        ImportDiagnosticTerm.name,
+      );
       return null;
     }
     final clampedName = _clamp(name, _capGroupName)!;
@@ -1097,7 +1125,12 @@ class _ExternalArchiveNormalizer {
         ? null
         : _groupIdsByExternalId[normalizedParentId];
     if (normalizedParentId != null && parentGroupId == null) {
-      _warnMissingRelation('Group', name, 'parent', normalizedParentId);
+      _warnMissingRelation(
+        ImportDiagnosticTerm.group,
+        name,
+        ImportDiagnosticTerm.parent,
+        normalizedParentId,
+      );
     } else if (parentGroupId == id) {
       warnings.add(
         ImportDiagnostic(ImportDiagnosticCode.ignoredSelfParent, {
@@ -1135,7 +1168,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
       if (note == null) {
-        _warnSkippedExpectedObject('note', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.note, index);
         continue;
       }
       final record = _noteRecord(note, index);
@@ -1159,7 +1192,11 @@ class _ExternalArchiveNormalizer {
       'subject',
     ])?.trim();
     if ((body == null || body.isEmpty) && (title == null || title.isEmpty)) {
-      _warnSkippedMissingFields('note', index, 'title and body');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.note,
+        index,
+        ImportDiagnosticTerm.titleAndBody,
+      );
       return null;
     }
 
@@ -1202,7 +1239,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final journal = _mapValue(items[index]);
       if (journal == null) {
-        _warnSkippedExpectedObject('journal', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.journal, index);
         continue;
       }
       final record = _journalRecord(journal, index);
@@ -1230,7 +1267,11 @@ class _ExternalArchiveNormalizer {
       'subject',
     ])?.trim();
     if ((body == null || body.isEmpty) && (title == null || title.isEmpty)) {
-      _warnSkippedMissingFields('journal', index, 'title and body');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.journal,
+        index,
+        ImportDiagnosticTerm.titleAndBody,
+      );
       return null;
     }
 
@@ -1274,12 +1315,16 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < channelItems.length; index++) {
       final channel = _mapValue(channelItems[index]);
       if (channel == null) {
-        _warnSkippedExpectedObject('chat channel', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.chatChannel, index);
         continue;
       }
       final name = _firstString(channel, const ['name', 'title'])?.trim();
       if (name == null || name.isEmpty) {
-        _warnSkippedMissingFields('chat channel', index, 'name');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.chatChannel,
+          index,
+          ImportDiagnosticTerm.name,
+        );
         continue;
       }
       final externalId =
@@ -1320,12 +1365,16 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < categoryItems.length; index++) {
       final category = _mapValue(categoryItems[index]);
       if (category == null) {
-        _warnSkippedExpectedObject('chat category', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.chatCategory, index);
         continue;
       }
       final name = _firstString(category, const ['name', 'title'])?.trim();
       if (name == null || name.isEmpty) {
-        _warnSkippedMissingFields('chat category', index, 'name');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.chatCategory,
+          index,
+          ImportDiagnosticTerm.name,
+        );
         continue;
       }
       final externalId =
@@ -1359,8 +1408,9 @@ class _ExternalArchiveNormalizer {
           if (ref != null) {
             warnings.add(
               ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
-                'record': 'chat category "$name"',
-                'relation': 'chat channel',
+                'record': ImportDiagnosticTerm.chatCategory,
+                'recordName': name,
+                'relation': ImportDiagnosticTerm.chatChannel,
                 'value': ref,
               }),
             );
@@ -1387,7 +1437,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final message = _mapValue(items[index]);
       if (message == null) {
-        _warnSkippedExpectedObject('message', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.message, index);
         continue;
       }
       if (_isFrontHistoryComment(message)) {
@@ -1413,7 +1463,11 @@ class _ExternalArchiveNormalizer {
       'title',
     ])?.trim();
     if (body == null || body.isEmpty) {
-      _warnSkippedMissingFields('message', index, 'body');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.message,
+        index,
+        ImportDiagnosticTerm.body,
+      );
       return null;
     }
 
@@ -1479,7 +1533,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final reminder = _mapValue(items[index]);
       if (reminder == null) {
-        _warnSkippedExpectedObject('reminder', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.reminder, index);
         continue;
       }
       final record = _reminderRecord(reminder, index);
@@ -1513,7 +1567,11 @@ class _ExternalArchiveNormalizer {
         title.isEmpty ||
         schedule == null ||
         schedule.isEmpty) {
-      _warnSkippedMissingFields('reminder', index, 'title or schedule');
+      _warnSkippedMissingFields(
+        ImportDiagnosticTerm.reminder,
+        index,
+        ImportDiagnosticTerm.titleOrSchedule,
+      );
       return null;
     }
     final structuredSchedule = _structuredReminderSchedule(reminder, schedule);
@@ -1639,7 +1697,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final poll = _mapValue(items[index]);
       if (poll == null) {
-        _warnSkippedExpectedObject('poll', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.poll, index);
         continue;
       }
 
@@ -1651,7 +1709,11 @@ class _ExternalArchiveNormalizer {
         'body',
       ])?.trim();
       if (question == null || question.isEmpty) {
-        _warnSkippedMissingFields('poll', index, 'question');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.poll,
+          index,
+          ImportDiagnosticTerm.question,
+        );
         continue;
       }
 
@@ -1919,7 +1981,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final front = _mapValue(items[index]);
       if (front == null) {
-        _warnSkippedExpectedObject('front', index);
+        _warnSkippedExpectedObject(ImportDiagnosticTerm.front, index);
         continue;
       }
 
@@ -1932,7 +1994,11 @@ class _ExternalArchiveNormalizer {
         'time',
       ]);
       if (start == null) {
-        _warnSkippedMissingFields('front', index, 'start time');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.front,
+          index,
+          ImportDiagnosticTerm.startTime,
+        );
         continue;
       }
 
@@ -1947,7 +2013,11 @@ class _ExternalArchiveNormalizer {
               ? 'No fronters'
               : null);
       if (memberIds.isEmpty && (label == null || label.trim().isEmpty)) {
-        _warnSkippedMissingFields('front', index, 'member IDs or custom label');
+        _warnSkippedMissingFields(
+          ImportDiagnosticTerm.front,
+          index,
+          ImportDiagnosticTerm.memberIdsOrCustomLabel,
+        );
         continue;
       }
 
@@ -1989,9 +2059,9 @@ class _ExternalArchiveNormalizer {
         final memberId = _memberIdsByExternalId[memberExternalId];
         if (memberId == null) {
           _warnMissingRelation(
-            'Front',
+            ImportDiagnosticTerm.front,
             '#${index + 1}',
-            'member',
+            ImportDiagnosticTerm.member,
             memberExternalId,
           );
           continue;
@@ -2081,8 +2151,8 @@ class _ExternalArchiveNormalizer {
     if (memberId == null) {
       warnings.add(
         ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
-          'record': 'the imported record',
-          'relation': 'member',
+          'record': ImportDiagnosticTerm.importedRecord,
+          'relation': ImportDiagnosticTerm.member,
           'value': external,
         }),
       );
@@ -2447,9 +2517,9 @@ class _PollData {
 }
 
 class _ImportTextCap {
-  const _ImportTextCap(this.label, this.limit);
+  const _ImportTextCap(this.term, this.limit);
 
-  final String label;
+  final ImportDiagnosticTerm term;
   final int limit;
 }
 
@@ -2476,15 +2546,19 @@ class _ImportClampReport {
   List<ImportDiagnostic> toWarnings() {
     final warnings = <ImportDiagnostic>[];
     final stringEntries = _stringHits.entries.toList()
-      ..sort((left, right) => left.key.label.compareTo(right.key.label));
+      ..sort(
+        (left, right) => left.key.term.index.compareTo(right.key.term.index),
+      );
     final listEntries = _listHits.entries.toList()
-      ..sort((left, right) => left.key.label.compareTo(right.key.label));
+      ..sort(
+        (left, right) => left.key.term.index.compareTo(right.key.term.index),
+      );
 
     for (final entry in stringEntries) {
       warnings.add(
         ImportDiagnostic(ImportDiagnosticCode.stringClamped, {
           'count': entry.value,
-          'field': entry.key.label,
+          'field': entry.key.term,
           'limit': entry.key.limit,
         }),
       );
@@ -2493,7 +2567,7 @@ class _ImportClampReport {
       warnings.add(
         ImportDiagnostic(ImportDiagnosticCode.listClamped, {
           'count': entry.value,
-          'field': entry.key.label,
+          'field': entry.key.term,
           'limit': entry.key.limit,
         }),
       );
@@ -2502,28 +2576,61 @@ class _ImportClampReport {
   }
 }
 
-const _capSystemName = _ImportTextCap('system name', 100);
-const _capMemberName = _ImportTextCap('member name', 100);
-const _capMemberPronouns = _ImportTextCap('member pronouns', 100);
-const _capMemberBirthday = _ImportTextCap('member birthday', 10);
-const _capMemberEmoji = _ImportTextCap('member emoji', 8);
-const _capMemberDescription = _ImportTextCap('member description', 5000);
-const _capAvatarUrl = _ImportTextCap('avatar URL', 500);
-const _capGroupName = _ImportTextCap('group name', 100);
-const _capCustomFieldName = _ImportTextCap('custom field name', 100);
-const _capCustomFieldValue = _ImportTextCap('custom field value', 5000);
-const _capContentTitle = _ImportTextCap('content title', 200);
-const _capLongText = _ImportTextCap('long text field', 5000);
-const _capJournalBody = _ImportTextCap('journal body', 20000);
-const _capMessageBody = _ImportTextCap('message body', 5000);
-const _capReminderTitle = _ImportTextCap('reminder title', 120);
-const _capReminderBody = _ImportTextCap('reminder body', 2000);
-const _capReminderSchedule = _ImportTextCap('reminder schedule', 500);
-const _capPollQuestion = _ImportTextCap('poll question', 500);
-const _capPollDescription = _ImportTextCap('poll description', 2000);
-const _capPollOption = _ImportTextCap('poll option', 200);
-const _capPollOptionList = _ImportTextCap('poll option list', 20);
-const _capFrontStatusNote = _ImportTextCap('front status note', 2000);
+const _capSystemName = _ImportTextCap(ImportDiagnosticTerm.systemName, 100);
+const _capMemberName = _ImportTextCap(ImportDiagnosticTerm.memberName, 100);
+const _capMemberPronouns = _ImportTextCap(
+  ImportDiagnosticTerm.memberPronouns,
+  100,
+);
+const _capMemberBirthday = _ImportTextCap(
+  ImportDiagnosticTerm.memberBirthday,
+  10,
+);
+const _capMemberEmoji = _ImportTextCap(ImportDiagnosticTerm.memberEmoji, 8);
+const _capMemberDescription = _ImportTextCap(
+  ImportDiagnosticTerm.memberDescription,
+  5000,
+);
+const _capAvatarUrl = _ImportTextCap(ImportDiagnosticTerm.avatarUrl, 500);
+const _capGroupName = _ImportTextCap(ImportDiagnosticTerm.groupName, 100);
+const _capCustomFieldName = _ImportTextCap(
+  ImportDiagnosticTerm.customFieldName,
+  100,
+);
+const _capCustomFieldValue = _ImportTextCap(
+  ImportDiagnosticTerm.customFieldValue,
+  5000,
+);
+const _capContentTitle = _ImportTextCap(ImportDiagnosticTerm.contentTitle, 200);
+const _capLongText = _ImportTextCap(ImportDiagnosticTerm.longTextField, 5000);
+const _capJournalBody = _ImportTextCap(ImportDiagnosticTerm.journalBody, 20000);
+const _capMessageBody = _ImportTextCap(ImportDiagnosticTerm.messageBody, 5000);
+const _capReminderTitle = _ImportTextCap(
+  ImportDiagnosticTerm.reminderTitle,
+  120,
+);
+const _capReminderBody = _ImportTextCap(
+  ImportDiagnosticTerm.reminderBody,
+  2000,
+);
+const _capReminderSchedule = _ImportTextCap(
+  ImportDiagnosticTerm.reminderSchedule,
+  500,
+);
+const _capPollQuestion = _ImportTextCap(ImportDiagnosticTerm.pollQuestion, 500);
+const _capPollDescription = _ImportTextCap(
+  ImportDiagnosticTerm.pollDescription,
+  2000,
+);
+const _capPollOption = _ImportTextCap(ImportDiagnosticTerm.pollOption, 200);
+const _capPollOptionList = _ImportTextCap(
+  ImportDiagnosticTerm.pollOptionList,
+  20,
+);
+const _capFrontStatusNote = _ImportTextCap(
+  ImportDiagnosticTerm.frontStatusNote,
+  2000,
+);
 
 Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'members': _listCount(archive['members']),
