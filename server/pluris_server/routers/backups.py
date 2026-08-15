@@ -8,13 +8,14 @@ from sqlalchemy.exc import IntegrityError
 from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.backup_storage import BackupChunkConflict, BackupChunkIntegrityError
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
-from pluris_server.models import BackupChunk, BackupSnapshot, User
+from pluris_server.models import BackupChunk, BackupSnapshot, SecurityEventType, User
 from pluris_server.schemas import (
     BackupChunkView,
     BackupSnapshotCreate,
     BackupSnapshotView,
     MessageResponse,
 )
+from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/backups", tags=["backups"])
 
@@ -248,6 +249,13 @@ async def get_chunk(
         )
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail="Backup chunk is not available") from error
+    if index == 0:
+        record_security_event(
+            db,
+            user_id=auth.user.id,
+            event_type=SecurityEventType.BACKUP_RECOVERY_STARTED,
+        )
+        await db.commit()
     return Response(
         content=content,
         media_type="application/octet-stream",
@@ -267,6 +275,11 @@ async def delete_snapshot(
         snapshot_ids=[storage_snapshot_id],
     )
     await db.delete(snapshot)
+    record_security_event(
+        db,
+        user_id=auth.user.id,
+        event_type=SecurityEventType.BACKUP_DELETED,
+    )
     await db.commit()
     await sweep_backup_deletions(db, request.app.state.backup_object_store)
     return MessageResponse(detail="Backup snapshot deleted")

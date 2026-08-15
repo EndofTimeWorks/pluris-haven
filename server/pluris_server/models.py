@@ -28,6 +28,15 @@ class RequestStatus(enum.StrEnum):
     CANCELLED = "cancelled"
 
 
+class SecurityEventType(enum.StrEnum):
+    SIGNED_OUT = "signed_out"
+    PASSWORD_CHANGED = "password_changed"
+    SESSION_REVOKED = "session_revoked"
+    BACKUP_RECOVERY_STARTED = "backup_recovery_started"
+    BACKUP_DELETED = "backup_deleted"
+    ACCOUNT_DELETED = "account_deleted"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -74,6 +83,27 @@ class RefreshToken(Base):
     rotation_retried_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class SecurityEvent(Base):
+    """Privacy-minimised, application-append-only security history."""
+
+    __tablename__ = "security_events"
+    __table_args__ = (
+        CheckConstraint(
+            "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
+            "'backup_recovery_started', 'backup_deleted', 'account_deleted')",
+            name="security_event_valid_type",
+        ),
+        Index("ix_security_events_user_id_id", "user_id", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    event_type: Mapped[str] = mapped_column(String(40))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
 class FriendRequest(Base):

@@ -46,11 +46,20 @@ def test_authenticated_backup_snapshot_upload_download_and_delete(client: TestCl
     assert downloaded.content == body
     assert downloaded.headers["X-Content-SHA256"] == chunk_headers["X-Content-SHA256"]
 
+    events = client.get("/v1/auth/security-events", headers=headers)
+    assert events.status_code == 200
+    assert [event["event_type"] for event in events.json()] == ["backup_recovery_started"]
+
     duplicate = client.post("/v1/backups/snapshots", headers=headers, json=payload)
     assert duplicate.status_code == 409
     deleted = client.delete("/v1/backups/snapshots/snapshot-1", headers=headers)
     assert deleted.status_code == 200
     assert client.get("/v1/backups/snapshots", headers=headers).json() == []
+    events = client.get("/v1/auth/security-events", headers=headers)
+    assert [event["event_type"] for event in events.json()] == [
+        "backup_deleted",
+        "backup_recovery_started",
+    ]
 
 
 def test_backup_upload_resumes_and_isolated_from_other_users(client: TestClient) -> None:

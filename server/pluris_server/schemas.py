@@ -77,6 +77,14 @@ class SessionView(BaseModel):
     current: bool
 
 
+class SecurityEventView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_type: str
+    occurred_at: datetime
+
+
 class FriendCodeResponse(BaseModel):
     friend_code: str
 

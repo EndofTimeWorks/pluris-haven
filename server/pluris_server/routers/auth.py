@@ -1,12 +1,20 @@
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
-from pluris_server.models import BackupSnapshot, DeviceSession, RefreshToken, User
+from pluris_server.models import (
+    BackupSnapshot,
+    DeviceSession,
+    RefreshToken,
+    SecurityEvent,
+    SecurityEventType,
+    User,
+)
 from pluris_server.schemas import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -15,6 +23,7 @@ from pluris_server.schemas import (
     RefreshRequest,
     RegisterRequest,
     RegistrationResponse,
+    SecurityEventView,
     SessionView,
     TokenPair,
     UserView,
@@ -29,6 +38,7 @@ from pluris_server.security import (
     rotate_refresh_token,
     verify_password,
 )
+from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
@@ -162,6 +172,11 @@ async def logout(auth: CurrentAuth, db: Db) -> MessageResponse:
         .where(RefreshToken.session_id == auth.session.id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=auth.session.revoked_at)
     )
+    record_security_event(
+        db,
+        user_id=auth.user.id,
+        event_type=SecurityEventType.SIGNED_OUT,
+    )
     await db.commit()
     return MessageResponse(detail="Signed out")
 
@@ -198,6 +213,11 @@ async def change_password(
         )
         .values(revoked_at=changed_at)
     )
+    record_security_event(
+        db,
+        user_id=auth.user.id,
+        event_type=SecurityEventType.PASSWORD_CHANGED,
+    )
     await db.commit()
     return MessageResponse(detail="Password changed")
 
@@ -219,6 +239,11 @@ async def delete_account(
     snapshot_ids = [snapshot.snapshot_id for snapshot in snapshots]
     owner_id = auth.user.id
     queue_backup_deletions(db, owner_id=owner_id, snapshot_ids=snapshot_ids)
+    record_security_event(
+        db,
+        user_id=owner_id,
+        event_type=SecurityEventType.ACCOUNT_DELETED,
+    )
     await db.delete(auth.user)
     await db.commit()
     await sweep_backup_deletions(db, request.app.state.backup_object_store)
@@ -252,6 +277,19 @@ async def sessions(auth: CurrentAuth, db: Db) -> list[SessionView]:
     ]
 
 
+@router.get("/security-events", response_model=list[SecurityEventView])
+async def security_events(
+    auth: CurrentAuth,
+    db: Db,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    before_id: Annotated[int | None, Query(ge=1)] = None,
+) -> list[SecurityEvent]:
+    query = select(SecurityEvent).where(SecurityEvent.user_id == auth.user.id)
+    if before_id is not None:
+        query = query.where(SecurityEvent.id < before_id)
+    return list((await db.scalars(query.order_by(SecurityEvent.id.desc()).limit(limit))).all())
+
+
 @router.delete("/sessions/{session_id}", response_model=MessageResponse)
 async def revoke_session(session_id: str, auth: CurrentAuth, db: Db) -> MessageResponse:
     target = await db.scalar(
@@ -268,6 +306,11 @@ async def revoke_session(session_id: str, auth: CurrentAuth, db: Db) -> MessageR
         update(RefreshToken)
         .where(RefreshToken.session_id == target.id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=target.revoked_at)
+    )
+    record_security_event(
+        db,
+        user_id=auth.user.id,
+        event_type=SecurityEventType.SESSION_REVOKED,
     )
     await db.commit()
     return MessageResponse(detail="Session revoked")

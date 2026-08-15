@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from pluris_server.models import BackupSnapshot, User
+from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
 from pluris_server.routers import auth as auth_router
 from tests.conftest import auth, register
 
@@ -168,6 +168,52 @@ def test_change_password_rejects_wrong_or_reused_password(
         },
     )
     assert reused.status_code == 400
+
+
+def test_security_events_are_private_and_cursor_paginated(
+    client: TestClient,
+    fast_passwords: None,
+) -> None:
+    owner = register(client, "events@example.com", "Events owner")
+    other = register(client, "events-other@example.com", "Events other")
+    owner_headers = auth(owner["access_token"])
+
+    changed = client.post(
+        "/v1/auth/password",
+        headers=owner_headers,
+        json={
+            "current_password": "correct horse battery staple",
+            "new_password": "new correct horse battery staple",
+        },
+    )
+    assert changed.status_code == 200
+
+    signed_out = client.post("/v1/auth/logout", headers=owner_headers)
+    assert signed_out.status_code == 200
+
+    logged_in = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "events@example.com",
+            "password": "new correct horse battery staple",
+            "device_name": "Fresh device",
+        },
+    )
+    assert logged_in.status_code == 200
+    fresh_headers = auth(logged_in.json()["access_token"])
+
+    first_page = client.get("/v1/auth/security-events?limit=1", headers=fresh_headers)
+    assert first_page.status_code == 200
+    assert [event["event_type"] for event in first_page.json()] == ["signed_out"]
+    cursor = first_page.json()[0]["id"]
+
+    second_page = client.get(f"/v1/auth/security-events?before_id={cursor}", headers=fresh_headers)
+    assert second_page.status_code == 200
+    assert [event["event_type"] for event in second_page.json()] == ["password_changed"]
+
+    other_events = client.get("/v1/auth/security-events", headers=auth(other["access_token"]))
+    assert other_events.status_code == 200
+    assert other_events.json() == []
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:
@@ -361,6 +407,13 @@ def test_account_deletion_requires_password_and_removes_server_data(client: Test
                 await session.scalar(select(User).where(User.email == "delete@example.com")) is None
             )
             assert await session.scalar(select(func.count(BackupSnapshot.id))) == 0
+            deletion_event = await session.scalar(
+                select(SecurityEvent).where(
+                    SecurityEvent.event_type == SecurityEventType.ACCOUNT_DELETED.value
+                )
+            )
+            assert deletion_event is not None
+            assert deletion_event.user_id is None
 
     asyncio.run(assert_deleted())
     storage_root = client.app.state.backup_object_store.root
