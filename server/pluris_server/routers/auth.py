@@ -15,6 +15,12 @@ from pluris_server.models import (
     SecurityEventType,
     User,
 )
+from pluris_server.observability import (
+    SecurityOperation,
+    SecurityReason,
+    SecuritySignal,
+    log_security_signal,
+)
 from pluris_server.schemas import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -45,16 +51,21 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 async def _enforce_rate_limit(
     request: Request,
-    endpoint: str,
+    operation: SecurityOperation,
     subject: str | None = None,
     include_client: bool = True,
 ) -> None:
     client_host = request.client.host if request.client is not None else "unknown"
-    keys = [f"auth:{endpoint}:ip:{client_host}"] if include_client else []
+    keys = [f"auth:{operation.value}:ip:{client_host}"] if include_client else []
     if subject is not None:
-        keys.append(f"auth:{endpoint}:subject:{subject}")
+        keys.append(f"auth:{operation.value}:subject:{subject}")
     retry_after = await request.app.state.auth_rate_limiter.retry_after(keys)
     if retry_after is not None:
+        log_security_signal(
+            SecuritySignal.AUTH_RATE_LIMITED,
+            operation=operation,
+            reason=SecurityReason.RATE_LIMIT,
+        )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many authentication attempts",
@@ -68,6 +79,11 @@ async def _enforce_refresh_ip_limit(request: Request) -> None:
         [f"auth:refresh:ip:{client_host}"]
     )
     if retry_after is not None:
+        log_security_signal(
+            SecuritySignal.AUTH_RATE_LIMITED,
+            operation=SecurityOperation.REFRESH,
+            reason=SecurityReason.RATE_LIMIT,
+        )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many authentication attempts",
@@ -91,10 +107,20 @@ async def register(
     request: Request, payload: RegisterRequest, db: Db, settings: AppSettings
 ) -> RegistrationResponse:
     email = str(payload.email).strip().casefold()
-    await _enforce_rate_limit(request, "register", email)
+    await _enforce_rate_limit(request, SecurityOperation.REGISTER, email)
     if not settings.registration_enabled:
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.REGISTER,
+            reason=SecurityReason.REGISTRATION_DISABLED,
+        )
         raise HTTPException(status_code=503, detail="Account registration is not enabled")
     if await db.scalar(select(User.id).where(User.email == email)) is not None:
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.REGISTER,
+            reason=SecurityReason.ACCOUNT_CONFLICT,
+        )
         raise HTTPException(status_code=409, detail="An account with that email already exists")
 
     user = User(
@@ -110,6 +136,11 @@ async def register(
         await db.commit()
     except IntegrityError as error:
         await db.rollback()
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.REGISTER,
+            reason=SecurityReason.ACCOUNT_CONFLICT,
+        )
         raise HTTPException(
             status_code=409, detail="An account with that email already exists"
         ) from error
@@ -126,14 +157,29 @@ async def login(
     request: Request, payload: LoginRequest, db: Db, settings: AppSettings
 ) -> TokenPair:
     email = str(payload.email).strip().casefold()
-    await _enforce_rate_limit(request, "login", email)
+    await _enforce_rate_limit(request, SecurityOperation.LOGIN, email)
     user = await db.scalar(select(User).where(User.email == email))
     if user is None:
         await dummy_verify_password(payload.password)
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.LOGIN,
+            reason=SecurityReason.INVALID_CREDENTIALS,
+        )
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not await verify_password(payload.password, user.password_hash):
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.LOGIN,
+            reason=SecurityReason.INVALID_CREDENTIALS,
+        )
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if user.disabled:
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.LOGIN,
+            reason=SecurityReason.DISABLED_ACCOUNT,
+        )
         raise HTTPException(status_code=403, detail="This account is disabled")
 
     tokens = await issue_tokens(db, user, payload.device_name, settings)
@@ -148,7 +194,7 @@ async def refresh(
     await _enforce_refresh_ip_limit(request)
     await _enforce_rate_limit(
         request,
-        "refresh",
+        SecurityOperation.REFRESH,
         digest_token(payload.refresh_token),
         include_client=False,
     )
@@ -159,6 +205,11 @@ async def refresh(
         rotation_nonce=payload.rotation_nonce,
     )
     if tokens is None:
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.REFRESH,
+            reason=SecurityReason.INVALID_CREDENTIALS,
+        )
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
     await db.commit()
     return TokenPair(**tokens.__dict__)
@@ -188,8 +239,13 @@ async def change_password(
     auth: CurrentAuth,
     db: Db,
 ) -> MessageResponse:
-    await _enforce_rate_limit(request, "password", auth.user.email)
+    await _enforce_rate_limit(request, SecurityOperation.CHANGE_PASSWORD, auth.user.email)
     if not await verify_password(payload.current_password, auth.user.password_hash):
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.CHANGE_PASSWORD,
+            reason=SecurityReason.WRONG_CURRENT_PASSWORD,
+        )
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     if await verify_password(payload.new_password, auth.user.password_hash):
         raise HTTPException(status_code=400, detail="New password must be different")
@@ -229,8 +285,13 @@ async def delete_account(
     auth: CurrentAuth,
     db: Db,
 ) -> MessageResponse:
-    await _enforce_rate_limit(request, "delete", auth.user.email)
+    await _enforce_rate_limit(request, SecurityOperation.DELETE_ACCOUNT, auth.user.email)
     if not await verify_password(payload.password, auth.user.password_hash):
+        log_security_signal(
+            SecuritySignal.AUTH_REJECTED,
+            operation=SecurityOperation.DELETE_ACCOUNT,
+            reason=SecurityReason.WRONG_CURRENT_PASSWORD,
+        )
         raise HTTPException(status_code=401, detail="Current password is incorrect")
 
     snapshots = (

@@ -91,6 +91,10 @@ journalctl -u pluris-haven-server -f
 curl --fail http://127.0.0.1:8000/ready
 ```
 
+See [SECURITY-OPERATIONS.md](SECURITY-OPERATIONS.md) for privacy-safe security
+signals, initial alert thresholds, capacity checks, and the incident-response
+path.
+
 Run the first backup and restore rehearsal before opening registration:
 
 ```sh

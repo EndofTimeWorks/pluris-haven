@@ -9,6 +9,12 @@ from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_de
 from pluris_server.backup_storage import BackupChunkConflict, BackupChunkIntegrityError
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import BackupChunk, BackupSnapshot, SecurityEventType, User
+from pluris_server.observability import (
+    SecurityOperation,
+    SecurityReason,
+    SecuritySignal,
+    log_security_signal,
+)
 from pluris_server.schemas import (
     BackupChunkView,
     BackupSnapshotCreate,
@@ -28,11 +34,21 @@ async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
         except ValueError as error:
             raise HTTPException(status_code=400, detail="Invalid Content-Length header") from error
         if declared_length > maximum_bytes:
+            log_security_signal(
+                SecuritySignal.CAPACITY_REJECTED,
+                operation=SecurityOperation.BACKUP_CHUNK,
+                reason=SecurityReason.PAYLOAD_TOO_LARGE,
+            )
             raise HTTPException(status_code=413, detail="Backup chunk exceeds the server limit")
 
     content = bytearray()
     async for chunk in request.stream():
         if len(content) > maximum_bytes - len(chunk):
+            log_security_signal(
+                SecuritySignal.CAPACITY_REJECTED,
+                operation=SecurityOperation.BACKUP_CHUNK,
+                reason=SecurityReason.PAYLOAD_TOO_LARGE,
+            )
             raise HTTPException(status_code=413, detail="Backup chunk exceeds the server limit")
         content.extend(chunk)
     return bytes(content)
@@ -95,11 +111,21 @@ async def create_snapshot(
         )
     ).one()
     if int(snapshot_count) >= settings.backup_max_snapshots_per_user:
+        log_security_signal(
+            SecuritySignal.CAPACITY_REJECTED,
+            operation=SecurityOperation.BACKUP_SNAPSHOT,
+            reason=SecurityReason.SNAPSHOT_LIMIT,
+        )
         raise HTTPException(
             status_code=413,
             detail="Backup snapshot limit reached for this account",
         )
     if int(reserved_bytes or 0) + payload.total_bytes > settings.backup_max_total_bytes_per_user:
+        log_security_signal(
+            SecuritySignal.CAPACITY_REJECTED,
+            operation=SecurityOperation.BACKUP_SNAPSHOT,
+            reason=SecurityReason.STORAGE_QUOTA,
+        )
         raise HTTPException(
             status_code=413,
             detail="Backup storage quota exceeded for this account",
@@ -197,6 +223,11 @@ async def put_chunk(
         )
     )
     if int(uploaded_bytes or 0) + len(content) > snapshot.total_bytes:
+        log_security_signal(
+            SecuritySignal.CAPACITY_REJECTED,
+            operation=SecurityOperation.BACKUP_CHUNK,
+            reason=SecurityReason.PAYLOAD_TOO_LARGE,
+        )
         raise HTTPException(status_code=413, detail="Backup chunks exceed the snapshot manifest")
 
     try:
