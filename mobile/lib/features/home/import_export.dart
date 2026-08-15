@@ -716,7 +716,6 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   ImportPreview _encryptedArchiveLockedPreview(String fileName) {
-    final l10n = AppLocalizations.of(context);
     return ImportPreview(
       source: ImportSource.plurisHavenArchive,
       fileName: fileName,
@@ -725,15 +724,16 @@ class _ImportExportPageState extends State<ImportExportPage> {
       events: [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'decrypt',
-          message: l10n.encryptedArchiveLockedPreview,
+          stage: ImportPreviewStage.decrypt,
+          diagnostic: const ImportDiagnostic(
+            ImportDiagnosticCode.encryptedArchiveLocked,
+          ),
         ),
       ],
     );
   }
 
   ImportPreview _encryptedArchiveFailedPreview(String fileName, Object error) {
-    final l10n = AppLocalizations.of(context);
     return ImportPreview(
       source: ImportSource.plurisHavenArchive,
       fileName: fileName,
@@ -742,8 +742,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
       events: [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.error,
-          stage: 'decrypt',
-          message: l10n.couldNotDecryptArchive(error.toString()),
+          stage: ImportPreviewStage.decrypt,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.encryptedArchiveDecryptFailed,
+            {'error': error.toString()},
+          ),
         ),
       ],
     );
@@ -1767,7 +1770,8 @@ class ImportPreviewCard extends StatelessWidget {
             const SizedBox(height: 14),
             for (final event in notableEvents) ...[
               Text(
-                '${event.stage}: ${event.message}',
+                '${localizeImportPreviewStage(l10n, event.stage)}: '
+                '${localizeImportDiagnostic(l10n, event.diagnostic)}',
                 style: TextStyle(
                   color: event.severity == ImportPreviewSeverity.error
                       ? Theme.of(context).colorScheme.error

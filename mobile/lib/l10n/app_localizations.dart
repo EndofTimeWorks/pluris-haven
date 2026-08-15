@@ -2004,6 +2004,199 @@ abstract class AppLocalizations {
   /// **'waiting for detection'**
   String get waitingForDetection;
 
+  /// No description provided for @importStageParse.
+  ///
+  /// In en, this message translates to:
+  /// **'parse'**
+  String get importStageParse;
+
+  /// No description provided for @importStageDecrypt.
+  ///
+  /// In en, this message translates to:
+  /// **'decrypt'**
+  String get importStageDecrypt;
+
+  /// No description provided for @importStageValidate.
+  ///
+  /// In en, this message translates to:
+  /// **'validate'**
+  String get importStageValidate;
+
+  /// No description provided for @importStagePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'preview'**
+  String get importStagePreview;
+
+  /// No description provided for @importStageNormalize.
+  ///
+  /// In en, this message translates to:
+  /// **'normalize'**
+  String get importStageNormalize;
+
+  /// No description provided for @importStagePreserve.
+  ///
+  /// In en, this message translates to:
+  /// **'preserve'**
+  String get importStagePreserve;
+
+  /// No description provided for @importStageAvatars.
+  ///
+  /// In en, this message translates to:
+  /// **'avatars'**
+  String get importStageAvatars;
+
+  /// No description provided for @importDiagnosticJsonParseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse JSON: {error}'**
+  String importDiagnosticJsonParseFailed(String error);
+
+  /// No description provided for @importDiagnosticExpectedTopLevelObject.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected a JSON object at the top level.'**
+  String get importDiagnosticExpectedTopLevelObject;
+
+  /// No description provided for @importDiagnosticPrismNeedsDecryption.
+  ///
+  /// In en, this message translates to:
+  /// **'Prism preview needs encrypted file decryption first.'**
+  String get importDiagnosticPrismNeedsDecryption;
+
+  /// No description provided for @importDiagnosticNotPlurisArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a Pluris Haven local archive.'**
+  String get importDiagnosticNotPlurisArchive;
+
+  /// No description provided for @importDiagnosticUnsupportedArchiveVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported archive version: {version}.'**
+  String importDiagnosticUnsupportedArchiveVersion(String version);
+
+  /// No description provided for @importDiagnosticFoundMembersAndFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'Found {members} members and {fronts} fronts.'**
+  String importDiagnosticFoundMembersAndFronts(int members, int fronts);
+
+  /// No description provided for @importDiagnosticRecognizedRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized records can be imported into the local archive.'**
+  String get importDiagnosticRecognizedRecords;
+
+  /// No description provided for @importDiagnosticNoImportableRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No importable records were recognized.'**
+  String get importDiagnosticNoImportableRecords;
+
+  /// No description provided for @importDiagnosticPreservedRawPayloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Preserved {count, plural, =1{1 original source collection} other{{count} original source collections}} as raw payloads for export/debug{collections}. Mapped records still import normally; raw copies do not create notes, messages, or members.'**
+  String importDiagnosticPreservedRawPayloads(int count, String collections);
+
+  /// No description provided for @importDiagnosticCollectionNames.
+  ///
+  /// In en, this message translates to:
+  /// **': {names}'**
+  String importDiagnosticCollectionNames(String names);
+
+  /// No description provided for @importDiagnosticCollectionNamesWithMore.
+  ///
+  /// In en, this message translates to:
+  /// **': {names}, +{count} more'**
+  String importDiagnosticCollectionNamesWithMore(String names, int count);
+
+  /// No description provided for @importDiagnosticRemoteAvatarsWithoutZip.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.'**
+  String get importDiagnosticRemoteAvatarsWithoutZip;
+
+  /// No description provided for @importDiagnosticBestEffort.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} import is best-effort. Review after import.'**
+  String importDiagnosticBestEffort(String source);
+
+  /// No description provided for @importDiagnosticSkippedExpectedObject.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {record} #{index}: expected an object.'**
+  String importDiagnosticSkippedExpectedObject(String record, int index);
+
+  /// No description provided for @importDiagnosticSkippedMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {record} #{index}: missing {fields}.'**
+  String importDiagnosticSkippedMissingFields(
+    String record,
+    int index,
+    String fields,
+  );
+
+  /// No description provided for @importDiagnosticIgnoredMissingRelation.
+  ///
+  /// In en, this message translates to:
+  /// **'{ownerKind} \"{owner}\" ignored missing {relationKind} \"{relation}\".'**
+  String importDiagnosticIgnoredMissingRelation(
+    String ownerKind,
+    String owner,
+    String relationKind,
+    String relation,
+  );
+
+  /// No description provided for @importDiagnosticIgnoredSelfParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Group \"{group}\" ignored itself as its parent.'**
+  String importDiagnosticIgnoredSelfParent(String group);
+
+  /// No description provided for @importDiagnosticReminderMissingMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder #{index} references a member that was not imported; the reminder was disabled.'**
+  String importDiagnosticReminderMissingMember(int index);
+
+  /// No description provided for @importDiagnosticPollTooFewOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped poll \"{question}\": fewer than two usable options.'**
+  String importDiagnosticPollTooFewOptions(String question);
+
+  /// No description provided for @importDiagnosticIgnoredMissingReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored missing {relation} reference \"{value}\" in {record}.'**
+  String importDiagnosticIgnoredMissingReference(
+    String record,
+    String relation,
+    String value,
+  );
+
+  /// No description provided for @importDiagnosticFrontReversed.
+  ///
+  /// In en, this message translates to:
+  /// **'Front #{index} ended before it started; swapped start and end.'**
+  String importDiagnosticFrontReversed(int index);
+
+  /// No description provided for @importDiagnosticStringClamped.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 {field} will be shortened} other{{count} {field}s will be shortened}} to {limit} characters.'**
+  String importDiagnosticStringClamped(int count, String field, int limit);
+
+  /// No description provided for @importDiagnosticListClamped.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 {field} will be trimmed} other{{count} {field}s will be trimmed}} to {limit} entries.'**
+  String importDiagnosticListClamped(int count, String field, int limit);
+
   /// No description provided for @previewTitle.
   ///
   /// In en, this message translates to:

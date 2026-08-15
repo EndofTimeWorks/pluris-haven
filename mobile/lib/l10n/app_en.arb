@@ -471,6 +471,92 @@
     "placeholders": { "service": { "type": "String" } }
   },
   "waitingForDetection": "waiting for detection",
+  "importStageParse": "parse",
+  "importStageDecrypt": "decrypt",
+  "importStageValidate": "validate",
+  "importStagePreview": "preview",
+  "importStageNormalize": "normalize",
+  "importStagePreserve": "preserve",
+  "importStageAvatars": "avatars",
+  "importDiagnosticJsonParseFailed": "Could not parse JSON: {error}",
+  "@importDiagnosticJsonParseFailed": { "placeholders": { "error": { "type": "String" } } },
+  "importDiagnosticExpectedTopLevelObject": "Expected a JSON object at the top level.",
+  "importDiagnosticPrismNeedsDecryption": "Prism preview needs encrypted file decryption first.",
+  "importDiagnosticNotPlurisArchive": "This is not a Pluris Haven local archive.",
+  "importDiagnosticUnsupportedArchiveVersion": "Unsupported archive version: {version}.",
+  "@importDiagnosticUnsupportedArchiveVersion": { "placeholders": { "version": { "type": "String" } } },
+  "importDiagnosticFoundMembersAndFronts": "Found {members} members and {fronts} fronts.",
+  "@importDiagnosticFoundMembersAndFronts": {
+    "placeholders": { "members": { "type": "int" }, "fronts": { "type": "int" } }
+  },
+  "importDiagnosticRecognizedRecords": "Recognized records can be imported into the local archive.",
+  "importDiagnosticNoImportableRecords": "No importable records were recognized.",
+  "importDiagnosticPreservedRawPayloads": "Preserved {count, plural, =1{1 original source collection} other{{count} original source collections}} as raw payloads for export/debug{collections}. Mapped records still import normally; raw copies do not create notes, messages, or members.",
+  "@importDiagnosticPreservedRawPayloads": {
+    "placeholders": { "count": { "type": "int" }, "collections": { "type": "String" } }
+  },
+  "importDiagnosticCollectionNames": ": {names}",
+  "@importDiagnosticCollectionNames": { "placeholders": { "names": { "type": "String" } } },
+  "importDiagnosticCollectionNamesWithMore": ": {names}, +{count} more",
+  "@importDiagnosticCollectionNamesWithMore": {
+    "placeholders": { "names": { "type": "String" }, "count": { "type": "int" } }
+  },
+  "importDiagnosticRemoteAvatarsWithoutZip": "Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.",
+  "importDiagnosticBestEffort": "{source} import is best-effort. Review after import.",
+  "@importDiagnosticBestEffort": { "placeholders": { "source": { "type": "String" } } },
+  "importDiagnosticSkippedExpectedObject": "Skipped {record} #{index}: expected an object.",
+  "@importDiagnosticSkippedExpectedObject": {
+    "placeholders": { "record": { "type": "String" }, "index": { "type": "int" } }
+  },
+  "importDiagnosticSkippedMissingFields": "Skipped {record} #{index}: missing {fields}.",
+  "@importDiagnosticSkippedMissingFields": {
+    "placeholders": {
+      "record": { "type": "String" },
+      "index": { "type": "int" },
+      "fields": { "type": "String" }
+    }
+  },
+  "importDiagnosticIgnoredMissingRelation": "{ownerKind} \"{owner}\" ignored missing {relationKind} \"{relation}\".",
+  "@importDiagnosticIgnoredMissingRelation": {
+    "placeholders": {
+      "ownerKind": { "type": "String" },
+      "owner": { "type": "String" },
+      "relationKind": { "type": "String" },
+      "relation": { "type": "String" }
+    }
+  },
+  "importDiagnosticIgnoredSelfParent": "Group \"{group}\" ignored itself as its parent.",
+  "@importDiagnosticIgnoredSelfParent": { "placeholders": { "group": { "type": "String" } } },
+  "importDiagnosticReminderMissingMember": "Reminder #{index} references a member that was not imported; the reminder was disabled.",
+  "@importDiagnosticReminderMissingMember": { "placeholders": { "index": { "type": "int" } } },
+  "importDiagnosticPollTooFewOptions": "Skipped poll \"{question}\": fewer than two usable options.",
+  "@importDiagnosticPollTooFewOptions": { "placeholders": { "question": { "type": "String" } } },
+  "importDiagnosticIgnoredMissingReference": "Ignored missing {relation} reference \"{value}\" in {record}.",
+  "@importDiagnosticIgnoredMissingReference": {
+    "placeholders": {
+      "record": { "type": "String" },
+      "relation": { "type": "String" },
+      "value": { "type": "String" }
+    }
+  },
+  "importDiagnosticFrontReversed": "Front #{index} ended before it started; swapped start and end.",
+  "@importDiagnosticFrontReversed": { "placeholders": { "index": { "type": "int" } } },
+  "importDiagnosticStringClamped": "{count, plural, =1{1 {field} will be shortened} other{{count} {field}s will be shortened}} to {limit} characters.",
+  "@importDiagnosticStringClamped": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "field": { "type": "String" },
+      "limit": { "type": "int" }
+    }
+  },
+  "importDiagnosticListClamped": "{count, plural, =1{1 {field} will be trimmed} other{{count} {field}s will be trimmed}} to {limit} entries.",
+  "@importDiagnosticListClamped": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "field": { "type": "String" },
+      "limit": { "type": "int" }
+    }
+  },
   "previewTitle": "Preview",
   "validShapeStatus": "valid shape",
   "needsAttentionStatus": "needs attention",

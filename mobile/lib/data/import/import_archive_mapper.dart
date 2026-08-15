@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'import_diagnostic.dart';
 import 'import_file_decoder.dart';
 import 'import_sources.dart';
 
@@ -17,7 +18,7 @@ class NormalizedImportArchive {
   final String fileName;
   final String archiveJson;
   final Map<String, int> counts;
-  final List<String> warnings;
+  final List<ImportDiagnostic> warnings;
 }
 
 NormalizedImportArchive normalizeImportTextToLocalArchive({
@@ -29,7 +30,9 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
 }) {
   final decoded = jsonDecode(text);
   if (decoded is! Map<String, Object?>) {
-    throw const FormatException('Expected a JSON object at the top level.');
+    throw const ImportDiagnosticException(
+      ImportDiagnostic(ImportDiagnosticCode.expectedTopLevelObject),
+    );
   }
 
   if (source == ImportSource.plurisHavenArchive) {
@@ -43,7 +46,9 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   }
 
   if (source == ImportSource.prism) {
-    throw const FormatException('Prism imports need decryption first.');
+    throw const ImportDiagnosticException(
+      ImportDiagnostic(ImportDiagnosticCode.prismNeedsDecryption),
+    );
   }
   final normalizer = _ExternalArchiveNormalizer(
     source: source,
@@ -92,7 +97,7 @@ class _ExternalArchiveNormalizer {
   final Map<String, Object?> decoded;
   final List<ImportAvatarAsset> avatarAssets;
   final DateTime importedAt;
-  final warnings = <String>[];
+  final warnings = <ImportDiagnostic>[];
   final _memberIdsByExternalId = <String, String>{};
   final _memberNamesByExternalId = <String, String>{};
   final _groupIdsByExternalId = <String, String>{};
@@ -108,6 +113,45 @@ class _ExternalArchiveNormalizer {
   final _externalIdByStableId = <String, String>{};
   final _anonymousExternalIdCounts = <String, int>{};
   final _groupExternalIdsByIndex = <int, String>{};
+
+  void _warnSkippedExpectedObject(String record, int zeroBasedIndex) {
+    warnings.add(
+      ImportDiagnostic(ImportDiagnosticCode.skippedExpectedObject, {
+        'record': record,
+        'index': zeroBasedIndex + 1,
+      }),
+    );
+  }
+
+  void _warnSkippedMissingFields(
+    String record,
+    int zeroBasedIndex,
+    String fields,
+  ) {
+    warnings.add(
+      ImportDiagnostic(ImportDiagnosticCode.skippedMissingFields, {
+        'record': record,
+        'index': zeroBasedIndex + 1,
+        'fields': fields,
+      }),
+    );
+  }
+
+  void _warnMissingRelation(
+    String ownerKind,
+    String owner,
+    String relationKind,
+    String relation,
+  ) {
+    warnings.add(
+      ImportDiagnostic(ImportDiagnosticCode.ignoredMissingRelation, {
+        'ownerKind': ownerKind,
+        'owner': owner,
+        'relationKind': relationKind,
+        'relation': relation,
+      }),
+    );
+  }
 
   late final List<Map<String, Object?>> members;
   late final List<Map<String, Object?>> groups;
@@ -318,7 +362,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final member = _mapValue(items[index]);
       if (member == null) {
-        warnings.add('Skipped member #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('member', index);
         continue;
       }
       if (source == ImportSource.simplyPlural &&
@@ -345,9 +389,7 @@ class _ExternalArchiveNormalizer {
       final externalId = _firstString(bucket, const ['_id', 'id', 'uuid']);
       final name = _firstString(bucket, const ['name'])?.trim();
       if (externalId == null || name == null || name.isEmpty) {
-        warnings.add(
-          'Skipped privacy bucket #${index + 1}: missing ID or name.',
-        );
+        _warnSkippedMissingFields('privacy bucket', index, 'ID or name');
         continue;
       }
       final id = _stableId('privacy-bucket', externalId);
@@ -434,7 +476,7 @@ class _ExternalArchiveNormalizer {
       'tupper',
     ])?.trim();
     if (name == null || name.isEmpty) {
-      warnings.add('Skipped member #${index + 1}: missing name.');
+      _warnSkippedMissingFields('member', index, 'name');
       return null;
     }
     final displayName = _clamp(name, _capMemberName)!;
@@ -463,7 +505,7 @@ class _ExternalArchiveNormalizer {
               .firstOrNull
         : _groupIdsByExternalId[groupExternalId];
     if (groupExternalId != null && groupId == null) {
-      warnings.add('Member "$name" ignored missing group "$groupExternalId".');
+      _warnMissingRelation('Member', name, 'group', groupExternalId);
     }
 
     return {
@@ -545,7 +587,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final customFront = _mapValue(items[index]);
       if (customFront == null) {
-        warnings.add('Skipped custom front #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('custom front', index);
         continue;
       }
       final label = _firstString(customFront, const [
@@ -558,7 +600,7 @@ class _ExternalArchiveNormalizer {
         'custom_status',
       ])?.trim();
       if (label == null || label.isEmpty) {
-        warnings.add('Skipped custom front #${index + 1}: missing label.');
+        _warnSkippedMissingFields('custom front', index, 'label');
         continue;
       }
       final name = _clamp(label, _capMemberName)!;
@@ -666,7 +708,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final field = _mapValue(items[index]);
       if (field == null) {
-        warnings.add('Skipped custom field #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('custom field', index);
         continue;
       }
       final name = _firstString(field, const [
@@ -675,7 +717,7 @@ class _ExternalArchiveNormalizer {
         'title',
       ])?.trim();
       if (name == null || name.isEmpty) {
-        warnings.add('Skipped custom field #${index + 1}: missing name.');
+        _warnSkippedMissingFields('custom field', index, 'name');
         continue;
       }
       final clampedName = _clamp(name, _capCustomFieldName)!;
@@ -740,7 +782,11 @@ class _ExternalArchiveNormalizer {
           : _memberIdsByExternalId[memberExternalId];
       if (memberExternalId != null && memberId == null) {
         warnings.add(
-          'Ignored custom field value for missing member "$memberExternalId".',
+          ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
+            'record': 'custom field value',
+            'relation': 'member',
+            'value': memberExternalId,
+          }),
         );
         continue;
       }
@@ -896,7 +942,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final group = _mapValue(items[index]);
       if (group == null) {
-        warnings.add('Skipped group #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('group', index);
         continue;
       }
       final record = _groupRecord(group, index);
@@ -989,8 +1035,11 @@ class _ExternalArchiveNormalizer {
         }
         final memberId = _memberIdsByExternalId[memberExternalId];
         if (memberId == null) {
-          warnings.add(
-            'Group "$groupExternalId" ignored missing member "$memberExternalId".',
+          _warnMissingRelation(
+            'Group',
+            groupExternalId,
+            'member',
+            memberExternalId,
           );
           continue;
         }
@@ -1023,7 +1072,7 @@ class _ExternalArchiveNormalizer {
       'title',
     ])?.trim();
     if (name == null || name.isEmpty) {
-      warnings.add('Skipped group #${index + 1}: missing name.');
+      _warnSkippedMissingFields('group', index, 'name');
       return null;
     }
     final clampedName = _clamp(name, _capGroupName)!;
@@ -1048,11 +1097,13 @@ class _ExternalArchiveNormalizer {
         ? null
         : _groupIdsByExternalId[normalizedParentId];
     if (normalizedParentId != null && parentGroupId == null) {
-      warnings.add(
-        'Group "$name" ignored missing parent "$normalizedParentId".',
-      );
+      _warnMissingRelation('Group', name, 'parent', normalizedParentId);
     } else if (parentGroupId == id) {
-      warnings.add('Group "$name" ignored itself as its parent.');
+      warnings.add(
+        ImportDiagnostic(ImportDiagnosticCode.ignoredSelfParent, {
+          'group': name,
+        }),
+      );
       parentGroupId = null;
     }
 
@@ -1084,7 +1135,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final note = _mapValue(items[index]);
       if (note == null) {
-        warnings.add('Skipped note #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('note', index);
         continue;
       }
       final record = _noteRecord(note, index);
@@ -1108,7 +1159,7 @@ class _ExternalArchiveNormalizer {
       'subject',
     ])?.trim();
     if ((body == null || body.isEmpty) && (title == null || title.isEmpty)) {
-      warnings.add('Skipped note #${index + 1}: missing title and body.');
+      _warnSkippedMissingFields('note', index, 'title and body');
       return null;
     }
 
@@ -1151,7 +1202,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final journal = _mapValue(items[index]);
       if (journal == null) {
-        warnings.add('Skipped journal #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('journal', index);
         continue;
       }
       final record = _journalRecord(journal, index);
@@ -1179,7 +1230,7 @@ class _ExternalArchiveNormalizer {
       'subject',
     ])?.trim();
     if ((body == null || body.isEmpty) && (title == null || title.isEmpty)) {
-      warnings.add('Skipped journal #${index + 1}: missing title and body.');
+      _warnSkippedMissingFields('journal', index, 'title and body');
       return null;
     }
 
@@ -1223,12 +1274,12 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < channelItems.length; index++) {
       final channel = _mapValue(channelItems[index]);
       if (channel == null) {
-        warnings.add('Skipped chat channel #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('chat channel', index);
         continue;
       }
       final name = _firstString(channel, const ['name', 'title'])?.trim();
       if (name == null || name.isEmpty) {
-        warnings.add('Skipped chat channel #${index + 1}: missing name.');
+        _warnSkippedMissingFields('chat channel', index, 'name');
         continue;
       }
       final externalId =
@@ -1269,14 +1320,12 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < categoryItems.length; index++) {
       final category = _mapValue(categoryItems[index]);
       if (category == null) {
-        warnings.add(
-          'Skipped chat category #${index + 1}: expected an object.',
-        );
+        _warnSkippedExpectedObject('chat category', index);
         continue;
       }
       final name = _firstString(category, const ['name', 'title'])?.trim();
       if (name == null || name.isEmpty) {
-        warnings.add('Skipped chat category #${index + 1}: missing name.');
+        _warnSkippedMissingFields('chat category', index, 'name');
         continue;
       }
       final externalId =
@@ -1309,7 +1358,11 @@ class _ExternalArchiveNormalizer {
         if (channel == null) {
           if (ref != null) {
             warnings.add(
-              'Ignored missing chat channel reference "$ref" in "$name".',
+              ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
+                'record': 'chat category "$name"',
+                'relation': 'chat channel',
+                'value': ref,
+              }),
             );
           }
           continue;
@@ -1334,7 +1387,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final message = _mapValue(items[index]);
       if (message == null) {
-        warnings.add('Skipped message #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('message', index);
         continue;
       }
       if (_isFrontHistoryComment(message)) {
@@ -1360,7 +1413,7 @@ class _ExternalArchiveNormalizer {
       'title',
     ])?.trim();
     if (body == null || body.isEmpty) {
-      warnings.add('Skipped message #${index + 1}: missing body.');
+      _warnSkippedMissingFields('message', index, 'body');
       return null;
     }
 
@@ -1426,7 +1479,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final reminder = _mapValue(items[index]);
       if (reminder == null) {
-        warnings.add('Skipped reminder #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('reminder', index);
         continue;
       }
       final record = _reminderRecord(reminder, index);
@@ -1460,9 +1513,7 @@ class _ExternalArchiveNormalizer {
         title.isEmpty ||
         schedule == null ||
         schedule.isEmpty) {
-      warnings.add(
-        'Skipped reminder #${index + 1}: missing title or schedule.',
-      );
+      _warnSkippedMissingFields('reminder', index, 'title or schedule');
       return null;
     }
     final structuredSchedule = _structuredReminderSchedule(reminder, schedule);
@@ -1477,8 +1528,9 @@ class _ExternalArchiveNormalizer {
         : _memberIdsByExternalId[triggerMemberId];
     if (triggerMemberId != null && mappedTriggerMemberId == null) {
       warnings.add(
-        'Reminder #${index + 1} references a member that was not imported; '
-        'the reminder was disabled.',
+        ImportDiagnostic(ImportDiagnosticCode.reminderMissingMember, {
+          'index': index + 1,
+        }),
       );
     }
 
@@ -1587,7 +1639,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final poll = _mapValue(items[index]);
       if (poll == null) {
-        warnings.add('Skipped poll #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('poll', index);
         continue;
       }
 
@@ -1599,7 +1651,7 @@ class _ExternalArchiveNormalizer {
         'body',
       ])?.trim();
       if (question == null || question.isEmpty) {
-        warnings.add('Skipped poll #${index + 1}: missing question.');
+        _warnSkippedMissingFields('poll', index, 'question');
         continue;
       }
 
@@ -1610,7 +1662,9 @@ class _ExternalArchiveNormalizer {
       final options = _pollOptionRecords(poll, id, externalId);
       if (options.length < 2) {
         warnings.add(
-          'Skipped poll "$question": fewer than two usable options.',
+          ImportDiagnostic(ImportDiagnosticCode.pollTooFewOptions, {
+            'question': question,
+          }),
         );
         continue;
       }
@@ -1865,7 +1919,7 @@ class _ExternalArchiveNormalizer {
     for (var index = 0; index < items.length; index++) {
       final front = _mapValue(items[index]);
       if (front == null) {
-        warnings.add('Skipped front #${index + 1}: expected an object.');
+        _warnSkippedExpectedObject('front', index);
         continue;
       }
 
@@ -1878,7 +1932,7 @@ class _ExternalArchiveNormalizer {
         'time',
       ]);
       if (start == null) {
-        warnings.add('Skipped front #${index + 1}: missing start time.');
+        _warnSkippedMissingFields('front', index, 'start time');
         continue;
       }
 
@@ -1893,9 +1947,7 @@ class _ExternalArchiveNormalizer {
               ? 'No fronters'
               : null);
       if (memberIds.isEmpty && (label == null || label.trim().isEmpty)) {
-        warnings.add(
-          'Skipped front #${index + 1}: no member ids or custom label.',
-        );
+        _warnSkippedMissingFields('front', index, 'member IDs or custom label');
         continue;
       }
 
@@ -1936,8 +1988,11 @@ class _ExternalArchiveNormalizer {
       for (final memberExternalId in memberIds) {
         final memberId = _memberIdsByExternalId[memberExternalId];
         if (memberId == null) {
-          warnings.add(
-            'Front #${index + 1} ignored missing member "$memberExternalId".',
+          _warnMissingRelation(
+            'Front',
+            '#${index + 1}',
+            'member',
+            memberExternalId,
           );
           continue;
         }
@@ -2024,7 +2079,13 @@ class _ExternalArchiveNormalizer {
     }
     final memberId = _memberIdsByExternalId[external];
     if (memberId == null) {
-      warnings.add('Ignored missing member reference "$external".');
+      warnings.add(
+        ImportDiagnostic(ImportDiagnosticCode.ignoredMissingReference, {
+          'record': 'the imported record',
+          'relation': 'member',
+          'value': external,
+        }),
+      );
     }
     return memberId;
   }
@@ -2136,7 +2197,9 @@ class _ExternalArchiveNormalizer {
     final endedAt = DateTime.tryParse(end);
     if (startedAt != null && endedAt != null && endedAt.isBefore(startedAt)) {
       warnings.add(
-        'Front #${index + 1} ended before it started; swapped start and end.',
+        ImportDiagnostic(ImportDiagnosticCode.frontReversed, {
+          'index': index + 1,
+        }),
       );
       return (start: endedAt.toUtc().toIso8601String(), end: start);
     }
@@ -2410,23 +2473,29 @@ class _ImportClampReport {
     return items.take(cap.limit).toList(growable: false);
   }
 
-  List<String> toWarnings() {
-    final warnings = <String>[];
+  List<ImportDiagnostic> toWarnings() {
+    final warnings = <ImportDiagnostic>[];
     final stringEntries = _stringHits.entries.toList()
       ..sort((left, right) => left.key.label.compareTo(right.key.label));
     final listEntries = _listHits.entries.toList()
       ..sort((left, right) => left.key.label.compareTo(right.key.label));
 
     for (final entry in stringEntries) {
-      final label = entry.value == 1 ? entry.key.label : '${entry.key.label}s';
       warnings.add(
-        '${entry.value} $label will be shortened to ${entry.key.limit} characters.',
+        ImportDiagnostic(ImportDiagnosticCode.stringClamped, {
+          'count': entry.value,
+          'field': entry.key.label,
+          'limit': entry.key.limit,
+        }),
       );
     }
     for (final entry in listEntries) {
-      final label = entry.value == 1 ? entry.key.label : '${entry.key.label}s';
       warnings.add(
-        '${entry.value} $label will be trimmed to ${entry.key.limit} entries.',
+        ImportDiagnostic(ImportDiagnosticCode.listClamped, {
+          'count': entry.value,
+          'field': entry.key.label,
+          'limit': entry.key.limit,
+        }),
       );
     }
     return warnings;

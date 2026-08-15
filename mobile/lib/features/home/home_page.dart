@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/avatar/avatar_file_policy.dart';
 import '../../data/import/import_archive_mapper.dart';
+import '../../data/import/import_diagnostic.dart';
 import '../../data/import/import_file_decoder.dart';
 import '../../data/import/import_plan.dart';
 import '../../data/import/import_preview.dart';
@@ -25,6 +26,7 @@ import '../../data/security/archive_encryption.dart';
 import '../../data/server/server_account_controller.dart';
 import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/import_diagnostic_localizations.dart';
 import '../../platform/native_file_dialog.dart';
 
 part 'dashboard.dart';

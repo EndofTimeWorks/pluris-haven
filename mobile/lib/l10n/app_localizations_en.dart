@@ -1085,6 +1085,167 @@ class AppLocalizationsEn extends AppLocalizations {
   String get waitingForDetection => 'waiting for detection';
 
   @override
+  String get importStageParse => 'parse';
+
+  @override
+  String get importStageDecrypt => 'decrypt';
+
+  @override
+  String get importStageValidate => 'validate';
+
+  @override
+  String get importStagePreview => 'preview';
+
+  @override
+  String get importStageNormalize => 'normalize';
+
+  @override
+  String get importStagePreserve => 'preserve';
+
+  @override
+  String get importStageAvatars => 'avatars';
+
+  @override
+  String importDiagnosticJsonParseFailed(String error) {
+    return 'Could not parse JSON: $error';
+  }
+
+  @override
+  String get importDiagnosticExpectedTopLevelObject =>
+      'Expected a JSON object at the top level.';
+
+  @override
+  String get importDiagnosticPrismNeedsDecryption =>
+      'Prism preview needs encrypted file decryption first.';
+
+  @override
+  String get importDiagnosticNotPlurisArchive =>
+      'This is not a Pluris Haven local archive.';
+
+  @override
+  String importDiagnosticUnsupportedArchiveVersion(String version) {
+    return 'Unsupported archive version: $version.';
+  }
+
+  @override
+  String importDiagnosticFoundMembersAndFronts(int members, int fronts) {
+    return 'Found $members members and $fronts fronts.';
+  }
+
+  @override
+  String get importDiagnosticRecognizedRecords =>
+      'Recognized records can be imported into the local archive.';
+
+  @override
+  String get importDiagnosticNoImportableRecords =>
+      'No importable records were recognized.';
+
+  @override
+  String importDiagnosticPreservedRawPayloads(int count, String collections) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count original source collections',
+      one: '1 original source collection',
+    );
+    return 'Preserved $_temp0 as raw payloads for export/debug$collections. Mapped records still import normally; raw copies do not create notes, messages, or members.';
+  }
+
+  @override
+  String importDiagnosticCollectionNames(String names) {
+    return ': $names';
+  }
+
+  @override
+  String importDiagnosticCollectionNamesWithMore(String names, int count) {
+    return ': $names, +$count more';
+  }
+
+  @override
+  String get importDiagnosticRemoteAvatarsWithoutZip =>
+      'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.';
+
+  @override
+  String importDiagnosticBestEffort(String source) {
+    return '$source import is best-effort. Review after import.';
+  }
+
+  @override
+  String importDiagnosticSkippedExpectedObject(String record, int index) {
+    return 'Skipped $record #$index: expected an object.';
+  }
+
+  @override
+  String importDiagnosticSkippedMissingFields(
+    String record,
+    int index,
+    String fields,
+  ) {
+    return 'Skipped $record #$index: missing $fields.';
+  }
+
+  @override
+  String importDiagnosticIgnoredMissingRelation(
+    String ownerKind,
+    String owner,
+    String relationKind,
+    String relation,
+  ) {
+    return '$ownerKind \"$owner\" ignored missing $relationKind \"$relation\".';
+  }
+
+  @override
+  String importDiagnosticIgnoredSelfParent(String group) {
+    return 'Group \"$group\" ignored itself as its parent.';
+  }
+
+  @override
+  String importDiagnosticReminderMissingMember(int index) {
+    return 'Reminder #$index references a member that was not imported; the reminder was disabled.';
+  }
+
+  @override
+  String importDiagnosticPollTooFewOptions(String question) {
+    return 'Skipped poll \"$question\": fewer than two usable options.';
+  }
+
+  @override
+  String importDiagnosticIgnoredMissingReference(
+    String record,
+    String relation,
+    String value,
+  ) {
+    return 'Ignored missing $relation reference \"$value\" in $record.';
+  }
+
+  @override
+  String importDiagnosticFrontReversed(int index) {
+    return 'Front #$index ended before it started; swapped start and end.';
+  }
+
+  @override
+  String importDiagnosticStringClamped(int count, String field, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ${field}s will be shortened',
+      one: '1 $field will be shortened',
+    );
+    return '$_temp0 to $limit characters.';
+  }
+
+  @override
+  String importDiagnosticListClamped(int count, String field, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ${field}s will be trimmed',
+      one: '1 $field will be trimmed',
+    );
+    return '$_temp0 to $limit entries.';
+  }
+
+  @override
   String get previewTitle => 'Preview';
 
   @override

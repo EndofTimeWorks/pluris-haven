@@ -2,23 +2,34 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'import_archive_mapper.dart';
+import 'import_diagnostic.dart';
 import 'import_file_decoder.dart';
 import 'import_plan.dart';
 import 'import_sources.dart';
 
 enum ImportPreviewSeverity { info, warning, error }
 
+enum ImportPreviewStage {
+  parse,
+  decrypt,
+  validate,
+  preview,
+  normalize,
+  preserve,
+  avatars,
+}
+
 class ImportPreviewEvent {
   const ImportPreviewEvent({
     required this.severity,
     required this.stage,
-    required this.message,
+    required this.diagnostic,
     this.recordRef,
   });
 
   final ImportPreviewSeverity severity;
-  final String stage;
-  final String message;
+  final ImportPreviewStage stage;
+  final ImportDiagnostic diagnostic;
   final String? recordRef;
 }
 
@@ -67,8 +78,10 @@ ImportPreview previewImportText({
       events: [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.error,
-          stage: 'parse',
-          message: 'Could not parse JSON: ${error.message}',
+          stage: ImportPreviewStage.parse,
+          diagnostic: ImportDiagnostic(ImportDiagnosticCode.jsonParseFailed, {
+            'error': error.message,
+          }),
         ),
       ],
     );
@@ -83,8 +96,10 @@ ImportPreview previewImportText({
       events: const [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.error,
-          stage: 'parse',
-          message: 'Expected a JSON object at the top level.',
+          stage: ImportPreviewStage.parse,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.expectedTopLevelObject,
+          ),
         ),
       ],
     );
@@ -128,8 +143,10 @@ ImportPreview previewImportText({
       events: const [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'decrypt',
-          message: 'Prism preview needs encrypted file decryption first.',
+          stage: ImportPreviewStage.decrypt,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.prismNeedsDecryption,
+          ),
         ),
       ],
     ),
@@ -164,8 +181,8 @@ ImportPreview _previewPlurisArchive(
     events.add(
       const ImportPreviewEvent(
         severity: ImportPreviewSeverity.error,
-        stage: 'validate',
-        message: 'This is not a Pluris Haven local archive.',
+        stage: ImportPreviewStage.validate,
+        diagnostic: ImportDiagnostic(ImportDiagnosticCode.notPlurisArchive),
       ),
     );
   }
@@ -174,8 +191,11 @@ ImportPreview _previewPlurisArchive(
     events.add(
       ImportPreviewEvent(
         severity: ImportPreviewSeverity.error,
-        stage: 'validate',
-        message: 'Unsupported archive version: ${version ?? 'missing'}.',
+        stage: ImportPreviewStage.validate,
+        diagnostic: ImportDiagnostic(
+          ImportDiagnosticCode.unsupportedArchiveVersion,
+          {'version': version?.toString() ?? 'missing'},
+        ),
       ),
     );
   }
@@ -210,9 +230,11 @@ ImportPreview _previewPlurisArchive(
   events.add(
     ImportPreviewEvent(
       severity: ImportPreviewSeverity.info,
-      stage: 'preview',
-      message:
-          'Found ${counts['members']} members and ${counts['fronts']} fronts.',
+      stage: ImportPreviewStage.preview,
+      diagnostic: ImportDiagnostic(ImportDiagnosticCode.foundMembersAndFronts, {
+        'members': counts['members'] ?? 0,
+        'fronts': counts['fronts'] ?? 0,
+      }),
     ),
   );
 
@@ -281,7 +303,7 @@ ImportPreview _previewNormalizedSource({
       text: jsonEncode(decoded),
       avatarAssets: avatarAssets,
     );
-  } on FormatException catch (error) {
+  } on ImportDiagnosticException catch (error) {
     return ImportPreview(
       source: source,
       fileName: fileName,
@@ -290,8 +312,8 @@ ImportPreview _previewNormalizedSource({
       events: [
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.error,
-          stage: 'normalize',
-          message: error.message,
+          stage: ImportPreviewStage.normalize,
+          diagnostic: error.diagnostic,
         ),
       ],
     );
@@ -314,41 +336,48 @@ ImportPreview _previewNormalizedSource({
     events: [
       const ImportPreviewEvent(
         severity: ImportPreviewSeverity.info,
-        stage: 'normalize',
-        message: 'Recognized records can be imported into the local archive.',
+        stage: ImportPreviewStage.normalize,
+        diagnostic: ImportDiagnostic(ImportDiagnosticCode.recognizedRecords),
       ),
       if (!foundRecords)
         const ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'normalize',
-          message: 'No importable records were recognized.',
+          stage: ImportPreviewStage.normalize,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.noImportableRecords,
+          ),
         ),
       if (rawPayloadCount > 0)
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'preserve',
-          message:
-              'Preserved $rawPayloadCount original source ${rawPayloadCount == 1 ? 'collection' : 'collections'} as raw payloads for export/debug${_rawPayloadCollectionSummary(rawPayloadCollections)}. Mapped records still import normally; raw copies do not create notes, messages, or members.',
+          stage: ImportPreviewStage.preserve,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.preservedRawPayloads,
+            {'count': rawPayloadCount, 'collections': rawPayloadCollections},
+          ),
         ),
       if (source == ImportSource.simplyPlural &&
           avatarRefCount > 0 &&
           avatarAssetCount == 0)
         const ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'avatars',
-          message:
-              'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.',
+          stage: ImportPreviewStage.avatars,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.remoteAvatarsWithoutZip,
+          ),
         ),
       for (final warning in normalized.warnings)
         ImportPreviewEvent(
           severity: ImportPreviewSeverity.warning,
-          stage: 'normalize',
-          message: warning,
+          stage: ImportPreviewStage.normalize,
+          diagnostic: warning,
         ),
       ImportPreviewEvent(
         severity: ImportPreviewSeverity.warning,
-        stage: 'preview',
-        message: '${source.label} import is best-effort. Review after import.',
+        stage: ImportPreviewStage.preview,
+        diagnostic: ImportDiagnostic(ImportDiagnosticCode.bestEffortImport, {
+          'source': source.label,
+        }),
       ),
     ],
   );
@@ -405,19 +434,6 @@ List<String> _rawPayloadCollections(String archiveJson) {
   } on FormatException {
     return const [];
   }
-}
-
-String _rawPayloadCollectionSummary(List<String> collections) {
-  if (collections.isEmpty) {
-    return '';
-  }
-  const visibleLimit = 6;
-  final visible = collections.take(visibleLimit).join(', ');
-  final hiddenCount = collections.length - visibleLimit;
-  if (hiddenCount > 0) {
-    return ': $visible, +$hiddenCount more';
-  }
-  return ': $visible';
 }
 
 int _listCount(Object? value) => value is List ? value.length : 0;

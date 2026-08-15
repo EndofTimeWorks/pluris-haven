@@ -4,10 +4,25 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
+import 'package:pluris_haven/data/import/import_diagnostic.dart';
 import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_plan.dart';
 import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
+import 'package:pluris_haven/l10n/app_localizations_en.dart';
+import 'package:pluris_haven/l10n/import_diagnostic_localizations.dart';
+
+final _englishL10n = AppLocalizationsEn();
+
+List<String> _messages(Iterable<ImportDiagnostic> diagnostics) {
+  return diagnostics
+      .map((diagnostic) => localizeImportDiagnostic(_englishL10n, diagnostic))
+      .toList(growable: false);
+}
+
+List<String> _previewMessages(ImportPreview preview) {
+  return _messages(preview.warningsAndErrors.map((event) => event.diagnostic));
+}
 
 void main() {
   test('normalizes and previews imports on background isolates', () async {
@@ -306,10 +321,48 @@ void main() {
 
     expect(preview.canApply, isFalse);
     expect(
-      preview.warningsAndErrors.map((event) => event.message),
+      _previewMessages(preview),
       contains('Unsupported archive version: 99.'),
     );
+    expect(
+      preview.warningsAndErrors.single.diagnostic.code,
+      ImportDiagnosticCode.unsupportedArchiveVersion,
+    );
   });
+
+  test(
+    'reports typed normalization failures without matching message text',
+    () {
+      expect(
+        () => normalizeImportTextToLocalArchive(
+          source: ImportSource.simplyPlural,
+          fileName: 'list.json',
+          text: '[]',
+        ),
+        throwsA(
+          isA<ImportDiagnosticException>().having(
+            (error) => error.diagnostic.code,
+            'diagnostic code',
+            ImportDiagnosticCode.expectedTopLevelObject,
+          ),
+        ),
+      );
+      expect(
+        () => normalizeImportTextToLocalArchive(
+          source: ImportSource.prism,
+          fileName: 'backup.prism',
+          text: '{}',
+        ),
+        throwsA(
+          isA<ImportDiagnosticException>().having(
+            (error) => error.diagnostic.code,
+            'diagnostic code',
+            ImportDiagnosticCode.prismNeedsDecryption,
+          ),
+        ),
+      );
+    },
+  );
 
   test('does not treat raw-only payload preservation as applyable', () {
     final preview = previewImportText(
@@ -321,11 +374,11 @@ void main() {
     expect(preview.canApply, isFalse);
     expect(preview.counts['raw_payloads'], 1);
     expect(
-      preview.warningsAndErrors.map((event) => event.message),
+      _previewMessages(preview),
       contains('No importable records were recognized.'),
     );
     expect(
-      preview.warningsAndErrors.map((event) => event.message),
+      _previewMessages(preview),
       contains(
         'Preserved 1 original source collection as raw payloads for export/debug: securityLogs. Mapped records still import normally; raw copies do not create notes, messages, or members.',
       ),
@@ -786,28 +839,30 @@ void main() {
     expect(archive.counts['front_members'], 0);
     expect(archive.counts['reminders'], 0);
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('Member "Iris" ignored missing group "missing-group".'),
     );
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('Group "Main" ignored missing parent "missing-parent".'),
     );
     expect(
-      archive.warnings,
-      contains('Front #1 ignored missing member "missing-member".'),
+      _messages(archive.warnings),
+      contains('Front "#1" ignored missing member "missing-member".'),
     );
     expect(
-      archive.warnings,
-      contains('Skipped front #2: no member ids or custom label.'),
+      _messages(archive.warnings),
+      contains('Skipped front #2: missing member IDs or custom label.'),
     );
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('Skipped reminder #1: missing title or schedule.'),
     );
     expect(
-      archive.warnings,
-      contains('Ignored missing member reference "missing-member".'),
+      _messages(archive.warnings),
+      contains(
+        'Ignored missing member reference "missing-member" in the imported record.',
+      ),
     );
     final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
     final member = (decoded['members'] as List).single as Map<String, dynamic>;
@@ -838,7 +893,7 @@ void main() {
 
     expect(group['parent_group_id'], isNull);
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('Group "Loop" ignored itself as its parent.'),
     );
   });
@@ -874,7 +929,7 @@ void main() {
       contains('"ended_at": "2026-01-01T01:00:00.000Z"'),
     );
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('Front #1 ended before it started; swapped start and end.'),
     );
   });
@@ -1353,7 +1408,7 @@ void main() {
 
       expect(preview.counts['avatar_refs'], 1);
       expect(
-        preview.warningsAndErrors.map((event) => event.message),
+        _previewMessages(preview),
         contains(
           'Avatar links may be downloaded during import so they can be kept locally. Attach the Simply Plural avatar ZIP to avoid remote avatar fetches.',
         ),
@@ -1422,7 +1477,7 @@ void main() {
     expect(archive.counts['raw_payloads'], 4);
     expect(preview.canApply, isTrue);
     expect(
-      preview.warningsAndErrors.map((event) => event.message),
+      _previewMessages(preview),
       contains(
         'Preserved 4 original source collections as raw payloads for export/debug: securityLogs, friends, tokens, usage. Mapped records still import normally; raw copies do not create notes, messages, or members.',
       ),
@@ -1519,15 +1574,15 @@ void main() {
     final fronts = (decoded['fronts'] as List).cast<Map<String, dynamic>>();
 
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('1 member name will be shortened to 100 characters.'),
     );
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains('1 poll option list will be trimmed to 20 entries.'),
     );
     expect(
-      preview.warningsAndErrors.map((event) => event.message),
+      _previewMessages(preview),
       contains('1 member name will be shortened to 100 characters.'),
     );
     expect(members.single['display_name'], hasLength(100));
@@ -1596,7 +1651,7 @@ void main() {
     expect(missing['trigger_member_id'], isNull);
     expect(missing['enabled'], isFalse);
     expect(
-      archive.warnings,
+      _messages(archive.warnings),
       contains(
         'Reminder #2 references a member that was not imported; the reminder was disabled.',
       ),
