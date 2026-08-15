@@ -1,6 +1,8 @@
 import '../data/import/import_diagnostic.dart';
 import '../data/import/import_preview.dart';
+import '../data/import/import_sources.dart';
 import 'app_localizations.dart';
+import 'import_plan_localizations.dart';
 
 String localizeImportPreviewStage(
   AppLocalizations l10n,
@@ -56,7 +58,7 @@ String localizeImportDiagnostic(
     ImportDiagnosticCode.remoteAvatarsWithoutZip =>
       l10n.importDiagnosticRemoteAvatarsWithoutZip,
     ImportDiagnosticCode.bestEffortImport => l10n.importDiagnosticBestEffort(
-      diagnostic.argument<String>('source'),
+      localizeImportSource(l10n, diagnostic.argument<ImportSource>('source')),
     ),
     ImportDiagnosticCode.encryptedArchiveLocked =>
       l10n.encryptedArchiveLockedPreview,

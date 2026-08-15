@@ -2064,6 +2064,720 @@ abstract class AppLocalizations {
   /// **'waiting for detection'**
   String get waitingForDetection;
 
+  /// No description provided for @importSourcePlurisHavenArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven archive'**
+  String get importSourcePlurisHavenArchive;
+
+  /// No description provided for @importSourceSimplyPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Simply Plural'**
+  String get importSourceSimplyPlural;
+
+  /// No description provided for @importSourcePluralKitFile.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit file'**
+  String get importSourcePluralKitFile;
+
+  /// No description provided for @importSourcePluralKitLive.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit live'**
+  String get importSourcePluralKitLive;
+
+  /// No description provided for @importSourceTupperbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Tupperbox'**
+  String get importSourceTupperbox;
+
+  /// No description provided for @importSourcePluralSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralSpace'**
+  String get importSourcePluralSpace;
+
+  /// No description provided for @importSourcePrism.
+  ///
+  /// In en, this message translates to:
+  /// **'Prism'**
+  String get importSourcePrism;
+
+  /// No description provided for @importInputFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get importInputFile;
+
+  /// No description provided for @importInputLiveToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Live token'**
+  String get importInputLiveToken;
+
+  /// No description provided for @importInputEncryptedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted file'**
+  String get importInputEncryptedFile;
+
+  /// No description provided for @importDedupePlurisHaven.
+  ///
+  /// In en, this message translates to:
+  /// **'local IDs, PluralKit IDs, normalized names'**
+  String get importDedupePlurisHaven;
+
+  /// No description provided for @importDedupeSimplyPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Simply Plural IDs, PluralKit IDs, normalized names'**
+  String get importDedupeSimplyPlural;
+
+  /// No description provided for @importDedupePluralKitFile.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit UUIDs, PluralKit short IDs, normalized names'**
+  String get importDedupePluralKitFile;
+
+  /// No description provided for @importDedupePluralKitLive.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit UUIDs, PluralKit short IDs'**
+  String get importDedupePluralKitLive;
+
+  /// No description provided for @importDedupeTupperbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Tupperbox IDs, normalized names'**
+  String get importDedupeTupperbox;
+
+  /// No description provided for @importDedupePluralSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralSpace IDs, normalized names'**
+  String get importDedupePluralSpace;
+
+  /// No description provided for @importDedupePrism.
+  ///
+  /// In en, this message translates to:
+  /// **'Prism IDs, normalized names'**
+  String get importDedupePrism;
+
+  /// No description provided for @importConflictPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for each match'**
+  String get importConflictPrompt;
+
+  /// No description provided for @importConflictCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new records'**
+  String get importConflictCreate;
+
+  /// No description provided for @importConflictSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip existing matches'**
+  String get importConflictSkip;
+
+  /// No description provided for @importConflictUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update existing matches'**
+  String get importConflictUpdate;
+
+  /// No description provided for @importPlanStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'ready'**
+  String get importPlanStatusReady;
+
+  /// No description provided for @importPlanStatusNext.
+  ///
+  /// In en, this message translates to:
+  /// **'next'**
+  String get importPlanStatusNext;
+
+  /// No description provided for @importPlanStatusPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'planned'**
+  String get importPlanStatusPlanned;
+
+  /// No description provided for @importPlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} plan'**
+  String importPlanTitle(String source);
+
+  /// No description provided for @importPlanOfflinePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'offline preview'**
+  String get importPlanOfflinePreview;
+
+  /// No description provided for @importPlanNeedsNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'needs network'**
+  String get importPlanNeedsNetwork;
+
+  /// No description provided for @importReasonPrismExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'.prism file extension'**
+  String get importReasonPrismExtension;
+
+  /// No description provided for @importReasonPlurisFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a Pluris Haven archive'**
+  String get importReasonPlurisFileName;
+
+  /// No description provided for @importReasonSimplyPluralFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a Simply Plural export'**
+  String get importReasonSimplyPluralFileName;
+
+  /// No description provided for @importReasonPluralKitFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a PluralKit export'**
+  String get importReasonPluralKitFileName;
+
+  /// No description provided for @importReasonTupperboxFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a Tupperbox export'**
+  String get importReasonTupperboxFileName;
+
+  /// No description provided for @importReasonPluralSpaceFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a PluralSpace export'**
+  String get importReasonPluralSpaceFileName;
+
+  /// No description provided for @importReasonChooseAfterUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'pick a service after upload'**
+  String get importReasonChooseAfterUpload;
+
+  /// No description provided for @importReasonEncryptedPlurisArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'file is an encrypted Pluris Haven archive'**
+  String get importReasonEncryptedPlurisArchive;
+
+  /// No description provided for @importReasonLocalPlurisArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'file is a Pluris Haven local archive'**
+  String get importReasonLocalPlurisArchive;
+
+  /// No description provided for @importReasonTupperboxFields.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains Tupperbox-style roster fields'**
+  String get importReasonTupperboxFields;
+
+  /// No description provided for @importReasonPluralKitFields.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains PluralKit-style members and switches'**
+  String get importReasonPluralKitFields;
+
+  /// No description provided for @importReasonSimplyPluralFields.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains Simply Plural fronting fields'**
+  String get importReasonSimplyPluralFields;
+
+  /// No description provided for @importReasonPluralSpaceMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains PluralSpace markers'**
+  String get importReasonPluralSpaceMarkers;
+
+  /// No description provided for @importReasonAmbiguousMemberGroupJson.
+  ///
+  /// In en, this message translates to:
+  /// **'member/group JSON found, choose the source to confirm'**
+  String get importReasonAmbiguousMemberGroupJson;
+
+  /// No description provided for @importReasonUnrecognised.
+  ///
+  /// In en, this message translates to:
+  /// **'could not recognize this file yet'**
+  String get importReasonUnrecognised;
+
+  /// No description provided for @importCountMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'members'**
+  String get importCountMembers;
+
+  /// No description provided for @importCountGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'groups'**
+  String get importCountGroups;
+
+  /// No description provided for @importCountNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'notes'**
+  String get importCountNotes;
+
+  /// No description provided for @importCountJournals.
+  ///
+  /// In en, this message translates to:
+  /// **'journals'**
+  String get importCountJournals;
+
+  /// No description provided for @importCountMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'messages'**
+  String get importCountMessages;
+
+  /// No description provided for @importCountReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'reminders'**
+  String get importCountReminders;
+
+  /// No description provided for @importCountTags.
+  ///
+  /// In en, this message translates to:
+  /// **'tags'**
+  String get importCountTags;
+
+  /// No description provided for @importCountCustomFields.
+  ///
+  /// In en, this message translates to:
+  /// **'custom fields'**
+  String get importCountCustomFields;
+
+  /// No description provided for @importCountPolls.
+  ///
+  /// In en, this message translates to:
+  /// **'polls'**
+  String get importCountPolls;
+
+  /// No description provided for @importCountFrontHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'front history'**
+  String get importCountFrontHistory;
+
+  /// No description provided for @importCountNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'notifications'**
+  String get importCountNotifications;
+
+  /// No description provided for @importCountPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'preferences'**
+  String get importCountPreferences;
+
+  /// No description provided for @importCountCustomFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'custom fronts'**
+  String get importCountCustomFronts;
+
+  /// No description provided for @importCountSwitches.
+  ///
+  /// In en, this message translates to:
+  /// **'switches'**
+  String get importCountSwitches;
+
+  /// No description provided for @importCountFrontIntervals.
+  ///
+  /// In en, this message translates to:
+  /// **'front intervals'**
+  String get importCountFrontIntervals;
+
+  /// No description provided for @importCountTuppers.
+  ///
+  /// In en, this message translates to:
+  /// **'tuppers'**
+  String get importCountTuppers;
+
+  /// No description provided for @importCountAvatars.
+  ///
+  /// In en, this message translates to:
+  /// **'avatars'**
+  String get importCountAvatars;
+
+  /// No description provided for @importCountFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'fronts'**
+  String get importCountFronts;
+
+  /// No description provided for @importStepReadArchiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read archive'**
+  String get importStepReadArchiveTitle;
+
+  /// No description provided for @importStepReadPlurisArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a Pluris Haven local archive JSON export.'**
+  String get importStepReadPlurisArchiveDetail;
+
+  /// No description provided for @importStepValidateFormatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate format'**
+  String get importStepValidateFormatTitle;
+
+  /// No description provided for @importStepValidatePlurisArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Require format pluris_haven.local_archive and a supported version.'**
+  String get importStepValidatePlurisArchiveDetail;
+
+  /// No description provided for @importStepReviewContentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review contents'**
+  String get importStepReviewContentsTitle;
+
+  /// No description provided for @importStepReviewPlurisArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Show local members, groups, journals, notes, fronts, tags, polls, and preferences before writing.'**
+  String get importStepReviewPlurisArchiveDetail;
+
+  /// No description provided for @importStepRestoreLocallyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore locally'**
+  String get importStepRestoreLocallyTitle;
+
+  /// No description provided for @importStepRestorePlurisArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply selected records and keep an import record for future dedupe.'**
+  String get importStepRestorePlurisArchiveDetail;
+
+  /// No description provided for @importStepReadExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read export'**
+  String get importStepReadExportTitle;
+
+  /// No description provided for @importStepReadSimplyPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a Simply Plural JSON export or backup archive.'**
+  String get importStepReadSimplyPluralDetail;
+
+  /// No description provided for @importStepNormalizeFieldsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Normalize fields'**
+  String get importStepNormalizeFieldsTitle;
+
+  /// No description provided for @importStepNormalizeSimplyPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Map members, groups, custom fields, custom fronts, and notes into local records.'**
+  String get importStepNormalizeSimplyPluralDetail;
+
+  /// No description provided for @importStepPrepareAvatarsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare avatars'**
+  String get importStepPrepareAvatarsTitle;
+
+  /// No description provided for @importStepPrepareSimplyPluralAvatarsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.'**
+  String get importStepPrepareSimplyPluralAvatarsDetail;
+
+  /// No description provided for @importStepReviewMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review matches'**
+  String get importStepReviewMatchesTitle;
+
+  /// No description provided for @importStepReviewSimplyPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Show creates, skips, and updates before writing.'**
+  String get importStepReviewSimplyPluralDetail;
+
+  /// No description provided for @importStepWriteLocallyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write locally'**
+  String get importStepWriteLocallyTitle;
+
+  /// No description provided for @importStepWriteSimplyPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Save records and keep an import record for future dedupe.'**
+  String get importStepWriteSimplyPluralDetail;
+
+  /// No description provided for @importStepReadPluralKitFileDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a PluralKit JSON export file.'**
+  String get importStepReadPluralKitFileDetail;
+
+  /// No description provided for @importStepBuildRosterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build roster'**
+  String get importStepBuildRosterTitle;
+
+  /// No description provided for @importStepBuildPluralKitRosterDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage members, groups, avatars, descriptions, and proxy metadata.'**
+  String get importStepBuildPluralKitRosterDetail;
+
+  /// No description provided for @importStepConvertSwitchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert switches'**
+  String get importStepConvertSwitchesTitle;
+
+  /// No description provided for @importStepConvertPluralKitSwitchesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn PK switches into local front history.'**
+  String get importStepConvertPluralKitSwitchesDetail;
+
+  /// No description provided for @importStepReviewPluralKitFileDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by PK UUID, short ID, then normalized name.'**
+  String get importStepReviewPluralKitFileDetail;
+
+  /// No description provided for @importStepValidateTokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate token'**
+  String get importStepValidateTokenTitle;
+
+  /// No description provided for @importStepValidatePluralKitTokenDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Call GET /systems/@me with the token as Authorization.'**
+  String get importStepValidatePluralKitTokenDetail;
+
+  /// No description provided for @importStepFetchRosterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch roster'**
+  String get importStepFetchRosterTitle;
+
+  /// No description provided for @importStepFetchPluralKitRosterDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Read members and groups from the PluralKit API.'**
+  String get importStepFetchPluralKitRosterDetail;
+
+  /// No description provided for @importStepFetchSwitchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch switches'**
+  String get importStepFetchSwitchesTitle;
+
+  /// No description provided for @importStepFetchPluralKitSwitchesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Page switches with a delay to avoid rate limits.'**
+  String get importStepFetchPluralKitSwitchesDetail;
+
+  /// No description provided for @importStepReviewPluralKitLiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by PK UUID and short ID before saving.'**
+  String get importStepReviewPluralKitLiveDetail;
+
+  /// No description provided for @importStepReadRosterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read roster'**
+  String get importStepReadRosterTitle;
+
+  /// No description provided for @importStepReadTupperboxDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a Tupperbox export file.'**
+  String get importStepReadTupperboxDetail;
+
+  /// No description provided for @importStepMapTuppersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map tuppers'**
+  String get importStepMapTuppersTitle;
+
+  /// No description provided for @importStepMapTupperboxDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert tuppers to members with names, avatars, brackets, and descriptions.'**
+  String get importStepMapTupperboxDetail;
+
+  /// No description provided for @importStepReviewTupperboxDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by Tupperbox ID, then normalized name.'**
+  String get importStepReviewTupperboxDetail;
+
+  /// No description provided for @importStepReadPluralSpaceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a PluralSpace export file.'**
+  String get importStepReadPluralSpaceDetail;
+
+  /// No description provided for @importStepMapRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map records'**
+  String get importStepMapRecordsTitle;
+
+  /// No description provided for @importStepMapPluralSpaceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage members, groups, notes, and fronting data when present.'**
+  String get importStepMapPluralSpaceDetail;
+
+  /// No description provided for @importStepReviewPluralSpaceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by source ID, then normalized name.'**
+  String get importStepReviewPluralSpaceDetail;
+
+  /// No description provided for @importStepChoosePrismTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose .prism file'**
+  String get importStepChoosePrismTitle;
+
+  /// No description provided for @importStepChoosePrismDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept an encrypted Prism export.'**
+  String get importStepChoosePrismDetail;
+
+  /// No description provided for @importStepDecryptPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrypt preview'**
+  String get importStepDecryptPreviewTitle;
+
+  /// No description provided for @importStepDecryptPrismDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the passphrase locally and avoid storing it.'**
+  String get importStepDecryptPrismDetail;
+
+  /// No description provided for @importStepReviewPrismDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by Prism ID, then normalized name.'**
+  String get importStepReviewPrismDetail;
+
+  /// No description provided for @importPrivacyPreviewBeforeWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview happens before records are saved.'**
+  String get importPrivacyPreviewBeforeWrite;
+
+  /// No description provided for @importPrivacyLocalBackupRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the backup and restore path for local data.'**
+  String get importPrivacyLocalBackupRestore;
+
+  /// No description provided for @importPrivacySimplyPluralDedupe.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.'**
+  String get importPrivacySimplyPluralDedupe;
+
+  /// No description provided for @importPrivacySimplyPluralAvatars.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.'**
+  String get importPrivacySimplyPluralAvatars;
+
+  /// No description provided for @importPrivacyPluralKitIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit IDs are kept as import identifiers for dedupe and optional sync.'**
+  String get importPrivacyPluralKitIdentifiers;
+
+  /// No description provided for @importPrivacyPluralKitSwitches.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch logs become local front history intervals.'**
+  String get importPrivacyPluralKitSwitches;
+
+  /// No description provided for @importPrivacyPluralKitTokenEphemeral.
+  ///
+  /// In en, this message translates to:
+  /// **'The pk;token is used for the import request only.'**
+  String get importPrivacyPluralKitTokenEphemeral;
+
+  /// No description provided for @importPrivacyPluralKitLiveNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Live import needs network access, but the preview and write still happen locally.'**
+  String get importPrivacyPluralKitLiveNetwork;
+
+  /// No description provided for @importPrivacyTupperboxIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Tupperbox IDs are retained only for dedupe and future re-imports.'**
+  String get importPrivacyTupperboxIdentifiers;
+
+  /// No description provided for @importPrivacyTupperboxProxyMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy patterns can be imported later as optional metadata.'**
+  String get importPrivacyTupperboxProxyMetadata;
+
+  /// No description provided for @importPrivacyPluralSpaceIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralSpace source IDs are kept as import identifiers.'**
+  String get importPrivacyPluralSpaceIdentifiers;
+
+  /// No description provided for @importPrivacyPluralSpaceUnknownFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown fields are kept in the preview until a mapper exists.'**
+  String get importPrivacyPluralSpaceUnknownFields;
+
+  /// No description provided for @importPrivacyPrismPassphraseMemoryOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The passphrase is only used to decrypt the import in memory.'**
+  String get importPrivacyPrismPassphraseMemoryOnly;
+
+  /// No description provided for @importPrivacyPrismIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Prism source IDs are kept for re-import dedupe.'**
+  String get importPrivacyPrismIdentifiers;
+
   /// No description provided for @importStageParse.
   ///
   /// In en, this message translates to:

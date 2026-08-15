@@ -27,6 +27,7 @@ import '../../data/server/server_account_controller.dart';
 import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/import_diagnostic_localizations.dart';
+import '../../l10n/import_plan_localizations.dart';
 import '../../platform/native_file_dialog.dart';
 
 part 'dashboard.dart';

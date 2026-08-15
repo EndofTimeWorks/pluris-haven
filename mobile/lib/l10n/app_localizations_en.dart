@@ -1117,6 +1117,419 @@ class AppLocalizationsEn extends AppLocalizations {
   String get waitingForDetection => 'waiting for detection';
 
   @override
+  String get importSourcePlurisHavenArchive => 'Pluris Haven archive';
+
+  @override
+  String get importSourceSimplyPlural => 'Simply Plural';
+
+  @override
+  String get importSourcePluralKitFile => 'PluralKit file';
+
+  @override
+  String get importSourcePluralKitLive => 'PluralKit live';
+
+  @override
+  String get importSourceTupperbox => 'Tupperbox';
+
+  @override
+  String get importSourcePluralSpace => 'PluralSpace';
+
+  @override
+  String get importSourcePrism => 'Prism';
+
+  @override
+  String get importInputFile => 'File';
+
+  @override
+  String get importInputLiveToken => 'Live token';
+
+  @override
+  String get importInputEncryptedFile => 'Encrypted file';
+
+  @override
+  String get importDedupePlurisHaven =>
+      'local IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupeSimplyPlural =>
+      'Simply Plural IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupePluralKitFile =>
+      'PluralKit UUIDs, PluralKit short IDs, normalized names';
+
+  @override
+  String get importDedupePluralKitLive =>
+      'PluralKit UUIDs, PluralKit short IDs';
+
+  @override
+  String get importDedupeTupperbox => 'Tupperbox IDs, normalized names';
+
+  @override
+  String get importDedupePluralSpace => 'PluralSpace IDs, normalized names';
+
+  @override
+  String get importDedupePrism => 'Prism IDs, normalized names';
+
+  @override
+  String get importConflictPrompt => 'Ask for each match';
+
+  @override
+  String get importConflictCreate => 'Create new records';
+
+  @override
+  String get importConflictSkip => 'Skip existing matches';
+
+  @override
+  String get importConflictUpdate => 'Update existing matches';
+
+  @override
+  String get importPlanStatusReady => 'ready';
+
+  @override
+  String get importPlanStatusNext => 'next';
+
+  @override
+  String get importPlanStatusPlanned => 'planned';
+
+  @override
+  String importPlanTitle(String source) {
+    return '$source plan';
+  }
+
+  @override
+  String get importPlanOfflinePreview => 'offline preview';
+
+  @override
+  String get importPlanNeedsNetwork => 'needs network';
+
+  @override
+  String get importReasonPrismExtension => '.prism file extension';
+
+  @override
+  String get importReasonPlurisFileName =>
+      'filename looks like a Pluris Haven archive';
+
+  @override
+  String get importReasonSimplyPluralFileName =>
+      'filename looks like a Simply Plural export';
+
+  @override
+  String get importReasonPluralKitFileName =>
+      'filename looks like a PluralKit export';
+
+  @override
+  String get importReasonTupperboxFileName =>
+      'filename looks like a Tupperbox export';
+
+  @override
+  String get importReasonPluralSpaceFileName =>
+      'filename looks like a PluralSpace export';
+
+  @override
+  String get importReasonChooseAfterUpload => 'pick a service after upload';
+
+  @override
+  String get importReasonEncryptedPlurisArchive =>
+      'file is an encrypted Pluris Haven archive';
+
+  @override
+  String get importReasonLocalPlurisArchive =>
+      'file is a Pluris Haven local archive';
+
+  @override
+  String get importReasonTupperboxFields =>
+      'file contains Tupperbox-style roster fields';
+
+  @override
+  String get importReasonPluralKitFields =>
+      'file contains PluralKit-style members and switches';
+
+  @override
+  String get importReasonSimplyPluralFields =>
+      'file contains Simply Plural fronting fields';
+
+  @override
+  String get importReasonPluralSpaceMarkers =>
+      'file contains PluralSpace markers';
+
+  @override
+  String get importReasonAmbiguousMemberGroupJson =>
+      'member/group JSON found, choose the source to confirm';
+
+  @override
+  String get importReasonUnrecognised => 'could not recognize this file yet';
+
+  @override
+  String get importCountMembers => 'members';
+
+  @override
+  String get importCountGroups => 'groups';
+
+  @override
+  String get importCountNotes => 'notes';
+
+  @override
+  String get importCountJournals => 'journals';
+
+  @override
+  String get importCountMessages => 'messages';
+
+  @override
+  String get importCountReminders => 'reminders';
+
+  @override
+  String get importCountTags => 'tags';
+
+  @override
+  String get importCountCustomFields => 'custom fields';
+
+  @override
+  String get importCountPolls => 'polls';
+
+  @override
+  String get importCountFrontHistory => 'front history';
+
+  @override
+  String get importCountNotifications => 'notifications';
+
+  @override
+  String get importCountPreferences => 'preferences';
+
+  @override
+  String get importCountCustomFronts => 'custom fronts';
+
+  @override
+  String get importCountSwitches => 'switches';
+
+  @override
+  String get importCountFrontIntervals => 'front intervals';
+
+  @override
+  String get importCountTuppers => 'tuppers';
+
+  @override
+  String get importCountAvatars => 'avatars';
+
+  @override
+  String get importCountFronts => 'fronts';
+
+  @override
+  String get importStepReadArchiveTitle => 'Read archive';
+
+  @override
+  String get importStepReadPlurisArchiveDetail =>
+      'Accept a Pluris Haven local archive JSON export.';
+
+  @override
+  String get importStepValidateFormatTitle => 'Validate format';
+
+  @override
+  String get importStepValidatePlurisArchiveDetail =>
+      'Require format pluris_haven.local_archive and a supported version.';
+
+  @override
+  String get importStepReviewContentsTitle => 'Review contents';
+
+  @override
+  String get importStepReviewPlurisArchiveDetail =>
+      'Show local members, groups, journals, notes, fronts, tags, polls, and preferences before writing.';
+
+  @override
+  String get importStepRestoreLocallyTitle => 'Restore locally';
+
+  @override
+  String get importStepRestorePlurisArchiveDetail =>
+      'Apply selected records and keep an import record for future dedupe.';
+
+  @override
+  String get importStepReadExportTitle => 'Read export';
+
+  @override
+  String get importStepReadSimplyPluralDetail =>
+      'Accept a Simply Plural JSON export or backup archive.';
+
+  @override
+  String get importStepNormalizeFieldsTitle => 'Normalize fields';
+
+  @override
+  String get importStepNormalizeSimplyPluralDetail =>
+      'Map members, groups, custom fields, custom fronts, and notes into local records.';
+
+  @override
+  String get importStepPrepareAvatarsTitle => 'Prepare avatars';
+
+  @override
+  String get importStepPrepareSimplyPluralAvatarsDetail =>
+      'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.';
+
+  @override
+  String get importStepReviewMatchesTitle => 'Review matches';
+
+  @override
+  String get importStepReviewSimplyPluralDetail =>
+      'Show creates, skips, and updates before writing.';
+
+  @override
+  String get importStepWriteLocallyTitle => 'Write locally';
+
+  @override
+  String get importStepWriteSimplyPluralDetail =>
+      'Save records and keep an import record for future dedupe.';
+
+  @override
+  String get importStepReadPluralKitFileDetail =>
+      'Accept a PluralKit JSON export file.';
+
+  @override
+  String get importStepBuildRosterTitle => 'Build roster';
+
+  @override
+  String get importStepBuildPluralKitRosterDetail =>
+      'Stage members, groups, avatars, descriptions, and proxy metadata.';
+
+  @override
+  String get importStepConvertSwitchesTitle => 'Convert switches';
+
+  @override
+  String get importStepConvertPluralKitSwitchesDetail =>
+      'Turn PK switches into local front history.';
+
+  @override
+  String get importStepReviewPluralKitFileDetail =>
+      'Dedupe by PK UUID, short ID, then normalized name.';
+
+  @override
+  String get importStepValidateTokenTitle => 'Validate token';
+
+  @override
+  String get importStepValidatePluralKitTokenDetail =>
+      'Call GET /systems/@me with the token as Authorization.';
+
+  @override
+  String get importStepFetchRosterTitle => 'Fetch roster';
+
+  @override
+  String get importStepFetchPluralKitRosterDetail =>
+      'Read members and groups from the PluralKit API.';
+
+  @override
+  String get importStepFetchSwitchesTitle => 'Fetch switches';
+
+  @override
+  String get importStepFetchPluralKitSwitchesDetail =>
+      'Page switches with a delay to avoid rate limits.';
+
+  @override
+  String get importStepReviewPluralKitLiveDetail =>
+      'Dedupe by PK UUID and short ID before saving.';
+
+  @override
+  String get importStepReadRosterTitle => 'Read roster';
+
+  @override
+  String get importStepReadTupperboxDetail => 'Accept a Tupperbox export file.';
+
+  @override
+  String get importStepMapTuppersTitle => 'Map tuppers';
+
+  @override
+  String get importStepMapTupperboxDetail =>
+      'Convert tuppers to members with names, avatars, brackets, and descriptions.';
+
+  @override
+  String get importStepReviewTupperboxDetail =>
+      'Dedupe by Tupperbox ID, then normalized name.';
+
+  @override
+  String get importStepReadPluralSpaceDetail =>
+      'Accept a PluralSpace export file.';
+
+  @override
+  String get importStepMapRecordsTitle => 'Map records';
+
+  @override
+  String get importStepMapPluralSpaceDetail =>
+      'Stage members, groups, notes, and fronting data when present.';
+
+  @override
+  String get importStepReviewPluralSpaceDetail =>
+      'Dedupe by source ID, then normalized name.';
+
+  @override
+  String get importStepChoosePrismTitle => 'Choose .prism file';
+
+  @override
+  String get importStepChoosePrismDetail => 'Accept an encrypted Prism export.';
+
+  @override
+  String get importStepDecryptPreviewTitle => 'Decrypt preview';
+
+  @override
+  String get importStepDecryptPrismDetail =>
+      'Use the passphrase locally and avoid storing it.';
+
+  @override
+  String get importStepReviewPrismDetail =>
+      'Dedupe by Prism ID, then normalized name.';
+
+  @override
+  String get importPrivacyPreviewBeforeWrite =>
+      'Preview happens before records are saved.';
+
+  @override
+  String get importPrivacyLocalBackupRestore =>
+      'This is the backup and restore path for local data.';
+
+  @override
+  String get importPrivacySimplyPluralDedupe =>
+      'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.';
+
+  @override
+  String get importPrivacySimplyPluralAvatars =>
+      'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.';
+
+  @override
+  String get importPrivacyPluralKitIdentifiers =>
+      'PluralKit IDs are kept as import identifiers for dedupe and optional sync.';
+
+  @override
+  String get importPrivacyPluralKitSwitches =>
+      'Switch logs become local front history intervals.';
+
+  @override
+  String get importPrivacyPluralKitTokenEphemeral =>
+      'The pk;token is used for the import request only.';
+
+  @override
+  String get importPrivacyPluralKitLiveNetwork =>
+      'Live import needs network access, but the preview and write still happen locally.';
+
+  @override
+  String get importPrivacyTupperboxIdentifiers =>
+      'Tupperbox IDs are retained only for dedupe and future re-imports.';
+
+  @override
+  String get importPrivacyTupperboxProxyMetadata =>
+      'Proxy patterns can be imported later as optional metadata.';
+
+  @override
+  String get importPrivacyPluralSpaceIdentifiers =>
+      'PluralSpace source IDs are kept as import identifiers.';
+
+  @override
+  String get importPrivacyPluralSpaceUnknownFields =>
+      'Unknown fields are kept in the preview until a mapper exists.';
+
+  @override
+  String get importPrivacyPrismPassphraseMemoryOnly =>
+      'The passphrase is only used to decrypt the import in memory.';
+
+  @override
+  String get importPrivacyPrismIdentifiers =>
+      'Prism source IDs are kept for re-import dedupe.';
+
+  @override
   String get importStageParse => 'parse';
 
   @override

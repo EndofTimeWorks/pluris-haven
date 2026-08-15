@@ -614,7 +614,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     setState(() {
       _isApplyingImport = true;
-      _importStatus = l10n.preparingImportStatus(_source.label);
+      _importStatus = l10n.preparingImportStatus(
+        localizeImportSource(l10n, _source),
+      );
     });
 
     var importCompleted = false;
@@ -697,7 +699,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     if (mounted && importCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sourceImportComplete(_source.label))),
+        SnackBar(
+          content: Text(
+            l10n.sourceImportComplete(localizeImportSource(l10n, _source)),
+          ),
+        ),
       );
     }
   }
@@ -818,13 +824,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     if (!mounted) return const _ConflictPromptResult.cancelled();
 
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<ImportConflictStrategy>(
       context: context,
       barrierDismissible: false,
       builder: (context) => _ConflictPromptDialog(
         memberCount: memberConflicts.length,
         groupCount: groupConflicts.length,
-        sourceLabel: _source.label,
+        sourceLabel: localizeImportSource(l10n, _source),
       ),
     );
 
@@ -1527,7 +1534,9 @@ class ImportSetupCard extends StatelessWidget {
         children: [
           SpSectionHeader(
             title: l10n.importSetupTitle,
-            trailing: StatusPill(text: plan.status.label),
+            trailing: StatusPill(
+              text: localizeImportPlanStatus(l10n, plan.status),
+            ),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1579,7 +1588,10 @@ class ImportSetupCard extends StatelessWidget {
             decoration: InputDecoration(labelText: l10n.serviceFieldLabel),
             items: [
               for (final source in ImportSource.values)
-                DropdownMenuItem(value: source, child: Text(source.label)),
+                DropdownMenuItem(
+                  value: source,
+                  child: Text(localizeImportSource(l10n, source)),
+                ),
             ],
             onChanged: (source) {
               if (source != null) {
@@ -1595,7 +1607,10 @@ class ImportSetupCard extends StatelessWidget {
             ),
             items: [
               for (final strategy in ImportConflictStrategy.values)
-                DropdownMenuItem(value: strategy, child: Text(strategy.label)),
+                DropdownMenuItem(
+                  value: strategy,
+                  child: Text(localizeImportConflictStrategy(l10n, strategy)),
+                ),
             ],
             onChanged: (strategy) {
               if (strategy != null) {
@@ -1643,11 +1658,17 @@ class ImportSetupCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          ImportMetaRow(label: l10n.inputLabel, value: source.inputLabel),
+          ImportMetaRow(
+            label: l10n.inputLabel,
+            value: localizeImportInput(l10n, source),
+          ),
           const SizedBox(height: 8),
           ImportMetaRow(label: l10n.jobLabel, value: source.jobSource),
           const SizedBox(height: 8),
-          ImportMetaRow(label: l10n.dedupeLabel, value: source.dedupeLabel),
+          ImportMetaRow(
+            label: l10n.dedupeLabel,
+            value: localizeImportDedupe(l10n, source),
+          ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: canPreview ? onPreview : null,
@@ -1682,7 +1703,7 @@ class ImportFileSummary extends StatelessWidget {
     final detected = guess?.source;
     final label = detected == null
         ? l10n.chooseServiceStatus
-        : l10n.serviceDetectedStatus(detected.label);
+        : l10n.serviceDetectedStatus(localizeImportSource(l10n, detected));
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1699,7 +1720,9 @@ class ImportFileSummary extends StatelessWidget {
           Text(
             [
               if (fileSize != null) _formatBytes(fileSize!),
-              guess?.reason ?? l10n.waitingForDetection,
+              guess == null
+                  ? l10n.waitingForDetection
+                  : localizeImportDetectionReason(l10n, guess!.reason),
             ].join(' - '),
             style: const TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
           ),
@@ -1749,7 +1772,7 @@ class ImportPreviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${preview.source.label} - ${preview.fileName}',
+            '${localizeImportSource(l10n, preview.source)} - ${preview.fileName}',
             style: const TextStyle(color: _spMuted, height: 1.35),
           ),
           const SizedBox(height: 12),
@@ -2371,17 +2394,20 @@ class ImportPlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SpCard(
       outlined: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SpSectionHeader(
-            title: '${plan.source.label} plan',
+            title: l10n.importPlanTitle(
+              localizeImportSource(l10n, plan.source),
+            ),
             trailing: StatusPill(
               text: plan.canPreviewOffline
-                  ? 'offline preview'
-                  : 'needs network',
+                  ? l10n.importPlanOfflinePreview
+                  : l10n.importPlanNeedsNetwork,
             ),
           ),
           const SizedBox(height: 12),
@@ -2390,18 +2416,18 @@ class ImportPlanCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               for (final count in plan.previewCounts)
-                StatusPill(text: count.label),
+                StatusPill(text: localizeImportPlanCount(l10n, count)),
             ],
           ),
           const SizedBox(height: 14),
           for (final step in plan.steps) ...[
             Text(
-              step.title,
+              localizeImportPlanStep(l10n, step).title,
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 3),
             Text(
-              step.detail,
+              localizeImportPlanStep(l10n, step).detail,
               style: const TextStyle(
                 color: _spMuted,
                 fontSize: 13,
@@ -2413,7 +2439,7 @@ class ImportPlanCard extends StatelessWidget {
           const Divider(height: 18),
           for (final note in plan.privacyNotes) ...[
             Text(
-              note,
+              localizeImportPrivacyNote(l10n, note),
               style: const TextStyle(
                 color: _spMuted,
                 fontSize: 12,

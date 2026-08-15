@@ -10,17 +10,89 @@ enum ImportPlanStatus {
   final String label;
 }
 
-class ImportPlanStep {
-  const ImportPlanStep(this.title, this.detail);
-
-  final String title;
-  final String detail;
+enum ImportPlanStep {
+  readPlurisArchive,
+  validatePlurisArchive,
+  reviewPlurisArchive,
+  restorePlurisArchive,
+  readSimplyPlural,
+  normalizeSimplyPlural,
+  prepareSimplyPluralAvatars,
+  reviewSimplyPlural,
+  writeSimplyPlural,
+  readPluralKitFile,
+  buildPluralKitRoster,
+  convertPluralKitSwitches,
+  reviewPluralKitFile,
+  validatePluralKitToken,
+  fetchPluralKitRoster,
+  fetchPluralKitSwitches,
+  reviewPluralKitLive,
+  readTupperbox,
+  mapTupperbox,
+  reviewTupperbox,
+  readPluralSpace,
+  mapPluralSpace,
+  reviewPluralSpace,
+  choosePrism,
+  decryptPrism,
+  reviewPrism,
 }
 
-class ImportPlanCount {
-  const ImportPlanCount(this.label);
+enum ImportPlanCount {
+  members,
+  groups,
+  notes,
+  journals,
+  messages,
+  reminders,
+  tags,
+  customFields,
+  polls,
+  frontHistory,
+  notifications,
+  preferences,
+  customFronts,
+  switches,
+  frontIntervals,
+  tuppers,
+  avatars,
+  fronts,
+}
 
-  final String label;
+enum ImportPrivacyNote {
+  previewBeforeWrite,
+  localBackupRestore,
+  simplyPluralDedupe,
+  simplyPluralAvatars,
+  pluralKitIdentifiers,
+  pluralKitSwitches,
+  pluralKitTokenEphemeral,
+  pluralKitLiveNetwork,
+  tupperboxIdentifiers,
+  tupperboxProxyMetadata,
+  pluralSpaceIdentifiers,
+  pluralSpaceUnknownFields,
+  prismPassphraseMemoryOnly,
+  prismIdentifiers,
+}
+
+enum ImportDetectionReason {
+  prismExtension,
+  plurisFileName,
+  simplyPluralFileName,
+  pluralKitFileName,
+  tupperboxFileName,
+  pluralSpaceFileName,
+  chooseAfterUpload,
+  encryptedPlurisArchive,
+  localPlurisArchive,
+  tupperboxFields,
+  pluralKitFields,
+  simplyPluralFields,
+  pluralSpaceMarkers,
+  ambiguousMemberGroupJson,
+  unrecognised,
 }
 
 class ImportSourcePlan {
@@ -38,7 +110,7 @@ class ImportSourcePlan {
   final ImportConflictStrategy defaultConflictStrategy;
   final List<ImportPlanStep> steps;
   final List<ImportPlanCount> previewCounts;
-  final List<String> privacyNotes;
+  final List<ImportPrivacyNote> privacyNotes;
 
   bool get requiresFile =>
       source.inputKinds.contains(ImportInputKind.file) ||
@@ -62,7 +134,7 @@ class ImportFileGuess {
 
   final ImportSource? source;
   final double confidence;
-  final String reason;
+  final ImportDetectionReason reason;
 
   bool get isConfident => source != null && confidence >= 0.72;
 }
@@ -78,7 +150,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.prism,
       confidence: 0.95,
-      reason: '.prism file extension',
+      reason: ImportDetectionReason.prismExtension,
     );
   }
 
@@ -86,7 +158,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.plurisHavenArchive,
       confidence: 0.9,
-      reason: 'filename looks like a Pluris Haven archive',
+      reason: ImportDetectionReason.plurisFileName,
     );
   }
 
@@ -99,7 +171,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.simplyPlural,
       confidence: 0.82,
-      reason: 'filename looks like a Simply Plural export',
+      reason: ImportDetectionReason.simplyPluralFileName,
     );
   }
 
@@ -107,7 +179,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.pluralKitFile,
       confidence: 0.84,
-      reason: 'filename looks like a PluralKit export',
+      reason: ImportDetectionReason.pluralKitFileName,
     );
   }
 
@@ -115,7 +187,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.tupperbox,
       confidence: 0.84,
-      reason: 'filename looks like a Tupperbox export',
+      reason: ImportDetectionReason.tupperboxFileName,
     );
   }
 
@@ -123,7 +195,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.pluralSpace,
       confidence: 0.84,
-      reason: 'filename looks like a PluralSpace export',
+      reason: ImportDetectionReason.pluralSpaceFileName,
     );
   }
 
@@ -131,7 +203,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: null,
       confidence: 0,
-      reason: 'pick a service after upload',
+      reason: ImportDetectionReason.chooseAfterUpload,
     );
   }
 
@@ -142,7 +214,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.plurisHavenArchive,
       confidence: 0.98,
-      reason: 'file is an encrypted Pluris Haven archive',
+      reason: ImportDetectionReason.encryptedPlurisArchive,
     );
   }
 
@@ -153,7 +225,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.plurisHavenArchive,
       confidence: 0.98,
-      reason: 'file is a Pluris Haven local archive',
+      reason: ImportDetectionReason.localPlurisArchive,
     );
   }
 
@@ -161,7 +233,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.tupperbox,
       confidence: 0.76,
-      reason: 'file contains Tupperbox-style roster fields',
+      reason: ImportDetectionReason.tupperboxFields,
     );
   }
 
@@ -170,7 +242,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.pluralKitFile,
       confidence: 0.78,
-      reason: 'file contains PluralKit-style members and switches',
+      reason: ImportDetectionReason.pluralKitFields,
     );
   }
 
@@ -178,7 +250,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.simplyPlural,
       confidence: 0.78,
-      reason: 'file contains Simply Plural fronting fields',
+      reason: ImportDetectionReason.simplyPluralFields,
     );
   }
 
@@ -186,7 +258,7 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: ImportSource.pluralSpace,
       confidence: 0.78,
-      reason: 'file contains PluralSpace markers',
+      reason: ImportDetectionReason.pluralSpaceMarkers,
     );
   }
 
@@ -194,14 +266,14 @@ ImportFileGuess guessImportSourceFromFile({
     return const ImportFileGuess(
       source: null,
       confidence: 0.45,
-      reason: 'member/group JSON found, choose the source to confirm',
+      reason: ImportDetectionReason.ambiguousMemberGroupJson,
     );
   }
 
   return const ImportFileGuess(
     source: null,
     confidence: 0,
-    reason: 'could not recognize this file yet',
+    reason: ImportDetectionReason.unrecognised,
   );
 }
 
@@ -212,40 +284,28 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.ready,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('groups'),
-        ImportPlanCount('notes'),
-        ImportPlanCount('journals'),
-        ImportPlanCount('messages'),
-        ImportPlanCount('reminders'),
-        ImportPlanCount('tags'),
-        ImportPlanCount('custom fields'),
-        ImportPlanCount('polls'),
-        ImportPlanCount('front history'),
-        ImportPlanCount('notifications'),
-        ImportPlanCount('preferences'),
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.notes,
+        ImportPlanCount.journals,
+        ImportPlanCount.messages,
+        ImportPlanCount.reminders,
+        ImportPlanCount.tags,
+        ImportPlanCount.customFields,
+        ImportPlanCount.polls,
+        ImportPlanCount.frontHistory,
+        ImportPlanCount.notifications,
+        ImportPlanCount.preferences,
       ],
       privacyNotes: [
-        'Archive import previews before writing anything.',
-        'This is the backup and restore path for local data.',
+        ImportPrivacyNote.previewBeforeWrite,
+        ImportPrivacyNote.localBackupRestore,
       ],
       steps: [
-        ImportPlanStep(
-          'Read archive',
-          'Accept a Pluris Haven local archive JSON export.',
-        ),
-        ImportPlanStep(
-          'Validate format',
-          'Require format pluris_haven.local_archive and a supported version.',
-        ),
-        ImportPlanStep(
-          'Review contents',
-          'Show local members, groups, journals, notes, fronts, tags, polls, and preferences before writing.',
-        ),
-        ImportPlanStep(
-          'Restore locally',
-          'Apply selected records and keep an import record for future dedupe.',
-        ),
+        ImportPlanStep.readPlurisArchive,
+        ImportPlanStep.validatePlurisArchive,
+        ImportPlanStep.reviewPlurisArchive,
+        ImportPlanStep.restorePlurisArchive,
       ],
     ),
     ImportSource.simplyPlural => const ImportSourcePlan(
@@ -253,38 +313,23 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('groups'),
-        ImportPlanCount('front history'),
-        ImportPlanCount('custom fronts'),
-        ImportPlanCount('notes'),
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.frontHistory,
+        ImportPlanCount.customFronts,
+        ImportPlanCount.notes,
       ],
       privacyNotes: [
-        'Preview happens before records are saved.',
-        'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.',
-        'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.',
+        ImportPrivacyNote.previewBeforeWrite,
+        ImportPrivacyNote.simplyPluralDedupe,
+        ImportPrivacyNote.simplyPluralAvatars,
       ],
       steps: [
-        ImportPlanStep(
-          'Read export',
-          'Accept a Simply Plural JSON export or backup archive.',
-        ),
-        ImportPlanStep(
-          'Normalize fields',
-          'Map members, groups, custom fields, custom fronts, and notes into local records.',
-        ),
-        ImportPlanStep(
-          'Prepare avatars',
-          'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Show creates, skips, and updates before writing.',
-        ),
-        ImportPlanStep(
-          'Write locally',
-          'Save records and keep an import record for future dedupe.',
-        ),
+        ImportPlanStep.readSimplyPlural,
+        ImportPlanStep.normalizeSimplyPlural,
+        ImportPlanStep.prepareSimplyPluralAvatars,
+        ImportPlanStep.reviewSimplyPlural,
+        ImportPlanStep.writeSimplyPlural,
       ],
     ),
     ImportSource.pluralKitFile => const ImportSourcePlan(
@@ -292,29 +337,20 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('groups'),
-        ImportPlanCount('switches'),
-        ImportPlanCount('front intervals'),
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.switches,
+        ImportPlanCount.frontIntervals,
       ],
       privacyNotes: [
-        'PluralKit IDs are kept as import identifiers for dedupe and optional sync.',
-        'Switch logs become local front history intervals.',
+        ImportPrivacyNote.pluralKitIdentifiers,
+        ImportPrivacyNote.pluralKitSwitches,
       ],
       steps: [
-        ImportPlanStep('Read export', 'Accept a PluralKit JSON export file.'),
-        ImportPlanStep(
-          'Build roster',
-          'Stage members, groups, avatars, descriptions, and proxy metadata.',
-        ),
-        ImportPlanStep(
-          'Convert switches',
-          'Turn PK switches into local front history.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Dedupe by PK UUID, short ID, then normalized name.',
-        ),
+        ImportPlanStep.readPluralKitFile,
+        ImportPlanStep.buildPluralKitRoster,
+        ImportPlanStep.convertPluralKitSwitches,
+        ImportPlanStep.reviewPluralKitFile,
       ],
     ),
     ImportSource.pluralKitLive => const ImportSourcePlan(
@@ -322,31 +358,19 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('groups'),
-        ImportPlanCount('switches'),
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.switches,
       ],
       privacyNotes: [
-        'The pk;token should be used for the import request only.',
-        'Live import needs network access, but the preview and write still happen locally.',
+        ImportPrivacyNote.pluralKitTokenEphemeral,
+        ImportPrivacyNote.pluralKitLiveNetwork,
       ],
       steps: [
-        ImportPlanStep(
-          'Validate token',
-          'Call GET /systems/@me with the token as Authorization.',
-        ),
-        ImportPlanStep(
-          'Fetch roster',
-          'Read members and groups from the PluralKit API.',
-        ),
-        ImportPlanStep(
-          'Fetch switches',
-          'Page switches with a delay to avoid rate limits.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Dedupe by PK UUID and short ID before saving.',
-        ),
+        ImportPlanStep.validatePluralKitToken,
+        ImportPlanStep.fetchPluralKitRoster,
+        ImportPlanStep.fetchPluralKitSwitches,
+        ImportPlanStep.reviewPluralKitLive,
       ],
     ),
     ImportSource.tupperbox => const ImportSourcePlan(
@@ -354,24 +378,18 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('tuppers'),
-        ImportPlanCount('avatars'),
-        ImportPlanCount('tags'),
+        ImportPlanCount.tuppers,
+        ImportPlanCount.avatars,
+        ImportPlanCount.tags,
       ],
       privacyNotes: [
-        'Tupperbox IDs are retained only for dedupe and future re-imports.',
-        'Proxy patterns can be imported later as optional metadata.',
+        ImportPrivacyNote.tupperboxIdentifiers,
+        ImportPrivacyNote.tupperboxProxyMetadata,
       ],
       steps: [
-        ImportPlanStep('Read roster', 'Accept a Tupperbox export file.'),
-        ImportPlanStep(
-          'Map tuppers',
-          'Convert tuppers to members with names, avatars, brackets, and descriptions.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Dedupe by Tupperbox ID, then normalized name.',
-        ),
+        ImportPlanStep.readTupperbox,
+        ImportPlanStep.mapTupperbox,
+        ImportPlanStep.reviewTupperbox,
       ],
     ),
     ImportSource.pluralSpace => const ImportSourcePlan(
@@ -379,24 +397,18 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.next,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('groups'),
-        ImportPlanCount('fronts'),
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.fronts,
       ],
       privacyNotes: [
-        'PluralSpace source IDs are kept as import identifiers.',
-        'Unknown fields are kept in the preview until a mapper exists.',
+        ImportPrivacyNote.pluralSpaceIdentifiers,
+        ImportPrivacyNote.pluralSpaceUnknownFields,
       ],
       steps: [
-        ImportPlanStep('Read export', 'Accept a PluralSpace export file.'),
-        ImportPlanStep(
-          'Map records',
-          'Stage members, groups, notes, and fronting data when present.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Dedupe by source ID, then normalized name.',
-        ),
+        ImportPlanStep.readPluralSpace,
+        ImportPlanStep.mapPluralSpace,
+        ImportPlanStep.reviewPluralSpace,
       ],
     ),
     ImportSource.prism => const ImportSourcePlan(
@@ -404,27 +416,18 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       status: ImportPlanStatus.planned,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
       previewCounts: [
-        ImportPlanCount('members'),
-        ImportPlanCount('fronts'),
-        ImportPlanCount('notes'),
+        ImportPlanCount.members,
+        ImportPlanCount.fronts,
+        ImportPlanCount.notes,
       ],
       privacyNotes: [
-        'The passphrase is only used to decrypt the import in memory.',
-        'Prism source IDs are kept for re-import dedupe.',
+        ImportPrivacyNote.prismPassphraseMemoryOnly,
+        ImportPrivacyNote.prismIdentifiers,
       ],
       steps: [
-        ImportPlanStep(
-          'Choose .prism file',
-          'Accept an encrypted Prism export.',
-        ),
-        ImportPlanStep(
-          'Decrypt preview',
-          'Use the passphrase locally and avoid storing it.',
-        ),
-        ImportPlanStep(
-          'Review matches',
-          'Dedupe by Prism ID, then normalized name.',
-        ),
+        ImportPlanStep.choosePrism,
+        ImportPlanStep.decryptPrism,
+        ImportPlanStep.reviewPrism,
       ],
     ),
   };

@@ -11,6 +11,7 @@ import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/l10n/app_localizations_en.dart';
 import 'package:pluris_haven/l10n/import_diagnostic_localizations.dart';
+import 'package:pluris_haven/l10n/import_plan_localizations.dart';
 
 final _englishL10n = AppLocalizationsEn();
 
@@ -103,9 +104,7 @@ void main() {
     );
     expect(
       importPlanFor(ImportSource.simplyPlural).privacyNotes,
-      contains(
-        'Avatar ZIPs stay offline. Remote avatar URLs may be fetched during import so they can be stored locally.',
-      ),
+      contains(ImportPrivacyNote.simplyPluralAvatars),
     );
   });
 
@@ -138,6 +137,20 @@ void main() {
         textPreview: '{"members":[],"groups":[]}',
       ).source,
       isNull,
+    );
+    expect(
+      localizeImportDetectionReason(
+        _englishL10n,
+        guessImportSourceFromFile(fileName: 'system.prism').reason,
+      ),
+      '.prism file extension',
+    );
+    final firstStep = importPlanFor(
+      ImportSource.plurisHavenArchive,
+    ).steps.first;
+    expect(
+      localizeImportPlanStep(_englishL10n, firstStep).title,
+      'Read archive',
     );
   });
 

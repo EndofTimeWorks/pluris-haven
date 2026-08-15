@@ -376,7 +376,7 @@ ImportPreview _previewNormalizedSource({
         severity: ImportPreviewSeverity.warning,
         stage: ImportPreviewStage.preview,
         diagnostic: ImportDiagnostic(ImportDiagnosticCode.bestEffortImport, {
-          'source': source.label,
+          'source': source,
         }),
       ),
     ],
