@@ -1948,14 +1948,6 @@ ORDER BY imported_at DESC
     bool includeArchived = false,
     bool includeCustomFronts = false,
   }) {
-    final where = <String>['m.system_id = ?'];
-    if (!includeArchived) {
-      where.add('m.archived = 0');
-    }
-    if (!includeCustomFronts) {
-      where.add('m.is_custom_front = 0');
-    }
-
     return database
         .customSelect(
           '''
@@ -1978,7 +1970,10 @@ SELECT
   GROUP_CONCAT(gm.group_id) AS group_ids
 FROM members m
 LEFT JOIN group_members gm ON gm.member_id = m.id
-WHERE ${where.join(' AND ')}
+WHERE
+  m.system_id = ?
+  AND (? = 1 OR m.archived = 0)
+  AND (? = 1 OR m.is_custom_front = 0)
 GROUP BY
   m.id,
   m.display_name,
@@ -1997,7 +1992,11 @@ GROUP BY
   m.folder_id
 ORDER BY m.lexo_rank ASC
           ''',
-          variables: [Variable<String>(localSystemId)],
+          variables: [
+            Variable<String>(localSystemId),
+            Variable<int>(includeArchived ? 1 : 0),
+            Variable<int>(includeCustomFronts ? 1 : 0),
+          ],
           readsFrom: {database.members, database.groupMembers},
         )
         .watch()

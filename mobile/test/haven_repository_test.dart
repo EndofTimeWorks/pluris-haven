@@ -68,6 +68,46 @@ void main() {
     expect(crypto.decryptCalls, 18);
   });
 
+  test('filters archived members and custom fronts independently', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = LocalHavenRepository(
+      database,
+      crypto: HavenCrypto(SecretKey(List<int>.generate(32, (index) => index))),
+    );
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Co-fronting'));
+
+    final savedMembers = await repository.watchMembers().first;
+    final normalMember = savedMembers.singleWhere(
+      (member) => member.displayName == 'River',
+    );
+    final customFront = savedMembers.singleWhere(
+      (member) => member.displayName == 'Co-fronting',
+    );
+    await (database.update(database.members)
+          ..where((member) => member.id.equals(customFront.id)))
+        .write(const MembersCompanion(isCustomFront: Value(true)));
+    await repository.archiveMember(normalMember.id);
+
+    expect(await repository.watchMembers().first, isEmpty);
+    expect(
+      await repository.watchMembers(includeArchived: true).first,
+      hasLength(1),
+    );
+    expect(
+      await repository.watchMembers(includeCustomFronts: true).first,
+      hasLength(1),
+    );
+    expect(
+      await repository
+          .watchMembers(includeArchived: true, includeCustomFronts: true)
+          .first,
+      hasLength(2),
+    );
+  });
+
   test('stores and clears current front in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
