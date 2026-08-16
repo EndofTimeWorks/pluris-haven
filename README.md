@@ -1,7 +1,8 @@
 # Pluris Haven
 
-Offline-first app for systems, collectives, and individuals to organise members,
-groups, identities, notes, journals, and fronting if those concepts fit them.
+Pluris Haven is an offline-first app for systems, other collectives,
+individuals, and anyone else who finds its tools useful. It is made by systems
+and does not assume which words or experiences fit someone.
 
 Made by systems. Designed to welcome everyone without assuming how many are
 present, which words they use for themselves, or what their experience looks
@@ -13,10 +14,10 @@ other network features are opt-in.
 ## Targets
 
 - `mobile` - Flutter app targeting Android and iOS.
-- `website` - SvelteKit site/app shell.
+- `website` - static SvelteKit project site.
 - `server` - optional accounts, sessions, friends, and encrypted backup storage.
 
-## Current Focus
+## What works
 
 - local member, group, note, and front tracking
 - mobile navigation and dashboard
@@ -26,12 +27,14 @@ other network features are opt-in.
 - optional server accounts, revocable sessions, encrypted backups, and experimental friends/blocking
 - dev and tagged mobile builds through GitHub Actions
 
+Public registration, federation(tbd), browser access to private data, and signed iOS
+distribution are not ready.
+
 ## Docs
 
 - `docs/release/mobile.md` - mobile dev builds and releases
 - `docs/mobile-accessibility.md` - mobile accessibility rules and alpha gate
 - `docs/product-goals.md` - product boundaries and inclusive language rules
-- `docs/protocol/federation-v1.md` - proposed federation protocol; not implemented
 - `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 
 ## Mobile
@@ -81,8 +84,8 @@ Local data stays local by default. Any online connection must say:
 Pluris Haven is a personal tracking and journaling tool. It is not medical
 care, medical advice, crisis support, or a replacement for professional help.
 
-## License
+## Licence
 
 Pluris Haven is source-available for noncommercial use. Commercial use,
-including selling builds or hosted access, requires a separate written license
+including selling builds or hosted access, requires a separate written licence
 from EndofTimeWorks. See [LICENSE](LICENSE).

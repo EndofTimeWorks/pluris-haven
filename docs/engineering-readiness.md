@@ -1,88 +1,60 @@
-# Engineering Readiness
+# Engineering readiness
 
-Internal release decision record. This is not a public checklist or product
-overview.
+Internal release notes, last reviewed 2026-08-16.
 
-Last reviewed: 2026-08-09
+## Ready for alpha testing
 
-## Current decision
+- Android release builds and ABI splits build with the configured signing key.
+- Local data, import, export, encrypted recovery, and migration tests pass.
+- Simply Plural import has a private local acceptance path. PluralKit has file
+  and bounded live-token tests.
+- The static website builds and has generated-page accessibility and security
+  header checks.
 
-| Area                    | Status                   | Evidence                                                                                                                                                      | Remaining work                                                                                                |
-| ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Android alpha build     | Conditional go           | Fresh release APK and ABI splits built locally; signing and package checks passed.                                                                            | Do a device smoke pass on the release artifact.                                                               |
-| Import and local backup | Go for alpha             | Import, encryption, restore, live PluralKit fetching, and malformed-input tests pass.                                                                         | Keep adding fixtures when a real compatibility problem is found.                                              |
-| Accessibility           | Conditional go           | Widget checks cover semantics, progress, high contrast, and reduced motion.                                                                                   | Test routes and sheets with TalkBack, VoiceOver, keyboard, switch access, and large text.                     |
-| iOS compilation         | Conditional go           | Hosted CI compiles the unsigned iOS target on the pinned macOS runner.                                                                                        | Validate on a device and decide signing/distribution.                                                         |
-| iOS distribution        | No-go                    | No signed IPA or TestFlight workflow.                                                                                                                         | Apple signing, provisioning, and physical-device validation.                                                  |
-| Optional server         | No-go for public use     | Mobile and server support accounts, sessions, encrypted backup upload, quotas, deletion, and experimental friends/blocks behind disabled-by-default settings. | Email verification, recovery, distributed limits, HTTPS operations, monitoring, moderation, and legal policy. |
-| Website                 | Go for the current scope | Website checks and production build pass.                                                                                                                     | Keep status pages consistent with the actual mobile release.                                                  |
+These are engineering checks, not a claim that every real export or device has
+been tested.
 
-## Compatibility scope
+## Still conditional
 
-| Source                | Current claim                   | Evidence                                        |
-| --------------------- | ------------------------------- | ----------------------------------------------- |
-| Simply Plural         | Import and re-import support    | Import tests and the local acceptance fixture.  |
-| PluralKit             | File and live-token import      | Checked-in mapper and bounded API-client tests. |
-| Tupperbox             | Contract-level importer support | Checked-in source-shape tests.                  |
-| PluralSpace and Prism | Contract-level importer support | Checked-in source-shape tests.                  |
+- Android needs a smoke test using the actual published release artefact.
+- iOS compiles unsigned in CI, but still needs signing, installation, and
+  physical-device testing.
+- Accessibility has widget and page checks, but still needs TalkBack,
+  VoiceOver, keyboard, switch access, large text, contrast, and reduced-motion
+  passes on devices.
+- Large imports and decrypt-heavy screens still need profiling on representative
+  Android and iOS hardware.
 
-No private real-world export is claimed for a source unless it is listed in the
-local test record.
+The optional server is not ready for public registration. Accounts, sessions,
+password changes, deletion, encrypted backup upload, and experimental friends
+exist, but verified email, recovery, moderation, policy, and production
+operations are not complete.
 
-## Fixture and data rules
+Keep registration and friends disabled by default.
 
-- Private exports, avatar archives, and local backup archives stay untracked.
-- Checked-in fixtures must state where they came from and what behavior they
-  cover.
-- Do not add private names, tokens, passwords, avatars, or account data to a
-  fixture.
-- A compatibility claim needs an import test, an acceptance run, or both.
+## Compatibility claims
 
-## Architecture boundaries
+- **Simply Plural:** import and re-import tests, plus a local private fixture.
+- **PluralKit:** file and live-token tests.
+- **Tupperbox, PluralSpace, and Prism:** checked-in shape and mapper tests only.
 
-- The mobile app remains usable without an account or server.
-- Local encrypted storage is the primary copy of user data.
-- The optional server must not receive plaintext system content.
-- Bidirectional sync, federation, portable identity, and ActivityPub are out of
-  scope for this alpha.
-- Public registration and friends stay disabled until the server launch gates
-  are complete.
+Do not claim real-export compatibility unless that export has been tested.
 
-## Recovery and migration requirements
+## Private test data
 
-- Database migrations must fail closed when they cannot preserve the data.
-- Encrypted backup restore must be tested with a clean destination.
-- Backup format changes need a compatibility or migration plan before release.
-- A device-key snapshot is not a portable recovery path; the password-protected
-  archive is the portable path.
+- Keep private exports, avatars, tokens, passwords, and recovery archives out of
+  Git.
+- Checked-in fixtures must say where they came from and what they test.
+- Add a fixture when it reproduces a real compatibility problem, not merely to
+  increase the fixture count.
 
 ## Release rules
 
-- Do not describe the hosted server as public-ready while any server item above
-  is `No-go`.
-- An unsigned iOS compile is build evidence, not an iOS release.
-- Widget coverage does not replace device accessibility testing.
-- Keep local import fixtures and private exports out of Git.
-- Record the command, CI run, artifact, or test that supports a status change.
-
-## Evidence update
-
-For each status change, record:
-
-- last reviewed date;
-- what changed;
-- the command, test, CI run, or artifact used as evidence; and
-- the remaining work or follow-up.
-
-## Evidence to refresh
-
-When this document changes, update only the rows affected by new evidence:
-
-- mobile build version and artifact checks;
-- Flutter and server test counts;
-- hosted CI run and uploaded artifacts;
-- device accessibility coverage;
-- server deployment and recovery checks.
-
-If a row has no current evidence, mark it `No-go` or `Blocked` instead of
-guessing.
+- Local use must not depend on the server.
+- The server must not receive plaintext private content.
+- Device-key snapshots are not portable recovery. Password-protected archives
+  are.
+- Database migrations need tests using real rows from the affected schema.
+- An unsigned iOS build is compile evidence, not a release.
+- Automated accessibility checks do not replace device testing.
+- Record the command, CI run, artefact, or test behind any readiness change.

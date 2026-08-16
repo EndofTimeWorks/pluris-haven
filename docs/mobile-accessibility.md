@@ -1,24 +1,24 @@
-# Mobile Accessibility
+# Mobile accessibility
 
 Accessibility is part of the app contract. Pluris Haven should work for screen
 reader users, blind and low-vision users, keyboard/switch users, low-mobility
 users, and people who need reduced motion or simpler screens.
 
-## Rules for UI Work
+## Rules for UI work
 
 - Icon-only controls must have a tooltip or semantic label.
 - Decorative icons should be excluded from semantics so TalkBack and VoiceOver
   read the actual row text instead.
 - Rows that do nothing must not be exposed as buttons.
 - Destructive actions must ask for confirmation and name what will be removed.
-- Color cannot be the only state indicator. Include text such as archived,
+- Colour cannot be the only state indicator. Include text such as archived,
   fronting, off, failed, or done.
 - Text must scale with system font settings. Avoid hard fixed-height containers
   around text-heavy controls.
 - Tap targets should stay at least 48 by 48 logical pixels.
 - Back navigation must close sheets before leaving the page.
 - Import and sync progress must be visible as text, not just spinners.
-- Motion should be minimal and must honor the reduced-motion setting and the
+- Motion should be minimal and must honour the reduced-motion setting and the
   platform animation preference.
 
 ## Covered so far
@@ -40,7 +40,7 @@ users, and people who need reduced motion or simpler screens.
 
 ## Still needs device coverage
 
-The automated checks cover individual behaviors. They do not replace a
+The automated checks cover individual behaviours. They do not replace a
 route-by-route pass with TalkBack, VoiceOver, keyboard or switch access. The
 remaining device work is:
 
@@ -50,7 +50,8 @@ remaining device work is:
 - Device-level reduced-motion verification.
 - Device-level verification of named avatar and banner semantics; persisted
   user-provided alternative-text fields are not yet implemented.
-- Better structured reminder scheduling with actual notification scheduling.
+- Reminder schedules need TalkBack and VoiceOver testing, including permission
+  denial and unavailable notification services.
 
 Import and restore progress already exposes text, the current phase, and failure
 recovery in widget semantics. Device timing and focus checks remain open.

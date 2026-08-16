@@ -1,16 +1,16 @@
 # Pluris Haven server
 
-This service is optional. The mobile app remains usable without an account or a server.
+This service is optional. The mobile app remains usable without an account or a
+server.
 
-The first server boundary handles accounts, revocable device sessions, friend requests, blocking, and directional sharing grants. Accepting a friend request shares nothing until the owner enables specific grants. Plaintext local system data is not uploaded or synchronized.
+The server handles accounts, revocable device sessions, encrypted backups,
+friend requests, and blocking. Friends are experimental and do not share local
+content. Sharing grants and bidirectional sync are not implemented.
 
-The backup workstream has a tested client-side snapshot contract, an
-authenticated per-user snapshot API, and a filesystem object store. Clients
-upload opaque encrypted chunks through this boundary; the server never
-receives archive plaintext or a device master key, and it never overwrites an
-existing chunk key. This is versioned backup, not bidirectional synchronization.
-The mobile client can create these encrypted snapshots, resume matching partial
-uploads, list recovery points, and explicitly delete server copies.
+The mobile app encrypts backups before uploading them. The server stores opaque,
+immutable chunks and never receives archive plaintext or the device master key.
+The mobile client can resume a matching partial upload, list snapshots, and
+delete them. It cannot restore a server snapshot yet.
 
 Set `PLURIS_BACKUP_OBJECT_DIR` to a private filesystem location with enough
 space for user-configured snapshot retention. The application creates the
@@ -110,7 +110,7 @@ The rehearsal creates a temporary database, restores the dump, verifies the appl
 Keep `PLURIS_REGISTRATION_ENABLED=false` and `PLURIS_FRIENDS_ENABLED=false` until all of these are complete:
 
 - HTTPS and strict reverse-proxy request limits
-- distributed rate limits for registration, login, refresh, and friend-code attempts
+- load and abuse testing of registration, login, refresh, and friend-code limits
 - email verification and account recovery
 - privacy, terms, moderation, abuse-reporting, and minor-safety policies
 - automated PostgreSQL backups and a successful restore rehearsal

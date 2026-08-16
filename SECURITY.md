@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please do not put exploit details in a public issue. Send a report to
-`security@endoftime.works` with `[security]` in the subject!
+`security@endoftime.works` with `[security]` in the subject.
 
 Useful reports include:
 

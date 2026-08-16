@@ -1,83 +1,71 @@
 # Server architecture
 
-This defines the architecture and policy for the first public-server release. Changing any of it requires a migration plan for existing accounts and clients.
+The server is optional. The mobile app and its local history must keep working
+when the server is unavailable or disconnected.
 
-## Product boundary
+## Current server
 
-- The app remains local-first. An account is optional.
-- Losing access to a server never removes local systems or local history.
-- Logging out removes server credentials, not local data. "Lock app," "disconnect this server," "remove this device," and "erase local data" are separate actions.
-- The official server is the default. Custom servers are an advanced option with identical protocol rights, migration rights, and encryption guarantees.
-- Self-hosters and the official server run the same protocol. Official-only extras are support and convenience, never protocol features.
+The implemented server provides:
 
-## Identity
+- password accounts and revocable device sessions;
+- password change and account deletion;
+- encrypted backup upload, download, listing, and deletion;
+- friend requests and blocking behind a disabled-by-default flag;
+- a small user-visible security event history; and
+- a public descriptor at `/.well-known/pluris-haven`.
 
-- An entity holds one portable cryptographic identity, recognised across servers. No server owns it.
-- Human-readable handles use a `name@server` style; the underlying identity stays stable if the handle changes.
-- Passkeys are the primary sign-in method. Password, Google/Apple sign-in, TOTP, hardware keys, and recovery codes are also supported. Google/Apple sign-in is convenience only and cannot itself decrypt private data.
-- SMS is never required, not even as a fallback.
-- Each device gets its own revocable key. Adding a device always requires approval from an existing trusted device or configured recovery material.
-- A revoked device can return later as a new, untrusted device, re-approved from scratch.
+The mobile app encrypts backup content before upload. The server stores opaque
+chunks and account metadata. It does not receive the device master key or local
+archive plaintext.
 
-## Server identity
+Accepting a friend request does not share local content. Sharing grants,
+messaging, content sync, federation, portable identity, passkeys, and public
+directories are not implemented.
 
-- The official API URL is `https://api.plurishaven.endoftime.works`.
-- Every server has a stable identity and publishes `/.well-known/pluris-haven`, identifying the operator, policies, support address, enabled capabilities, and protocol version.
-- The client shows this identity before creating an account on a custom server.
-- Servers are untrusted routing and storage infrastructure, not identity or data authorities. Clients fail closed if a server can't prove required security capabilities.
+## Trust boundaries
 
-## Friends and federation
+- Logging out or disconnecting a server must not erase local data.
+- Each backup, session, friendship, and block query is scoped to the signed-in
+  account.
+- Clients check the server descriptor before authentication.
+- Production uses PostgreSQL, HTTPS through a reverse proxy, explicit trusted
+  hosts, and a narrow proxy-header boundary.
+- Self-hosted and official servers use the same API and data format.
 
-- Friends, sharing, and messaging work the same way whether both entities are on the same server or different servers, over a purpose-built Pluris protocol. This is not Mastodon, ActivityPub, or the Fediverse.
-- The proposed wire protocol, trust model, state machines, and rollout gates are specified in [`docs/protocol/federation-v1.md`](../docs/protocol/federation-v1.md). It is a design contract, not a claim that federation is currently implemented.
-- ActivityPub support is deferred until the private protocol is designed; if it's ever added, it covers deliberately public content only.
-- Accepting a friend request grants no access by itself. Sharing grants are directional and revocable independently.
-- Blocking removes the friendship and every grant in both directions immediately.
-- There is no default public directory. Users may opt into a searchable public listing if they want to be discoverable.
+## Authentication
 
-## Migration
+Passwords use Argon2. Access tokens are short-lived and checked against the
+live device session. Refresh tokens rotate once; unexpected reuse revokes the
+session. A nonce allows one narrow retry when the first refresh response is
+lost.
 
-- Migrating to a new server is a complete, cryptographically signed transfer. It works even if the old server is permanently offline.
-- The root-signed portable identity is the authority for migration, not any device or server by itself.
-- If an old server comes back online with divergent data from after a migration, that data is quarantined and reviewed rather than silently merged or discarded.
-- Automatic standby replication is on by default for the official server. Self-hosters choose their own standby or opt out.
+Authentication and friend-request limits are stored in the database. The
+production PostgreSQL path locks each rate-limit bucket during updates.
 
-## Data and encryption
+## Backups
 
-- Server-local account identity, device-session records, friend relationships, blocks, and grants are server data.
-- Passwords use Argon2 hashes. Refresh tokens are one-time records; replay revokes the device session.
-- All non-public synchronised or shared content is end-to-end encrypted. The server stores and routes ciphertext for member profiles, fronts, notes, messages, polls, and journals, never plaintext.
-- A feature may request one plaintext value from a user with explicit, specific, opt-in consent and a clear warning that it breaks encryption for that value. This is never silent or blanket.
-- No custom cryptographic primitives. Established, reviewed algorithms and libraries only; any protocol composition gets review before a stable release.
-- Server exports and account deletion must be implemented before public registration opens.
+Backup chunks are immutable, size-limited, digest-checked, and owned by one
+account. Snapshot count and byte quotas are configurable. Blob deletion happens
+after the database transaction and is retried from a durable cleanup queue.
 
-## Metadata and privacy
-
-- The server retains only what auth, routing, delivery, and abuse prevention require.
-- Crash reports and performance metrics are collected by default and are configurable or opt-out where technically possible.
-- An optional stronger-privacy mode (padding, batching, relay routing) is available for people who want to obscure who-talks-to-whom patterns, at a battery and latency cost. It is not the default.
+Device-key snapshots are not portable by themselves. Password-protected local
+archives remain the new-device recovery path.
 
 ## Public launch
 
-- Registration starts closed and opens gradually after email verification, recovery, rate limits, reporting, and moderation tools exist.
-- There is no public account directory beyond the opt-in listing above, and no stranger messaging or cross-server search at launch.
-- Direct messages are not included in the first friends release.
-- The service is for people aged 13 and older. Jurisdictions with a higher digital-consent age require separate handling; qualified legal review covers this before public registration opens.
-- Account deletion uses immediate deactivation followed by a 30-day recovery period before permanent removal.
-- Moderation acts on public content and evidence a user chooses to submit. There is no routine scanning of private content.
+Registration and friends stay disabled until the project has:
 
-## Hosting
+- verified email and account recovery;
+- production HTTPS, monitoring, backups, and restore rehearsals;
+- abuse reporting, moderation, privacy, terms, and minor-safety policies; and
+- physical-device testing of the account and friend flows.
 
-- The official server uses PostgreSQL, systemd, and a local reverse proxy connection.
-- Rootless containers are the recommended packaged option for self-hosters. Native systemd installation remains supported for experienced self-hosters.
-- Operators are responsible for their own policies, email delivery, abuse response, backups, and restore rehearsals.
-- A custom-server warning tells users that its operator controls account metadata and any data intentionally sent to it.
-- Official hosting is donation-funded with no paid feature tiers. For-profit hosting by other operators is not permitted under the current licence; community servers may recover their own actual, itemised costs without that being commercial use.
+Future identity, sync, and federation work needs its own reviewed protocol and
+migration plan. It is not implied by the current friends API.
 
-## Compatibility
+## Deployment
 
-- Clients check the descriptor before authentication.
-- Unknown protocol versions or missing required capabilities fail closed.
-- New optional capabilities can be added without breaking older clients.
-- Servers publish a compatibility window and support older clients on a best-effort basis beyond it.
-- Encrypted sync requires a later protocol revision; it is not implied by the current friends API.
+The supported production path is PostgreSQL with systemd behind a local reverse
+proxy. Rootless containers remain available for self-hosting and testing.
+Operators are responsible for email delivery, abuse response, host backups,
+restore tests, and local law and policy requirements.

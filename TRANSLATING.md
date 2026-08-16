@@ -1,6 +1,6 @@
 # Translating Pluris Haven
 
-Mobile app text goes through Flutter's ARB-based localization system in
+Mobile app text goes through Flutter's ARB-based localisation system in
 `mobile/lib/l10n/`. Two locales have real content today: `en` (British
 English, the base) and `en_US` (American English). The in-app language picker
 already lists around three dozen other languages, but picking one of those
@@ -52,7 +52,7 @@ follow the steps below to actually give it content.
 4. Set `"@@locale"` at the top of the new file to match, using the same
    underscore format (`"de"`, `"pt_BR"`).
 5. From `mobile/`, run `flutter gen-l10n` to regenerate the Dart
-   localization classes, then `flutter analyze` and `flutter test` to make
+   localisation classes, then `flutter analyze` and `flutter test` to make
    sure nothing broke.
 
 ## Testing a translation locally
