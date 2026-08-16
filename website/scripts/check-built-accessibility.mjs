@@ -26,8 +26,15 @@ function attribute(tag, name) {
 }
 
 function visibleText(fragment) {
-  return fragment
-    .replace(/<[^>]+aria-hidden=(?:"true"|'true')[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+  const hiddenContent = /<[^>]+aria-hidden=(?:"true"|'true')[^>]*>[\s\S]*?<\/[^>]+>/gi;
+  let visible = fragment;
+  let previous;
+  do {
+    previous = visible;
+    visible = visible.replace(hiddenContent, '');
+  } while (visible !== previous);
+
+  return visible
     .replace(/<[^>]+>/g, ' ')
     .replace(/&(?:nbsp|#160);/gi, ' ')
     .replace(/&[^;]+;/g, 'x')
