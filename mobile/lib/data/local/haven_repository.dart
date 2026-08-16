@@ -11,9 +11,16 @@ import '../import/remote_avatar_policy.dart';
 import '../import/import_sources.dart';
 import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
+import 'app_customization.dart';
 import 'app_database.dart';
 import 'rehearsal_database_connection.dart';
-import 'supported_language.dart';
+
+export 'app_customization.dart'
+    show
+        AppCustomization,
+        HavenAccentColor,
+        HavenThemeMode,
+        defaultDashboardShortcutIds;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -621,134 +628,6 @@ class FrontHistoryDraft {
   final String? statusNote;
 }
 
-enum HavenThemeMode {
-  dark('dark', 'Dark'),
-  light('light', 'Light'),
-  system('system', 'System');
-
-  const HavenThemeMode(this.storageValue, this.label);
-
-  final String storageValue;
-  final String label;
-
-  static HavenThemeMode fromStorage(String? value) {
-    return HavenThemeMode.values.firstWhere(
-      (mode) => mode.storageValue == value,
-      orElse: () => HavenThemeMode.dark,
-    );
-  }
-}
-
-enum HavenAccentColor {
-  purple('purple', 'Purple', 0xFF7B61FF),
-  gold('gold', 'Gold', 0xFFF2C75C),
-  teal('teal', 'Teal', 0xFF5FD6C2),
-  rose('rose', 'Rose', 0xFFFF7AA8);
-
-  const HavenAccentColor(this.storageValue, this.label, this.argb);
-
-  final String storageValue;
-  final String label;
-  final int argb;
-
-  static HavenAccentColor fromStorage(String? value) {
-    return HavenAccentColor.values.firstWhere(
-      (accent) => accent.storageValue == value,
-      orElse: () => HavenAccentColor.purple,
-    );
-  }
-}
-
-class AppCustomization {
-  const AppCustomization({
-    required this.themeMode,
-    required this.accentColor,
-    required this.customAccentHex,
-    required this.compactDashboard,
-    required this.showDashboardSubtitles,
-    required this.reducedMotion,
-    required this.frontStatusNotification,
-    required this.highContrast,
-    required this.largeText,
-    required this.compactLists,
-    required this.dashboardShortcutIds,
-    required this.languageCode,
-  });
-
-  final HavenThemeMode themeMode;
-  final HavenAccentColor accentColor;
-  final String? customAccentHex;
-  final bool compactDashboard;
-  final bool showDashboardSubtitles;
-  final bool reducedMotion;
-  final bool frontStatusNotification;
-  final bool highContrast;
-  final bool largeText;
-  final bool compactLists;
-  final List<String> dashboardShortcutIds;
-  final String languageCode;
-
-  int get effectiveAccentArgb =>
-      _argbFromHex(customAccentHex) ?? accentColor.argb;
-
-  String get accentLabel => customAccentHex == null
-      ? accentColor.label
-      : 'Custom ${customAccentHex!.toUpperCase()}';
-
-  static AppCustomization get defaults => AppCustomization(
-    themeMode: HavenThemeMode.dark,
-    accentColor: HavenAccentColor.purple,
-    customAccentHex: null,
-    compactDashboard: false,
-    showDashboardSubtitles: true,
-    reducedMotion: false,
-    frontStatusNotification: false,
-    highContrast: false,
-    largeText: false,
-    compactLists: false,
-    dashboardShortcutIds: defaultDashboardShortcutIds,
-    languageCode: systemLanguageCode,
-  );
-
-  AppCustomization copyWith({
-    HavenThemeMode? themeMode,
-    HavenAccentColor? accentColor,
-    Object? customAccentHex = _unchanged,
-    bool? compactDashboard,
-    bool? showDashboardSubtitles,
-    bool? reducedMotion,
-    bool? frontStatusNotification,
-    bool? highContrast,
-    bool? largeText,
-    bool? compactLists,
-    List<String>? dashboardShortcutIds,
-    String? languageCode,
-  }) {
-    return AppCustomization(
-      themeMode: themeMode ?? this.themeMode,
-      accentColor: accentColor ?? this.accentColor,
-      customAccentHex: identical(customAccentHex, _unchanged)
-          ? this.customAccentHex
-          : customAccentHex as String?,
-      compactDashboard: compactDashboard ?? this.compactDashboard,
-      showDashboardSubtitles:
-          showDashboardSubtitles ?? this.showDashboardSubtitles,
-      reducedMotion: reducedMotion ?? this.reducedMotion,
-      frontStatusNotification:
-          frontStatusNotification ?? this.frontStatusNotification,
-      highContrast: highContrast ?? this.highContrast,
-      largeText: largeText ?? this.largeText,
-      compactLists: compactLists ?? this.compactLists,
-      dashboardShortcutIds: List.unmodifiable(
-        dashboardShortcutIds ?? this.dashboardShortcutIds,
-      ),
-      languageCode: languageCode ?? this.languageCode,
-    );
-  }
-
-  SupportedLanguage get language => supportedLanguageForCode(languageCode);
-}
-
 class SystemProfileDraft {
   const SystemProfileDraft({
     required this.name,
@@ -762,20 +641,6 @@ class SystemProfileDraft {
   final String? avatarUrl;
   final String? description;
 }
-
-const Object _unchanged = Object();
-
-const defaultDashboardShortcutIds = [
-  'members',
-  'front-history',
-  'groups',
-  'notes',
-  'journals',
-  'import-export',
-  'analytics',
-  'reminders',
-  'customize',
-];
 
 abstract interface class HavenRepository {
   Stream<HomeSnapshot> watchHomeSnapshot();
@@ -1040,10 +905,12 @@ abstract interface class HavenRepository {
 }
 
 class LocalHavenRepository implements HavenRepository {
-  LocalHavenRepository(this.database, {required this.crypto});
+  LocalHavenRepository(this.database, {required this.crypto})
+    : _customization = LocalAppCustomizationStore(database);
 
   final AppDatabase database;
   final HavenCrypto crypto;
+  final LocalAppCustomizationStore _customization;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -2952,18 +2819,10 @@ ORDER BY pb.position ASC
   }
 
   @override
-  Stream<AppCustomization> watchCustomization() {
-    return database
-        .select(database.appPreferences)
-        .watch()
-        .map(_mapCustomizationRows);
-  }
+  Stream<AppCustomization> watchCustomization() => _customization.watch();
 
   @override
-  Future<AppCustomization> loadCustomization() async {
-    final rows = await database.select(database.appPreferences).get();
-    return _mapCustomizationRows(rows);
-  }
+  Future<AppCustomization> loadCustomization() => _customization.load();
 
   String get _homeSnapshotSql => '''
 SELECT
@@ -3043,7 +2902,7 @@ SELECT
         ),
         colorHex: Value(
           await _encryptNullableLocalText(
-            _normalizeHexColor(draft.colorHex),
+            normalizeHexColor(draft.colorHex),
             'plural_systems',
             localSystemId,
             'color_hex',
@@ -3161,181 +3020,65 @@ SELECT
         .toList(growable: false);
   }
 
-  AppCustomization _mapCustomizationRows(List<AppPreference> rows) {
-    final values = {for (final row in rows) row.key: row.value};
-
-    return AppCustomization(
-      themeMode: HavenThemeMode.fromStorage(values[_themeModeKey]),
-      accentColor: HavenAccentColor.fromStorage(values[_accentColorKey]),
-      customAccentHex: _normalizeHexColor(values[_customAccentHexKey]),
-      compactDashboard: _readBool(values[_compactDashboardKey]),
-      showDashboardSubtitles: _readBool(
-        values[_showDashboardSubtitlesKey],
-        defaultValue: true,
-      ),
-      reducedMotion: _readBool(values[_reducedMotionKey]),
-      frontStatusNotification: _readBool(values[_frontStatusNotificationKey]),
-      highContrast: _readBool(values[_highContrastKey]),
-      largeText: _readBool(values[_largeTextKey]),
-      compactLists: _readBool(values[_compactListsKey]),
-      dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
-      languageCode: _readLanguageCode(values[_languageCodeKey]),
-    );
-  }
-
-  bool _readBool(String? value, {bool defaultValue = false}) {
-    if (value == null) {
-      return defaultValue;
-    }
-
-    return value == 'true';
-  }
-
-  List<String> _readShortcutIds(String? value) {
-    if (value == null) {
-      return defaultDashboardShortcutIds;
-    }
-
-    final stored = value.trim();
-    if (stored == _emptyShortcutIdsValue) {
-      return const [];
-    }
-    if (stored.isEmpty) {
-      return defaultDashboardShortcutIds;
-    }
-
-    final ids = stored
-        .split(',')
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toList();
-
-    if (ids.isEmpty) {
-      return defaultDashboardShortcutIds;
-    }
-
-    return List.unmodifiable(ids);
-  }
-
-  String _readLanguageCode(String? value) {
-    return supportedLanguageForCode(value).code;
-  }
+  @override
+  Future<void> setThemeMode(HavenThemeMode mode) =>
+      _customization.setThemeMode(mode);
 
   @override
-  Future<void> setThemeMode(HavenThemeMode mode) {
-    return _writePreference(_themeModeKey, mode.storageValue);
-  }
+  Future<void> setAccentColor(HavenAccentColor color) =>
+      _customization.setAccentColor(color);
 
   @override
-  Future<void> setAccentColor(HavenAccentColor color) async {
-    await _writePreference(_accentColorKey, color.storageValue);
-    await _writePreference(_customAccentHexKey, '');
-  }
+  Future<void> setCustomAccentColor(String? colorHex) =>
+      _customization.setCustomAccentColor(colorHex);
 
   @override
-  Future<void> setCustomAccentColor(String? colorHex) {
-    return _writePreference(
-      _customAccentHexKey,
-      _normalizeHexColor(colorHex) ?? '',
-    );
-  }
+  Future<void> setCompactDashboard(bool compact) =>
+      _customization.setCompactDashboard(compact);
 
   @override
-  Future<void> setCompactDashboard(bool compact) {
-    return _writePreference(_compactDashboardKey, compact.toString());
-  }
+  Future<void> setShowDashboardSubtitles(bool show) =>
+      _customization.setShowDashboardSubtitles(show);
 
   @override
-  Future<void> setShowDashboardSubtitles(bool show) {
-    return _writePreference(_showDashboardSubtitlesKey, show.toString());
-  }
+  Future<void> setReducedMotion(bool reduced) =>
+      _customization.setReducedMotion(reduced);
 
   @override
-  Future<void> setReducedMotion(bool reduced) {
-    return _writePreference(_reducedMotionKey, reduced.toString());
-  }
+  Future<void> setFrontStatusNotification(bool enabled) =>
+      _customization.setFrontStatusNotification(enabled);
 
   @override
-  Future<void> setFrontStatusNotification(bool enabled) {
-    return _writePreference(_frontStatusNotificationKey, enabled.toString());
-  }
+  Future<void> setHighContrast(bool highContrast) =>
+      _customization.setHighContrast(highContrast);
 
   @override
-  Future<void> setHighContrast(bool highContrast) {
-    return _writePreference(_highContrastKey, highContrast.toString());
-  }
+  Future<void> setLargeText(bool largeText) =>
+      _customization.setLargeText(largeText);
 
   @override
-  Future<void> setLargeText(bool largeText) {
-    return _writePreference(_largeTextKey, largeText.toString());
-  }
+  Future<void> setCompactLists(bool compact) =>
+      _customization.setCompactLists(compact);
 
   @override
-  Future<void> setCompactLists(bool compact) {
-    return _writePreference(_compactListsKey, compact.toString());
-  }
+  Future<void> setDashboardShortcutIds(List<String> shortcutIds) =>
+      _customization.setDashboardShortcutIds(shortcutIds);
 
   @override
-  Future<void> setDashboardShortcutIds(List<String> shortcutIds) {
-    return _writePreference(
-      _dashboardShortcutIdsKey,
-      _serializeIds(shortcutIds),
-    );
-  }
+  Future<void> setLanguageCode(String languageCode) =>
+      _customization.setLanguageCode(languageCode);
 
   @override
-  Future<void> setLanguageCode(String languageCode) {
-    return _writePreference(
-      _languageCodeKey,
-      supportedLanguageForCode(languageCode).code,
-    );
-  }
+  Future<void> setDashboardShortcutVisible(String shortcutId, bool visible) =>
+      _customization.setDashboardShortcutVisible(shortcutId, visible);
 
   @override
-  Future<void> setDashboardShortcutVisible(
-    String shortcutId,
-    bool visible,
-  ) async {
-    final customization = await loadCustomization();
-    final ids = customization.dashboardShortcutIds.toList();
-    final existingIndex = ids.indexOf(shortcutId);
-
-    if (visible && existingIndex == -1) {
-      ids.add(shortcutId);
-    } else if (!visible && existingIndex != -1) {
-      ids.removeAt(existingIndex);
-    }
-
-    await setDashboardShortcutIds(ids);
-  }
+  Future<void> moveDashboardShortcut(String shortcutId, int delta) =>
+      _customization.moveDashboardShortcut(shortcutId, delta);
 
   @override
-  Future<void> moveDashboardShortcut(String shortcutId, int delta) async {
-    if (delta == 0) {
-      return;
-    }
-
-    final customization = await loadCustomization();
-    final ids = customization.dashboardShortcutIds.toList();
-    final index = ids.indexOf(shortcutId);
-    if (index == -1) {
-      return;
-    }
-
-    final newIndex = (index + delta).clamp(0, ids.length - 1);
-    if (newIndex == index) {
-      return;
-    }
-
-    final id = ids.removeAt(index);
-    ids.insert(newIndex, id);
-    await setDashboardShortcutIds(ids);
-  }
-
-  @override
-  Future<void> resetDashboardShortcuts() {
-    return setDashboardShortcutIds(defaultDashboardShortcutIds);
-  }
+  Future<void> resetDashboardShortcuts() =>
+      _customization.resetDashboardShortcuts();
 
   @override
   Future<void> saveMember(MemberDraft draft) async {
@@ -4140,7 +3883,7 @@ SELECT
               ),
               colorHex: Value(
                 await _encryptNullableLocalText(
-                  _normalizeHexColor(draft.colorHex),
+                  normalizeHexColor(draft.colorHex),
                   'privacy_buckets',
                   bucketId,
                   'color_hex',
@@ -4188,7 +3931,7 @@ SELECT
               ),
               colorHex: Value(
                 await _encryptNullableLocalText(
-                  _normalizeHexColor(draft.colorHex),
+                  normalizeHexColor(draft.colorHex),
                   'privacy_buckets',
                   bucketId,
                   'color_hex',
@@ -4703,7 +4446,7 @@ SELECT
             ),
             colorHex: Value(
               await _encryptNullableLocalText(
-                _normalizeHexColor(draft.colorHex),
+                normalizeHexColor(draft.colorHex),
                 'chat_channels',
                 channelId,
                 'color_hex',
@@ -4744,7 +4487,7 @@ SELECT
             ),
             colorHex: Value(
               await _encryptNullableLocalText(
-                _normalizeHexColor(draft.colorHex),
+                normalizeHexColor(draft.colorHex),
                 'chat_channels',
                 channelId,
                 'color_hex',
@@ -5054,19 +4797,6 @@ SELECT
             createdAt: now,
           ),
         );
-  }
-
-  String _serializeIds(List<String> shortcutIds) {
-    final seen = <String>{};
-    final ids = <String>[];
-    for (final id in shortcutIds) {
-      final trimmed = id.trim();
-      if (trimmed.isEmpty || !seen.add(trimmed)) {
-        continue;
-      }
-      ids.add(trimmed);
-    }
-    return ids.isEmpty ? _emptyShortcutIdsValue : ids.join(',');
   }
 
   List<String> _cleanPollOptions(List<String> options) {
@@ -6873,7 +6603,7 @@ SELECT
       ),
       colorHex: Value(
         await _encryptNullableLocalText(
-          _normalizeHexColor(_stringValue(channel['color_hex'])),
+          normalizeHexColor(_stringValue(channel['color_hex'])),
           'chat_channels',
           id,
           'color_hex',
@@ -7371,7 +7101,7 @@ SELECT
       ),
       colorHex: Value(
         await _encryptNullableLocalText(
-          _normalizeHexColor(_stringValue(bucket['color_hex'])),
+          normalizeHexColor(_stringValue(bucket['color_hex'])),
           'privacy_buckets',
           id,
           'color_hex',
@@ -8890,43 +8620,11 @@ String _safeFilePart(String value) {
   return cleaned.isEmpty ? 'avatar' : cleaned;
 }
 
-String? _normalizeHexColor(String? value) {
-  if (value == null) {
-    return null;
-  }
-  final trimmed = value.trim().replaceFirst('#', '');
-  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(trimmed)) {
-    return null;
-  }
-  return '#${trimmed.toUpperCase()}';
-}
-
 String? _trimToNull(String? value) {
   final trimmed = value?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }
 
-int? _argbFromHex(String? value) {
-  final normalized = _normalizeHexColor(value);
-  if (normalized == null) {
-    return null;
-  }
-  return int.parse('FF${normalized.substring(1)}', radix: 16);
-}
-
-const _themeModeKey = 'theme_mode';
-const _accentColorKey = 'accent_color';
-const _customAccentHexKey = 'custom_accent_hex';
-const _compactDashboardKey = 'compact_dashboard';
-const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
-const _reducedMotionKey = 'reduced_motion';
-const _frontStatusNotificationKey = 'front_status_notification';
-const _highContrastKey = 'high_contrast';
-const _largeTextKey = 'large_text';
-const _compactListsKey = 'compact_lists';
-const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
-const _emptyShortcutIdsValue = '__empty__';
-const _languageCodeKey = 'language_code';
 const _allowedCustomFieldTypes = {
   'text',
   'number',
