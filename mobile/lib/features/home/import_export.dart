@@ -540,7 +540,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
       setState(() {
         _isPickingImport = false;
         _preview = null;
-        _importStatus = l10n.pluralKitImportFailed(error.toString());
+        _importStatus = error is PluralKitResponseTooLargeException
+            ? l10n.pluralKitResponseTooLarge
+            : l10n.pluralKitImportFailed(error.toString());
       });
     }
   }

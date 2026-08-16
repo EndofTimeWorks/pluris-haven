@@ -417,6 +417,7 @@
   "decryptArchiveFailed": "Could not decrypt archive. Check the passphrase.",
   "fetchingPluralKitData": "Fetching PluralKit data...",
   "pluralKitImportFailed": "PluralKit import failed: {error}",
+  "pluralKitResponseTooLarge": "PluralKit returned too much data. Import stopped before loading it into memory.",
   "@pluralKitImportFailed": {
     "placeholders": { "error": { "type": "String" } }
   },

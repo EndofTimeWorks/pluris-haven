@@ -984,6 +984,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pluralKitResponseTooLarge =>
+      'PluralKit returned too much data. Import stopped before loading it into memory.';
+
+  @override
   String get chooseFileBeforeRehearsal =>
       'Choose or paste a file before rehearsing restore.';
 

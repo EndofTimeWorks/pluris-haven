@@ -1,20 +1,27 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
 import 'import_sources.dart';
+
+final class PluralKitResponseTooLargeException implements Exception {
+  const PluralKitResponseTooLargeException();
+}
 
 class PluralKitLiveClient {
   PluralKitLiveClient({
     http.Client? client,
     this.pageDelay = const Duration(milliseconds: 600),
     this.maxSwitches = 10000,
+    this.maximumResponseBytes = 16 * 1024 * 1024,
   }) : _client = client ?? http.Client();
 
   static final Uri _origin = Uri.parse('https://api.pluralkit.me/v2/');
   final http.Client _client;
   final Duration pageDelay;
   final int maxSwitches;
+  final int maximumResponseBytes;
 
   Future<String> fetchArchiveJson(String token) async {
     final trimmedToken = token.trim();
@@ -83,7 +90,6 @@ class PluralKitLiveClient {
     final response = await _client
         .send(request)
         .timeout(const Duration(seconds: 20));
-    final bytes = await response.stream.toBytes();
 
     if (response.statusCode >= 300 && response.statusCode < 400) {
       throw const FormatException(
@@ -104,8 +110,22 @@ class PluralKitLiveClient {
       );
     }
 
+    final declaredLength = response.contentLength;
+    if (declaredLength != null && declaredLength > maximumResponseBytes) {
+      throw const PluralKitResponseTooLargeException();
+    }
+    final bytes = BytesBuilder(copy: false);
+    await response.stream
+        .forEach((chunk) {
+          if (bytes.length > maximumResponseBytes - chunk.length) {
+            throw const PluralKitResponseTooLargeException();
+          }
+          bytes.add(chunk);
+        })
+        .timeout(const Duration(seconds: 20));
+
     try {
-      return jsonDecode(utf8.decode(bytes));
+      return jsonDecode(utf8.decode(bytes.takeBytes()));
     } on FormatException {
       throw const FormatException('PluralKit returned invalid JSON.');
     }

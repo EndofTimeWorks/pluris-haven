@@ -1860,6 +1860,12 @@ abstract class AppLocalizations {
   /// **'PluralKit import failed: {error}'**
   String pluralKitImportFailed(String error);
 
+  /// No description provided for @pluralKitResponseTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralKit returned too much data. Import stopped before loading it into memory.'**
+  String get pluralKitResponseTooLarge;
+
   /// No description provided for @chooseFileBeforeRehearsal.
   ///
   /// In en, this message translates to:

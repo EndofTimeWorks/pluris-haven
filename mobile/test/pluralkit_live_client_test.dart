@@ -85,4 +85,42 @@ void main() {
       ),
     );
   });
+
+  test('rejects a declared response above the byte limit', () async {
+    final client = MockClient.streaming((request, bodyStream) async {
+      return http.StreamedResponse(
+        const Stream<List<int>>.empty(),
+        200,
+        contentLength: 9,
+      );
+    });
+
+    expect(
+      () => PluralKitLiveClient(
+        client: client,
+        maximumResponseBytes: 8,
+      ).fetchArchiveJson('token'),
+      throwsA(isA<PluralKitResponseTooLargeException>()),
+    );
+  });
+
+  test('rejects a chunked response above the byte limit', () async {
+    final client = MockClient.streaming((request, bodyStream) async {
+      return http.StreamedResponse(
+        Stream<List<int>>.fromIterable(const [
+          [91, 123, 125],
+          [44, 123, 125, 93],
+        ]),
+        200,
+      );
+    });
+
+    expect(
+      () => PluralKitLiveClient(
+        client: client,
+        maximumResponseBytes: 6,
+      ).fetchArchiveJson('token'),
+      throwsA(isA<PluralKitResponseTooLargeException>()),
+    );
+  });
 }
