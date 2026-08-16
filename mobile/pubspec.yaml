@@ -39,16 +39,16 @@ dependencies:
   archive: ^4.0.7
   cryptography: ^2.9.0
   cupertino_icons: ^1.0.8
-  drift: ^2.34.0
+  drift: ^2.34.3
   intl: ^0.20.2
   path: ^1.9.1
   path_provider: ^2.1.5
-  sqlite3: ^3.4.0
+  sqlite3: ^3.5.1
   url_launcher: ^6.3.2
-  flutter_local_notifications: ^22.0.1
+  flutter_local_notifications: ^22.3.0
   flutter_timezone: ^5.1.0
   timezone: ^0.11.1
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: ^11.0.0
   http: ^1.6.0
 
 dev_dependencies:
@@ -61,8 +61,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  drift_dev: ^2.34.0
-  build_runner: ^2.15.0
+  drift_dev: ^2.34.5
+  build_runner: ^2.16.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
