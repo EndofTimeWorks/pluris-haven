@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz_data;
+
+import 'local_time_zone.dart';
 
 class NotificationCopy {
   const NotificationCopy({
@@ -36,7 +37,7 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_initialized) return;
-    tz_data.initializeTimeZones();
+    await configureLocalTimeZone();
 
     _plugin = FlutterLocalNotificationsPlugin();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
