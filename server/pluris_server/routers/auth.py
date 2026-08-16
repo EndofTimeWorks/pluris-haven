@@ -223,7 +223,7 @@ async def logout(auth: CurrentAuth, db: Db) -> MessageResponse:
         .where(RefreshToken.session_id == auth.session.id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=auth.session.revoked_at)
     )
-    record_security_event(
+    await record_security_event(
         db,
         user_id=auth.user.id,
         event_type=SecurityEventType.SIGNED_OUT,
@@ -269,7 +269,7 @@ async def change_password(
         )
         .values(revoked_at=changed_at)
     )
-    record_security_event(
+    await record_security_event(
         db,
         user_id=auth.user.id,
         event_type=SecurityEventType.PASSWORD_CHANGED,
@@ -300,7 +300,7 @@ async def delete_account(
     snapshot_ids = [snapshot.snapshot_id for snapshot in snapshots]
     owner_id = auth.user.id
     queue_backup_deletions(db, owner_id=owner_id, snapshot_ids=snapshot_ids)
-    record_security_event(
+    await record_security_event(
         db,
         user_id=owner_id,
         event_type=SecurityEventType.ACCOUNT_DELETED,
@@ -368,7 +368,7 @@ async def revoke_session(session_id: str, auth: CurrentAuth, db: Db) -> MessageR
         .where(RefreshToken.session_id == target.id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=target.revoked_at)
     )
-    record_security_event(
+    await record_security_event(
         db,
         user_id=auth.user.id,
         event_type=SecurityEventType.SESSION_REVOKED,

@@ -281,7 +281,7 @@ async def get_chunk(
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail="Backup chunk is not available") from error
     if index == 0:
-        record_security_event(
+        await record_security_event(
             db,
             user_id=auth.user.id,
             event_type=SecurityEventType.BACKUP_RECOVERY_STARTED,
@@ -306,7 +306,7 @@ async def delete_snapshot(
         snapshot_ids=[storage_snapshot_id],
     )
     await db.delete(snapshot)
-    record_security_event(
+    await record_security_event(
         db,
         user_id=auth.user.id,
         event_type=SecurityEventType.BACKUP_DELETED,

@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
+from pluris_server import security_events as security_event_store
 from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
 from pluris_server.routers import auth as auth_router
 from tests.conftest import auth, register
@@ -214,6 +215,43 @@ def test_security_events_are_private_and_cursor_paginated(
     other_events = client.get("/v1/auth/security-events", headers=auth(other["access_token"]))
     assert other_events.status_code == 200
     assert other_events.json() == []
+
+
+def test_security_event_history_is_bounded(
+    client: TestClient,
+    fast_passwords: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    owner = register(client, "bounded-events@example.com", "Bounded events")
+    monkeypatch.setattr(security_event_store, "MAX_SECURITY_EVENTS_PER_USER", 5)
+
+    async def add_events() -> None:
+        async with client.app.state.session_factory() as session:
+            user_id = await session.scalar(
+                select(User.id).where(User.email == "bounded-events@example.com")
+            )
+            assert user_id is not None
+            for _ in range(8):
+                await security_event_store.record_security_event(
+                    session,
+                    user_id=user_id,
+                    event_type=SecurityEventType.BACKUP_RECOVERY_STARTED,
+                )
+            await session.commit()
+
+            count = await session.scalar(
+                select(func.count(SecurityEvent.id)).where(SecurityEvent.user_id == user_id)
+            )
+            assert count == 5
+
+    asyncio.run(add_events())
+
+    events = client.get(
+        "/v1/auth/security-events",
+        headers=auth(owner["access_token"]),
+    )
+    assert events.status_code == 200
+    assert len(events.json()) == 5
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:
