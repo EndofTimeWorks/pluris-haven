@@ -13,6 +13,7 @@ import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
+import 'chat_store.dart';
 import 'journal_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';
@@ -25,6 +26,12 @@ export 'app_customization.dart'
         HavenAccentColor,
         HavenThemeMode,
         defaultDashboardShortcutIds;
+export 'chat_store.dart'
+    show
+        ChatCategoryDraft,
+        ChatCategorySummary,
+        ChatChannelDraft,
+        ChatChannelSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
 
@@ -266,59 +273,6 @@ class GroupDraft {
   final String? description;
   final String? emoji;
   final bool isSubsystem;
-}
-
-class ChatCategorySummary {
-  const ChatCategorySummary({
-    required this.id,
-    required this.name,
-    this.description,
-    required this.position,
-  });
-
-  final String id;
-  final String name;
-  final String? description;
-  final int position;
-}
-
-class ChatCategoryDraft {
-  const ChatCategoryDraft({required this.name, this.description});
-
-  final String name;
-  final String? description;
-}
-
-class ChatChannelSummary {
-  const ChatChannelSummary({
-    required this.id,
-    required this.name,
-    this.categoryId,
-    this.description,
-    this.colorHex,
-    required this.position,
-  });
-
-  final String id;
-  final String name;
-  final String? categoryId;
-  final String? description;
-  final String? colorHex;
-  final int position;
-}
-
-class ChatChannelDraft {
-  const ChatChannelDraft({
-    required this.name,
-    this.categoryId,
-    this.description,
-    this.colorHex,
-  });
-
-  final String name;
-  final String? categoryId;
-  final String? description;
-  final String? colorHex;
 }
 
 class ReminderSummary {
@@ -869,6 +823,12 @@ class LocalHavenRepository implements HavenRepository {
       encryptText: _encryptLocalText,
       decryptText: _decryptLocalText,
     );
+    _chat = LocalChatStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -878,6 +838,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalJournalStore _journals;
   late final LocalNoteStore _notes;
   late final LocalMessageStore _messages;
+  late final LocalChatStore _chat;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -2390,71 +2351,11 @@ ORDER BY pb.position ASC
   Stream<List<MessageSummary>> watchMessages() => _messages.watch();
 
   @override
-  Stream<List<ChatCategorySummary>> watchChatCategories() {
-    final query = database.select(database.chatCategories)
-      ..where((category) => category.systemId.equals(localSystemId))
-      ..orderBy([(category) => OrderingTerm(expression: category.position)]);
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          ChatCategorySummary(
-            id: row.id,
-            name:
-                (await _decryptLocalText(
-                  row.name,
-                  'chat_categories',
-                  row.id,
-                  'name',
-                )) ??
-                '',
-            description: await _decryptLocalText(
-              row.description,
-              'chat_categories',
-              row.id,
-              'description',
-            ),
-            position: row.position,
-          ),
-      ],
-    );
-  }
+  Stream<List<ChatCategorySummary>> watchChatCategories() =>
+      _chat.watchCategories();
 
   @override
-  Stream<List<ChatChannelSummary>> watchChatChannels() {
-    final query = database.select(database.chatChannels)
-      ..where((channel) => channel.systemId.equals(localSystemId))
-      ..orderBy([(channel) => OrderingTerm(expression: channel.position)]);
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          ChatChannelSummary(
-            id: row.id,
-            name:
-                (await _decryptLocalText(
-                  row.name,
-                  'chat_channels',
-                  row.id,
-                  'name',
-                )) ??
-                '',
-            categoryId: row.categoryId,
-            description: await _decryptLocalText(
-              row.description,
-              'chat_channels',
-              row.id,
-              'description',
-            ),
-            colorHex: await _decryptLocalText(
-              row.colorHex,
-              'chat_channels',
-              row.id,
-              'color_hex',
-            ),
-            position: row.position,
-          ),
-      ],
-    );
-  }
+  Stream<List<ChatChannelSummary>> watchChatChannels() => _chat.watchChannels();
 
   @override
   Stream<List<ReminderSummary>> watchReminders() {
@@ -4071,197 +3972,28 @@ SELECT
   Future<void> deleteMessage(String messageId) => _messages.delete(messageId);
 
   @override
-  Future<void> saveChatCategory(ChatCategoryDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    final now = DateTime.now().toUtc();
-    final categoryId = 'chat-category-${now.microsecondsSinceEpoch}';
-    final maxPosition = database.chatCategories.position.max();
-    final position =
-        await (database.selectOnly(database.chatCategories)
-              ..addColumns([maxPosition])
-              ..where(database.chatCategories.systemId.equals(localSystemId)))
-            .map((row) => row.read(maxPosition) ?? -1)
-            .getSingle();
-    await database
-        .into(database.chatCategories)
-        .insert(
-          ChatCategoriesCompanion.insert(
-            id: categoryId,
-            systemId: localSystemId,
-            name: await _encryptLocalText(
-              name,
-              'chat_categories',
-              categoryId,
-              'name',
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'chat_categories',
-                categoryId,
-                'description',
-              ),
-            ),
-            position: Value(position + 1),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveChatCategory(ChatCategoryDraft draft) =>
+      _chat.saveCategory(draft);
 
   @override
-  Future<void> updateChatCategory(
-    String categoryId,
-    ChatCategoryDraft draft,
-  ) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    await (database.update(database.chatCategories)..where(
-          (category) =>
-              category.systemId.equals(localSystemId) &
-              category.id.equals(categoryId),
-        ))
-        .write(
-          ChatCategoriesCompanion(
-            name: Value(
-              await _encryptLocalText(
-                name,
-                'chat_categories',
-                categoryId,
-                'name',
-              ),
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'chat_categories',
-                categoryId,
-                'description',
-              ),
-            ),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
+  Future<void> updateChatCategory(String categoryId, ChatCategoryDraft draft) =>
+      _chat.updateCategory(categoryId, draft);
 
   @override
-  Future<void> deleteChatCategory(String categoryId) async {
-    await database.transaction(() async {
-      await (database.update(database.chatChannels)
-            ..where((channel) => channel.categoryId.equals(categoryId)))
-          .write(const ChatChannelsCompanion(categoryId: Value(null)));
-      await (database.delete(database.chatCategories)..where(
-            (category) =>
-                category.systemId.equals(localSystemId) &
-                category.id.equals(categoryId),
-          ))
-          .go();
-    });
-  }
+  Future<void> deleteChatCategory(String categoryId) =>
+      _chat.deleteCategory(categoryId);
 
   @override
-  Future<void> saveChatChannel(ChatChannelDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    final now = DateTime.now().toUtc();
-    final channelId = 'chat-channel-${now.microsecondsSinceEpoch}';
-    final maxPosition = database.chatChannels.position.max();
-    final position =
-        await (database.selectOnly(database.chatChannels)
-              ..addColumns([maxPosition])
-              ..where(database.chatChannels.systemId.equals(localSystemId)))
-            .map((row) => row.read(maxPosition) ?? -1)
-            .getSingle();
-    await database
-        .into(database.chatChannels)
-        .insert(
-          ChatChannelsCompanion.insert(
-            id: channelId,
-            systemId: localSystemId,
-            categoryId: Value(_nullIfBlank(draft.categoryId)),
-            name: await _encryptLocalText(
-              name,
-              'chat_channels',
-              channelId,
-              'name',
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'chat_channels',
-                channelId,
-                'description',
-              ),
-            ),
-            colorHex: Value(
-              await _encryptNullableLocalText(
-                normalizeHexColor(draft.colorHex),
-                'chat_channels',
-                channelId,
-                'color_hex',
-              ),
-            ),
-            position: Value(position + 1),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveChatChannel(ChatChannelDraft draft) =>
+      _chat.saveChannel(draft);
 
   @override
-  Future<void> updateChatChannel(
-    String channelId,
-    ChatChannelDraft draft,
-  ) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    await (database.update(database.chatChannels)..where(
-          (channel) =>
-              channel.systemId.equals(localSystemId) &
-              channel.id.equals(channelId),
-        ))
-        .write(
-          ChatChannelsCompanion(
-            categoryId: Value(_nullIfBlank(draft.categoryId)),
-            name: Value(
-              await _encryptLocalText(name, 'chat_channels', channelId, 'name'),
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'chat_channels',
-                channelId,
-                'description',
-              ),
-            ),
-            colorHex: Value(
-              await _encryptNullableLocalText(
-                normalizeHexColor(draft.colorHex),
-                'chat_channels',
-                channelId,
-                'color_hex',
-              ),
-            ),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
+  Future<void> updateChatChannel(String channelId, ChatChannelDraft draft) =>
+      _chat.updateChannel(channelId, draft);
 
   @override
-  Future<void> deleteChatChannel(String channelId) async {
-    await database.transaction(() async {
-      await (database.update(database.messages)
-            ..where((message) => message.channelId.equals(channelId)))
-          .write(const MessagesCompanion(channelId: Value(null)));
-      await (database.delete(database.chatChannels)..where(
-            (channel) =>
-                channel.systemId.equals(localSystemId) &
-                channel.id.equals(channelId),
-          ))
-          .go();
-    });
-  }
+  Future<void> deleteChatChannel(String channelId) =>
+      _chat.deleteChannel(channelId);
 
   @override
   Future<String?> saveReminder(ReminderDraft draft) async {
