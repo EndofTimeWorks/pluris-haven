@@ -15,6 +15,7 @@ class PluralKitLiveClient {
     this.pageDelay = const Duration(milliseconds: 600),
     this.maxSwitches = 10000,
     this.maximumResponseBytes = 16 * 1024 * 1024,
+    this.maximumTotalResponseBytes = 32 * 1024 * 1024,
   }) : _client = client ?? http.Client();
 
   static final Uri _origin = Uri.parse('https://api.pluralkit.me/v2/');
@@ -22,6 +23,7 @@ class PluralKitLiveClient {
   final Duration pageDelay;
   final int maxSwitches;
   final int maximumResponseBytes;
+  final int maximumTotalResponseBytes;
 
   Future<String> fetchArchiveJson(String token) async {
     final trimmedToken = token.trim();
@@ -30,10 +32,15 @@ class PluralKitLiveClient {
     }
 
     final shape = const PluralKitLiveImportShape();
-    final system = await _getObject(shape.systemEndpoint, trimmedToken);
-    final members = await _getList(shape.membersEndpoint, trimmedToken);
-    final groups = await _getList(shape.groupsEndpoint, trimmedToken);
-    final switches = await _getSwitches(shape.switchesEndpoint, trimmedToken);
+    final budget = _ResponseBudget(maximumTotalResponseBytes);
+    final system = await _getObject(shape.systemEndpoint, trimmedToken, budget);
+    final members = await _getList(shape.membersEndpoint, trimmedToken, budget);
+    final groups = await _getList(shape.groupsEndpoint, trimmedToken, budget);
+    final switches = await _getSwitches(
+      shape.switchesEndpoint,
+      trimmedToken,
+      budget,
+    );
 
     return jsonEncode({
       'system': system,
@@ -43,12 +50,16 @@ class PluralKitLiveClient {
     });
   }
 
-  Future<List<Object?>> _getSwitches(String path, String token) async {
+  Future<List<Object?>> _getSwitches(
+    String path,
+    String token,
+    _ResponseBudget budget,
+  ) async {
     final switches = <Object?>[];
     var nextPath = path;
 
     while (switches.length < maxSwitches) {
-      final page = await _getList(nextPath, token);
+      final page = await _getList(nextPath, token, budget);
       if (page.isEmpty) break;
       switches.addAll(page.take(maxSwitches - switches.length));
       if (page.length < 100 || switches.length >= maxSwitches) break;
@@ -65,23 +76,35 @@ class PluralKitLiveClient {
     return switches;
   }
 
-  Future<Map<String, Object?>> _getObject(String path, String token) async {
-    final decoded = await _get(path, token);
+  Future<Map<String, Object?>> _getObject(
+    String path,
+    String token,
+    _ResponseBudget budget,
+  ) async {
+    final decoded = await _get(path, token, budget);
     if (decoded is! Map<String, Object?>) {
       throw const FormatException('PluralKit returned an unexpected object.');
     }
     return decoded;
   }
 
-  Future<List<Object?>> _getList(String path, String token) async {
-    final decoded = await _get(path, token);
+  Future<List<Object?>> _getList(
+    String path,
+    String token,
+    _ResponseBudget budget,
+  ) async {
+    final decoded = await _get(path, token, budget);
     if (decoded is! List<Object?>) {
       throw const FormatException('PluralKit returned an unexpected list.');
     }
     return decoded;
   }
 
-  Future<Object?> _get(String path, String token) async {
+  Future<Object?> _get(
+    String path,
+    String token,
+    _ResponseBudget budget,
+  ) async {
     final relativePath = path.startsWith('/') ? path.substring(1) : path;
     final request = http.Request('GET', _origin.resolve(relativePath))
       ..followRedirects = false
@@ -120,6 +143,7 @@ class PluralKitLiveClient {
           if (bytes.length > maximumResponseBytes - chunk.length) {
             throw const PluralKitResponseTooLargeException();
           }
+          budget.add(chunk.length);
           bytes.add(chunk);
         })
         .timeout(const Duration(seconds: 20));
@@ -129,5 +153,19 @@ class PluralKitLiveClient {
     } on FormatException {
       throw const FormatException('PluralKit returned invalid JSON.');
     }
+  }
+}
+
+final class _ResponseBudget {
+  _ResponseBudget(this.maximumBytes);
+
+  final int maximumBytes;
+  int _usedBytes = 0;
+
+  void add(int byteCount) {
+    if (_usedBytes > maximumBytes - byteCount) {
+      throw const PluralKitResponseTooLargeException();
+    }
+    _usedBytes += byteCount;
   }
 }

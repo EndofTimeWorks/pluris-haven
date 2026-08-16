@@ -123,4 +123,22 @@ void main() {
       throwsA(isA<PluralKitResponseTooLargeException>()),
     );
   });
+
+  test('rejects responses that exceed the total import budget', () async {
+    final client = MockClient((request) async {
+      return http.Response(
+        request.url.path.endsWith('/systems/@me') ? '{}' : '[]',
+        200,
+      );
+    });
+
+    expect(
+      () => PluralKitLiveClient(
+        client: client,
+        maximumResponseBytes: 8,
+        maximumTotalResponseBytes: 7,
+      ).fetchArchiveJson('token'),
+      throwsA(isA<PluralKitResponseTooLargeException>()),
+    );
+  });
 }
