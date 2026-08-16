@@ -73,7 +73,7 @@ def test_cors_allows_browser_backup_digest_header(tmp_path) -> None:
         cors_origins=("https://app.example.com",),
     )
     with TestClient(create_app(settings)) as client:
-        response = client.options(
+        preflight = client.options(
             "/v1/backups/snapshots/snapshot/chunks/0",
             headers={
                 "Origin": "https://app.example.com",
@@ -81,10 +81,15 @@ def test_cors_allows_browser_backup_digest_header(tmp_path) -> None:
                 "Access-Control-Request-Headers": ("authorization,content-type,x-content-sha256"),
             },
         )
+        response = client.get(
+            "/health",
+            headers={"Origin": "https://app.example.com"},
+        )
 
-    assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == "https://app.example.com"
-    assert "x-content-sha256" in response.headers["access-control-allow-headers"].lower()
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == "https://app.example.com"
+    assert "x-content-sha256" in preflight.headers["access-control-allow-headers"].lower()
+    assert response.headers["access-control-expose-headers"].lower() == "x-content-sha256"
 
 
 def test_friends_feature_is_closed_by_default(tmp_path) -> None:

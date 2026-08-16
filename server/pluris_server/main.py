@@ -96,6 +96,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_credentials=False,
             allow_methods=["GET", "POST", "PUT", "DELETE"],
             allow_headers=["Authorization", "Content-Type", "X-Content-SHA256"],
+            expose_headers=["X-Content-SHA256"],
         )
 
     app.include_router(health.router)
