@@ -342,6 +342,39 @@ void main() {
       expect(storage.values.values, isNot(contains('refresh')));
     },
   );
+
+  test('startup network failures preserve stored server tokens', () async {
+    final storage = MemoryServerStorage();
+    final initial = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await initial.connect('https://haven.example');
+    await initial.login(
+      email: 'test@example.com',
+      password: 'correct horse battery staple',
+      deviceName: 'Phone',
+    );
+
+    final unavailableApi = FakeServerApi()..failDescriptor = true;
+    final unavailable = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => unavailableApi,
+    );
+    await unavailable.initialize();
+
+    expect(unavailable.error, isNotNull);
+    expect(storage.values.values, containsAll(['access', 'refresh']));
+
+    final recovered = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await recovered.initialize();
+
+    expect(recovered.error, isNull);
+    expect(recovered.signedIn, isTrue);
+  });
 }
 
 class MemoryServerStorage implements SecureValueStore {
@@ -370,20 +403,26 @@ class FakeServerApi extends ServerApi {
   bool passwordChanged = false;
   bool rejectAccess = false;
   bool failNextRefresh = false;
+  bool failDescriptor = false;
 
   @override
-  Future<ServerDescriptor> descriptor() async => const ServerDescriptor(
-    name: 'Test Haven',
-    publicUrl: 'https://haven.example',
-    registrationEnabled: true,
-    friendsEnabled: true,
-    capabilities: {
-      'accounts',
-      'encrypted_backup_chunks',
-      'friend_requests',
-      'security_events_v1',
-    },
-  );
+  Future<ServerDescriptor> descriptor() async {
+    if (failDescriptor) {
+      throw const ServerApiException('Server unavailable.');
+    }
+    return const ServerDescriptor(
+      name: 'Test Haven',
+      publicUrl: 'https://haven.example',
+      registrationEnabled: true,
+      friendsEnabled: true,
+      capabilities: {
+        'accounts',
+        'encrypted_backup_chunks',
+        'friend_requests',
+        'security_events_v1',
+      },
+    );
+  }
 
   @override
   Future<ServerTokens> login({

@@ -68,7 +68,6 @@ class ServerAccountController extends ChangeNotifier {
       }
     } on Object catch (caught) {
       error = _message(caught);
-      await _clearTokens();
     }
     notifyListeners();
   }
