@@ -24,10 +24,8 @@ real user exports, passwords, tokens, or private avatars in a report.
   user-facing password-protected archive is a separate portable recovery path:
   import it on a new device with its passphrase and the app will encrypt the
   restored local data with that device's new key.
-- Authentication and friend-request rate limits are in-memory and apply per
-  process. Running multiple workers or replicas requires a shared limiter
-  before treating them as global controls.
-- The server provides password-confirmed account deletion and removes the
-  account's opaque backup files with it. The mobile app does not expose the
-  account/session flow yet. Keep public account features disabled until account
-  recovery, client flows, and legal requirements are complete.
+- Authentication and friend-request limits are stored in the database. The
+  production PostgreSQL path locks each bucket while it updates the count.
+- The mobile app exposes account, session, password-change, deletion, backup,
+  and experimental friend controls. Public accounts are still not ready: email
+  verification, recovery, moderation, policy, and deployment checks remain.
