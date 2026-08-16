@@ -14,6 +14,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'rehearsal_database_connection.dart';
+import 'tag_store.dart';
 
 export 'app_customization.dart'
     show
@@ -906,11 +907,19 @@ abstract interface class HavenRepository {
 
 class LocalHavenRepository implements HavenRepository {
   LocalHavenRepository(this.database, {required this.crypto})
-    : _customization = LocalAppCustomizationStore(database);
+    : _customization = LocalAppCustomizationStore(database) {
+    _tags = LocalTagStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
+  }
 
   final AppDatabase database;
   final HavenCrypto crypto;
   final LocalAppCustomizationStore _customization;
+  late final LocalTagStore _tags;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -7213,111 +7222,21 @@ SELECT
   // v8: Tags
 
   @override
-  Stream<List<Tag>> watchTags() {
-    final query = database.select(database.tags)
-      ..where((t) => t.systemId.equals(localSystemId))
-      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          row.copyWith(
-            name:
-                await _decryptLocalText(row.name, 'tags', row.id, 'name') ?? '',
-            colorHex: Value(
-              await _decryptLocalText(
-                row.colorHex,
-                'tags',
-                row.id,
-                'color_hex',
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Stream<List<Tag>> watchTags() => _tags.watch();
 
   @override
-  Future<void> saveTag(Tag tag) async {
-    final now = DateTime.now().toUtc();
-    await database
-        .into(database.tags)
-        .insertOnConflictUpdate(
-          TagsCompanion.insert(
-            id: tag.id,
-            systemId: localSystemId,
-            name: await _encryptLocalText(tag.name, 'tags', tag.id, 'name'),
-            colorHex: Value(
-              await _encryptNullableLocalText(
-                tag.colorHex,
-                'tags',
-                tag.id,
-                'color_hex',
-              ),
-            ),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveTag(Tag tag) => _tags.save(tag);
 
   @override
-  Future<void> deleteTag(String tagId) async {
-    await (database.delete(
-      database.memberTags,
-    )..where((mt) => mt.tagId.equals(tagId))).go();
-    await (database.delete(
-      database.tags,
-    )..where((t) => t.id.equals(tagId))).go();
-  }
+  Future<void> deleteTag(String tagId) => _tags.delete(tagId);
 
   @override
-  Stream<List<Tag>> watchTagsForMember(String memberId) {
-    final query = database.select(database.memberTags).join([
-      innerJoin(
-        database.tags,
-        database.memberTags.tagId.equalsExp(database.tags.id),
-      ),
-    ])..where(database.memberTags.memberId.equals(memberId));
-    return query.watch().asyncMap((rows) async {
-      final tags = <Tag>[];
-      for (final row in rows) {
-        final tag = row.readTable(database.tags);
-        tags.add(
-          tag.copyWith(
-            name:
-                (await _decryptLocalText(tag.name, 'tags', tag.id, 'name')) ??
-                '',
-            colorHex: Value(
-              await _decryptLocalText(
-                tag.colorHex,
-                'tags',
-                tag.id,
-                'color_hex',
-              ),
-            ),
-          ),
-        );
-      }
-      return tags;
-    });
-  }
+  Stream<List<Tag>> watchTagsForMember(String memberId) =>
+      _tags.watchForMember(memberId);
 
   @override
-  Future<void> setMemberTags(String memberId, List<String> tagIds) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.memberTags,
-      )..where((mt) => mt.memberId.equals(memberId))).go();
-      for (final tagId in tagIds) {
-        await database
-            .into(database.memberTags)
-            .insert(
-              MemberTagsCompanion.insert(tagId: tagId, memberId: memberId),
-              mode: InsertMode.insertOrIgnore,
-            );
-      }
-    });
-  }
+  Future<void> setMemberTags(String memberId, List<String> tagIds) =>
+      _tags.setForMember(memberId, tagIds);
 
   // v8: Journals
 
