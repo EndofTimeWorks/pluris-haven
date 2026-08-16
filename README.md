@@ -35,6 +35,7 @@ distribution are not ready.
 - `docs/release/mobile.md` - mobile dev builds and releases
 - `docs/mobile-accessibility.md` - mobile accessibility rules and alpha gate
 - `docs/product-goals.md` - product boundaries and inclusive language rules
+- `docs/local-data-model.md` - local storage, encryption, and archive boundaries
 - `docs/distribution.md` - install channels, Obtainium notes, and funding metadata
 
 ## Mobile
