@@ -34,21 +34,32 @@ class NotificationService {
 
   FlutterLocalNotificationsPlugin? _plugin;
   bool _initialized = false;
+  bool _setupFailed = false;
+
+  bool get setupFailed => _setupFailed;
 
   Future<void> initialize() async {
     if (_initialized) return;
-    await configureLocalTimeZone();
+    try {
+      await configureLocalTimeZone();
 
-    _plugin = FlutterLocalNotificationsPlugin();
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-    const settings = InitializationSettings(android: android, iOS: ios);
-    await _plugin!.initialize(settings: settings);
-    _initialized = true;
+      final plugin = FlutterLocalNotificationsPlugin();
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const ios = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+      const settings = InitializationSettings(android: android, iOS: ios);
+      await plugin.initialize(settings: settings);
+      _plugin = plugin;
+      _initialized = true;
+      _setupFailed = false;
+    } on Object {
+      _plugin = null;
+      _setupFailed = true;
+      rethrow;
+    }
   }
 
   Future<bool> _requestPermission() async {

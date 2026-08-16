@@ -34,6 +34,15 @@ class RemindersPage extends StatelessWidget {
 
         return SpPage(
           children: [
+            if (NotificationService.instance.setupFailed) ...[
+              SpCard(
+                child: SpEmptyState(
+                  title: l10n.notificationsUnavailableTitle,
+                  body: l10n.notificationsUnavailableBody,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             SpCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

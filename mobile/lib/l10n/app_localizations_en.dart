@@ -75,6 +75,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Persistent currently-fronting status';
 
   @override
+  String get notificationsUnavailableTitle => 'Notifications unavailable';
+
+  @override
+  String get notificationsUnavailableBody =>
+      'Pluris Haven could not start this device\'s notification service. Reminders stay saved, but they may not appear outside the app until it restarts successfully.';
+
+  @override
   String get highContrastTitle => 'High contrast';
 
   @override

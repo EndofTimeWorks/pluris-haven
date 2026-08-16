@@ -65,6 +65,11 @@ class AppOptionsPage extends StatelessWidget {
         SpSettingsGroup(
           title: l10n.accessibilityGroupTitle,
           rows: [
+            if (NotificationService.instance.setupFailed)
+              SpSettingsRow(
+                l10n.notificationsUnavailableTitle,
+                l10n.notificationsUnavailableBody,
+              ),
             SpSwitchRow(
               title: l10n.reducedMotionTitle,
               subtitle: l10n.reducedMotionSubtitle,

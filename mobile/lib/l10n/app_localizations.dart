@@ -223,6 +223,18 @@ abstract class AppLocalizations {
   /// **'Persistent currently-fronting status'**
   String get frontStatusChannelDescription;
 
+  /// No description provided for @notificationsUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications unavailable'**
+  String get notificationsUnavailableTitle;
+
+  /// No description provided for @notificationsUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven could not start this device\'s notification service. Reminders stay saved, but they may not appear outside the app until it restarts successfully.'**
+  String get notificationsUnavailableBody;
+
   /// No description provided for @highContrastTitle.
   ///
   /// In en, this message translates to:

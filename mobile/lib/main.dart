@@ -23,8 +23,24 @@ Future<void> main() async {
   if (staleExports > 0) {
     appDebugLog('Removed stale export staging directories count=$staleExports');
   }
-  await initializeBackgroundTasks();
-  await NotificationService.instance.initialize();
+  try {
+    await initializeBackgroundTasks();
+  } on Object catch (error, stackTrace) {
+    appDebugLog(
+      'Background task setup unavailable',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+  try {
+    await NotificationService.instance.initialize();
+  } on Object catch (error, stackTrace) {
+    appDebugLog(
+      'Notification setup unavailable',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 
   final database = AppDatabase();
   final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
