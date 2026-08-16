@@ -14,6 +14,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'journal_store.dart';
+import 'message_store.dart';
 import 'note_store.dart';
 import 'rehearsal_database_connection.dart';
 import 'tag_store.dart';
@@ -25,6 +26,7 @@ export 'app_customization.dart'
         HavenThemeMode,
         defaultDashboardShortcutIds;
 export 'note_store.dart' show NoteDraft, NoteSummary;
+export 'message_store.dart' show MessageDraft, MessageSummary;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -264,48 +266,6 @@ class GroupDraft {
   final String? description;
   final String? emoji;
   final bool isSubsystem;
-}
-
-class MessageSummary {
-  const MessageSummary({
-    required this.id,
-    required this.body,
-    this.memberId,
-    this.boardKind = 'system',
-    this.boardMemberId,
-    this.parentMessageId,
-    this.channelId,
-    required this.createdAt,
-    this.archived = false,
-  });
-
-  final String id;
-  final String body;
-  final String? memberId;
-  final String boardKind;
-  final String? boardMemberId;
-  final String? parentMessageId;
-  final String? channelId;
-  final DateTime createdAt;
-  final bool archived;
-}
-
-class MessageDraft {
-  const MessageDraft({
-    required this.body,
-    this.memberId,
-    this.boardKind = 'system',
-    this.boardMemberId,
-    this.parentMessageId,
-    this.channelId,
-  });
-
-  final String body;
-  final String? memberId;
-  final String boardKind;
-  final String? boardMemberId;
-  final String? parentMessageId;
-  final String? channelId;
 }
 
 class ChatCategorySummary {
@@ -904,6 +864,11 @@ class LocalHavenRepository implements HavenRepository {
       encryptText: _encryptLocalText,
       decryptText: _decryptLocalText,
     );
+    _messages = LocalMessageStore(
+      database,
+      encryptText: _encryptLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -912,6 +877,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalTagStore _tags;
   late final LocalJournalStore _journals;
   late final LocalNoteStore _notes;
+  late final LocalMessageStore _messages;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -2421,44 +2387,7 @@ ORDER BY pb.position ASC
   Stream<List<NoteSummary>> watchNotes() => _notes.watch();
 
   @override
-  Stream<List<MessageSummary>> watchMessages() {
-    final query = database.select(database.messages)
-      ..where(
-        (message) =>
-            message.systemId.equals(localSystemId) &
-            message.archived.equals(false),
-      )
-      ..orderBy([
-        (message) => OrderingTerm(
-          expression: message.createdAt,
-          mode: OrderingMode.desc,
-        ),
-      ]);
-
-    return query.watch().asyncMap((rows) async {
-      return [
-        for (final row in rows)
-          MessageSummary(
-            id: row.id,
-            body:
-                (await _decryptLocalText(
-                  row.body,
-                  'messages',
-                  row.id,
-                  'body',
-                )) ??
-                '',
-            memberId: row.memberId,
-            boardKind: row.boardKind,
-            boardMemberId: row.boardMemberId,
-            parentMessageId: row.parentMessageId,
-            channelId: row.channelId,
-            createdAt: row.createdAt,
-            archived: row.archived,
-          ),
-      ];
-    });
-  }
+  Stream<List<MessageSummary>> watchMessages() => _messages.watch();
 
   @override
   Stream<List<ChatCategorySummary>> watchChatCategories() {
@@ -4132,106 +4061,14 @@ SELECT
   Future<void> deleteNote(String noteId) => _notes.delete(noteId);
 
   @override
-  Future<void> saveMessage(MessageDraft draft) async {
-    final body = draft.body.trim();
-    if (body.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final messageId = 'message-${now.microsecondsSinceEpoch}';
-    await database
-        .into(database.messages)
-        .insert(
-          MessagesCompanion.insert(
-            id: messageId,
-            systemId: localSystemId,
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            body: await _encryptLocalText(body, 'messages', messageId, 'body'),
-            boardKind: Value(
-              draft.boardKind == 'member'
-                  ? 'member'
-                  : draft.boardKind == 'channel'
-                  ? 'channel'
-                  : 'system',
-            ),
-            boardMemberId: Value(
-              draft.boardKind == 'member'
-                  ? _nullIfBlank(draft.boardMemberId)
-                  : null,
-            ),
-            parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
-            channelId: Value(
-              draft.boardKind == 'channel'
-                  ? _nullIfBlank(draft.channelId)
-                  : null,
-            ),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveMessage(MessageDraft draft) => _messages.save(draft);
 
   @override
-  Future<void> updateMessage(String messageId, MessageDraft draft) async {
-    final body = draft.body.trim();
-    if (body.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    await (database.update(database.messages)..where(
-          (message) =>
-              message.systemId.equals(localSystemId) &
-              message.id.equals(messageId),
-        ))
-        .write(
-          MessagesCompanion(
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            body: Value(
-              await _encryptLocalText(body, 'messages', messageId, 'body'),
-            ),
-            boardKind: Value(
-              draft.boardKind == 'member'
-                  ? 'member'
-                  : draft.boardKind == 'channel'
-                  ? 'channel'
-                  : 'system',
-            ),
-            boardMemberId: Value(
-              draft.boardKind == 'member'
-                  ? _nullIfBlank(draft.boardMemberId)
-                  : null,
-            ),
-            parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
-            channelId: Value(
-              draft.boardKind == 'channel'
-                  ? _nullIfBlank(draft.channelId)
-                  : null,
-            ),
-            archived: const Value(false),
-            deletedAt: const Value(null),
-            updatedAt: Value(now),
-          ),
-        );
-  }
+  Future<void> updateMessage(String messageId, MessageDraft draft) =>
+      _messages.update(messageId, draft);
 
   @override
-  Future<void> deleteMessage(String messageId) async {
-    final now = DateTime.now().toUtc();
-    await (database.update(database.messages)..where(
-          (message) =>
-              message.systemId.equals(localSystemId) &
-              message.id.equals(messageId),
-        ))
-        .write(
-          MessagesCompanion(
-            archived: const Value(true),
-            deletedAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-  }
+  Future<void> deleteMessage(String messageId) => _messages.delete(messageId);
 
   @override
   Future<void> saveChatCategory(ChatCategoryDraft draft) async {
