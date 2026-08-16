@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_file_decoder.dart';
@@ -14,6 +16,58 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('reuses member decryptions when only metadata changes', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final crypto = _CountingHavenCrypto();
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'River',
+        pronouns: 'they/them',
+        colorHex: '#123456',
+        birthday: '02-03',
+        emoji: 'R',
+        privacy: 'trusted',
+        description: 'Profile',
+        avatarUrl: 'local-avatar:river.png',
+        pluralKitId: 'pk-river',
+      ),
+    );
+
+    final members = StreamIterator(
+      repository.watchMembers(includeArchived: true),
+    );
+    addTearDown(members.cancel);
+    expect(await members.moveNext(), isTrue);
+    final memberId = members.current.single.id;
+    expect(crypto.decryptCalls, 9);
+
+    await repository.archiveMember(memberId);
+    expect(await members.moveNext(), isTrue);
+    expect(members.current.single.archived, isTrue);
+    expect(crypto.decryptCalls, 9);
+
+    await repository.updateMember(
+      memberId,
+      const MemberDraft(
+        displayName: 'Brook',
+        pronouns: 'they/them',
+        colorHex: '#654321',
+        birthday: '02-03',
+        emoji: 'B',
+        privacy: 'trusted',
+        description: 'Updated profile',
+        avatarUrl: 'local-avatar:brook.png',
+        pluralKitId: 'pk-brook',
+      ),
+    );
+    expect(await members.moveNext(), isTrue);
+    expect(members.current.single.displayName, 'Brook');
+    expect(crypto.decryptCalls, 18);
+  });
+
   test('stores and clears current front in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -1516,4 +1570,17 @@ void main() {
     expect(archive, isNot(contains('content://')));
     expect(archive, isNot(contains('/data/user/0/')));
   });
+}
+
+class _CountingHavenCrypto extends HavenCrypto {
+  _CountingHavenCrypto()
+    : super(SecretKey(List<int>.filled(32, 0x42, growable: false)));
+
+  int decryptCalls = 0;
+
+  @override
+  Future<String?> decrypt(String? ciphertext, {String aad = ''}) {
+    decryptCalls++;
+    return super.decrypt(ciphertext, aad: aad);
+  }
 }

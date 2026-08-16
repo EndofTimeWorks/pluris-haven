@@ -1044,6 +1044,8 @@ class LocalHavenRepository implements HavenRepository {
 
   final AppDatabase database;
   final HavenCrypto crypto;
+  final Map<(String, String), ({String? ciphertext, String? plaintext})>
+  _memberDecryptCache = {};
 
   String _memberAad(String memberId, String field) =>
       'members:$memberId:$field';
@@ -1068,8 +1070,18 @@ class LocalHavenRepository implements HavenRepository {
     String memberId,
     String field,
     String? ciphertext,
-  ) {
-    return crypto.decrypt(ciphertext, aad: _memberAad(memberId, field));
+  ) async {
+    final key = (memberId, field);
+    final cached = _memberDecryptCache[key];
+    if (cached != null && cached.ciphertext == ciphertext) {
+      return cached.plaintext;
+    }
+    final plaintext = await crypto.decrypt(
+      ciphertext,
+      aad: _memberAad(memberId, field),
+    );
+    _memberDecryptCache[key] = (ciphertext: ciphertext, plaintext: plaintext);
+    return plaintext;
   }
 
   Future<String?> _migrateMemberField(
@@ -3619,6 +3631,7 @@ SELECT
           ))
           .go();
     });
+    _memberDecryptCache.removeWhere((key, _) => key.$1 == memberId);
   }
 
   @override
