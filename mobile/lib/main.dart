@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -31,10 +33,10 @@ Future<void> main() async {
   await repository.migrateMemberNamesToEncryption();
   await repository.migrateLocalPrivateContentToEncryption();
   final serverAccount = ServerAccountController();
-  await serverAccount.initialize();
   appDebugLog('Local repository ready');
 
   runApp(PlurisHavenApp(repository: repository, serverAccount: serverAccount));
+  unawaited(serverAccount.initialize());
 }
 
 class PlurisHavenApp extends StatelessWidget {

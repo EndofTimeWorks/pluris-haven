@@ -53,14 +53,14 @@ class ServerAccountController extends ChangeNotifier {
   Uri? get serverUri => _api?.baseUri;
 
   Future<void> initialize() async {
-    final rawUrl = await _storage.read(_serverUrlKey);
-    _accessToken = await _storage.read(_accessTokenKey);
-    _refreshToken = await _storage.read(_refreshTokenKey);
-    await _loadRefreshRetryState();
-    if (rawUrl == null || rawUrl.isEmpty) {
-      return;
-    }
     try {
+      final rawUrl = await _storage.read(_serverUrlKey);
+      _accessToken = await _storage.read(_accessTokenKey);
+      _refreshToken = await _storage.read(_refreshTokenKey);
+      await _loadRefreshRetryState();
+      if (rawUrl == null || rawUrl.isEmpty) {
+        return;
+      }
       _api = _apiFactory(Uri.parse(rawUrl));
       descriptor = await _api!.descriptor();
       if (_accessToken != null && _refreshToken != null) {
@@ -68,8 +68,9 @@ class ServerAccountController extends ChangeNotifier {
       }
     } on Object catch (caught) {
       error = _message(caught);
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> connect(String serverUrl) async {

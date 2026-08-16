@@ -375,6 +375,14 @@ void main() {
     expect(recovered.error, isNull);
     expect(recovered.signedIn, isTrue);
   });
+
+  test('startup storage failures are reported without escaping', () async {
+    final controller = ServerAccountController(storage: FailingReadStorage());
+
+    await expectLater(controller.initialize(), completes);
+
+    expect(controller.error, isNotNull);
+  });
 }
 
 class MemoryServerStorage implements SecureValueStore {
@@ -388,6 +396,17 @@ class MemoryServerStorage implements SecureValueStore {
 
   @override
   Future<void> write(String key, String value) async => values[key] = value;
+}
+
+class FailingReadStorage implements SecureValueStore {
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<String?> read(String key) async => throw StateError('Unavailable');
+
+  @override
+  Future<void> write(String key, String value) async {}
 }
 
 class FakeServerApi extends ServerApi {
