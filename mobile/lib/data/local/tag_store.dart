@@ -1,28 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
-
-typedef EncryptLocalText =
-    Future<String> Function(
-      String value,
-      String table,
-      String rowId,
-      String column,
-    );
-typedef EncryptNullableLocalText =
-    Future<String?> Function(
-      String? value,
-      String table,
-      String rowId,
-      String column,
-    );
-typedef DecryptLocalText =
-    Future<String?> Function(
-      String? stored,
-      String table,
-      String rowId,
-      String column,
-    );
+import 'local_text_codec.dart';
 
 class LocalTagStore {
   LocalTagStore(

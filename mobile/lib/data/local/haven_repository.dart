@@ -13,6 +13,7 @@ import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
+import 'journal_store.dart';
 import 'rehearsal_database_connection.dart';
 import 'tag_store.dart';
 
@@ -914,12 +915,19 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _journals = LocalJournalStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
   final HavenCrypto crypto;
   final LocalAppCustomizationStore _customization;
   late final LocalTagStore _tags;
+  late final LocalJournalStore _journals;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -7241,76 +7249,14 @@ SELECT
   // v8: Journals
 
   @override
-  Stream<List<JournalEntry>> watchJournals({String? memberId}) {
-    final query = database.select(database.journalEntries)
-      ..where((j) => j.systemId.equals(localSystemId));
-    if (memberId != null) {
-      query.where((j) => j.memberId.equals(memberId));
-    }
-    query.orderBy([
-      (j) => OrderingTerm(expression: j.createdAt, mode: OrderingMode.desc),
-    ]);
-    return query.watch().asyncMap((rows) async {
-      return [
-        for (final row in rows)
-          row.copyWith(
-            title: Value(
-              await _decryptLocalText(
-                row.title,
-                'journal_entries',
-                row.id,
-                'title',
-              ),
-            ),
-            body:
-                (await _decryptLocalText(
-                  row.body,
-                  'journal_entries',
-                  row.id,
-                  'body',
-                )) ??
-                '',
-          ),
-      ];
-    });
-  }
+  Stream<List<JournalEntry>> watchJournals({String? memberId}) =>
+      _journals.watch(memberId: memberId);
 
   @override
-  Future<void> saveJournal(JournalEntry entry) async {
-    final now = DateTime.now().toUtc();
-    await database
-        .into(database.journalEntries)
-        .insertOnConflictUpdate(
-          JournalEntriesCompanion.insert(
-            id: entry.id,
-            systemId: localSystemId,
-            memberId: Value(entry.memberId),
-            title: Value(
-              await _encryptNullableLocalText(
-                entry.title,
-                'journal_entries',
-                entry.id,
-                'title',
-              ),
-            ),
-            body: await _encryptLocalText(
-              entry.body,
-              'journal_entries',
-              entry.id,
-              'body',
-            ),
-            createdAt: entry.createdAt,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveJournal(JournalEntry entry) => _journals.save(entry);
 
   @override
-  Future<void> deleteJournal(String entryId) async {
-    await (database.delete(
-      database.journalEntries,
-    )..where((j) => j.id.equals(entryId))).go();
-  }
+  Future<void> deleteJournal(String entryId) => _journals.delete(entryId);
 
   // v8: Content revisions
 
