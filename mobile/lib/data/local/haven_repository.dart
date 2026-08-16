@@ -14,6 +14,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'journal_store.dart';
+import 'note_store.dart';
 import 'rehearsal_database_connection.dart';
 import 'tag_store.dart';
 
@@ -23,6 +24,7 @@ export 'app_customization.dart'
         HavenAccentColor,
         HavenThemeMode,
         defaultDashboardShortcutIds;
+export 'note_store.dart' show NoteDraft, NoteSummary;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -262,30 +264,6 @@ class GroupDraft {
   final String? description;
   final String? emoji;
   final bool isSubsystem;
-}
-
-class NoteSummary {
-  const NoteSummary({
-    required this.id,
-    required this.title,
-    required this.body,
-    this.memberId,
-    required this.updatedAt,
-  });
-
-  final String id;
-  final String title;
-  final String body;
-  final String? memberId;
-  final DateTime updatedAt;
-}
-
-class NoteDraft {
-  const NoteDraft({required this.title, required this.body, this.memberId});
-
-  final String title;
-  final String body;
-  final String? memberId;
 }
 
 class MessageSummary {
@@ -921,6 +899,11 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _notes = LocalNoteStore(
+      database,
+      encryptText: _encryptLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -928,6 +911,7 @@ class LocalHavenRepository implements HavenRepository {
   final LocalAppCustomizationStore _customization;
   late final LocalTagStore _tags;
   late final LocalJournalStore _journals;
+  late final LocalNoteStore _notes;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -2434,36 +2418,7 @@ ORDER BY pb.position ASC
   }
 
   @override
-  Stream<List<NoteSummary>> watchNotes() {
-    final query = database.select(database.notes)
-      ..where((note) => note.systemId.equals(localSystemId))
-      ..orderBy([
-        (note) =>
-            OrderingTerm(expression: note.updatedAt, mode: OrderingMode.desc),
-      ]);
-
-    return query.watch().asyncMap((rows) async {
-      return [
-        for (final row in rows)
-          NoteSummary(
-            id: row.id,
-            title:
-                (await _decryptLocalText(
-                  row.title,
-                  'notes',
-                  row.id,
-                  'title',
-                )) ??
-                '',
-            body:
-                (await _decryptLocalText(row.body, 'notes', row.id, 'body')) ??
-                '',
-            memberId: row.memberId,
-            updatedAt: row.updatedAt,
-          ),
-      ];
-    });
-  }
+  Stream<List<NoteSummary>> watchNotes() => _notes.watch();
 
   @override
   Stream<List<MessageSummary>> watchMessages() {
@@ -4167,73 +4122,14 @@ SELECT
   }
 
   @override
-  Future<void> saveNote(NoteDraft draft) async {
-    final title = draft.title.trim();
-    final body = draft.body.trim();
-    if (title.isEmpty && body.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final noteId = 'note-${now.microsecondsSinceEpoch}';
-    await database
-        .into(database.notes)
-        .insert(
-          NotesCompanion.insert(
-            id: noteId,
-            systemId: localSystemId,
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            title: await _encryptLocalText(
-              title.isEmpty ? 'Untitled note' : title,
-              'notes',
-              noteId,
-              'title',
-            ),
-            body: await _encryptLocalText(body, 'notes', noteId, 'body'),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveNote(NoteDraft draft) => _notes.save(draft);
 
   @override
-  Future<void> updateNote(String noteId, NoteDraft draft) async {
-    final title = draft.title.trim();
-    final body = draft.body.trim();
-    if (title.isEmpty && body.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    await (database.update(database.notes)..where(
-          (note) =>
-              note.systemId.equals(localSystemId) & note.id.equals(noteId),
-        ))
-        .write(
-          NotesCompanion(
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            title: Value(
-              await _encryptLocalText(
-                title.isEmpty ? 'Untitled note' : title,
-                'notes',
-                noteId,
-                'title',
-              ),
-            ),
-            body: Value(await _encryptLocalText(body, 'notes', noteId, 'body')),
-            updatedAt: Value(now),
-          ),
-        );
-  }
+  Future<void> updateNote(String noteId, NoteDraft draft) =>
+      _notes.update(noteId, draft);
 
   @override
-  Future<void> deleteNote(String noteId) {
-    return (database.delete(database.notes)..where(
-          (note) =>
-              note.systemId.equals(localSystemId) & note.id.equals(noteId),
-        ))
-        .go();
-  }
+  Future<void> deleteNote(String noteId) => _notes.delete(noteId);
 
   @override
   Future<void> saveMessage(MessageDraft draft) async {
