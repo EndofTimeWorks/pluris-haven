@@ -726,7 +726,7 @@ abstract interface class HavenRepository {
     bool localizeAvatars = true,
   });
 
-  // v8: Tags
+  // Tags
 
   Stream<List<Tag>> watchTags();
 
@@ -738,7 +738,7 @@ abstract interface class HavenRepository {
 
   Future<void> setMemberTags(String memberId, List<String> tagIds);
 
-  // v8: Journals
+  // Journals
 
   Stream<List<JournalEntry>> watchJournals({String? memberId});
 
@@ -746,7 +746,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteJournal(String entryId);
 
-  // v8: Content revisions
+  // Content revisions
 
   Stream<List<ContentRevision>> watchRevisions(
     String targetType,
@@ -763,15 +763,15 @@ abstract interface class HavenRepository {
     String targetId,
   );
 
-  // v8: Front audit events
+  // Front audit events
 
   Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId);
 
-  // v8: Poll vote events
+  // Poll vote events
 
   Stream<List<PollVoteEvent>> watchPollVoteEvents(String pollId);
 
-  // v8: Named fronts
+  // Named fronts
 
   Stream<List<NamedFront>> watchNamedFronts();
 
@@ -781,7 +781,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteNamedFront(String namedFrontId);
 
-  // v8: Pending actions
+  // Pending actions
 
   Stream<List<PendingAction>> watchPendingActions();
 
@@ -789,7 +789,7 @@ abstract interface class HavenRepository {
 
   Future<void> finalizePendingActions();
 
-  // v8: Lexorank reordering
+  // Lexorank reordering
 
   Future<void> reorderMember(
     String memberId,
@@ -6692,7 +6692,7 @@ SELECT
         .insert(companion, mode: InsertMode.insertOrIgnore);
   }
 
-  // v8: Tags
+  // Tags
 
   @override
   Stream<List<Tag>> watchTags() => _tags.watch();
@@ -6711,7 +6711,7 @@ SELECT
   Future<void> setMemberTags(String memberId, List<String> tagIds) =>
       _tags.setForMember(memberId, tagIds);
 
-  // v8: Journals
+  // Journals
 
   @override
   Stream<List<JournalEntry>> watchJournals({String? memberId}) =>
@@ -6723,7 +6723,7 @@ SELECT
   @override
   Future<void> deleteJournal(String entryId) => _journals.delete(entryId);
 
-  // v8: Content revisions
+  // Content revisions
 
   @override
   Stream<List<ContentRevision>> watchRevisions(
@@ -6881,7 +6881,7 @@ SELECT
     }
   }
 
-  // v8: Front audit events
+  // Front audit events
 
   @override
   Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId) {
@@ -6915,7 +6915,7 @@ SELECT
     );
   }
 
-  // v8: Poll vote events
+  // Poll vote events
 
   @override
   Stream<List<PollVoteEvent>> watchPollVoteEvents(String pollId) {
@@ -6927,7 +6927,7 @@ SELECT
     return query.watch();
   }
 
-  // v8: Named fronts
+  // Named fronts
 
   @override
   Stream<List<NamedFront>> watchNamedFronts() {
@@ -7084,7 +7084,7 @@ SELECT
     )..where((nf) => nf.id.equals(namedFrontId))).go();
   }
 
-  // v8: Pending actions
+  // Pending actions
 
   @override
   Stream<List<PendingAction>> watchPendingActions() {
@@ -7152,7 +7152,7 @@ SELECT
     }
   }
 
-  // v8: Lexorank reordering
+  // Lexorank reordering
 
   @override
   Future<void> reorderMember(
