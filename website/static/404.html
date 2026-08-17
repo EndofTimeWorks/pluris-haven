@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="content-security-policy"
+      content="default-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; upgrade-insecure-requests"
+    />
+    <title>Page not found · Pluris Haven</title>
+    <meta name="description" content="The requested Pluris Haven page could not be found." />
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #151820;
+        color: #f4f0ff;
+      }
+      .skip-link {
+        position: fixed;
+        top: -100%;
+        left: 12px;
+        padding: 10px 20px;
+        border: 3px solid #f0ca63;
+        border-radius: 8px;
+        background: #151820;
+        color: #f0ca63;
+      }
+      .skip-link:focus {
+        top: 12px;
+      }
+      main {
+        min-height: 100vh;
+        padding: clamp(32px, 8vw, 96px) clamp(18px, 6vw, 72px);
+      }
+      p {
+        max-width: 62ch;
+        color: #c9c4d4;
+        line-height: 1.7;
+      }
+      .eyebrow {
+        color: #f0ca63;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0 0 18px;
+        font-size: clamp(2.35rem, 7vw, 5rem);
+        line-height: 0.98;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .button {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        padding: 0 18px;
+        border: 1px solid #464a5c;
+        border-radius: 10px;
+        background: #242832;
+        color: #f4f0ff;
+        font-weight: 800;
+        text-decoration: none;
+      }
+      .button.primary {
+        border-color: #6750f0;
+        background: #6750f0;
+      }
+      :focus-visible {
+        outline: 3px solid #f0ca63;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <main id="main-content" tabindex="-1">
+      <p class="eyebrow">Error 404</p>
+      <h1>Page not found</h1>
+      <p>That address does not match a page on this site.</p>
+      <div class="actions">
+        <a class="button primary" href="/">Return home</a>
+        <a class="button" href="/support">Get support</a>
+      </div>
+    </main>
+  </body>
+</html>

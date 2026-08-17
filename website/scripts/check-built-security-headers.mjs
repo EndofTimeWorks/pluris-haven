@@ -50,7 +50,7 @@ for (const path of await htmlFiles(buildDirectory)) {
   for (const directive of requiredPolicy) {
     if (!meta[1].includes(directive)) failures.push(`${page}: CSP missing ${directive}`);
   }
-  if (!/script-src[^;]*'sha256-[^']+'/.test(meta[1])) {
+  if (/<script\b/i.test(html) && !/script-src[^;]*'sha256-[^']+'/.test(meta[1])) {
     failures.push(`${page}: CSP does not authenticate the hydration script`);
   }
 }
