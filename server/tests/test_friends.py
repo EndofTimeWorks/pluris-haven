@@ -1,5 +1,12 @@
+import asyncio
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from pluris_server.routers.friends import _friend_view
 from tests.conftest import auth, register
 
 
@@ -19,6 +26,16 @@ def connect_users(client: TestClient) -> tuple[dict, dict, dict]:
     )
     assert accepted.status_code == 200, accepted.text
     return alice, bob, accepted.json()
+
+
+def test_friend_view_handles_a_missing_related_user() -> None:
+    db = SimpleNamespace(get=AsyncMock(return_value=None))
+    friendship = SimpleNamespace(user_low_id="current", user_high_id="missing")
+
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(_friend_view(db, friendship, "current"))
+
+    assert caught.value.status_code == 404
 
 
 def test_friend_request_and_relationship_removal(client: TestClient) -> None:

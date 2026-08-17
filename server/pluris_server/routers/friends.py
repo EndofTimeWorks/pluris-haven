@@ -307,6 +307,8 @@ async def _friend_view(db: Db, friendship: Friendship, current_id: str) -> Frien
         friendship.user_high_id if friendship.user_low_id == current_id else friendship.user_low_id
     )
     other = await db.get(User, other_id)
+    if other is None:
+        raise HTTPException(status_code=404, detail="Friend not found")
     return FriendView(
         friendship_id=friendship.id,
         user=PublicUserView(id=other.id, display_name=other.display_name),
