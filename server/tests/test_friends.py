@@ -144,3 +144,19 @@ def test_friend_request_endpoint_is_rate_limited(client: TestClient) -> None:
     assert all(response.status_code != 429 for response in responses[:10])
     assert responses[-1].status_code == 429
     assert responses[-1].headers["Retry-After"].isdigit()
+
+
+def test_friend_code_rotation_is_rate_limited(client: TestClient) -> None:
+    user = register(client, "rotate-rate@example.com", "Rotate Rate")
+
+    responses = [
+        client.post(
+            "/v1/friends/code/rotate",
+            headers=auth(user["access_token"]),
+        )
+        for _ in range(11)
+    ]
+
+    assert all(response.status_code == 200 for response in responses[:10])
+    assert responses[-1].status_code == 429
+    assert responses[-1].headers["Retry-After"].isdigit()

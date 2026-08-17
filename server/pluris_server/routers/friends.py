@@ -53,6 +53,22 @@ async def _enforce_request_rate_limit(request: Request, user_id: str) -> None:
         )
 
 
+async def _enforce_code_rotation_rate_limit(request: Request, user_id: str) -> None:
+    client_host = request.client.host if request.client is not None else "unknown"
+    retry_after = await request.app.state.friend_request_rate_limiter.retry_after(
+        [
+            f"friends:code-rotation:ip:{client_host}",
+            f"friends:code-rotation:user:{user_id}",
+        ]
+    )
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many friend-code rotations",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 def _pair(first: str, second: str) -> tuple[str, str]:
     return tuple(sorted((first, second)))
 
@@ -96,7 +112,13 @@ def _request_view(request: FriendRequest, current_id: str, other: User) -> Frien
 
 
 @router.post("/code/rotate", response_model=FriendCodeResponse)
-async def rotate_code(auth: CurrentAuth, db: Db, settings: AppSettings) -> FriendCodeResponse:
+async def rotate_code(
+    request: Request,
+    auth: CurrentAuth,
+    db: Db,
+    settings: AppSettings,
+) -> FriendCodeResponse:
+    await _enforce_code_rotation_rate_limit(request, auth.user.id)
     for _ in range(10):
         code = new_friend_code()
         digest = digest_friend_code(code, settings.friend_code_pepper)
