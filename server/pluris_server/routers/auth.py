@@ -36,6 +36,7 @@ from pluris_server.schemas import (
 )
 from pluris_server.security import (
     digest_friend_code,
+    digest_legacy_friend_code,
     digest_token,
     dummy_verify_password,
     hash_password,
@@ -95,7 +96,10 @@ async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
     for _ in range(10):
         code = new_friend_code()
         digest = digest_friend_code(code, pepper)
-        existing = await db.scalar(select(User.id).where(User.friend_code_digest == digest))
+        legacy_digest = digest_legacy_friend_code(code, pepper)
+        existing = await db.scalar(
+            select(User.id).where(User.friend_code_digest.in_((digest, legacy_digest)))
+        )
         if existing is None:
             user.friend_code_digest = digest
             return code

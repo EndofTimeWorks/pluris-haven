@@ -50,6 +50,15 @@ def normalize_friend_code(code: str) -> str:
 
 def digest_friend_code(code: str, pepper: str) -> str:
     normalized = normalize_friend_code(code)
+    return hmac.new(
+        pepper.encode(),
+        b"pluris-haven:friend-code:v1\0" + normalized.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def digest_legacy_friend_code(code: str, pepper: str) -> str:
+    normalized = normalize_friend_code(code)
     return hmac.new(pepper.encode(), normalized.encode(), hashlib.sha256).hexdigest()
 
 

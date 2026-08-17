@@ -5,8 +5,11 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
+from pluris_server.models import User
 from pluris_server.routers.friends import _friend_view
+from pluris_server.security import digest_friend_code, digest_legacy_friend_code
 from tests.conftest import auth, register
 
 
@@ -36,6 +39,37 @@ def test_friend_view_handles_a_missing_related_user() -> None:
         asyncio.run(_friend_view(db, friendship, "current"))
 
     assert caught.value.status_code == 404
+
+
+def test_legacy_friend_code_is_accepted_and_upgraded(client: TestClient) -> None:
+    alice = register(client, "legacy-alice@example.com", "Legacy Alice")
+    bob = register(client, "legacy-bob@example.com", "Legacy Bob")
+    pepper = client.app.state.settings.friend_code_pepper
+
+    async def use_legacy_digest() -> None:
+        async with client.app.state.session_factory() as session:
+            user = await session.scalar(select(User).where(User.email == "legacy-bob@example.com"))
+            assert user is not None
+            user.friend_code_digest = digest_legacy_friend_code(bob["friend_code"], pepper)
+            await session.commit()
+
+    asyncio.run(use_legacy_digest())
+
+    created = client.post(
+        "/v1/friends/requests",
+        headers=auth(alice["access_token"]),
+        json={"friend_code": bob["friend_code"]},
+    )
+    assert created.status_code == 201, created.text
+
+    async def assert_upgraded() -> None:
+        async with client.app.state.session_factory() as session:
+            digest = await session.scalar(
+                select(User.friend_code_digest).where(User.email == "legacy-bob@example.com")
+            )
+            assert digest == digest_friend_code(bob["friend_code"], pepper)
+
+    asyncio.run(assert_upgraded())
 
 
 def test_friend_request_and_relationship_removal(client: TestClient) -> None:

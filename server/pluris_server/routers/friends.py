@@ -28,7 +28,11 @@ from pluris_server.schemas import (
     MessageResponse,
     PublicUserView,
 )
-from pluris_server.security import digest_friend_code, new_friend_code
+from pluris_server.security import (
+    digest_friend_code,
+    digest_legacy_friend_code,
+    new_friend_code,
+)
 
 router = APIRouter(
     prefix="/v1/friends",
@@ -122,7 +126,11 @@ async def rotate_code(
     for _ in range(10):
         code = new_friend_code()
         digest = digest_friend_code(code, settings.friend_code_pepper)
-        if await db.scalar(select(User.id).where(User.friend_code_digest == digest)) is None:
+        legacy_digest = digest_legacy_friend_code(code, settings.friend_code_pepper)
+        existing = await db.scalar(
+            select(User.id).where(User.friend_code_digest.in_((digest, legacy_digest)))
+        )
+        if existing is None:
             auth.user.friend_code_digest = digest
             await db.commit()
             return FriendCodeResponse(friend_code=code)
@@ -139,9 +147,15 @@ async def create_request(
 ) -> FriendRequestView:
     await _enforce_request_rate_limit(request, auth.user.id)
     digest = digest_friend_code(payload.friend_code, settings.friend_code_pepper)
-    recipient = await db.scalar(select(User).where(User.friend_code_digest == digest))
-    if recipient is None or recipient.disabled:
+    legacy_digest = digest_legacy_friend_code(payload.friend_code, settings.friend_code_pepper)
+    recipients = (
+        await db.scalars(select(User).where(User.friend_code_digest.in_((digest, legacy_digest))))
+    ).all()
+    if len(recipients) != 1 or recipients[0].disabled:
         raise HTTPException(status_code=404, detail="Friend code not found")
+    recipient = recipients[0]
+    if recipient.friend_code_digest == legacy_digest:
+        recipient.friend_code_digest = digest
     if recipient.id == auth.user.id:
         raise HTTPException(status_code=400, detail="You cannot add yourself")
     if await _blocked(db, auth.user.id, recipient.id):
