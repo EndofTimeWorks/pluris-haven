@@ -14,6 +14,21 @@ const config = {
     },
   },
   kit: {
+    csp: {
+      mode: 'hash',
+      directives: {
+        'default-src': ['self'],
+        'base-uri': ['self'],
+        'form-action': ['none'],
+        'object-src': ['none'],
+        'script-src': ['self'],
+        'style-src': ['self', 'unsafe-inline'],
+        'img-src': ['self', 'data:'],
+        'font-src': ['self'],
+        'connect-src': ['self'],
+        'upgrade-insecure-requests': true,
+      },
+    },
     adapter: adapter({
       pages: 'build',
       assets: 'build',
