@@ -73,14 +73,13 @@ FROM system_groups g
 LEFT JOIN group_members gm ON gm.group_id = g.id
 WHERE g.system_id = ?
 GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g.is_subsystem
-ORDER BY LOWER(g.name) ASC
           ''',
           variables: [Variable<String>(localSystemId)],
           readsFrom: {database.systemGroups, database.groupMembers},
         )
         .watch()
-        .asyncMap(
-          (rows) async => [
+        .asyncMap((rows) async {
+          final groups = [
             for (final row in rows)
               GroupSummary(
                 id: row.data['id'] as String,
@@ -114,8 +113,15 @@ ORDER BY LOWER(g.name) ASC
                 isSubsystem: (row.data['is_subsystem'] as int?) == 1,
                 memberCount: row.data['member_count'] as int,
               ),
-          ],
-        );
+          ];
+          groups.sort((first, second) {
+            final byName = first.name.toLowerCase().compareTo(
+              second.name.toLowerCase(),
+            );
+            return byName != 0 ? byName : first.id.compareTo(second.id);
+          });
+          return groups;
+        });
   }
 
   Future<void> save(GroupDraft draft) async {

@@ -594,15 +594,15 @@ void main() {
         description: 'Internal support crew',
       ),
     );
+    await repository.saveGroup(const GroupDraft(name: 'Archivists'));
 
     final groups = await repository.watchGroups().first;
-    expect(groups, hasLength(1));
-    expect(groups.single.name, 'Caretakers');
-    expect(groups.single.emoji, '*');
-    expect(groups.single.description, 'Internal support crew');
+    expect(groups.map((group) => group.name), ['Archivists', 'Caretakers']);
+    expect(groups.last.emoji, '*');
+    expect(groups.last.description, 'Internal support crew');
 
     final snapshot = await repository.loadHomeSnapshot();
-    expect(snapshot.groupCount, 1);
+    expect(snapshot.groupCount, 2);
   });
 
   test('stores members in multiple groups', () async {
