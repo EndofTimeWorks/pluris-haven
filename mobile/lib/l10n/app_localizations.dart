@@ -2442,6 +2442,132 @@ abstract class AppLocalizations {
   /// **'fronts'**
   String get importCountFronts;
 
+  /// No description provided for @importCountGroupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'group memberships'**
+  String get importCountGroupMembers;
+
+  /// No description provided for @importCountCustomFieldValues.
+  ///
+  /// In en, this message translates to:
+  /// **'custom field values'**
+  String get importCountCustomFieldValues;
+
+  /// No description provided for @importCountChatCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'chat categories'**
+  String get importCountChatCategories;
+
+  /// No description provided for @importCountChatChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'chat channels'**
+  String get importCountChatChannels;
+
+  /// No description provided for @importCountMemberTags.
+  ///
+  /// In en, this message translates to:
+  /// **'member tags'**
+  String get importCountMemberTags;
+
+  /// No description provided for @importCountContentRevisions.
+  ///
+  /// In en, this message translates to:
+  /// **'content revisions'**
+  String get importCountContentRevisions;
+
+  /// No description provided for @importCountPollOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'poll options'**
+  String get importCountPollOptions;
+
+  /// No description provided for @importCountPollVotes.
+  ///
+  /// In en, this message translates to:
+  /// **'poll votes'**
+  String get importCountPollVotes;
+
+  /// No description provided for @importCountPollVoteEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'poll vote events'**
+  String get importCountPollVoteEvents;
+
+  /// No description provided for @importCountFrontMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'front memberships'**
+  String get importCountFrontMembers;
+
+  /// No description provided for @importCountFrontAuditEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'front audit events'**
+  String get importCountFrontAuditEvents;
+
+  /// No description provided for @importCountNamedFrontMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'saved-front memberships'**
+  String get importCountNamedFrontMembers;
+
+  /// No description provided for @importCountPrivacyBuckets.
+  ///
+  /// In en, this message translates to:
+  /// **'privacy buckets'**
+  String get importCountPrivacyBuckets;
+
+  /// No description provided for @importCountPrivacyBucketMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'privacy-bucket memberships'**
+  String get importCountPrivacyBucketMembers;
+
+  /// No description provided for @importCountAvatarReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'avatar references'**
+  String get importCountAvatarReferences;
+
+  /// No description provided for @importCountAvatarAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'avatar files'**
+  String get importCountAvatarAssets;
+
+  /// No description provided for @importCountImportRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'import records'**
+  String get importCountImportRecords;
+
+  /// No description provided for @importCountPreservedSourceCollections.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{preserved source collection} other{preserved source collections}}'**
+  String importCountPreservedSourceCollections(int count);
+
+  /// No description provided for @importCountNotificationEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'notification events'**
+  String get importCountNotificationEvents;
+
+  /// No description provided for @importCountOther.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}'**
+  String importCountOther(String name);
+
+  /// No description provided for @importCountPill.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {count}'**
+  String importCountPill(String label, int count);
+
   /// No description provided for @importStepReadArchiveTitle.
   ///
   /// In en, this message translates to:

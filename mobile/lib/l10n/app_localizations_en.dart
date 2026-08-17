@@ -1326,6 +1326,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importCountFronts => 'fronts';
 
   @override
+  String get importCountGroupMembers => 'group memberships';
+
+  @override
+  String get importCountCustomFieldValues => 'custom field values';
+
+  @override
+  String get importCountChatCategories => 'chat categories';
+
+  @override
+  String get importCountChatChannels => 'chat channels';
+
+  @override
+  String get importCountMemberTags => 'member tags';
+
+  @override
+  String get importCountContentRevisions => 'content revisions';
+
+  @override
+  String get importCountPollOptions => 'poll options';
+
+  @override
+  String get importCountPollVotes => 'poll votes';
+
+  @override
+  String get importCountPollVoteEvents => 'poll vote events';
+
+  @override
+  String get importCountFrontMembers => 'front memberships';
+
+  @override
+  String get importCountFrontAuditEvents => 'front audit events';
+
+  @override
+  String get importCountNamedFrontMembers => 'saved-front memberships';
+
+  @override
+  String get importCountPrivacyBuckets => 'privacy buckets';
+
+  @override
+  String get importCountPrivacyBucketMembers => 'privacy-bucket memberships';
+
+  @override
+  String get importCountAvatarReferences => 'avatar references';
+
+  @override
+  String get importCountAvatarAssets => 'avatar files';
+
+  @override
+  String get importCountImportRecords => 'import records';
+
+  @override
+  String importCountPreservedSourceCollections(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'preserved source collections',
+      one: 'preserved source collection',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importCountNotificationEvents => 'notification events';
+
+  @override
+  String importCountOther(String name) {
+    return '$name';
+  }
+
+  @override
+  String importCountPill(String label, int count) {
+    return '$label: $count';
+  }
+
+  @override
   String get importStepReadArchiveTitle => 'Read archive';
 
   @override

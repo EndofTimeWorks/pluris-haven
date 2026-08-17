@@ -848,32 +848,58 @@ class _ImportExportPageState extends State<ImportExportPage> {
   }
 
   String _countSummary(Map<String, int> counts) {
+    final l10n = AppLocalizations.of(context);
     final visible = counts.entries
         .where((entry) => entry.value > 0)
         .map(
           (entry) =>
-              '${entry.value} ${_importCountLabel(entry.key, entry.value)}',
+              '${entry.value} ${_importCountLabel(l10n, entry.key, entry.value)}',
         )
         .join(', ');
 
-    return visible.isEmpty ? 'no records found' : visible;
+    return visible.isEmpty ? l10n.noRecordsFound : visible;
   }
 }
 
-String _importCountLabel(String key, int count) {
-  if (key == 'raw_payloads') {
-    return count == 1
-        ? 'preserved source collection'
-        : 'preserved source collections';
-  }
-  return key;
+String _importCountLabel(AppLocalizations l10n, String key, int count) {
+  return switch (key) {
+    'members' => l10n.importCountMembers,
+    'groups' => l10n.importCountGroups,
+    'group_members' => l10n.importCountGroupMembers,
+    'custom_fields' => l10n.importCountCustomFields,
+    'custom_field_values' => l10n.importCountCustomFieldValues,
+    'notes' => l10n.importCountNotes,
+    'chat_categories' => l10n.importCountChatCategories,
+    'chat_channels' => l10n.importCountChatChannels,
+    'messages' => l10n.importCountMessages,
+    'reminders' => l10n.importCountReminders,
+    'tags' => l10n.importCountTags,
+    'member_tags' => l10n.importCountMemberTags,
+    'journals' => l10n.importCountJournals,
+    'content_revisions' => l10n.importCountContentRevisions,
+    'polls' => l10n.importCountPolls,
+    'poll_options' => l10n.importCountPollOptions,
+    'poll_votes' => l10n.importCountPollVotes,
+    'poll_vote_events' => l10n.importCountPollVoteEvents,
+    'fronts' => l10n.importCountFronts,
+    'front_members' => l10n.importCountFrontMembers,
+    'front_audit_events' => l10n.importCountFrontAuditEvents,
+    'named_fronts' => l10n.importCountCustomFronts,
+    'named_front_members' => l10n.importCountNamedFrontMembers,
+    'privacy_buckets' => l10n.importCountPrivacyBuckets,
+    'privacy_bucket_members' => l10n.importCountPrivacyBucketMembers,
+    'avatar_refs' => l10n.importCountAvatarReferences,
+    'avatar_assets' => l10n.importCountAvatarAssets,
+    'import_records' => l10n.importCountImportRecords,
+    'raw_payloads' => l10n.importCountPreservedSourceCollections(count),
+    'notification_events' => l10n.importCountNotificationEvents,
+    'preferences' => l10n.importCountPreferences,
+    _ => l10n.importCountOther(key),
+  };
 }
 
-String _importCountPillLabel(String key, int count) {
-  if (key == 'raw_payloads') {
-    return 'preserved source collections: $count';
-  }
-  return '$key: $count';
+String _importCountPillLabel(AppLocalizations l10n, String key, int count) {
+  return l10n.importCountPill(_importCountLabel(l10n, key, count), count);
 }
 
 /// Distinguishes "no conflicts were found" (proceed with the original
@@ -1785,7 +1811,7 @@ class ImportPreviewCard extends StatelessWidget {
               for (final entry in preview.counts.entries)
                 if (entry.value > 0)
                   StatusPill(
-                    text: _importCountPillLabel(entry.key, entry.value),
+                    text: _importCountPillLabel(l10n, entry.key, entry.value),
                   ),
               if (!preview.counts.values.any((count) => count > 0))
                 StatusPill(text: l10n.noRecordsFound),
