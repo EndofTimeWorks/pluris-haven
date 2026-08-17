@@ -326,6 +326,14 @@ jobs:
           uv run alembic upgrade head
           uv run alembic check
 
+      - name: Build server container
+        run: docker build --tag pluris-haven-server:ci .
+
+      - name: Smoke-test server container
+        run: >-
+          docker run --rm pluris-haven-server:ci
+          python -c "import pluris_server.main"
+
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ${{ matrix.os }}

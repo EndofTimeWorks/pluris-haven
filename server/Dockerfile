@@ -1,4 +1,4 @@
-FROM python:3.13-slim@sha256:bffeb7bd6a85767587059c6ba23e1e9122078e3aa3fa836099171b9bb5a9bb00 AS runtime
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN groupadd --system pluris && useradd --system --gid pluris --home /app pluris
 WORKDIR /app
+RUN install -d -o pluris -g pluris /app/data /app/data/backups
 
 COPY pyproject.toml uv.lock README.md alembic.ini ./
 RUN pip install uv==0.11.28 \

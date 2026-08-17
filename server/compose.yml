@@ -20,6 +20,7 @@ services:
       PLURIS_TERMS_URL: ${PLURIS_TERMS_URL:-}
       PLURIS_SUPPORT_EMAIL: ${PLURIS_SUPPORT_EMAIL:-}
       PLURIS_CORS_ORIGINS: ${PLURIS_CORS_ORIGINS:-}
+      PLURIS_BACKUP_OBJECT_DIR: /app/data/backups
     command:
       [
         'sh',
@@ -31,6 +32,8 @@ services:
         condition: service_healthy
     ports:
       - '127.0.0.1:8000:8000'
+    volumes:
+      - backup-data:/app/data/backups
     healthcheck:
       test:
         [
@@ -66,4 +69,5 @@ services:
       - no-new-privileges:true
 
 volumes:
+  backup-data:
   postgres-data:
