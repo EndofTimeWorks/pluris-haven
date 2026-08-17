@@ -13,10 +13,16 @@ def queue_backup_deletions(db: AsyncSession, *, owner_id: str, snapshot_ids: Ite
 
 
 async def sweep_backup_deletions(
-    db: AsyncSession, object_store: FilesystemBackupObjectStore
+    db: AsyncSession,
+    object_store: FilesystemBackupObjectStore,
+    *,
+    owner_id: str | None = None,
 ) -> int:
     """Delete queued blobs after their owning database transaction committed."""
-    deletions = (await db.scalars(select(BackupDeletion))).all()
+    statement = select(BackupDeletion)
+    if owner_id is not None:
+        statement = statement.where(BackupDeletion.owner_id == owner_id)
+    deletions = (await db.scalars(statement)).all()
     completed = 0
     for deletion in deletions:
         try:

@@ -307,7 +307,11 @@ async def delete_account(
     )
     await db.delete(auth.user)
     await db.commit()
-    await sweep_backup_deletions(db, request.app.state.backup_object_store)
+    await sweep_backup_deletions(
+        db,
+        request.app.state.backup_object_store,
+        owner_id=owner_id,
+    )
     return MessageResponse(detail="Account deleted")
 
 

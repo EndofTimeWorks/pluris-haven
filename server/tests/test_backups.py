@@ -4,7 +4,7 @@ import hashlib
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from pluris_server.backup_cleanup import sweep_backup_deletions
+from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.models import BackupDeletion, BackupSnapshot
 from tests.conftest import auth, register
 
@@ -337,3 +337,34 @@ def test_snapshot_delete_commits_before_blob_cleanup_and_retries(
             assert await session.scalar(select(func.count(BackupDeletion.id))) == 0
 
     asyncio.run(retry_cleanup())
+
+
+def test_backup_cleanup_can_be_scoped_to_one_owner(client: TestClient) -> None:
+    store = client.app.state.backup_object_store
+
+    async def run_cleanup() -> None:
+        async with client.app.state.session_factory() as session:
+            queue_backup_deletions(
+                session,
+                owner_id="owner-one",
+                snapshot_ids=["snapshot-one"],
+            )
+            queue_backup_deletions(
+                session,
+                owner_id="owner-two",
+                snapshot_ids=["snapshot-two"],
+            )
+            await session.commit()
+
+            assert (
+                await sweep_backup_deletions(
+                    session,
+                    store,
+                    owner_id="owner-one",
+                )
+                == 1
+            )
+            remaining = (await session.scalars(select(BackupDeletion))).one()
+            assert remaining.owner_id == "owner-two"
+
+    asyncio.run(run_cleanup())

@@ -312,5 +312,9 @@ async def delete_snapshot(
         event_type=SecurityEventType.BACKUP_DELETED,
     )
     await db.commit()
-    await sweep_backup_deletions(db, request.app.state.backup_object_store)
+    await sweep_backup_deletions(
+        db,
+        request.app.state.backup_object_store,
+        owner_id=auth.user.id,
+    )
     return MessageResponse(detail="Backup snapshot deleted")
