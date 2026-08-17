@@ -17,7 +17,7 @@
   ];
 
   const rough = [
-    'SP-style co-fronting still needs to behave closer to independent front entries',
+    'Overlapping co-fronts still need more physical-device testing',
     'Import details need clearer counts, skips, and per-row errors',
     'Avatars and large archives need more physical-device testing',
     'Encrypted Prism imports are detected but not implemented yet',
