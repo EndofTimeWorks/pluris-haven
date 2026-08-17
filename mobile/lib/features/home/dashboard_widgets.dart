@@ -317,7 +317,7 @@ class CurrentFrontEntry extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
+      enableDrag: false,
       backgroundColor: _spSurface,
       builder: (context) => CustomFrontSheet(repository: repository),
     );

@@ -409,6 +409,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _syncFrontNotification(String? label) async {
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     final frontLabel = label?.trim();
     final hasFront = frontLabel != null && frontLabel.isNotEmpty;
