@@ -20,6 +20,7 @@ import 'message_store.dart';
 import 'note_store.dart';
 import 'poll_store.dart';
 import 'rehearsal_database_connection.dart';
+import 'reminder_store.dart';
 import 'tag_store.dart';
 
 export 'app_customization.dart'
@@ -40,6 +41,7 @@ export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart' show MemberDraft, MemberSummary;
 export 'poll_store.dart'
     show PollDraft, PollKind, PollOptionSummary, PollSummary;
+export 'reminder_store.dart' show ReminderDraft, ReminderSummary;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -173,72 +175,6 @@ class RestoreRehearsalSummary {
 
   Iterable<MapEntry<String, int>> get visibleCounts =>
       counts.entries.where((entry) => entry.value > 0);
-}
-
-class ReminderSummary {
-  const ReminderSummary({
-    required this.id,
-    required this.title,
-    this.body,
-    required this.scheduleText,
-    this.scheduleKind,
-    this.scheduleTime,
-    this.scheduleDowMask,
-    this.scheduleDom,
-    this.triggerType,
-    this.triggerMemberId,
-    this.triggerEvent,
-    this.delaySeconds,
-    this.lastFiredAt,
-    required this.enabled,
-    required this.updatedAt,
-  });
-
-  final String id;
-  final String title;
-  final String? body;
-  final String scheduleText;
-  final String? scheduleKind;
-  final String? scheduleTime;
-  final int? scheduleDowMask;
-  final int? scheduleDom;
-  final String? triggerType;
-  final String? triggerMemberId;
-  final String? triggerEvent;
-  final int? delaySeconds;
-  final DateTime? lastFiredAt;
-  final bool enabled;
-  final DateTime updatedAt;
-}
-
-class ReminderDraft {
-  const ReminderDraft({
-    required this.title,
-    this.body,
-    required this.scheduleText,
-    this.scheduleKind,
-    this.scheduleTime,
-    this.scheduleDowMask,
-    this.scheduleDom,
-    this.triggerType,
-    this.triggerMemberId,
-    this.triggerEvent,
-    this.delaySeconds,
-    this.enabled = true,
-  });
-
-  final String title;
-  final String? body;
-  final String scheduleText;
-  final String? scheduleKind;
-  final String? scheduleTime;
-  final int? scheduleDowMask;
-  final int? scheduleDom;
-  final String? triggerType;
-  final String? triggerMemberId;
-  final String? triggerEvent;
-  final int? delaySeconds;
-  final bool enabled;
 }
 
 class CustomFieldSummary {
@@ -680,6 +616,12 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _reminders = LocalReminderStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -693,6 +635,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalMemberStore _members;
   late final LocalGroupStore _groups;
   late final LocalPollStore _polls;
+  late final LocalReminderStore _reminders;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1949,64 +1892,7 @@ ORDER BY pb.position ASC
   Stream<List<ChatChannelSummary>> watchChatChannels() => _chat.watchChannels();
 
   @override
-  Stream<List<ReminderSummary>> watchReminders() {
-    final query = database.select(database.reminders)
-      ..where((reminder) => reminder.systemId.equals(localSystemId))
-      ..orderBy([
-        (reminder) => OrderingTerm(
-          expression: reminder.updatedAt,
-          mode: OrderingMode.desc,
-        ),
-      ]);
-
-    return query.watch().asyncMap((rows) async {
-      return [for (final row in rows) await _reminderSummary(row)];
-    });
-  }
-
-  Future<ReminderSummary> _reminderSummary(Reminder row) async {
-    return ReminderSummary(
-      id: row.id,
-      title:
-          (await _decryptLocalText(row.title, 'reminders', row.id, 'title')) ??
-          '',
-      body: await _decryptLocalText(row.body, 'reminders', row.id, 'body'),
-      scheduleText:
-          (await _decryptLocalText(
-            row.scheduleText,
-            'reminders',
-            row.id,
-            'schedule_text',
-          )) ??
-          '',
-      scheduleKind: await _decryptLocalText(
-        row.scheduleKind,
-        'reminders',
-        row.id,
-        'schedule_kind',
-      ),
-      scheduleTime: await _decryptLocalText(
-        row.scheduleTime,
-        'reminders',
-        row.id,
-        'schedule_time',
-      ),
-      scheduleDowMask: row.scheduleDowMask,
-      scheduleDom: row.scheduleDom,
-      triggerType: row.triggerType,
-      triggerMemberId: row.triggerMemberId,
-      triggerEvent: await _decryptLocalText(
-        row.triggerEvent,
-        'reminders',
-        row.id,
-        'trigger_event',
-      ),
-      delaySeconds: row.delaySeconds,
-      lastFiredAt: row.lastFiredAt,
-      enabled: row.enabled,
-      updatedAt: row.updatedAt,
-    );
-  }
+  Stream<List<ReminderSummary>> watchReminders() => _reminders.watch();
 
   @override
   Stream<List<PollSummary>> watchPolls() => _polls.watch();
@@ -2527,63 +2413,12 @@ SELECT
         newlyStartedMemberIds.add(member.id);
       }
 
-      return _claimAfterFrontReminders(
+      return _reminders.claimAfterFront(
         newlyStartedMemberIds: newlyStartedMemberIds,
         frontStarted: newlyStartedMemberIds.isNotEmpty,
         firedAt: now,
       );
     });
-  }
-
-  Future<List<ReminderSummary>> _claimAfterFrontReminders({
-    required Set<String> newlyStartedMemberIds,
-    required bool frontStarted,
-    required DateTime firedAt,
-  }) async {
-    if (!frontStarted) return const [];
-
-    final rows =
-        await (database.select(database.reminders)..where(
-              (reminder) =>
-                  reminder.systemId.equals(localSystemId) &
-                  reminder.enabled.equals(true),
-            ))
-            .get();
-    final claimed = <ReminderSummary>[];
-    for (final row in rows) {
-      final kind = await _decryptLocalText(
-        row.scheduleKind,
-        'reminders',
-        row.id,
-        'schedule_kind',
-      );
-      final event = await _decryptLocalText(
-        row.triggerEvent,
-        'reminders',
-        row.id,
-        'trigger_event',
-      );
-      final isAfterFront =
-          kind == 'after_front' ||
-          (row.triggerType == 'event' && event == 'front_started');
-      final targetMatches =
-          row.triggerMemberId == null ||
-          newlyStartedMemberIds.contains(row.triggerMemberId);
-      if (!isAfterFront || !targetMatches) continue;
-
-      await (database.update(
-        database.reminders,
-      )..where((reminder) => reminder.id.equals(row.id))).write(
-        RemindersCompanion(
-          lastFiredAt: Value(firedAt),
-          updatedAt: Value(firedAt),
-        ),
-      );
-      claimed.add(
-        await _reminderSummary(row.copyWith(lastFiredAt: Value(firedAt))),
-      );
-    }
-    return claimed;
   }
 
   @override
@@ -3091,97 +2926,15 @@ SELECT
       _chat.deleteChannel(channelId);
 
   @override
-  Future<String?> saveReminder(ReminderDraft draft) async {
-    final title = draft.title.trim();
-    final scheduleText = draft.scheduleText.trim();
-    if (title.isEmpty || scheduleText.isEmpty) {
-      return null;
-    }
-
-    final now = DateTime.now().toUtc();
-    final id = 'reminder-${now.microsecondsSinceEpoch}';
-    await database
-        .into(database.reminders)
-        .insert(
-          RemindersCompanion.insert(
-            id: id,
-            systemId: localSystemId,
-            title: await _encryptLocalText(title, 'reminders', id, 'title'),
-            body: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.body),
-                'reminders',
-                id,
-                'body',
-              ),
-            ),
-            scheduleText: await _encryptLocalText(
-              scheduleText,
-              'reminders',
-              id,
-              'schedule_text',
-            ),
-            scheduleKind: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.scheduleKind),
-                'reminders',
-                id,
-                'schedule_kind',
-              ),
-            ),
-            scheduleTime: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.scheduleTime),
-                'reminders',
-                id,
-                'schedule_time',
-              ),
-            ),
-            scheduleDowMask: Value(draft.scheduleDowMask),
-            scheduleDom: Value(draft.scheduleDom),
-            triggerType: Value(_nullIfBlank(draft.triggerType) ?? 'repeated'),
-            triggerMemberId: Value(_nullIfBlank(draft.triggerMemberId)),
-            triggerEvent: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.triggerEvent),
-                'reminders',
-                id,
-                'trigger_event',
-              ),
-            ),
-            delaySeconds: Value(draft.delaySeconds),
-            enabled: Value(draft.enabled),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    return id;
-  }
+  Future<String?> saveReminder(ReminderDraft draft) => _reminders.save(draft);
 
   @override
-  Future<void> setReminderEnabled(String reminderId, bool enabled) async {
-    await (database.update(database.reminders)..where(
-          (reminder) =>
-              reminder.systemId.equals(localSystemId) &
-              reminder.id.equals(reminderId),
-        ))
-        .write(
-          RemindersCompanion(
-            enabled: Value(enabled),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
+  Future<void> setReminderEnabled(String reminderId, bool enabled) =>
+      _reminders.setEnabled(reminderId, enabled);
 
   @override
-  Future<void> deleteReminder(String reminderId) {
-    return (database.delete(database.reminders)..where(
-          (reminder) =>
-              reminder.systemId.equals(localSystemId) &
-              reminder.id.equals(reminderId),
-        ))
-        .go();
-  }
+  Future<void> deleteReminder(String reminderId) =>
+      _reminders.delete(reminderId);
 
   @override
   Future<void> savePoll(PollDraft draft) => _polls.save(draft);
@@ -3301,7 +3054,7 @@ SELECT
               updatedAt: now,
             ),
           );
-      return _claimAfterFrontReminders(
+      return _reminders.claimAfterFront(
         newlyStartedMemberIds: const {},
         frontStarted: true,
         firedAt: now,
