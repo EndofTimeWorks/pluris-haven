@@ -19,6 +19,10 @@ node_modules
 /build
 **/build
 
+# Local export files
+export_*.json
+Avatars_*.zip
+
 # OS
 .DS_Store
 Thumbs.db
