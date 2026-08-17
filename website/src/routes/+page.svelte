@@ -48,7 +48,7 @@
   />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <header class="site-head">
     <a class="brand" href="/" aria-current="page">
       <span class="mark" aria-hidden="true">PH</span>

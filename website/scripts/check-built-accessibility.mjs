@@ -64,6 +64,9 @@ for (const path of await htmlFiles(buildDirectory)) {
     fail('the page needs a skip link targeting #main-content');
   }
   if (count(html, /<main\b/gi) !== 1) fail('expected exactly one main landmark');
+  if (!/<main\b[^>]*\bid=(?:"main-content"|'main-content')[^>]*>/i.test(html)) {
+    fail('the main landmark must be the skip-link target');
+  }
   if (count(html, /<h1\b/gi) !== 1) fail('expected exactly one h1');
   if (/\btabindex=(?:"[1-9][0-9]*"|'[1-9][0-9]*')/i.test(html)) {
     fail('positive tabindex changes the natural keyboard order');

@@ -3,7 +3,7 @@
   <meta name="description" content="Basic docs for Pluris Haven setup, imports, and hosting." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Docs</p>

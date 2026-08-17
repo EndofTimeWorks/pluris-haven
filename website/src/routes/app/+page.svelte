@@ -18,7 +18,7 @@
   <meta name="description" content="Current Pluris Haven web app status and browser client plan." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Web UI</p>

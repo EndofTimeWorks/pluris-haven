@@ -3,7 +3,7 @@
   <meta name="description" content="Support, bug reports, and optional funding for Pluris Haven." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Support</p>

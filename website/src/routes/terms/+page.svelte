@@ -3,7 +3,7 @@
   <meta name="description" content="Plain-language terms draft for Pluris Haven." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Terms draft</p>

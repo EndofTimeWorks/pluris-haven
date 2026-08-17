@@ -7,7 +7,7 @@
   <meta name="description" content="Install channels and update notes for Pluris Haven." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Distribution</p>

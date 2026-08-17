@@ -10,7 +10,7 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 
-<div id="main-content" tabindex="-1">
+<div>
   {@render children()}
 </div>
 

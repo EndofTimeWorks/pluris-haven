@@ -7,7 +7,7 @@
   <meta name="description" content="Current Pluris Haven pre-alpha changes and release notes." />
 </svelte:head>
 
-<main>
+<main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Changelog</p>
