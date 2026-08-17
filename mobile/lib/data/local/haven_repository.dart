@@ -13,6 +13,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'chat_store.dart';
+import 'group_store.dart';
 import 'journal_store.dart';
 import 'member_store.dart';
 import 'message_store.dart';
@@ -32,6 +33,7 @@ export 'chat_store.dart'
         ChatCategorySummary,
         ChatChannelDraft,
         ChatChannelSummary;
+export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart' show MemberDraft, MemberSummary;
@@ -168,46 +170,6 @@ class RestoreRehearsalSummary {
 
   Iterable<MapEntry<String, int>> get visibleCounts =>
       counts.entries.where((entry) => entry.value > 0);
-}
-
-class GroupSummary {
-  const GroupSummary({
-    required this.id,
-    required this.name,
-    this.parentGroupId,
-    this.colorHex,
-    this.description,
-    this.emoji,
-    this.memberCount = 0,
-    this.isSubsystem = false,
-  });
-
-  final String id;
-  final String name;
-  final String? parentGroupId;
-  final String? colorHex;
-  final String? description;
-  final String? emoji;
-  final int memberCount;
-  final bool isSubsystem;
-}
-
-class GroupDraft {
-  const GroupDraft({
-    required this.name,
-    this.parentGroupId,
-    this.colorHex,
-    this.description,
-    this.emoji,
-    this.isSubsystem = false,
-  });
-
-  final String name;
-  final String? parentGroupId;
-  final String? colorHex;
-  final String? description;
-  final String? emoji;
-  final bool isSubsystem;
 }
 
 class ReminderSummary {
@@ -772,6 +734,12 @@ class LocalHavenRepository implements HavenRepository {
       onDeleted: (memberId) =>
           _memberDecryptCache.removeWhere((key, _) => key.$1 == memberId),
     );
+    _groups = LocalGroupStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -783,6 +751,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalMessageStore _messages;
   late final LocalChatStore _chat;
   late final LocalMemberStore _members;
+  late final LocalGroupStore _groups;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1971,67 +1940,7 @@ ORDER BY imported_at DESC
   }
 
   @override
-  Stream<List<GroupSummary>> watchGroups() {
-    return database
-        .customSelect(
-          '''
-SELECT
-  g.id,
-  g.parent_group_id,
-  g.name,
-  g.color_hex,
-  g.description,
-  g.emoji,
-  g.is_subsystem,
-  COUNT(gm.member_id) AS member_count
-FROM system_groups g
-LEFT JOIN group_members gm ON gm.group_id = g.id
-WHERE g.system_id = ?
-GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g.is_subsystem
-ORDER BY LOWER(g.name) ASC
-          ''',
-          variables: [Variable<String>(localSystemId)],
-          readsFrom: {database.systemGroups, database.groupMembers},
-        )
-        .watch()
-        .asyncMap(
-          (rows) async => [
-            for (final row in rows)
-              GroupSummary(
-                id: row.data['id'] as String,
-                name:
-                    (await _decryptLocalText(
-                      row.data['name'] as String,
-                      'system_groups',
-                      row.data['id'] as String,
-                      'name',
-                    )) ??
-                    '',
-                parentGroupId: row.data['parent_group_id'] as String?,
-                colorHex: await _decryptLocalText(
-                  row.data['color_hex'] as String?,
-                  'system_groups',
-                  row.data['id'] as String,
-                  'color_hex',
-                ),
-                description: await _decryptLocalText(
-                  row.data['description'] as String?,
-                  'system_groups',
-                  row.data['id'] as String,
-                  'description',
-                ),
-                emoji: await _decryptLocalText(
-                  row.data['emoji'] as String?,
-                  'system_groups',
-                  row.data['id'] as String,
-                  'emoji',
-                ),
-                isSubsystem: (row.data['is_subsystem'] as int?) == 1,
-                memberCount: row.data['member_count'] as int,
-              ),
-          ],
-        );
-  }
+  Stream<List<GroupSummary>> watchGroups() => _groups.watch();
 
   @override
   Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets() {
@@ -2956,167 +2865,14 @@ SELECT
   }
 
   @override
-  Future<void> saveGroup(GroupDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final groupId = 'group-${now.microsecondsSinceEpoch}';
-    await database
-        .into(database.systemGroups)
-        .insert(
-          SystemGroupsCompanion.insert(
-            id: groupId,
-            systemId: localSystemId,
-            name: await _encryptLocalText(
-              name,
-              'system_groups',
-              groupId,
-              'name',
-            ),
-            parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
-            colorHex: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.colorHex),
-                'system_groups',
-                groupId,
-                'color_hex',
-              ),
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'system_groups',
-                groupId,
-                'description',
-              ),
-            ),
-            emoji: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.emoji),
-                'system_groups',
-                groupId,
-                'emoji',
-              ),
-            ),
-            isSubsystem: Value(draft.isSubsystem),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveGroup(GroupDraft draft) => _groups.save(draft);
 
   @override
-  Future<void> updateGroup(String groupId, GroupDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) {
-      return;
-    }
-
-    final parentId = _nullIfBlank(draft.parentGroupId);
-    if (parentId == groupId ||
-        await _wouldCreateGroupCycle(groupId, parentId)) {
-      return;
-    }
-
-    await (database.update(database.systemGroups)..where(
-          (group) =>
-              group.id.equals(groupId) & group.systemId.equals(localSystemId),
-        ))
-        .write(
-          SystemGroupsCompanion(
-            parentGroupId: Value(parentId),
-            name: Value(
-              await _encryptLocalText(name, 'system_groups', groupId, 'name'),
-            ),
-            colorHex: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.colorHex),
-                'system_groups',
-                groupId,
-                'color_hex',
-              ),
-            ),
-            description: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.description),
-                'system_groups',
-                groupId,
-                'description',
-              ),
-            ),
-            emoji: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.emoji),
-                'system_groups',
-                groupId,
-                'emoji',
-              ),
-            ),
-            isSubsystem: Value(draft.isSubsystem),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
-
-  Future<bool> _wouldCreateGroupCycle(String groupId, String? parentId) async {
-    var cursor = parentId;
-    final seen = <String>{};
-    while (cursor != null && cursor.isNotEmpty) {
-      if (cursor == groupId || !seen.add(cursor)) {
-        return true;
-      }
-      final parent =
-          await (database.select(database.systemGroups)
-                ..where(
-                  (group) =>
-                      group.id.equals(cursor!) &
-                      group.systemId.equals(localSystemId),
-                )
-                ..limit(1))
-              .getSingleOrNull();
-      cursor = parent?.parentGroupId;
-    }
-    return false;
-  }
+  Future<void> updateGroup(String groupId, GroupDraft draft) =>
+      _groups.update(groupId, draft);
 
   @override
-  Future<void> deleteGroup(String groupId) async {
-    await database.transaction(() async {
-      await (database.update(database.systemGroups)..where(
-            (group) =>
-                group.parentGroupId.equals(groupId) &
-                group.systemId.equals(localSystemId),
-          ))
-          .write(
-            SystemGroupsCompanion(
-              parentGroupId: const Value(null),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-      await (database.update(database.members)..where(
-            (member) =>
-                member.folderId.equals(groupId) &
-                member.systemId.equals(localSystemId),
-          ))
-          .write(
-            MembersCompanion(
-              folderId: const Value(null),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-      await (database.delete(
-        database.groupMembers,
-      )..where((link) => link.groupId.equals(groupId))).go();
-      await (database.delete(database.systemGroups)..where(
-            (group) =>
-                group.id.equals(groupId) & group.systemId.equals(localSystemId),
-          ))
-          .go();
-    });
-  }
+  Future<void> deleteGroup(String groupId) => _groups.delete(groupId);
 
   @override
   Future<void> savePrivacyBucket(PrivacyBucketDraft draft) async {
