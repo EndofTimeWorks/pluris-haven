@@ -1149,6 +1149,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importSourcePrism => 'Prism';
 
   @override
+  String get importSourceAmpersand => 'Ampersand';
+
+  @override
   String get importInputFile => 'File';
 
   @override
@@ -1181,6 +1184,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importDedupePrism => 'Prism IDs, normalized names';
+
+  @override
+  String get importDedupeAmpersand => 'Ampersand UUIDs, normalized names';
 
   @override
   String get importConflictPrompt => 'Ask for each match';
@@ -1560,6 +1566,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dedupe by Prism ID, then normalized name.';
 
   @override
+  String get importStepReadAmpersandDetail =>
+      'Accept an Ampersand JSON database export.';
+
+  @override
+  String get importStepMapAmpersandDetail =>
+      'Stage members, custom fields, fronting history, journals, and notes.';
+
+  @override
+  String get importStepReviewAmpersandDetail =>
+      'Dedupe by Ampersand UUID, then normalized name.';
+
+  @override
   String get importPrivacyPreviewBeforeWrite =>
       'Preview happens before records are saved.';
 
@@ -1614,6 +1632,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importPrivacyPrismIdentifiers =>
       'Prism source IDs are kept for re-import dedupe.';
+
+  @override
+  String get importPrivacyAmpersandIdentifiers =>
+      'Ampersand UUIDs are kept as import identifiers.';
+
+  @override
+  String get importPrivacyAmpersandCustomFields =>
+      'Custom field values are imported as plain text.';
 
   @override
   String get importStageParse => 'parse';

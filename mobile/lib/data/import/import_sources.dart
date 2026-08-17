@@ -80,6 +80,13 @@ enum ImportSource {
     inputKinds: [ImportInputKind.encryptedFile],
     status: ImporterStatus.planned,
     dedupeKeys: ['Prism IDs', 'normalized names'],
+  ),
+  ampersand(
+    label: 'Ampersand',
+    subtitle: 'Ampersand JSON database export',
+    inputKinds: [ImportInputKind.file],
+    status: ImporterStatus.ready,
+    dedupeKeys: ['Ampersand UUIDs', 'normalized names'],
   );
 
   const ImportSource({
@@ -104,6 +111,7 @@ enum ImportSource {
     ImportSource.tupperbox => 'tupperbox_file',
     ImportSource.pluralSpace => 'pluralspace_file',
     ImportSource.prism => 'prism_file',
+    ImportSource.ampersand => 'ampersand_file',
   };
 
   String get inputLabel => inputKinds.map((kind) => kind.label).join(' + ');

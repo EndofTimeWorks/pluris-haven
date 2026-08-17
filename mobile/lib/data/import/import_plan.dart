@@ -37,6 +37,9 @@ enum ImportPlanStep {
   choosePrism,
   decryptPrism,
   reviewPrism,
+  readAmpersand,
+  mapAmpersand,
+  reviewAmpersand,
 }
 
 enum ImportPlanCount {
@@ -75,6 +78,8 @@ enum ImportPrivacyNote {
   pluralSpaceUnknownFields,
   prismPassphraseMemoryOnly,
   prismIdentifiers,
+  ampersandIdentifiers,
+  ampersandCustomFields,
 }
 
 enum ImportDetectionReason {
@@ -428,6 +433,27 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanStep.choosePrism,
         ImportPlanStep.decryptPrism,
         ImportPlanStep.reviewPrism,
+      ],
+    ),
+    ImportSource.ampersand => const ImportSourcePlan(
+      source: ImportSource.ampersand,
+      status: ImportPlanStatus.ready,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
+      previewCounts: [
+        ImportPlanCount.members,
+        ImportPlanCount.fronts,
+        ImportPlanCount.journals,
+        ImportPlanCount.notes,
+        ImportPlanCount.customFields,
+      ],
+      privacyNotes: [
+        ImportPrivacyNote.ampersandIdentifiers,
+        ImportPrivacyNote.ampersandCustomFields,
+      ],
+      steps: [
+        ImportPlanStep.readAmpersand,
+        ImportPlanStep.mapAmpersand,
+        ImportPlanStep.reviewAmpersand,
       ],
     ),
   };

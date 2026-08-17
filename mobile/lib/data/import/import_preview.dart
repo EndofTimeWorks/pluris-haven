@@ -135,6 +135,12 @@ ImportPreview previewImportText({
       decoded: decoded,
       avatarAssets: avatarAssets,
     ),
+    ImportSource.ampersand => _previewLooseSource(
+      source: source,
+      fileName: fileName,
+      decoded: decoded,
+      avatarAssets: avatarAssets,
+    ),
     ImportSource.prism => ImportPreview(
       source: source,
       fileName: fileName,

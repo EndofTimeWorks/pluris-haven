@@ -1954,4 +1954,126 @@ void main() {
     expect(member['source_member_id'], 'pluralspace_file-member-member-uuid');
     expect(member['pluralkit_id'], isNull);
   });
+
+  test('normalizes an Ampersand database export', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.ampersand,
+      fileName: 'ampersand-export.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "revision": {"count": 42, "humanReadable": "0.3.0"},
+  "database": {
+    "systems": [
+      {"uuid": "sys1", "name": "Test System", "dateCreated": "2026-01-01T00:00:00Z"}
+    ],
+    "members": [
+      {
+        "uuid": "mem1",
+        "system": "sys1",
+        "name": "Iris",
+        "pronouns": "she/they",
+        "description": "Front-facing",
+        "color": "3366ff",
+        "customFields": {"field1": "20s"},
+        "isArchived": false,
+        "tags": [],
+        "dateCreated": "2026-01-01T00:00:00Z"
+      }
+    ],
+    "frontingEntries": [
+      {
+        "uuid": "front1",
+        "member": "mem1",
+        "startTime": "2026-01-01T10:00:00Z",
+        "endTime": "2026-01-01T11:00:00Z",
+        "isMainFronter": true,
+        "isLocked": false,
+        "dateCreated": "2026-01-01T10:00:00Z"
+      }
+    ],
+    "journalPosts": [
+      {
+        "uuid": "journal1",
+        "members": ["mem1"],
+        "date": "2026-01-01T09:00:00Z",
+        "title": "First entry",
+        "body": "Settling in.",
+        "tags": [],
+        "isPinned": false,
+        "isPrivate": false,
+        "dateCreated": "2026-01-01T09:00:00Z"
+      }
+    ],
+    "customFields": [
+      {"uuid": "field1", "name": "Age", "priority": 0, "default": false, "dateCreated": "2026-01-01T00:00:00Z"}
+    ],
+    "notes": [
+      {"uuid": "note1", "title": "Grounding", "content": "Drink water", "priority": 0, "isArchived": false, "dateCreated": "2026-01-01T00:00:00Z"}
+    ],
+    "boardMessages": [
+      {
+        "uuid": "board1",
+        "members": ["mem1"],
+        "title": "Heads up",
+        "body": "Check supplies",
+        "date": "2026-01-01T08:00:00Z",
+        "isPinned": false,
+        "isArchived": false,
+        "dateCreated": "2026-01-01T08:00:00Z"
+      }
+    ],
+    "reminders": [
+      {
+        "uuid": "reminder1",
+        "active": true,
+        "title": "Check in",
+        "message": "Drink water and stretch",
+        "trigger": "fronting",
+        "members": ["mem1"],
+        "delay": 900000,
+        "dateCreated": "2026-01-01T00:00:00Z"
+      }
+    ],
+    "tags": [],
+    "assets": [],
+    "filterQueries": []
+  }
+}
+''',
+    );
+
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['journals'], 1);
+    expect(archive.counts['custom_fields'], 1);
+    expect(archive.counts['custom_field_values'], 1);
+    expect(archive.counts['messages'], 1);
+    expect(archive.counts['reminders'], 1);
+    expect(archive.archiveJson, contains('"display_name": "Iris"'));
+    expect(archive.archiveJson, contains('"pronouns": "she/they"'));
+    expect(archive.archiveJson, contains('"source": "ampersand_file"'));
+    expect(archive.archiveJson, contains('"name": "Age"'));
+    expect(archive.archiveJson, contains('"value": "20s"'));
+    expect(archive.archiveJson, contains('"title": "First entry"'));
+    expect(archive.archiveJson, contains('"body": "Settling in."'));
+    expect(
+      archive.archiveJson,
+      contains('"body": "Heads up\\nCheck supplies"'),
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final reminders = (decoded['reminders'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(reminders.single['title'], 'Check in');
+    expect(reminders.single['body'], 'Drink water and stretch');
+    expect(reminders.single['schedule_kind'], 'after_front');
+    expect(reminders.single['trigger_event'], 'front_started');
+    expect(
+      reminders.single['trigger_member_id'],
+      'ampersand_file-member-mem1',
+    );
+    expect(reminders.single['delay_seconds'], 900);
+    expect(reminders.single['enabled'], isTrue);
+  });
 }

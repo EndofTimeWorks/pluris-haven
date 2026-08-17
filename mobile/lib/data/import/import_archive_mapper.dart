@@ -50,9 +50,22 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
       ImportDiagnostic(ImportDiagnosticCode.prismNeedsDecryption),
     );
   }
+
+  // Ampersand nests its whole export under a `database` envelope alongside
+  // `revision`/`config` metadata. Flatten that one level so the generic
+  // root-list/root-map lookups below can find `members`, `systems`, etc.
+  // directly, the same way every other source's flat export shape does.
+  var effectiveDecoded = decoded;
+  if (source == ImportSource.ampersand) {
+    final database = decoded['database'];
+    if (database is Map<String, Object?>) {
+      effectiveDecoded = {...decoded, ...database};
+    }
+  }
+
   final normalizer = _ExternalArchiveNormalizer(
     source: source,
-    decoded: decoded,
+    decoded: effectiveDecoded,
     avatarAssets: avatarAssets,
     importedAt: importedAt ?? DateTime.now().toUtc(),
   )..normalize();
@@ -298,8 +311,10 @@ class _ExternalArchiveNormalizer {
 
   Map<String, Object?> _systemSource() {
     final users = _firstRootList(const ['users']);
+    final systems = _firstRootList(const ['systems']);
     return _rootMap('system') ??
         (users.isEmpty ? null : _mapValue(users.first)) ??
+        (systems.isEmpty ? null : _mapValue(systems.first)) ??
         decoded;
   }
 
@@ -584,7 +599,7 @@ class _ExternalArchiveNormalizer {
                   source == ImportSource.pluralKitLive
               ? _firstString(member, const ['uuid'])
               : null),
-      'archived': member['archived'] == true,
+      'archived': member['archived'] == true || member['isArchived'] == true,
       'is_custom_front': isCustomFront || member['is_custom_front'] == true,
       'created_at': _dateString(member, const ['created_at', 'createdAt']),
       'updated_at': _dateString(member, const ['updated_at', 'updatedAt']),
@@ -854,7 +869,9 @@ class _ExternalArchiveNormalizer {
 
     for (final memberValue in _firstRootList(const ['members'])) {
       final member = _mapValue(memberValue);
-      final info = member == null ? null : _mapValue(member['info']);
+      final info =
+          (member == null ? null : _mapValue(member['info'])) ??
+          (member == null ? null : _mapValue(member['customFields']));
       if (member == null || info == null || info.isEmpty) {
         continue;
       }
@@ -1234,6 +1251,7 @@ class _ExternalArchiveNormalizer {
       'journals',
       'journalEntries',
       'journal_entries',
+      'journalPosts',
     ]);
     final records = <Map<String, Object?>>[];
     for (var index = 0; index < items.length; index++) {
@@ -1562,6 +1580,7 @@ class _ExternalArchiveNormalizer {
       'dayInterval',
       'due',
       'startTime',
+      'trigger',
     ])?.trim();
     if (title == null ||
         title.isEmpty ||
@@ -1575,12 +1594,15 @@ class _ExternalArchiveNormalizer {
       return null;
     }
     final structuredSchedule = _structuredReminderSchedule(reminder, schedule);
-    final triggerMemberId = _firstString(reminder, const [
-      'trigger_member_id',
-      'triggerMemberId',
-      'member_id',
-      'memberId',
-    ]);
+    final reminderMemberRefs = _memberRefsFromValue(reminder['members']);
+    final triggerMemberId =
+        _firstString(reminder, const [
+          'trigger_member_id',
+          'triggerMemberId',
+          'member_id',
+          'memberId',
+        ]) ??
+        (reminderMemberRefs.isEmpty ? null : reminderMemberRefs.first);
     final mappedTriggerMemberId = triggerMemberId == null
         ? null
         : _memberIdsByExternalId[triggerMemberId];
@@ -1623,15 +1645,18 @@ class _ExternalArchiveNormalizer {
       'trigger_event': structuredSchedule.kind == 'after_front'
           ? 'front_started'
           : _firstString(reminder, const ['trigger_event', 'triggerEvent']),
-      'delay_seconds': _intValue(
-        reminder['delay_seconds'] ?? reminder['delaySeconds'],
-      ),
+      'delay_seconds':
+          _intValue(reminder['delay_seconds'] ?? reminder['delaySeconds']) ??
+          (_intValue(reminder['delay']) == null
+              ? null
+              : _intValue(reminder['delay'])! ~/ 1000),
       'last_fired_at': _dateString(reminder, const [
         'last_fired_at',
         'lastFiredAt',
       ]),
       'enabled':
           reminder['enabled'] != false &&
+          reminder['active'] != false &&
           (triggerMemberId == null || mappedTriggerMemberId != null),
       'created_at': _dateString(reminder, const ['created_at', 'createdAt']),
       'updated_at': _dateString(reminder, const ['updated_at', 'updatedAt']),
@@ -1647,6 +1672,7 @@ class _ExternalArchiveNormalizer {
       'scheduleKind',
       'kind',
       'frequency',
+      'trigger',
     ])?.toLowerCase();
     final scheduleLower = schedule.toLowerCase();
     final kind = switch (explicitKind) {
@@ -1656,6 +1682,7 @@ class _ExternalArchiveNormalizer {
       'after_front' ||
       'after-front' ||
       'fronting' ||
+      'fronted' ||
       'member_front' => 'after_front',
       _ when scheduleLower.startsWith('daily') => 'daily',
       _ when scheduleLower.startsWith('weekly') => 'weekly',
@@ -1974,6 +2001,7 @@ class _ExternalArchiveNormalizer {
       'fronthistory',
       'fronts',
       'switches',
+      'frontingEntries',
     ]);
     final sessions = <Map<String, Object?>>[];
     final links = <Map<String, Object?>>[];
@@ -2133,17 +2161,32 @@ class _ExternalArchiveNormalizer {
     );
   }
 
+  String? _memberRefsFromListField(
+    Map<String, Object?> object,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final refs = _memberRefsFromValue(object[key]);
+      if (refs.isNotEmpty) {
+        return refs.first;
+      }
+    }
+    return null;
+  }
+
   String? _memberRef(Map<String, Object?> object) {
-    final external = _firstString(object, const [
-      'member_id',
-      'memberId',
-      'member',
-      'writtenBy',
-      'writtenFor',
-      'writer',
-      'author',
-      'authorId',
-    ]);
+    final external =
+        _firstString(object, const [
+          'member_id',
+          'memberId',
+          'member',
+          'writtenBy',
+          'writtenFor',
+          'writer',
+          'author',
+          'authorId',
+        ]) ??
+        _memberRefsFromListField(object, const ['members', 'member_ids']);
     if (external == null) {
       return null;
     }

@@ -2124,6 +2124,12 @@ abstract class AppLocalizations {
   /// **'Prism'**
   String get importSourcePrism;
 
+  /// No description provided for @importSourceAmpersand.
+  ///
+  /// In en, this message translates to:
+  /// **'Ampersand'**
+  String get importSourceAmpersand;
+
   /// No description provided for @importInputFile.
   ///
   /// In en, this message translates to:
@@ -2183,6 +2189,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Prism IDs, normalized names'**
   String get importDedupePrism;
+
+  /// No description provided for @importDedupeAmpersand.
+  ///
+  /// In en, this message translates to:
+  /// **'Ampersand UUIDs, normalized names'**
+  String get importDedupeAmpersand;
 
   /// No description provided for @importConflictPrompt.
   ///
@@ -2838,6 +2850,24 @@ abstract class AppLocalizations {
   /// **'Dedupe by Prism ID, then normalized name.'**
   String get importStepReviewPrismDetail;
 
+  /// No description provided for @importStepReadAmpersandDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept an Ampersand JSON database export.'**
+  String get importStepReadAmpersandDetail;
+
+  /// No description provided for @importStepMapAmpersandDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage members, custom fields, fronting history, journals, and notes.'**
+  String get importStepMapAmpersandDetail;
+
+  /// No description provided for @importStepReviewAmpersandDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by Ampersand UUID, then normalized name.'**
+  String get importStepReviewAmpersandDetail;
+
   /// No description provided for @importPrivacyPreviewBeforeWrite.
   ///
   /// In en, this message translates to:
@@ -2921,6 +2951,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Prism source IDs are kept for re-import dedupe.'**
   String get importPrivacyPrismIdentifiers;
+
+  /// No description provided for @importPrivacyAmpersandIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Ampersand UUIDs are kept as import identifiers.'**
+  String get importPrivacyAmpersandIdentifiers;
+
+  /// No description provided for @importPrivacyAmpersandCustomFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom field values are imported as plain text.'**
+  String get importPrivacyAmpersandCustomFields;
 
   /// No description provided for @importStageParse.
   ///

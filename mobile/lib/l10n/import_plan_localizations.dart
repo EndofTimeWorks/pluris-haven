@@ -11,6 +11,7 @@ String localizeImportSource(AppLocalizations l10n, ImportSource source) {
     ImportSource.tupperbox => l10n.importSourceTupperbox,
     ImportSource.pluralSpace => l10n.importSourcePluralSpace,
     ImportSource.prism => l10n.importSourcePrism,
+    ImportSource.ampersand => l10n.importSourceAmpersand,
   };
 }
 
@@ -20,7 +21,8 @@ String localizeImportInput(AppLocalizations l10n, ImportSource source) {
     ImportSource.simplyPlural ||
     ImportSource.pluralKitFile ||
     ImportSource.tupperbox ||
-    ImportSource.pluralSpace => l10n.importInputFile,
+    ImportSource.pluralSpace ||
+    ImportSource.ampersand => l10n.importInputFile,
     ImportSource.pluralKitLive => l10n.importInputLiveToken,
     ImportSource.prism => l10n.importInputEncryptedFile,
   };
@@ -35,6 +37,7 @@ String localizeImportDedupe(AppLocalizations l10n, ImportSource source) {
     ImportSource.tupperbox => l10n.importDedupeTupperbox,
     ImportSource.pluralSpace => l10n.importDedupePluralSpace,
     ImportSource.prism => l10n.importDedupePrism,
+    ImportSource.ampersand => l10n.importDedupeAmpersand,
   };
 }
 
@@ -226,6 +229,18 @@ String localizeImportPlanCount(AppLocalizations l10n, ImportPlanCount count) {
       title: l10n.importStepReviewMatchesTitle,
       detail: l10n.importStepReviewPrismDetail,
     ),
+    ImportPlanStep.readAmpersand => (
+      title: l10n.importStepReadExportTitle,
+      detail: l10n.importStepReadAmpersandDetail,
+    ),
+    ImportPlanStep.mapAmpersand => (
+      title: l10n.importStepMapRecordsTitle,
+      detail: l10n.importStepMapAmpersandDetail,
+    ),
+    ImportPlanStep.reviewAmpersand => (
+      title: l10n.importStepReviewMatchesTitle,
+      detail: l10n.importStepReviewAmpersandDetail,
+    ),
   };
 }
 
@@ -260,5 +275,9 @@ String localizeImportPrivacyNote(
     ImportPrivacyNote.prismPassphraseMemoryOnly =>
       l10n.importPrivacyPrismPassphraseMemoryOnly,
     ImportPrivacyNote.prismIdentifiers => l10n.importPrivacyPrismIdentifiers,
+    ImportPrivacyNote.ampersandIdentifiers =>
+      l10n.importPrivacyAmpersandIdentifiers,
+    ImportPrivacyNote.ampersandCustomFields =>
+      l10n.importPrivacyAmpersandCustomFields,
   };
 }
