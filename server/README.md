@@ -80,6 +80,9 @@ sudo systemctl enable --now pluris-haven-backup.timer
 ```
 
 Edit `/etc/pluris-haven/server.env` before starting the service. Generate independent secrets with `openssl rand -hex 32`; the JWT secret, friend-code pepper, and database password must all differ.
+The server unit creates `/var/lib/pluris-haven` for backup-object storage and
+keeps it writable while the rest of the system remains read-only to the
+service.
 
 Use Caddy, nginx, or another reverse proxy for HTTPS. `deploy/Caddyfile.example` is a minimal Caddy route. The application only listens on `127.0.0.1:8000`.
 

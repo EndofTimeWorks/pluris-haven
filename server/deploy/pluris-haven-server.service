@@ -9,6 +9,8 @@ User=pluris-haven
 Group=pluris-haven
 WorkingDirectory=/opt/pluris-haven/server
 EnvironmentFile=/etc/pluris-haven/server.env
+StateDirectory=pluris-haven
+StateDirectoryMode=0750
 ExecStartPre=/opt/pluris-haven/server/.venv/bin/alembic upgrade head
 ExecStart=/opt/pluris-haven/server/.venv/bin/uvicorn pluris_server.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=on-failure
@@ -35,4 +37,3 @@ SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target
-
