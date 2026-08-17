@@ -1,11 +1,11 @@
 // Tests that AppDatabase.migration.onUpgrade correctly brings a real,
-// historical-shaped SQLite file up to the current schema (schemaVersion 17).
+// historical-shaped SQLite file up to the current schema (schemaVersion 18).
 //
 // There are no captured drift schema snapshots for old versions of this app,
 // so there is no version-by-version JSON to diff against. Instead, the
 // historical shape of each schema version is reconstructed mechanically from
 // onUpgrade itself: `migrator.createTable(x)` and `migrator.addColumn(t, c)`
-// always operate against the CURRENT (v17) Dart column/table definition, so
+// always operate against the CURRENT (v18) Dart column/table definition, so
 // "what did version N look like" is exactly "the current table/column set,
 // minus everything added by an `if (from < M)` block for M > N". That
 // subtraction is done by hand below (see the comments next to each raw
@@ -15,7 +15,7 @@
 // existed at some historical version, stamps `PRAGMA user_version` to that
 // version, closes it, then reopens the SAME file with the real,
 // unmodified `AppDatabase` class. Opening triggers the real
-// `onUpgrade(migrator, from, 17)` path end-to-end.
+// `onUpgrade(migrator, from, 18)` path end-to-end.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
@@ -518,7 +518,7 @@ List<String> _v12Statements() => [
   ''',
 ];
 
-/// Version 16 is the final pre-v17 shape. The only remaining migration should
+/// Version 16 is the final pre-v17 shape. The remaining migrations should
 /// add members.profile_encryption_version without disturbing chat or privacy
 /// relationships.
 List<String> _v16Statements() => [
@@ -587,14 +587,14 @@ void main() {
     }
   });
 
-  test('migrates a version-1 database up to the current schema (v17)', () async {
+  test('migrates a version-1 database up to the current schema (v18)', () async {
     final dbPath = '${tempDir.path}/legacy_v1.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());
 
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
 
-    // Merely opening the database runs onUpgrade(1, 17); this must not throw.
+    // Merely opening the database runs onUpgrade(1, 18); this must not throw.
     await database.customSelect('SELECT 1').getSingle();
 
     // v8: displayNameHash / frameShape / lexoRank on members.
@@ -683,11 +683,11 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 17);
+    expect(version.data['user_version'], 18);
   });
 
   test('migrates a version-8 database (right after the largest migration '
-      'step) up to the current schema (v17)', () async {
+      'step) up to the current schema (v18)', () async {
     final dbPath = '${tempDir.path}/legacy_v8.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 8, statements: _v8Statements());
 
@@ -696,7 +696,7 @@ void main() {
 
     await database.customSelect('SELECT 1').getSingle();
 
-    // v9-v17 columns/tables should all be present.
+    // v9-v18 columns/tables should all be present.
     await database
         .customSelect(
           'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
@@ -755,10 +755,10 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 17);
+    expect(version.data['user_version'], 18);
   });
 
-  test('a real row written before migration survives the v1 -> v17 upgrade '
+  test('a real row written before migration survives the v1 -> v18 upgrade '
       'and new columns read back with their schema defaults', () async {
     final dbPath = '${tempDir.path}/legacy_v1_data.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());
@@ -795,6 +795,14 @@ void main() {
     expect(member.data['lexo_rank'], '0|zzzzzz');
     expect(member.data['is_custom_front'], 0);
     expect(member.data['profile_encryption_version'], 0);
+
+    final memberColumns = await database
+        .customSelect('PRAGMA table_info(members)')
+        .get();
+    final rankColumn = memberColumns.singleWhere(
+      (column) => column.data['name'] == 'lexo_rank',
+    );
+    expect(rankColumn.data['dflt_value'], isNull);
   });
 
   test('v3 message and reminder rows survive their v8 shape expansion', () async {
@@ -856,10 +864,10 @@ void main() {
     expect(reminder.data['body'], 'legacy reminder');
     expect(reminder.data['trigger_type'], 'repeated');
     expect(reminder.data['schedule_kind'], isNull);
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 18);
   });
 
-  test('v12 member, front, and group relationships survive to v17', () async {
+  test('v12 member, front, and group relationships survive to v18', () async {
     final dbPath = '${tempDir.path}/legacy_v12_data.sqlite';
     _seedLegacyDatabase(
       path: dbPath,
@@ -943,7 +951,7 @@ void main() {
       ),
       'Grounded',
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 18);
   });
 
   test('v16 chat and privacy relationships survive the final migration', () async {
@@ -1037,10 +1045,10 @@ void main() {
       ),
       0,
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 17);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 18);
   });
 
-  test('private content survives the v8 -> v17 upgrade', () async {
+  test('private content survives the v8 -> v18 upgrade', () async {
     final dbPath = '${tempDir.path}/legacy_v8_private_data.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 8, statements: _v8Statements());
 
@@ -1240,6 +1248,6 @@ void main() {
       ),
       '{"after":true}',
     );
-    expect(await value('PRAGMA user_version', 'user_version'), 17);
+    expect(await value('PRAGMA user_version', 'user_version'), 18);
   });
 }

@@ -16,6 +16,26 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('assigns distinct ordering ranks to new members', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = LocalHavenRepository(
+      database,
+      crypto: HavenCrypto(await generateMasterKey()),
+    );
+    await repository.ensureLocalSystem();
+
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
+
+    final members = await repository.watchMembers().first;
+    expect(members.map((member) => member.lexoRank).toSet(), hasLength(2));
+    expect(
+      members.map((member) => member.displayName),
+      orderedEquals(['River', 'Juniper']),
+    );
+  });
+
   test('reuses member decryptions when only metadata changes', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -243,6 +263,7 @@ void main() {
             description: const Value('Legacy private profile'),
             avatarUrl: const Value('local-avatar:river.png'),
             pluralKitId: const Value('pk-river'),
+            lexoRank: '0|zzzzzz',
             createdAt: now,
             updatedAt: now,
           ),

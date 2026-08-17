@@ -9,12 +9,12 @@ import '../../debug/debug_log.dart';
 import '../avatar/avatar_file_policy.dart';
 import '../import/remote_avatar_policy.dart';
 import '../import/import_sources.dart';
-import '../ordering/lexorank.dart';
 import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'chat_store.dart';
 import 'journal_store.dart';
+import 'member_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';
 import 'rehearsal_database_connection.dart';
@@ -34,6 +34,7 @@ export 'chat_store.dart'
         ChatChannelSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
+export 'member_store.dart' show MemberDraft, MemberSummary;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -167,72 +168,6 @@ class RestoreRehearsalSummary {
 
   Iterable<MapEntry<String, int>> get visibleCounts =>
       counts.entries.where((entry) => entry.value > 0);
-}
-
-class MemberSummary {
-  const MemberSummary({
-    required this.id,
-    required this.displayName,
-    this.pronouns,
-    this.colorHex,
-    this.birthday,
-    this.emoji,
-    this.privacy,
-    this.description,
-    this.avatarUrl,
-    this.pluralKitId,
-    this.archived = false,
-    this.isCustomFront = false,
-    this.frameShape = 'circle',
-    this.lexoRank = '0|zzzzzz',
-    this.folderId,
-    this.groupIds = const [],
-  });
-
-  final String id;
-  final String displayName;
-  final String? pronouns;
-  final String? colorHex;
-  final String? birthday;
-  final String? emoji;
-  final String? privacy;
-  final String? description;
-  final String? avatarUrl;
-  final String? pluralKitId;
-  final bool archived;
-  final bool isCustomFront;
-  final String frameShape;
-  final String lexoRank;
-  final String? folderId;
-  final List<String> groupIds;
-}
-
-class MemberDraft {
-  const MemberDraft({
-    required this.displayName,
-    this.pronouns,
-    this.colorHex,
-    this.birthday,
-    this.emoji,
-    this.privacy,
-    this.description,
-    this.avatarUrl,
-    this.pluralKitId,
-    this.folderId,
-    this.groupIds,
-  });
-
-  final String displayName;
-  final String? pronouns;
-  final String? colorHex;
-  final String? birthday;
-  final String? emoji;
-  final String? privacy;
-  final String? description;
-  final String? avatarUrl;
-  final String? pluralKitId;
-  final String? folderId;
-  final List<String>? groupIds;
 }
 
 class GroupSummary {
@@ -829,6 +764,14 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _members = LocalMemberStore(
+      database,
+      encryptText: _encryptMember,
+      decryptText: _decryptMemberValue,
+      blindIndex: _blindIndex,
+      onDeleted: (memberId) =>
+          _memberDecryptCache.removeWhere((key, _) => key.$1 == memberId),
+    );
   }
 
   final AppDatabase database;
@@ -839,6 +782,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalNoteStore _notes;
   late final LocalMessageStore _messages;
   late final LocalChatStore _chat;
+  late final LocalMemberStore _members;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1947,216 +1891,14 @@ ORDER BY imported_at DESC
   Stream<List<MemberSummary>> watchMembers({
     bool includeArchived = false,
     bool includeCustomFronts = false,
-  }) {
-    return database
-        .customSelect(
-          '''
-SELECT
-  m.id,
-  m.display_name,
-  m.pronouns,
-  m.color_hex,
-  m.birthday,
-  m.emoji,
-  m.privacy,
-  m.description,
-  m.avatar_url,
-  m.plural_kit_id,
-  m.archived,
-  m.is_custom_front,
-  m.frame_shape,
-  m.lexo_rank,
-  m.folder_id,
-  GROUP_CONCAT(gm.group_id) AS group_ids
-FROM members m
-LEFT JOIN group_members gm ON gm.member_id = m.id
-WHERE
-  m.system_id = ?
-  AND (? = 1 OR m.archived = 0)
-  AND (? = 1 OR m.is_custom_front = 0)
-GROUP BY
-  m.id,
-  m.display_name,
-  m.pronouns,
-  m.color_hex,
-  m.birthday,
-  m.emoji,
-  m.privacy,
-  m.description,
-  m.avatar_url,
-  m.plural_kit_id,
-  m.archived,
-  m.is_custom_front,
-  m.frame_shape,
-  m.lexo_rank,
-  m.folder_id
-ORDER BY m.lexo_rank ASC
-          ''',
-          variables: [
-            Variable<String>(localSystemId),
-            Variable<int>(includeArchived ? 1 : 0),
-            Variable<int>(includeCustomFronts ? 1 : 0),
-          ],
-          readsFrom: {database.members, database.groupMembers},
-        )
-        .watch()
-        .asyncMap((rows) async {
-          final summaries = <MemberSummary>[];
-          for (final row in rows) {
-            final data = row.data;
-            final memberId = data['id'] as String;
-            final storedName = data['display_name'] as String;
-            final displayName = await _decryptMemberValue(
-              memberId,
-              'display_name',
-              storedName,
-            );
-            if (displayName == null) {
-              throw StateError('Protected member name is unexpectedly null.');
-            }
-            summaries.add(
-              MemberSummary(
-                id: memberId,
-                displayName: displayName,
-                pronouns: await _decryptMemberValue(
-                  memberId,
-                  'pronouns',
-                  data['pronouns'] as String?,
-                ),
-                colorHex: await _decryptMemberValue(
-                  memberId,
-                  'color_hex',
-                  data['color_hex'] as String?,
-                ),
-                birthday: await _decryptMemberValue(
-                  memberId,
-                  'birthday',
-                  data['birthday'] as String?,
-                ),
-                emoji: await _decryptMemberValue(
-                  memberId,
-                  'emoji',
-                  data['emoji'] as String?,
-                ),
-                privacy: await _decryptMemberValue(
-                  memberId,
-                  'privacy',
-                  data['privacy'] as String?,
-                ),
-                description: await _decryptMemberValue(
-                  memberId,
-                  'description',
-                  data['description'] as String?,
-                ),
-                avatarUrl: await _decryptMemberValue(
-                  memberId,
-                  'avatar_url',
-                  data['avatar_url'] as String?,
-                ),
-                pluralKitId: await _decryptMemberValue(
-                  memberId,
-                  'pluralkit_id',
-                  data['plural_kit_id'] as String?,
-                ),
-                archived: _readSqlBool(data['archived']),
-                isCustomFront: _readSqlBool(data['is_custom_front']),
-                frameShape: data['frame_shape'] as String,
-                lexoRank: data['lexo_rank'] as String,
-                folderId: data['folder_id'] as String?,
-                groupIds: _splitJoinedIds(data['group_ids']),
-              ),
-            );
-          }
-          return summaries;
-        });
-  }
+  }) => _members.watch(
+    includeArchived: includeArchived,
+    includeCustomFronts: includeCustomFronts,
+  );
 
   @override
-  Stream<List<MemberSummary>> watchCurrentFrontMembers() {
-    final query = database.select(database.frontSessions)
-      ..where(
-        (front) =>
-            front.systemId.equals(localSystemId) & front.endedAt.isNull(),
-      )
-      ..orderBy([
-        (front) =>
-            OrderingTerm(expression: front.startedAt, mode: OrderingMode.asc),
-      ]);
-
-    return query.watch().asyncMap((sessions) async {
-      if (sessions.isEmpty) {
-        return const <MemberSummary>[];
-      }
-
-      final sessionIds = sessions.map((session) => session.id).toList();
-      final links = await (database.select(
-        database.frontSessionMembers,
-      )..where((link) => link.sessionId.isIn(sessionIds))).get();
-      if (links.isEmpty) {
-        return const <MemberSummary>[];
-      }
-
-      final memberIds = links.map((link) => link.memberId).toSet();
-      final members =
-          await (database.select(database.members)..where(
-                (member) =>
-                    member.systemId.equals(localSystemId) &
-                    member.archived.equals(false) &
-                    member.isCustomFront.equals(false) &
-                    member.id.isIn(memberIds.toList()),
-              ))
-              .get();
-      final byId = {for (final member in members) member.id: member};
-
-      final summaries = <MemberSummary>[];
-      final seen = <String>{};
-      for (final link in links) {
-        if (!seen.add(link.memberId)) {
-          continue;
-        }
-        final row = byId[link.memberId];
-        if (row == null) {
-          continue;
-        }
-        final displayName = await _decryptMember(
-          row,
-          'display_name',
-          row.displayName,
-        );
-        if (displayName == null) {
-          throw StateError('Protected member name is unexpectedly null.');
-        }
-        summaries.add(
-          MemberSummary(
-            id: row.id,
-            displayName: displayName,
-            pronouns: await _decryptMember(row, 'pronouns', row.pronouns),
-            colorHex: await _decryptMember(row, 'color_hex', row.colorHex),
-            birthday: await _decryptMember(row, 'birthday', row.birthday),
-            emoji: await _decryptMember(row, 'emoji', row.emoji),
-            privacy: await _decryptMember(row, 'privacy', row.privacy),
-            description: await _decryptMember(
-              row,
-              'description',
-              row.description,
-            ),
-            avatarUrl: await _decryptMember(row, 'avatar_url', row.avatarUrl),
-            pluralKitId: await _decryptMember(
-              row,
-              'pluralkit_id',
-              row.pluralKitId,
-            ),
-            archived: row.archived,
-            isCustomFront: row.isCustomFront,
-            frameShape: row.frameShape,
-            lexoRank: row.lexoRank,
-            folderId: row.folderId,
-          ),
-        );
-      }
-      return summaries;
-    });
-  }
+  Stream<List<MemberSummary>> watchCurrentFrontMembers() =>
+      _members.watchCurrentFront();
 
   @override
   Stream<List<CustomFieldSummary>> watchCustomFields() {
@@ -2806,10 +2548,6 @@ SELECT
     return uniqueLabels.isEmpty ? null : uniqueLabels.join(', ');
   }
 
-  bool _readSqlBool(Object? value) {
-    return value == true || value == 1;
-  }
-
   List<String> _splitJoinedIds(Object? value) {
     if (value is! String || value.trim().isEmpty) {
       return const [];
@@ -2882,254 +2620,15 @@ SELECT
       _customization.resetDashboardShortcuts();
 
   @override
-  Future<void> saveMember(MemberDraft draft) async {
-    final displayName = draft.displayName.trim();
-    if (displayName.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final memberId = 'member-${now.microsecondsSinceEpoch}';
-    final groupIds = _normalizedMemberGroupIds(draft);
-    final folderId = _nullIfBlank(draft.folderId) ?? _firstOrNull(groupIds);
-    final encryptedName = await _encryptMember(
-      memberId,
-      'display_name',
-      displayName,
-    );
-    final nameHash = await _blindIndex(displayName);
-    await database
-        .into(database.members)
-        .insert(
-          MembersCompanion.insert(
-            id: memberId,
-            systemId: localSystemId,
-            displayName: encryptedName!,
-            displayNameHash: Value(nameHash),
-            profileEncryptionVersion: const Value(2),
-            pronouns: Value(
-              await _encryptMember(
-                memberId,
-                'pronouns',
-                _nullIfBlank(draft.pronouns),
-              ),
-            ),
-            colorHex: Value(
-              await _encryptMember(
-                memberId,
-                'color_hex',
-                _nullIfBlank(draft.colorHex),
-              ),
-            ),
-            birthday: Value(
-              await _encryptMember(
-                memberId,
-                'birthday',
-                _nullIfBlank(draft.birthday),
-              ),
-            ),
-            emoji: Value(
-              await _encryptMember(
-                memberId,
-                'emoji',
-                _nullIfBlank(draft.emoji),
-              ),
-            ),
-            privacy: Value(
-              await _encryptMember(
-                memberId,
-                'privacy',
-                _nullIfBlank(draft.privacy),
-              ),
-            ),
-            description: Value(
-              await _encryptMember(
-                memberId,
-                'description',
-                _nullIfBlank(draft.description),
-              ),
-            ),
-            avatarUrl: Value(
-              await _encryptMember(
-                memberId,
-                'avatar_url',
-                _nullIfBlank(draft.avatarUrl),
-              ),
-            ),
-            pluralKitId: Value(
-              await _encryptMember(
-                memberId,
-                'pluralkit_id',
-                _nullIfBlank(draft.pluralKitId),
-              ),
-            ),
-            folderId: Value(folderId),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    await _replaceGroupMemberships(memberId: memberId, groupIds: groupIds);
-  }
+  Future<void> saveMember(MemberDraft draft) => _members.save(draft);
 
   @override
-  Future<void> archiveMember(String memberId) async {
-    final now = DateTime.now().toUtc();
-    await (database.update(database.members)..where(
-          (member) =>
-              member.systemId.equals(localSystemId) &
-              member.id.equals(memberId),
-        ))
-        .write(
-          MembersCompanion(archived: const Value(true), updatedAt: Value(now)),
-        );
-  }
+  Future<void> archiveMember(String memberId) =>
+      _members.archive(memberId, archived: true);
 
   @override
-  Future<void> updateMember(String memberId, MemberDraft draft) async {
-    final displayName = draft.displayName.trim();
-    if (displayName.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final existing =
-        await (database.select(database.members)..where(
-              (member) =>
-                  member.systemId.equals(localSystemId) &
-                  member.id.equals(memberId),
-            ))
-            .getSingleOrNull();
-    final requestedFolderId = _nullIfBlank(draft.folderId);
-    final preserveGroups = draft.groupIds == null && requestedFolderId == null;
-    final groupIds = preserveGroups
-        ? await _memberGroupIds(memberId)
-        : _normalizedMemberGroupIds(draft);
-    final folderId = preserveGroups
-        ? existing?.folderId
-        : requestedFolderId ?? _firstOrNull(groupIds);
-    final encryptedName = await _encryptMember(
-      memberId,
-      'display_name',
-      displayName,
-    );
-    final nameHash = await _blindIndex(displayName);
-    await (database.update(database.members)..where(
-          (member) =>
-              member.systemId.equals(localSystemId) &
-              member.id.equals(memberId),
-        ))
-        .write(
-          MembersCompanion(
-            displayName: Value(encryptedName!),
-            displayNameHash: Value(nameHash),
-            profileEncryptionVersion: const Value(2),
-            pronouns: Value(
-              await _encryptMember(
-                memberId,
-                'pronouns',
-                _nullIfBlank(draft.pronouns),
-              ),
-            ),
-            colorHex: Value(
-              await _encryptMember(
-                memberId,
-                'color_hex',
-                _nullIfBlank(draft.colorHex),
-              ),
-            ),
-            birthday: Value(
-              await _encryptMember(
-                memberId,
-                'birthday',
-                _nullIfBlank(draft.birthday),
-              ),
-            ),
-            emoji: Value(
-              await _encryptMember(
-                memberId,
-                'emoji',
-                _nullIfBlank(draft.emoji),
-              ),
-            ),
-            privacy: Value(
-              await _encryptMember(
-                memberId,
-                'privacy',
-                _nullIfBlank(draft.privacy),
-              ),
-            ),
-            description: Value(
-              await _encryptMember(
-                memberId,
-                'description',
-                _nullIfBlank(draft.description),
-              ),
-            ),
-            avatarUrl: Value(
-              await _encryptMember(
-                memberId,
-                'avatar_url',
-                _nullIfBlank(draft.avatarUrl),
-              ),
-            ),
-            pluralKitId: Value(
-              await _encryptMember(
-                memberId,
-                'pluralkit_id',
-                _nullIfBlank(draft.pluralKitId),
-              ),
-            ),
-            folderId: Value(folderId),
-            updatedAt: Value(now),
-          ),
-        );
-    await _replaceGroupMemberships(memberId: memberId, groupIds: groupIds);
-  }
-
-  Set<String> _normalizedMemberGroupIds(MemberDraft draft) {
-    final ids = <String>{};
-    for (final groupId in draft.groupIds ?? const <String>[]) {
-      final normalized = _nullIfBlank(groupId);
-      if (normalized != null) {
-        ids.add(normalized);
-      }
-    }
-    final primaryGroupId = _nullIfBlank(draft.folderId);
-    if (primaryGroupId != null) {
-      ids.add(primaryGroupId);
-    }
-    return ids;
-  }
-
-  Future<Set<String>> _memberGroupIds(String memberId) async {
-    final links = await (database.select(
-      database.groupMembers,
-    )..where((link) => link.memberId.equals(memberId))).get();
-    return {for (final link in links) link.groupId};
-  }
-
-  Future<void> _replaceGroupMemberships({
-    required String memberId,
-    required Set<String> groupIds,
-  }) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.groupMembers,
-      )..where((link) => link.memberId.equals(memberId))).go();
-
-      for (final groupId in groupIds) {
-        await database
-            .into(database.groupMembers)
-            .insert(
-              GroupMembersCompanion.insert(
-                groupId: groupId,
-                memberId: memberId,
-              ),
-              mode: InsertMode.insertOrIgnore,
-            );
-      }
-    });
-  }
+  Future<void> updateMember(String memberId, MemberDraft draft) =>
+      _members.update(memberId, draft);
 
   Future<String?> _migrateNullableLocalText(
     String? stored,
@@ -3142,41 +2641,12 @@ SELECT
         : _migrateLocalText(stored, table, rowId, column);
   }
 
-  String? _firstOrNull(Set<String> values) {
-    return values.isEmpty ? null : values.first;
-  }
+  @override
+  Future<void> restoreMember(String memberId) =>
+      _members.archive(memberId, archived: false);
 
   @override
-  Future<void> restoreMember(String memberId) async {
-    final now = DateTime.now().toUtc();
-    await (database.update(database.members)..where(
-          (member) =>
-              member.systemId.equals(localSystemId) &
-              member.id.equals(memberId),
-        ))
-        .write(
-          MembersCompanion(archived: const Value(false), updatedAt: Value(now)),
-        );
-  }
-
-  @override
-  Future<void> deleteMember(String memberId) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.frontSessionMembers,
-      )..where((frontMember) => frontMember.memberId.equals(memberId))).go();
-      await (database.delete(
-        database.groupMembers,
-      )..where((groupMember) => groupMember.memberId.equals(memberId))).go();
-      await (database.delete(database.members)..where(
-            (member) =>
-                member.systemId.equals(localSystemId) &
-                member.id.equals(memberId),
-          ))
-          .go();
-    });
-    _memberDecryptCache.removeWhere((key, _) => key.$1 == memberId);
-  }
+  Future<void> deleteMember(String memberId) => _members.delete(memberId);
 
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) async {
@@ -5954,6 +5424,10 @@ SELECT
       ),
       isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
+      lexoRank: await _members.rankForImport(
+        id,
+        _stringValue(member['lexo_rank']),
+      ),
       createdAt: _dateValue(member['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -7158,17 +6632,7 @@ SELECT
     String memberId,
     String? prevRank,
     String? nextRank,
-  ) async {
-    final newRank = Lexorank.between(prevRank, nextRank);
-    await (database.update(
-      database.members,
-    )..where((m) => m.id.equals(memberId))).write(
-      MembersCompanion(
-        lexoRank: Value(newRank),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
-  }
+  ) => _members.reorder(memberId, prevRank, nextRank);
 
   Future<void> _endOpenFrontSessions(DateTime endedAt) {
     return (database.update(database.frontSessions)..where(

@@ -52,7 +52,7 @@ class Members extends Table {
   TextColumn get avatarUrl => text().nullable()();
   TextColumn get pluralKitId => text().nullable()();
   TextColumn get frameShape => text().withDefault(const Constant('circle'))();
-  TextColumn get lexoRank => text().withDefault(const Constant('0|zzzzzz'))();
+  TextColumn get lexoRank => text()();
   BoolColumn get isCustomFront =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
@@ -475,9 +475,9 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
-  // `migrator.createTable(x)` always creates `x` using its CURRENT (v17)
+  // `migrator.createTable(x)` always creates `x` using its CURRENT (v18)
   // Dart column definition - there is no per-historical-version table shape
   // stored anywhere, and `CREATE TABLE IF NOT EXISTS` means it happily
   // no-ops if the table is already there. That has a sharp edge: if a
@@ -494,13 +494,20 @@ class AppDatabase extends _$AppDatabase {
     TableInfo<Table, dynamic> table,
     GeneratedColumn column,
   ) async {
+    if (!await _hasColumn(migrator, table, column.name)) {
+      await migrator.addColumn(table, column);
+    }
+  }
+
+  static Future<bool> _hasColumn(
+    Migrator migrator,
+    TableInfo<Table, dynamic> table,
+    String columnName,
+  ) async {
     final existing = await migrator.database
         .customSelect('PRAGMA table_info(${table.actualTableName})')
         .get();
-    final hasColumn = existing.any((row) => row.data['name'] == column.name);
-    if (!hasColumn) {
-      await migrator.addColumn(table, column);
-    }
+    return existing.any((row) => row.data['name'] == columnName);
   }
 
   @override
@@ -534,7 +541,12 @@ class AppDatabase extends _$AppDatabase {
         // Members: add blind-index hash + frame shape + lexo rank for ordering.
         await _addColumnIfMissing(migrator, members, members.displayNameHash);
         await _addColumnIfMissing(migrator, members, members.frameShape);
-        await _addColumnIfMissing(migrator, members, members.lexoRank);
+        if (!await _hasColumn(migrator, members, members.lexoRank.name)) {
+          await migrator.database.customStatement(
+            "ALTER TABLE members ADD COLUMN lexo_rank "
+            "TEXT NOT NULL DEFAULT '0|zzzzzz'",
+          );
+        }
         // Messages: two-board model + reply chain + soft delete.
         await _addColumnIfMissing(migrator, messages, messages.boardKind);
         await _addColumnIfMissing(migrator, messages, messages.boardMemberId);
@@ -640,6 +652,11 @@ class AppDatabase extends _$AppDatabase {
           members,
           members.profileEncryptionVersion,
         );
+      }
+      if (from < 18) {
+        // New member writes always assign a unique rank. Rebuild the table so
+        // SQLite cannot silently insert the old shared tail sentinel.
+        await migrator.alterTable(TableMigration(members));
       }
     },
     beforeOpen: (details) async {

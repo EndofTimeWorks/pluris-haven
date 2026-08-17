@@ -1282,8 +1282,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('0|zzzzzz'),
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _isCustomFrontMeta = const VerificationMeta(
     'isCustomFront',
@@ -1485,6 +1484,8 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         _lexoRankMeta,
         lexoRank.isAcceptableOrUnknown(data['lexo_rank']!, _lexoRankMeta),
       );
+    } else if (isInserting) {
+      context.missing(_lexoRankMeta);
     }
     if (data.containsKey('is_custom_front')) {
       context.handle(
@@ -2030,7 +2031,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.avatarUrl = const Value.absent(),
     this.pluralKitId = const Value.absent(),
     this.frameShape = const Value.absent(),
-    this.lexoRank = const Value.absent(),
+    required String lexoRank,
     this.isCustomFront = const Value.absent(),
     this.archived = const Value.absent(),
     required DateTime createdAt,
@@ -2039,6 +2040,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   }) : id = Value(id),
        systemId = Value(systemId),
        displayName = Value(displayName),
+       lexoRank = Value(lexoRank),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<Member> custom({
@@ -18147,7 +18149,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<String?> avatarUrl,
       Value<String?> pluralKitId,
       Value<String> frameShape,
-      Value<String> lexoRank,
+      required String lexoRank,
       Value<bool> isCustomFront,
       Value<bool> archived,
       required DateTime createdAt,
@@ -19158,7 +19160,7 @@ class $$MembersTableTableManager
                 Value<String?> avatarUrl = const Value.absent(),
                 Value<String?> pluralKitId = const Value.absent(),
                 Value<String> frameShape = const Value.absent(),
-                Value<String> lexoRank = const Value.absent(),
+                required String lexoRank,
                 Value<bool> isCustomFront = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
                 required DateTime createdAt,
