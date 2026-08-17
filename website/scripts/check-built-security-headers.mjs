@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const buildDirectory = fileURLToPath(new URL('../build/', import.meta.url));
 const headersPath = join(buildDirectory, '_headers');
 const headers = await readFile(headersPath, 'utf8');
+const securityText = await readFile(join(buildDirectory, '.well-known', 'security.txt'), 'utf8');
 
 const requiredHeaders = [
   'X-Content-Type-Options: nosniff',
@@ -16,6 +17,12 @@ const requiredHeaders = [
 const failures = requiredHeaders
   .filter((value) => !headers.includes(value))
   .map((value) => `_headers: missing ${value}`);
+
+const expires = securityText.match(/^Expires:\s*(\S+)$/m)?.[1];
+const expiry = expires === undefined ? Number.NaN : Date.parse(expires);
+if (!Number.isFinite(expiry) || expiry <= Date.now()) {
+  failures.push('security.txt: missing or expired Expires field');
+}
 
 async function htmlFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });

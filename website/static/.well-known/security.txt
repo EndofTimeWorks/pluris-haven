@@ -1,3 +1,4 @@
 Contact: https://github.com/EndofTimeWorks/pluris-haven/issues
+Expires: 2027-08-15T23:59:59Z
 Preferred-Languages: en
 Canonical: https://pluris.endoftime.works/.well-known/security.txt
