@@ -3,6 +3,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -168,7 +169,7 @@ class BackupSnapshot(Base):
     snapshot_id: Mapped[str] = mapped_column(String(128))
     manifest_sha256: Mapped[str] = mapped_column(String(64))
     chunk_count: Mapped[int]
-    total_bytes: Mapped[int]
+    total_bytes: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
