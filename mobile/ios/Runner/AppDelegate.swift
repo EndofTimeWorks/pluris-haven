@@ -50,6 +50,19 @@ import UniformTypeIdentifiers
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     backgroundControl.setMethodCallHandler(handleBackgroundControl)
+    let timezoneChannel = FlutterMethodChannel(
+      name: "works.endoftime.plurishaven/timezone",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    timezoneChannel.setMethodCallHandler(handleTimezoneCall)
+  }
+
+  private func handleTimezoneCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    if call.method == "getLocalTimezone" {
+      result(TimeZone.current.identifier)
+    } else {
+      result(FlutterMethodNotImplemented)
+    }
   }
 
   private func topViewController() -> UIViewController? {

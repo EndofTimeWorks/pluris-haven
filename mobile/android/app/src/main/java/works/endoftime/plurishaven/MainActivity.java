@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
@@ -39,6 +40,8 @@ import io.flutter.plugin.common.MethodChannel;
 public final class MainActivity extends FlutterFragmentActivity {
     private static final String FILE_DIALOG_CHANNEL =
             "works.endoftime.plurishaven/file_dialog";
+    private static final String TIMEZONE_CHANNEL =
+            "works.endoftime.plurishaven/timezone";
 
     private MethodChannel.Result pendingPickResult;
     private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
@@ -118,6 +121,18 @@ public final class MainActivity extends FlutterFragmentActivity {
                 flutterEngine.getDartExecutor().getBinaryMessenger(),
                 PlurisBackgroundWorker.CONTROL_CHANNEL
         ).setMethodCallHandler(this::handleBackgroundTaskCall);
+        new MethodChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                TIMEZONE_CHANNEL
+        ).setMethodCallHandler(this::handleTimezoneCall);
+    }
+
+    private void handleTimezoneCall(MethodCall call, MethodChannel.Result result) {
+        if ("getLocalTimezone".equals(call.method)) {
+            result.success(TimeZone.getDefault().getID());
+        } else {
+            result.notImplemented();
+        }
     }
 
     private void handleBackgroundTaskCall(
