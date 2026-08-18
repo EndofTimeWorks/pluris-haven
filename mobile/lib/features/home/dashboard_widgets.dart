@@ -58,40 +58,49 @@ class SpDashboardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _spCard,
-          foregroundColor: _spText,
-          elevation: 0,
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(item.icon, color: _spGold, size: 22),
-            SizedBox(height: compact ? 10 : 14),
-            Text(
-              item.title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, height: 1.15),
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: MediaQuery.textScalerOf(
+          context,
+        ).clamp(maxScaleFactor: 1.3),
+      ),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ElevatedButton(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _spCard,
+            foregroundColor: _spText,
+            elevation: 0,
+            padding: const EdgeInsets.all(10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
-            if (showSubtitle && !compact) ...[
-              const SizedBox(height: 5),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(item.icon, color: _spGold, size: 22),
+              SizedBox(height: compact ? 10 : 14),
               Text(
-                item.subtitle,
+                item.title,
                 textAlign: TextAlign.center,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: _spMuted, fontSize: 11),
+                style: const TextStyle(fontSize: 12, height: 1.15),
               ),
+              if (showSubtitle && !compact) ...[
+                const SizedBox(height: 5),
+                Text(
+                  item.subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _spMuted, fontSize: 11),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
