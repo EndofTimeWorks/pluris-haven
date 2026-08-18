@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest an idea or improvement for Pluris Haven.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Product-facing suggestions should fit the language and inclusion rules
+        in [docs/product-goals.md](../../docs/product-goals.md) — for example,
+        nothing that requires an account for a local feature, or that asks
+        someone to prove or medicalise their identity.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Mobile app (Android)
+        - Mobile app (iOS)
+        - Server
+        - Website
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What's missing or awkward today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

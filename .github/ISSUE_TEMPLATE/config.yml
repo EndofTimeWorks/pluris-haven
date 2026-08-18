@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/EndofTimeWorks/pluris-haven/security/policy
+    about: Please do not report vulnerabilities through a public issue. See SECURITY.md.
+  - name: Translations
+    url: https://github.com/EndofTimeWorks/pluris-haven/blob/main/TRANSLATING.md
+    about: Add or fix a language.

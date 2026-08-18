@@ -1,0 +1,75 @@
+name: Bug report
+description: Something in Pluris Haven isn't working as expected.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Please do not include real
+        exports, passwords, tokens, or private avatars anywhere in this report.
+        For a security vulnerability, use [SECURITY.md](../../SECURITY.md)
+        instead of a public issue.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Mobile app (Android)
+        - Mobile app (iOS)
+        - Server
+        - Website
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version or commit
+      placeholder: e.g. 0.2.0-pre-alpha.2, or a commit hash
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Device and OS
+      placeholder: e.g. Pixel 8, Android 15
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste any error output here. This field is rendered as code automatically.
+      render: shell
+    validations:
+      required: false
