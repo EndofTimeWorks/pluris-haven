@@ -1453,7 +1453,7 @@ class LocalArchiveSheet extends StatelessWidget {
       return;
     }
     final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: archive));
+    await SensitiveClipboard.copy(archive);
     messenger.showSnackBar(SnackBar(content: Text(l10n.archiveCopied)));
   }
 

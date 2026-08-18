@@ -2,10 +2,14 @@ package works.endoftime.plurishaven;
 
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ClipDescription;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.provider.OpenableColumns;
 import android.view.WindowManager;
 
@@ -44,6 +48,8 @@ public final class MainActivity extends FlutterFragmentActivity {
             "works.endoftime.plurishaven/file_dialog";
     private static final String TIMEZONE_CHANNEL =
             "works.endoftime.plurishaven/timezone";
+    private static final String CLIPBOARD_CHANNEL =
+            "works.endoftime.plurishaven/clipboard";
 
     private MethodChannel.Result pendingPickResult;
     private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
@@ -135,6 +141,10 @@ public final class MainActivity extends FlutterFragmentActivity {
                 flutterEngine.getDartExecutor().getBinaryMessenger(),
                 TIMEZONE_CHANNEL
         ).setMethodCallHandler(this::handleTimezoneCall);
+        new MethodChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                CLIPBOARD_CHANNEL
+        ).setMethodCallHandler(this::handleClipboardCall);
     }
 
     private void handleTimezoneCall(MethodCall call, MethodChannel.Result result) {
@@ -143,6 +153,28 @@ public final class MainActivity extends FlutterFragmentActivity {
         } else {
             result.notImplemented();
         }
+    }
+
+    private void handleClipboardCall(MethodCall call, MethodChannel.Result result) {
+        if (!"copySensitive".equals(call.method)) {
+            result.notImplemented();
+            return;
+        }
+        String text = call.argument("text");
+        if (text == null) {
+            result.error("invalid_argument", "Missing clipboard text.", null);
+            return;
+        }
+        ClipboardManager clipboard =
+                (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("Pluris Haven", text);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            PersistableBundle extras = new PersistableBundle();
+            extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+            clip.getDescription().setExtras(extras);
+        }
+        clipboard.setPrimaryClip(clip);
+        result.success(null);
     }
 
     private void handleBackgroundTaskCall(
