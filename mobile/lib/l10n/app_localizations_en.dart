@@ -3768,6 +3768,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyReportButton => 'Copy report';
 
   @override
+  String get reportBugButton => 'Report a bug';
+
+  @override
   String get relatedTitle => 'Related';
 
   @override

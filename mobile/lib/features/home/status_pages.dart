@@ -375,10 +375,22 @@ class UserReportPage extends StatelessWidget {
                 style: const TextStyle(color: _spMuted, height: 1.35),
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () => _copyReport(context, report),
-                icon: const Icon(Icons.copy_rounded),
-                label: Text(l10n.copyReportButton),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => _copyReport(context, report),
+                    icon: const Icon(Icons.copy_rounded),
+                    label: Text(l10n.copyReportButton),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        launchExternalUrl(context, _bugReportUri(report)),
+                    icon: const Icon(Icons.bug_report_outlined),
+                    label: Text(l10n.reportBugButton),
+                  ),
+                ],
               ),
             ],
           ),
@@ -422,6 +434,14 @@ class UserReportPage extends StatelessWidget {
       l10n.localReportStorage,
       l10n.localReportSync,
     ].join('\n');
+  }
+
+  Uri _bugReportUri(String report) {
+    return Uri.https('github.com', '/EndofTimeWorks/pluris-haven/issues/new', {
+      'template': 'bug_report.yml',
+      'labels': 'bug',
+      'logs': report,
+    });
   }
 
   Future<void> _copyReport(BuildContext context, String report) async {

@@ -1417,6 +1417,7 @@
   "requiresSyncSetupSubtitle": "requires sync setup",
   "userReportDescription": "A small local snapshot you can copy before filing a bug. It excludes system and front names.",
   "copyReportButton": "Copy report",
+  "reportBugButton": "Report a bug",
   "relatedTitle": "Related",
   "importJobsTitle": "Import jobs",
   "importJobsSubtitle": "open import details and errors",

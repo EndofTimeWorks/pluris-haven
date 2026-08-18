@@ -6522,6 +6522,12 @@ abstract class AppLocalizations {
   /// **'Copy report'**
   String get copyReportButton;
 
+  /// No description provided for @reportBugButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a bug'**
+  String get reportBugButton;
+
   /// No description provided for @relatedTitle.
   ///
   /// In en, this message translates to:
