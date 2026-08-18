@@ -894,6 +894,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'The import file is larger than the 32 MiB safety limit. If this is a legitimate export, report it so the limit can be reviewed.';
 
   @override
+  String get oversizedImportWarningTitle => 'Import a file over 32 MiB?';
+
+  @override
+  String get oversizedImportWarningBody =>
+      'This file is larger than the recommended safety limit. Very large imports can run slowly or run out of memory, especially on older or low-memory devices. A higher 200 MiB limit will apply for this import, and you\'ll need to choose the file again on the next screen.';
+
+  @override
+  String get oversizedImportConfirmButton => 'Import anyway';
+
+  @override
   String get importFileInvalidUtf8 =>
       'The import file is not valid UTF-8 text.';
 

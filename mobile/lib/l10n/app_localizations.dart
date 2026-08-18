@@ -1728,6 +1728,24 @@ abstract class AppLocalizations {
   /// **'The import file is larger than the 32 MiB safety limit. If this is a legitimate export, report it so the limit can be reviewed.'**
   String get importFileTooLarge;
 
+  /// No description provided for @oversizedImportWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a file over 32 MiB?'**
+  String get oversizedImportWarningTitle;
+
+  /// No description provided for @oversizedImportWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is larger than the recommended safety limit. Very large imports can run slowly or run out of memory, especially on older or low-memory devices. A higher 200 MiB limit will apply for this import, and you\'ll need to choose the file again on the next screen.'**
+  String get oversizedImportWarningBody;
+
+  /// No description provided for @oversizedImportConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import anyway'**
+  String get oversizedImportConfirmButton;
+
   /// No description provided for @importFileInvalidUtf8.
   ///
   /// In en, this message translates to:

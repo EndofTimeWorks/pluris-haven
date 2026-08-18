@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 enum NativeFileType { custom, image }
 
 const maximumNativePickedFileBytes = 32 * 1024 * 1024;
+const maximumOverriddenPickedFileBytes = 200 * 1024 * 1024;
 const _exportTemporaryDirectoryPrefix = 'pluris-haven-export-';
 
 final class NativePickedFileTooLargeException implements Exception {

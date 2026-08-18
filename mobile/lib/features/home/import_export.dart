@@ -150,6 +150,54 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
   }
 
+  Future<({NativeFileResult? result, bool usedOverride})>
+  _pickFilesAllowingSizeOverride({
+    required String dialogTitle,
+    required List<String> allowedExtensions,
+  }) async {
+    try {
+      final result = await NativeFileDialog.pickFiles(
+        dialogTitle: dialogTitle,
+        type: NativeFileType.custom,
+        allowedExtensions: allowedExtensions,
+      );
+      return (result: result, usedOverride: false);
+    } on NativePickedFileTooLargeException {
+      if (!mounted) rethrow;
+      final proceed = await _confirmOversizedFileImport();
+      if (!mounted || !proceed) rethrow;
+      final result = await NativeFileDialog.pickFiles(
+        dialogTitle: dialogTitle,
+        type: NativeFileType.custom,
+        allowedExtensions: allowedExtensions,
+        maximumBytes: maximumOverriddenPickedFileBytes,
+      );
+      return (result: result, usedOverride: true);
+    }
+  }
+
+  Future<bool> _confirmOversizedFileImport() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.oversizedImportWarningTitle),
+        content: Text(l10n.oversizedImportWarningBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.oversizedImportConfirmButton),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _pickImportFile() async {
     final l10n = AppLocalizations.of(context);
     setState(() {
@@ -158,12 +206,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _canReportImportIssue = false;
     });
     NativeFileResult? result;
+    bool usedOverride;
     try {
-      result = await NativeFileDialog.pickFiles(
+      final picked = await _pickFilesAllowingSizeOverride(
         dialogTitle: l10n.chooseImportFileTitle,
-        type: NativeFileType.custom,
         allowedExtensions: ['json', 'zip', 'prism', 'txt'],
       );
+      result = picked.result;
+      usedOverride = picked.usedOverride;
     } on NativePickedFileTooLargeException {
       if (mounted) {
         setState(() {
@@ -193,14 +243,21 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     final file = result.files.single;
+    final maximumBytes = usedOverride
+        ? maximumOverriddenPickedFileBytes
+        : maximumNativePickedFileBytes;
     setState(() {
       _importStatus = l10n.readingFileStatus(file.name);
     });
     DecodedImportFile decoded;
     try {
-      final bytes = await _pickedFileBytes(file);
+      final bytes = await _pickedFileBytes(file, maximumBytes: maximumBytes);
       if (!mounted) return;
-      decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
+      decoded = await decodeImportFileBytes(
+        fileName: file.name,
+        bytes: bytes,
+        maximumBytes: maximumBytes,
+      );
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
@@ -243,12 +300,14 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _canReportImportIssue = false;
     });
     NativeFileResult? result;
+    bool usedOverride;
     try {
-      result = await NativeFileDialog.pickFiles(
+      final picked = await _pickFilesAllowingSizeOverride(
         dialogTitle: l10n.chooseAvatarZipTitle,
-        type: NativeFileType.custom,
         allowedExtensions: ['zip'],
       );
+      result = picked.result;
+      usedOverride = picked.usedOverride;
     } on NativePickedFileTooLargeException {
       if (mounted) {
         setState(() {
@@ -278,14 +337,21 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
 
     final file = result.files.single;
+    final maximumBytes = usedOverride
+        ? maximumOverriddenPickedFileBytes
+        : maximumNativePickedFileBytes;
     setState(() {
       _importStatus = l10n.readingAvatarsStatus(file.name);
     });
     DecodedImportFile decoded;
     try {
-      final bytes = await _pickedFileBytes(file);
+      final bytes = await _pickedFileBytes(file, maximumBytes: maximumBytes);
       if (!mounted) return;
-      decoded = await decodeImportFileBytes(fileName: file.name, bytes: bytes);
+      decoded = await decodeImportFileBytes(
+        fileName: file.name,
+        bytes: bytes,
+        maximumBytes: maximumBytes,
+      );
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
@@ -461,12 +527,17 @@ class _ImportExportPageState extends State<ImportExportPage> {
     }
   }
 
-  Future<Uint8List?> _pickedFileBytes(NativePlatformFile file) async {
+  Future<Uint8List?> _pickedFileBytes(
+    NativePlatformFile file, {
+    int maximumBytes = maximumNativePickedFileBytes,
+  }) async {
     final path = file.path;
     try {
-      if (file.size > maximumNativePickedFileBytes) {
+      if (file.size > maximumBytes) {
         await file.dispose();
-        throw const FormatException('Selected file exceeds the 32 MiB limit.');
+        throw FormatException(
+          'Selected file exceeds the $maximumBytes byte limit.',
+        );
       }
       return await file.readBytes();
     } on Object catch (error) {

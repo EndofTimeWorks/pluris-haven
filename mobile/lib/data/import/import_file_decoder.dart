@@ -54,11 +54,12 @@ const _maxZipExpandedBytes = 50 * 1024 * 1024;
 Future<DecodedImportFile> decodeImportFileBytes({
   required String fileName,
   required Uint8List? bytes,
+  int maximumBytes = _maxImportBytes,
 }) async {
   if (bytes == null || bytes.isEmpty) {
     throw const ImportFileDecodeException(ImportFileDecodeFailure.empty);
   }
-  if (bytes.length > _maxImportBytes) {
+  if (bytes.length > maximumBytes) {
     throw const ImportFileDecodeException(ImportFileDecodeFailure.tooLarge);
   }
   final transferable = TransferableTypedData.fromList([bytes]);
