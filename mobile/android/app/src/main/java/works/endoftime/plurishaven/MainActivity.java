@@ -5,7 +5,9 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.view.WindowManager;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -106,6 +108,14 @@ public final class MainActivity extends FlutterFragmentActivity {
                             result.error("save_failed", error.getMessage(), null);
                         }
                     });
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // Screenshots and screen recordings of this app show a black
+        // rectangle instead of member, front, or journal content.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
