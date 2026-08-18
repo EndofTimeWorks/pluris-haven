@@ -355,6 +355,10 @@ abstract interface class HavenRepository {
 
   Future<void> setFrontStatusNotification(bool enabled);
 
+  Future<void> setFrontStatusShowOnLockScreen(bool showOnLockScreen);
+
+  Future<void> setFrontStatusRevealMemberName(bool revealMemberName);
+
   Future<void> setHighContrast(bool highContrast);
 
   Future<void> setLargeText(bool largeText);
@@ -2251,6 +2255,14 @@ SELECT
   @override
   Future<void> setFrontStatusNotification(bool enabled) =>
       _customization.setFrontStatusNotification(enabled);
+
+  @override
+  Future<void> setFrontStatusShowOnLockScreen(bool showOnLockScreen) =>
+      _customization.setFrontStatusShowOnLockScreen(showOnLockScreen);
+
+  @override
+  Future<void> setFrontStatusRevealMemberName(bool revealMemberName) =>
+      _customization.setFrontStatusRevealMemberName(revealMemberName);
 
   @override
   Future<void> setHighContrast(bool highContrast) =>

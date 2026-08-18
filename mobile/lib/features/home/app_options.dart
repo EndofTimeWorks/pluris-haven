@@ -3,10 +3,12 @@ part of 'home_page.dart';
 class AppOptionsPage extends StatelessWidget {
   const AppOptionsPage({
     super.key,
+    required this.snapshot,
     required this.customization,
     required this.repository,
   });
 
+  final HomeSnapshot? snapshot;
   final AppCustomization customization;
   final HavenRepository repository;
 
@@ -88,6 +90,31 @@ class AppOptionsPage extends StatelessWidget {
                 }
               },
             ),
+            if (customization.frontStatusNotification &&
+                defaultTargetPlatform == TargetPlatform.android) ...[
+              SpSwitchRow(
+                title: l10n.frontStatusShowOnLockScreenTitle,
+                subtitle: l10n.frontStatusShowOnLockScreenSubtitle,
+                value: customization.frontStatusShowOnLockScreen,
+                onChanged: (value) async {
+                  await repository.setFrontStatusShowOnLockScreen(value);
+                  if (context.mounted) {
+                    await _refreshFrontStatusNotification(context);
+                  }
+                },
+              ),
+              SpSwitchRow(
+                title: l10n.frontStatusRevealMemberNameTitle,
+                subtitle: l10n.frontStatusRevealMemberNameSubtitle,
+                value: customization.frontStatusRevealMemberName,
+                onChanged: (value) async {
+                  await repository.setFrontStatusRevealMemberName(value);
+                  if (context.mounted) {
+                    await _refreshFrontStatusNotification(context);
+                  }
+                },
+              ),
+            ],
             SpSwitchRow(
               title: l10n.highContrastTitle,
               subtitle: l10n.highContrastSubtitle,
@@ -131,6 +158,19 @@ class AppOptionsPage extends StatelessWidget {
       HavenThemeMode.light => HavenThemeMode.system,
       HavenThemeMode.system => HavenThemeMode.dark,
     };
+  }
+
+  Future<void> _refreshFrontStatusNotification(BuildContext context) async {
+    final frontLabel = snapshot?.currentFrontLabel?.trim();
+    if (frontLabel == null || frontLabel.isEmpty) return;
+    final l10n = AppLocalizations.of(context);
+    final updated = await repository.loadCustomization();
+    await NotificationService.instance.showFrontStatusNotification(
+      frontLabel: frontLabel,
+      copy: _notificationCopy(l10n),
+      showOnLockScreen: updated.frontStatusShowOnLockScreen,
+      revealMemberName: updated.frontStatusRevealMemberName,
+    );
   }
 }
 

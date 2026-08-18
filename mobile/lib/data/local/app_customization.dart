@@ -48,6 +48,8 @@ class AppCustomization {
     required this.showDashboardSubtitles,
     required this.reducedMotion,
     required this.frontStatusNotification,
+    required this.frontStatusShowOnLockScreen,
+    required this.frontStatusRevealMemberName,
     required this.highContrast,
     required this.largeText,
     required this.compactLists,
@@ -62,6 +64,8 @@ class AppCustomization {
   final bool showDashboardSubtitles;
   final bool reducedMotion;
   final bool frontStatusNotification;
+  final bool frontStatusShowOnLockScreen;
+  final bool frontStatusRevealMemberName;
   final bool highContrast;
   final bool largeText;
   final bool compactLists;
@@ -83,6 +87,8 @@ class AppCustomization {
     showDashboardSubtitles: true,
     reducedMotion: false,
     frontStatusNotification: false,
+    frontStatusShowOnLockScreen: false,
+    frontStatusRevealMemberName: false,
     highContrast: false,
     largeText: false,
     compactLists: false,
@@ -98,6 +104,8 @@ class AppCustomization {
     bool? showDashboardSubtitles,
     bool? reducedMotion,
     bool? frontStatusNotification,
+    bool? frontStatusShowOnLockScreen,
+    bool? frontStatusRevealMemberName,
     bool? highContrast,
     bool? largeText,
     bool? compactLists,
@@ -116,6 +124,10 @@ class AppCustomization {
       reducedMotion: reducedMotion ?? this.reducedMotion,
       frontStatusNotification:
           frontStatusNotification ?? this.frontStatusNotification,
+      frontStatusShowOnLockScreen:
+          frontStatusShowOnLockScreen ?? this.frontStatusShowOnLockScreen,
+      frontStatusRevealMemberName:
+          frontStatusRevealMemberName ?? this.frontStatusRevealMemberName,
       highContrast: highContrast ?? this.highContrast,
       largeText: largeText ?? this.largeText,
       compactLists: compactLists ?? this.compactLists,
@@ -176,6 +188,12 @@ class LocalAppCustomizationStore {
   Future<void> setFrontStatusNotification(bool value) =>
       _write(_frontStatusNotificationKey, value.toString());
 
+  Future<void> setFrontStatusShowOnLockScreen(bool value) =>
+      _write(_frontStatusShowOnLockScreenKey, value.toString());
+
+  Future<void> setFrontStatusRevealMemberName(bool value) =>
+      _write(_frontStatusRevealMemberNameKey, value.toString());
+
   Future<void> setHighContrast(bool value) =>
       _write(_highContrastKey, value.toString());
 
@@ -233,6 +251,12 @@ class LocalAppCustomizationStore {
       ),
       reducedMotion: _readBool(values[_reducedMotionKey]),
       frontStatusNotification: _readBool(values[_frontStatusNotificationKey]),
+      frontStatusShowOnLockScreen: _readBool(
+        values[_frontStatusShowOnLockScreenKey],
+      ),
+      frontStatusRevealMemberName: _readBool(
+        values[_frontStatusRevealMemberNameKey],
+      ),
       highContrast: _readBool(values[_highContrastKey]),
       largeText: _readBool(values[_largeTextKey]),
       compactLists: _readBool(values[_compactListsKey]),
@@ -304,6 +328,8 @@ const _compactDashboardKey = 'compact_dashboard';
 const _showDashboardSubtitlesKey = 'show_dashboard_subtitles';
 const _reducedMotionKey = 'reduced_motion';
 const _frontStatusNotificationKey = 'front_status_notification';
+const _frontStatusShowOnLockScreenKey = 'front_status_show_on_lock_screen';
+const _frontStatusRevealMemberNameKey = 'front_status_reveal_member_name';
 const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';

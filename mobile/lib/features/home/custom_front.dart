@@ -420,6 +420,8 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
         await NotificationService.instance.showFrontStatusNotification(
           frontLabel: hasFront ? frontLabel : null,
           copy: notificationCopy,
+          showOnLockScreen: customization.frontStatusShowOnLockScreen,
+          revealMemberName: customization.frontStatusRevealMemberName,
         );
       } else {
         await NotificationService.instance.cancelFrontStatusNotification();

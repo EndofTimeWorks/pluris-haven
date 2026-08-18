@@ -49,6 +49,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'keep the current front visible in Android status';
 
   @override
+  String get frontStatusShowOnLockScreenTitle => 'Show on lock screen';
+
+  @override
+  String get frontStatusShowOnLockScreenSubtitle =>
+      'reveal this notification before the device is unlocked';
+
+  @override
+  String get frontStatusRevealMemberNameTitle => 'Show fronting member\'s name';
+
+  @override
+  String get frontStatusRevealMemberNameSubtitle =>
+      'otherwise the notification only says Pluris Haven is active';
+
+  @override
   String get plurisHavenAppName => 'Pluris Haven';
 
   @override

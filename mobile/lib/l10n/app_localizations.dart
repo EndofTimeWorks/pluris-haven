@@ -175,6 +175,30 @@ abstract class AppLocalizations {
   /// **'keep the current front visible in Android status'**
   String get frontingNotificationSubtitle;
 
+  /// No description provided for @frontStatusShowOnLockScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on lock screen'**
+  String get frontStatusShowOnLockScreenTitle;
+
+  /// No description provided for @frontStatusShowOnLockScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'reveal this notification before the device is unlocked'**
+  String get frontStatusShowOnLockScreenSubtitle;
+
+  /// No description provided for @frontStatusRevealMemberNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show fronting member\'s name'**
+  String get frontStatusRevealMemberNameTitle;
+
+  /// No description provided for @frontStatusRevealMemberNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'otherwise the notification only says Pluris Haven is active'**
+  String get frontStatusRevealMemberNameSubtitle;
+
   /// No description provided for @plurisHavenAppName.
   ///
   /// In en, this message translates to:

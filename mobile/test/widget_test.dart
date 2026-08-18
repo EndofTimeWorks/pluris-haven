@@ -2753,6 +2753,22 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setFrontStatusShowOnLockScreen(bool showOnLockScreen) async {
+    _customization = _customization.copyWith(
+      frontStatusShowOnLockScreen: showOnLockScreen,
+    );
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setFrontStatusRevealMemberName(bool revealMemberName) async {
+    _customization = _customization.copyWith(
+      frontStatusRevealMemberName: revealMemberName,
+    );
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<void> setHighContrast(bool highContrast) async {
     _customization = _customization.copyWith(highContrast: highContrast);
     _customizationController.add(_customization);

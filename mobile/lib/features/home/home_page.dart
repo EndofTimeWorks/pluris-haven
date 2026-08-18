@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -276,6 +277,7 @@ class _HomePageState extends State<HomePage> {
         );
       case SpSection.appOptions:
         return AppOptionsPage(
+          snapshot: home,
           customization: customization,
           repository: widget.repository,
         );

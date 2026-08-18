@@ -191,6 +191,8 @@ class NotificationService {
   Future<void> showFrontStatusNotification({
     required String? frontLabel,
     required NotificationCopy copy,
+    bool showOnLockScreen = false,
+    bool revealMemberName = false,
   }) async {
     if (_plugin == null) return;
     final label = frontLabel?.trim();
@@ -212,7 +214,9 @@ class NotificationService {
       showWhen: false,
       silent: true,
       category: AndroidNotificationCategory.status,
-      visibility: NotificationVisibility.secret,
+      visibility: showOnLockScreen
+          ? NotificationVisibility.public
+          : NotificationVisibility.secret,
     );
     final details = NotificationDetails(
       android: androidDetails,
@@ -223,11 +227,15 @@ class NotificationService {
       ),
     );
 
-    final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
+    // iOS has no persistent-notification affordance equivalent to Android's
+    // status-bar icon, so it always uses the generic copy regardless of
+    // revealMemberName.
+    final hideContent =
+        defaultTargetPlatform == TargetPlatform.iOS || !revealMemberName;
     await _plugin!.show(
       id: frontStatusNotificationId,
-      title: hideAppleContent ? copy.appName : copy.currentlyFrontingTitle,
-      body: hideAppleContent ? copy.privateBody : label,
+      title: hideContent ? copy.appName : copy.currentlyFrontingTitle,
+      body: hideContent ? copy.privateBody : label,
       notificationDetails: details,
     );
   }
