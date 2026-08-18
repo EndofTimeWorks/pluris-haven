@@ -164,6 +164,15 @@ class _ImportExportPageState extends State<ImportExportPage> {
         type: NativeFileType.custom,
         allowedExtensions: ['json', 'zip', 'prism', 'txt'],
       );
+    } on NativePickedFileTooLargeException {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = l10n.importFileTooLarge;
+          _canReportImportIssue = true;
+        });
+      }
+      return;
     } on Object {
       if (mounted) {
         setState(() {
@@ -240,6 +249,15 @@ class _ImportExportPageState extends State<ImportExportPage> {
         type: NativeFileType.custom,
         allowedExtensions: ['zip'],
       );
+    } on NativePickedFileTooLargeException {
+      if (mounted) {
+        setState(() {
+          _isPickingImport = false;
+          _importStatus = l10n.importFileTooLarge;
+          _canReportImportIssue = true;
+        });
+      }
+      return;
     } on Object {
       if (mounted) {
         setState(() {
