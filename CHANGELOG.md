@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.0-pre-alpha.1 - 2026-08-18
+
+Android privacy hardening: `0.3.0-pre-alpha.1+3001`.
+
+### Mobile privacy and security
+
+- Screenshots and screen recordings of the app now show a black rectangle on
+  Android instead of member, front, or journal content.
+- Added an optional app lock: the app can require the device's own screen
+  lock (biometric, PIN, pattern, or password) before it opens, and re-locks
+  whenever the app is backgrounded. No separate app-specific secret is
+  stored.
+- Copying the local archive JSON to the clipboard now marks it sensitive on
+  Android 13+, so the system clipboard preview shows a masked placeholder
+  instead of the plaintext content.
+- The Android fronting-status notification gained two off-by-default
+  settings: whether it shows on the lock screen at all, and whether it names
+  the fronting member or just says the app is active.
+- Avatar photos are now excluded from iOS iCloud/iTunes backups, matching
+  Android's existing full backup exclusion.
+
+### Mobile UI
+
+- Fixed dashboard shortcut tiles overflowing at large system text-scale
+  settings.
+- The User Report screen can now open a prefilled GitHub bug report
+  alongside the existing local-report copy button.
+
+### Repository
+
+- Added GitHub issue templates for bug reports and feature requests.
+
 ## 0.2.0-pre-alpha.2 - 2026-08-10
 
 Android-first alpha release: `0.2.0-pre-alpha.2+2008`.
