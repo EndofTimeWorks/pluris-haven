@@ -21,6 +21,7 @@ import UniformTypeIdentifiers
       at: FileManager.default.temporaryDirectory
         .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
     )
+    excludeAvatarsFromBackup()
     BGTaskScheduler.shared.register(
       forTaskWithIdentifier: backgroundTaskIdentifier,
       using: nil
@@ -55,6 +56,21 @@ import UniformTypeIdentifiers
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     timezoneChannel.setMethodCallHandler(handleTimezoneCall)
+  }
+
+  // Android already excludes app data from backup entirely (allowBackup
+  // false). Avatars are the one place iOS otherwise defaults to including
+  // in iCloud/iTunes backups, so exclude that directory specifically;
+  // marking it excluded also covers every file written into it afterward.
+  private func excludeAvatarsFromBackup() {
+    guard
+      let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+    else { return }
+    var avatars = documents.appendingPathComponent("avatars", isDirectory: true)
+    try? FileManager.default.createDirectory(at: avatars, withIntermediateDirectories: true)
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try? avatars.setResourceValues(values)
   }
 
   private func handleTimezoneCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
