@@ -106,7 +106,10 @@ class PlurisHavenApp extends StatelessWidget {
           },
           home: AppLockGate(
             enabled: customization.appLockEnabled,
-            child: HomePage(repository: repository, serverAccount: serverAccount),
+            child: HomePage(
+              repository: repository,
+              serverAccount: serverAccount,
+            ),
           ),
         );
       },

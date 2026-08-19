@@ -60,9 +60,7 @@ class SpDashboardTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: MediaQuery.textScalerOf(
-          context,
-        ).clamp(maxScaleFactor: 1.3),
+        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
       ),
       child: AspectRatio(
         aspectRatio: 1,

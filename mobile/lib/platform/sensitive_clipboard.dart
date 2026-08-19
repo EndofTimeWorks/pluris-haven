@@ -9,7 +9,9 @@ import 'package:flutter/services.dart';
 class SensitiveClipboard {
   SensitiveClipboard._();
 
-  static const _channel = MethodChannel('works.endoftime.plurishaven/clipboard');
+  static const _channel = MethodChannel(
+    'works.endoftime.plurishaven/clipboard',
+  );
 
   static Future<void> copy(String text) async {
     if (defaultTargetPlatform != TargetPlatform.android) {

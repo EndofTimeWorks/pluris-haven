@@ -53,6 +53,19 @@
         Versioned releases include an unsigned iOS IPA for AltStore, SideStore, or Sideloadly to
         re-sign.
       </li>
+      <li>
+        Android screenshots and screen recordings of the app show a black rectangle instead of
+        member, front, or journal content.
+      </li>
+      <li>
+        An optional app lock can require the device's own screen lock before the app opens, and
+        re-locks whenever it is backgrounded.
+      </li>
+      <li>
+        Copying the local archive JSON marks it sensitive on Android 13+, so the system clipboard
+        preview does not show the plaintext content.
+      </li>
+      <li>Avatar photos are excluded from iOS backups, matching Android's existing behavior.</li>
     </ul>
   </section>
 

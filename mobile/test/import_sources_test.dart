@@ -2069,10 +2069,7 @@ void main() {
     expect(reminders.single['body'], 'Drink water and stretch');
     expect(reminders.single['schedule_kind'], 'after_front');
     expect(reminders.single['trigger_event'], 'front_started');
-    expect(
-      reminders.single['trigger_member_id'],
-      'ampersand_file-member-mem1',
-    );
+    expect(reminders.single['trigger_member_id'], 'ampersand_file-member-mem1');
     expect(reminders.single['delay_seconds'], 900);
     expect(reminders.single['enabled'], isTrue);
   });
