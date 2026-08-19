@@ -63,6 +63,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'otherwise the notification only says Pluris Haven is active';
 
   @override
+  String get appLockTitle => 'App lock';
+
+  @override
+  String get appLockSubtitle =>
+      'require your device screen lock or biometrics to open the app';
+
+  @override
+  String get appLockReason => 'Unlock Pluris Haven';
+
+  @override
+  String get appLockedTitle => 'Pluris Haven is locked';
+
+  @override
+  String get appLockedBody => 'Unlock your device to continue.';
+
+  @override
+  String get appLockUnlockButton => 'Unlock';
+
+  @override
   String get plurisHavenAppName => 'Pluris Haven';
 
   @override

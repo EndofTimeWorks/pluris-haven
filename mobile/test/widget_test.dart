@@ -2769,6 +2769,12 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setAppLockEnabled(bool enabled) async {
+    _customization = _customization.copyWith(appLockEnabled: enabled);
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<void> setHighContrast(bool highContrast) async {
     _customization = _customization.copyWith(highContrast: highContrast);
     _customizationController.add(_customization);

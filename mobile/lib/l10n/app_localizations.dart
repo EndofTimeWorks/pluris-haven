@@ -199,6 +199,42 @@ abstract class AppLocalizations {
   /// **'otherwise the notification only says Pluris Haven is active'**
   String get frontStatusRevealMemberNameSubtitle;
 
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'require your device screen lock or biometrics to open the app'**
+  String get appLockSubtitle;
+
+  /// No description provided for @appLockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Pluris Haven'**
+  String get appLockReason;
+
+  /// No description provided for @appLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pluris Haven is locked'**
+  String get appLockedTitle;
+
+  /// No description provided for @appLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock your device to continue.'**
+  String get appLockedBody;
+
+  /// No description provided for @appLockUnlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlockButton;
+
   /// No description provided for @plurisHavenAppName.
   ///
   /// In en, this message translates to:

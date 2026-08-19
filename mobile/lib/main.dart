@@ -11,6 +11,7 @@ import 'data/notifications/notification_service.dart';
 import 'data/security/master_key_store.dart';
 import 'data/server/server_account_controller.dart';
 import 'debug/debug_log.dart';
+import 'features/app_lock_gate.dart';
 import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
 import 'platform/native_file_dialog.dart';
@@ -103,7 +104,10 @@ class PlurisHavenApp extends StatelessWidget {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: HomePage(repository: repository, serverAccount: serverAccount),
+          home: AppLockGate(
+            enabled: customization.appLockEnabled,
+            child: HomePage(repository: repository, serverAccount: serverAccount),
+          ),
         );
       },
     );

@@ -50,6 +50,7 @@ class AppCustomization {
     required this.frontStatusNotification,
     required this.frontStatusShowOnLockScreen,
     required this.frontStatusRevealMemberName,
+    required this.appLockEnabled,
     required this.highContrast,
     required this.largeText,
     required this.compactLists,
@@ -66,6 +67,7 @@ class AppCustomization {
   final bool frontStatusNotification;
   final bool frontStatusShowOnLockScreen;
   final bool frontStatusRevealMemberName;
+  final bool appLockEnabled;
   final bool highContrast;
   final bool largeText;
   final bool compactLists;
@@ -89,6 +91,7 @@ class AppCustomization {
     frontStatusNotification: false,
     frontStatusShowOnLockScreen: false,
     frontStatusRevealMemberName: false,
+    appLockEnabled: false,
     highContrast: false,
     largeText: false,
     compactLists: false,
@@ -106,6 +109,7 @@ class AppCustomization {
     bool? frontStatusNotification,
     bool? frontStatusShowOnLockScreen,
     bool? frontStatusRevealMemberName,
+    bool? appLockEnabled,
     bool? highContrast,
     bool? largeText,
     bool? compactLists,
@@ -128,6 +132,7 @@ class AppCustomization {
           frontStatusShowOnLockScreen ?? this.frontStatusShowOnLockScreen,
       frontStatusRevealMemberName:
           frontStatusRevealMemberName ?? this.frontStatusRevealMemberName,
+      appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       highContrast: highContrast ?? this.highContrast,
       largeText: largeText ?? this.largeText,
       compactLists: compactLists ?? this.compactLists,
@@ -194,6 +199,9 @@ class LocalAppCustomizationStore {
   Future<void> setFrontStatusRevealMemberName(bool value) =>
       _write(_frontStatusRevealMemberNameKey, value.toString());
 
+  Future<void> setAppLockEnabled(bool value) =>
+      _write(_appLockEnabledKey, value.toString());
+
   Future<void> setHighContrast(bool value) =>
       _write(_highContrastKey, value.toString());
 
@@ -257,6 +265,7 @@ class LocalAppCustomizationStore {
       frontStatusRevealMemberName: _readBool(
         values[_frontStatusRevealMemberNameKey],
       ),
+      appLockEnabled: _readBool(values[_appLockEnabledKey]),
       highContrast: _readBool(values[_highContrastKey]),
       largeText: _readBool(values[_largeTextKey]),
       compactLists: _readBool(values[_compactListsKey]),
@@ -330,6 +339,7 @@ const _reducedMotionKey = 'reduced_motion';
 const _frontStatusNotificationKey = 'front_status_notification';
 const _frontStatusShowOnLockScreenKey = 'front_status_show_on_lock_screen';
 const _frontStatusRevealMemberNameKey = 'front_status_reveal_member_name';
+const _appLockEnabledKey = 'app_lock_enabled';
 const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';
