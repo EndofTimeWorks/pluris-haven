@@ -19,6 +19,7 @@ import 'journal_store.dart';
 import 'member_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';
+import 'pending_action_store.dart';
 import 'poll_store.dart';
 import 'privacy_bucket_store.dart';
 import 'rehearsal_database_connection.dart';
@@ -572,6 +573,16 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _pendingActions = LocalPendingActionStore(
+      database,
+      deleteMember: deleteMember,
+      deleteNote: deleteNote,
+      deleteReminder: deleteReminder,
+      deletePoll: deletePoll,
+      deleteJournal: deleteJournal,
+      deleteTag: deleteTag,
+      deleteNamedFront: deleteNamedFront,
+    );
   }
 
   final AppDatabase database;
@@ -588,6 +599,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalReminderStore _reminders;
   late final LocalCustomFieldStore _customFields;
   late final LocalPrivacyBucketStore _privacyBuckets;
+  late final LocalPendingActionStore _pendingActions;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -5347,70 +5359,14 @@ SELECT
   // Pending actions
 
   @override
-  Stream<List<PendingAction>> watchPendingActions() {
-    final query = database.select(database.pendingActions)
-      ..where(
-        (a) => a.systemId.equals(localSystemId) & a.status.equals('pending'),
-      )
-      ..orderBy([
-        (a) =>
-            OrderingTerm(expression: a.finalizeAfter, mode: OrderingMode.asc),
-      ]);
-    return query.watch();
-  }
+  Stream<List<PendingAction>> watchPendingActions() => _pendingActions.watch();
 
   @override
-  Future<void> cancelPendingAction(String actionId) async {
-    final now = DateTime.now().toUtc();
-    await (database.update(
-      database.pendingActions,
-    )..where((a) => a.id.equals(actionId))).write(
-      PendingActionsCompanion(
-        status: const Value('cancelled'),
-        cancelledAt: Value(now),
-      ),
-    );
-  }
+  Future<void> cancelPendingAction(String actionId) =>
+      _pendingActions.cancel(actionId);
 
   @override
-  Future<void> finalizePendingActions() async {
-    final now = DateTime.now().toUtc();
-    final due =
-        await (database.select(database.pendingActions)..where(
-              (a) =>
-                  a.systemId.equals(localSystemId) &
-                  a.status.equals('pending') &
-                  a.finalizeAfter.isSmallerOrEqualValue(now),
-            ))
-            .get();
-
-    for (final action in due) {
-      switch (action.actionType) {
-        case 'member_delete':
-          await deleteMember(action.targetId);
-        case 'note_delete':
-          await deleteNote(action.targetId);
-        case 'reminder_delete':
-          await deleteReminder(action.targetId);
-        case 'poll_delete':
-          await deletePoll(action.targetId);
-        case 'journal_delete':
-          await deleteJournal(action.targetId);
-        case 'tag_delete':
-          await deleteTag(action.targetId);
-        case 'named_front_delete':
-          await deleteNamedFront(action.targetId);
-      }
-      await (database.update(
-        database.pendingActions,
-      )..where((a) => a.id.equals(action.id))).write(
-        PendingActionsCompanion(
-          status: const Value('completed'),
-          completedAt: Value(now),
-        ),
-      );
-    }
-  }
+  Future<void> finalizePendingActions() => _pendingActions.finalize();
 
   // Lexorank reordering
 
