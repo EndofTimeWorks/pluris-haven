@@ -13,6 +13,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'chat_store.dart';
+import 'custom_field_store.dart';
 import 'group_store.dart';
 import 'journal_store.dart';
 import 'member_store.dart';
@@ -35,6 +36,8 @@ export 'chat_store.dart'
         ChatCategorySummary,
         ChatChannelDraft,
         ChatChannelSummary;
+export 'custom_field_store.dart'
+    show CustomFieldDraft, CustomFieldSummary, CustomFieldValueSummary;
 export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
@@ -175,50 +178,6 @@ class RestoreRehearsalSummary {
 
   Iterable<MapEntry<String, int>> get visibleCounts =>
       counts.entries.where((entry) => entry.value > 0);
-}
-
-class CustomFieldSummary {
-  const CustomFieldSummary({
-    required this.id,
-    required this.name,
-    required this.fieldType,
-    this.privacy,
-    required this.position,
-    required this.valueCount,
-  });
-
-  final String id;
-  final String name;
-  final String fieldType;
-  final String? privacy;
-  final int position;
-  final int valueCount;
-}
-
-class CustomFieldDraft {
-  const CustomFieldDraft({
-    required this.name,
-    this.fieldType = 'text',
-    this.privacy,
-  });
-
-  final String name;
-  final String fieldType;
-  final String? privacy;
-}
-
-class CustomFieldValueSummary {
-  const CustomFieldValueSummary({
-    required this.id,
-    required this.fieldId,
-    this.memberId,
-    required this.value,
-  });
-
-  final String id;
-  final String fieldId;
-  final String? memberId;
-  final String value;
 }
 
 class NotificationEventSummary {
@@ -628,6 +587,12 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _customFields = LocalCustomFieldStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -642,6 +607,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalGroupStore _groups;
   late final LocalPollStore _polls;
   late final LocalReminderStore _reminders;
+  late final LocalCustomFieldStore _customFields;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1760,74 +1726,12 @@ ORDER BY imported_at DESC
       _members.watchCurrentFront();
 
   @override
-  Stream<List<CustomFieldSummary>> watchCustomFields() {
-    final query = database.select(database.customFieldDefinitions)
-      ..where((field) => field.systemId.equals(localSystemId))
-      ..orderBy([
-        (field) =>
-            OrderingTerm(expression: field.position, mode: OrderingMode.asc),
-      ]);
-
-    return query.watch().asyncMap((fields) async {
-      final values = await database.select(database.customFieldValues).get();
-      final valueCounts = <String, int>{};
-      for (final value in values) {
-        valueCounts[value.fieldId] = (valueCounts[value.fieldId] ?? 0) + 1;
-      }
-      return [
-        for (final field in fields)
-          CustomFieldSummary(
-            id: field.id,
-            name:
-                (await _decryptLocalText(
-                  field.name,
-                  'custom_field_definitions',
-                  field.id,
-                  'name',
-                )) ??
-                '',
-            fieldType: field.fieldType,
-            privacy: await _decryptLocalText(
-              field.privacy,
-              'custom_field_definitions',
-              field.id,
-              'privacy',
-            ),
-            position: field.position,
-            valueCount: valueCounts[field.id] ?? 0,
-          ),
-      ];
-    });
-  }
+  Stream<List<CustomFieldSummary>> watchCustomFields() =>
+      _customFields.watchFields();
 
   @override
-  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() {
-    return database.select(database.customFieldValues).watch().asyncMap((
-      rows,
-    ) async {
-      final fields = await (database.select(
-        database.customFieldDefinitions,
-      )..where((field) => field.systemId.equals(localSystemId))).get();
-      final fieldIds = fields.map((field) => field.id).toSet();
-      return [
-        for (final row in rows)
-          if (fieldIds.contains(row.fieldId))
-            CustomFieldValueSummary(
-              id: row.id,
-              fieldId: row.fieldId,
-              memberId: row.memberId,
-              value:
-                  (await _decryptLocalText(
-                    row.value,
-                    'custom_field_values',
-                    row.id,
-                    'value',
-                  )) ??
-                  '',
-            ),
-      ];
-    });
-  }
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() =>
+      _customFields.watchValues();
 
   @override
   Stream<List<GroupSummary>> watchGroups() => _groups.watch();
@@ -2730,174 +2634,27 @@ SELECT
   }
 
   @override
-  Future<void> saveCustomField(CustomFieldDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) {
-      return;
-    }
-
-    final fieldType = _allowedCustomFieldTypes.contains(draft.fieldType)
-        ? draft.fieldType
-        : 'text';
-    final now = DateTime.now().toUtc();
-    final fieldId = 'custom-field-${now.microsecondsSinceEpoch}';
-    final maxPosition =
-        await (database.selectOnly(database.customFieldDefinitions)
-              ..addColumns([database.customFieldDefinitions.position.max()])
-              ..where(
-                database.customFieldDefinitions.systemId.equals(localSystemId),
-              ))
-            .map(
-              (row) => row.read(database.customFieldDefinitions.position.max()),
-            )
-            .getSingleOrNull();
-
-    await database
-        .into(database.customFieldDefinitions)
-        .insert(
-          CustomFieldDefinitionsCompanion.insert(
-            id: fieldId,
-            systemId: localSystemId,
-            name: await _encryptLocalText(
-              name,
-              'custom_field_definitions',
-              fieldId,
-              'name',
-            ),
-            fieldType: Value(fieldType),
-            privacy: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.privacy),
-                'custom_field_definitions',
-                fieldId,
-                'privacy',
-              ),
-            ),
-            position: Value((maxPosition ?? -1) + 1),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-  }
+  Future<void> saveCustomField(CustomFieldDraft draft) =>
+      _customFields.save(draft);
 
   @override
-  Future<void> updateCustomField(String fieldId, CustomFieldDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) {
-      return;
-    }
-
-    final fieldType = _allowedCustomFieldTypes.contains(draft.fieldType)
-        ? draft.fieldType
-        : 'text';
-    await (database.update(database.customFieldDefinitions)..where(
-          (field) =>
-              field.id.equals(fieldId) & field.systemId.equals(localSystemId),
-        ))
-        .write(
-          CustomFieldDefinitionsCompanion(
-            name: Value(
-              await _encryptLocalText(
-                name,
-                'custom_field_definitions',
-                fieldId,
-                'name',
-              ),
-            ),
-            fieldType: Value(fieldType),
-            privacy: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(draft.privacy),
-                'custom_field_definitions',
-                fieldId,
-                'privacy',
-              ),
-            ),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
+  Future<void> updateCustomField(String fieldId, CustomFieldDraft draft) =>
+      _customFields.update(fieldId, draft);
 
   @override
-  Future<void> deleteCustomField(String fieldId) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.customFieldValues,
-      )..where((value) => value.fieldId.equals(fieldId))).go();
-      await (database.delete(database.customFieldDefinitions)..where(
-            (field) =>
-                field.id.equals(fieldId) & field.systemId.equals(localSystemId),
-          ))
-          .go();
-    });
-  }
+  Future<void> deleteCustomField(String fieldId) =>
+      _customFields.delete(fieldId);
 
   @override
   Future<void> setCustomFieldValue({
     required String fieldId,
     required String? memberId,
     required String value,
-  }) async {
-    final trimmed = value.trim();
-    final ownerId = _nullIfBlank(memberId);
-    final existing =
-        await (database.select(database.customFieldValues)..where(
-              (row) =>
-                  row.fieldId.equals(fieldId) &
-                  (ownerId == null
-                      ? row.memberId.isNull()
-                      : row.memberId.equals(ownerId)),
-            ))
-            .getSingleOrNull();
-
-    if (trimmed.isEmpty) {
-      if (existing != null) {
-        await (database.delete(
-          database.customFieldValues,
-        )..where((row) => row.id.equals(existing.id))).go();
-      }
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    if (existing == null) {
-      final valueId = 'custom-field-value-${now.microsecondsSinceEpoch}';
-      await database
-          .into(database.customFieldValues)
-          .insert(
-            CustomFieldValuesCompanion.insert(
-              id: valueId,
-              fieldId: fieldId,
-              memberId: Value(ownerId),
-              value: await _encryptLocalText(
-                trimmed,
-                'custom_field_values',
-                valueId,
-                'value',
-              ),
-              createdAt: now,
-              updatedAt: now,
-            ),
-          );
-      return;
-    }
-
-    await (database.update(
-      database.customFieldValues,
-    )..where((row) => row.id.equals(existing.id))).write(
-      CustomFieldValuesCompanion(
-        value: Value(
-          await _encryptLocalText(
-            trimmed,
-            'custom_field_values',
-            existing.id,
-            'value',
-          ),
-        ),
-        updatedAt: Value(now),
-      ),
-    );
-  }
+  }) => _customFields.setValue(
+    fieldId: fieldId,
+    memberId: memberId,
+    value: value,
+  );
 
   @override
   Future<void> saveNote(NoteDraft draft) => _notes.save(draft);
@@ -6646,11 +6403,3 @@ String? _trimToNull(String? value) {
   final trimmed = value?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }
-
-const _allowedCustomFieldTypes = {
-  'text',
-  'number',
-  'date',
-  'boolean',
-  'select',
-};
