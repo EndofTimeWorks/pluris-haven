@@ -56,6 +56,7 @@ export 'privacy_bucket_store.dart'
 export 'reminder_store.dart' show ReminderDraft, ReminderSummary;
 
 part 'archive_store.dart';
+part 'front_store.dart';
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
@@ -1747,87 +1748,7 @@ ORDER BY imported_at DESC
       _notificationEvents.watch();
 
   @override
-  Stream<List<FrontHistoryEntry>> watchFrontHistory() {
-    final query = database.select(database.frontSessions)
-      ..where((session) => session.systemId.equals(localSystemId))
-      ..orderBy([
-        (session) => OrderingTerm(
-          expression: session.startedAt,
-          mode: OrderingMode.desc,
-        ),
-      ]);
-
-    return query.watch().asyncMap(_frontHistoryEntries);
-  }
-
-  Future<List<FrontHistoryEntry>> _frontHistoryEntries(
-    List<FrontSession> rows,
-  ) async {
-    final entries = <FrontHistoryEntry>[];
-    for (final row in rows) {
-      final links = await (database.select(
-        database.frontSessionMembers,
-      )..where((link) => link.sessionId.equals(row.id))).get();
-      entries.add(
-        FrontHistoryEntry(
-          id: row.id,
-          label: await _frontHistoryLabel(row),
-          statusNote: await _decryptLocalText(
-            row.statusNote,
-            'front_sessions',
-            row.id,
-            'status_note',
-          ),
-          startedAt: row.startedAt,
-          endedAt: row.endedAt,
-          memberIds: [for (final link in links) link.memberId],
-        ),
-      );
-    }
-    return entries;
-  }
-
-  Future<String> _frontHistoryLabel(FrontSession row) async {
-    final explicit = (await _decryptLocalText(
-      row.label,
-      'front_sessions',
-      row.id,
-      'label',
-    ))?.trim();
-    if (explicit != null && explicit.isNotEmpty) {
-      return explicit;
-    }
-
-    final links = await (database.select(
-      database.frontSessionMembers,
-    )..where((link) => link.sessionId.equals(row.id))).get();
-    if (links.isEmpty) {
-      return 'Unknown front';
-    }
-
-    final memberIds = links.map((link) => link.memberId).toSet().toList();
-    final members = await (database.select(
-      database.members,
-    )..where((member) => member.id.isIn(memberIds))).get();
-    final namesById = <String, String>{};
-    for (final member in members) {
-      final name = (await _decryptMember(
-        member,
-        'display_name',
-        member.displayName,
-      ))?.trim();
-      if (name != null && name.isNotEmpty) {
-        namesById[member.id] = name;
-      }
-    }
-    final names = [
-      for (final link in links)
-        if ((namesById[link.memberId] ?? '').isNotEmpty)
-          namesById[link.memberId]!,
-    ];
-
-    return names.isEmpty ? 'Unknown front' : names.join(', ');
-  }
+  Stream<List<FrontHistoryEntry>> watchFrontHistory() => _frontWatchHistory();
 
   Future<HomeSnapshot> loadHomeSnapshot() async {
     final row = await database
@@ -2126,261 +2047,26 @@ SELECT
   Future<void> deleteMember(String memberId) => _members.delete(memberId);
 
   @override
-  Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) async {
-    final ids = memberIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
-    if (ids.isEmpty) {
-      await clearCurrentFront();
-      return const [];
-    }
-
-    final members =
-        await (database.select(database.members)..where(
-              (member) =>
-                  member.systemId.equals(localSystemId) &
-                  member.archived.equals(false) &
-                  member.isCustomFront.equals(false) &
-                  member.id.isIn(ids),
-            ))
-            .get();
-    if (members.isEmpty) {
-      await clearCurrentFront();
-      return const [];
-    }
-
-    final now = DateTime.now().toUtc();
-
-    return database.transaction(() async {
-      final openSessions =
-          await (database.select(database.frontSessions)..where(
-                (front) =>
-                    front.systemId.equals(localSystemId) &
-                    front.endedAt.isNull(),
-              ))
-              .get();
-      final openSessionIds = openSessions.map((session) => session.id).toList();
-      final openLinks = openSessionIds.isEmpty
-          ? const <FrontSessionMember>[]
-          : await (database.select(
-              database.frontSessionMembers,
-            )..where((link) => link.sessionId.isIn(openSessionIds))).get();
-
-      final sessionsByMember = <String, Set<String>>{};
-      for (final link in openLinks) {
-        sessionsByMember
-            .putIfAbsent(link.memberId, () => <String>{})
-            .add(link.sessionId);
-      }
-      final desiredIds = members.map((member) => member.id).toSet();
-      final sessionsToClose = <String>{};
-      for (final entry in sessionsByMember.entries) {
-        if (!desiredIds.contains(entry.key)) {
-          sessionsToClose.addAll(entry.value);
-        }
-      }
-
-      for (final sessionId in sessionsToClose) {
-        await _endFrontSession(sessionId, now);
-      }
-
-      final remainingActiveMemberIds = <String>{};
-      for (final entry in sessionsByMember.entries) {
-        if (entry.value.any(
-          (sessionId) => !sessionsToClose.contains(sessionId),
-        )) {
-          remainingActiveMemberIds.add(entry.key);
-        }
-      }
-
-      var offset = 0;
-      final newlyStartedMemberIds = <String>{};
-      for (final member in members) {
-        if (remainingActiveMemberIds.contains(member.id)) {
-          continue;
-        }
-        final startedAt = now.add(Duration(microseconds: offset++));
-        final sessionId = 'front-${startedAt.microsecondsSinceEpoch}';
-        await database
-            .into(database.frontSessions)
-            .insert(
-              FrontSessionsCompanion.insert(
-                id: sessionId,
-                systemId: localSystemId,
-                startedAt: startedAt,
-                createdAt: startedAt,
-                updatedAt: startedAt,
-              ),
-            );
-        await database
-            .into(database.frontSessionMembers)
-            .insert(
-              FrontSessionMembersCompanion.insert(
-                sessionId: sessionId,
-                memberId: member.id,
-              ),
-            );
-        newlyStartedMemberIds.add(member.id);
-      }
-
-      return _reminders.claimAfterFront(
-        newlyStartedMemberIds: newlyStartedMemberIds,
-        frontStarted: newlyStartedMemberIds.isNotEmpty,
-        firedAt: now,
-      );
-    });
-  }
+  Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) =>
+      _frontSetFrontMembers(memberIds);
 
   @override
-  Future<void> updateFrontStatusNote(String frontId, String? statusNote) async {
-    await (database.update(database.frontSessions)..where(
-          (front) =>
-              front.systemId.equals(localSystemId) & front.id.equals(frontId),
-        ))
-        .write(
-          FrontSessionsCompanion(
-            statusNote: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(statusNote),
-                'front_sessions',
-                frontId,
-                'status_note',
-              ),
-            ),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-  }
+  Future<void> updateFrontStatusNote(String frontId, String? statusNote) =>
+      _frontUpdateFrontStatusNote(frontId, statusNote);
 
   @override
-  Future<void> saveFrontHistoryEntry(FrontHistoryDraft draft) async {
-    final now = DateTime.now().toUtc();
-    final id = 'front-${now.microsecondsSinceEpoch}';
-    await _writeFrontHistoryEntry(id, draft, now, create: true);
-  }
+  Future<void> saveFrontHistoryEntry(FrontHistoryDraft draft) =>
+      _frontSaveFrontHistoryEntry(draft);
 
   @override
   Future<void> updateFrontHistoryEntry(
     String frontId,
     FrontHistoryDraft draft,
-  ) {
-    return _writeFrontHistoryEntry(
-      frontId,
-      draft,
-      DateTime.now().toUtc(),
-      create: false,
-    );
-  }
-
-  Future<void> _writeFrontHistoryEntry(
-    String frontId,
-    FrontHistoryDraft draft,
-    DateTime now, {
-    required bool create,
-  }) async {
-    final startedAt = draft.startedAt.toUtc();
-    final endedAt = draft.endedAt.toUtc();
-    if (endedAt.isBefore(startedAt)) {
-      throw const FormatException('Front end cannot be before its start.');
-    }
-    final memberIds = draft.memberIds.toSet().toList(growable: false);
-    final label = _nullIfBlank(draft.label);
-    if (memberIds.isEmpty && label == null) {
-      throw const FormatException('Choose members or enter a front label.');
-    }
-    await database.transaction(() async {
-      if (create) {
-        await database
-            .into(database.frontSessions)
-            .insert(
-              FrontSessionsCompanion.insert(
-                id: frontId,
-                systemId: localSystemId,
-                label: Value(
-                  await _encryptNullableLocalText(
-                    memberIds.isEmpty ? label : null,
-                    'front_sessions',
-                    frontId,
-                    'label',
-                  ),
-                ),
-                statusNote: Value(
-                  await _encryptNullableLocalText(
-                    _nullIfBlank(draft.statusNote),
-                    'front_sessions',
-                    frontId,
-                    'status_note',
-                  ),
-                ),
-                startedAt: startedAt,
-                endedAt: Value(endedAt),
-                createdAt: now,
-                updatedAt: now,
-              ),
-            );
-      } else {
-        await (database.update(database.frontSessions)..where(
-              (front) =>
-                  front.id.equals(frontId) &
-                  front.systemId.equals(localSystemId),
-            ))
-            .write(
-              FrontSessionsCompanion(
-                label: Value(
-                  await _encryptNullableLocalText(
-                    memberIds.isEmpty ? label : null,
-                    'front_sessions',
-                    frontId,
-                    'label',
-                  ),
-                ),
-                statusNote: Value(
-                  await _encryptNullableLocalText(
-                    _nullIfBlank(draft.statusNote),
-                    'front_sessions',
-                    frontId,
-                    'status_note',
-                  ),
-                ),
-                startedAt: Value(startedAt),
-                endedAt: Value(endedAt),
-                updatedAt: Value(now),
-              ),
-            );
-        await (database.delete(
-          database.frontSessionMembers,
-        )..where((link) => link.sessionId.equals(frontId))).go();
-      }
-      for (final memberId in memberIds) {
-        await database
-            .into(database.frontSessionMembers)
-            .insert(
-              FrontSessionMembersCompanion.insert(
-                sessionId: frontId,
-                memberId: memberId,
-              ),
-              mode: InsertMode.insertOrIgnore,
-            );
-      }
-    });
-  }
+  ) => _frontUpdateFrontHistoryEntry(frontId, draft);
 
   @override
-  Future<void> deleteFrontSession(String frontId) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.frontSessionMembers,
-      )..where((link) => link.sessionId.equals(frontId))).go();
-      await (database.delete(database.frontSessions)..where(
-            (front) =>
-                front.systemId.equals(localSystemId) & front.id.equals(frontId),
-          ))
-          .go();
-    });
-  }
-
+  Future<void> deleteFrontSession(String frontId) =>
+      _frontDeleteFrontSession(frontId);
   @override
   Future<void> saveGroup(GroupDraft draft) => _groups.save(draft);
 
@@ -2520,70 +2206,12 @@ SELECT
   }
 
   @override
-  Future<List<ReminderSummary>> setCustomFront(String label) async {
-    final trimmed = label.trim();
-    if (trimmed.isEmpty) {
-      await clearCurrentFront();
-      return const [];
-    }
-
-    final now = DateTime.now().toUtc();
-
-    return database.transaction(() async {
-      final existing =
-          await (database.select(database.frontSessions)..where(
-                (front) =>
-                    front.systemId.equals(localSystemId) &
-                    front.endedAt.isNull(),
-              ))
-              .get();
-      for (final front in existing) {
-        if ((await _decryptLocalText(
-              front.label,
-              'front_sessions',
-              front.id,
-              'label',
-            ))?.trim() ==
-            trimmed) {
-          return const <ReminderSummary>[];
-        }
-      }
-
-      final frontId = 'front-${now.microsecondsSinceEpoch}';
-      await database
-          .into(database.frontSessions)
-          .insert(
-            FrontSessionsCompanion.insert(
-              id: frontId,
-              systemId: localSystemId,
-              label: Value(
-                await _encryptLocalText(
-                  trimmed,
-                  'front_sessions',
-                  frontId,
-                  'label',
-                ),
-              ),
-              startedAt: now,
-              createdAt: now,
-              updatedAt: now,
-            ),
-          );
-      return _reminders.claimAfterFront(
-        newlyStartedMemberIds: const {},
-        frontStarted: true,
-        firedAt: now,
-      );
-    });
-  }
+  Future<List<ReminderSummary>> setCustomFront(String label) =>
+      _frontSetCustomFront(label);
 
   @override
-  Future<void> clearCurrentFront() async {
-    final now = DateTime.now().toUtc();
-    await _endOpenFrontSessions(now);
-  }
+  Future<void> clearCurrentFront() => _frontClearCurrentFront();
 
-  @override
   @override
   Future<String> buildLocalArchiveJson() => _archiveBuildLocalArchiveJson();
 
