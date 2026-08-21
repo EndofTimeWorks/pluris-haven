@@ -119,6 +119,90 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'member_id': link.memberId,
   };
 
+  Future<Map<String, Object?>> _noteToJson(Note note) async => {
+    'id': note.id,
+    'member_id': note.memberId,
+    'title':
+        (await _decryptLocalText(note.title, 'notes', note.id, 'title')) ?? '',
+    'body':
+        (await _decryptLocalText(note.body, 'notes', note.id, 'body')) ?? '',
+    'created_at': note.createdAt.toIso8601String(),
+    'updated_at': note.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _messageToJson(Message message) async => {
+    'id': message.id,
+    'member_id': message.memberId,
+    'body':
+        (await _decryptLocalText(
+          message.body,
+          'messages',
+          message.id,
+          'body',
+        )) ??
+        '',
+    'board_kind': message.boardKind,
+    'board_member_id': message.boardMemberId,
+    'parent_message_id': message.parentMessageId,
+    'channel_id': message.channelId,
+    'deleted_at': message.deletedAt?.toIso8601String(),
+    'archived': message.archived,
+    'created_at': message.createdAt.toIso8601String(),
+    'updated_at': message.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _chatCategoryToJson(
+    ChatCategory category,
+  ) async => {
+    'id': category.id,
+    'name':
+        (await _decryptLocalText(
+          category.name,
+          'chat_categories',
+          category.id,
+          'name',
+        )) ??
+        '',
+    'description': await _decryptLocalText(
+      category.description,
+      'chat_categories',
+      category.id,
+      'description',
+    ),
+    'position': category.position,
+    'created_at': category.createdAt.toIso8601String(),
+    'updated_at': category.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _chatChannelToJson(ChatChannel channel) async =>
+      {
+        'id': channel.id,
+        'category_id': channel.categoryId,
+        'name':
+            (await _decryptLocalText(
+              channel.name,
+              'chat_channels',
+              channel.id,
+              'name',
+            )) ??
+            '',
+        'description': await _decryptLocalText(
+          channel.description,
+          'chat_channels',
+          channel.id,
+          'description',
+        ),
+        'color_hex': await _decryptLocalText(
+          channel.colorHex,
+          'chat_channels',
+          channel.id,
+          'color_hex',
+        ),
+        'position': channel.position,
+        'created_at': channel.createdAt.toIso8601String(),
+        'updated_at': channel.updatedAt.toIso8601String(),
+      };
+
   List<Map<String, Object?>> _jsonObjectList(Object? value) {
     if (value == null) return <Map<String, Object?>>[];
     if (value is! List) {
