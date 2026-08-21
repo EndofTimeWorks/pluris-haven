@@ -14,6 +14,7 @@ import 'app_customization.dart';
 import 'app_database.dart';
 import 'chat_store.dart';
 import 'custom_field_store.dart';
+import 'front_audit_store.dart';
 import 'group_store.dart';
 import 'journal_store.dart';
 import 'member_store.dart';
@@ -559,6 +560,10 @@ class LocalHavenRepository implements HavenRepository {
       encryptText: _encryptLocalText,
       decryptText: _decryptLocalText,
     );
+    _frontAudit = LocalFrontAuditStore(
+      database,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -577,6 +582,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalPrivacyBucketStore _privacyBuckets;
   late final LocalPendingActionStore _pendingActions;
   late final LocalNotificationEventStore _notificationEvents;
+  late final LocalFrontAuditStore _frontAudit;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -5075,36 +5081,8 @@ SELECT
   // Front audit events
 
   @override
-  Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId) {
-    final query = database.select(database.frontAuditEvents)
-      ..where((e) => e.frontId.equals(frontSessionId))
-      ..orderBy([
-        (e) => OrderingTerm(expression: e.createdAt, mode: OrderingMode.desc),
-      ]);
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          row.copyWith(
-            beforeSnapshot: Value(
-              await _decryptLocalText(
-                row.beforeSnapshot,
-                'front_audit_events',
-                row.id,
-                'before_snapshot',
-              ),
-            ),
-            afterSnapshot: Value(
-              await _decryptLocalText(
-                row.afterSnapshot,
-                'front_audit_events',
-                row.id,
-                'after_snapshot',
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Stream<List<FrontAuditEvent>> watchFrontAuditEvents(String frontSessionId) =>
+      _frontAudit.watch(frontSessionId);
 
   // Poll vote events
 
