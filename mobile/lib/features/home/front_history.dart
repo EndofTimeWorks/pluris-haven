@@ -378,9 +378,11 @@ class FrontHistoryEditorSheet extends StatefulWidget {
 class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   late final TextEditingController _labelController;
   late final TextEditingController _noteController;
+  late final TextEditingController _memberSearchController;
   late DateTime _startedAt;
   late DateTime _endedAt;
   late final Set<String> _memberIds;
+  String _memberQuery = '';
   String? _error;
 
   @override
@@ -396,12 +398,14 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
       text: entry?.memberIds.isEmpty == true ? entry?.label : null,
     );
     _noteController = TextEditingController(text: entry?.statusNote);
+    _memberSearchController = TextEditingController();
   }
 
   @override
   void dispose() {
     _labelController.dispose();
     _noteController.dispose();
+    _memberSearchController.dispose();
     super.dispose();
   }
 
@@ -449,23 +453,50 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
               initialData: const [],
-              builder: (context, snapshot) => Column(
-                children: [
-                  for (final member in snapshot.data ?? const <MemberSummary>[])
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(member.displayName),
-                      value: _memberIds.contains(member.id),
-                      onChanged: (selected) => setState(() {
-                        if (selected == true) {
-                          _memberIds.add(member.id);
-                        } else {
-                          _memberIds.remove(member.id);
-                        }
-                      }),
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                final visibleMembers = [
+                  for (final member in members)
+                    if (_matchesMemberQuery(member, _memberQuery)) member,
+                ];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SpSearchField(
+                      key: const ValueKey('front-history-member-search-field'),
+                      hintText: l10n.searchMembersHint,
+                      controller: _memberSearchController,
+                      onChanged: (value) =>
+                          setState(() => _memberQuery = value),
                     ),
-                ],
-              ),
+                    const SizedBox(height: 10),
+                    if (visibleMembers.isEmpty)
+                      SpEmptyState(
+                        title: l10n.noMatchingMembersTitle,
+                        body: l10n.noMatchingMembersBody,
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final member in visibleMembers)
+                            FilterChip(
+                              label: Text(member.displayName),
+                              selected: _memberIds.contains(member.id),
+                              onSelected: (selected) => setState(() {
+                                if (selected) {
+                                  _memberIds.add(member.id);
+                                } else {
+                                  _memberIds.remove(member.id);
+                                }
+                              }),
+                            ),
+                        ],
+                      ),
+                  ],
+                );
+              },
             ),
             TextField(
               key: const ValueKey('front-history-label-field'),
@@ -498,6 +529,17 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
         ),
       ),
     );
+  }
+
+  bool _matchesMemberQuery(MemberSummary member, String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return true;
+    return [
+      member.displayName,
+      member.pronouns,
+      member.description,
+      member.pluralKitId,
+    ].any((value) => (value ?? '').toLowerCase().contains(normalized));
   }
 
   Future<void> _pickDateTime({required bool start}) async {
