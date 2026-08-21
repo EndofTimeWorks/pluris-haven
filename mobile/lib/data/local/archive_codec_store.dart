@@ -1,6 +1,124 @@
 part of 'haven_repository.dart';
 
 extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
+  Future<Map<String, Object?>> _systemToJson(PluralSystem system) async => {
+    'id': system.id,
+    'name':
+        (await _decryptLocalText(
+          system.name,
+          'plural_systems',
+          system.id,
+          'name',
+        )) ??
+        'Local system',
+    'color_hex': await _decryptLocalText(
+      system.colorHex,
+      'plural_systems',
+      system.id,
+      'color_hex',
+    ),
+    'avatar_url': await _decryptLocalText(
+      system.avatarUrl,
+      'plural_systems',
+      system.id,
+      'avatar_url',
+    ),
+    'description': await _decryptLocalText(
+      system.description,
+      'plural_systems',
+      system.id,
+      'description',
+    ),
+    'created_at': system.createdAt.toIso8601String(),
+    'updated_at': system.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _memberToJson(Member member) async {
+    final displayName = await _decryptMember(
+      member,
+      'display_name',
+      member.displayName,
+    );
+    if (displayName == null) {
+      throw StateError('Protected member name could not be exported.');
+    }
+    final pronouns = await _decryptMember(member, 'pronouns', member.pronouns);
+    final colorHex = await _decryptMember(member, 'color_hex', member.colorHex);
+    final birthday = await _decryptMember(member, 'birthday', member.birthday);
+    final emoji = await _decryptMember(member, 'emoji', member.emoji);
+    final privacy = await _decryptMember(member, 'privacy', member.privacy);
+    final description = await _decryptMember(
+      member,
+      'description',
+      member.description,
+    );
+    final avatarUrl = await _decryptMember(
+      member,
+      'avatar_url',
+      member.avatarUrl,
+    );
+    final pluralKitId = await _decryptMember(
+      member,
+      'pluralkit_id',
+      member.pluralKitId,
+    );
+    return {
+      'id': member.id,
+      'display_name': displayName,
+      'pronouns': pronouns,
+      'color_hex': colorHex,
+      'birthday': birthday,
+      'emoji': emoji,
+      'privacy': privacy,
+      'folder_id': member.folderId,
+      'description': description,
+      'avatar_url': avatarUrl,
+      'pluralkit_id': pluralKitId,
+      'is_custom_front': member.isCustomFront,
+      'archived': member.archived,
+      'created_at': member.createdAt.toIso8601String(),
+      'updated_at': member.updatedAt.toIso8601String(),
+    };
+  }
+
+  Future<Map<String, Object?>> _groupToJson(SystemGroup group) async => {
+    'id': group.id,
+    'parent_group_id': group.parentGroupId,
+    'name':
+        (await _decryptLocalText(
+          group.name,
+          'system_groups',
+          group.id,
+          'name',
+        )) ??
+        '',
+    'color_hex': await _decryptLocalText(
+      group.colorHex,
+      'system_groups',
+      group.id,
+      'color_hex',
+    ),
+    'description': await _decryptLocalText(
+      group.description,
+      'system_groups',
+      group.id,
+      'description',
+    ),
+    'emoji': await _decryptLocalText(
+      group.emoji,
+      'system_groups',
+      group.id,
+      'emoji',
+    ),
+    'created_at': group.createdAt.toIso8601String(),
+    'updated_at': group.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _groupMemberToJson(GroupMember link) => {
+    'group_id': link.groupId,
+    'member_id': link.memberId,
+  };
+
   List<Map<String, Object?>> _jsonObjectList(Object? value) {
     if (value == null) return <Map<String, Object?>>[];
     if (value is! List) {
