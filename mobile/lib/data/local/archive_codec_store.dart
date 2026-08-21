@@ -203,6 +203,99 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
         'updated_at': channel.updatedAt.toIso8601String(),
       };
 
+  Future<Map<String, Object?>> _reminderToJson(Reminder reminder) async => {
+    'id': reminder.id,
+    'title':
+        (await _decryptLocalText(
+          reminder.title,
+          'reminders',
+          reminder.id,
+          'title',
+        )) ??
+        '',
+    'body': await _decryptLocalText(
+      reminder.body,
+      'reminders',
+      reminder.id,
+      'body',
+    ),
+    'schedule_text':
+        (await _decryptLocalText(
+          reminder.scheduleText,
+          'reminders',
+          reminder.id,
+          'schedule_text',
+        )) ??
+        '',
+    'trigger_type': reminder.triggerType,
+    'trigger_member_id': reminder.triggerMemberId,
+    'trigger_event': await _decryptLocalText(
+      reminder.triggerEvent,
+      'reminders',
+      reminder.id,
+      'trigger_event',
+    ),
+    'schedule_kind': await _decryptLocalText(
+      reminder.scheduleKind,
+      'reminders',
+      reminder.id,
+      'schedule_kind',
+    ),
+    'schedule_time': await _decryptLocalText(
+      reminder.scheduleTime,
+      'reminders',
+      reminder.id,
+      'schedule_time',
+    ),
+    'schedule_dow_mask': reminder.scheduleDowMask,
+    'schedule_dom': reminder.scheduleDom,
+    'delay_seconds': reminder.delaySeconds,
+    'enabled': reminder.enabled,
+    'last_fired_at': reminder.lastFiredAt?.toIso8601String(),
+    'created_at': reminder.createdAt.toIso8601String(),
+    'updated_at': reminder.updatedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _tagToJson(Tag tag) async => {
+    'id': tag.id,
+    'name': (await _decryptLocalText(tag.name, 'tags', tag.id, 'name')) ?? '',
+    'color_hex': await _decryptLocalText(
+      tag.colorHex,
+      'tags',
+      tag.id,
+      'color_hex',
+    ),
+    'created_at': tag.createdAt.toIso8601String(),
+    'updated_at': tag.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _memberTagToJson(MemberTag link) => {
+    'tag_id': link.tagId,
+    'member_id': link.memberId,
+  };
+
+  Future<Map<String, Object?>> _journalToJson(JournalEntry journal) async => {
+    'id': journal.id,
+    'member_id': journal.memberId,
+    'title': await _decryptLocalText(
+      journal.title,
+      'journal_entries',
+      journal.id,
+      'title',
+    ),
+    'body':
+        (await _decryptLocalText(
+          journal.body,
+          'journal_entries',
+          journal.id,
+          'body',
+        )) ??
+        '',
+    'visibility': journal.visibility,
+    'created_at': journal.createdAt.toIso8601String(),
+    'updated_at': journal.updatedAt.toIso8601String(),
+  };
+
   List<Map<String, Object?>> _jsonObjectList(Object? value) {
     if (value == null) return <Map<String, Object?>>[];
     if (value is! List) {
