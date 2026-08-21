@@ -20,6 +20,7 @@ import 'member_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';
 import 'poll_store.dart';
+import 'privacy_bucket_store.dart';
 import 'rehearsal_database_connection.dart';
 import 'reminder_store.dart';
 import 'tag_store.dart';
@@ -44,6 +45,8 @@ export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart' show MemberDraft, MemberSummary;
 export 'poll_store.dart'
     show PollDraft, PollKind, PollOptionSummary, PollSummary;
+export 'privacy_bucket_store.dart'
+    show PrivacyBucketDraft, PrivacyBucketSummary;
 export 'reminder_store.dart' show ReminderDraft, ReminderSummary;
 
 const _legacyLocalEncryptedTextPrefix = 'ph1:';
@@ -124,36 +127,6 @@ class RetainedImportPayloadSummary {
   final List<String> collections;
   final int payloadCount;
   final DateTime importedAt;
-}
-
-class PrivacyBucketSummary {
-  const PrivacyBucketSummary({
-    required this.id,
-    required this.name,
-    this.description,
-    this.colorHex,
-    this.memberIds = const [],
-  });
-
-  final String id;
-  final String name;
-  final String? description;
-  final String? colorHex;
-  final List<String> memberIds;
-}
-
-class PrivacyBucketDraft {
-  const PrivacyBucketDraft({
-    required this.name,
-    this.description,
-    this.colorHex,
-    this.memberIds = const [],
-  });
-
-  final String name;
-  final String? description;
-  final String? colorHex;
-  final List<String> memberIds;
 }
 
 class RestoreRehearsalSummary {
@@ -593,6 +566,12 @@ class LocalHavenRepository implements HavenRepository {
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
+    _privacyBuckets = LocalPrivacyBucketStore(
+      database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -608,6 +587,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalPollStore _polls;
   late final LocalReminderStore _reminders;
   late final LocalCustomFieldStore _customFields;
+  late final LocalPrivacyBucketStore _privacyBuckets;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1737,56 +1717,8 @@ ORDER BY imported_at DESC
   Stream<List<GroupSummary>> watchGroups() => _groups.watch();
 
   @override
-  Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets() {
-    return database
-        .customSelect(
-          '''
-SELECT
-  pb.id,
-  pb.name,
-  pb.description,
-  pb.color_hex,
-  GROUP_CONCAT(pbm.member_id) AS member_ids
-FROM privacy_buckets pb
-LEFT JOIN privacy_bucket_members pbm ON pbm.bucket_id = pb.id
-WHERE pb.system_id = ?
-GROUP BY pb.id, pb.name, pb.description, pb.color_hex, pb.position
-ORDER BY pb.position ASC
-''',
-          variables: [Variable<String>(localSystemId)],
-          readsFrom: {database.privacyBuckets, database.privacyBucketMembers},
-        )
-        .watch()
-        .asyncMap(
-          (rows) async => [
-            for (final row in rows)
-              PrivacyBucketSummary(
-                id: row.read<String>('id'),
-                name:
-                    (await _decryptLocalText(
-                      row.read<String>('name'),
-                      'privacy_buckets',
-                      row.read<String>('id'),
-                      'name',
-                    )) ??
-                    '',
-                description: await _decryptLocalText(
-                  row.readNullable<String>('description'),
-                  'privacy_buckets',
-                  row.read<String>('id'),
-                  'description',
-                ),
-                colorHex: await _decryptLocalText(
-                  row.readNullable<String>('color_hex'),
-                  'privacy_buckets',
-                  row.read<String>('id'),
-                  'color_hex',
-                ),
-                memberIds: _splitJoinedIds(row.data['member_ids']),
-              ),
-          ],
-        );
-  }
+  Stream<List<PrivacyBucketSummary>> watchPrivacyBuckets() =>
+      _privacyBuckets.watch();
 
   @override
   Stream<List<NoteSummary>> watchNotes() => _notes.watch();
@@ -2121,17 +2053,6 @@ SELECT
       }
     }
     return uniqueLabels.isEmpty ? null : uniqueLabels.join(', ');
-  }
-
-  List<String> _splitJoinedIds(Object? value) {
-    if (value is! String || value.trim().isEmpty) {
-      return const [];
-    }
-    return value
-        .split(',')
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toList(growable: false);
   }
 
   @override
@@ -2502,136 +2423,16 @@ SELECT
   Future<void> deleteGroup(String groupId) => _groups.delete(groupId);
 
   @override
-  Future<void> savePrivacyBucket(PrivacyBucketDraft draft) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    final now = DateTime.now().toUtc();
-    final bucketId = 'privacy-bucket-${now.microsecondsSinceEpoch}';
-    await database.transaction(() async {
-      final positionExpression = database.privacyBuckets.position.max();
-      final maxPosition =
-          await (database.selectOnly(database.privacyBuckets)
-                ..addColumns([positionExpression])
-                ..where(database.privacyBuckets.systemId.equals(localSystemId)))
-              .map((row) => row.read(positionExpression))
-              .getSingle();
-      await database
-          .into(database.privacyBuckets)
-          .insert(
-            PrivacyBucketsCompanion.insert(
-              id: bucketId,
-              systemId: localSystemId,
-              name: await _encryptLocalText(
-                name,
-                'privacy_buckets',
-                bucketId,
-                'name',
-              ),
-              description: Value(
-                await _encryptNullableLocalText(
-                  _nullIfBlank(draft.description),
-                  'privacy_buckets',
-                  bucketId,
-                  'description',
-                ),
-              ),
-              colorHex: Value(
-                await _encryptNullableLocalText(
-                  normalizeHexColor(draft.colorHex),
-                  'privacy_buckets',
-                  bucketId,
-                  'color_hex',
-                ),
-              ),
-              position: Value((maxPosition ?? -1) + 1),
-              createdAt: now,
-              updatedAt: now,
-            ),
-          );
-      await _replacePrivacyBucketMembers(bucketId, draft.memberIds);
-    });
-  }
+  Future<void> savePrivacyBucket(PrivacyBucketDraft draft) =>
+      _privacyBuckets.save(draft);
 
   @override
-  Future<void> updatePrivacyBucket(
-    String bucketId,
-    PrivacyBucketDraft draft,
-  ) async {
-    final name = draft.name.trim();
-    if (name.isEmpty) return;
-    await database.transaction(() async {
-      await (database.update(database.privacyBuckets)..where(
-            (bucket) =>
-                bucket.id.equals(bucketId) &
-                bucket.systemId.equals(localSystemId),
-          ))
-          .write(
-            PrivacyBucketsCompanion(
-              name: Value(
-                await _encryptLocalText(
-                  name,
-                  'privacy_buckets',
-                  bucketId,
-                  'name',
-                ),
-              ),
-              description: Value(
-                await _encryptNullableLocalText(
-                  _nullIfBlank(draft.description),
-                  'privacy_buckets',
-                  bucketId,
-                  'description',
-                ),
-              ),
-              colorHex: Value(
-                await _encryptNullableLocalText(
-                  normalizeHexColor(draft.colorHex),
-                  'privacy_buckets',
-                  bucketId,
-                  'color_hex',
-                ),
-              ),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-      await _replacePrivacyBucketMembers(bucketId, draft.memberIds);
-    });
-  }
-
-  Future<void> _replacePrivacyBucketMembers(
-    String bucketId,
-    List<String> memberIds,
-  ) async {
-    await (database.delete(
-      database.privacyBucketMembers,
-    )..where((link) => link.bucketId.equals(bucketId))).go();
-    for (final memberId in memberIds.toSet()) {
-      await database
-          .into(database.privacyBucketMembers)
-          .insert(
-            PrivacyBucketMembersCompanion.insert(
-              bucketId: bucketId,
-              memberId: memberId,
-            ),
-            mode: InsertMode.insertOrIgnore,
-          );
-    }
-  }
+  Future<void> updatePrivacyBucket(String bucketId, PrivacyBucketDraft draft) =>
+      _privacyBuckets.update(bucketId, draft);
 
   @override
-  Future<void> deletePrivacyBucket(String bucketId) async {
-    await database.transaction(() async {
-      await (database.delete(
-        database.privacyBucketMembers,
-      )..where((link) => link.bucketId.equals(bucketId))).go();
-      await (database.delete(database.privacyBuckets)..where(
-            (bucket) =>
-                bucket.id.equals(bucketId) &
-                bucket.systemId.equals(localSystemId),
-          ))
-          .go();
-    });
-  }
+  Future<void> deletePrivacyBucket(String bucketId) =>
+      _privacyBuckets.delete(bucketId);
 
   @override
   Future<void> saveCustomField(CustomFieldDraft draft) =>
