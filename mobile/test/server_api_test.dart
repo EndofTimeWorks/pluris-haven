@@ -376,6 +376,35 @@ void main() {
     expect(recovered.signedIn, isTrue);
   });
 
+  test('startup refresh rejection clears stored server tokens', () async {
+    final storage = MemoryServerStorage();
+    final initial = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await initial.connect('https://haven.example');
+    await initial.login(
+      email: 'test@example.com',
+      password: 'correct horse battery staple',
+      deviceName: 'Phone',
+    );
+
+    final revoked = FakeServerApi()
+      ..rejectAccess = true
+      ..rejectRefresh = true;
+    final controller = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => revoked,
+    );
+
+    await controller.initialize();
+
+    expect(controller.error, isNotNull);
+    expect(controller.signedIn, isFalse);
+    expect(storage.values, isNot(contains('access')));
+    expect(storage.values, isNot(contains('refresh')));
+  });
+
   test('startup storage failures are reported without escaping', () async {
     final controller = ServerAccountController(storage: FailingReadStorage());
 
@@ -421,6 +450,7 @@ class FakeServerApi extends ServerApi {
   final refreshNonces = <String?>[];
   bool passwordChanged = false;
   bool rejectAccess = false;
+  bool rejectRefresh = false;
   bool failNextRefresh = false;
   bool failDescriptor = false;
 
@@ -473,6 +503,9 @@ class FakeServerApi extends ServerApi {
     String? rotationNonce,
   }) async {
     refreshNonces.add(rotationNonce);
+    if (rejectRefresh) {
+      throw const ServerApiException('Revoked', statusCode: 401);
+    }
     if (failNextRefresh) {
       failNextRefresh = false;
       throw const ServerApiException('Network response was lost.');

@@ -64,8 +64,13 @@ class ServerAccountController extends ChangeNotifier {
       _api = _apiFactory(Uri.parse(rawUrl));
       descriptor = await _api!.descriptor();
       if (_accessToken != null && _refreshToken != null) {
-        await refreshAll();
+        await _refreshAllAuthenticated();
       }
+    } on ServerApiException catch (caught) {
+      if (caught.isUnauthorized) {
+        await _clearTokens();
+      }
+      error = _message(caught);
     } on Object catch (caught) {
       error = _message(caught);
     } finally {
