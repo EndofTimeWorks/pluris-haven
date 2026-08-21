@@ -19,6 +19,7 @@ import 'journal_store.dart';
 import 'member_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';
+import 'notification_event_store.dart';
 import 'pending_action_store.dart';
 import 'poll_store.dart';
 import 'privacy_bucket_store.dart';
@@ -44,6 +45,8 @@ export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart' show MemberDraft, MemberSummary;
+export 'notification_event_store.dart'
+    show NotificationEventDraft, NotificationEventSummary;
 export 'poll_store.dart'
     show PollDraft, PollKind, PollOptionSummary, PollSummary;
 export 'privacy_bucket_store.dart'
@@ -152,38 +155,6 @@ class RestoreRehearsalSummary {
 
   Iterable<MapEntry<String, int>> get visibleCounts =>
       counts.entries.where((entry) => entry.value > 0);
-}
-
-class NotificationEventSummary {
-  const NotificationEventSummary({
-    required this.id,
-    required this.kind,
-    required this.title,
-    required this.body,
-    this.readAt,
-    required this.createdAt,
-  });
-
-  final String id;
-  final String kind;
-  final String title;
-  final String body;
-  final DateTime? readAt;
-  final DateTime createdAt;
-
-  bool get isUnread => readAt == null;
-}
-
-class NotificationEventDraft {
-  const NotificationEventDraft({
-    required this.kind,
-    required this.title,
-    required this.body,
-  });
-
-  final String kind;
-  final String title;
-  final String body;
 }
 
 class FrontHistoryEntry {
@@ -583,6 +554,11 @@ class LocalHavenRepository implements HavenRepository {
       deleteTag: deleteTag,
       deleteNamedFront: deleteNamedFront,
     );
+    _notificationEvents = LocalNotificationEventStore(
+      database,
+      encryptText: _encryptLocalText,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -600,6 +576,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalCustomFieldStore _customFields;
   late final LocalPrivacyBucketStore _privacyBuckets;
   late final LocalPendingActionStore _pendingActions;
+  late final LocalNotificationEventStore _notificationEvents;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -1752,42 +1729,8 @@ ORDER BY imported_at DESC
   Stream<List<PollSummary>> watchPolls() => _polls.watch();
 
   @override
-  Stream<List<NotificationEventSummary>> watchNotificationEvents() {
-    final query = database.select(database.notificationEvents)
-      ..where((event) => event.systemId.equals(localSystemId))
-      ..orderBy([
-        (event) =>
-            OrderingTerm(expression: event.createdAt, mode: OrderingMode.desc),
-      ]);
-
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          NotificationEventSummary(
-            id: row.id,
-            kind: row.kind,
-            title:
-                (await _decryptLocalText(
-                  row.title,
-                  'notification_events',
-                  row.id,
-                  'title',
-                )) ??
-                '',
-            body:
-                (await _decryptLocalText(
-                  row.body,
-                  'notification_events',
-                  row.id,
-                  'body',
-                )) ??
-                '',
-            readAt: row.readAt,
-            createdAt: row.createdAt,
-          ),
-      ],
-    );
-  }
+  Stream<List<NotificationEventSummary>> watchNotificationEvents() =>
+      _notificationEvents.watch();
 
   @override
   Stream<List<FrontHistoryEntry>> watchFrontHistory() {
@@ -2538,38 +2481,8 @@ SELECT
   Future<void> deletePoll(String pollId) => _polls.delete(pollId);
 
   @override
-  Future<void> recordNotificationEvent(NotificationEventDraft draft) async {
-    final title = draft.title.trim();
-    final body = draft.body.trim();
-    if (title.isEmpty && body.isEmpty) {
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final eventId = 'notification-${now.microsecondsSinceEpoch}';
-    await database
-        .into(database.notificationEvents)
-        .insert(
-          NotificationEventsCompanion.insert(
-            id: eventId,
-            systemId: localSystemId,
-            kind: draft.kind.trim().isEmpty ? 'general' : draft.kind.trim(),
-            title: await _encryptLocalText(
-              title.isEmpty ? 'Notification' : title,
-              'notification_events',
-              eventId,
-              'title',
-            ),
-            body: await _encryptLocalText(
-              body,
-              'notification_events',
-              eventId,
-              'body',
-            ),
-            createdAt: now,
-          ),
-        );
-  }
+  Future<void> recordNotificationEvent(NotificationEventDraft draft) =>
+      _notificationEvents.record(draft);
 
   Future<bool> _preferenceEquals(String key, String expectedValue) async {
     final preference = await (database.select(
