@@ -211,6 +211,18 @@ abstract class AppLocalizations {
   /// **'require your device screen lock or biometrics to open the app'**
   String get appLockSubtitle;
 
+  /// No description provided for @screenshotBlockingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block screenshots'**
+  String get screenshotBlockingTitle;
+
+  /// No description provided for @screenshotBlockingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'hide app content from screenshots and screen recordings'**
+  String get screenshotBlockingSubtitle;
+
   /// No description provided for @appLockReason.
   ///
   /// In en, this message translates to:

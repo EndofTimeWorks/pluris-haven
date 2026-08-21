@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -15,6 +16,7 @@ import 'features/app_lock_gate.dart';
 import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
 import 'platform/native_file_dialog.dart';
+import 'platform/screen_capture_protection.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +75,13 @@ class PlurisHavenApp extends StatelessWidget {
       initialData: AppCustomization.defaults,
       builder: (context, snapshot) {
         final customization = snapshot.data ?? AppCustomization.defaults;
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          unawaited(
+            ScreenCaptureProtection.setEnabled(
+              customization.screenshotBlockingEnabled,
+            ),
+          );
+        }
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,

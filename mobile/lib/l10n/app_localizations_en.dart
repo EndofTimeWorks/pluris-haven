@@ -70,6 +70,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'require your device screen lock or biometrics to open the app';
 
   @override
+  String get screenshotBlockingTitle => 'Block screenshots';
+
+  @override
+  String get screenshotBlockingSubtitle =>
+      'hide app content from screenshots and screen recordings';
+
+  @override
   String get appLockReason => 'Unlock Pluris Haven';
 
   @override

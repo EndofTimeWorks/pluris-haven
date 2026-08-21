@@ -50,6 +50,8 @@ public final class MainActivity extends FlutterFragmentActivity {
             "works.endoftime.plurishaven/timezone";
     private static final String CLIPBOARD_CHANNEL =
             "works.endoftime.plurishaven/clipboard";
+    private static final String SCREEN_CAPTURE_CHANNEL =
+            "works.endoftime.plurishaven/screen_capture";
 
     private MethodChannel.Result pendingPickResult;
     private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
@@ -145,6 +147,10 @@ public final class MainActivity extends FlutterFragmentActivity {
                 flutterEngine.getDartExecutor().getBinaryMessenger(),
                 CLIPBOARD_CHANNEL
         ).setMethodCallHandler(this::handleClipboardCall);
+        new MethodChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                SCREEN_CAPTURE_CHANNEL
+        ).setMethodCallHandler(this::handleScreenCaptureCall);
     }
 
     private void handleTimezoneCall(MethodCall call, MethodChannel.Result result) {
@@ -174,6 +180,24 @@ public final class MainActivity extends FlutterFragmentActivity {
             clip.getDescription().setExtras(extras);
         }
         clipboard.setPrimaryClip(clip);
+        result.success(null);
+    }
+
+    private void handleScreenCaptureCall(MethodCall call, MethodChannel.Result result) {
+        if (!"setEnabled".equals(call.method)) {
+            result.notImplemented();
+            return;
+        }
+        Boolean enabled = call.argument("enabled");
+        if (enabled == null) {
+            result.error("invalid_argument", "Missing screen capture setting.", null);
+            return;
+        }
+        if (enabled) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
         result.success(null);
     }
 

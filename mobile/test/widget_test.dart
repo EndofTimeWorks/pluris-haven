@@ -2769,6 +2769,14 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setScreenshotBlockingEnabled(bool enabled) async {
+    _customization = _customization.copyWith(
+      screenshotBlockingEnabled: enabled,
+    );
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<void> setAppLockEnabled(bool enabled) async {
     _customization = _customization.copyWith(appLockEnabled: enabled);
     _customizationController.add(_customization);

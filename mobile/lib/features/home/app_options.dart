@@ -122,6 +122,12 @@ class AppOptionsPage extends StatelessWidget {
               onChanged: repository.setAppLockEnabled,
             ),
             SpSwitchRow(
+              title: l10n.screenshotBlockingTitle,
+              subtitle: l10n.screenshotBlockingSubtitle,
+              value: customization.screenshotBlockingEnabled,
+              onChanged: repository.setScreenshotBlockingEnabled,
+            ),
+            SpSwitchRow(
               title: l10n.highContrastTitle,
               subtitle: l10n.highContrastSubtitle,
               value: customization.highContrast,

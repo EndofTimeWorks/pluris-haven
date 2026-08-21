@@ -50,6 +50,7 @@ class AppCustomization {
     required this.frontStatusNotification,
     required this.frontStatusShowOnLockScreen,
     required this.frontStatusRevealMemberName,
+    required this.screenshotBlockingEnabled,
     required this.appLockEnabled,
     required this.highContrast,
     required this.largeText,
@@ -67,6 +68,7 @@ class AppCustomization {
   final bool frontStatusNotification;
   final bool frontStatusShowOnLockScreen;
   final bool frontStatusRevealMemberName;
+  final bool screenshotBlockingEnabled;
   final bool appLockEnabled;
   final bool highContrast;
   final bool largeText;
@@ -91,6 +93,7 @@ class AppCustomization {
     frontStatusNotification: false,
     frontStatusShowOnLockScreen: false,
     frontStatusRevealMemberName: false,
+    screenshotBlockingEnabled: true,
     appLockEnabled: false,
     highContrast: false,
     largeText: false,
@@ -109,6 +112,7 @@ class AppCustomization {
     bool? frontStatusNotification,
     bool? frontStatusShowOnLockScreen,
     bool? frontStatusRevealMemberName,
+    bool? screenshotBlockingEnabled,
     bool? appLockEnabled,
     bool? highContrast,
     bool? largeText,
@@ -132,6 +136,8 @@ class AppCustomization {
           frontStatusShowOnLockScreen ?? this.frontStatusShowOnLockScreen,
       frontStatusRevealMemberName:
           frontStatusRevealMemberName ?? this.frontStatusRevealMemberName,
+      screenshotBlockingEnabled:
+          screenshotBlockingEnabled ?? this.screenshotBlockingEnabled,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       highContrast: highContrast ?? this.highContrast,
       largeText: largeText ?? this.largeText,
@@ -199,6 +205,9 @@ class LocalAppCustomizationStore {
   Future<void> setFrontStatusRevealMemberName(bool value) =>
       _write(_frontStatusRevealMemberNameKey, value.toString());
 
+  Future<void> setScreenshotBlockingEnabled(bool value) =>
+      _write(_screenshotBlockingEnabledKey, value.toString());
+
   Future<void> setAppLockEnabled(bool value) =>
       _write(_appLockEnabledKey, value.toString());
 
@@ -264,6 +273,10 @@ class LocalAppCustomizationStore {
       ),
       frontStatusRevealMemberName: _readBool(
         values[_frontStatusRevealMemberNameKey],
+      ),
+      screenshotBlockingEnabled: _readBool(
+        values[_screenshotBlockingEnabledKey],
+        defaultValue: true,
       ),
       appLockEnabled: _readBool(values[_appLockEnabledKey]),
       highContrast: _readBool(values[_highContrastKey]),
@@ -339,6 +352,7 @@ const _reducedMotionKey = 'reduced_motion';
 const _frontStatusNotificationKey = 'front_status_notification';
 const _frontStatusShowOnLockScreenKey = 'front_status_show_on_lock_screen';
 const _frontStatusRevealMemberNameKey = 'front_status_reveal_member_name';
+const _screenshotBlockingEnabledKey = 'screenshot_blocking_enabled';
 const _appLockEnabledKey = 'app_lock_enabled';
 const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';

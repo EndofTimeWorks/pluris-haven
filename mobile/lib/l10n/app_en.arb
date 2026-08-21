@@ -22,6 +22,8 @@
   "frontStatusRevealMemberNameSubtitle": "otherwise the notification only says Pluris Haven is active",
   "appLockTitle": "App lock",
   "appLockSubtitle": "require your device screen lock or biometrics to open the app",
+  "screenshotBlockingTitle": "Block screenshots",
+  "screenshotBlockingSubtitle": "hide app content from screenshots and screen recordings",
   "appLockReason": "Unlock Pluris Haven",
   "appLockedTitle": "Pluris Haven is locked",
   "appLockedBody": "Unlock your device to continue.",
