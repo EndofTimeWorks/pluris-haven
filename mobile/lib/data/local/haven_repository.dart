@@ -2105,51 +2105,6 @@ ORDER BY imported_at DESC
     return text;
   }
 
-  Future<Map<String, Object?>> _frontToJson(FrontSession front) async => {
-    'id': front.id,
-    'label': await _decryptLocalText(
-      front.label,
-      'front_sessions',
-      front.id,
-      'label',
-    ),
-    'status_note': await _decryptLocalText(
-      front.statusNote,
-      'front_sessions',
-      front.id,
-      'status_note',
-    ),
-    'started_at': front.startedAt.toIso8601String(),
-    'ended_at': front.endedAt?.toIso8601String(),
-    'created_at': front.createdAt.toIso8601String(),
-    'updated_at': front.updatedAt.toIso8601String(),
-  };
-
-  Map<String, Object?> _frontMemberToJson(FrontSessionMember link) => {
-    'session_id': link.sessionId,
-    'member_id': link.memberId,
-  };
-
-  Future<Map<String, Object?>> _frontAuditEventToJson(
-    FrontAuditEvent event,
-  ) async => {
-    'id': event.id,
-    'front_id': event.frontId,
-    'before_snapshot': await _decryptLocalText(
-      event.beforeSnapshot,
-      'front_audit_events',
-      event.id,
-      'before_snapshot',
-    ),
-    'after_snapshot': await _decryptLocalText(
-      event.afterSnapshot,
-      'front_audit_events',
-      event.id,
-      'after_snapshot',
-    ),
-    'created_at': event.createdAt.toIso8601String(),
-  };
-
   Future<Map<String, Object?>> _namedFrontToJson(NamedFront front) async => {
     'id': front.id,
     'name':
