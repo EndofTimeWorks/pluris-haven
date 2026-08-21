@@ -13,6 +13,7 @@ import '../security/haven_crypto.dart';
 import 'app_customization.dart';
 import 'app_database.dart';
 import 'chat_store.dart';
+import 'content_revision_store.dart';
 import 'custom_field_store.dart';
 import 'front_audit_store.dart';
 import 'group_store.dart';
@@ -564,6 +565,10 @@ class LocalHavenRepository implements HavenRepository {
       database,
       decryptText: _decryptLocalText,
     );
+    _revisions = LocalContentRevisionStore(
+      database,
+      decryptText: _decryptLocalText,
+    );
   }
 
   final AppDatabase database;
@@ -583,6 +588,7 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalPendingActionStore _pendingActions;
   late final LocalNotificationEventStore _notificationEvents;
   late final LocalFrontAuditStore _frontAudit;
+  late final LocalContentRevisionStore _revisions;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
 
@@ -4926,54 +4932,13 @@ SELECT
   Stream<List<ContentRevision>> watchRevisions(
     String targetType,
     String targetId,
-  ) {
-    final query = database.select(database.contentRevisions)
-      ..where(
-        (r) => r.targetType.equals(targetType) & r.targetId.equals(targetId),
-      )
-      ..orderBy([
-        (r) => OrderingTerm(expression: r.createdAt, mode: OrderingMode.desc),
-      ]);
-    return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          row.copyWith(
-            title: Value(
-              await _decryptLocalText(
-                row.title,
-                'content_revisions',
-                row.id,
-                'title',
-              ),
-            ),
-            body:
-                (await _decryptLocalText(
-                  row.body,
-                  'content_revisions',
-                  row.id,
-                  'body',
-                )) ??
-                '',
-          ),
-      ],
-    );
-  }
+  ) => _revisions.watch(targetType, targetId);
 
   @override
-  Future<void> pinRevision(String revisionId) async {
-    await (database.update(
-      database.contentRevisions,
-    )..where((r) => r.id.equals(revisionId))).write(
-      ContentRevisionsCompanion(pinnedAt: Value(DateTime.now().toUtc())),
-    );
-  }
+  Future<void> pinRevision(String revisionId) => _revisions.pin(revisionId);
 
   @override
-  Future<void> unpinRevision(String revisionId) async {
-    await (database.update(database.contentRevisions)
-          ..where((r) => r.id.equals(revisionId)))
-        .write(const ContentRevisionsCompanion(pinnedAt: Value(null)));
-  }
+  Future<void> unpinRevision(String revisionId) => _revisions.unpin(revisionId);
 
   @override
   Future<void> restoreRevision(
