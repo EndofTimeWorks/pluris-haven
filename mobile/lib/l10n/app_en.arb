@@ -251,6 +251,9 @@
     }
   },
   "restoreEncryptedBackupButton": "Restore this backup",
+  "restoreEncryptedBackupTitle": "Restore encrypted backup?",
+  "restoreEncryptedBackupBody": "This will merge the backup into local data and update matching records. Keep a local encrypted archive before continuing.",
+  "restoreEncryptedBackupConfirm": "Restore backup",
   "restoringEncryptedBackup": "Downloading and restoring encrypted backup...",
   "encryptedBackupRestored": "Encrypted backup restored.",
   "encryptedBackupRestoreFailed": "Could not restore encrypted backup: {error}",

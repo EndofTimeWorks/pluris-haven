@@ -713,9 +713,28 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
 
   Future<void> _restore(ServerBackupSnapshot backup) async {
     final repository = widget.repository as LocalHavenRepository;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.restoreEncryptedBackupTitle),
+        content: Text(l10n.restoreEncryptedBackupBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.restoreEncryptedBackupConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     setState(() {
       _restoringSnapshotId = backup.snapshotId;
-      _restoreMessage = AppLocalizations.of(context).restoringEncryptedBackup;
+      _restoreMessage = l10n.restoringEncryptedBackup;
     });
     try {
       final snapshot = await widget.controller!.downloadBackup(backup);
@@ -723,7 +742,7 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
       final rehearsal = await repository.rehearseLocalArchiveRestore(
         archiveJson,
         strategy: ImportConflictStrategy.update,
-        fileName: '\${backup.snapshotId}.json',
+        fileName: '${backup.snapshotId}.json',
         source: ImportSource.plurisHavenArchive,
       );
       if (!rehearsal.canRestore) {
@@ -732,7 +751,7 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
       await repository.importLocalArchiveJson(
         archiveJson,
         strategy: ImportConflictStrategy.update,
-        fileName: '\${backup.snapshotId}.json',
+        fileName: '${backup.snapshotId}.json',
         source: ImportSource.plurisHavenArchive,
       );
       if (!mounted) return;

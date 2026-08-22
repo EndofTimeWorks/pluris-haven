@@ -1212,6 +1212,24 @@ abstract class AppLocalizations {
   /// **'Restore this backup'**
   String get restoreEncryptedBackupButton;
 
+  /// No description provided for @restoreEncryptedBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore encrypted backup?'**
+  String get restoreEncryptedBackupTitle;
+
+  /// No description provided for @restoreEncryptedBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will merge the backup into local data and update matching records. Keep a local encrypted archive before continuing.'**
+  String get restoreEncryptedBackupBody;
+
+  /// No description provided for @restoreEncryptedBackupConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup'**
+  String get restoreEncryptedBackupConfirm;
+
   /// No description provided for @restoringEncryptedBackup.
   ///
   /// In en, this message translates to:

@@ -611,6 +611,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restoreEncryptedBackupButton => 'Restore this backup';
 
   @override
+  String get restoreEncryptedBackupTitle => 'Restore encrypted backup?';
+
+  @override
+  String get restoreEncryptedBackupBody =>
+      'This will merge the backup into local data and update matching records. Keep a local encrypted archive before continuing.';
+
+  @override
+  String get restoreEncryptedBackupConfirm => 'Restore backup';
+
+  @override
   String get restoringEncryptedBackup =>
       'Downloading and restoring encrypted backup...';
 
