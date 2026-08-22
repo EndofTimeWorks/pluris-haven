@@ -646,18 +646,33 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
                     backup.totalBytes,
                   ),
                 ),
-                trailing: IconButton(
-                  tooltip: l10n.deleteEncryptedBackupTooltip,
-                  onPressed: controller.busy
-                      ? null
-                      : () => confirmDelete(
-                          context,
-                          title: l10n.deleteEncryptedBackupTitle,
-                          body: l10n.deleteEncryptedBackupBody,
-                          onDelete: () =>
-                              controller.deleteBackup(backup.snapshotId),
-                        ),
-                  icon: const Icon(Icons.delete_outline),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.restoreEncryptedBackupButton,
+                      onPressed:
+                          !backup.complete ||
+                              _restoringSnapshotId != null ||
+                              widget.repository is! LocalHavenRepository
+                          ? null
+                          : () => _restore(backup),
+                      icon: const Icon(Icons.restore_rounded),
+                    ),
+                    IconButton(
+                      tooltip: l10n.deleteEncryptedBackupTooltip,
+                      onPressed: controller.busy
+                          ? null
+                          : () => confirmDelete(
+                              context,
+                              title: l10n.deleteEncryptedBackupTitle,
+                              body: l10n.deleteEncryptedBackupBody,
+                              onDelete: () =>
+                                  controller.deleteBackup(backup.snapshotId),
+                            ),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
                 ),
                 onTap:
                     backup.complete &&
