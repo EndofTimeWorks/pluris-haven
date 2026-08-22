@@ -371,70 +371,6 @@ void main() {
     expect(repository.watchMembers().first, throwsA(anything));
   });
 
-  test('migrates legacy notes and messages into encrypted storage', () async {
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    final repository = testRepository(database);
-    await repository.ensureLocalSystem();
-    final now = DateTime.now().toUtc();
-    await database
-        .into(database.notes)
-        .insert(
-          NotesCompanion.insert(
-            id: 'legacy-note',
-            systemId: localSystemId,
-            title: 'Private note',
-            body: 'Legacy note body',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    await database
-        .into(database.messages)
-        .insert(
-          MessagesCompanion.insert(
-            id: 'legacy-message',
-            systemId: localSystemId,
-            body: 'Legacy message body',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-
-    await repository.migrateLocalPrivateContentToEncryption();
-    final changesAfterMigration = await database
-        .customSelect('SELECT total_changes() AS count')
-        .getSingle();
-    await repository.migrateLocalPrivateContentToEncryption();
-    final changesAfterNoOp = await database
-        .customSelect('SELECT total_changes() AS count')
-        .getSingle();
-
-    final storedNote = (await database.select(database.notes).get()).single;
-    final storedMessage =
-        (await database.select(database.messages).get()).single;
-    expect(storedNote.title, startsWith('ph2:'));
-    expect(storedNote.body, startsWith('ph2:'));
-    expect(storedMessage.body, startsWith('ph2:'));
-    expect(
-      changesAfterNoOp.read<int>('count'),
-      changesAfterMigration.read<int>('count'),
-    );
-    expect(
-      await (database.select(database.appPreferences)..where(
-            (row) => row.key.equals('internal.local_encryption_sweep_version'),
-          ))
-          .getSingle()
-          .then((row) => row.value),
-      '2',
-    );
-    expect((await repository.watchNotes().first).single.title, 'Private note');
-    expect(
-      (await repository.watchMessages().first).single.body,
-      'Legacy message body',
-    );
-  });
-
   test('rejects local ciphertext moved between rows or columns', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -473,12 +409,25 @@ void main() {
             id: 'revision-restore-test',
             targetType: 'note',
             targetId: note.id,
-            title: const Value('Earlier title'),
-            body: 'Earlier body',
+            title: Value(
+              await _encryptedLocalText(
+                testCrypto(),
+                'Earlier title',
+                'content_revisions',
+                'revision-restore-test',
+                'title',
+              ),
+            ),
+            body: await _encryptedLocalText(
+              testCrypto(),
+              'Earlier body',
+              'content_revisions',
+              'revision-restore-test',
+              'body',
+            ),
             createdAt: now,
           ),
         );
-    await repository.migrateLocalPrivateContentToEncryption();
 
     await repository.restoreRevision('revision-restore-test', 'note', note.id);
 
@@ -488,59 +437,6 @@ void main() {
     final raw = (await database.select(database.notes).get()).single;
     expect(raw.title, startsWith('ph2:'));
     expect(raw.body, startsWith('ph2:'));
-  });
-
-  test('migrates and round-trips private custom fields', () async {
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    final repository = testRepository(database);
-    await repository.ensureLocalSystem();
-    final now = DateTime.now().toUtc();
-    await database
-        .into(database.customFieldDefinitions)
-        .insert(
-          CustomFieldDefinitionsCompanion.insert(
-            id: 'legacy-field',
-            systemId: localSystemId,
-            name: 'Legal name',
-            privacy: const Value('private'),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    await database
-        .into(database.customFieldValues)
-        .insert(
-          CustomFieldValuesCompanion.insert(
-            id: 'legacy-field-value',
-            fieldId: 'legacy-field',
-            value: 'River',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-
-    await repository.migrateLocalPrivateContentToEncryption();
-
-    final storedField =
-        (await database.select(database.customFieldDefinitions).get()).single;
-    final storedValue =
-        (await database.select(database.customFieldValues).get()).single;
-    expect(storedField.name, isNot('Legal name'));
-    expect(storedField.privacy, isNot('private'));
-    expect(storedValue.value, isNot('River'));
-
-    final fields = await repository.watchCustomFields().first;
-    expect(fields.single.name, 'Legal name');
-    expect(fields.single.privacy, 'private');
-    final values = await repository.watchCustomFieldValues().first;
-    expect(values.single.value, 'River');
-
-    final archive =
-        jsonDecode(await repository.buildLocalArchiveJson())
-            as Map<String, Object?>;
-    expect((archive['custom_fields'] as List).single['name'], 'Legal name');
-    expect((archive['custom_field_values'] as List).single['value'], 'River');
   });
 
   test('stores edits assigns and deletes privacy buckets', () async {
@@ -905,8 +801,22 @@ void main() {
             id: 'revision-note-1',
             targetType: 'note',
             targetId: note.id,
-            title: const Value('Grounding'),
-            body: 'Drink water and breathe.',
+            title: Value(
+              await _encryptedLocalText(
+                testCrypto(),
+                'Grounding',
+                'content_revisions',
+                'revision-note-1',
+                'title',
+              ),
+            ),
+            body: await _encryptedLocalText(
+              testCrypto(),
+              'Drink water and breathe.',
+              'content_revisions',
+              'revision-note-1',
+              'body',
+            ),
             pinnedAt: Value(now),
             createdAt: now,
           ),
@@ -920,11 +830,18 @@ void main() {
             id: 'front-audit-1',
             frontId: front.id,
             beforeSnapshot: const Value(null),
-            afterSnapshot: const Value('{"members":["Iris"]}'),
+            afterSnapshot: Value(
+              await _encryptedLocalText(
+                testCrypto(),
+                '{"members":["Iris"]}',
+                'front_audit_events',
+                'front-audit-1',
+                'after_snapshot',
+              ),
+            ),
             createdAt: now,
           ),
         );
-    await repository.migrateLocalPrivateContentToEncryption();
     final poll = (await repository.watchPolls().first).single;
     await database
         .into(database.pollVoteEvents)
@@ -1102,8 +1019,22 @@ void main() {
             id: 'revision-note-1',
             targetType: 'note',
             targetId: note.id,
-            title: const Value('Grounding'),
-            body: 'Drink water and breathe.',
+            title: Value(
+              await _encryptedLocalText(
+                testCrypto(),
+                'Grounding',
+                'content_revisions',
+                'revision-note-1',
+                'title',
+              ),
+            ),
+            body: await _encryptedLocalText(
+              testCrypto(),
+              'Drink water and breathe.',
+              'content_revisions',
+              'revision-note-1',
+              'body',
+            ),
             pinnedAt: Value(now),
             createdAt: now,
           ),
@@ -1117,11 +1048,18 @@ void main() {
             id: 'front-audit-1',
             frontId: front.id,
             beforeSnapshot: const Value(null),
-            afterSnapshot: const Value('{"members":["Iris"]}'),
+            afterSnapshot: Value(
+              await _encryptedLocalText(
+                testCrypto(),
+                '{"members":["Iris"]}',
+                'front_audit_events',
+                'front-audit-1',
+                'after_snapshot',
+              ),
+            ),
             createdAt: now,
           ),
         );
-    await source.migrateLocalPrivateContentToEncryption();
     final poll = (await source.watchPolls().first).single;
     await sourceDatabase
         .into(sourceDatabase.pollVoteEvents)
@@ -1631,6 +1569,20 @@ void main() {
     expect(archive, isNot(contains('content://')));
     expect(archive, isNot(contains('/data/user/0/')));
   });
+}
+
+Future<String> _encryptedLocalText(
+  HavenCrypto crypto,
+  String value,
+  String table,
+  String rowId,
+  String column,
+) async {
+  final ciphertext = await crypto.encrypt(
+    value,
+    aad: 'pluris-haven:local-text:v2\u0000$table\u0000$rowId\u0000$column',
+  );
+  return 'ph2:$ciphertext';
 }
 
 class _CountingHavenCrypto extends HavenCrypto {

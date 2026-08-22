@@ -45,9 +45,7 @@ SELECT
     final storedSystemName = data['system_name'] as String;
 
     return HomeSnapshot(
-      systemName:
-          (storedSystemName.startsWith(_localEncryptedTextPrefix) ||
-              storedSystemName.startsWith(_legacyLocalEncryptedTextPrefix))
+      systemName: storedSystemName.startsWith(_localEncryptedTextPrefix)
           ? (await _decryptLocalText(
                   storedSystemName,
                   'plural_systems',

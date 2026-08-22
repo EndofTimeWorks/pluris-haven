@@ -50,7 +50,6 @@ Future<void> main() async {
   final repository = LocalHavenRepository(database, crypto: crypto);
   await repository.ensureLocalSystem();
   await repository.migrateMemberNamesToEncryption();
-  await repository.migrateLocalPrivateContentToEncryption();
   final serverAccount = ServerAccountController();
   appDebugLog('Local repository ready');
 

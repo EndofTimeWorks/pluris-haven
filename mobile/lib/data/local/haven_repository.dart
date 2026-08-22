@@ -65,16 +65,11 @@ part 'archive_codec_store.dart';
 part 'background_job_store.dart';
 part 'revision_restore_store.dart';
 part 'repository_contract.dart';
-part 'encryption_migration_store.dart';
 
-const _legacyLocalEncryptedTextPrefix = 'ph1:';
 const _localEncryptedTextPrefix = 'ph2:';
 const _memberEncryptionSweepPreference =
     'internal.member_encryption_sweep_version';
-const _localEncryptionSweepPreference =
-    'internal.local_encryption_sweep_version';
 const _memberEncryptionSweepVersion = '2';
-const _localEncryptionSweepVersion = '2';
 
 class LocalHavenRepository implements HavenRepository {
   LocalHavenRepository(this.database, {required this.crypto})
@@ -196,8 +191,6 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> migrateMemberNamesToEncryption() =>
       _migrateMemberNamesToEncryption();
 
-  Future<void> migrateLocalPrivateContentToEncryption() =>
-      _migrateLocalPrivateContentToEncryption();
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _homeWatchSnapshot();
 
@@ -365,17 +358,6 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> updateMember(String memberId, MemberDraft draft) =>
       _members.update(memberId, draft);
-
-  Future<String?> _migrateNullableLocalText(
-    String? stored,
-    String table,
-    String rowId,
-    String column,
-  ) async {
-    return stored == null
-        ? null
-        : _migrateLocalText(stored, table, rowId, column);
-  }
 
   @override
   Future<void> restoreMember(String memberId) =>

@@ -49,7 +49,6 @@ Future<bool> _runBackgroundTask(
   try {
     await repository.ensureLocalSystem();
     await repository.migrateMemberNamesToEncryption();
-    await repository.migrateLocalPrivateContentToEncryption();
     switch (task) {
       case importArchiveTaskName:
         final jobId = inputData['job_id'] as String?;

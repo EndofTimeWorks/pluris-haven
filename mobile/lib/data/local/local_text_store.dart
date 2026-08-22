@@ -38,11 +38,6 @@ extension LocalHavenRepositoryLocalText on LocalHavenRepository {
     String column,
   ) async {
     if (stored == null) return null;
-    if (stored.startsWith(_legacyLocalEncryptedTextPrefix)) {
-      return crypto.decrypt(
-        stored.substring(_legacyLocalEncryptedTextPrefix.length),
-      );
-    }
     if (!stored.startsWith(_localEncryptedTextPrefix)) {
       throw StateError('Protected local text is not encrypted.');
     }
@@ -51,25 +46,4 @@ extension LocalHavenRepositoryLocalText on LocalHavenRepository {
       aad: _localTextAad(table, rowId, column),
     );
   }
-
-  Future<String> _migrateLocalText(
-    String stored,
-    String table,
-    String rowId,
-    String column,
-  ) async {
-    if (stored.startsWith(_localEncryptedTextPrefix)) return stored;
-    final plaintext = stored.startsWith(_legacyLocalEncryptedTextPrefix)
-        ? await crypto.decrypt(
-            stored.substring(_legacyLocalEncryptedTextPrefix.length),
-          )
-        : stored;
-    if (plaintext == null) {
-      throw StateError('Legacy local text decryption returned no value.');
-    }
-    return _encryptLocalText(plaintext, table, rowId, column);
-  }
-
-  bool _needsLocalTextMigration(String? stored) =>
-      stored != null && !stored.startsWith(_localEncryptedTextPrefix);
 }
