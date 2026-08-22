@@ -2130,6 +2130,7 @@ void main() {
     await tester.ensureVisible(find.text('Import / Export'));
     await tester.tap(find.text('Import / Export'));
     await tester.pumpAndSettle();
+    final pageScrollable = find.byType(Scrollable).first;
     await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
     await tester.pumpAndSettle();
 
@@ -2155,6 +2156,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('restore-rehearsal-button')),
       240,
+      scrollable: pageScrollable,
     );
     await tester.ensureVisible(
       find.byKey(const ValueKey('restore-rehearsal-button')),
@@ -2173,10 +2175,18 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('members: 1'), findsWidgets);
-    await tester.scrollUntilVisible(find.text('Import archive'), 240);
+    await tester.scrollUntilVisible(
+      find.text('Import archive'),
+      240,
+      scrollable: pageScrollable,
+    );
     expect(find.text('Import archive'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Refresh preview'), -240);
+    await tester.scrollUntilVisible(
+      find.text('Refresh preview'),
+      -240,
+      scrollable: pageScrollable,
+    );
     await tester.tap(find.text('Refresh preview'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
 
