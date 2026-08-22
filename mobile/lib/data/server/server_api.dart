@@ -140,6 +140,9 @@ class ServerBackupSnapshot {
   const ServerBackupSnapshot({
     required this.snapshotId,
     required this.manifestSha256,
+    this.format,
+    this.version,
+    this.chunkSize,
     required this.chunkCount,
     required this.uploadedChunks,
     required this.totalBytes,
@@ -149,6 +152,9 @@ class ServerBackupSnapshot {
 
   final String snapshotId;
   final String manifestSha256;
+  final String? format;
+  final int? version;
+  final int? chunkSize;
   final int chunkCount;
   final int uploadedChunks;
   final int totalBytes;
@@ -162,6 +168,9 @@ class ServerBackupSnapshot {
     return ServerBackupSnapshot(
       snapshotId: _string(json, 'snapshot_id'),
       manifestSha256: _string(json, 'manifest_sha256'),
+      format: json['format'] as String?,
+      version: json['version'] as int?,
+      chunkSize: json['chunk_size'] as int?,
       chunkCount: _integer(json, 'chunk_count'),
       uploadedChunks: _integer(json, 'uploaded_chunks'),
       totalBytes: _integer(json, 'total_bytes'),
@@ -412,6 +421,9 @@ class ServerApi {
     String token, {
     required String snapshotId,
     required String manifestSha256,
+    required String format,
+    required int version,
+    required int chunkSize,
     required int chunkCount,
     required int totalBytes,
     required DateTime createdAt,
@@ -423,6 +435,9 @@ class ServerApi {
       jsonBody: {
         'snapshot_id': snapshotId,
         'manifest_sha256': manifestSha256,
+        'format': format,
+        'version': version,
+        'chunk_size': chunkSize,
         'chunk_count': chunkCount,
         'total_bytes': totalBytes,
         'created_at': createdAt.toUtc().toIso8601String(),
@@ -448,6 +463,20 @@ class ServerApi {
         'X-Content-SHA256': sha256,
       },
     );
+  }
+
+  Future<List<int>> getBackupChunk(
+    String token, {
+    required String snapshotId,
+    required int index,
+  }) async {
+    final response = await _request(
+      'GET',
+      '/v1/backups/snapshots/$snapshotId/chunks/$index',
+      token: token,
+      headers: {'Accept': 'application/octet-stream'},
+    );
+    return response.bodyBytes;
   }
 
   Future<void> deleteBackupSnapshot(String token, String snapshotId) async {

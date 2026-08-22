@@ -124,6 +124,9 @@ class MessageResponse(BaseModel):
 class BackupSnapshotCreate(BaseModel):
     snapshot_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
     manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    format: str | None = Field(default=None, max_length=128)
+    version: int | None = Field(default=None, ge=1, le=10)
+    chunk_size: int | None = Field(default=None, ge=1, le=4 * 1024 * 1024)
     chunk_count: int = Field(ge=1, le=100_000)
     total_bytes: int = Field(ge=1, le=1_000_000_000_000)
     created_at: datetime | None = None
@@ -132,6 +135,9 @@ class BackupSnapshotCreate(BaseModel):
 class BackupSnapshotView(BaseModel):
     snapshot_id: str
     manifest_sha256: str
+    format: str | None = None
+    version: int | None = None
+    chunk_size: int | None = None
     chunk_count: int
     uploaded_chunks: int
     total_bytes: int

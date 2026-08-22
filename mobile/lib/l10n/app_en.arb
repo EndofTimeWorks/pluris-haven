@@ -250,6 +250,13 @@
       "totalBytes": { "type": "int" }
     }
   },
+  "restoreEncryptedBackupButton": "Restore this backup",
+  "restoringEncryptedBackup": "Downloading and restoring encrypted backup...",
+  "encryptedBackupRestored": "Encrypted backup restored.",
+  "encryptedBackupRestoreFailed": "Could not restore encrypted backup: {error}",
+  "@encryptedBackupRestoreFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
   "deleteEncryptedBackupTooltip": "Delete encrypted backup",
   "deleteEncryptedBackupTitle": "Delete encrypted backup?",
   "deleteEncryptedBackupBody": "This server copy will be permanently removed.",

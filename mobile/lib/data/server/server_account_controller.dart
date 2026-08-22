@@ -203,6 +203,9 @@ class ServerAccountController extends ChangeNotifier {
             token,
             snapshotId: snapshot.snapshotId,
             manifestSha256: manifestSha,
+            format: encryptedBackupFormat,
+            version: snapshot.version,
+            chunkSize: snapshot.chunkSize,
             chunkCount: snapshot.chunks.length,
             totalBytes: totalBytes,
             createdAt: snapshot.createdAt,
@@ -239,6 +242,49 @@ class ServerAccountController extends ChangeNotifier {
         (api, token) => api.backupSnapshots(token),
       );
       status = 'Encrypted backup uploaded.';
+    });
+  }
+
+  Future<EncryptedBackupSnapshot> downloadBackup(
+    ServerBackupSnapshot metadata,
+  ) async {
+    if (!metadata.complete) {
+      throw const ServerApiException(
+        'This backup is incomplete and cannot be restored.',
+      );
+    }
+    if (metadata.format != encryptedBackupFormat ||
+        metadata.version == null ||
+        metadata.chunkSize == null) {
+      throw const ServerApiException(
+        'This backup predates online restore metadata and cannot be restored.',
+      );
+    }
+
+    return _authenticated((api, token) async {
+      final chunks = <EncryptedBackupChunk>[];
+      for (var index = 0; index < metadata.chunkCount; index++) {
+        final content = await api.getBackupChunk(
+          token,
+          snapshotId: metadata.snapshotId,
+          index: index,
+        );
+        final ciphertext = utf8.decode(content);
+        chunks.add(
+          EncryptedBackupChunk(
+            index: index,
+            ciphertext: ciphertext,
+            sha256: await _sha256(content),
+          ),
+        );
+      }
+      return EncryptedBackupSnapshot(
+        version: metadata.version!,
+        snapshotId: metadata.snapshotId,
+        createdAt: metadata.createdAt,
+        chunkSize: metadata.chunkSize!,
+        chunks: List.unmodifiable(chunks),
+      );
     });
   }
 

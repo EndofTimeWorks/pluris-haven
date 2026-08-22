@@ -1206,6 +1206,30 @@ abstract class AppLocalizations {
     int totalBytes,
   );
 
+  /// No description provided for @restoreEncryptedBackupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this backup'**
+  String get restoreEncryptedBackupButton;
+
+  /// No description provided for @restoringEncryptedBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading and restoring encrypted backup...'**
+  String get restoringEncryptedBackup;
+
+  /// No description provided for @encryptedBackupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup restored.'**
+  String get encryptedBackupRestored;
+
+  /// No description provided for @encryptedBackupRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore encrypted backup: {error}'**
+  String encryptedBackupRestoreFailed(String error);
+
   /// No description provided for @deleteEncryptedBackupTooltip.
   ///
   /// In en, this message translates to:

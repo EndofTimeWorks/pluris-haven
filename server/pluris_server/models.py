@@ -168,6 +168,9 @@ class BackupSnapshot(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     snapshot_id: Mapped[str] = mapped_column(String(128))
     manifest_sha256: Mapped[str] = mapped_column(String(64))
+    format: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    version: Mapped[int | None] = mapped_column(nullable=True)
+    chunk_size: Mapped[int | None] = mapped_column(nullable=True)
     chunk_count: Mapped[int]
     total_bytes: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

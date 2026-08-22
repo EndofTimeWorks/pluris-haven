@@ -578,6 +578,9 @@ class ServerBackupPanel extends StatefulWidget {
 }
 
 class _ServerBackupPanelState extends State<ServerBackupPanel> {
+  String? _restoringSnapshotId;
+  String? _restoreMessage;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -656,7 +659,24 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
                         ),
                   icon: const Icon(Icons.delete_outline),
                 ),
+                onTap:
+                    backup.complete &&
+                        _restoringSnapshotId == null &&
+                        widget.repository is LocalHavenRepository
+                    ? () => _restore(backup)
+                    : null,
               ),
+            if (_restoreMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _restoreMessage!,
+                style: TextStyle(
+                  color: _restoreMessage!.startsWith('Could not')
+                      ? Theme.of(context).colorScheme.error
+                      : _spMuted,
+                ),
+              ),
+            ],
             if (controller.error != null)
               _ServerMessage(controller.error!, error: true),
             if (controller.status != null) _ServerMessage(controller.status!),
@@ -674,6 +694,50 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
       createdAt: now,
     );
     await widget.controller!.uploadBackup(snapshot);
+  }
+
+  Future<void> _restore(ServerBackupSnapshot backup) async {
+    final repository = widget.repository as LocalHavenRepository;
+    setState(() {
+      _restoringSnapshotId = backup.snapshotId;
+      _restoreMessage = AppLocalizations.of(context).restoringEncryptedBackup;
+    });
+    try {
+      final snapshot = await widget.controller!.downloadBackup(backup);
+      final archiveJson = await snapshot.restoreArchiveJson(repository.crypto);
+      final rehearsal = await repository.rehearseLocalArchiveRestore(
+        archiveJson,
+        strategy: ImportConflictStrategy.update,
+        fileName: '\${backup.snapshotId}.json',
+        source: ImportSource.plurisHavenArchive,
+      );
+      if (!rehearsal.canRestore) {
+        throw StateError(rehearsal.error ?? 'Restore rehearsal failed.');
+      }
+      await repository.importLocalArchiveJson(
+        archiveJson,
+        strategy: ImportConflictStrategy.update,
+        fileName: '\${backup.snapshotId}.json',
+        source: ImportSource.plurisHavenArchive,
+      );
+      if (!mounted) return;
+      setState(() {
+        _restoreMessage = AppLocalizations.of(context).encryptedBackupRestored;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _restoreMessage = AppLocalizations.of(
+          context,
+        ).encryptedBackupRestoreFailed(error.toString());
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _restoringSnapshotId = null;
+        });
+      }
+    }
   }
 }
 

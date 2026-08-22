@@ -569,6 +569,9 @@ class FakeServerApi extends ServerApi {
     String token, {
     required String snapshotId,
     required String manifestSha256,
+    required String format,
+    required int version,
+    required int chunkSize,
     required int chunkCount,
     required int totalBytes,
     required DateTime createdAt,
@@ -576,6 +579,9 @@ class FakeServerApi extends ServerApi {
     final row = ServerBackupSnapshot(
       snapshotId: snapshotId,
       manifestSha256: manifestSha256,
+      format: format,
+      version: version,
+      chunkSize: chunkSize,
       chunkCount: chunkCount,
       uploadedChunks: 0,
       totalBytes: totalBytes,
@@ -604,6 +610,9 @@ class FakeServerApi extends ServerApi {
         ServerBackupSnapshot(
           snapshotId: original.snapshotId,
           manifestSha256: original.manifestSha256,
+          format: original.format,
+          version: original.version,
+          chunkSize: original.chunkSize,
           chunkCount: original.chunkCount,
           uploadedChunks: original.uploadedChunks + 1,
           totalBytes: original.totalBytes,

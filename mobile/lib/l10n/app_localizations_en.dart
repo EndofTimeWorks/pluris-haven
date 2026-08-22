@@ -608,6 +608,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get restoreEncryptedBackupButton => 'Restore this backup';
+
+  @override
+  String get restoringEncryptedBackup =>
+      'Downloading and restoring encrypted backup...';
+
+  @override
+  String get encryptedBackupRestored => 'Encrypted backup restored.';
+
+  @override
+  String encryptedBackupRestoreFailed(String error) {
+    return 'Could not restore encrypted backup: $error';
+  }
+
+  @override
   String get deleteEncryptedBackupTooltip => 'Delete encrypted backup';
 
   @override
@@ -1798,7 +1813,7 @@ class AppLocalizationsEn extends AppLocalizations {
     String relationKind,
     String relation,
   ) {
-    return '$ownerKind "$owner" kept; missing $relationKind "$relation" link was dropped.';
+    return '$ownerKind \"$owner\" kept; missing $relationKind \"$relation\" link was dropped.';
   }
 
   @override

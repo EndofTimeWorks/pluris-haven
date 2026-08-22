@@ -15,6 +15,9 @@ def test_authenticated_backup_snapshot_upload_download_and_delete(client: TestCl
     payload = {
         "snapshot_id": "snapshot-1",
         "manifest_sha256": "a" * 64,
+        "format": "pluris_haven.encrypted_backup_snapshot",
+        "version": 2,
+        "chunk_size": 1024,
         "chunk_count": 1,
         "total_bytes": 13,
     }
@@ -22,6 +25,9 @@ def test_authenticated_backup_snapshot_upload_download_and_delete(client: TestCl
     created = client.post("/v1/backups/snapshots", headers=headers, json=payload)
     assert created.status_code == 201, created.text
     assert created.json()["uploaded_chunks"] == 0
+    assert created.json()["format"] == payload["format"]
+    assert created.json()["version"] == payload["version"]
+    assert created.json()["chunk_size"] == payload["chunk_size"]
 
     body = b"opaque-chunk"
     chunk_headers = {
