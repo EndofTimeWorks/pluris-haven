@@ -320,6 +320,12 @@ void main() {
       expect(api.uploadedChunks, [utf8.encode('ph1:ciphertext')]);
       expect(controller.uploadCompletedChunks, 1);
 
+      final downloaded = await controller.downloadBackup(
+        api.snapshotRows.single,
+      );
+      expect(downloaded.snapshotId, 'mobile-test');
+      expect(downloaded.chunks.single.ciphertext, 'ph1:ciphertext');
+
       api
         ..rejectAccess = true
         ..failNextRefresh = true;
@@ -621,6 +627,13 @@ class FakeServerApi extends ServerApi {
         ),
       );
   }
+
+  @override
+  Future<List<int>> getBackupChunk(
+    String token, {
+    required String snapshotId,
+    required int index,
+  }) async => uploadedChunks[index];
 
   @override
   Future<void> logout(String token) async {}
