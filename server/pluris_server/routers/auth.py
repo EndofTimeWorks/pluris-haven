@@ -207,7 +207,7 @@ async def refresh(
     await _enforce_rate_limit(
         request,
         SecurityOperation.REFRESH,
-        digest_token(payload.refresh_token),
+        digest_token(payload.refresh_token, purpose="refresh"),
         include_client=False,
     )
     tokens = await rotate_refresh_token(
@@ -311,7 +311,7 @@ async def request_password_reset(
         db.add(
             PasswordResetToken(
                 user_id=user.id,
-                token_digest=digest_token(token),
+                token_digest=digest_token(token, purpose="password_reset"),
                 issued_at=now,
                 expires_at=now + timedelta(minutes=settings.password_reset_token_minutes),
             )
@@ -335,7 +335,10 @@ async def reset_password(
     result = await db.execute(
         select(PasswordResetToken, User)
         .join(User, User.id == PasswordResetToken.user_id)
-        .where(PasswordResetToken.token_digest == digest_token(payload.token))
+        .where(
+            PasswordResetToken.token_digest
+            == digest_token(payload.token, purpose="password_reset")
+        )
         .with_for_update()
     )
     row = result.one_or_none()

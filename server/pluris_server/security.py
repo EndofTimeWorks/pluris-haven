@@ -5,6 +5,7 @@ import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 import jwt
 from pwdlib import PasswordHash
@@ -40,8 +41,12 @@ async def dummy_verify_password(password: str) -> None:
     await verify_password(password, _dummy_hash)
 
 
-def digest_token(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+TokenPurpose = Literal["refresh", "rotation_nonce", "password_reset"]
+
+
+def digest_token(token: str, *, purpose: TokenPurpose) -> str:
+    domain = f"pluris-haven:{purpose}:v1\0".encode()
+    return hashlib.sha256(domain + token.encode()).hexdigest()
 
 
 def normalize_friend_code(code: str) -> str:
@@ -115,7 +120,7 @@ async def issue_tokens(
     db.add(
         RefreshToken(
             session_id=session.id,
-            token_digest=digest_token(refresh_token),
+            token_digest=digest_token(refresh_token, purpose="refresh"),
             issued_at=now,
             expires_at=session.expires_at,
         )
@@ -139,7 +144,9 @@ async def rotate_refresh_token(
         select(RefreshToken, DeviceSession, User)
         .join(DeviceSession, DeviceSession.id == RefreshToken.session_id)
         .join(User, User.id == DeviceSession.user_id)
-        .where(RefreshToken.token_digest == digest_token(refresh_token))
+        .where(
+            RefreshToken.token_digest == digest_token(refresh_token, purpose="refresh")
+        )
         .with_for_update()
     )
     row = result.one_or_none()
@@ -163,7 +170,7 @@ async def rotate_refresh_token(
             used_at = used_at.replace(tzinfo=UTC)
         nonce_matches = rotation_nonce is not None and hmac.compare_digest(
             token_record.rotation_nonce_digest or "",
-            digest_token(rotation_nonce),
+            digest_token(rotation_nonce, purpose="rotation_nonce"),
         )
         within_grace = now - used_at <= timedelta(seconds=settings.refresh_retry_grace_seconds)
         if (
@@ -203,7 +210,9 @@ async def rotate_refresh_token(
         return None
     token_record.used_at = now
     token_record.rotation_nonce_digest = (
-        digest_token(rotation_nonce) if rotation_nonce is not None else None
+        digest_token(rotation_nonce, purpose="rotation_nonce")
+        if rotation_nonce is not None
+        else None
     )
     return await _issue_rotated_tokens(
         db,
@@ -231,7 +240,7 @@ async def _issue_rotated_tokens(
     session.expires_at = now + timedelta(days=settings.refresh_token_days)
     replacement = RefreshToken(
         session_id=session.id,
-        token_digest=digest_token(new_refresh_token),
+        token_digest=digest_token(new_refresh_token, purpose="refresh"),
         issued_at=now,
         expires_at=session.expires_at,
     )
@@ -239,7 +248,9 @@ async def _issue_rotated_tokens(
     await db.flush()
     token_record.replacement_token_id = replacement.id
     if rotation_nonce is not None:
-        token_record.rotation_nonce_digest = digest_token(rotation_nonce)
+        token_record.rotation_nonce_digest = digest_token(
+            rotation_nonce, purpose="rotation_nonce"
+        )
     return IssuedTokens(
         access_token=_create_access_token(user.id, session.id, settings),
         refresh_token=new_refresh_token,
