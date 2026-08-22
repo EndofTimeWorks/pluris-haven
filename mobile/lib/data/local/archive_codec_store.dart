@@ -495,6 +495,163 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     if (text == null || text.trim().isEmpty) return null;
     return DateTime.tryParse(text)?.toUtc();
   }
+
+  String _debugErrorText(Object error, StackTrace stackTrace) {
+    var text = error.toString();
+    assert(() {
+      final stack = stackTrace.toString().trim();
+      if (stack.isNotEmpty) {
+        text = '$text\n\nDebug stack:\n$stack';
+      }
+      return true;
+    }());
+    return text;
+  }
+
+  Future<Map<String, Object?>> _namedFrontToJson(NamedFront front) async => {
+    'id': front.id,
+    'name':
+        (await _decryptLocalText(
+          front.name,
+          'named_fronts',
+          front.id,
+          'name',
+        )) ??
+        '',
+    'custom_label': await _decryptLocalText(
+      front.customLabel,
+      'named_fronts',
+      front.id,
+      'custom_label',
+    ),
+    'color_hex': await _decryptLocalText(
+      front.colorHex,
+      'named_fronts',
+      front.id,
+      'color_hex',
+    ),
+    'avatar_url': await _decryptLocalText(
+      front.avatarUrl,
+      'named_fronts',
+      front.id,
+      'avatar_url',
+    ),
+    'description': await _decryptLocalText(
+      front.description,
+      'named_fronts',
+      front.id,
+      'description',
+    ),
+    'created_at': front.createdAt.toIso8601String(),
+    'updated_at': front.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _namedFrontMemberToJson(NamedFrontMember link) => {
+    'named_front_id': link.namedFrontId,
+    'member_id': link.memberId,
+  };
+
+  Future<Map<String, Object?>> _privacyBucketToJson(
+    PrivacyBucket bucket,
+  ) async => {
+    'id': bucket.id,
+    'name':
+        (await _decryptLocalText(
+          bucket.name,
+          'privacy_buckets',
+          bucket.id,
+          'name',
+        )) ??
+        '',
+    'description': await _decryptLocalText(
+      bucket.description,
+      'privacy_buckets',
+      bucket.id,
+      'description',
+    ),
+    'color_hex': await _decryptLocalText(
+      bucket.colorHex,
+      'privacy_buckets',
+      bucket.id,
+      'color_hex',
+    ),
+    'position': bucket.position,
+    'created_at': bucket.createdAt.toIso8601String(),
+    'updated_at': bucket.updatedAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _privacyBucketMemberToJson(PrivacyBucketMember link) => {
+    'bucket_id': link.bucketId,
+    'member_id': link.memberId,
+  };
+
+  Future<Map<String, Object?>> _importRecordToJson(ImportRecord record) async =>
+      {
+        'id': record.id,
+        'source': record.source,
+        'file_name': await _decryptLocalText(
+          record.fileName,
+          'import_records',
+          record.id,
+          'file_name',
+        ),
+        'summary_json': await _decryptLocalText(
+          record.summaryJson,
+          'import_records',
+          record.id,
+          'summary_json',
+        ),
+        'imported_at': record.importedAt.toIso8601String(),
+      };
+
+  Future<Map<String, Object?>> _importPayloadToJson(
+    ImportPayload payload,
+  ) async => {
+    'id': payload.id,
+    'import_record_id': payload.importRecordId,
+    'source': payload.source,
+    'collection': payload.collection,
+    'payload_json':
+        (await _decryptLocalText(
+          payload.payloadJson,
+          'import_payloads',
+          payload.id,
+          'payload_json',
+        )) ??
+        '',
+    'imported_at': payload.importedAt.toIso8601String(),
+  };
+
+  Future<Map<String, Object?>> _notificationEventToJson(
+    NotificationEvent event,
+  ) async => {
+    'id': event.id,
+    'kind': event.kind,
+    'title':
+        (await _decryptLocalText(
+          event.title,
+          'notification_events',
+          event.id,
+          'title',
+        )) ??
+        '',
+    'body':
+        (await _decryptLocalText(
+          event.body,
+          'notification_events',
+          event.id,
+          'body',
+        )) ??
+        '',
+    'read_at': event.readAt?.toIso8601String(),
+    'created_at': event.createdAt.toIso8601String(),
+  };
+
+  Map<String, Object?> _preferenceToJson(AppPreference preference) => {
+    'key': preference.key,
+    'value': preference.value,
+    'updated_at': preference.updatedAt.toIso8601String(),
+  };
 }
 
 class _ImportAvatarBytes {
