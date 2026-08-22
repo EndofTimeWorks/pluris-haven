@@ -1,0 +1,64 @@
+name: Deploy website
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: website-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Pull and build website
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DEPLOY_HOST: ${{ secrets.WEBSITE_DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.WEBSITE_DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.WEBSITE_DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_PATH: ${{ secrets.WEBSITE_DEPLOY_PATH }}
+
+    steps:
+      - name: Check deployment configuration
+        run: |
+          set -euo pipefail
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_KEY DEPLOY_KNOWN_HOSTS; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing required website deployment secret: ${name}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Pull and build website over SSH
+        run: |
+          set -euo pipefail
+
+          deploy_key="${RUNNER_TEMP}/website-deploy-key"
+          known_hosts="${RUNNER_TEMP}/website-known-hosts"
+          printf '%s\n' "${DEPLOY_KEY}" > "${deploy_key}"
+          printf '%s\n' "${DEPLOY_KNOWN_HOSTS}" > "${known_hosts}"
+          chmod 600 "${deploy_key}"
+
+          ssh \
+            -i "${deploy_key}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="${known_hosts}" \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "site_path='${DEPLOY_PATH:-/srv/pluris-haven}'; \
+             cd \"\${site_path}\" && \
+             git pull --ff-only origin main && \
+             pnpm --dir website install --frozen-lockfile && \
+             pnpm --dir website build"

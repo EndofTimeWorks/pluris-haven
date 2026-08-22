@@ -12,9 +12,26 @@ pnpm build
 pnpm preview
 ```
 
-## Pull-only deploy
+## SSH deploy
 
-Use this shape on the host:
+The repository includes a GitHub Actions deployment workflow. After a successful
+`CI` run on `main`, it can connect over SSH, pull the exact fast-forward update,
+install the locked website dependencies, and rebuild the static site.
+
+Configure these repository Actions secrets before enabling it:
+
+- `WEBSITE_DEPLOY_HOST`
+- `WEBSITE_DEPLOY_USER`
+- `WEBSITE_DEPLOY_KEY`
+- `WEBSITE_DEPLOY_KNOWN_HOSTS`
+- `WEBSITE_DEPLOY_PATH` (optional; defaults to `/srv/pluris-haven`)
+
+The SSH key should be restricted to the deployment account and the known-hosts
+value should be generated from the intended host out of band. The host must
+already have repository access for `git pull`, Node.js, pnpm, and the static
+web-server configuration.
+
+The equivalent manual commands on the host are:
 
 ```sh
 cd /srv/pluris-haven

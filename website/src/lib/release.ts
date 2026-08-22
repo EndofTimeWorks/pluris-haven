@@ -14,7 +14,10 @@ export const mobileRelease = {
     size: '24 MB',
     url: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-arm64-v8a.apk',
   },
-  checksumsUrl: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/SHA256SUMS.txt',
-  buildMetadataUrl: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/BUILD.txt',
-  unsignedIpaUrl: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-unsigned.ipa',
+  checksumsUrl:
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/SHA256SUMS.txt',
+  buildMetadataUrl:
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/BUILD.txt',
+  unsignedIpaUrl:
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-unsigned.ipa',
 } as const;

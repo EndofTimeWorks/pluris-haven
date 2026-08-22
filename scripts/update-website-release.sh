@@ -49,8 +49,11 @@ export const mobileRelease = {
     size: '$(asset_size "${arm64_name}")',
     url: '${arm64_url}',
   },
-  checksumsUrl: '${checksums_url}',
-  buildMetadataUrl: '${build_metadata_url}',
-  unsignedIpaUrl: '${ipa_url}',
+  checksumsUrl:
+    '${checksums_url}',
+  buildMetadataUrl:
+    '${build_metadata_url}',
+  unsignedIpaUrl:
+    '${ipa_url}',
 } as const;
 EOF
