@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0-pre-alpha.2 - 2026-08-21
+
+Privacy follow-up and repository maintenance: `0.3.0-pre-alpha.2+3002`.
+
+### Mobile privacy and security
+
+- iOS now hides app content before the system captures an app-switcher preview.
+- Startup refreshes now clear local server sessions only when the server
+  explicitly rejects the refresh token, while transient network failures keep
+  offline sessions available.
+
+### Maintenance
+
+- Continued splitting the local repository implementation into focused store
+  parts without changing its public interface.
+
 ## 0.3.0-pre-alpha.1 - 2026-08-18
 
 Android privacy hardening: `0.3.0-pre-alpha.1+3001`.
