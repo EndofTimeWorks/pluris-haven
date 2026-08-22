@@ -460,6 +460,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPasswordButton => 'Forgot password?';
 
   @override
+  String get useResetTokenButton => 'I have a reset token';
+
+  @override
+  String get resetPasswordTitle => 'Reset server password';
+
+  @override
+  String get resetTokenLabel => 'Reset token';
+
+  @override
+  String get resetPasswordButton => 'Reset password';
+
+  @override
   String get createAccountButton => 'Create account';
 
   @override

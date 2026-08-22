@@ -134,6 +134,19 @@ class ServerAccountController extends ChangeNotifier {
     });
   }
 
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _run(() async {
+      await _requireApi().resetPassword(
+        token: token.trim(),
+        newPassword: newPassword,
+      );
+      status = 'Password reset. Sign in again.';
+    });
+  }
+
   Future<void> refreshAll() async {
     await _run(_refreshAllAuthenticated);
   }

@@ -538,6 +538,13 @@ class _ServerAuthenticationSheetState
                         : _requestPasswordReset,
                     child: Text(l10n.forgotPasswordButton),
                   ),
+                  TextButton(
+                    key: const ValueKey('use-server-password-token-button'),
+                    onPressed: widget.controller.busy
+                        ? null
+                        : _showPasswordReset,
+                    child: Text(l10n.useResetTokenButton),
+                  ),
                 ],
               ],
             ),
@@ -578,6 +585,81 @@ class _ServerAuthenticationSheetState
       return;
     }
     await widget.controller.requestPasswordReset(_email.text);
+  }
+
+  Future<void> _showPasswordReset() async {
+    final token = TextEditingController();
+    final password = TextEditingController();
+    final confirmation = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).resetPasswordTitle),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: token,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).resetTokenLabel,
+                  ),
+                  validator: (value) =>
+                      _required(value, AppLocalizations.of(context)),
+                ),
+                TextFormField(
+                  controller: password,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).newPasswordLabel,
+                  ),
+                  validator: (value) => (value?.length ?? 0) < 12
+                      ? AppLocalizations.of(context).passwordLengthError
+                      : null,
+                ),
+                TextFormField(
+                  controller: confirmation,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(
+                      context,
+                    ).confirmNewPasswordLabel,
+                  ),
+                  validator: (value) => value != password.text
+                      ? AppLocalizations.of(context).passwordsDoNotMatchError
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() != true) return;
+              await widget.controller.resetPassword(
+                token: token.text,
+                newPassword: password.text,
+              );
+              if (context.mounted && widget.controller.error == null) {
+                Navigator.pop(context);
+              }
+            },
+            child: Text(AppLocalizations.of(context).resetPasswordButton),
+          ),
+        ],
+      ),
+    );
+    token.dispose();
+    password.dispose();
+    confirmation.dispose();
   }
 }
 

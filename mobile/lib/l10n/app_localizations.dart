@@ -937,6 +937,30 @@ abstract class AppLocalizations {
   /// **'Forgot password?'**
   String get forgotPasswordButton;
 
+  /// No description provided for @useResetTokenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'I have a reset token'**
+  String get useResetTokenButton;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset server password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset token'**
+  String get resetTokenLabel;
+
+  /// No description provided for @resetPasswordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get resetPasswordButton;
+
   /// No description provided for @createAccountButton.
   ///
   /// In en, this message translates to:

@@ -102,6 +102,28 @@ void main() {
     },
   );
 
+  test('password reset submits the token and replacement password', () async {
+    late http.Request captured;
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: MockClient((request) async {
+        captured = request;
+        return http.Response(jsonEncode({'detail': 'Password reset'}), 200);
+      }),
+    );
+
+    await api.resetPassword(
+      token: 'reset-token',
+      newPassword: 'new correct horse battery staple',
+    );
+
+    expect(captured.url.path, '/v1/auth/password/reset');
+    expect(jsonDecode(captured.body), {
+      'token': 'reset-token',
+      'new_password': 'new correct horse battery staple',
+    });
+  });
+
   test(
     'password change sends both passwords to the authenticated endpoint',
     () async {

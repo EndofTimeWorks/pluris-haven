@@ -332,6 +332,17 @@ class ServerApi {
     );
   }
 
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _request(
+      'POST',
+      '/v1/auth/password/reset',
+      jsonBody: {'token': token, 'new_password': newPassword},
+    );
+  }
+
   Future<ServerTokens> refresh(
     String refreshToken, {
     String? rotationNonce,
