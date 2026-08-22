@@ -32,8 +32,8 @@ Use this for a named alpha milestone such as `0.2.0-pre-alpha.2+2008`.
 1. Set the release version in `mobile/pubspec.yaml`. Remove `.dev.N` and increase
    the number after `+`.
 2. Move the current changelog notes under a heading for that version and date.
-3. Update the current version shown in the website download, distribution and
-   changelog pages.
+3. The website release metadata is updated automatically after GitHub publishes
+   the release.
 4. Run the release checks:
 
    ```sh
