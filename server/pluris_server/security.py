@@ -49,6 +49,11 @@ def digest_token(token: str, *, purpose: TokenPurpose) -> str:
     return hashlib.sha256(domain + token.encode()).hexdigest()
 
 
+def digest_legacy_token(token: str) -> str:
+    """Digest used before token purposes were separated; refresh-only migration."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
 def normalize_friend_code(code: str) -> str:
     return "".join(character for character in code.upper() if character.isalnum())
 
@@ -145,7 +150,12 @@ async def rotate_refresh_token(
         .join(DeviceSession, DeviceSession.id == RefreshToken.session_id)
         .join(User, User.id == DeviceSession.user_id)
         .where(
-            RefreshToken.token_digest == digest_token(refresh_token, purpose="refresh")
+            RefreshToken.token_digest.in_(
+                (
+                    digest_token(refresh_token, purpose="refresh"),
+                    digest_legacy_token(refresh_token),
+                )
+            )
         )
         .with_for_update()
     )
@@ -154,6 +164,8 @@ async def rotate_refresh_token(
         return None
     token_record, session, user = row
     now = datetime.now(UTC)
+    if token_record.token_digest == digest_legacy_token(refresh_token):
+        token_record.token_digest = digest_token(refresh_token, purpose="refresh")
     expires_at = token_record.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
@@ -172,6 +184,11 @@ async def rotate_refresh_token(
             token_record.rotation_nonce_digest or "",
             digest_token(rotation_nonce, purpose="rotation_nonce"),
         )
+        if not nonce_matches and rotation_nonce is not None:
+            nonce_matches = hmac.compare_digest(
+                token_record.rotation_nonce_digest or "",
+                digest_legacy_token(rotation_nonce),
+            )
         within_grace = now - used_at <= timedelta(seconds=settings.refresh_retry_grace_seconds)
         if (
             nonce_matches
