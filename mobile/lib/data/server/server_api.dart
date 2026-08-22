@@ -324,6 +324,14 @@ class ServerApi {
     return ServerTokens.fromJson(_decodeObject(response));
   }
 
+  Future<void> requestPasswordReset(String email) async {
+    await _request(
+      'POST',
+      '/v1/auth/password/reset-request',
+      jsonBody: {'email': email},
+    );
+  }
+
   Future<ServerTokens> refresh(
     String refreshToken, {
     String? rotationNonce,

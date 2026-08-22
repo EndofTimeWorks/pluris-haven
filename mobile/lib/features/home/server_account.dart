@@ -529,6 +529,16 @@ class _ServerAuthenticationSheetState
                         : l10n.signInButton,
                   ),
                 ),
+                if (!widget.register) ...[
+                  const SizedBox(height: 4),
+                  TextButton(
+                    key: const ValueKey('forgot-server-password-button'),
+                    onPressed: widget.controller.busy
+                        ? null
+                        : _requestPasswordReset,
+                    child: Text(l10n.forgotPasswordButton),
+                  ),
+                ],
               ],
             ),
           ),
@@ -560,6 +570,14 @@ class _ServerAuthenticationSheetState
     if (widget.controller.signedIn && mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _requestPasswordReset() async {
+    if (_email.text.trim().isEmpty || !_email.text.contains('@')) {
+      _formKey.currentState?.validate();
+      return;
+    }
+    await widget.controller.requestPasswordReset(_email.text);
   }
 }
 

@@ -191,6 +191,7 @@
   "connectServerButton": "Check and connect",
   "connectedServerFallback": "Connected server",
   "signInButton": "Sign in",
+  "forgotPasswordButton": "Forgot password?",
   "createAccountButton": "Create account",
   "disconnectButton": "Disconnect",
   "accountFallback": "Account",

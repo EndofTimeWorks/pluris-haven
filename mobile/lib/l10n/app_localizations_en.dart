@@ -457,6 +457,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInButton => 'Sign in';
 
   @override
+  String get forgotPasswordButton => 'Forgot password?';
+
+  @override
   String get createAccountButton => 'Create account';
 
   @override

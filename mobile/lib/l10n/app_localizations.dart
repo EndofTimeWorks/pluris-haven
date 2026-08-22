@@ -931,6 +931,12 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get signInButton;
 
+  /// No description provided for @forgotPasswordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPasswordButton;
+
   /// No description provided for @createAccountButton.
   ///
   /// In en, this message translates to:

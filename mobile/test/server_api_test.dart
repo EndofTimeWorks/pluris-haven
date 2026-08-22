@@ -82,6 +82,27 @@ void main() {
   });
 
   test(
+    'password reset request sends the email without authentication',
+    () async {
+      late http.Request captured;
+      final api = ServerApi(
+        baseUri: Uri.parse('https://haven.example'),
+        client: MockClient((request) async {
+          captured = request;
+          return http.Response(jsonEncode({'detail': 'Reset requested'}), 202);
+        }),
+      );
+
+      await api.requestPasswordReset('test@example.com');
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/v1/auth/password/reset-request');
+      expect(captured.headers.containsKey('authorization'), isFalse);
+      expect(jsonDecode(captured.body), {'email': 'test@example.com'});
+    },
+  );
+
+  test(
     'password change sends both passwords to the authenticated endpoint',
     () async {
       late http.Request captured;

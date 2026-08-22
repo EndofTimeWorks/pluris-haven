@@ -127,6 +127,13 @@ class ServerAccountController extends ChangeNotifier {
     });
   }
 
+  Future<void> requestPasswordReset(String email) async {
+    await _run(() async {
+      await _requireApi().requestPasswordReset(email.trim());
+      status = 'If that account exists, a reset link has been sent.';
+    });
+  }
+
   Future<void> refreshAll() async {
     await _run(_refreshAllAuthenticated);
   }
