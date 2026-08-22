@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+import secrets
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -10,6 +11,7 @@ from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import (
     BackupSnapshot,
     DeviceSession,
+    PasswordResetToken,
     RefreshToken,
     SecurityEvent,
     SecurityEventType,
@@ -26,6 +28,8 @@ from pluris_server.schemas import (
     DeleteAccountRequest,
     LoginRequest,
     MessageResponse,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
     RefreshRequest,
     RegisterRequest,
     RegistrationResponse,
@@ -104,6 +108,10 @@ async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
             user.friend_code_digest = digest
             return code
     raise HTTPException(status_code=503, detail="Could not allocate a friend code")
+
+
+def _password_reset_link(settings: AppSettings, token: str) -> str:
+    return f"{settings.public_url.rstrip('/')}/reset-password?token={token}"
 
 
 @router.post("/register", response_model=RegistrationResponse, status_code=status.HTTP_201_CREATED)
@@ -280,6 +288,86 @@ async def change_password(
     )
     await db.commit()
     return MessageResponse(detail="Password changed")
+
+
+@router.post("/password/reset-request", response_model=MessageResponse, status_code=202)
+async def request_password_reset(
+    request: Request,
+    payload: PasswordResetRequest,
+    db: Db,
+    settings: AppSettings,
+) -> MessageResponse:
+    email = str(payload.email).strip().casefold()
+    await _enforce_rate_limit(request, SecurityOperation.PASSWORD_RESET_REQUEST, email)
+    user = await db.scalar(select(User).where(User.email == email, User.disabled.is_(False)))
+    if user is not None:
+        now = datetime.now(UTC)
+        await db.execute(
+            update(PasswordResetToken)
+            .where(PasswordResetToken.user_id == user.id, PasswordResetToken.used_at.is_(None))
+            .values(used_at=now)
+        )
+        token = secrets.token_urlsafe(48)
+        db.add(
+            PasswordResetToken(
+                user_id=user.id,
+                token_digest=digest_token(token),
+                issued_at=now,
+                expires_at=now + timedelta(minutes=settings.password_reset_token_minutes),
+            )
+        )
+        await db.commit()
+        await request.app.state.email_sender.send_password_reset(
+            user.email,
+            _password_reset_link(settings, token),
+        )
+    return MessageResponse(detail="If that account exists, a reset link has been sent")
+
+
+@router.post("/password/reset", response_model=MessageResponse)
+async def reset_password(
+    request: Request,
+    payload: PasswordResetConfirmRequest,
+    db: Db,
+) -> MessageResponse:
+    await _enforce_rate_limit(request, SecurityOperation.PASSWORD_RESET)
+    now = datetime.now(UTC)
+    result = await db.execute(
+        select(PasswordResetToken, User)
+        .join(User, User.id == PasswordResetToken.user_id)
+        .where(PasswordResetToken.token_digest == digest_token(payload.token))
+        .with_for_update()
+    )
+    row = result.one_or_none()
+    if row is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
+    reset_token, user = row
+    expires_at = reset_token.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if user.disabled or reset_token.used_at is not None or expires_at <= now:
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
+
+    reset_token.used_at = now
+    user.password_hash = await hash_password(payload.new_password)
+    await db.execute(
+        update(DeviceSession)
+        .where(DeviceSession.user_id == user.id, DeviceSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.session_id.in_(
+                select(DeviceSession.id).where(DeviceSession.user_id == user.id)
+            ),
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
+    await record_security_event(db, user_id=user.id, event_type=SecurityEventType.PASSWORD_CHANGED)
+    await db.commit()
+    return MessageResponse(detail="Password reset; sign in again")
 
 
 @router.delete("/account", response_model=MessageResponse)

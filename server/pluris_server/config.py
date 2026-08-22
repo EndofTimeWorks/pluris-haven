@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     privacy_policy_url: str = ""
     terms_url: str = ""
     support_email: str = ""
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65_535)
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    password_reset_token_minutes: int = Field(default=60, ge=5, le=1_440)
     backup_object_dir: str = "./data/backups"
     backup_max_chunk_bytes: int = 8 * 1024 * 1024
     backup_max_snapshots_per_user: int = Field(default=10, ge=1, le=10_000)

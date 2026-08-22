@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from pluris_server import security_events as security_event_store
+from pluris_server.mail import MemoryEmailSender
 from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
 from pluris_server.routers import auth as auth_router
 from tests.conftest import auth, register
@@ -252,6 +253,52 @@ def test_security_event_history_is_bounded(
     )
     assert events.status_code == 200
     assert len(events.json()) == 5
+
+
+def test_password_reset_is_single_use_and_revokes_sessions(
+    client: TestClient,
+    fast_passwords: None,
+) -> None:
+    registered = register(client, "recover@example.com", "Recover User")
+    sender = client.app.state.email_sender
+    assert isinstance(sender, MemoryEmailSender)
+
+    requested = client.post(
+        "/v1/auth/password/reset-request",
+        json={"email": "RECOVER@example.com"},
+    )
+    assert requested.status_code == 202
+    assert len(sender.sent) == 1
+    token = sender.sent[0].link.split("token=", maxsplit=1)[1]
+
+    reset = client.post(
+        "/v1/auth/password/reset",
+        json={"token": token, "new_password": "new correct horse battery staple"},
+    )
+    assert reset.status_code == 200
+    assert client.get("/v1/auth/me", headers=auth(registered["access_token"])).status_code == 401
+    assert client.post(
+        "/v1/auth/password/reset",
+        json={"token": token, "new_password": "another correct horse battery staple"},
+    ).status_code == 400
+
+    old_login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "recover@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Old password",
+        },
+    )
+    assert old_login.status_code == 401
+
+    unknown = client.post(
+        "/v1/auth/password/reset-request",
+        json={"email": "missing@example.com"},
+    )
+    assert unknown.status_code == 202
+    assert unknown.json() == requested.json()
+    assert len(sender.sent) == 1
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:

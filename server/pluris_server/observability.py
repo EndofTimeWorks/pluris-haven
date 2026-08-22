@@ -15,6 +15,8 @@ class SecurityOperation(StrEnum):
     LOGIN = "login"
     REFRESH = "refresh"
     CHANGE_PASSWORD = "change_password"
+    PASSWORD_RESET_REQUEST = "password_reset_request"
+    PASSWORD_RESET = "password_reset"
     DELETE_ACCOUNT = "delete_account"
     BACKUP_SNAPSHOT = "backup_snapshot"
     BACKUP_CHUNK = "backup_chunk"

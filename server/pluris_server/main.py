@@ -14,6 +14,7 @@ from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
 from pluris_server.http_security import SecurityHeadersMiddleware
+from pluris_server.mail import create_email_sender
 from pluris_server.rate_limit import DatabaseRateLimiter
 from pluris_server.routers import auth, backups, friends, health, server_info
 
@@ -49,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = active_settings
+    app.state.email_sender = create_email_sender(active_settings)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
     app.state.auth_rate_limiter = DatabaseRateLimiter(
