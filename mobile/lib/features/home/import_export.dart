@@ -102,6 +102,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ImportProgressCard(
             status: _importStatus,
             isActive: _isPickingImport || _isApplyingImport,
+            onCopyDetails: _importStatus == null
+                ? null
+                : () => _copyImportDetails(_importStatus!),
             onReportIssue: _canReportImportIssue
                 ? () => launchExternalUrl(context, _importIssueUri)
                 : null,
@@ -118,6 +121,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
             isImporting: _isApplyingImport,
             isRehearsing: _isRehearsingRestore,
             rehearsal: _restoreRehearsal,
+            onCopyDetails: () => _copyPreviewDetails(_preview!),
           ),
         ],
         const SizedBox(height: 12),
@@ -947,6 +951,28 @@ class _ImportExportPageState extends State<ImportExportPage> {
         .join(', ');
 
     return visible.isEmpty ? l10n.noRecordsFound : visible;
+  }
+
+  Future<void> _copyImportDetails(String details) async {
+    await Clipboard.setData(ClipboardData(text: details));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).fullErrorCopied)),
+    );
+  }
+
+  Future<void> _copyPreviewDetails(ImportPreview preview) {
+    final l10n = AppLocalizations.of(context);
+    return _copyImportDetails(
+      [
+        'source: ${localizeImportSource(l10n, preview.source)}',
+        'file: ${preview.fileName}',
+        'counts: ${preview.counts}',
+        for (final event in preview.events)
+          '${event.severity.name} ${event.stage.name}: '
+              '${localizeImportDiagnostic(l10n, event.diagnostic)}',
+      ].join('\n'),
+    );
   }
 }
 
@@ -1860,6 +1886,7 @@ class ImportPreviewCard extends StatelessWidget {
     this.isImporting = false,
     this.isRehearsing = false,
     this.rehearsal,
+    this.onCopyDetails,
   });
 
   final ImportPreview preview;
@@ -1868,6 +1895,7 @@ class ImportPreviewCard extends StatelessWidget {
   final bool isImporting;
   final bool isRehearsing;
   final RestoreRehearsalSummary? rehearsal;
+  final Future<void> Function()? onCopyDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -1908,20 +1936,47 @@ class ImportPreviewCard extends StatelessWidget {
           ),
           if (notableEvents.isNotEmpty) ...[
             const SizedBox(height: 14),
-            for (final event in notableEvents) ...[
-              Text(
-                '${localizeImportPreviewStage(l10n, event.stage)}: '
-                '${localizeImportDiagnostic(l10n, event.diagnostic)}',
-                style: TextStyle(
-                  color: event.severity == ImportPreviewSeverity.error
-                      ? Theme.of(context).colorScheme.error
-                      : _spMuted,
-                  fontSize: 12,
-                  height: 1.35,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.errorTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                if (onCopyDetails != null)
+                  TextButton.icon(
+                    onPressed: onCopyDetails,
+                    icon: const Icon(Icons.copy_rounded),
+                    label: Text(l10n.copyFullButton),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 280),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final event in notableEvents) ...[
+                      Text(
+                        '${localizeImportPreviewStage(l10n, event.stage)}: '
+                        '${localizeImportDiagnostic(l10n, event.diagnostic)}',
+                        style: TextStyle(
+                          color: event.severity == ImportPreviewSeverity.error
+                              ? Theme.of(context).colorScheme.error
+                              : _spMuted,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-            ],
+            ),
           ],
           const SizedBox(height: 10),
           if (rehearsal != null) ...[
@@ -2062,11 +2117,13 @@ class ImportProgressCard extends StatelessWidget {
     super.key,
     required this.status,
     required this.isActive,
+    this.onCopyDetails,
     this.onReportIssue,
   });
 
   final String? status;
   final bool isActive;
+  final Future<void> Function()? onCopyDetails;
   final VoidCallback? onReportIssue;
 
   @override
@@ -2114,6 +2171,14 @@ class ImportProgressCard extends StatelessWidget {
               if (isActive) ...[
                 const SizedBox(height: 12),
                 const LinearProgressIndicator(),
+              ],
+              if (!isActive && onCopyDetails != null) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: onCopyDetails,
+                  icon: const Icon(Icons.copy_rounded),
+                  label: Text(l10n.copyFullButton),
+                ),
               ],
               if (onReportIssue != null) ...[
                 const SizedBox(height: 12),

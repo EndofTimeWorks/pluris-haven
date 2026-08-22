@@ -863,15 +863,21 @@ void main() {
     );
     expect(
       _messages(archive.warnings),
-      contains('Member "Iris" ignored missing group "missing-group".'),
+      contains(
+        'Member "Iris" kept; missing group "missing-group" link was dropped.',
+      ),
     );
     expect(
       _messages(archive.warnings),
-      contains('Group "Main" ignored missing parent "missing-parent".'),
+      contains(
+        'Group "Main" kept; missing parent "missing-parent" link was dropped.',
+      ),
     );
     expect(
       _messages(archive.warnings),
-      contains('Front "#1" ignored missing member "missing-member".'),
+      contains(
+        'Front "#1" kept; missing member "missing-member" link was dropped.',
+      ),
     );
     expect(
       _messages(archive.warnings),
@@ -890,10 +896,13 @@ void main() {
     final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
     final member = (decoded['members'] as List).single as Map<String, dynamic>;
     final group = (decoded['groups'] as List).single as Map<String, dynamic>;
+    final front = (decoded['fronts'] as List).single as Map<String, dynamic>;
     final message =
         (decoded['messages'] as List).single as Map<String, dynamic>;
     expect(member['folder_id'], isNull);
     expect(group['parent_group_id'], isNull);
+    expect(front['started_at'], '2026-01-01T00:00:00.000Z');
+    expect(front['ended_at'], isNull);
     expect(message['member_id'], isNull);
   });
 

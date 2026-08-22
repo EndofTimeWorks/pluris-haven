@@ -3193,7 +3193,7 @@ abstract class AppLocalizations {
   /// No description provided for @importDiagnosticIgnoredMissingRelation.
   ///
   /// In en, this message translates to:
-  /// **'{ownerKind} \"{owner}\" ignored missing {relationKind} \"{relation}\".'**
+  /// **'{ownerKind} \"{owner}\" kept; missing {relationKind} \"{relation}\" link was dropped.'**
   String importDiagnosticIgnoredMissingRelation(
     String ownerKind,
     String owner,

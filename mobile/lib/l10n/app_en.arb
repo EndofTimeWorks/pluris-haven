@@ -695,7 +695,7 @@
       "fields": { "type": "String" }
     }
   },
-  "importDiagnosticIgnoredMissingRelation": "{ownerKind} \"{owner}\" ignored missing {relationKind} \"{relation}\".",
+  "importDiagnosticIgnoredMissingRelation": "{ownerKind} \"{owner}\" kept; missing {relationKind} \"{relation}\" link was dropped.",
   "@importDiagnosticIgnoredMissingRelation": {
     "placeholders": {
       "ownerKind": { "type": "String" },

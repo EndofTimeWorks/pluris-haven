@@ -1798,7 +1798,7 @@ class AppLocalizationsEn extends AppLocalizations {
     String relationKind,
     String relation,
   ) {
-    return '$ownerKind \"$owner\" ignored missing $relationKind \"$relation\".';
+    return '$ownerKind "$owner" kept; missing $relationKind "$relation" link was dropped.';
   }
 
   @override
