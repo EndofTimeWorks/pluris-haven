@@ -22,7 +22,8 @@ other network features are opt-in.
 - local member, group, note, and front tracking
 - mobile navigation and dashboard
 - dashboard, theme, and language preferences
-- Simply Plural and PluralKit file and live-token import paths
+- Simply Plural, PluralKit (file and live-token), Tupperbox, PluralSpace, and
+  Ampersand import paths
 - local export, password-protected recovery, and encrypted server backup upload
 - optional server accounts, revocable sessions, encrypted backups, and experimental friends/blocking
 - dev and tagged mobile builds through GitHub Actions
