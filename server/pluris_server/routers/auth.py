@@ -336,8 +336,7 @@ async def reset_password(
         select(PasswordResetToken, User)
         .join(User, User.id == PasswordResetToken.user_id)
         .where(
-            PasswordResetToken.token_digest
-            == digest_token(payload.token, purpose="password_reset")
+            PasswordResetToken.token_digest == digest_token(payload.token, purpose="password_reset")
         )
         .with_for_update()
     )

@@ -277,10 +277,13 @@ def test_password_reset_is_single_use_and_revokes_sessions(
     )
     assert reset.status_code == 200
     assert client.get("/v1/auth/me", headers=auth(registered["access_token"])).status_code == 401
-    assert client.post(
-        "/v1/auth/password/reset",
-        json={"token": token, "new_password": "another correct horse battery staple"},
-    ).status_code == 400
+    assert (
+        client.post(
+            "/v1/auth/password/reset",
+            json={"token": token, "new_password": "another correct horse battery staple"},
+        ).status_code
+        == 400
+    )
 
     old_login = client.post(
         "/v1/auth/login",

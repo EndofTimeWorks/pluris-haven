@@ -2,3 +2,5 @@
 
 pnpm format:check
 pnpm check:l10n
+uv run --directory server ruff format --check .
+(cd mobile && dart format --set-exit-if-changed lib test)

@@ -265,9 +265,7 @@ async def _issue_rotated_tokens(
     await db.flush()
     token_record.replacement_token_id = replacement.id
     if rotation_nonce is not None:
-        token_record.rotation_nonce_digest = digest_token(
-            rotation_nonce, purpose="rotation_nonce"
-        )
+        token_record.rotation_nonce_digest = digest_token(rotation_nonce, purpose="rotation_nonce")
     return IssuedTokens(
         access_token=_create_access_token(user.id, session.id, settings),
         refresh_token=new_refresh_token,
