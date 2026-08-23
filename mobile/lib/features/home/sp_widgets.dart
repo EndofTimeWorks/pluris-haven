@@ -8,6 +8,7 @@ class SpNavigationEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SpCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -29,15 +30,18 @@ class SpNavigationEntry extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   item.subtitle,
-                  style: const TextStyle(color: _spMuted, fontSize: 14),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
           ),
-          const Text(
+          Text(
             '>',
             style: TextStyle(
-              color: _spMuted,
+              color: scheme.onSurfaceVariant,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -273,7 +277,11 @@ class SpSettingsGroup extends StatelessWidget {
           for (var i = 0; i < rows.length; i++) ...[
             rows[i],
             if (i != rows.length - 1)
-              const Divider(height: 1, color: _spLine, indent: 16),
+              Divider(
+                height: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+                indent: 16,
+              ),
           ],
         ],
       ),
@@ -412,7 +420,10 @@ class SpSwitchRow extends StatelessWidget {
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: _spMuted, fontSize: 13),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 13,
+          ),
         ),
       ),
     );
