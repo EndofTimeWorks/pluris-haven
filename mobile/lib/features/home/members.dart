@@ -42,6 +42,7 @@ class _MembersPageState extends State<MembersPage> {
         final members = _filteredMembers(
           membersSnapshot.data ?? const <MemberSummary>[],
         );
+        final visualTheme = _visualThemeOf(context);
 
         return SpPage(
           children: [
@@ -81,6 +82,22 @@ class _MembersPageState extends State<MembersPage> {
                           ? l10n.membersEmptyBody
                           : l10n.tryAnotherSearchOrFilter,
                     )
+                  else if (visualTheme == HavenVisualTheme.simplyPlural ||
+                      visualTheme == HavenVisualTheme.ampersand)
+                    for (final member in members)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SpCard(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: MemberListTile(
+                            member: member,
+                            repository: widget.repository,
+                          ),
+                        ),
+                      )
                   else
                     for (final member in members) ...[
                       MemberListTile(
