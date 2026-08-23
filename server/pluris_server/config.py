@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
     refresh_ip_rate_limit_attempts: int = Field(default=120, ge=1, le=10_000)
     refresh_retry_grace_seconds: int = Field(default=10, ge=0, le=60)
+    auth_max_body_bytes: int = Field(default=64 * 1024, ge=1024, le=1024 * 1024)
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ()
     trusted_hosts: Annotated[tuple[str, ...], NoDecode] = ()
 

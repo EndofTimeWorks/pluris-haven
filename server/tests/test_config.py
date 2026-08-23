@@ -123,3 +123,13 @@ def test_registration_is_closed_by_default(tmp_path) -> None:
             },
         )
     assert response.status_code == 503
+
+
+def test_auth_requests_reject_oversized_bodies(client: TestClient) -> None:
+    response = client.post(
+        "/v1/auth/login",
+        content=b"x" * (64 * 1024 + 1),
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 413

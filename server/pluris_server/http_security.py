@@ -1,6 +1,67 @@
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
+class AuthBodyLimitMiddleware:
+    """Bound authentication request bodies before JSON parsing buffers them."""
+
+    def __init__(self, app: ASGIApp, *, maximum_bytes: int) -> None:
+        self.app = app
+        self.maximum_bytes = maximum_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or not scope["path"].startswith("/v1/auth/"):
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > self.maximum_bytes:
+                    await self._reject(send)
+                    return
+            except ValueError:
+                await self._reject(send)
+                return
+
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                await self.app(scope, receive, send)
+                return
+            body = message.get("body", b"")
+            total += len(body)
+            if total > self.maximum_bytes:
+                await self._reject(send)
+                return
+            chunks.append(body)
+            if not message.get("more_body", False):
+                break
+
+        delivered = False
+
+        async def receive_buffered() -> Message:
+            nonlocal delivered
+            if delivered:
+                return {"type": "http.disconnect"}
+            delivered = True
+            return {"type": "http.request", "body": b"".join(chunks), "more_body": False}
+
+        await self.app(scope, receive_buffered, send)
+
+    async def _reject(self, send: Send) -> None:
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [(b"content-type", b"application/json")],
+            }
+        )
+        await send({"type": "http.response.body", "body": b'{"detail":"Request body too large"}'})
+
+
 class SecurityHeadersMiddleware:
     """Attach browser hardening headers without buffering response bodies."""
 
