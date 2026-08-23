@@ -15,6 +15,7 @@ class OfflineFeaturePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpPage(
       children: [
         SpCard(
@@ -27,7 +28,10 @@ class OfflineFeaturePage extends StatelessWidget {
                 trailing: StatusPill(text: l10n.offlineStatusPill),
               ),
               const SizedBox(height: 8),
-              Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+              Text(
+                body,
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+              ),
             ],
           ),
         ),
@@ -54,6 +58,7 @@ class SpDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final home = snapshot;
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final systemName = (home?.systemName ?? '').trim().isEmpty
         ? l10n.localSystemName
         : home!.systemName.trim();
@@ -97,7 +102,10 @@ class SpDrawer extends StatelessWidget {
                             home?.memberCount ?? 0,
                             home?.groupCount ?? 0,
                           ),
-                          style: const TextStyle(color: _spMuted, fontSize: 13),
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),

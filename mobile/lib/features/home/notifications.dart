@@ -54,6 +54,7 @@ class NotificationEventTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -74,7 +75,10 @@ class NotificationEventTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${event.kind} - ${_shortDateTime(event.createdAt)}',
-                  style: const TextStyle(color: _spMuted, fontSize: 12),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

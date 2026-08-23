@@ -176,6 +176,7 @@ class FrontHistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: ListTile(
@@ -195,13 +196,13 @@ class FrontHistoryTile extends StatelessWidget {
           children: [
             Text(
               _frontTimingLabel(entry, l10n),
-              style: const TextStyle(color: _spMuted),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             if ((entry.statusNote ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
                 entry.statusNote!.trim(),
-                style: const TextStyle(color: _spText),
+                style: TextStyle(color: scheme.onSurface),
               ),
             ],
           ],
@@ -260,6 +261,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       child: Padding(
@@ -290,7 +292,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                       const SizedBox(height: 4),
                       Text(
                         _frontTimingLabel(widget.entry, l10n),
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                     ],
                   ),

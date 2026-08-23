@@ -68,6 +68,7 @@ class PollTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -91,7 +92,10 @@ class PollTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         poll.description!,
-                        style: const TextStyle(color: _spMuted, height: 1.35),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
                       ),
                     ],
                   ],
@@ -129,7 +133,9 @@ class PollTile extends StatelessWidget {
                             : poll.kind == PollKind.singleChoice
                             ? Icons.radio_button_unchecked_rounded
                             : Icons.check_box_outline_blank_rounded,
-                        color: option.selected ? _spGold : _spMuted,
+                        color: option.selected
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
@@ -147,7 +153,7 @@ class PollTile extends StatelessWidget {
                   _pollKindLabel(poll.kind, l10n),
                   poll.selectedCount,
                 ),
-                style: const TextStyle(color: _spMuted, fontSize: 12),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
               const Spacer(),
               if (!poll.closed)
