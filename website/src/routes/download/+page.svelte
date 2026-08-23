@@ -60,7 +60,6 @@
       macOS, compare the downloaded universal APK with the expected SHA-256 value:
     </p>
     <pre><code>sha256sum {mobileRelease.universalApk.name}</code></pre>
-    <p class="hash"><strong>Expected:</strong> <code>{mobileRelease.universalApk.sha256}</code></p>
     <div class="actions">
       <a class="button" href={mobileRelease.checksumsUrl}>All SHA-256 checksums</a>
       <a class="button" href={mobileRelease.buildMetadataUrl}>Build metadata</a>
@@ -106,7 +105,4 @@
 
 <style>
   @import '../page.css';
-  .hash {
-    overflow-wrap: anywhere;
-  }
 </style>
