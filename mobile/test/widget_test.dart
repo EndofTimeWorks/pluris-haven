@@ -449,6 +449,8 @@ void main() {
     expect(find.text('Total front time'), findsOneWidget);
     expect(find.text('Sessions'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(find.text('Top fronts'), findsOneWidget);
     expect(find.text('Asleep'), findsOneWidget);
     expect(find.text('Away'), findsOneWidget);
@@ -2720,6 +2722,12 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> setThemeMode(HavenThemeMode mode) async {
     _customization = _customization.copyWith(themeMode: mode);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setVisualTheme(HavenVisualTheme theme) async {
+    _customization = _customization.copyWith(visualTheme: theme);
     _customizationController.add(_customization);
   }
 

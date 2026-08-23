@@ -109,6 +109,12 @@ abstract class AppLocalizations {
   /// **'Theme'**
   String get themeRowTitle;
 
+  /// No description provided for @visualThemeRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual style'**
+  String get visualThemeRowTitle;
+
   /// No description provided for @accentColorLabel.
   ///
   /// In en, this message translates to:
@@ -6221,6 +6227,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fronting patterns from local history.'**
   String get analyticsDescription;
+
+  /// No description provided for @frontTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front timeline'**
+  String get frontTimelineTitle;
 
   /// No description provided for @noAnalyticsTitle.
   ///

@@ -275,6 +275,7 @@ class DrawerEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = selected == section;
+    final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
       button: true,
@@ -283,7 +284,9 @@ class DrawerEntry extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
         child: Material(
-          color: isSelected ? _spCard : Colors.transparent,
+          color: isSelected
+              ? scheme.surfaceContainerHighest
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           child: InkWell(
             borderRadius: BorderRadius.circular(10),
@@ -299,12 +302,12 @@ class DrawerEntry extends StatelessWidget {
                     child: Text(
                       label,
                       style: TextStyle(
-                        color: isSelected ? _spText : null,
+                        color: isSelected ? scheme.onSurface : null,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const Text('>', style: TextStyle(color: _spMuted)),
+                  Text('>', style: TextStyle(color: scheme.onSurfaceVariant)),
                 ],
               ),
             ),

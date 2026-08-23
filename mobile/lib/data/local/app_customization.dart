@@ -19,6 +19,24 @@ enum HavenThemeMode {
   }
 }
 
+enum HavenVisualTheme {
+  original('original', 'Pluris Haven'),
+  simplyPlural('simply_plural', 'Simply Plural style'),
+  materialYou('material_you', 'Material You');
+
+  const HavenVisualTheme(this.storageValue, this.label);
+
+  final String storageValue;
+  final String label;
+
+  static HavenVisualTheme fromStorage(String? value) {
+    return HavenVisualTheme.values.firstWhere(
+      (theme) => theme.storageValue == value,
+      orElse: () => HavenVisualTheme.original,
+    );
+  }
+}
+
 enum HavenAccentColor {
   purple('purple', 'Purple', 0xFF7B61FF),
   gold('gold', 'Gold', 0xFFF2C75C),
@@ -42,6 +60,7 @@ enum HavenAccentColor {
 class AppCustomization {
   const AppCustomization({
     required this.themeMode,
+    required this.visualTheme,
     required this.accentColor,
     required this.customAccentHex,
     required this.compactDashboard,
@@ -60,6 +79,7 @@ class AppCustomization {
   });
 
   final HavenThemeMode themeMode;
+  final HavenVisualTheme visualTheme;
   final HavenAccentColor accentColor;
   final String? customAccentHex;
   final bool compactDashboard;
@@ -85,6 +105,7 @@ class AppCustomization {
 
   static AppCustomization get defaults => AppCustomization(
     themeMode: HavenThemeMode.dark,
+    visualTheme: HavenVisualTheme.original,
     accentColor: HavenAccentColor.purple,
     customAccentHex: null,
     compactDashboard: false,
@@ -104,6 +125,7 @@ class AppCustomization {
 
   AppCustomization copyWith({
     HavenThemeMode? themeMode,
+    HavenVisualTheme? visualTheme,
     HavenAccentColor? accentColor,
     Object? customAccentHex = _unchanged,
     bool? compactDashboard,
@@ -122,6 +144,7 @@ class AppCustomization {
   }) {
     return AppCustomization(
       themeMode: themeMode ?? this.themeMode,
+      visualTheme: visualTheme ?? this.visualTheme,
       accentColor: accentColor ?? this.accentColor,
       customAccentHex: identical(customAccentHex, _unchanged)
           ? this.customAccentHex
@@ -178,6 +201,9 @@ class LocalAppCustomizationStore {
 
   Future<void> setThemeMode(HavenThemeMode mode) =>
       _write(_themeModeKey, mode.storageValue);
+
+  Future<void> setVisualTheme(HavenVisualTheme theme) =>
+      _write(_visualThemeKey, theme.storageValue);
 
   Future<void> setAccentColor(HavenAccentColor color) async {
     await _write(_accentColorKey, color.storageValue);
@@ -259,6 +285,7 @@ class LocalAppCustomizationStore {
     final values = {for (final row in rows) row.key: row.value};
     return AppCustomization(
       themeMode: HavenThemeMode.fromStorage(values[_themeModeKey]),
+      visualTheme: HavenVisualTheme.fromStorage(values[_visualThemeKey]),
       accentColor: HavenAccentColor.fromStorage(values[_accentColorKey]),
       customAccentHex: normalizeHexColor(values[_customAccentHexKey]),
       compactDashboard: _readBool(values[_compactDashboardKey]),
@@ -344,6 +371,7 @@ int? _argbFromHex(String? value) {
 
 const Object _unchanged = Object();
 const _themeModeKey = 'theme_mode';
+const _visualThemeKey = 'visual_theme';
 const _accentColorKey = 'accent_color';
 const _customAccentHexKey = 'custom_accent_hex';
 const _compactDashboardKey = 'compact_dashboard';

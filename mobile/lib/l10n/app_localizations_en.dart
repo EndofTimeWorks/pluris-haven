@@ -15,6 +15,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeRowTitle => 'Theme';
 
   @override
+  String get visualThemeRowTitle => 'Visual style';
+
+  @override
   String get accentColorLabel => 'Accent colour';
 
   @override
@@ -3560,6 +3563,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get analyticsDescription => 'Fronting patterns from local history.';
+
+  @override
+  String get frontTimelineTitle => 'Front timeline';
 
   @override
   String get noAnalyticsTitle => 'No analytics yet';

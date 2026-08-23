@@ -34,6 +34,7 @@ export 'app_customization.dart'
         AppCustomization,
         HavenAccentColor,
         HavenThemeMode,
+        HavenVisualTheme,
         defaultDashboardShortcutIds;
 export 'chat_store.dart'
     show
@@ -277,6 +278,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> setThemeMode(HavenThemeMode mode) =>
       _customization.setThemeMode(mode);
+
+  @override
+  Future<void> setVisualTheme(HavenVisualTheme theme) =>
+      _customization.setVisualTheme(theme);
 
   @override
   Future<void> setAccentColor(HavenAccentColor color) =>

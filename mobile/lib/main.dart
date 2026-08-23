@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
@@ -83,41 +84,52 @@ class PlurisHavenApp extends StatelessWidget {
           );
         }
 
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Pluris Haven',
-          locale: _locale(customization.languageCode),
-          supportedLocales: supportedLanguageLocales,
-          localizationsDelegates: const [
-            FallbackAppLocalizationsDelegate(),
-            GlobalMaterialLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-          ],
-          themeMode: _themeMode(customization.themeMode),
-          theme: _buildTheme(customization, Brightness.light),
-          darkTheme: _buildTheme(customization, Brightness.dark),
-          builder: (context, child) {
-            final mediaQuery = MediaQuery.of(context);
-            return MediaQuery(
-              data: mediaQuery.copyWith(
-                accessibleNavigation:
-                    customization.reducedMotion ||
-                    mediaQuery.accessibleNavigation,
-                disableAnimations:
-                    customization.reducedMotion || mediaQuery.disableAnimations,
-                textScaler: customization.largeText
-                    ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
-                    : mediaQuery.textScaler,
+        return DynamicColorBuilder(
+          builder: (lightDynamic, darkDynamic) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Pluris Haven',
+            locale: _locale(customization.languageCode),
+            supportedLocales: supportedLanguageLocales,
+            localizationsDelegates: const [
+              FallbackAppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            themeMode: _themeMode(customization.themeMode),
+            theme: _buildTheme(
+              customization,
+              Brightness.light,
+              dynamicScheme: lightDynamic,
+            ),
+            darkTheme: _buildTheme(
+              customization,
+              Brightness.dark,
+              dynamicScheme: darkDynamic,
+            ),
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  accessibleNavigation:
+                      customization.reducedMotion ||
+                      mediaQuery.accessibleNavigation,
+                  disableAnimations:
+                      customization.reducedMotion ||
+                      mediaQuery.disableAnimations,
+                  textScaler: customization.largeText
+                      ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
+                      : mediaQuery.textScaler,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            home: AppLockGate(
+              enabled: customization.appLockEnabled,
+              child: HomePage(
+                repository: repository,
+                serverAccount: serverAccount,
               ),
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
-          home: AppLockGate(
-            enabled: customization.appLockEnabled,
-            child: HomePage(
-              repository: repository,
-              serverAccount: serverAccount,
             ),
           ),
         );
@@ -141,26 +153,65 @@ class PlurisHavenApp extends StatelessWidget {
     };
   }
 
-  ThemeData _buildTheme(AppCustomization customization, Brightness brightness) {
+  ThemeData _buildTheme(
+    AppCustomization customization,
+    Brightness brightness, {
+    ColorScheme? dynamicScheme,
+  }) {
+    if (customization.visualTheme == HavenVisualTheme.materialYou &&
+        dynamicScheme != null) {
+      return ThemeData.from(
+        colorScheme: dynamicScheme,
+        useMaterial3: true,
+      ).copyWith(
+        visualDensity: customization.compactLists
+            ? VisualDensity.compact
+            : VisualDensity.standard,
+        cardTheme: CardThemeData(
+          color: dynamicScheme.surfaceContainerHighest,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          margin: EdgeInsets.zero,
+        ),
+      );
+    }
     final isDark = brightness == Brightness.dark;
-    final accent = Color(customization.effectiveAccentArgb);
+    final simplyPlural =
+        customization.visualTheme == HavenVisualTheme.simplyPlural;
+    final accent = simplyPlural
+        ? const Color(0xFFD9B45B)
+        : Color(customization.effectiveAccentArgb);
     final highContrast = customization.highContrast;
-    final surface = highContrast
+    final surface = simplyPlural
+        ? (isDark ? const Color(0xFF20242B) : const Color(0xFFF5F5F2))
+        : highContrast
         ? (isDark ? const Color(0xFF11131A) : Colors.white)
         : (isDark ? const Color(0xFF232532) : const Color(0xFFF7F4FC));
-    final background = highContrast
+    final background = simplyPlural
+        ? (isDark ? const Color(0xFF171A20) : const Color(0xFFEAEBE8))
+        : highContrast
         ? (isDark ? Colors.black : const Color(0xFFF8F8FC))
         : (isDark ? const Color(0xFF171922) : const Color(0xFFF1EFF7));
-    final card = highContrast
+    final card = simplyPlural
+        ? (isDark ? const Color(0xFF252A32) : Colors.white)
+        : highContrast
         ? (isDark ? const Color(0xFF1E2230) : Colors.white)
         : (isDark ? const Color(0xFF2B2E3D) : Colors.white);
-    final onSurface = highContrast
+    final onSurface = simplyPlural
+        ? (isDark ? const Color(0xFFE7E9EC) : const Color(0xFF20242B))
+        : highContrast
         ? (isDark ? Colors.white : const Color(0xFF11111A))
         : (isDark ? const Color(0xFFECEAF2) : const Color(0xFF252334));
-    final muted = highContrast
+    final muted = simplyPlural
+        ? (isDark ? const Color(0xFFB5BBC4) : const Color(0xFF646A72))
+        : highContrast
         ? (isDark ? const Color(0xFFE1DDF0) : const Color(0xFF3B3748))
         : (isDark ? const Color(0xFFC4C0CE) : const Color(0xFF605C70));
-    final outline = highContrast
+    final outline = simplyPlural
+        ? (isDark ? const Color(0xFF3A414B) : const Color(0xFFD1D4D0))
+        : highContrast
         ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
         : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
     return ThemeData(
@@ -169,7 +220,9 @@ class PlurisHavenApp extends StatelessWidget {
         brightness: brightness,
         primary: accent,
         onPrimary: Colors.white,
-        secondary: const Color(0xFFF2C75C),
+        secondary: simplyPlural
+            ? const Color(0xFFD9B45B)
+            : const Color(0xFFF2C75C),
         onSecondary: const Color(0xFF211B00),
         tertiary: const Color(0xFFF2C75C),
         onTertiary: const Color(0xFF211B00),
@@ -210,7 +263,9 @@ class PlurisHavenApp extends StatelessWidget {
       cardTheme: CardThemeData(
         color: card,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(simplyPlural ? 16 : 12),
+        ),
         margin: EdgeInsets.zero,
       ),
       useMaterial3: true,

@@ -19,6 +19,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       initialData: const [],
       builder: (context, snapshot) {
         final l10n = AppLocalizations.of(context);
+        final scheme = Theme.of(context).colorScheme;
         final entries = snapshot.data ?? const <FrontHistoryEntry>[];
         final stats = _buildAnalytics(entries, _window, l10n.unknownLabel);
 
@@ -36,7 +37,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   const SizedBox(height: 8),
                   Text(
                     l10n.analyticsDescription,
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                 ],
               ),
@@ -66,6 +70,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             else ...[
               _AnalyticsSummary(stats: stats),
               const SizedBox(height: 12),
+              _FrontTimelineCard(stats: stats),
+              const SizedBox(height: 12),
               _TopFrontsCard(stats: stats),
               const SizedBox(height: 12),
               _HourChartCard(stats: stats),
@@ -75,6 +81,109 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       },
     );
   }
+}
+
+class _FrontTimelineCard extends StatelessWidget {
+  const _FrontTimelineCard({required this.stats});
+
+  final _FrontAnalytics stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SpCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SpSectionHeader(title: l10n.frontTimelineTitle),
+          const SizedBox(height: 12),
+          RepaintBoundary(
+            child: SizedBox(
+              height: 220,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _FrontTimelinePainter(
+                  segments: stats.timeline,
+                  lanes: stats.timelineLanes,
+                  colours: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                    Theme.of(context).colorScheme.tertiary,
+                    Theme.of(context).colorScheme.error,
+                  ],
+                  gridColour: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FrontTimelinePainter extends CustomPainter {
+  const _FrontTimelinePainter({
+    required this.segments,
+    required this.lanes,
+    required this.colours,
+    required this.gridColour,
+  });
+
+  final List<_TimelineSegment> segments;
+  final List<String> lanes;
+  final List<Color> colours;
+  final Color gridColour;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (segments.isEmpty || lanes.isEmpty) {
+      return;
+    }
+
+    final minTime = segments
+        .map((segment) => segment.start)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final maxTime = segments
+        .map((segment) => segment.end)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+    final span = maxTime.difference(minTime).inMilliseconds.clamp(1, 1 << 62);
+    final laneHeight = size.height / lanes.length;
+    final gridPaint = Paint()
+      ..color = gridColour
+      ..strokeWidth = 1;
+    final barPaint = Paint()
+      ..color = colours.first
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = laneHeight.clamp(5, 14) * 0.55;
+
+    for (var index = 0; index <= 4; index++) {
+      final x = size.width * index / 4;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (final segment in segments) {
+      final lane = lanes.indexOf(segment.label);
+      if (lane < 0) {
+        continue;
+      }
+      final start = segment.start.difference(minTime).inMilliseconds / span;
+      final end = segment.end.difference(minTime).inMilliseconds / span;
+      final y = laneHeight * (lane + 0.5);
+      barPaint.color = colours[lane % colours.length];
+      canvas.drawLine(
+        Offset(size.width * start, y),
+        Offset(size.width * end, y),
+        barPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FrontTimelinePainter oldDelegate) =>
+      oldDelegate.segments != segments ||
+      oldDelegate.lanes != lanes ||
+      oldDelegate.colours != colours ||
+      oldDelegate.gridColour != gridColour;
 }
 
 class _AnalyticsSummary extends StatelessWidget {
@@ -135,6 +244,7 @@ class _MetricBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Semantics(
       label: '$label $value',
       child: Column(
@@ -150,7 +260,7 @@ class _MetricBlock extends StatelessWidget {
           ExcludeSemantics(
             child: Text(
               label,
-              style: const TextStyle(color: _spMuted, fontSize: 13),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
             ),
           ),
         ],
@@ -167,6 +277,7 @@ class _TopFrontsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final top = stats.topLabels.take(8).toList(growable: false);
     final maxSeconds = top.isEmpty ? 1 : top.first.totalSeconds;
 
@@ -198,8 +309,12 @@ class _TopFrontsCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        _formatAnalyticsDuration(l10n, item.totalSeconds),
-                        style: const TextStyle(color: _spMuted, fontSize: 13),
+                        '${_formatAnalyticsDuration(l10n, item.totalSeconds)} · '
+                        '${(item.totalSeconds * 100 / stats.totalSeconds).toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -207,14 +322,17 @@ class _TopFrontsCard extends StatelessWidget {
                   LinearProgressIndicator(
                     minHeight: 7,
                     value: item.totalSeconds / maxSeconds,
-                    color: _spGold,
-                    backgroundColor: _spLine,
+                    color: scheme.primary,
+                    backgroundColor: scheme.outlineVariant,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     l10n.sessionCount(item.sessions),
-                    style: const TextStyle(color: _spMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -235,6 +353,7 @@ class _HourChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final maxSeconds = stats.hourSeconds.fold<int>(
       1,
       (current, value) => value > current ? value : current,
@@ -266,7 +385,7 @@ class _HourChartCard extends StatelessWidget {
                             heightFactor: stats.hourSeconds[hour] / maxSeconds,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: _spPurple,
+                                color: scheme.secondary,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const SizedBox(width: double.infinity),
@@ -280,13 +399,13 @@ class _HourChartCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             children: [
-              Text('00', style: TextStyle(color: _spMuted, fontSize: 12)),
+              Text('00', style: TextStyle(fontSize: 12)),
               Spacer(),
-              Text('12', style: TextStyle(color: _spMuted, fontSize: 12)),
+              Text('12', style: TextStyle(fontSize: 12)),
               Spacer(),
-              Text('23', style: TextStyle(color: _spMuted, fontSize: 12)),
+              Text('23', style: TextStyle(fontSize: 12)),
             ],
           ),
         ],
@@ -323,6 +442,8 @@ class _FrontAnalytics {
     required this.longestSeconds,
     required this.topLabels,
     required this.hourSeconds,
+    required this.timeline,
+    required this.timelineLanes,
   });
 
   final int sessions;
@@ -331,6 +452,20 @@ class _FrontAnalytics {
   final int longestSeconds;
   final List<_FrontLabelAnalytics> topLabels;
   final List<int> hourSeconds;
+  final List<_TimelineSegment> timeline;
+  final List<String> timelineLanes;
+}
+
+class _TimelineSegment {
+  const _TimelineSegment({
+    required this.label,
+    required this.start,
+    required this.end,
+  });
+
+  final String label;
+  final DateTime start;
+  final DateTime end;
 }
 
 class _FrontLabelAnalytics {
@@ -358,6 +493,7 @@ _FrontAnalytics _buildAnalytics(
   final now = DateTime.now();
   final since = window.duration == null ? null : now.subtract(window.duration!);
   final labels = <String, _LabelAccumulator>{};
+  final timeline = <_TimelineSegment>[];
   final hourSeconds = List<int>.filled(24, 0);
   var totalSeconds = 0;
   var longestSeconds = 0;
@@ -387,6 +523,9 @@ _FrontAnalytics _buildAnalytics(
     labelStats.totalSeconds += seconds;
 
     _addHourBuckets(hourSeconds, interval.start, interval.end);
+    timeline.add(
+      _TimelineSegment(label: label, start: interval.start, end: interval.end),
+    );
   }
 
   final topLabels =
@@ -412,6 +551,10 @@ _FrontAnalytics _buildAnalytics(
     longestSeconds: longestSeconds,
     topLabels: topLabels,
     hourSeconds: List.unmodifiable(hourSeconds),
+    timeline: List.unmodifiable(timeline),
+    timelineLanes: List.unmodifiable(
+      topLabels.take(12).map((item) => item.label),
+    ),
   );
 }
 

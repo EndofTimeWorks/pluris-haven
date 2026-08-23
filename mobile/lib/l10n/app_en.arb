@@ -5,6 +5,7 @@
     "description": "Title of the settings group for theme, accent colour, dashboard, and language."
   },
   "themeRowTitle": "Theme",
+  "visualThemeRowTitle": "Visual style",
   "accentColorLabel": "Accent colour",
   "compactDashboardTitle": "Compact dashboard",
   "compactDashboardSubtitle": "smaller shortcuts, more room",
@@ -1353,6 +1354,7 @@
   "openGroupsAction": "Open groups",
   "analyticsTitle": "Analytics",
   "analyticsDescription": "Fronting patterns from local history.",
+  "frontTimelineTitle": "Front timeline",
   "noAnalyticsTitle": "No analytics yet",
   "noAnalyticsBody": "Set fronts or import Simply Plural front history to fill this in.",
   "totalFrontTimeLabel": "Total front time",

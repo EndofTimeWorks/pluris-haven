@@ -100,6 +100,7 @@ class SpSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
       onChanged: onChanged,
@@ -108,14 +109,14 @@ class SpSearchField extends StatelessWidget {
         hintText: hintText,
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: _spCard,
+        fillColor: scheme.surfaceContainerHighest,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _spLine),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _spPurple),
+          borderSide: BorderSide(color: scheme.primary),
         ),
       ),
     );
@@ -198,11 +199,12 @@ class SpEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _spSurface,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _spLine),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -211,7 +213,10 @@ class SpEmptyState extends StatelessWidget {
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+            Text(
+              body,
+              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+            ),
           ],
         ),
       ),
@@ -294,6 +299,7 @@ class SpSettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
@@ -314,15 +320,21 @@ class SpSettingsRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: _spMuted, fontSize: 13),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
           ),
           trailing ??
-              const Text(
+              Text(
                 '>',
-                style: TextStyle(color: _spMuted, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
         ],
       ),
@@ -437,11 +449,12 @@ class SpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final content = DecoratedBox(
       decoration: BoxDecoration(
-        color: _spCard,
-        borderRadius: BorderRadius.circular(12),
-        border: outlined ? Border.all(color: _spLine) : null,
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: outlined ? Border.all(color: scheme.outlineVariant) : null,
       ),
       child: Padding(padding: padding, child: child),
     );

@@ -28,6 +28,15 @@ class AppOptionsPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
+              l10n.visualThemeRowTitle,
+              customization.visualTheme.label,
+              onTap: () => showVisualThemePicker(
+                context,
+                customization: customization,
+                repository: repository,
+              ),
+            ),
+            SpSettingsRow(
               l10n.accentColorLabel,
               customization.accentLabel,
               trailing: AccentSwatch(
@@ -195,9 +204,42 @@ void showAccentPicker(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         AccentPickerSheet(customization: customization, repository: repository),
+  );
+}
+
+void showVisualThemePicker(
+  BuildContext context, {
+  required AppCustomization customization,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final theme in HavenVisualTheme.values)
+            ListTile(
+              leading: Icon(
+                customization.visualTheme == theme
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(theme.label),
+              onTap: () async {
+                await repository.setVisualTheme(theme);
+                if (context.mounted) Navigator.of(context).pop();
+              },
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
   );
 }
 

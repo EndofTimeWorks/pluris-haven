@@ -185,6 +185,8 @@ abstract interface class HavenRepository {
 
   Future<void> setThemeMode(HavenThemeMode mode);
 
+  Future<void> setVisualTheme(HavenVisualTheme theme);
+
   Future<void> setAccentColor(HavenAccentColor color);
 
   Future<void> setCustomAccentColor(String? colorHex);
