@@ -40,6 +40,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
       builder: (context, historySnapshot) {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
         final filteredEntries = entries.where(_matchesEntry).toList();
+        final visualTheme = _visualThemeOf(context);
 
         return CustomScrollView(
           slivers: [
@@ -59,15 +60,33 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                     onChanged: (value) => setState(() => _query = value),
                   ),
                   const SizedBox(height: 12),
-                  SpFilterRow(
-                    filters: filters.values.toList(growable: false),
-                    selected: filters[_filter]!,
-                    onSelected: (label) => setState(
-                      () => _filter = filters.entries
-                          .firstWhere((entry) => entry.value == label)
-                          .key,
+                  if (visualTheme == HavenVisualTheme.simplyPlural ||
+                      visualTheme == HavenVisualTheme.ampersand)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SegmentedButton<String>(
+                        segments: [
+                          for (final entry in filters.entries)
+                            ButtonSegment<String>(
+                              value: entry.key,
+                              label: Text(entry.value),
+                            ),
+                        ],
+                        selected: {_filter},
+                        onSelectionChanged: (selection) =>
+                            setState(() => _filter = selection.first),
+                      ),
+                    )
+                  else
+                    SpFilterRow(
+                      filters: filters.values.toList(growable: false),
+                      selected: filters[_filter]!,
+                      onSelected: (label) => setState(
+                        () => _filter = filters.entries
+                            .firstWhere((entry) => entry.value == label)
+                            .key,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   SpCard(
                     child: SpSectionHeader(
