@@ -19,6 +19,8 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
   String _filter = 'all';
   String _query = '';
   int _historyLimit = 250;
+  bool _showCalendar = true;
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void dispose() {
@@ -40,8 +42,17 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
       initialData: const [],
       builder: (context, historySnapshot) {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
-        final filteredEntries = entries.where(_matchesEntry).toList();
         final visualTheme = _visualThemeOf(context);
+        final isAmpersand = visualTheme == HavenVisualTheme.ampersand;
+        final filteredEntries = entries
+            .where(_matchesEntry)
+            .where(
+              (entry) =>
+                  !isAmpersand ||
+                  !_showCalendar ||
+                  _isOnSelectedDate(entry.startedAt),
+            )
+            .toList();
 
         return CustomScrollView(
           slivers: [
@@ -49,11 +60,13 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
               padding: const EdgeInsets.fromLTRB(10, 14, 10, 0),
               sliver: SliverList.list(
                 children: [
-                  CurrentFrontEntry(
-                    snapshot: widget.snapshot,
-                    repository: widget.repository,
-                  ),
-                  const SizedBox(height: 12),
+                  if (!isAmpersand) ...[
+                    CurrentFrontEntry(
+                      snapshot: widget.snapshot,
+                      repository: widget.repository,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SpSearchField(
                     key: const ValueKey('front-history-search-field'),
                     hintText: l10n.searchFrontHistoryHint,
@@ -61,8 +74,40 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                     onChanged: (value) => setState(() => _query = value),
                   ),
                   const SizedBox(height: 12),
-                  if (visualTheme == HavenVisualTheme.simplyPlural ||
-                      visualTheme == HavenVisualTheme.ampersand)
+                  if (isAmpersand) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.frontHistoryTitle,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          tooltip: _showCalendar
+                              ? 'Show chronological list'
+                              : 'Show calendar',
+                          onPressed: () =>
+                              setState(() => _showCalendar = !_showCalendar),
+                          icon: Icon(
+                            _showCalendar
+                                ? Icons.format_list_bulleted_rounded
+                                : Icons.calendar_month_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_showCalendar) ...[
+                      const SizedBox(height: 8),
+                      CalendarDatePicker(
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(DateTime.now().year + 1),
+                        onDateChanged: (date) =>
+                            setState(() => _selectedDate = date),
+                      ),
+                    ],
+                  ] else if (visualTheme == HavenVisualTheme.simplyPlural)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: SegmentedButton<String>(
@@ -88,15 +133,17 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                             .key,
                       ),
                     ),
-                  const SizedBox(height: 12),
-                  SpCard(
-                    child: SpSectionHeader(
-                      title: l10n.frontHistoryTitle,
-                      trailing: StatusPill(
-                        text: '${filteredEntries.length}/${entries.length}',
+                  if (!isAmpersand) ...[
+                    const SizedBox(height: 12),
+                    SpCard(
+                      child: SpSectionHeader(
+                        title: l10n.frontHistoryTitle,
+                        trailing: StatusPill(
+                          text: '${filteredEntries.length}/${entries.length}',
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   if (entries.isEmpty || filteredEntries.isEmpty)
                     SpCard(
                       child: entries.isEmpty
@@ -117,15 +164,22 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 sliver: SliverList.builder(
                   itemCount: filteredEntries.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 1),
-                    child: SpCard(
-                      child: FrontHistoryTile(
-                        entry: filteredEntries[index],
-                        repository: widget.repository,
-                      ),
-                    ),
-                  ),
+                  itemBuilder: (context, index) {
+                    final tile = FrontHistoryTile(
+                      entry: filteredEntries[index],
+                      repository: widget.repository,
+                    );
+                    if (isAmpersand) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: tile,
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 1),
+                      child: SpCard(child: tile),
+                    );
+                  },
                 ),
               ),
             if (entries.length >= _historyLimit &&
@@ -193,6 +247,13 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
       _ => DateTime.fromMillisecondsSinceEpoch(0),
     };
     return !local.isBefore(start);
+  }
+
+  bool _isOnSelectedDate(DateTime value) {
+    final local = value.toLocal();
+    return local.year == _selectedDate.year &&
+        local.month == _selectedDate.month &&
+        local.day == _selectedDate.day;
   }
 }
 
