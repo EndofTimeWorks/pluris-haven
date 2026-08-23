@@ -79,36 +79,45 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (_unlocked) return widget.child;
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_outline, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.appLockedTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Offstage(
+          offstage: !_unlocked,
+          child: TickerMode(enabled: _unlocked, child: widget.child),
+        ),
+        if (!_unlocked)
+          Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_outline, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.appLockedTitle,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(l10n.appLockedBody, textAlign: TextAlign.center),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: _authenticating ? null : _tryUnlock,
+                        icon: const Icon(Icons.lock_open_rounded),
+                        label: Text(l10n.appLockUnlockButton),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(l10n.appLockedBody, textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: _authenticating ? null : _tryUnlock,
-                  icon: const Icon(Icons.lock_open_rounded),
-                  label: Text(l10n.appLockUnlockButton),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 }

@@ -41,77 +41,91 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
         final filteredEntries = entries.where(_matchesEntry).toList();
 
-        return SpPage(
-          children: [
-            CurrentFrontEntry(
-              snapshot: widget.snapshot,
-              repository: widget.repository,
-            ),
-            const SizedBox(height: 12),
-            SpSearchField(
-              key: const ValueKey('front-history-search-field'),
-              hintText: l10n.searchFrontHistoryHint,
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            const SizedBox(height: 12),
-            SpFilterRow(
-              filters: filters.values.toList(growable: false),
-              selected: filters[_filter]!,
-              onSelected: (label) => setState(
-                () => _filter = filters.entries
-                    .firstWhere((entry) => entry.value == label)
-                    .key,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(10, 14, 10, 0),
+              sliver: SliverList.list(
                 children: [
-                  SpSectionHeader(
-                    title: l10n.frontHistoryTitle,
-                    trailing: StatusPill(
-                      text: '${filteredEntries.length}/${entries.length}',
+                  CurrentFrontEntry(
+                    snapshot: widget.snapshot,
+                    repository: widget.repository,
+                  ),
+                  const SizedBox(height: 12),
+                  SpSearchField(
+                    key: const ValueKey('front-history-search-field'),
+                    hintText: l10n.searchFrontHistoryHint,
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                  const SizedBox(height: 12),
+                  SpFilterRow(
+                    filters: filters.values.toList(growable: false),
+                    selected: filters[_filter]!,
+                    onSelected: (label) => setState(
+                      () => _filter = filters.entries
+                          .firstWhere((entry) => entry.value == label)
+                          .key,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (entries.isEmpty)
-                    SpEmptyState(
-                      title: l10n.noFrontHistoryYet,
-                      body: l10n.frontHistoryEmptyBody,
-                    )
-                  else if (filteredEntries.isEmpty)
-                    SpEmptyState(
-                      title: l10n.noMatchingFronts,
-                      body: l10n.noMatchingFrontsBody,
-                    )
-                  else
-                    for (final entry in filteredEntries) ...[
-                      FrontHistoryTile(
-                        entry: entry,
+                  SpCard(
+                    child: SpSectionHeader(
+                      title: l10n.frontHistoryTitle,
+                      trailing: StatusPill(
+                        text: '${filteredEntries.length}/${entries.length}',
+                      ),
+                    ),
+                  ),
+                  if (entries.isEmpty || filteredEntries.isEmpty)
+                    SpCard(
+                      child: entries.isEmpty
+                          ? SpEmptyState(
+                              title: l10n.noFrontHistoryYet,
+                              body: l10n.frontHistoryEmptyBody,
+                            )
+                          : SpEmptyState(
+                              title: l10n.noMatchingFronts,
+                              body: l10n.noMatchingFrontsBody,
+                            ),
+                    ),
+                ],
+              ),
+            ),
+            if (filteredEntries.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                sliver: SliverList.builder(
+                  itemCount: filteredEntries.length,
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 1),
+                    child: SpCard(
+                      child: FrontHistoryTile(
+                        entry: filteredEntries[index],
                         repository: widget.repository,
                       ),
-                      if (entry != filteredEntries.last)
-                        const Divider(height: 1, color: _spLine),
-                    ],
-                  const SizedBox(height: 14),
-                  SpActionRow(
-                    primary: l10n.addEntryButton,
-                    secondary: l10n.resetButton,
-                    onPrimary: () => showFrontHistoryEditor(
-                      context,
-                      repository: widget.repository,
                     ),
-                    onSecondary: () {
-                      _searchController.clear();
-                      setState(() {
-                        _query = '';
-                        _filter = 'all';
-                      });
-                    },
                   ),
-                ],
+                ),
+              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
+              sliver: SliverToBoxAdapter(
+                child: SpActionRow(
+                  primary: l10n.addEntryButton,
+                  secondary: l10n.resetButton,
+                  onPrimary: () => showFrontHistoryEditor(
+                    context,
+                    repository: widget.repository,
+                  ),
+                  onSecondary: () {
+                    _searchController.clear();
+                    setState(() {
+                      _query = '';
+                      _filter = 'all';
+                    });
+                  },
+                ),
               ),
             ),
           ],

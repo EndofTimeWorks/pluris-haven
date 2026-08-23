@@ -1,6 +1,134 @@
 part of 'haven_repository.dart';
 
 extension LocalHavenRepositoryArchive on LocalHavenRepository {
+  Future<int> repairRemoteAvatars() async {
+    if (await _preferenceEquals(
+      _remoteAvatarRepairPreference,
+      _remoteAvatarRepairVersion,
+    )) {
+      return 0;
+    }
+
+    var repaired = 0;
+    var remaining = 0;
+    final now = DateTime.now().toUtc();
+    final system = await (database.select(
+      database.pluralSystems,
+    )..where((row) => row.id.equals(localSystemId))).getSingleOrNull();
+    if (system != null) {
+      final avatarUrl = await _decryptLocalText(
+        system.avatarUrl,
+        'plural_systems',
+        system.id,
+        'avatar_url',
+      );
+      final localAvatar = await _repairRemoteAvatar(avatarUrl);
+      if (localAvatar != null) {
+        await (database.update(
+          database.pluralSystems,
+        )..where((row) => row.id.equals(system.id))).write(
+          PluralSystemsCompanion(
+            avatarUrl: Value(
+              await _encryptNullableLocalText(
+                localAvatar,
+                'plural_systems',
+                system.id,
+                'avatar_url',
+              ),
+            ),
+            updatedAt: Value(now),
+          ),
+        );
+        repaired++;
+      } else if (_isRemoteAvatar(avatarUrl)) {
+        remaining++;
+      }
+    }
+
+    final members = await (database.select(
+      database.members,
+    )..where((row) => row.systemId.equals(localSystemId))).get();
+    for (final member in members) {
+      final avatarUrl = await _decryptMember(
+        member,
+        'avatar_url',
+        member.avatarUrl,
+      );
+      final localAvatar = await _repairRemoteAvatar(avatarUrl);
+      if (localAvatar != null) {
+        await (database.update(
+          database.members,
+        )..where((row) => row.id.equals(member.id))).write(
+          MembersCompanion(
+            avatarUrl: Value(
+              await _encryptMember(member.id, 'avatar_url', localAvatar),
+            ),
+            updatedAt: Value(now),
+          ),
+        );
+        _memberDecryptCache.remove((member.id, 'avatar_url'));
+        repaired++;
+      } else if (_isRemoteAvatar(avatarUrl)) {
+        remaining++;
+      }
+    }
+
+    final namedFronts = await (database.select(
+      database.namedFronts,
+    )..where((row) => row.systemId.equals(localSystemId))).get();
+    for (final front in namedFronts) {
+      final avatarUrl = await _decryptLocalText(
+        front.avatarUrl,
+        'named_fronts',
+        front.id,
+        'avatar_url',
+      );
+      final localAvatar = await _repairRemoteAvatar(avatarUrl);
+      if (localAvatar != null) {
+        await (database.update(
+          database.namedFronts,
+        )..where((row) => row.id.equals(front.id))).write(
+          NamedFrontsCompanion(
+            avatarUrl: Value(
+              await _encryptNullableLocalText(
+                localAvatar,
+                'named_fronts',
+                front.id,
+                'avatar_url',
+              ),
+            ),
+            updatedAt: Value(now),
+          ),
+        );
+        repaired++;
+      } else if (_isRemoteAvatar(avatarUrl)) {
+        remaining++;
+      }
+    }
+
+    if (remaining == 0) {
+      await _writePreference(
+        _remoteAvatarRepairPreference,
+        _remoteAvatarRepairVersion,
+      );
+    }
+    if (repaired > 0) {
+      appDebugLog(
+        'Repaired remote avatars count=$repaired remaining=$remaining',
+      );
+    }
+    return repaired;
+  }
+
+  bool _isRemoteAvatar(String? value) =>
+      value?.startsWith('http://') == true ||
+      value?.startsWith('https://') == true;
+
+  Future<String?> _repairRemoteAvatar(String? value) async {
+    if (!_isRemoteAvatar(value)) return null;
+    return _downloadAndStoreAvatar(value!);
+  }
+
   Future<String> _archiveBuildLocalArchiveJson() async {
     final systems = await (database.select(
       database.pluralSystems,
@@ -1351,66 +1479,93 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
   }
 
   Future<String?> _downloadAndStoreAvatar(String url) async {
-    final uri = Uri.tryParse(url);
-    final allowedAddresses = uri == null
-        ? null
-        : await allowedRemoteAvatarAddresses(uri);
-    if (uri == null || allowedAddresses == null) {
-      appDebugLog('Avatar download skipped unsafe URL');
-      return null;
-    }
-
-    final pinnedAddress = allowedAddresses.first;
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 8);
-    client.findProxy = (_) => 'DIRECT';
-    client.connectionFactory = (requestUri, proxyHost, proxyPort) async {
-      if (proxyHost != null ||
-          requestUri.host.toLowerCase() != uri.host.toLowerCase() ||
-          requestUri.port != uri.port) {
-        throw const SocketException('Avatar connection target changed.');
+    var currentUri = Uri.tryParse(url);
+    final visitedUris = <Uri>{};
+    for (var redirect = 0; redirect <= 3; redirect++) {
+      final uri = currentUri;
+      if (uri == null || !visitedUris.add(uri)) {
+        appDebugLog('Avatar download skipped invalid redirect target');
+        return null;
       }
-      final task = await Socket.startConnect(pinnedAddress, requestUri.port);
-      final secureSocket = task.socket.then(
-        (socket) => SecureSocket.secure(socket, host: requestUri.host),
-      );
-      return ConnectionTask.fromSocket(secureSocket, task.cancel);
-    };
-    try {
-      final request = await client.getUrl(uri);
-      request.followRedirects = false;
-      final response = await request.close();
-      if (response.statusCode < 200 || response.statusCode >= 300) {
+      final allowedAddresses = await allowedRemoteAvatarAddresses(uri);
+      if (allowedAddresses == null) {
+        appDebugLog('Avatar download skipped unsafe URL');
+        return null;
+      }
+
+      final pinnedAddress = allowedAddresses.first;
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 8);
+      client.findProxy = (_) => 'DIRECT';
+      client.connectionFactory = (requestUri, proxyHost, proxyPort) async {
+        if (proxyHost != null ||
+            requestUri.host.toLowerCase() != uri.host.toLowerCase() ||
+            requestUri.port != uri.port) {
+          throw const SocketException('Avatar connection target changed.');
+        }
+        final port = requestUri.port == 0 ? 443 : requestUri.port;
+        final task = await Socket.startConnect(pinnedAddress, port);
+        final secureSocket = task.socket.then(
+          (socket) => SecureSocket.secure(socket, host: requestUri.host),
+        );
+        return ConnectionTask.fromSocket(secureSocket, task.cancel);
+      };
+      try {
+        final request = await client.getUrl(uri);
+        request.followRedirects = false;
+        final response = await request.close();
+        if (response.statusCode >= 300 && response.statusCode < 400) {
+          final location = response.headers.value(HttpHeaders.locationHeader);
+          if (location == null || redirect == 3) {
+            appDebugLog('Avatar download skipped excessive redirects');
+            return null;
+          }
+          currentUri = uri.resolve(location);
+          continue;
+        }
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          appDebugLog(
+            'Avatar download skipped host=${uri.host} status=${response.statusCode}',
+          );
+          return null;
+        }
+
+        final bytes = await _readAvatarResponseBytes(response);
+        if (bytes == null || bytes.isEmpty) {
+          appDebugLog('Avatar download skipped host=${uri.host} invalid bytes');
+          return null;
+        }
+        try {
+          validateRasterAvatarBytes(bytes);
+        } on AvatarFileException {
+          appDebugLog(
+            'Avatar download skipped host=${uri.host} unsupported image',
+          );
+          return null;
+        }
+
+        return _storeAvatarBytes(
+          id: uri.pathSegments.isEmpty
+              ? 'remote-avatar'
+              : uri.pathSegments.last,
+          sourceName: uri.pathSegments.isEmpty
+              ? 'remote-avatar'
+              : uri.pathSegments.last,
+          mimeType: response.headers.contentType?.mimeType,
+          bytes: bytes,
+        );
+      } on Object catch (error, stackTrace) {
         appDebugLog(
-          'Avatar download skipped host=${uri.host} status=${response.statusCode}',
+          'Avatar download failed host=${uri.host}',
+          error: error,
+          stackTrace: stackTrace,
         );
         return null;
+      } finally {
+        client.close(force: true);
       }
-
-      final bytes = await _readAvatarResponseBytes(response);
-      if (bytes == null || bytes.isEmpty) {
-        appDebugLog('Avatar download skipped host=${uri.host} invalid bytes');
-        return null;
-      }
-
-      return _storeAvatarBytes(
-        id: uri.pathSegments.isEmpty ? 'remote-avatar' : uri.pathSegments.last,
-        sourceName: uri.pathSegments.isEmpty
-            ? 'remote-avatar'
-            : uri.pathSegments.last,
-        mimeType: response.headers.contentType?.mimeType,
-        bytes: bytes,
-      );
-    } on Object catch (error, stackTrace) {
-      appDebugLog(
-        'Avatar download failed host=${uri.host}',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return null;
-    } finally {
-      client.close(force: true);
     }
+    return null;
   }
 
   Future<Uint8List?> _readAvatarResponseBytes(

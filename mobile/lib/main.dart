@@ -54,6 +54,7 @@ Future<void> main() async {
   appDebugLog('Local repository ready');
 
   runApp(PlurisHavenApp(repository: repository, serverAccount: serverAccount));
+  unawaited(repository.repairRemoteAvatars());
   unawaited(serverAccount.initialize());
 }
 

@@ -70,6 +70,8 @@ const _localEncryptedTextPrefix = 'ph2:';
 const _memberEncryptionSweepPreference =
     'internal.member_encryption_sweep_version';
 const _memberEncryptionSweepVersion = '2';
+const _remoteAvatarRepairPreference = 'internal.remote_avatar_repair_version';
+const _remoteAvatarRepairVersion = '1';
 
 class LocalHavenRepository implements HavenRepository {
   LocalHavenRepository(this.database, {required this.crypto})

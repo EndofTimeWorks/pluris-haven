@@ -17,52 +17,23 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
   Future<List<FrontHistoryEntry>> _frontHistoryEntries(
     List<FrontSession> rows,
   ) async {
-    final entries = <FrontHistoryEntry>[];
-    for (final row in rows) {
-      final links = await (database.select(
-        database.frontSessionMembers,
-      )..where((link) => link.sessionId.equals(row.id))).get();
-      entries.add(
-        FrontHistoryEntry(
-          id: row.id,
-          label: await _frontHistoryLabel(row),
-          statusNote: await _decryptLocalText(
-            row.statusNote,
-            'front_sessions',
-            row.id,
-            'status_note',
-          ),
-          startedAt: row.startedAt,
-          endedAt: row.endedAt,
-          memberIds: [for (final link in links) link.memberId],
-        ),
-      );
-    }
-    return entries;
-  }
-
-  Future<String> _frontHistoryLabel(FrontSession row) async {
-    final explicit = (await _decryptLocalText(
-      row.label,
-      'front_sessions',
-      row.id,
-      'label',
-    ))?.trim();
-    if (explicit != null && explicit.isNotEmpty) {
-      return explicit;
+    if (rows.isEmpty) {
+      return const [];
     }
 
-    final links = await (database.select(
-      database.frontSessionMembers,
-    )..where((link) => link.sessionId.equals(row.id))).get();
-    if (links.isEmpty) {
-      return 'Unknown front';
+    final links =
+        await (database.select(database.frontSessionMembers)..where(
+              (link) => link.sessionId.isIn(rows.map((row) => row.id).toList()),
+            ))
+            .get();
+    final linksBySession = <String, List<FrontSessionMember>>{};
+    for (final link in links) {
+      linksBySession.putIfAbsent(link.sessionId, () => []).add(link);
     }
 
-    final memberIds = links.map((link) => link.memberId).toSet().toList();
     final members = await (database.select(
       database.members,
-    )..where((member) => member.id.isIn(memberIds))).get();
+    )..where((member) => member.systemId.equals(localSystemId))).get();
     final namesById = <String, String>{};
     for (final member in members) {
       final name = (await _decryptMember(
@@ -74,13 +45,42 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         namesById[member.id] = name;
       }
     }
-    final names = [
-      for (final link in links)
-        if ((namesById[link.memberId] ?? '').isNotEmpty)
-          namesById[link.memberId]!,
-    ];
 
-    return names.isEmpty ? 'Unknown front' : names.join(', ');
+    final entries = <FrontHistoryEntry>[];
+    for (final row in rows) {
+      final sessionLinks = linksBySession[row.id] ?? const [];
+      final explicit = (await _decryptLocalText(
+        row.label,
+        'front_sessions',
+        row.id,
+        'label',
+      ))?.trim();
+      final label = explicit != null && explicit.isNotEmpty
+          ? explicit
+          : sessionLinks.isEmpty
+          ? 'Unknown front'
+          : sessionLinks
+                .map((link) => namesById[link.memberId])
+                .whereType<String>()
+                .where((name) => name.isNotEmpty)
+                .join(', ');
+      entries.add(
+        FrontHistoryEntry(
+          id: row.id,
+          label: label.isEmpty ? 'Unknown front' : label,
+          statusNote: await _decryptLocalText(
+            row.statusNote,
+            'front_sessions',
+            row.id,
+            'status_note',
+          ),
+          startedAt: row.startedAt,
+          endedAt: row.endedAt,
+          memberIds: [for (final link in sessionLinks) link.memberId],
+        ),
+      );
+    }
+    return entries;
   }
 
   Future<List<ReminderSummary>> _frontSetFrontMembers(
