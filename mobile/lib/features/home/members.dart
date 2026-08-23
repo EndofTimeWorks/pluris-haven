@@ -43,6 +43,9 @@ class _MembersPageState extends State<MembersPage> {
           membersSnapshot.data ?? const <MemberSummary>[],
         );
         final visualTheme = _visualThemeOf(context);
+        final profileLayout =
+            visualTheme == HavenVisualTheme.simplyPlural ||
+            visualTheme == HavenVisualTheme.ampersand;
 
         return SpPage(
           children: [
@@ -62,62 +65,97 @@ class _MembersPageState extends State<MembersPage> {
               ),
             ),
             const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            if (profileLayout) ...[
+              Row(
                 children: [
-                  SpSectionHeader(
-                    title: l10n.navigationMembers,
-                    trailing: StatusPill(
-                      text: '${widget.snapshot?.memberCount ?? 0}',
+                  Expanded(
+                    child: Text(
+                      l10n.navigationMembers,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  if (members.isEmpty)
-                    SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.noMembersSavedLocally
-                          : l10n.noMatchingMembers,
-                      body: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.membersEmptyBody
-                          : l10n.tryAnotherSearchOrFilter,
-                    )
-                  else if (visualTheme == HavenVisualTheme.simplyPlural ||
-                      visualTheme == HavenVisualTheme.ampersand)
-                    for (final member in members)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: SpCard(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          child: MemberListTile(
-                            member: member,
-                            repository: widget.repository,
-                          ),
-                        ),
-                      )
-                  else
-                    for (final member in members) ...[
-                      MemberListTile(
-                        member: member,
-                        repository: widget.repository,
-                      ),
-                      if (member != members.last)
-                        const Divider(height: 1, color: _spLine),
-                    ],
-                  const SizedBox(height: 14),
-                  SpActionRow(
-                    primary: l10n.addMemberButton,
-                    secondary: l10n.importTitle,
-                    onPrimary: () =>
+                  StatusPill(text: '${widget.snapshot?.memberCount ?? 0}'),
+                  const SizedBox(width: 4),
+                  IconButton.filledTonal(
+                    tooltip: l10n.addMemberButton,
+                    onPressed: () =>
                         showAddMemberSheet(context, widget.repository),
-                    onSecondary: widget.onImport,
+                    icon: const Icon(Icons.person_add_alt_1_rounded),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
+              if (members.isEmpty)
+                SpEmptyState(
+                  title: _query.trim().isEmpty && _filter == 'all'
+                      ? l10n.noMembersSavedLocally
+                      : l10n.noMatchingMembers,
+                  body: _query.trim().isEmpty && _filter == 'all'
+                      ? l10n.membersEmptyBody
+                      : l10n.tryAnotherSearchOrFilter,
+                )
+              else
+                for (final member in members)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SpCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: MemberListTile(
+                        member: member,
+                        repository: widget.repository,
+                      ),
+                    ),
+                  ),
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                onPressed: widget.onImport,
+                icon: const Icon(Icons.file_download_outlined),
+                label: Text(l10n.importTitle),
+              ),
+            ] else
+              SpCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SpSectionHeader(
+                      title: l10n.navigationMembers,
+                      trailing: StatusPill(
+                        text: '${widget.snapshot?.memberCount ?? 0}',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (members.isEmpty)
+                      SpEmptyState(
+                        title: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.noMembersSavedLocally
+                            : l10n.noMatchingMembers,
+                        body: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.membersEmptyBody
+                            : l10n.tryAnotherSearchOrFilter,
+                      )
+                    else
+                      for (final member in members) ...[
+                        MemberListTile(
+                          member: member,
+                          repository: widget.repository,
+                        ),
+                        if (member != members.last)
+                          const Divider(height: 1, color: _spLine),
+                      ],
+                    const SizedBox(height: 14),
+                    SpActionRow(
+                      primary: l10n.addMemberButton,
+                      secondary: l10n.importTitle,
+                      onPrimary: () =>
+                          showAddMemberSheet(context, widget.repository),
+                      onSecondary: widget.onImport,
+                    ),
+                  ],
+                ),
+              ),
           ],
         );
       },
