@@ -93,6 +93,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Custom Fronts'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('add-custom-front-page-button')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps the current front readable in light theme', (
