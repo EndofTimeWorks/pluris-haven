@@ -1776,6 +1776,15 @@ void main() {
 
     await tester.tap(find.text('Visual style'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Ampersand style'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).visualTheme,
+      HavenVisualTheme.ampersand,
+    );
+
+    await tester.tap(find.text('Visual style'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Material You'));
     await tester.pumpAndSettle();
     expect(

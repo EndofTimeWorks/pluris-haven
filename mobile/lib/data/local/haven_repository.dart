@@ -35,6 +35,7 @@ export 'app_customization.dart'
         HavenAccentColor,
         HavenThemeMode,
         HavenVisualTheme,
+        HavenVisualThemeExtension,
         defaultDashboardShortcutIds;
 export 'chat_store.dart'
     show

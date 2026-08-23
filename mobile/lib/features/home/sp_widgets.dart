@@ -461,13 +461,27 @@ class SpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final visualTheme =
+        Theme.of(context).extension<HavenVisualThemeExtension>()?.theme ??
+        HavenVisualTheme.original;
+    final radius = switch (visualTheme) {
+      HavenVisualTheme.simplyPlural => 10.0,
+      HavenVisualTheme.ampersand => 8.0,
+      HavenVisualTheme.materialYou => 16.0,
+      HavenVisualTheme.original => 14.0,
+    };
     final content = DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(radius),
         border: outlined ? Border.all(color: scheme.outlineVariant) : null,
       ),
-      child: Padding(padding: padding, child: child),
+      child: Padding(
+        padding: visualTheme == HavenVisualTheme.simplyPlural
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+            : padding,
+        child: child,
+      ),
     );
 
     if (onTap == null) {

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import 'app_database.dart';
 import 'supported_language.dart';
 
@@ -22,6 +24,7 @@ enum HavenThemeMode {
 enum HavenVisualTheme {
   original('original', 'Pluris Haven'),
   simplyPlural('simply_plural', 'Simply Plural style'),
+  ampersand('ampersand', 'Ampersand style'),
   materialYou('material_you', 'Material You');
 
   const HavenVisualTheme(this.storageValue, this.label);
@@ -35,6 +38,23 @@ enum HavenVisualTheme {
       orElse: () => HavenVisualTheme.original,
     );
   }
+}
+
+class HavenVisualThemeExtension
+    extends ThemeExtension<HavenVisualThemeExtension> {
+  const HavenVisualThemeExtension(this.theme);
+
+  final HavenVisualTheme theme;
+
+  @override
+  HavenVisualThemeExtension copyWith({HavenVisualTheme? theme}) =>
+      HavenVisualThemeExtension(theme ?? this.theme);
+
+  @override
+  HavenVisualThemeExtension lerp(
+    covariant HavenVisualThemeExtension? other,
+    double t,
+  ) => other == null || t < 0.5 ? this : other;
 }
 
 enum HavenAccentColor {

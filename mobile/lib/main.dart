@@ -164,6 +164,7 @@ class PlurisHavenApp extends StatelessWidget {
         colorScheme: dynamicScheme,
         useMaterial3: true,
       ).copyWith(
+        extensions: [HavenVisualThemeExtension(customization.visualTheme)],
         visualDensity: customization.compactLists
             ? VisualDensity.compact
             : VisualDensity.standard,
@@ -268,6 +269,7 @@ class PlurisHavenApp extends StatelessWidget {
         ),
         margin: EdgeInsets.zero,
       ),
+      extensions: [HavenVisualThemeExtension(customization.visualTheme)],
       useMaterial3: true,
     );
   }

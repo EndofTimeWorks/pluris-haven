@@ -141,46 +141,93 @@ class _HomePageState extends State<HomePage> {
         final home = snapshot.data;
         final l10n = AppLocalizations.of(context);
 
-        return PopScope(
-          canPop: _section == SpSection.dashboard,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && _section != SpSection.dashboard) {
-              _selectSection(SpSection.dashboard);
-            }
-          },
-          child: Scaffold(
-            drawer: SpDrawer(
-              snapshot: home,
-              selected: _section,
-              onSelect: _selectSection,
-            ),
-            appBar: AppBar(
-              toolbarHeight: 48,
-              titleSpacing: 0,
-              title: Text(
-                _section.label(l10n),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+        return StreamBuilder<AppCustomization>(
+          stream: widget.repository.watchCustomization(),
+          initialData: AppCustomization.defaults,
+          builder: (context, customizationSnapshot) {
+            final customization =
+                customizationSnapshot.data ?? AppCustomization.defaults;
+            return PopScope(
+              canPop: _section == SpSection.dashboard,
+              onPopInvokedWithResult: (didPop, result) {
+                if (!didPop && _section != SpSection.dashboard) {
+                  _selectSection(SpSection.dashboard);
+                }
+              },
+              child: Scaffold(
+                drawer: SpDrawer(
+                  snapshot: home,
+                  selected: _section,
+                  onSelect: _selectSection,
                 ),
+                appBar: AppBar(
+                  toolbarHeight: 48,
+                  titleSpacing: 0,
+                  title: Text(
+                    _section.label(l10n),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                body: SafeArea(
+                  top: false,
+                  child: _buildSection(home, customization),
+                ),
+                bottomNavigationBar: _profileNavigation(customization, l10n),
               ),
-            ),
-            body: SafeArea(
-              top: false,
-              child: StreamBuilder<AppCustomization>(
-                stream: widget.repository.watchCustomization(),
-                initialData: AppCustomization.defaults,
-                builder: (context, customizationSnapshot) {
-                  return _buildSection(
-                    home,
-                    customizationSnapshot.data ?? AppCustomization.defaults,
-                  );
-                },
-              ),
-            ),
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget? _profileNavigation(
+    AppCustomization customization,
+    AppLocalizations l10n,
+  ) {
+    final visualTheme = customization.visualTheme;
+    if (visualTheme != HavenVisualTheme.simplyPlural &&
+        visualTheme != HavenVisualTheme.ampersand) {
+      return null;
+    }
+    return NavigationBar(
+      selectedIndex: switch (_section) {
+        SpSection.members => 1,
+        SpSection.frontHistory => 2,
+        SpSection.analytics => 3,
+        _ => 0,
+      },
+      onDestinationSelected: (index) => _selectSection(switch (index) {
+        1 => SpSection.members,
+        2 => SpSection.frontHistory,
+        3 => SpSection.analytics,
+        _ => SpSection.dashboard,
+      }),
+      destinations: [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard_rounded),
+          label: l10n.navigationDashboard,
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.group_outlined),
+          selectedIcon: Icon(Icons.group_rounded),
+          label: l10n.navigationMembers,
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.history_outlined),
+          selectedIcon: Icon(Icons.history_rounded),
+          label: l10n.navigationFrontHistory,
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.analytics_outlined),
+          selectedIcon: Icon(Icons.analytics_rounded),
+          label: l10n.navigationAnalytics,
+        ),
+      ],
     );
   }
 
