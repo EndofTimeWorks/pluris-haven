@@ -183,7 +183,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: _spCard,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) =>
           _CustomFrontEditorSheet(repository: widget.repository, front: front),
     );

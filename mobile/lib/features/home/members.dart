@@ -319,7 +319,7 @@ Future<void> showMemberFrontActionSheet(
 ) async {
   final action = await showModalBottomSheet<String>(
     context: context,
-    backgroundColor: _spCard,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     showDragHandle: true,
     builder: (context) => SafeArea(
       child: Padding(
