@@ -161,17 +161,7 @@ class _HomePageState extends State<HomePage> {
                   selected: _section,
                   onSelect: _selectSection,
                 ),
-                appBar: AppBar(
-                  toolbarHeight: 48,
-                  titleSpacing: 0,
-                  title: Text(
-                    _section.label(l10n),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                appBar: _buildAppBar(context, customization, home, l10n),
                 body: SafeArea(
                   top: false,
                   child: _buildSection(home, customization),
@@ -228,6 +218,56 @@ class _HomePageState extends State<HomePage> {
           selectedIcon: Icon(Icons.analytics_rounded),
           label: l10n.navigationAnalytics,
         ),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    AppCustomization customization,
+    HomeSnapshot? snapshot,
+    AppLocalizations l10n,
+  ) {
+    if (customization.visualTheme != HavenVisualTheme.simplyPlural) {
+      return AppBar(
+        toolbarHeight: 48,
+        titleSpacing: 0,
+        title: Text(
+          _section.label(l10n),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      );
+    }
+
+    final systemName = snapshot?.systemName.trim() ?? '';
+    return AppBar(
+      toolbarHeight: 64,
+      title: const SizedBox.shrink(),
+      leading: Builder(
+        builder: (context) => IconButton(
+          tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+          onPressed: Scaffold.of(context).openDrawer,
+          icon: const Icon(Icons.menu_rounded),
+        ),
+      ),
+      actions: [
+        IconButton(
+          tooltip: l10n.navigationAccountSettings,
+          onPressed: () => _selectSection(SpSection.accountSettings),
+          icon: StoredAvatar(
+            size: 38,
+            color: _colorFromHex(
+              snapshot?.systemColorHex,
+              fallback: Theme.of(context).colorScheme.primary,
+            ),
+            avatarUrl: snapshot?.systemAvatarUrl,
+            label: systemName.isEmpty ? 'PH' : systemName.substring(0, 1),
+            semanticLabel: l10n.systemAvatarSemanticLabel(
+              systemName.isEmpty ? l10n.localSystemFallback : systemName,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
       ],
     );
   }
