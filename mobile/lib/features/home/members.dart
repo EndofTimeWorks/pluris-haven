@@ -164,52 +164,75 @@ class MemberListTile extends StatelessWidget {
           style: const TextStyle(color: _spMuted),
         ),
         onTap: () => showMemberProfileSheet(context, repository, member),
-        trailing: PopupMenuButton<String>(
-          tooltip: l10n.memberActionsTooltip,
-          onSelected: (value) async {
-            if (value == 'front') {
-              final reminders = await repository.setFrontMembers([member.id]);
-              if (context.mounted) {
-                await deliverAfterFrontReminders(
-                  context,
-                  repository,
-                  reminders,
-                );
-              }
-            } else if (value == 'edit') {
-              showMemberSheet(context, repository, member: member);
-            } else if (value == 'duplicate') {
-              showMemberSheet(
-                context,
-                repository,
-                initialDraft: _duplicateMemberDraft(member, l10n),
-              );
-            } else if (value == 'archive') {
-              repository.archiveMember(member.id);
-            } else if (value == 'restore') {
-              repository.restoreMember(member.id);
-            } else if (value == 'delete') {
-              confirmDelete(
-                context,
-                title: l10n.deleteMemberTitle,
-                body: l10n.deleteMemberBody(member.displayName),
-                onDelete: () => repository.deleteMember(member.id),
-              );
-            }
-          },
-          itemBuilder: (context) => [
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             if (!member.archived)
-              PopupMenuItem(value: 'front', child: Text(l10n.setFrontButton)),
-            PopupMenuItem(value: 'edit', child: Text(l10n.editButton)),
-            PopupMenuItem(
-              value: 'duplicate',
-              child: Text(l10n.duplicateButton),
+              IconButton(
+                tooltip: l10n.setFrontButton,
+                onPressed: () =>
+                    showMemberFrontActionSheet(context, repository, member),
+                icon: const Icon(Icons.add_rounded),
+              ),
+            PopupMenuButton<String>(
+              tooltip: l10n.memberActionsTooltip,
+              onSelected: (value) async {
+                if (value == 'front') {
+                  final reminders = await repository.setFrontMembers([
+                    member.id,
+                  ]);
+                  if (context.mounted) {
+                    await deliverAfterFrontReminders(
+                      context,
+                      repository,
+                      reminders,
+                    );
+                  }
+                } else if (value == 'edit') {
+                  showMemberSheet(context, repository, member: member);
+                } else if (value == 'duplicate') {
+                  showMemberSheet(
+                    context,
+                    repository,
+                    initialDraft: _duplicateMemberDraft(member, l10n),
+                  );
+                } else if (value == 'archive') {
+                  repository.archiveMember(member.id);
+                } else if (value == 'restore') {
+                  repository.restoreMember(member.id);
+                } else if (value == 'delete') {
+                  confirmDelete(
+                    context,
+                    title: l10n.deleteMemberTitle,
+                    body: l10n.deleteMemberBody(member.displayName),
+                    onDelete: () => repository.deleteMember(member.id),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                if (!member.archived)
+                  PopupMenuItem(
+                    value: 'front',
+                    child: Text(l10n.setFrontButton),
+                  ),
+                PopupMenuItem(value: 'edit', child: Text(l10n.editButton)),
+                PopupMenuItem(
+                  value: 'duplicate',
+                  child: Text(l10n.duplicateButton),
+                ),
+                if (member.archived)
+                  PopupMenuItem(
+                    value: 'restore',
+                    child: Text(l10n.restoreButton),
+                  )
+                else
+                  PopupMenuItem(
+                    value: 'archive',
+                    child: Text(l10n.archiveButton),
+                  ),
+                PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
+              ],
             ),
-            if (member.archived)
-              PopupMenuItem(value: 'restore', child: Text(l10n.restoreButton))
-            else
-              PopupMenuItem(value: 'archive', child: Text(l10n.archiveButton)),
-            PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
           ],
         ),
       ),
@@ -231,6 +254,87 @@ class MemberListTile extends StatelessWidget {
 
   Color _memberColor(MemberSummary member) {
     return _colorFromHex(member.colorHex);
+  }
+}
+
+Future<void> showMemberFrontActionSheet(
+  BuildContext context,
+  HavenRepository repository,
+  MemberSummary member,
+) async {
+  final action = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: _spCard,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              member.displayName,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            _MemberFrontAction(
+              icon: Icons.add_rounded,
+              label: AppLocalizations.of(context).addToFrontButton,
+              value: 'add',
+            ),
+            _MemberFrontAction(
+              icon: Icons.arrow_upward_rounded,
+              label: AppLocalizations.of(context).setAsFrontButton,
+              value: 'set',
+            ),
+            _MemberFrontAction(
+              icon: Icons.close_rounded,
+              label: AppLocalizations.of(context).noActionButton,
+              value: 'none',
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (!context.mounted || action == null || action == 'none') {
+    return;
+  }
+
+  final ids = action == 'set'
+      ? [member.id]
+      : [
+          for (final current
+              in await repository.watchCurrentFrontMembers().first)
+            current.id,
+          member.id,
+        ];
+  final reminders = await repository.setFrontMembers(ids.toSet().toList());
+  if (context.mounted) {
+    await deliverAfterFrontReminders(context, repository, reminders);
+  }
+}
+
+class _MemberFrontAction extends StatelessWidget {
+  const _MemberFrontAction({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      onTap: () => Navigator.of(context).pop(value),
+    );
   }
 }
 

@@ -4992,6 +4992,24 @@ abstract class AppLocalizations {
   /// **'Set front'**
   String get setFrontButton;
 
+  /// No description provided for @addToFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to front'**
+  String get addToFrontButton;
+
+  /// No description provided for @setAsFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as front'**
+  String get setAsFrontButton;
+
+  /// No description provided for @noActionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'No action'**
+  String get noActionButton;
+
   /// No description provided for @duplicateButton.
   ///
   /// In en, this message translates to:

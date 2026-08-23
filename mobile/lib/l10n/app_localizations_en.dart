@@ -2859,6 +2859,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setFrontButton => 'Set front';
 
   @override
+  String get addToFrontButton => 'Add to front';
+
+  @override
+  String get setAsFrontButton => 'Set as front';
+
+  @override
+  String get noActionButton => 'No action';
+
+  @override
   String get duplicateButton => 'Duplicate';
 
   @override
