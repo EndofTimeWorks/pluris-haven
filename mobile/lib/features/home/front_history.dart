@@ -18,6 +18,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
   String _filter = 'all';
   String _query = '';
+  int _historyLimit = 250;
 
   @override
   void dispose() {
@@ -35,7 +36,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
       'month': l10n.monthFilter,
     };
     return StreamBuilder<List<FrontHistoryEntry>>(
-      stream: widget.repository.watchFrontHistory(),
+      stream: widget.repository.watchRecentFrontHistory(limit: _historyLimit),
       initialData: const [],
       builder: (context, historySnapshot) {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
@@ -124,6 +125,19 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                         repository: widget.repository,
                       ),
                     ),
+                  ),
+                ),
+              ),
+            if (entries.length >= _historyLimit &&
+                (widget.snapshot?.frontHistoryCount ?? entries.length) >
+                    entries.length)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 0),
+                sliver: SliverToBoxAdapter(
+                  child: OutlinedButton.icon(
+                    onPressed: () => setState(() => _historyLimit += 250),
+                    icon: const Icon(Icons.expand_more_rounded),
+                    label: const Text('Load older fronts'),
                   ),
                 ),
               ),

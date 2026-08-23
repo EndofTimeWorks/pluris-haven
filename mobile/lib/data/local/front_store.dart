@@ -1,7 +1,7 @@
 part of 'haven_repository.dart';
 
 extension LocalHavenRepositoryFronts on LocalHavenRepository {
-  Stream<List<FrontHistoryEntry>> _frontWatchHistory() {
+  Stream<List<FrontHistoryEntry>> _frontWatchHistory({int? limit}) {
     final query = database.select(database.frontSessions)
       ..where((session) => session.systemId.equals(localSystemId))
       ..orderBy([
@@ -10,6 +10,9 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
           mode: OrderingMode.desc,
         ),
       ]);
+    if (limit != null) {
+      query.limit(limit);
+    }
 
     return query.watch().asyncMap(_frontHistoryEntries);
   }

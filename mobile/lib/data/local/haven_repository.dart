@@ -264,6 +264,9 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Stream<List<FrontHistoryEntry>> watchFrontHistory() => _frontWatchHistory();
 
+  Stream<List<FrontHistoryEntry>> watchRecentFrontHistory({int limit = 250}) =>
+      _frontWatchHistory(limit: limit);
+
   Future<HomeSnapshot> loadHomeSnapshot() => _homeLoadSnapshot();
 
   @override

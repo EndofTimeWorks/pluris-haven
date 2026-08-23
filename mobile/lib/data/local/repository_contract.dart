@@ -416,3 +416,13 @@ abstract interface class HavenRepository {
     String? nextRank,
   );
 }
+
+extension HavenRepositoryRecentFrontHistory on HavenRepository {
+  Stream<List<FrontHistoryEntry>> watchRecentFrontHistory({int limit = 250}) {
+    final repository = this;
+    if (repository is LocalHavenRepository) {
+      return repository.watchRecentFrontHistory(limit: limit);
+    }
+    return repository.watchFrontHistory();
+  }
+}
