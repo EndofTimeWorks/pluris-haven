@@ -230,7 +230,7 @@ void showNoteSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => NoteSheet(repository: repository, note: note),
   );
 }
