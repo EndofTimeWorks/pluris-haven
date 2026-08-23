@@ -11,6 +11,7 @@ class AnalyticsPage extends StatefulWidget {
 
 class _AnalyticsPageState extends State<AnalyticsPage> {
   _AnalyticsWindow _window = _AnalyticsWindow.thirtyDays;
+  _AnalyticsPanel _panel = _AnalyticsPanel.overview;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +21,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       builder: (context, snapshot) {
         final l10n = AppLocalizations.of(context);
         final scheme = Theme.of(context).colorScheme;
+        final visualTheme = _visualThemeOf(context);
         final entries = snapshot.data ?? const <FrontHistoryEntry>[];
         final stats = _buildAnalytics(entries, _window, l10n.unknownLabel);
 
@@ -46,6 +48,31 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               ),
             ),
             const SizedBox(height: 10),
+            if (visualTheme == HavenVisualTheme.ampersand) ...[
+              SegmentedButton<_AnalyticsPanel>(
+                segments: const [
+                  ButtonSegment(
+                    value: _AnalyticsPanel.overview,
+                    label: Text('Overview'),
+                    icon: Icon(Icons.insights_outlined),
+                  ),
+                  ButtonSegment(
+                    value: _AnalyticsPanel.timeline,
+                    label: Text('Timeline'),
+                    icon: Icon(Icons.timeline_outlined),
+                  ),
+                  ButtonSegment(
+                    value: _AnalyticsPanel.hours,
+                    label: Text('Hours'),
+                    icon: Icon(Icons.schedule_outlined),
+                  ),
+                ],
+                selected: {_panel},
+                onSelectionChanged: (selection) =>
+                    setState(() => _panel = selection.first),
+              ),
+              const SizedBox(height: 12),
+            ],
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -69,12 +96,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               )
             else ...[
               _AnalyticsSummary(stats: stats),
-              const SizedBox(height: 12),
-              _FrontTimelineCard(stats: stats),
-              const SizedBox(height: 12),
-              _TopFrontsCard(stats: stats),
-              const SizedBox(height: 12),
-              _HourChartCard(stats: stats),
+              if (visualTheme != HavenVisualTheme.ampersand ||
+                  _panel == _AnalyticsPanel.overview) ...[
+                const SizedBox(height: 12),
+                _TopFrontsCard(stats: stats),
+              ],
+              if (visualTheme != HavenVisualTheme.ampersand ||
+                  _panel == _AnalyticsPanel.timeline) ...[
+                const SizedBox(height: 12),
+                _FrontTimelineCard(stats: stats),
+              ],
+              if (visualTheme != HavenVisualTheme.ampersand ||
+                  _panel == _AnalyticsPanel.hours) ...[
+                const SizedBox(height: 12),
+                _HourChartCard(stats: stats),
+              ],
             ],
           ],
         );
@@ -82,6 +118,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 }
+
+enum _AnalyticsPanel { overview, timeline, hours }
 
 class _FrontTimelineCard extends StatelessWidget {
   const _FrontTimelineCard({required this.stats});
