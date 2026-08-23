@@ -49,9 +49,11 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!widget.enabled) return;
-    if (state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused && !_authenticating) {
       setState(() => _unlocked = false);
-    } else if (state == AppLifecycleState.resumed && !_unlocked) {
+    } else if (state == AppLifecycleState.resumed &&
+        !_unlocked &&
+        !_authenticating) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryUnlock());
     }
   }
@@ -63,7 +65,12 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     // the lock to check against, so treat the setting as a no-op there
     // rather than showing an unlock screen that can never succeed.
     if (!await AppLock.isAvailable()) {
-      if (mounted) setState(() => _unlocked = true);
+      if (mounted) {
+        setState(() {
+          _authenticating = false;
+          _unlocked = true;
+        });
+      }
       return;
     }
     if (!mounted) return;
