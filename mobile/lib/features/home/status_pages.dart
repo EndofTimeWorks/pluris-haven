@@ -17,6 +17,7 @@ class LocalPrivacyPage extends StatelessWidget {
       initialData: const [],
       builder: (context, snapshot) {
         final l10n = AppLocalizations.of(context);
+        final scheme = Theme.of(context).colorScheme;
         final buckets = snapshot.data ?? const <PrivacyBucketSummary>[];
         return SpPage(
           children: [
@@ -32,7 +33,10 @@ class LocalPrivacyPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     l10n.privacyBucketsDescription,
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if (buckets.isEmpty)
@@ -81,7 +85,7 @@ class LocalPrivacyPage extends StatelessWidget {
                         ),
                       ),
                       if (bucket != buckets.last)
-                        const Divider(height: 1, color: _spLine),
+                        Divider(height: 1, color: scheme.outlineVariant),
                     ],
                   const SizedBox(height: 12),
                   FilledButton.icon(
@@ -298,6 +302,7 @@ class LocalTokensPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpPage(
       children: [
         SpCard(
@@ -312,7 +317,7 @@ class LocalTokensPage extends StatelessWidget {
               SizedBox(height: 8),
               Text(
                 l10n.tokensDescription,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
             ],
           ),
@@ -357,6 +362,7 @@ class UserReportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final report = _buildReport(snapshot, l10n);
+    final scheme = Theme.of(context).colorScheme;
 
     return SpPage(
       children: [
@@ -372,7 +378,7 @@ class UserReportPage extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 l10n.userReportDescription,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -399,7 +405,7 @@ class UserReportPage extends StatelessWidget {
         SpCard(
           child: SelectableText(
             report,
-            style: const TextStyle(color: _spMuted, height: 1.35),
+            style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
           ),
         ),
         const SizedBox(height: 12),

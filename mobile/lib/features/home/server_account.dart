@@ -31,6 +31,7 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        final scheme = Theme.of(context).colorScheme;
         return SpCard(
           outlined: true,
           child: Column(
@@ -41,7 +42,10 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
               if (!controller.connected) ...[
                 Text(
                   l10n.serverConnectDescription,
-                  style: const TextStyle(color: _spMuted, height: 1.35),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -70,7 +74,7 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                 ),
                 Text(
                   controller.serverUri.toString(),
-                  style: const TextStyle(color: _spMuted),
+                  style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 12),
                 if (!controller.signedIn)
@@ -115,7 +119,7 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                   ),
                   Text(
                     controller.account?.email ?? '',
-                    style: const TextStyle(color: _spMuted),
+                    style: TextStyle(color: scheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 12),
                   for (final session in controller.sessions)
@@ -150,7 +154,10 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                   const SizedBox(height: 4),
                   Text(
                     l10n.securityHistoryDescription,
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                   if (controller.securityEvents.isEmpty)
                     ListTile(
@@ -690,114 +697,117 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
     }
     return AnimatedBuilder(
       animation: controller,
-      builder: (context, _) => SpCard(
-        outlined: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SpSectionHeader(title: l10n.encryptedOnlineBackupTitle),
-            const SizedBox(height: 8),
-            Text(
-              controller.signedIn
-                  ? l10n.backupEncryptionDescription
-                  : l10n.backupSignInDescription,
-              style: const TextStyle(color: _spMuted),
-            ),
-            if (controller.uploadTotalChunks > 0 && controller.busy) ...[
-              const SizedBox(height: 10),
-              LinearProgressIndicator(
-                value:
-                    controller.uploadCompletedChunks /
-                    controller.uploadTotalChunks,
-                semanticsLabel: l10n.backupUploadProgressLabel,
-                semanticsValue: l10n.backupUploadProgressValue(
-                  controller.uploadCompletedChunks,
-                  controller.uploadTotalChunks,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              key: const ValueKey('upload-encrypted-backup-button'),
-              onPressed:
-                  !controller.signedIn ||
-                      controller.busy ||
-                      widget.repository is! LocalHavenRepository
-                  ? null
-                  : _upload,
-              icon: const Icon(Icons.cloud_upload_outlined),
-              label: Text(l10n.createUploadSnapshotButton),
-            ),
-            const SizedBox(height: 8),
-            for (final backup in controller.backups)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  backup.complete
-                      ? Icons.cloud_done_outlined
-                      : Icons.cloud_sync_outlined,
-                ),
-                title: Text(backup.snapshotId),
-                subtitle: Text(
-                  l10n.backupSnapshotProgress(
-                    backup.uploadedChunks,
-                    backup.chunkCount,
-                    backup.uploadedBytes,
-                    backup.totalBytes,
-                  ),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: l10n.restoreEncryptedBackupButton,
-                      onPressed:
-                          !backup.complete ||
-                              _restoringSnapshotId != null ||
-                              widget.repository is! LocalHavenRepository
-                          ? null
-                          : () => _restore(backup),
-                      icon: const Icon(Icons.restore_rounded),
-                    ),
-                    IconButton(
-                      tooltip: l10n.deleteEncryptedBackupTooltip,
-                      onPressed: controller.busy
-                          ? null
-                          : () => confirmDelete(
-                              context,
-                              title: l10n.deleteEncryptedBackupTitle,
-                              body: l10n.deleteEncryptedBackupBody,
-                              onDelete: () =>
-                                  controller.deleteBackup(backup.snapshotId),
-                            ),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  ],
-                ),
-                onTap:
-                    backup.complete &&
-                        _restoringSnapshotId == null &&
-                        widget.repository is LocalHavenRepository
-                    ? () => _restore(backup)
-                    : null,
-              ),
-            if (_restoreMessage != null) ...[
+      builder: (context, _) {
+        final scheme = Theme.of(context).colorScheme;
+        return SpCard(
+          outlined: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpSectionHeader(title: l10n.encryptedOnlineBackupTitle),
               const SizedBox(height: 8),
               Text(
-                _restoreMessage!,
-                style: TextStyle(
-                  color: _restoreMessage!.startsWith('Could not')
-                      ? Theme.of(context).colorScheme.error
-                      : _spMuted,
-                ),
+                controller.signedIn
+                    ? l10n.backupEncryptionDescription
+                    : l10n.backupSignInDescription,
+                style: TextStyle(color: scheme.onSurfaceVariant),
               ),
+              if (controller.uploadTotalChunks > 0 && controller.busy) ...[
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value:
+                      controller.uploadCompletedChunks /
+                      controller.uploadTotalChunks,
+                  semanticsLabel: l10n.backupUploadProgressLabel,
+                  semanticsValue: l10n.backupUploadProgressValue(
+                    controller.uploadCompletedChunks,
+                    controller.uploadTotalChunks,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                key: const ValueKey('upload-encrypted-backup-button'),
+                onPressed:
+                    !controller.signedIn ||
+                        controller.busy ||
+                        widget.repository is! LocalHavenRepository
+                    ? null
+                    : _upload,
+                icon: const Icon(Icons.cloud_upload_outlined),
+                label: Text(l10n.createUploadSnapshotButton),
+              ),
+              const SizedBox(height: 8),
+              for (final backup in controller.backups)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    backup.complete
+                        ? Icons.cloud_done_outlined
+                        : Icons.cloud_sync_outlined,
+                  ),
+                  title: Text(backup.snapshotId),
+                  subtitle: Text(
+                    l10n.backupSnapshotProgress(
+                      backup.uploadedChunks,
+                      backup.chunkCount,
+                      backup.uploadedBytes,
+                      backup.totalBytes,
+                    ),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: l10n.restoreEncryptedBackupButton,
+                        onPressed:
+                            !backup.complete ||
+                                _restoringSnapshotId != null ||
+                                widget.repository is! LocalHavenRepository
+                            ? null
+                            : () => _restore(backup),
+                        icon: const Icon(Icons.restore_rounded),
+                      ),
+                      IconButton(
+                        tooltip: l10n.deleteEncryptedBackupTooltip,
+                        onPressed: controller.busy
+                            ? null
+                            : () => confirmDelete(
+                                context,
+                                title: l10n.deleteEncryptedBackupTitle,
+                                body: l10n.deleteEncryptedBackupBody,
+                                onDelete: () =>
+                                    controller.deleteBackup(backup.snapshotId),
+                              ),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
+                  onTap:
+                      backup.complete &&
+                          _restoringSnapshotId == null &&
+                          widget.repository is LocalHavenRepository
+                      ? () => _restore(backup)
+                      : null,
+                ),
+              if (_restoreMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _restoreMessage!,
+                  style: TextStyle(
+                    color: _restoreMessage!.startsWith('Could not')
+                        ? Theme.of(context).colorScheme.error
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (controller.error != null)
+                _ServerMessage(controller.error!, error: true),
+              if (controller.status != null) _ServerMessage(controller.status!),
             ],
-            if (controller.error != null)
-              _ServerMessage(controller.error!, error: true),
-            if (controller.status != null) _ServerMessage(controller.status!),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
