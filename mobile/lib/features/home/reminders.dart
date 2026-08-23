@@ -177,7 +177,7 @@ void showAddReminderSheet(BuildContext context, HavenRepository repository) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddReminderSheet(repository: repository),
   );
 }

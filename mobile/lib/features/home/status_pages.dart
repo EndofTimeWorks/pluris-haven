@@ -128,7 +128,7 @@ void showPrivacyBucketEditor(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         PrivacyBucketEditorSheet(repository: repository, bucket: bucket),
   );
@@ -591,7 +591,7 @@ Future<void> showSystemProfileEditor(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         SystemProfileEditorSheet(snapshot: snapshot, repository: repository),
   );

@@ -207,7 +207,7 @@ void showCustomFieldDetailSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) {
       final l10n = AppLocalizations.of(context);
       return SafeArea(
@@ -321,7 +321,7 @@ void showCustomFieldSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         AddCustomFieldSheet(repository: repository, field: field),
   );

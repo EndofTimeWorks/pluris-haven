@@ -187,7 +187,7 @@ void showJournalEntrySheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         JournalEntrySheet(repository: repository, entry: entry),
   );

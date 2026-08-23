@@ -325,7 +325,7 @@ class CurrentFrontEntry extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       enableDrag: false,
-      backgroundColor: _spSurface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => CustomFrontSheet(repository: repository),
     );
   }
