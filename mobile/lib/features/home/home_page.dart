@@ -61,7 +61,6 @@ part 'server_account.dart';
 const _spSurface = Color(0xFF232532);
 const _spCard = Color(0xFF2B2E3D);
 const _spLine = Color(0xFF3A3E50);
-const _spText = Color(0xFFECEAF2);
 const _spMuted = Color(0xFFC4C0CE);
 const _spPurple = Color(0xFF7B61FF);
 const _spGold = Color(0xFFF2C75C);

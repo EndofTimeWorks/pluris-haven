@@ -95,6 +95,50 @@ void main() {
     expect(find.text('Custom Fronts'), findsOneWidget);
   });
 
+  testWidgets('keeps the current front readable in light theme', (
+    tester,
+  ) async {
+    final theme = ThemeData.light();
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: CurrentFrontEntry(
+            snapshot: const HomeSnapshot(
+              systemName: 'Local system',
+              memberCount: 0,
+              groupCount: 0,
+              noteCount: 0,
+              frontHistoryCount: 0,
+              currentFrontLabel: null,
+            ),
+            repository: repository,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<Text>(find.text('None')).style?.color,
+      theme.colorScheme.onSurface,
+    );
+  });
+
   testWidgets('sets and clears a custom front from the home screen', (
     tester,
   ) async {

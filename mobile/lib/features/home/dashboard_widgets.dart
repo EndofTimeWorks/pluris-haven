@@ -233,6 +233,7 @@ class CurrentFrontEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final home = snapshot;
+    final scheme = Theme.of(context).colorScheme;
 
     return SpCard(
       outlined: true,
@@ -254,8 +255,8 @@ class CurrentFrontEntry extends StatelessWidget {
               children: [
                 Text(
                   l10n.currentlyFrontingNotificationTitle,
-                  style: const TextStyle(
-                    color: _spMuted,
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -264,8 +265,8 @@ class CurrentFrontEntry extends StatelessWidget {
                   home?.currentFrontText ?? l10n.noneTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _spText,
+                  style: TextStyle(
+                    color: scheme.onSurface,
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
                   ),
@@ -318,8 +319,8 @@ class CurrentFrontEntry extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 l10n.setFrontButton,
-                style: const TextStyle(
-                  color: _spMuted,
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
               ),
