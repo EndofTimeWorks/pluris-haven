@@ -560,7 +560,7 @@ class SpAvatar extends StatelessWidget {
                 child: Text(
                   label!,
                   style: TextStyle(
-                    color: _spText,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: size * 0.3,
                     fontWeight: FontWeight.w900,
                   ),
@@ -648,9 +648,12 @@ class AccentDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(color: _spGold, shape: BoxShape.circle),
-      child: SizedBox(width: 20, height: 20),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        shape: BoxShape.circle,
+      ),
+      child: const SizedBox(width: 20, height: 20),
     );
   }
 }
@@ -667,7 +670,7 @@ class StatusPill extends StatelessWidget {
       label: l10n?.statusSemanticLabel(text) ?? 'Status $text',
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: _spSurface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Padding(
@@ -678,8 +681,8 @@ class StatusPill extends StatelessWidget {
               child: Text(
                 text,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: _spMuted,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w800,
                 ),
               ),
