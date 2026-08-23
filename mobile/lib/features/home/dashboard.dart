@@ -17,33 +17,32 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 24),
-      children: [
-        SystemListEntry(snapshot: snapshot),
-        const SizedBox(height: 10),
-        CurrentFrontEntry(snapshot: snapshot, repository: repository),
-        const SizedBox(height: 18),
-        DashboardSectionTitle(l10n.dashboardMainSectionTitle),
-        const SizedBox(height: 8),
-        DashboardActionGrid(
-          items: _dashboardItems(
-            snapshot,
-            customization.dashboardShortcutIds,
-            l10n,
-          ),
-          customization: customization,
-          onSelect: onSelect,
-        ),
-        if (customization.dashboardShortcutIds.isEmpty) ...[
-          const SizedBox(height: 10),
-          SpEmptyState(
-            title: l10n.noDashboardShortcutsTitle,
-            body: l10n.noDashboardShortcutsBody,
-          ),
-        ],
-      ],
+    final items = _dashboardItems(
+      snapshot,
+      customization.dashboardShortcutIds,
+      l10n,
     );
+    return switch (customization.visualTheme) {
+      HavenVisualTheme.simplyPlural => _SimplyPluralDashboard(
+        snapshot: snapshot,
+        repository: repository,
+        items: items,
+        onSelect: onSelect,
+      ),
+      HavenVisualTheme.ampersand => _AmpersandDashboard(
+        snapshot: snapshot,
+        repository: repository,
+        items: items,
+        onSelect: onSelect,
+      ),
+      _ => _OriginalDashboard(
+        snapshot: snapshot,
+        customization: customization,
+        repository: repository,
+        items: items,
+        onSelect: onSelect,
+      ),
+    };
   }
 
   List<HomeNavigationItem> _dashboardItems(
@@ -57,6 +56,155 @@ class DashboardPage extends StatelessWidget {
       for (final id in ids)
         if (definitions[id] case final definition?) definition.item(home, l10n),
     ];
+  }
+}
+
+class _OriginalDashboard extends StatelessWidget {
+  const _OriginalDashboard({
+    required this.snapshot,
+    required this.customization,
+    required this.repository,
+    required this.items,
+    required this.onSelect,
+  });
+
+  final HomeSnapshot? snapshot;
+  final AppCustomization customization;
+  final HavenRepository repository;
+  final List<HomeNavigationItem> items;
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 24),
+      children: [
+        SystemListEntry(snapshot: snapshot),
+        const SizedBox(height: 10),
+        CurrentFrontEntry(snapshot: snapshot, repository: repository),
+        const SizedBox(height: 18),
+        DashboardSectionTitle(l10n.dashboardMainSectionTitle),
+        const SizedBox(height: 8),
+        DashboardActionGrid(
+          items: items,
+          customization: customization,
+          onSelect: onSelect,
+        ),
+        if (customization.dashboardShortcutIds.isEmpty) ...[
+          const SizedBox(height: 10),
+          SpEmptyState(
+            title: l10n.noDashboardShortcutsTitle,
+            body: l10n.noDashboardShortcutsBody,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SimplyPluralDashboard extends StatelessWidget {
+  const _SimplyPluralDashboard({
+    required this.snapshot,
+    required this.repository,
+    required this.items,
+    required this.onSelect,
+  });
+
+  final HomeSnapshot? snapshot;
+  final HavenRepository repository;
+  final List<HomeNavigationItem> items;
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 20),
+      itemCount: items.length + 2,
+      separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 12 : 8),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return CurrentFrontEntry(snapshot: snapshot, repository: repository);
+        }
+        if (index == 1) {
+          return DashboardSystemHeader(snapshot: snapshot);
+        }
+        final item = items[index - 2];
+        return SpNavigationEntry(
+          item: item,
+          onTap: () => onSelect(item.section),
+        );
+      },
+    );
+  }
+}
+
+class _AmpersandDashboard extends StatelessWidget {
+  const _AmpersandDashboard({
+    required this.snapshot,
+    required this.repository,
+    required this.items,
+    required this.onSelect,
+  });
+
+  final HomeSnapshot? snapshot;
+  final HavenRepository repository;
+  final List<HomeNavigationItem> items;
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return StreamBuilder<List<FrontHistoryEntry>>(
+      stream: repository.watchRecentFrontHistory(limit: 5),
+      initialData: const [],
+      builder: (context, historySnapshot) {
+        final history = historySnapshot.data ?? const <FrontHistoryEntry>[];
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+          children: [
+            DashboardSystemHeader(snapshot: snapshot),
+            CurrentFrontEntry(snapshot: snapshot, repository: repository),
+            const SizedBox(height: 20),
+            DashboardSectionTitle(l10n.currentlyFrontingNotificationTitle),
+            const SizedBox(height: 8),
+            SpNavigationEntry(
+              item: HomeNavigationItem(
+                l10n.navigationMembers,
+                '${snapshot?.memberCount ?? 0}',
+                SpSection.members,
+                Icons.people_alt_rounded,
+              ),
+              onTap: () => onSelect(SpSection.members),
+            ),
+            if (history.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              DashboardSectionTitle(l10n.frontHistoryTitle),
+              const SizedBox(height: 8),
+              for (final entry in history)
+                SpCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  onTap: () => onSelect(SpSection.frontHistory),
+                  child: FrontHistoryTile(entry: entry, repository: repository),
+                ),
+            ],
+            const SizedBox(height: 16),
+            for (final item in items.where(
+              (item) =>
+                  item.section != SpSection.members &&
+                  item.section != SpSection.frontHistory,
+            ))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SpNavigationEntry(
+                  item: item,
+                  onTap: () => onSelect(item.section),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
