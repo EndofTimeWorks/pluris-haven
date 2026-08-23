@@ -153,6 +153,7 @@ class MessageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final senderLabel = _messageSenderLabel(l10n, message, memberName);
 
     return Material(
@@ -183,7 +184,7 @@ class MessageTile extends StatelessWidget {
                       ? ''
                       : l10n.messageReplyMarker,
                 ),
-          style: const TextStyle(color: _spMuted, fontSize: 12),
+          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
         ),
         trailing: PopupMenuButton<String>(
           tooltip: l10n.messageActionsTooltip,
@@ -288,6 +289,7 @@ class _MessageSheetState extends State<MessageSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -391,7 +393,7 @@ class _MessageSheetState extends State<MessageSheet> {
                 l10n.replyingToMessage(widget.parentMessage!.body),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: _spMuted),
+                style: TextStyle(color: scheme.onSurfaceVariant),
               ),
             ],
             const SizedBox(height: 10),

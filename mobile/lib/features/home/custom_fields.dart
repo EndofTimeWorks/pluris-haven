@@ -13,6 +13,7 @@ class CustomFieldsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<List<CustomFieldSummary>>(
       stream: repository.watchCustomFields(),
       initialData: const [],
@@ -47,8 +48,8 @@ class CustomFieldsPage extends StatelessWidget {
                             fields.isEmpty
                                 ? l10n.customFieldsImportDescription
                                 : l10n.customFieldsWithValues(fieldsWithValues),
-                            style: const TextStyle(
-                              color: _spMuted,
+                            style: TextStyle(
+                              color: scheme.onSurfaceVariant,
                               height: 1.35,
                             ),
                           ),
@@ -117,6 +118,7 @@ class CustomFieldTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final privacy = field.privacy?.trim();
     return Material(
       color: Colors.transparent,
@@ -140,7 +142,7 @@ class CustomFieldTile extends StatelessWidget {
             l10n.valueCount(field.valueCount),
             if (privacy != null && privacy.isNotEmpty) privacy,
           ].join(' - '),
-          style: const TextStyle(color: _spMuted),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: PopupMenuButton<String>(
           tooltip: l10n.customFieldActionsTooltip,
@@ -210,6 +212,7 @@ void showCustomFieldDetailSheet(
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) {
       final l10n = AppLocalizations.of(context);
+      final scheme = Theme.of(context).colorScheme;
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
@@ -238,7 +241,7 @@ void showCustomFieldDetailSheet(
                             field.fieldType,
                             values.length,
                           ),
-                          style: const TextStyle(color: _spMuted),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -258,7 +261,7 @@ void showCustomFieldDetailSheet(
                   systemValue == null || systemValue.value.trim().isEmpty
                       ? l10n.notSetLabel
                       : systemValue.value,
-                  style: const TextStyle(color: _spMuted),
+                  style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
                 trailing: const Icon(Icons.edit_rounded, size: 18),
                 onTap: () => openValueEditor(systemValue, null),
@@ -277,7 +280,7 @@ void showCustomFieldDetailSheet(
                     shrinkWrap: true,
                     itemCount: memberValues.length,
                     separatorBuilder: (context, index) =>
-                        const Divider(height: 1, color: _spLine),
+                        Divider(height: 1, color: scheme.outlineVariant),
                     itemBuilder: (context, index) {
                       final value = memberValues[index];
                       final memberId = value.memberId;
@@ -292,7 +295,7 @@ void showCustomFieldDetailSheet(
                         ),
                         subtitle: Text(
                           value.value,
-                          style: const TextStyle(color: _spMuted),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                         trailing: const Icon(Icons.edit_rounded, size: 18),
                         onTap: () => openValueEditor(value, memberId),
@@ -365,6 +368,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -386,7 +390,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
               _isEditing
                   ? l10n.editCustomFieldDescription
                   : l10n.createCustomFieldDescription,
-              style: const TextStyle(color: _spMuted, height: 1.35),
+              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
             ),
             const SizedBox(height: 12),
             TextField(
