@@ -440,7 +440,7 @@ void showLanguagePicker(
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         LanguagePickerSheet(selectedCode: selectedCode, repository: repository),
   );

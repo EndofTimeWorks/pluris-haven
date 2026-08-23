@@ -1116,7 +1116,7 @@ void showLocalArchiveSheet(BuildContext context, HavenRepository repository) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => LocalArchiveSheet(repository: repository),
   );
 }
@@ -1129,7 +1129,7 @@ void showEncryptedArchiveSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => EncryptedArchiveSheet(repository: repository),
   );
 }
@@ -1543,7 +1543,7 @@ Future<String?> showPasteImportJsonSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => const PasteImportJsonSheet(),
   );
 }

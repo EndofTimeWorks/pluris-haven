@@ -221,7 +221,7 @@ void showFrontHistoryDetailSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         FrontHistoryDetailSheet(repository: repository, entry: entry),
   );
@@ -368,7 +368,7 @@ void showFrontHistoryEditor(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         FrontHistoryEditorSheet(repository: repository, entry: entry),
   );

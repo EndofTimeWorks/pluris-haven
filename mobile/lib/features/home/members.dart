@@ -347,7 +347,7 @@ void showMemberProfileSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (sheetContext) => MemberProfileSheet(
       hostContext: context,
       repository: repository,
@@ -641,7 +641,7 @@ void showMemberTagsSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         MemberTagsSheet(repository: repository, memberId: memberId),
   );
@@ -976,7 +976,7 @@ void showCustomFieldValueSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => CustomFieldValueSheet(
       repository: repository,
       field: field,
@@ -1270,7 +1270,7 @@ void showMemberSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: _spSurface,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddMemberSheet(
       repository: repository,
       member: member,
