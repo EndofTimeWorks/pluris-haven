@@ -263,6 +263,7 @@ class HowToCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +288,10 @@ class HowToCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     steps[i],
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                 ),
               ],

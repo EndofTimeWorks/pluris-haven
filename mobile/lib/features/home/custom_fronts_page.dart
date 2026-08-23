@@ -26,6 +26,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
       stream: widget.repository.watchNamedFronts(),
       initialData: const [],
       builder: (context, snapshot) {
+        final scheme = Theme.of(context).colorScheme;
         final fronts = snapshot.data ?? const <NamedFront>[];
         final customFronts = fronts
             .where(_isCustomFront)
@@ -56,7 +57,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                   const SizedBox(height: 8),
                   Text(
                     l10n.customFrontsDescription,
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   FilledButton.icon(
@@ -319,6 +323,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final editing = widget.front != null;
+    final scheme = Theme.of(context).colorScheme;
     final previewName = _nameController.text.trim().isEmpty
         ? l10n.customFrontLabel
         : _nameController.text.trim();
@@ -355,7 +360,10 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
                 Expanded(
                   child: Text(
                     l10n.customFrontEditorDescription,
-                    style: const TextStyle(color: _spMuted, height: 1.35),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
                   ),
                 ),
               ],
@@ -431,7 +439,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               const SizedBox(height: 6),
               Text(
                 _avatarMessage!,
-                style: const TextStyle(color: _spMuted, fontSize: 12),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ],
             const SizedBox(height: 10),

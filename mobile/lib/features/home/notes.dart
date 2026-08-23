@@ -163,6 +163,7 @@ class NoteListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final body = note.body.trim();
     final ownerLabel = _noteMemberLabel(note, memberName, l10n);
 
@@ -179,7 +180,7 @@ class NoteListTile extends StatelessWidget {
           body.isEmpty ? ownerLabel : '$ownerLabel\n$body',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: _spMuted),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: IconButton(
           tooltip: l10n.deleteNoteTooltip,

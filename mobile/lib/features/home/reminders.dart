@@ -93,6 +93,7 @@ class ReminderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -117,7 +118,10 @@ class ReminderTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   reminder.scheduleText,
-                  style: const TextStyle(color: _spMuted, fontSize: 12),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
                 if (reminder.body?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 6),
