@@ -132,6 +132,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   SpSection _section = SpSection.dashboard;
+  final _sectionHistory = <SpSection>[];
 
   @override
   Widget build(BuildContext context) {
@@ -148,10 +149,10 @@ class _HomePageState extends State<HomePage> {
             final customization =
                 customizationSnapshot.data ?? AppCustomization.defaults;
             return PopScope(
-              canPop: _section == SpSection.dashboard,
+              canPop: _sectionHistory.isEmpty,
               onPopInvokedWithResult: (didPop, result) {
-                if (!didPop && _section != SpSection.dashboard) {
-                  _selectSection(SpSection.dashboard);
+                if (!didPop && _sectionHistory.isNotEmpty) {
+                  _popSection();
                 }
               },
               child: Scaffold(
@@ -232,9 +233,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _selectSection(SpSection section) {
+    if (section == _section) return;
     setState(() {
+      _sectionHistory.add(_section);
       _section = section;
     });
+  }
+
+  void _popSection() {
+    setState(() => _section = _sectionHistory.removeLast());
   }
 
   Widget _buildSection(HomeSnapshot? home, AppCustomization customization) {

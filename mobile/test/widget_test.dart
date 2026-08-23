@@ -2028,6 +2028,41 @@ void main() {
     expect(find.text('Import setup'), findsNothing);
   });
 
+  testWidgets('back returns to the previous section instead of dashboard', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await tester.tap(find.text('Members'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Import'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import setup'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Import setup'), findsNothing);
+    expect(find.text('No members saved locally'), findsOneWidget);
+  });
+
   testWidgets('back from paste JSON sheet closes the sheet safely', (
     tester,
   ) async {
