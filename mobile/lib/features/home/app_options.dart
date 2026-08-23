@@ -278,6 +278,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -349,7 +350,7 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
                         SelectableText(
                           _currentHex,
                           key: const ValueKey('current-accent-hex'),
-                          style: const TextStyle(color: _spMuted),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -459,6 +460,7 @@ class LanguagePickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
@@ -470,7 +472,7 @@ class LanguagePickerSheet extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             l10n.chooseLanguageSubtitle,
-            style: const TextStyle(color: _spMuted, height: 1.35),
+            style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
           ),
           const SizedBox(height: 14),
           for (final language in supportedLanguages)
@@ -505,11 +507,14 @@ class SpLanguageOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Ink(
         decoration: BoxDecoration(
-          color: selected ? _spLine : _spCard,
+          color: selected
+              ? scheme.primaryContainer
+              : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Material(
@@ -524,7 +529,7 @@ class SpLanguageOption extends StatelessWidget {
             ),
             subtitle: Text(
               language.code,
-              style: const TextStyle(color: _spMuted),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             trailing: selected
                 ? Icon(
@@ -611,13 +616,14 @@ class DashboardShortcutRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
       child: Row(
         children: [
           SpIconBubble(
             icon: shortcut.icon,
-            color: visible ? _spGold : _spMuted,
+            color: visible ? scheme.primary : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -634,7 +640,10 @@ class DashboardShortcutRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   visible ? l10n.shortcutShownLabel : l10n.shortcutHiddenLabel,
-                  style: const TextStyle(color: _spMuted, fontSize: 13),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -675,10 +684,11 @@ class DashboardResetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpSettingsRow(
       l10n.resetDashboardTitle,
       l10n.resetDashboardValue,
-      trailing: const Icon(Icons.restart_alt_rounded, color: _spMuted),
+      trailing: Icon(Icons.restart_alt_rounded, color: scheme.onSurfaceVariant),
       onTap: onReset,
     );
   }
