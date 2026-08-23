@@ -6,6 +6,7 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpPage(
       children: [
         SpCard(
@@ -22,12 +23,12 @@ class AboutPage extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 l10n.appTagline,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 8),
               Text(
                 l10n.madeBySystemsStatement,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
             ],
           ),
@@ -100,9 +101,13 @@ class AboutPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              const SelectableText(
+              SelectableText(
                 _moneroAddress,
-                style: TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
               ),
             ],
           ),
