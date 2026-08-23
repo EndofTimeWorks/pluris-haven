@@ -18,7 +18,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
   String _filter = 'all';
   String _query = '';
-  int _historyLimit = 250;
+  int _historyLimit = 100;
   bool _showCalendar = true;
   DateTime _selectedDate = DateTime.now();
 
