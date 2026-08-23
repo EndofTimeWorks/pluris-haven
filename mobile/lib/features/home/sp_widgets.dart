@@ -1,5 +1,9 @@
 part of 'home_page.dart';
 
+HavenVisualTheme _visualThemeOf(BuildContext context) =>
+    Theme.of(context).extension<HavenVisualThemeExtension>()?.theme ??
+    HavenVisualTheme.original;
+
 class SpNavigationEntry extends StatelessWidget {
   const SpNavigationEntry({super.key, required this.item, this.onTap});
 
@@ -83,8 +87,18 @@ class SpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visualTheme = _visualThemeOf(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 24),
+      padding: switch (visualTheme) {
+        HavenVisualTheme.simplyPlural => const EdgeInsets.fromLTRB(
+          8,
+          10,
+          8,
+          20,
+        ),
+        HavenVisualTheme.ampersand => const EdgeInsets.fromLTRB(14, 12, 14, 24),
+        _ => const EdgeInsets.fromLTRB(10, 14, 10, 24),
+      },
       children: children,
     );
   }
@@ -105,6 +119,11 @@ class SpSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final radius = switch (_visualThemeOf(context)) {
+      HavenVisualTheme.simplyPlural => 10.0,
+      HavenVisualTheme.ampersand => 6.0,
+      _ => 12.0,
+    };
     return TextField(
       controller: controller,
       onChanged: onChanged,
@@ -115,11 +134,11 @@ class SpSearchField extends StatelessWidget {
         filled: true,
         fillColor: scheme.surfaceContainerHighest,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: scheme.primary),
         ),
       ),
