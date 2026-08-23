@@ -280,6 +280,17 @@ class ServerAccountController extends ChangeNotifier {
         'This backup predates online restore metadata and cannot be restored.',
       );
     }
+    if (metadata.chunkCount < 1 ||
+        metadata.chunkCount > maxEncryptedBackupChunkCount ||
+        metadata.chunkSize! < minEncryptedBackupChunkSize ||
+        metadata.chunkSize! > maxEncryptedBackupChunkSize ||
+        metadata.totalBytes < 1 ||
+        metadata.totalBytes > maxEncryptedBackupPlainBytes * 2 ||
+        metadata.uploadedBytes != metadata.totalBytes) {
+      throw const ServerApiException(
+        'This backup has invalid restore metadata and cannot be restored.',
+      );
+    }
 
     return _authenticated((api, token) async {
       final chunks = <EncryptedBackupChunk>[];
