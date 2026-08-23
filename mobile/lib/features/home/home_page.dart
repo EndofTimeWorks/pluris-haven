@@ -179,11 +179,61 @@ class _HomePageState extends State<HomePage> {
     AppCustomization customization,
     AppLocalizations l10n,
   ) {
-    final visualTheme = customization.visualTheme;
-    if (visualTheme != HavenVisualTheme.simplyPlural &&
-        visualTheme != HavenVisualTheme.ampersand) {
-      return null;
-    }
+    return switch (customization.visualTheme) {
+      HavenVisualTheme.simplyPlural => _simplyPluralNavigation(l10n),
+      HavenVisualTheme.ampersand => _ampersandNavigation(l10n),
+      _ => null,
+    };
+  }
+
+  Widget _simplyPluralNavigation(AppLocalizations l10n) {
+    return Builder(
+      builder: (context) => NavigationBar(
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        selectedIndex: switch (_section) {
+          SpSection.members => 0,
+          SpSection.frontHistory => 1,
+          SpSection.customFronts => 2,
+          _ => 3,
+        },
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0:
+              _selectSection(SpSection.members);
+            case 1:
+              _selectSection(SpSection.frontHistory);
+            case 2:
+              _selectSection(SpSection.customFronts);
+            case 3:
+              Scaffold.of(context).openDrawer();
+          }
+        },
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.people_outline_rounded),
+            selectedIcon: const Icon(Icons.people_rounded),
+            label: l10n.navigationMembers,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.accessibility_new_outlined),
+            selectedIcon: const Icon(Icons.accessibility_new_rounded),
+            label: l10n.navigationFrontHistory,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.category_outlined),
+            selectedIcon: const Icon(Icons.category_rounded),
+            label: l10n.navigationCustomFronts,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.menu_rounded),
+            label: MaterialLocalizations.of(context).openAppDrawerTooltip,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ampersandNavigation(AppLocalizations l10n) {
     return NavigationBar(
       selectedIndex: switch (_section) {
         SpSection.members => 1,

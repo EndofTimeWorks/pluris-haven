@@ -69,6 +69,32 @@ void main() {
     expect(find.text('Local system'), findsWidgets);
   });
 
+  testWidgets('uses Simply Plural fronting navigation', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setVisualTheme(HavenVisualTheme.simplyPlural);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.analytics_outlined), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.category_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Custom Fronts'), findsOneWidget);
+  });
+
   testWidgets('sets and clears a custom front from the home screen', (
     tester,
   ) async {
