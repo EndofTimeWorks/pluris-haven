@@ -60,7 +60,7 @@ class NotificationEventTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.notifications_rounded, color: _spGold, size: 20),
+          Icon(Icons.notifications_rounded, color: scheme.primary, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

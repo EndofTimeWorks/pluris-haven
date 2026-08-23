@@ -165,6 +165,7 @@ class GroupListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final hasDescription = group.description?.trim().isNotEmpty == true;
     final countLabel = l10n.groupMemberCount(group.memberCount);
     final subtitle = hasDescription
@@ -184,9 +185,9 @@ class GroupListTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (depth > 0) ...[
-                  const Icon(
+                  Icon(
                     Icons.subdirectory_arrow_right_rounded,
-                    color: _spMuted,
+                    color: scheme.onSurfaceVariant,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -215,12 +216,15 @@ class GroupListTile extends StatelessWidget {
                   Icon(
                     Icons.layers_outlined,
                     size: 16,
-                    color: _spGold.withValues(alpha: 0.7),
+                    color: scheme.primary.withValues(alpha: 0.7),
                   ),
                 ],
               ],
             ),
-            subtitle: Text(subtitle, style: const TextStyle(color: _spMuted)),
+            subtitle: Text(
+              subtitle,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(

@@ -8,6 +8,7 @@ class DashboardSystemHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = snapshot;
+    final scheme = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: 58,
@@ -32,7 +33,7 @@ class DashboardSystemHeader extends StatelessWidget {
                 home?.systemName ?? 'Local system',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, color: _spText),
+                style: TextStyle(fontSize: 16, color: scheme.onSurface),
               ),
             ),
           ],
@@ -58,6 +59,7 @@ class SpDashboardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
@@ -68,7 +70,7 @@ class SpDashboardTile extends StatelessWidget {
           onPressed: onTap,
           style: ElevatedButton.styleFrom(
             backgroundColor: _spCard,
-            foregroundColor: _spText,
+            foregroundColor: scheme.onSurface,
             elevation: 0,
             padding: const EdgeInsets.all(10),
             shape: RoundedRectangleBorder(
@@ -78,7 +80,7 @@ class SpDashboardTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(item.icon, color: _spGold, size: 22),
+              Icon(item.icon, color: scheme.primary, size: 22),
               SizedBox(height: compact ? 10 : 14),
               Text(
                 item.title,
@@ -94,7 +96,10 @@ class SpDashboardTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _spMuted, fontSize: 11),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ],
@@ -112,10 +117,11 @@ class DashboardSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Text(
       label,
-      style: const TextStyle(
-        color: _spMuted,
+      style: TextStyle(
+        color: scheme.onSurfaceVariant,
         fontSize: 12,
         fontWeight: FontWeight.w900,
       ),
@@ -168,6 +174,7 @@ class SystemListEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final home = snapshot;
+    final scheme = Theme.of(context).colorScheme;
 
     return SpCard(
       child: Row(
@@ -198,7 +205,10 @@ class SystemListEntry extends StatelessWidget {
                     home?.memberCount ?? 0,
                     home?.groupCount ?? 0,
                   ),
-                  style: const TextStyle(color: _spMuted, fontSize: 15),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 15,
+                  ),
                 ),
               ],
             ),

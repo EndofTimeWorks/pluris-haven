@@ -134,6 +134,7 @@ class JournalEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final title = entry.title?.trim();
     final body = entry.body.trim();
 
@@ -153,12 +154,12 @@ class JournalEntryTile extends StatelessWidget {
               body.isEmpty ? l10n.emptyJournal : body,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: _spMuted),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 4),
             Text(
               _shortDateTime(entry.createdAt),
-              style: const TextStyle(color: _spMuted, fontSize: 12),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
