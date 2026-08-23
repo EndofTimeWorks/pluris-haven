@@ -1765,6 +1765,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Light'), findsOneWidget);
 
+    await tester.tap(find.text('Visual style'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simply Plural style'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).visualTheme,
+      HavenVisualTheme.simplyPlural,
+    );
+
+    await tester.tap(find.text('Visual style'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Material You'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).visualTheme,
+      HavenVisualTheme.materialYou,
+    );
+
     await tester.tap(find.text('Accent color'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('current-accent-hex')), findsOneWidget);
