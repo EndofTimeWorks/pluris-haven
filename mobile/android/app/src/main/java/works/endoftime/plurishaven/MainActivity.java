@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,6 +56,7 @@ public final class MainActivity extends FlutterFragmentActivity {
 
     private MethodChannel.Result pendingPickResult;
     private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
+    private Set<String> pendingPickAllowedExtensions = Collections.emptySet();
     private MethodChannel.Result pendingSaveResult;
     private String pendingSaveSource;
 
@@ -72,6 +74,7 @@ public final class MainActivity extends FlutterFragmentActivity {
                         try {
                             List<Map<String, Object>> files = new ArrayList<>();
                             for (Uri uri : selectedUris(activityResult.getData())) {
+                                if (!isAllowedPickedFile(uri)) continue;
                                 files.add(copySelectionToCache(uri, pendingPickMaximumBytes));
                             }
                             result.success(files);
@@ -287,6 +290,7 @@ public final class MainActivity extends FlutterFragmentActivity {
         purgePickedFiles();
         String type = call.argument("type");
         List<String> extensions = call.argument("allowedExtensions");
+        pendingPickAllowedExtensions = normaliseExtensions(extensions);
         boolean allowMultiple = Boolean.TRUE.equals(call.argument("allowMultiple"));
         Number maximumBytes = call.argument("maximumBytes");
         pendingPickMaximumBytes = maximumBytes == null
@@ -353,6 +357,29 @@ public final class MainActivity extends FlutterFragmentActivity {
             if (uri != null && !uris.contains(uri)) uris.add(uri);
         }
         return uris;
+    }
+
+    private boolean isAllowedPickedFile(Uri uri) {
+        if (pendingPickAllowedExtensions.isEmpty()) return true;
+        String displayName = queryDisplayName(uri);
+        if (displayName == null) return false;
+        int dot = displayName.lastIndexOf('.');
+        if (dot <= 0 || dot == displayName.length() - 1) return false;
+        return pendingPickAllowedExtensions.contains(
+                displayName.substring(dot + 1).toLowerCase(Locale.ROOT)
+        );
+    }
+
+    private static Set<String> normaliseExtensions(List<String> extensions) {
+        if (extensions == null || extensions.isEmpty()) return Collections.emptySet();
+        Set<String> normalised = new LinkedHashSet<>();
+        for (String extension : extensions) {
+            if (extension == null) continue;
+            String value = extension.trim().toLowerCase(Locale.ROOT);
+            if (value.startsWith(".")) value = value.substring(1);
+            if (!value.isEmpty()) normalised.add(value);
+        }
+        return normalised.isEmpty() ? Collections.emptySet() : normalised;
     }
 
     private Map<String, Object> copySelectionToCache(Uri uri, long maximumBytes) throws Exception {
