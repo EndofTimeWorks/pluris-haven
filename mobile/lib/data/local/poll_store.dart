@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 enum PollKind {
@@ -182,7 +183,7 @@ class LocalPollStore {
     if (question.isEmpty || options.length < 2) return;
 
     final now = DateTime.now().toUtc();
-    final pollId = 'poll-${now.microsecondsSinceEpoch}';
+    final pollId = newLocalId('poll');
     await database.transaction(() async {
       await database
           .into(database.polls)

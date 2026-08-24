@@ -817,7 +817,7 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
     final repository = widget.repository as LocalHavenRepository;
     final now = DateTime.now().toUtc();
     final snapshot = await repository.buildEncryptedBackupSnapshot(
-      snapshotId: 'mobile-${now.microsecondsSinceEpoch}',
+      snapshotId: newLocalId('mobile'),
       createdAt: now,
     );
     await widget.controller!.uploadBackup(snapshot);

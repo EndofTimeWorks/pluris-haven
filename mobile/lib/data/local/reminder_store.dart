@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class ReminderSummary {
@@ -144,7 +145,7 @@ class LocalReminderStore {
     if (title.isEmpty || scheduleText.isEmpty) return null;
 
     final now = DateTime.now().toUtc();
-    final id = 'reminder-${now.microsecondsSinceEpoch}';
+    final id = newLocalId('reminder');
     await database
         .into(database.reminders)
         .insert(

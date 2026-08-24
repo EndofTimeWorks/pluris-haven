@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class GroupSummary {
@@ -129,7 +130,7 @@ GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g
     if (name.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final groupId = 'group-${now.microsecondsSinceEpoch}';
+    final groupId = newLocalId('group');
     await database
         .into(database.systemGroups)
         .insert(

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'app_customization.dart' show normalizeHexColor;
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class PrivacyBucketSummary {
@@ -102,7 +103,7 @@ ORDER BY pb.position ASC
     final name = draft.name.trim();
     if (name.isEmpty) return;
     final now = DateTime.now().toUtc();
-    final bucketId = 'privacy-bucket-${now.microsecondsSinceEpoch}';
+    final bucketId = newLocalId('privacy-bucket');
     await database.transaction(() async {
       final positionExpression = database.privacyBuckets.position.max();
       final maxPosition =

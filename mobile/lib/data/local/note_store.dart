@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class NoteSummary {
@@ -66,7 +67,7 @@ class LocalNoteStore {
     if (title.isEmpty && body.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final noteId = 'note-${now.microsecondsSinceEpoch}';
+    final noteId = newLocalId('note');
     await database
         .into(database.notes)
         .insert(

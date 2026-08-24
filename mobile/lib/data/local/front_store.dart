@@ -164,7 +164,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
           continue;
         }
         final startedAt = now.add(Duration(microseconds: offset++));
-        final sessionId = 'front-${startedAt.microsecondsSinceEpoch}';
+        final sessionId = newLocalId('front');
         await database
             .into(database.frontSessions)
             .insert(
@@ -220,7 +220,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
 
   Future<void> _frontSaveFrontHistoryEntry(FrontHistoryDraft draft) async {
     final now = DateTime.now().toUtc();
-    final id = 'front-${now.microsecondsSinceEpoch}';
+    final id = newLocalId('front');
     await _writeFrontHistoryEntry(id, draft, now, create: true);
   }
 
@@ -371,7 +371,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         }
       }
 
-      final frontId = 'front-${now.microsecondsSinceEpoch}';
+      final frontId = newLocalId('front');
       await database
           .into(database.frontSessions)
           .insert(

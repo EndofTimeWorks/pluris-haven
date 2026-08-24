@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class CustomFieldSummary {
@@ -155,7 +156,7 @@ WHERE f.system_id = ?
         ? draft.fieldType
         : 'text';
     final now = DateTime.now().toUtc();
-    final fieldId = 'custom-field-${now.microsecondsSinceEpoch}';
+    final fieldId = newLocalId('custom-field');
     final positionExpression = database.customFieldDefinitions.position.max();
     final maxPosition =
         await (database.selectOnly(database.customFieldDefinitions)
@@ -279,7 +280,7 @@ WHERE f.system_id = ?
 
     final now = DateTime.now().toUtc();
     if (existing == null) {
-      final valueId = 'custom-field-value-${now.microsecondsSinceEpoch}';
+      final valueId = newLocalId('custom-field-value');
       await database
           .into(database.customFieldValues)
           .insert(

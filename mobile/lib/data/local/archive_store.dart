@@ -583,7 +583,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required ImportSource source,
   }) async {
     final now = DateTime.now().toUtc();
-    final jobId = 'job-${now.microsecondsSinceEpoch}';
+    final jobId = newLocalId('job');
     appDebugLog(
       'Queue import job id=$jobId source=${source.name} file=${fileName ?? '(none)'} strategy=${strategy.name}',
     );
@@ -998,7 +998,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         await _importContentRevision(revision, strategy, now);
       }
 
-      final importRecordId = 'import-${now.microsecondsSinceEpoch}';
+      final importRecordId = newLocalId('import');
       await database
           .into(database.importRecords)
           .insert(

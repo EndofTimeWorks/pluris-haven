@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'app_customization.dart' show normalizeHexColor;
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class ChatCategorySummary {
@@ -134,7 +135,7 @@ class LocalChatStore {
     final name = draft.name.trim();
     if (name.isEmpty) return;
     final now = DateTime.now().toUtc();
-    final categoryId = 'chat-category-${now.microsecondsSinceEpoch}';
+    final categoryId = newLocalId('chat-category');
     final maxPosition = database.chatCategories.position.max();
     final position =
         await (database.selectOnly(database.chatCategories)
@@ -216,7 +217,7 @@ class LocalChatStore {
     final name = draft.name.trim();
     if (name.isEmpty) return;
     final now = DateTime.now().toUtc();
-    final channelId = 'chat-channel-${now.microsecondsSinceEpoch}';
+    final channelId = newLocalId('chat-channel');
     final maxPosition = database.chatChannels.position.max();
     final position =
         await (database.selectOnly(database.chatChannels)

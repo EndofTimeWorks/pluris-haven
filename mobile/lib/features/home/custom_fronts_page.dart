@@ -554,7 +554,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
     final existing = widget.front;
     await widget.repository.saveNamedFront(
       NamedFront(
-        id: existing?.id ?? 'custom-front-${now.microsecondsSinceEpoch}',
+        id: existing?.id ?? newLocalId('custom-front'),
         systemId: localSystemId,
         name: name,
         customLabel: name,

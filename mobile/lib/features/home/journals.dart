@@ -291,7 +291,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     final existing = widget.entry;
     await widget.repository.saveJournal(
       JournalEntry(
-        id: existing?.id ?? 'journal-${now.microsecondsSinceEpoch}',
+        id: existing?.id ?? newLocalId('journal'),
         systemId: localSystemId,
         memberId: existing?.memberId,
         title: _nullIfBlank(_titleController.text),

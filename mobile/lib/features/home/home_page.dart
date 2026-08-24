@@ -21,6 +21,7 @@ import '../../data/local/app_database.dart'
     show JournalEntry, NamedFront, Tag, localSystemId;
 import '../../data/notifications/notification_service.dart';
 import '../../data/local/haven_repository.dart';
+import '../../data/local/local_id.dart';
 import '../../data/local/supported_language.dart';
 import '../../data/security/archive_encryption.dart';
 import '../../data/server/server_account_controller.dart';

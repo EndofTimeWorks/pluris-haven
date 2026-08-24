@@ -890,7 +890,7 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
     }
     final now = DateTime.now().toUtc();
     final tag = Tag(
-      id: 'tag-${now.microsecondsSinceEpoch}',
+      id: newLocalId('tag'),
       systemId: localSystemId,
       name: name,
       colorHex: colorHex,
@@ -1825,8 +1825,7 @@ Future<String> _storeManualAvatar(String sourceName, Uint8List bytes) async {
     _ => 'png',
   };
   final stem = _manualAvatarStem(sourceName);
-  final fileName =
-      'manual_${DateTime.now().toUtc().microsecondsSinceEpoch}_$stem.$extension';
+  final fileName = '${newLocalId('manual')}_$stem.$extension';
   await LocalAvatarStore().write(fileName, bytes);
   return 'local-avatar:$fileName';
 }

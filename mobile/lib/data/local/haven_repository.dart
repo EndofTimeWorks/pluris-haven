@@ -19,6 +19,7 @@ import 'custom_field_store.dart';
 import 'front_audit_store.dart';
 import 'group_store.dart';
 import 'journal_store.dart';
+import 'local_id.dart';
 import 'member_store.dart';
 import 'message_store.dart';
 import 'note_store.dart';

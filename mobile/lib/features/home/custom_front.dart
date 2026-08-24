@@ -503,7 +503,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     final now = DateTime.now().toUtc();
     await widget.repository.saveNamedFront(
       NamedFront(
-        id: 'named-front-${now.microsecondsSinceEpoch}',
+        id: newLocalId('named-front'),
         systemId: localSystemId,
         name: name,
         customLabel: customLabel,

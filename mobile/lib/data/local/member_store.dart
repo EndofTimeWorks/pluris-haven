@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../ordering/lexorank.dart';
 import 'app_database.dart';
+import 'local_id.dart';
 
 typedef EncryptMemberText =
     Future<String?> Function(String memberId, String field, String? plaintext);
@@ -297,7 +298,7 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
     if (displayName.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final memberId = 'member-${now.microsecondsSinceEpoch}';
+    final memberId = newLocalId('member');
     final groupIds = _normalizedGroupIds(draft);
     final folderId = _nullIfBlank(draft.folderId) ?? _firstOrNull(groupIds);
     final lexoRank = await _nextRank();

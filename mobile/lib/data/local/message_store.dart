@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class MessageSummary {
@@ -93,7 +94,7 @@ class LocalMessageStore {
     if (body.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final messageId = 'message-${now.microsecondsSinceEpoch}';
+    final messageId = newLocalId('message');
     await database
         .into(database.messages)
         .insert(

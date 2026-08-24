@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class NotificationEventSummary {
@@ -89,7 +90,7 @@ class LocalNotificationEventStore {
     if (title.isEmpty && body.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final eventId = 'notification-${now.microsecondsSinceEpoch}';
+    final eventId = newLocalId('notification');
     await database
         .into(database.notificationEvents)
         .insert(
