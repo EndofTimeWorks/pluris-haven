@@ -20,12 +20,13 @@ services:
       PLURIS_TERMS_URL: ${PLURIS_TERMS_URL:-}
       PLURIS_SUPPORT_EMAIL: ${PLURIS_SUPPORT_EMAIL:-}
       PLURIS_CORS_ORIGINS: ${PLURIS_CORS_ORIGINS:-}
+      PLURIS_FORWARDED_ALLOW_IPS: ${PLURIS_FORWARDED_ALLOW_IPS:-}
       PLURIS_BACKUP_OBJECT_DIR: /app/data/backups
     command:
       [
         'sh',
         '-c',
-        'alembic upgrade head && exec uvicorn pluris_server.main:app --host 0.0.0.0 --port 8000',
+        'alembic upgrade head && if [ "$${PLURIS_ENVIRONMENT}" = production ] && [ -z "$${PLURIS_FORWARDED_ALLOW_IPS}" ]; then echo "PLURIS_FORWARDED_ALLOW_IPS is required for production Compose deployments" >&2; exit 1; fi; if [ -n "$${PLURIS_FORWARDED_ALLOW_IPS}" ]; then exec uvicorn pluris_server.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="$${PLURIS_FORWARDED_ALLOW_IPS}"; fi; exec uvicorn pluris_server.main:app --host 0.0.0.0 --port 8000',
       ]
     depends_on:
       db:

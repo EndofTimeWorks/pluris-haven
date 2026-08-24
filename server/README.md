@@ -143,4 +143,4 @@ Run `uv run alembic upgrade head` during every deployment. The systemd unit does
 
 ## Optional containers
 
-`Dockerfile` and `compose.yml` remain available for isolated testing. Native systemd deployment is the primary path for the live instance.
+`Dockerfile` and `compose.yml` remain available for isolated testing. Native systemd deployment is the primary path for the live instance. A production Compose deployment must set `PLURIS_FORWARDED_ALLOW_IPS` to the exact reverse-proxy peer IPs; Compose then enables Uvicorn proxy headers only for those peers. Never use `*` or expose the API port directly when this is enabled.
