@@ -435,7 +435,7 @@ def test_refresh_ip_abuse_limit_catches_unique_invalid_tokens(client: TestClient
     assert responses[-1].status_code == 429
 
 
-def test_account_deletion_requires_password_and_removes_server_data(client: TestClient) -> None:
+def test_account_deletion_can_be_recovered_within_30_days(client: TestClient) -> None:
     registered = register(client, "delete@example.com", "Delete User")
     headers = auth(registered["access_token"])
     payload = {
@@ -471,7 +471,7 @@ def test_account_deletion_requires_password_and_removes_server_data(client: Test
         json={"password": "correct horse battery staple"},
     )
     assert deleted.status_code == 200, deleted.text
-    assert deleted.json() == {"detail": "Account deleted"}
+    assert deleted.json() == {"detail": "Account deletion scheduled; recover within 30 days"}
     assert client.get("/v1/auth/me", headers=headers).status_code == 401
     assert (
         client.post(
@@ -487,22 +487,36 @@ def test_account_deletion_requires_password_and_removes_server_data(client: Test
             "device_name": "Phone",
         },
     )
-    assert login.status_code == 401
+    assert login.status_code == 403
 
-    async def assert_deleted() -> None:
+    recovered = client.post(
+        "/v1/auth/account/recover",
+        json={
+            "email": "delete@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Phone",
+        },
+    )
+    assert recovered.status_code == 200, recovered.text
+    assert (
+        client.get("/v1/auth/me", headers=auth(recovered.json()["access_token"])).status_code == 200
+    )
+
+    async def assert_recovered() -> None:
         async with client.app.state.session_factory() as session:
-            assert (
-                await session.scalar(select(User).where(User.email == "delete@example.com")) is None
-            )
-            assert await session.scalar(select(func.count(BackupSnapshot.id))) == 0
-            deletion_event = await session.scalar(
+            user = await session.scalar(select(User).where(User.email == "delete@example.com"))
+            assert user is not None
+            assert user.disabled is False
+            assert user.deletion_purge_after is None
+            assert await session.scalar(select(func.count(BackupSnapshot.id))) == 1
+            recovery_event = await session.scalar(
                 select(SecurityEvent).where(
-                    SecurityEvent.event_type == SecurityEventType.ACCOUNT_DELETED.value
+                    SecurityEvent.event_type == SecurityEventType.ACCOUNT_RECOVERED.value
                 )
             )
-            assert deletion_event is not None
-            assert deletion_event.user_id is None
+            assert recovery_event is not None
+            assert recovery_event.user_id == user.id
 
-    asyncio.run(assert_deleted())
+    asyncio.run(assert_recovered())
     storage_root = client.app.state.backup_object_store.root
-    assert not any(storage_root.iterdir())
+    assert any(storage_root.iterdir())

@@ -38,6 +38,10 @@ class DeleteAccountRequest(BaseModel):
     password: str = Field(min_length=1, max_length=1024)
 
 
+class RecoverAccountRequest(LoginRequest):
+    pass
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=1, max_length=1024)
     new_password: str = Field(min_length=12, max_length=1024)

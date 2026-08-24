@@ -9,6 +9,7 @@ from sqlalchemy.engine import make_url
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from pluris_server import __version__
+from pluris_server.account_cleanup import sweep_deleted_accounts
 from pluris_server.backup_cleanup import sweep_backup_deletions
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
@@ -38,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 cleanup_session,
                 _app.state.backup_object_store,
             )
+            await sweep_deleted_accounts(cleanup_session, _app.state.backup_object_store)
         yield
         await engine.dispose()
 

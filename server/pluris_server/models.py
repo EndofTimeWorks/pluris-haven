@@ -36,6 +36,8 @@ class SecurityEventType(enum.StrEnum):
     BACKUP_RECOVERY_STARTED = "backup_recovery_started"
     BACKUP_DELETED = "backup_deleted"
     ACCOUNT_DELETED = "account_deleted"
+    ACCOUNT_DELETION_REQUESTED = "account_deletion_requested"
+    ACCOUNT_RECOVERED = "account_recovered"
 
 
 class User(Base):
@@ -47,6 +49,12 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     friend_code_digest: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deletion_purge_after: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
@@ -105,7 +113,8 @@ class SecurityEvent(Base):
     __table_args__ = (
         CheckConstraint(
             "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
-            "'backup_recovery_started', 'backup_deleted', 'account_deleted')",
+            "'backup_recovery_started', 'backup_deleted', 'account_deleted', "
+            "'account_deletion_requested', 'account_recovered')",
             name="security_event_valid_type",
         ),
         Index("ix_security_events_user_id_id", "user_id", "id"),

@@ -6,10 +6,8 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import (
-    BackupSnapshot,
     DeviceSession,
     PasswordResetToken,
     RefreshToken,
@@ -30,6 +28,7 @@ from pluris_server.schemas import (
     MessageResponse,
     PasswordResetConfirmRequest,
     PasswordResetRequest,
+    RecoverAccountRequest,
     RefreshRequest,
     RegisterRequest,
     RegistrationResponse,
@@ -52,6 +51,7 @@ from pluris_server.security import (
 from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
+ACCOUNT_DELETION_GRACE = timedelta(days=30)
 
 
 async def _enforce_rate_limit(
@@ -388,25 +388,57 @@ async def delete_account(
         )
         raise HTTPException(status_code=401, detail="Current password is incorrect")
 
-    snapshots = (
-        await db.scalars(select(BackupSnapshot).where(BackupSnapshot.user_id == auth.user.id))
-    ).all()
-    snapshot_ids = [snapshot.snapshot_id for snapshot in snapshots]
-    owner_id = auth.user.id
-    queue_backup_deletions(db, owner_id=owner_id, snapshot_ids=snapshot_ids)
+    now = datetime.now(UTC)
+    auth.user.disabled = True
+    auth.user.deletion_requested_at = now
+    auth.user.deletion_purge_after = now + ACCOUNT_DELETION_GRACE
+    await db.execute(
+        update(DeviceSession)
+        .where(DeviceSession.user_id == auth.user.id, DeviceSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.session_id.in_(
+                select(DeviceSession.id).where(DeviceSession.user_id == auth.user.id)
+            ),
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
     await record_security_event(
         db,
-        user_id=owner_id,
-        event_type=SecurityEventType.ACCOUNT_DELETED,
+        user_id=auth.user.id,
+        event_type=SecurityEventType.ACCOUNT_DELETION_REQUESTED,
     )
-    await db.delete(auth.user)
     await db.commit()
-    await sweep_backup_deletions(
-        db,
-        request.app.state.backup_object_store,
-        owner_id=owner_id,
-    )
-    return MessageResponse(detail="Account deleted")
+    return MessageResponse(detail="Account deletion scheduled; recover within 30 days")
+
+
+@router.post("/account/recover", response_model=TokenPair)
+async def recover_account(
+    request: Request, payload: RecoverAccountRequest, db: Db, settings: AppSettings
+) -> TokenPair:
+    email = str(payload.email).strip().casefold()
+    await _enforce_rate_limit(request, SecurityOperation.LOGIN, email)
+    user = await db.scalar(select(User).where(User.email == email))
+    if user is None or not await verify_password(payload.password, user.password_hash):
+        if user is None:
+            await dummy_verify_password(payload.password)
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    purge_after = user.deletion_purge_after
+    if purge_after is not None and purge_after.tzinfo is None:
+        purge_after = purge_after.replace(tzinfo=UTC)
+    if not user.disabled or purge_after is None or purge_after <= datetime.now(UTC):
+        raise HTTPException(status_code=400, detail="Account cannot be recovered")
+    user.disabled = False
+    user.deletion_requested_at = None
+    user.deletion_purge_after = None
+    await record_security_event(db, user_id=user.id, event_type=SecurityEventType.ACCOUNT_RECOVERED)
+    tokens = await issue_tokens(db, user, payload.device_name, settings)
+    await db.commit()
+    return TokenPair(**tokens.__dict__)
 
 
 @router.get("/me", response_model=UserView)
