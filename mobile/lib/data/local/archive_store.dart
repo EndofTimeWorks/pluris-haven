@@ -2,6 +2,16 @@ part of 'haven_repository.dart';
 
 extension LocalHavenRepositoryArchive on LocalHavenRepository {
   Future<int> repairRemoteAvatars() async {
+    if (!await _preferenceEquals(
+      _localAvatarEncryptionPreference,
+      _localAvatarEncryptionVersion,
+    )) {
+      await LocalAvatarStore().migrateLegacyFiles();
+      await _writePreference(
+        _localAvatarEncryptionPreference,
+        _localAvatarEncryptionVersion,
+      );
+    }
     if (await _preferenceEquals(
       _remoteAvatarRepairPreference,
       _remoteAvatarRepairVersion,
@@ -1442,18 +1452,12 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       return const [];
     }
 
-    final root = await _avatarRootDirectory();
     final assets = <Map<String, Object?>>[];
     for (final fileName in fileNames) {
-      final file = File('${root.path}/$fileName');
-      if (!await file.exists()) {
+      final bytes = await LocalAvatarStore().read('local-avatar:$fileName');
+      if (bytes == null || bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
         continue;
       }
-      final length = await file.length();
-      if (length <= 0 || length > 10 * 1024 * 1024) {
-        continue;
-      }
-      final bytes = await file.readAsBytes();
       assets.add({
         'id': fileName,
         'name': fileName,
@@ -1591,7 +1595,6 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required String? mimeType,
     required Uint8List bytes,
   }) async {
-    final root = await _avatarRootDirectory();
     final detectedMimeType = sniffAvatarMimeType(bytes) ?? mimeType;
     final extension = _avatarExtension(sourceName, detectedMimeType);
     final safeId = _safeFilePart(id);
@@ -1599,24 +1602,8 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         .encode(bytes.take(18).toList())
         .replaceAll('=', '');
     final fileName = '$safeId-$digest$extension';
-    final file = File('${root.path}/$fileName');
-    await file.writeAsBytes(bytes, flush: true);
+    await LocalAvatarStore().write(fileName, bytes);
     return 'local-avatar:$fileName';
-  }
-
-  Future<Directory> _avatarRootDirectory() async {
-    Directory base;
-    try {
-      base = await getApplicationDocumentsDirectory();
-    } on Object {
-      base = Directory('${Directory.systemTemp.path}/pluris-haven-test');
-    }
-
-    final avatars = Directory('${base.path}/avatars');
-    if (!await avatars.exists()) {
-      await avatars.create(recursive: true);
-    }
-    return avatars;
   }
 
   Future<void> _importGroup(

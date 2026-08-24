@@ -614,13 +614,13 @@ class StoredAvatar extends StatelessWidget {
       );
     }
     if (source.startsWith('local-avatar:')) {
-      return FutureBuilder<File?>(
+      return FutureBuilder<Uint8List?>(
         future: _localAvatarFile(source),
         builder: (context, snapshot) => SpAvatar(
           size: size,
           color: color,
           label: label,
-          image: snapshot.data == null ? null : FileImage(snapshot.data!),
+          image: snapshot.data == null ? null : MemoryImage(snapshot.data!),
           semanticLabel: semanticLabel,
         ),
       );

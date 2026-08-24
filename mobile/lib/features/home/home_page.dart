@@ -1,14 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/avatar/avatar_file_policy.dart';
+import '../../data/avatar/local_avatar_store.dart';
 import '../../data/import/import_archive_mapper.dart';
 import '../../data/import/import_diagnostic.dart';
 import '../../data/import/import_file_decoder.dart';

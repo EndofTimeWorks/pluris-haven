@@ -1247,7 +1247,7 @@ class MemberAvatar extends StatelessWidget {
       );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
-      return FutureBuilder<File?>(
+      return FutureBuilder<Uint8List?>(
         future: _localAvatarFile(avatarUrl),
         builder: (context, snapshot) {
           final file = snapshot.data;
@@ -1255,7 +1255,7 @@ class MemberAvatar extends StatelessWidget {
             size: size,
             color: color,
             label: label,
-            image: file == null ? null : FileImage(file),
+            image: file == null ? null : MemoryImage(file),
             semanticLabel: avatarSemanticLabel,
           );
         },
@@ -1279,22 +1279,8 @@ class MemberAvatar extends StatelessWidget {
   }
 }
 
-Future<File?> _localAvatarFile(String avatarUrl) async {
-  final fileName = avatarUrl.replaceFirst('local-avatar:', '').trim();
-  if (fileName.isEmpty || fileName.contains('/') || fileName.contains('\\')) {
-    return null;
-  }
-  try {
-    final base = await getApplicationDocumentsDirectory();
-    final file = File('${base.path}/avatars/$fileName');
-    return file.existsSync() ? file : null;
-  } on Object {
-    final file = File(
-      '${Directory.systemTemp.path}/pluris-haven-test/avatars/$fileName',
-    );
-    return file.existsSync() ? file : null;
-  }
-}
+Future<Uint8List?> _localAvatarFile(String avatarUrl) =>
+    LocalAvatarStore().read(avatarUrl);
 
 String _initialFor(String value) {
   final trimmed = value.trim();
@@ -1832,16 +1818,6 @@ String? _manualAvatarValidationMessage(AppLocalizations l10n, Object error) {
 
 Future<String> _storeManualAvatar(String sourceName, Uint8List bytes) async {
   final mimeType = validateRasterAvatarBytes(bytes);
-  Directory base;
-  try {
-    base = await getApplicationDocumentsDirectory();
-  } on Object {
-    base = Directory('${Directory.systemTemp.path}/pluris-haven-test');
-  }
-  final avatars = Directory('${base.path}/avatars');
-  if (!await avatars.exists()) {
-    await avatars.create(recursive: true);
-  }
   final extension = switch (mimeType) {
     'image/jpeg' => 'jpg',
     'image/webp' => 'webp',
@@ -1851,7 +1827,7 @@ Future<String> _storeManualAvatar(String sourceName, Uint8List bytes) async {
   final stem = _manualAvatarStem(sourceName);
   final fileName =
       'manual_${DateTime.now().toUtc().microsecondsSinceEpoch}_$stem.$extension';
-  await File('${avatars.path}/$fileName').writeAsBytes(bytes, flush: true);
+  await LocalAvatarStore().write(fileName, bytes);
   return 'local-avatar:$fileName';
 }
 

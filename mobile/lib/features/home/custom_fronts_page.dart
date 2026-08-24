@@ -659,14 +659,14 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
       );
     }
     if (ref.startsWith('local-avatar:')) {
-      return FutureBuilder<File?>(
+      return FutureBuilder<Uint8List?>(
         future: _localAvatarFile(ref),
         builder: (context, snapshot) {
           return SpAvatar(
             size: 42,
             color: color,
             label: label,
-            image: snapshot.data == null ? null : FileImage(snapshot.data!),
+            image: snapshot.data == null ? null : MemoryImage(snapshot.data!),
             semanticLabel: avatarSemanticLabel,
           );
         },

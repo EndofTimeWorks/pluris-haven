@@ -617,14 +617,14 @@ class _NamedFrontAvatar extends StatelessWidget {
       );
     }
     if (avatarUrl.startsWith('local-avatar:')) {
-      return FutureBuilder<File?>(
+      return FutureBuilder<Uint8List?>(
         future: _localAvatarFile(avatarUrl),
         builder: (context, snapshot) {
           return SpAvatar(
             size: 34,
             color: color,
             label: _initialFor(label),
-            image: snapshot.data == null ? null : FileImage(snapshot.data!),
+            image: snapshot.data == null ? null : MemoryImage(snapshot.data!),
             semanticLabel: l10n.avatarForLabel(label),
           );
         },

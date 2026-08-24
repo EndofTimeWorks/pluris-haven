@@ -3,10 +3,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../debug/debug_log.dart';
 import '../avatar/avatar_file_policy.dart';
+import '../avatar/local_avatar_store.dart';
 import '../import/remote_avatar_policy.dart';
 import '../import/import_sources.dart';
 import '../security/haven_crypto.dart';
@@ -74,6 +74,9 @@ const _memberEncryptionSweepPreference =
 const _memberEncryptionSweepVersion = '2';
 const _remoteAvatarRepairPreference = 'internal.remote_avatar_repair_version';
 const _remoteAvatarRepairVersion = '1';
+const _localAvatarEncryptionPreference =
+    'internal.local_avatar_encryption_version';
+const _localAvatarEncryptionVersion = '1';
 
 class LocalHavenRepository implements HavenRepository {
   LocalHavenRepository(this.database, {required this.crypto})
