@@ -13,25 +13,27 @@ depends_on: str | None = None
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("deletion_requested_at", sa.DateTime(timezone=True)))
-    op.add_column("users", sa.Column("deletion_purge_after", sa.DateTime(timezone=True)))
-    op.drop_constraint("security_event_valid_type", "security_events", type_="check")
-    op.create_check_constraint(
-        "security_event_valid_type",
-        "security_events",
-        "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
-        "'backup_recovery_started', 'backup_deleted', 'account_deleted', "
-        "'account_deletion_requested', 'account_recovered')",
-    )
+    with op.batch_alter_table("users") as batch:
+        batch.add_column(sa.Column("deletion_requested_at", sa.DateTime(timezone=True)))
+        batch.add_column(sa.Column("deletion_purge_after", sa.DateTime(timezone=True)))
+    with op.batch_alter_table("security_events") as batch:
+        batch.drop_constraint("security_event_valid_type", type_="check")
+        batch.create_check_constraint(
+            "security_event_valid_type",
+            "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
+            "'backup_recovery_started', 'backup_deleted', 'account_deleted', "
+            "'account_deletion_requested', 'account_recovered')",
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint("security_event_valid_type", "security_events", type_="check")
-    op.create_check_constraint(
-        "security_event_valid_type",
-        "security_events",
-        "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
-        "'backup_recovery_started', 'backup_deleted', 'account_deleted')",
-    )
-    op.drop_column("users", "deletion_purge_after")
-    op.drop_column("users", "deletion_requested_at")
+    with op.batch_alter_table("security_events") as batch:
+        batch.drop_constraint("security_event_valid_type", type_="check")
+        batch.create_check_constraint(
+            "security_event_valid_type",
+            "event_type IN ('signed_out', 'password_changed', 'session_revoked', "
+            "'backup_recovery_started', 'backup_deleted', 'account_deleted')",
+        )
+    with op.batch_alter_table("users") as batch:
+        batch.drop_column("deletion_purge_after")
+        batch.drop_column("deletion_requested_at")
