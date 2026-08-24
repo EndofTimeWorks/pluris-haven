@@ -12,6 +12,7 @@ const requiredHeaders = [
   'X-Frame-Options: DENY',
   'Referrer-Policy: no-referrer',
   'Strict-Transport-Security: max-age=31536000; includeSubDomains',
+  "Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
 ];
 
 const failures = requiredHeaders
