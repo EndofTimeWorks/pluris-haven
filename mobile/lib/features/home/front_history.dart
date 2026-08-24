@@ -191,7 +191,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _historyLimit += 250),
                     icon: const Icon(Icons.expand_more_rounded),
-                    label: const Text('Load older fronts'),
+                    label: Text(l10n.loadOlderFronts),
                   ),
                 ),
               ),

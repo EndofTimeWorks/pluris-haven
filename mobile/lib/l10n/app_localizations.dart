@@ -6312,6 +6312,30 @@ abstract class AppLocalizations {
   /// **'30d'**
   String get analyticsThirtyDays;
 
+  /// No description provided for @analyticsOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get analyticsOverview;
+
+  /// No description provided for @analyticsTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get analyticsTimeline;
+
+  /// No description provided for @analyticsHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get analyticsHours;
+
+  /// No description provided for @loadOlderFronts.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older fronts'**
+  String get loadOlderFronts;
+
   /// No description provided for @analyticsNinetyDays.
   ///
   /// In en, this message translates to:

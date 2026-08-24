@@ -50,21 +50,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 10),
             if (visualTheme == HavenVisualTheme.ampersand) ...[
               SegmentedButton<_AnalyticsPanel>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: _AnalyticsPanel.overview,
-                    label: Text('Overview'),
-                    icon: Icon(Icons.insights_outlined),
+                    label: Text(l10n.analyticsOverview),
+                    icon: const Icon(Icons.insights_outlined),
                   ),
                   ButtonSegment(
                     value: _AnalyticsPanel.timeline,
-                    label: Text('Timeline'),
-                    icon: Icon(Icons.timeline_outlined),
+                    label: Text(l10n.analyticsTimeline),
+                    icon: const Icon(Icons.timeline_outlined),
                   ),
                   ButtonSegment(
                     value: _AnalyticsPanel.hours,
-                    label: Text('Hours'),
-                    icon: Icon(Icons.schedule_outlined),
+                    label: Text(l10n.analyticsHours),
+                    icon: const Icon(Icons.schedule_outlined),
                   ),
                 ],
                 selected: {_panel},

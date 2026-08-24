@@ -3609,6 +3609,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyticsThirtyDays => '30d';
 
   @override
+  String get analyticsOverview => 'Overview';
+
+  @override
+  String get analyticsTimeline => 'Timeline';
+
+  @override
+  String get analyticsHours => 'Hours';
+
+  @override
+  String get loadOlderFronts => 'Load older fronts';
+
+  @override
   String get analyticsNinetyDays => '90d';
 
   @override
