@@ -79,6 +79,7 @@ extension LocalHavenRepositoryMemberSecurity on LocalHavenRepository {
       _memberEncryptionSweepPreference,
       _memberEncryptionSweepVersion,
     )) {
+      crypto.rejectLegacyCiphertext();
       return;
     }
     await database.transaction(() async {
@@ -154,6 +155,7 @@ extension LocalHavenRepositoryMemberSecurity on LocalHavenRepository {
         _memberEncryptionSweepPreference,
         _memberEncryptionSweepVersion,
       );
+      crypto.rejectLegacyCiphertext();
     });
   }
 

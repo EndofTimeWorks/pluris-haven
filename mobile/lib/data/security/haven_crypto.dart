@@ -35,6 +35,7 @@ class HavenCrypto {
   static const _contentKeyLabel = 'pluris-haven:content:v2';
   static const _blindIndexKeyLabel = 'pluris-haven:blind-index:v2';
   static const _hkdfSalt = 'pluris-haven:hkdf:v2';
+  var _legacyCiphertextAllowed = true;
 
   /// Encrypts [plaintext] and returns base64url(nonce || ciphertext || mac).
   ///
@@ -77,6 +78,9 @@ class HavenCrypto {
     List<int> aad = const [],
   }) async {
     final isCurrent = ciphertext.startsWith(_ciphertextV2Prefix);
+    if (!isCurrent && !_legacyCiphertextAllowed) {
+      throw const FormatException('Legacy ciphertext is no longer supported.');
+    }
     final encoded = isCurrent
         ? ciphertext.substring(_ciphertextV2Prefix.length)
         : ciphertext;
@@ -92,6 +96,11 @@ class HavenCrypto {
       secretKey: await (isCurrent ? _contentKey : _legacyContentKey),
       aad: isCurrent ? aad : const [],
     );
+  }
+
+  /// Retires v1 ciphertext after the local migration has completed.
+  void rejectLegacyCiphertext() {
+    _legacyCiphertextAllowed = false;
   }
 
   /// Returns a stable hex-encoded HMAC-SHA256 of the normalized plaintext

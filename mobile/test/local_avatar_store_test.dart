@@ -12,7 +12,10 @@ void main() {
   setUp(() async {
     root = await Directory.systemTemp.createTemp('pluris-avatar-test-');
     store = LocalAvatarStore(
-      keyStore: HavenMasterKeyStore(storage: _MemorySecureValueStore()),
+      keyStore: HavenMasterKeyStore(
+        storage: _MemorySecureValueStore(),
+        provisioningStore: _MemoryMasterKeyProvisioningStore(),
+      ),
       rootDirectory: () async => root,
     );
   });
@@ -61,4 +64,17 @@ final class _MemorySecureValueStore implements SecureValueStore {
 
   @override
   Future<void> write(String key, String value) async => values[key] = value;
+}
+
+final class _MemoryMasterKeyProvisioningStore
+    implements MasterKeyProvisioningStore {
+  var provisioned = false;
+
+  @override
+  Future<bool> isProvisioned() async => provisioned;
+
+  @override
+  Future<void> markProvisioned() async {
+    provisioned = true;
+  }
 }

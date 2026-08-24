@@ -1403,7 +1403,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         final asset = assetsById[assetId];
         refs[memberId] = asset == null
             ? avatarUrl
-            : await _storeAvatarBytes(
+            : await _validateAndStoreAvatarBytes(
                 id: asset.id,
                 sourceName: asset.name,
                 mimeType: asset.mimeType,
@@ -1418,7 +1418,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         final asset = assetsById[assetId];
         refs[memberId] = asset == null
             ? avatarUrl
-            : await _storeAvatarBytes(
+            : await _validateAndStoreAvatarBytes(
                 id: asset.id,
                 sourceName: asset.name,
                 mimeType: asset.mimeType,
@@ -1452,9 +1452,10 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       return const [];
     }
 
+    final avatarStore = LocalAvatarStore();
     final assets = <Map<String, Object?>>[];
     for (final fileName in fileNames) {
-      final bytes = await LocalAvatarStore().read('local-avatar:$fileName');
+      final bytes = await avatarStore.read('local-avatar:$fileName');
       if (bytes == null || bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
         continue;
       }
@@ -1598,12 +1599,31 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final detectedMimeType = sniffAvatarMimeType(bytes) ?? mimeType;
     final extension = _avatarExtension(sourceName, detectedMimeType);
     final safeId = _safeFilePart(id);
-    final digest = base64Url
-        .encode(bytes.take(18).toList())
-        .replaceAll('=', '');
+    final digest = base64UrlEncode(
+      (await Sha256().hash(bytes)).bytes,
+    ).replaceAll('=', '').substring(0, 24);
     final fileName = '$safeId-$digest$extension';
     await LocalAvatarStore().write(fileName, bytes);
     return 'local-avatar:$fileName';
+  }
+
+  Future<String?> _validateAndStoreAvatarBytes({
+    required String id,
+    required String sourceName,
+    required String? mimeType,
+    required Uint8List bytes,
+  }) async {
+    try {
+      validateRasterAvatarBytes(bytes);
+    } on AvatarFileException {
+      return null;
+    }
+    return _storeAvatarBytes(
+      id: id,
+      sourceName: sourceName,
+      mimeType: mimeType,
+      bytes: bytes,
+    );
   }
 
   Future<void> _importGroup(

@@ -49,11 +49,11 @@ final class LocalAvatarStore {
   Future<void> migrateLegacyFiles() async {
     final root = await _root();
     if (!await root.exists()) return;
-    await for (final entity in root.list()) {
-      if (entity is! File) continue;
-      final stored = await entity.readAsBytes();
+    final files = (await root.list().toList()).whereType<File>().toList();
+    for (final file in files) {
+      final stored = await file.readAsBytes();
       if (_isEncrypted(stored)) continue;
-      await write(entity.uri.pathSegments.last, stored);
+      await write(file.uri.pathSegments.last, stored);
     }
   }
 

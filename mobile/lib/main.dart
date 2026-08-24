@@ -10,6 +10,7 @@ import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
 import 'data/notifications/notification_service.dart';
+import 'data/security/haven_crypto.dart';
 import 'data/security/master_key_store.dart';
 import 'data/server/server_account_controller.dart';
 import 'debug/debug_log.dart';
@@ -47,7 +48,13 @@ Future<void> main() async {
   }
 
   final database = AppDatabase();
-  final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+  late final HavenCrypto crypto;
+  try {
+    crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+  } on MissingMasterKeyException {
+    runApp(const MissingMasterKeyApp());
+    return;
+  }
   final repository = LocalHavenRepository(database, crypto: crypto);
   await repository.ensureLocalSystem();
   await repository.migrateMemberNamesToEncryption();
@@ -57,6 +64,39 @@ Future<void> main() async {
   runApp(PlurisHavenApp(repository: repository, serverAccount: serverAccount));
   unawaited(repository.repairRemoteAvatars());
   unawaited(serverAccount.initialize());
+}
+
+class MissingMasterKeyApp extends StatelessWidget {
+  const MissingMasterKeyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Encryption key missing',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'This device no longer has the key that decrypts your local data. '
+                  'Pluris Haven will not replace it. Restore an encrypted backup on '
+                  'a device that still has the original key.',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class PlurisHavenApp extends StatelessWidget {

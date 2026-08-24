@@ -22,16 +22,20 @@ void main() {
 
   test('creates and reuses the same secure master key', () async {
     final storage = MemorySecureValueStore();
+    final provisioned = MemoryMasterKeyProvisioningStore();
     final first = await HavenMasterKeyStore(
       storage: storage,
+      provisioningStore: provisioned,
     ).loadOrCreateCrypto();
     final ciphertext = await first.encrypt('River');
 
     final second = await HavenMasterKeyStore(
       storage: storage,
+      provisioningStore: provisioned,
     ).loadOrCreateCrypto();
     expect(await second.decrypt(ciphertext), 'River');
     expect(storage.values, hasLength(1));
+    expect(provisioned.provisioned, isTrue);
   });
 
   test('rejects a malformed stored master key', () async {
@@ -42,6 +46,20 @@ void main() {
       HavenMasterKeyStore(storage: storage).loadOrCreateCrypto,
       throwsFormatException,
     );
+  });
+
+  test('does not replace a missing provisioned master key', () async {
+    final storage = MemorySecureValueStore();
+    final provisioned = MemoryMasterKeyProvisioningStore()..provisioned = true;
+
+    expect(
+      HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: provisioned,
+      ).loadOrCreateCrypto,
+      throwsA(isA<MissingMasterKeyException>()),
+    );
+    expect(storage.values, isEmpty);
   });
 }
 
@@ -59,5 +77,17 @@ class MemorySecureValueStore implements SecureValueStore {
   @override
   Future<void> write(String key, String value) async {
     values[key] = value;
+  }
+}
+
+class MemoryMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
+  var provisioned = false;
+
+  @override
+  Future<bool> isProvisioned() async => provisioned;
+
+  @override
+  Future<void> markProvisioned() async {
+    provisioned = true;
   }
 }

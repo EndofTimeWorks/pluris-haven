@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
+import 'package:cryptography/cryptography.dart';
 
 import '../../debug/debug_log.dart';
 import '../avatar/avatar_file_policy.dart';

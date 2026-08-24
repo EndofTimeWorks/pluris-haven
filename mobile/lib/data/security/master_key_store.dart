@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'haven_crypto.dart';
 
@@ -10,6 +12,35 @@ abstract interface class SecureValueStore {
   Future<void> write(String key, String value);
 
   Future<void> delete(String key);
+}
+
+abstract interface class MasterKeyProvisioningStore {
+  Future<bool> isProvisioned();
+
+  Future<void> markProvisioned();
+}
+
+class MissingMasterKeyException implements Exception {
+  const MissingMasterKeyException();
+
+  @override
+  String toString() =>
+      'The device encryption key is missing. Restore a backup to recover your data.';
+}
+
+class PlatformMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
+  static const _fileName = '.pluris-haven-master-key-v1';
+
+  Future<File> _file() async =>
+      File('${(await getApplicationDocumentsDirectory()).path}/$_fileName');
+
+  @override
+  Future<bool> isProvisioned() async => (await _file()).exists();
+
+  @override
+  Future<void> markProvisioned() async {
+    await (await _file()).writeAsString('provisioned', flush: true);
+  }
 }
 
 class PlatformSecureValueStore implements SecureValueStore {
@@ -41,11 +72,16 @@ class PlatformSecureValueStore implements SecureValueStore {
 }
 
 class HavenMasterKeyStore {
-  HavenMasterKeyStore({SecureValueStore? storage})
-    : _storage = storage ?? const PlatformSecureValueStore();
+  HavenMasterKeyStore({
+    SecureValueStore? storage,
+    MasterKeyProvisioningStore? provisioningStore,
+  }) : _storage = storage ?? const PlatformSecureValueStore(),
+       _provisioningStore =
+           provisioningStore ?? PlatformMasterKeyProvisioningStore();
 
   static const _masterKeyName = 'pluris_haven.master_key.v1';
   final SecureValueStore _storage;
+  final MasterKeyProvisioningStore _provisioningStore;
 
   Future<HavenCrypto> loadOrCreateCrypto() async {
     final stored = await _storage.read(_masterKeyName);
@@ -54,12 +90,18 @@ class HavenMasterKeyStore {
       if (bytes.length != 32) {
         throw const FormatException('Stored encryption key is invalid.');
       }
+      await _provisioningStore.markProvisioned();
       return HavenCrypto(await deriveMasterKey(bytes));
+    }
+
+    if (await _provisioningStore.isProvisioned()) {
+      throw const MissingMasterKeyException();
     }
 
     final key = await generateMasterKey();
     final bytes = await key.extractBytes();
     await _storage.write(_masterKeyName, base64UrlEncode(bytes));
+    await _provisioningStore.markProvisioned();
     return HavenCrypto(await deriveMasterKey(bytes));
   }
 }

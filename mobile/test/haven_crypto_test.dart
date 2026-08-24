@@ -94,6 +94,18 @@ void main() {
         throwsA(anything),
       );
     });
+
+    test('rejects legacy ciphertext after the migration is retired', () async {
+      final legacy = await crypto.encryptBytes(const [1, 2, 3]);
+      final legacyPayload = legacy.substring(3);
+
+      crypto.rejectLegacyCiphertext();
+
+      await expectLater(
+        crypto.decryptBytes(legacyPayload),
+        throwsFormatException,
+      );
+    });
   });
 
   group('archive encryption', () {
