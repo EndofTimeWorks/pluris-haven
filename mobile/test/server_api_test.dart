@@ -454,6 +454,25 @@ void main() {
     expect(storage.values, isNot(contains('refresh')));
   });
 
+  test('signing in recovers a deletion-scheduled account', () async {
+    final api = FakeServerApi()..deletionScheduled = true;
+    final controller = ServerAccountController(
+      storage: MemoryServerStorage(),
+      apiFactory: (_) => api,
+    );
+    await controller.connect('https://haven.example');
+
+    await controller.login(
+      email: 'test@example.com',
+      password: 'correct horse battery staple',
+      deviceName: 'Phone',
+    );
+
+    expect(controller.signedIn, isTrue);
+    expect(controller.status, 'Account recovered.');
+    expect(api.recoveryRequested, isTrue);
+  });
+
   test('startup storage failures are reported without escaping', () async {
     final controller = ServerAccountController(storage: FailingReadStorage());
 
@@ -502,6 +521,8 @@ class FakeServerApi extends ServerApi {
   bool rejectRefresh = false;
   bool failNextRefresh = false;
   bool failDescriptor = false;
+  bool deletionScheduled = false;
+  bool recoveryRequested = false;
 
   @override
   Future<ServerDescriptor> descriptor() async {
@@ -527,11 +548,34 @@ class FakeServerApi extends ServerApi {
     required String email,
     required String password,
     required String deviceName,
-  }) async => const ServerTokens(
-    accessToken: 'access',
-    refreshToken: 'refresh',
-    expiresIn: 900,
-  );
+  }) async {
+    if (deletionScheduled) {
+      throw const ServerApiException(
+        'This account is disabled',
+        statusCode: 403,
+      );
+    }
+    return const ServerTokens(
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresIn: 900,
+    );
+  }
+
+  @override
+  Future<ServerTokens> recoverAccount({
+    required String email,
+    required String password,
+    required String deviceName,
+  }) async {
+    recoveryRequested = true;
+    deletionScheduled = false;
+    return const ServerTokens(
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresIn: 900,
+    );
+  }
 
   @override
   Future<ServerAccount> me(String token) async {

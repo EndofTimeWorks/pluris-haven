@@ -116,14 +116,28 @@ class ServerAccountController extends ChangeNotifier {
     required String deviceName,
   }) async {
     await _run(() async {
-      final tokens = await _requireApi().login(
-        email: email.trim(),
-        password: password,
-        deviceName: deviceName.trim(),
-      );
+      final api = _requireApi();
+      final normalizedEmail = email.trim();
+      final normalizedDeviceName = deviceName.trim();
+      ServerTokens tokens;
+      try {
+        tokens = await api.login(
+          email: normalizedEmail,
+          password: password,
+          deviceName: normalizedDeviceName,
+        );
+      } on ServerApiException catch (caught) {
+        if (caught.statusCode != 403) rethrow;
+        tokens = await api.recoverAccount(
+          email: normalizedEmail,
+          password: password,
+          deviceName: normalizedDeviceName,
+        );
+        status = 'Account recovered.';
+      }
       await _saveTokens(tokens);
       await _refreshAllAuthenticated();
-      status = 'Signed in.';
+      status ??= 'Signed in.';
     });
   }
 
@@ -177,7 +191,7 @@ class ServerAccountController extends ChangeNotifier {
     await _run(() async {
       await _authenticated((api, token) => api.deleteAccount(token, password));
       await _clearTokens();
-      status = 'Server account deleted. Local data was not changed.';
+      status = 'Account deletion scheduled. Local data was not changed.';
     });
   }
 
