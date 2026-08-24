@@ -34,7 +34,25 @@ class RequestBodyLimitMiddleware:
         while True:
             message = await receive()
             if message["type"] != "http.request":
-                await self.app(scope, receive, send)
+                buffered_messages: list[Message] = []
+                if chunks:
+                    buffered_messages.append(
+                        {
+                            "type": "http.request",
+                            "body": b"".join(chunks),
+                            "more_body": False,
+                        }
+                    )
+                buffered_messages.append(message)
+
+                async def receive_buffered_disconnect(
+                    messages: list[Message] = buffered_messages,
+                ) -> Message:
+                    if messages:
+                        return messages.pop(0)
+                    return {"type": "http.disconnect"}
+
+                await self.app(scope, receive_buffered_disconnect, send)
                 return
             body = message.get("body", b"")
             total += len(body)

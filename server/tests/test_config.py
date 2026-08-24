@@ -1,7 +1,10 @@
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 
 from pluris_server.config import Settings
+from pluris_server.http_security import RequestBodyLimitMiddleware
 from pluris_server.main import create_app
 
 
@@ -133,3 +136,37 @@ def test_auth_requests_reject_oversized_bodies(client: TestClient) -> None:
     )
 
     assert response.status_code == 413
+
+
+def test_body_limit_preserves_partial_request_before_disconnect() -> None:
+    received: list[dict[str, object]] = []
+
+    async def app(_scope, receive, _send) -> None:
+        received.append(await receive())
+        received.append(await receive())
+
+    pending = iter(
+        [
+            {"type": "http.request", "body": b"part", "more_body": True},
+            {"type": "http.disconnect"},
+        ]
+    )
+
+    async def receive() -> dict[str, object]:
+        return next(pending)
+
+    async def send(_message: dict[str, object]) -> None:
+        return None
+
+    asyncio.run(
+        RequestBodyLimitMiddleware(app, maximum_bytes=64)(
+            {"type": "http", "path": "/v1/auth/login", "headers": []},
+            receive,
+            send,
+        )
+    )
+
+    assert received == [
+        {"type": "http.request", "body": b"part", "more_body": False},
+        {"type": "http.disconnect"},
+    ]
