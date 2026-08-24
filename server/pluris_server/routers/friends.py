@@ -238,7 +238,11 @@ async def list_requests(auth: CurrentAuth, db: Db) -> list[FriendRequestView]:
         request.recipient_id if request.requester_id == auth.user.id else request.requester_id
         for request in requests
     }
-    users = await db.scalars(select(User).where(User.id.in_(other_ids))) if other_ids else []
+    users = (
+        await db.scalars(select(User).where(User.id.in_(other_ids), User.disabled.is_(False)))
+        if other_ids
+        else []
+    )
     users_by_id = {user.id: user for user in users}
     return [
         _request_view(
@@ -266,6 +270,9 @@ async def accept_request(request_id: str, auth: CurrentAuth, db: Db) -> FriendVi
         or request.recipient_id != auth.user.id
         or request.status != RequestStatus.PENDING.value
     ):
+        raise HTTPException(status_code=404, detail="Pending request not found")
+    requester = await db.get(User, request.requester_id)
+    if requester is None or requester.disabled:
         raise HTTPException(status_code=404, detail="Pending request not found")
     if await _blocked(db, request.requester_id, request.recipient_id):
         raise HTTPException(status_code=409, detail="This request can no longer be accepted")
@@ -321,7 +328,7 @@ async def _friend_view(db: Db, friendship: Friendship, current_id: str) -> Frien
         friendship.user_high_id if friendship.user_low_id == current_id else friendship.user_low_id
     )
     other = await db.get(User, other_id)
-    if other is None:
+    if other is None or other.disabled:
         raise HTTPException(status_code=404, detail="Friend not found")
     return FriendView(
         friendship_id=friendship.id,
@@ -350,7 +357,11 @@ async def list_friends(auth: CurrentAuth, db: Db) -> list[FriendView]:
         else friendship.user_low_id
         for friendship in friendships
     }
-    users = await db.scalars(select(User).where(User.id.in_(other_ids))) if other_ids else []
+    users = (
+        await db.scalars(select(User).where(User.id.in_(other_ids), User.disabled.is_(False)))
+        if other_ids
+        else []
+    )
     users_by_id = {user.id: user for user in users}
     return [
         FriendView(

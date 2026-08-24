@@ -86,6 +86,23 @@ def test_friend_request_and_relationship_removal(client: TestClient) -> None:
     assert client.get("/v1/friends", headers=auth(bob["access_token"])).json() == []
 
 
+def test_scheduled_deletion_hides_a_friend(client: TestClient) -> None:
+    alice, bob, _ = connect_users(client)
+
+    async def schedule_bob() -> None:
+        async with client.app.state.session_factory() as session:
+            user = await session.scalar(select(User).where(User.email == "bob@example.com"))
+            assert user is not None
+            user.disabled = True
+            await session.commit()
+
+    asyncio.run(schedule_bob())
+
+    friends = client.get("/v1/friends", headers=auth(alice["access_token"]))
+    assert friends.status_code == 200
+    assert friends.json() == []
+
+
 def test_decline_cancel_rotation_and_re_request(client: TestClient) -> None:
     alice = register(client, "alice2@example.com", "Alice")
     bob = register(client, "bob2@example.com", "Bob")
