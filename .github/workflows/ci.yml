@@ -338,6 +338,9 @@ jobs:
 
       - run: uv run pytest -q
 
+      - name: Audit Python dependencies
+        run: uv run --with pip-audit pip-audit --local
+
       - name: Verify migrations
         env:
           PLURIS_ENVIRONMENT: test
