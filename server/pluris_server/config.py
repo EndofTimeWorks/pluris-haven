@@ -44,6 +44,7 @@ class Settings(BaseSettings):
         ge=1 * 1024 * 1024,
         le=1 * 1024 * 1024 * 1024 * 1024,
     )
+    backup_incomplete_snapshot_ttl_seconds: int = Field(default=86_400, ge=3_600, le=2_592_000)
     friend_request_cooldown_seconds: int = Field(default=86_400, ge=0, le=2_592_000)
     friend_request_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
     friend_request_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)

@@ -4,7 +4,11 @@ import hashlib
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
+from pluris_server.backup_cleanup import (
+    queue_backup_deletions,
+    sweep_backup_deletions,
+    sweep_incomplete_backup_snapshots,
+)
 from pluris_server.models import BackupDeletion, BackupSnapshot
 from tests.conftest import auth, register
 
@@ -188,6 +192,34 @@ def test_backup_upload_rejects_stream_after_chunk_limit(client: TestClient) -> N
 
     assert response.status_code == 413
     assert not any(client.app.state.backup_object_store.root.rglob("*.chunk"))
+
+
+def test_incomplete_backup_snapshots_expire(client: TestClient) -> None:
+    user = register(client, "expired-backup@example.com", "Expired backup")
+    headers = auth(user["access_token"])
+    created = client.post(
+        "/v1/backups/snapshots",
+        headers=headers,
+        json={
+            "snapshot_id": "expired-upload",
+            "manifest_sha256": "a" * 64,
+            "chunk_count": 1,
+            "total_bytes": 5,
+            "created_at": "2000-01-01T00:00:00Z",
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    async def sweep() -> int:
+        async with client.app.state.session_factory() as session:
+            return await sweep_incomplete_backup_snapshots(
+                session,
+                client.app.state.backup_object_store,
+                ttl_seconds=3600,
+            )
+
+    assert asyncio.run(sweep()) == 1
+    assert client.get("/v1/backups/snapshots", headers=headers).json() == []
 
 
 def test_backup_snapshot_quotas_reserve_declared_storage(client: TestClient) -> None:

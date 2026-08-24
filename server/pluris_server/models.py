@@ -183,6 +183,7 @@ class BackupSnapshot(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "snapshot_id", name="uq_backup_snapshots_user_snapshot"),
         Index("ix_backup_snapshots_user_created", "user_id", "created_at"),
+        Index("ix_backup_snapshots_created", "created_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

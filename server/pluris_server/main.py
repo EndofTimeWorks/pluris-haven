@@ -11,7 +11,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from pluris_server import __version__
 from pluris_server.account_cleanup import sweep_deleted_accounts
-from pluris_server.backup_cleanup import sweep_backup_deletions
+from pluris_server.backup_cleanup import sweep_backup_deletions, sweep_incomplete_backup_snapshots
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
@@ -40,6 +40,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 cleanup_session,
                 _app.state.backup_object_store,
             )
+            await sweep_incomplete_backup_snapshots(
+                cleanup_session,
+                _app.state.backup_object_store,
+                ttl_seconds=active_settings.backup_incomplete_snapshot_ttl_seconds,
+            )
             await sweep_deleted_accounts(cleanup_session, _app.state.backup_object_store)
 
         async def run_account_cleanup() -> None:
@@ -49,6 +54,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     await sweep_deleted_accounts(
                         cleanup_session,
                         _app.state.backup_object_store,
+                    )
+                    await sweep_incomplete_backup_snapshots(
+                        cleanup_session,
+                        _app.state.backup_object_store,
+                        ttl_seconds=active_settings.backup_incomplete_snapshot_ttl_seconds,
                     )
 
         cleanup_task = asyncio.create_task(run_account_cleanup())
