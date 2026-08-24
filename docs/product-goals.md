@@ -16,8 +16,8 @@ It imports Simply Plural and PluralKit data, previews changes before applying
 them, and keeps source information that it does not understand yet.
 
 Password-protected archives are the portable recovery path. Server snapshots
-use the device key, upload in checked chunks, and cannot yet be restored by the
-mobile client.
+use the device key, upload in checked chunks, and can be restored only by a
+client that retains that device key.
 
 Accounts and friends are optional. Friends are experimental and disabled by
 default.

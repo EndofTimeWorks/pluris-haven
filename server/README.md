@@ -9,8 +9,9 @@ content. Sharing grants and bidirectional sync are not implemented.
 
 The mobile app encrypts backups before uploading them. The server stores opaque,
 immutable chunks and never receives archive plaintext or the device master key.
-The mobile client can resume a matching partial upload, list snapshots, and
-delete them. It cannot restore a server snapshot yet.
+The mobile client can resume a matching partial upload, list snapshots, delete
+them, and restore a completed snapshot after validating its declared chunk and
+byte limits. Device-key snapshots are not portable recovery archives.
 
 Set `PLURIS_BACKUP_OBJECT_DIR` to a private filesystem location with enough
 space for user-configured snapshot retention. The application creates the
