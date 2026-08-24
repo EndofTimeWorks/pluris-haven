@@ -28,7 +28,6 @@ from pluris_server.schemas import (
     MessageResponse,
     PasswordResetConfirmRequest,
     PasswordResetRequest,
-    RecoverAccountRequest,
     RefreshRequest,
     RegisterRequest,
     RegistrationResponse,
@@ -52,6 +51,13 @@ from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 ACCOUNT_DELETION_GRACE = timedelta(days=30)
+
+
+def _deletion_recovery_open(user: User, now: datetime) -> bool:
+    purge_after = user.deletion_purge_after
+    if purge_after is not None and purge_after.tzinfo is None:
+        purge_after = purge_after.replace(tzinfo=UTC)
+    return user.disabled and purge_after is not None and purge_after > now
 
 
 async def _enforce_rate_limit(
@@ -127,13 +133,17 @@ async def register(
             reason=SecurityReason.REGISTRATION_DISABLED,
         )
         raise HTTPException(status_code=503, detail="Account registration is not enabled")
-    if await db.scalar(select(User.id).where(User.email == email)) is not None:
+    existing = await db.scalar(select(User).where(User.email == email))
+    if existing is not None:
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
             operation=SecurityOperation.REGISTER,
             reason=SecurityReason.ACCOUNT_CONFLICT,
         )
-        raise HTTPException(status_code=409, detail="An account with that email already exists")
+        detail = "An account with that email already exists"
+        if _deletion_recovery_open(existing, datetime.now(UTC)):
+            detail = "This email is scheduled for deletion; reset its password to recover it"
+        raise HTTPException(status_code=409, detail=detail)
 
     user = User(
         email=email,
@@ -192,7 +202,10 @@ async def login(
             operation=SecurityOperation.LOGIN,
             reason=SecurityReason.DISABLED_ACCOUNT,
         )
-        raise HTTPException(status_code=403, detail="This account is disabled")
+        detail = "This account is disabled"
+        if _deletion_recovery_open(user, datetime.now(UTC)):
+            detail = "This account is scheduled for deletion; reset its password to recover it"
+        raise HTTPException(status_code=403, detail=detail)
 
     tokens = await issue_tokens(db, user, payload.device_name, settings)
     await db.commit()
@@ -299,8 +312,8 @@ async def request_password_reset(
 ) -> MessageResponse:
     email = str(payload.email).strip().casefold()
     await _enforce_rate_limit(request, SecurityOperation.PASSWORD_RESET_REQUEST, email)
-    user = await db.scalar(select(User).where(User.email == email, User.disabled.is_(False)))
-    if user is not None:
+    user = await db.scalar(select(User).where(User.email == email))
+    if user is not None and (not user.disabled or _deletion_recovery_open(user, datetime.now(UTC))):
         now = datetime.now(UTC)
         await db.execute(
             update(PasswordResetToken)
@@ -347,11 +360,20 @@ async def reset_password(
     expires_at = reset_token.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
-    if user.disabled or reset_token.used_at is not None or expires_at <= now:
+    if (
+        (user.disabled and not _deletion_recovery_open(user, now))
+        or reset_token.used_at is not None
+        or expires_at <= now
+    ):
         raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
 
     reset_token.used_at = now
     user.password_hash = await hash_password(payload.new_password)
+    recovered = _deletion_recovery_open(user, now)
+    if recovered:
+        user.disabled = False
+        user.deletion_requested_at = None
+        user.deletion_purge_after = None
     await db.execute(
         update(DeviceSession)
         .where(DeviceSession.user_id == user.id, DeviceSession.revoked_at.is_(None))
@@ -368,8 +390,15 @@ async def reset_password(
         .values(revoked_at=now)
     )
     await record_security_event(db, user_id=user.id, event_type=SecurityEventType.PASSWORD_CHANGED)
+    if recovered:
+        await record_security_event(
+            db, user_id=user.id, event_type=SecurityEventType.ACCOUNT_RECOVERED
+        )
     await db.commit()
-    return MessageResponse(detail="Password reset; sign in again")
+    detail = "Password reset; sign in again"
+    if recovered:
+        detail = "Password reset and account recovered; sign in again"
+    return MessageResponse(detail=detail)
 
 
 @router.delete("/account", response_model=MessageResponse)
@@ -414,31 +443,6 @@ async def delete_account(
     )
     await db.commit()
     return MessageResponse(detail="Account deletion scheduled; recover within 30 days")
-
-
-@router.post("/account/recover", response_model=TokenPair)
-async def recover_account(
-    request: Request, payload: RecoverAccountRequest, db: Db, settings: AppSettings
-) -> TokenPair:
-    email = str(payload.email).strip().casefold()
-    await _enforce_rate_limit(request, SecurityOperation.LOGIN, email)
-    user = await db.scalar(select(User).where(User.email == email))
-    if user is None or not await verify_password(payload.password, user.password_hash):
-        if user is None:
-            await dummy_verify_password(payload.password)
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    purge_after = user.deletion_purge_after
-    if purge_after is not None and purge_after.tzinfo is None:
-        purge_after = purge_after.replace(tzinfo=UTC)
-    if not user.disabled or purge_after is None or purge_after <= datetime.now(UTC):
-        raise HTTPException(status_code=400, detail="Account cannot be recovered")
-    user.disabled = False
-    user.deletion_requested_at = None
-    user.deletion_purge_after = None
-    await record_security_event(db, user_id=user.id, event_type=SecurityEventType.ACCOUNT_RECOVERED)
-    tokens = await issue_tokens(db, user, payload.device_name, settings)
-    await db.commit()
-    return TokenPair(**tokens.__dict__)
 
 
 @router.get("/me", response_model=UserView)

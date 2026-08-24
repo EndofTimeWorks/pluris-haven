@@ -119,25 +119,14 @@ class ServerAccountController extends ChangeNotifier {
       final api = _requireApi();
       final normalizedEmail = email.trim();
       final normalizedDeviceName = deviceName.trim();
-      ServerTokens tokens;
-      try {
-        tokens = await api.login(
-          email: normalizedEmail,
-          password: password,
-          deviceName: normalizedDeviceName,
-        );
-      } on ServerApiException catch (caught) {
-        if (caught.statusCode != 403) rethrow;
-        tokens = await api.recoverAccount(
-          email: normalizedEmail,
-          password: password,
-          deviceName: normalizedDeviceName,
-        );
-        status = 'Account recovered.';
-      }
+      final tokens = await api.login(
+        email: normalizedEmail,
+        password: password,
+        deviceName: normalizedDeviceName,
+      );
       await _saveTokens(tokens);
       await _refreshAllAuthenticated();
-      status ??= 'Signed in.';
+      status = 'Signed in.';
     });
   }
 

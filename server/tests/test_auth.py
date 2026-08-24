@@ -437,7 +437,7 @@ def test_refresh_ip_abuse_limit_catches_unique_invalid_tokens(client: TestClient
     assert responses[-1].status_code == 429
 
 
-def test_account_deletion_can_be_recovered_within_30_days(client: TestClient) -> None:
+def test_account_deletion_can_be_recovered_with_password_reset(client: TestClient) -> None:
     registered = register(client, "delete@example.com", "Delete User")
     headers = auth(registered["access_token"])
     payload = {
@@ -491,15 +491,24 @@ def test_account_deletion_can_be_recovered_within_30_days(client: TestClient) ->
     )
     assert login.status_code == 403
 
+    sender = client.app.state.email_sender
+    assert isinstance(sender, MemoryEmailSender)
+    requested = client.post("/v1/auth/password/reset-request", json={"email": "delete@example.com"})
+    assert requested.status_code == 202
+    token = sender.sent[-1].link.split("token=", maxsplit=1)[1]
+    reset = client.post(
+        "/v1/auth/password/reset",
+        json={"token": token, "new_password": "new correct horse battery staple"},
+    )
+    assert reset.status_code == 200, reset.text
     recovered = client.post(
-        "/v1/auth/account/recover",
+        "/v1/auth/login",
         json={
             "email": "delete@example.com",
-            "password": "correct horse battery staple",
+            "password": "new correct horse battery staple",
             "device_name": "Phone",
         },
     )
-    assert recovered.status_code == 200, recovered.text
     assert (
         client.get("/v1/auth/me", headers=auth(recovered.json()["access_token"])).status_code == 200
     )

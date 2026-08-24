@@ -324,23 +324,6 @@ class ServerApi {
     return ServerTokens.fromJson(_decodeObject(response));
   }
 
-  Future<ServerTokens> recoverAccount({
-    required String email,
-    required String password,
-    required String deviceName,
-  }) async {
-    final response = await _request(
-      'POST',
-      '/v1/auth/account/recover',
-      jsonBody: {
-        'email': email,
-        'password': password,
-        'device_name': deviceName,
-      },
-    );
-    return ServerTokens.fromJson(_decodeObject(response));
-  }
-
   Future<void> requestPasswordReset(String email) async {
     await _request(
       'POST',

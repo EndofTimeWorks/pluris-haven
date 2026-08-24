@@ -454,7 +454,7 @@ void main() {
     expect(storage.values, isNot(contains('refresh')));
   });
 
-  test('signing in recovers a deletion-scheduled account', () async {
+  test('signing in does not recover a deletion-scheduled account', () async {
     final api = FakeServerApi()..deletionScheduled = true;
     final controller = ServerAccountController(
       storage: MemoryServerStorage(),
@@ -462,15 +462,17 @@ void main() {
     );
     await controller.connect('https://haven.example');
 
-    await controller.login(
-      email: 'test@example.com',
-      password: 'correct horse battery staple',
-      deviceName: 'Phone',
+    await expectLater(
+      controller.login(
+        email: 'test@example.com',
+        password: 'correct horse battery staple',
+        deviceName: 'Phone',
+      ),
+      completes,
     );
 
-    expect(controller.signedIn, isTrue);
-    expect(controller.status, 'Account recovered.');
-    expect(api.recoveryRequested, isTrue);
+    expect(controller.signedIn, isFalse);
+    expect(controller.error, contains('disabled'));
   });
 
   test('startup storage failures are reported without escaping', () async {
@@ -522,7 +524,6 @@ class FakeServerApi extends ServerApi {
   bool failNextRefresh = false;
   bool failDescriptor = false;
   bool deletionScheduled = false;
-  bool recoveryRequested = false;
 
   @override
   Future<ServerDescriptor> descriptor() async {
@@ -555,21 +556,6 @@ class FakeServerApi extends ServerApi {
         statusCode: 403,
       );
     }
-    return const ServerTokens(
-      accessToken: 'access',
-      refreshToken: 'refresh',
-      expiresIn: 900,
-    );
-  }
-
-  @override
-  Future<ServerTokens> recoverAccount({
-    required String email,
-    required String password,
-    required String deviceName,
-  }) async {
-    recoveryRequested = true;
-    deletionScheduled = false;
     return const ServerTokens(
       accessToken: 'access',
       refreshToken: 'refresh',
