@@ -16,6 +16,7 @@ jobs:
   update:
     name: Update current mobile release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
 

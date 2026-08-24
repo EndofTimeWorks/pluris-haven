@@ -18,6 +18,7 @@ jobs:
   quality:
     name: Repository quality gates
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,6 +76,7 @@ jobs:
   mobile:
     name: Mobile (analyze + test + build)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: mobile
@@ -133,6 +135,7 @@ jobs:
     needs: mobile
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       actions: read
       contents: write
@@ -227,6 +230,7 @@ jobs:
   ios:
     name: iOS (unsigned build)
     runs-on: macos-26-intel
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: mobile
@@ -259,6 +263,7 @@ jobs:
   website:
     name: Website (check + build)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: website
@@ -293,6 +298,7 @@ jobs:
   server:
     name: Server (lint + test + migration)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17.10-alpine3.23@sha256:8189a1f6e40904781fc9e2612687877791d21679866db58b1de996b31fc312e4
@@ -359,6 +365,7 @@ jobs:
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     permissions:
       contents: read
       security-events: write

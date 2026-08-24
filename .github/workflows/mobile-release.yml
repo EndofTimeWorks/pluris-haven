@@ -16,6 +16,7 @@ jobs:
   metadata:
     name: Resolve release metadata
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     outputs:
@@ -77,6 +78,7 @@ jobs:
     name: Verify unsigned iOS build
     needs: metadata
     runs-on: macos-26-intel
+    timeout-minutes: 60
     permissions:
       contents: read
     defaults:
@@ -130,6 +132,7 @@ jobs:
   android:
     name: Build Android APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: metadata
     permissions:
       contents: read
@@ -221,6 +224,7 @@ jobs:
       - ios
       - android
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: write
