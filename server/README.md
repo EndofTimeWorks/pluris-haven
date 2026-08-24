@@ -31,7 +31,7 @@ and cursor ID. They never contain IP addresses, email addresses, device names,
 tokens, snapshot names, or archive content. Account deletion immediately
 revokes server sessions and schedules the account, friend data, and encrypted
 backups for permanent deletion after 30 days. The account holder can recover it
-during that window by signing in with the same email and password. Final
+during that window by completing a password-reset link sent to that email. Final
 deletion unlinks its security event from the deleted user, leaving only an
 anonymous operational count.
 

@@ -1,11 +1,15 @@
 friends.example.com {
     encode zstd gzip
 
-    request_body /v1/backups/snapshots/* {
+    @backup_chunks path /v1/backups/snapshots/*/chunks/*
+    request_body @backup_chunks {
         max_size 9MB
     }
 
-    request_body /v1/auth/* {
+    @other_requests {
+        not path /v1/backups/snapshots/*/chunks/*
+    }
+    request_body @other_requests {
         max_size 64KB
     }
 
