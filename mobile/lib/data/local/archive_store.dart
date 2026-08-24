@@ -6,7 +6,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       _localAvatarEncryptionPreference,
       _localAvatarEncryptionVersion,
     )) {
-      await LocalAvatarStore().migrateLegacyFiles();
+      await _avatarStore.migrateLegacyFiles();
       await _writePreference(
         _localAvatarEncryptionPreference,
         _localAvatarEncryptionVersion,
@@ -1452,10 +1452,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       return const [];
     }
 
-    final avatarStore = LocalAvatarStore();
     final assets = <Map<String, Object?>>[];
     for (final fileName in fileNames) {
-      final bytes = await avatarStore.read('local-avatar:$fileName');
+      final bytes = await _avatarStore.read('local-avatar:$fileName');
       if (bytes == null || bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
         continue;
       }
@@ -1603,7 +1602,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       (await Sha256().hash(bytes)).bytes,
     ).replaceAll('=', '').substring(0, 24);
     final fileName = '$safeId-$digest$extension';
-    await LocalAvatarStore().write(fileName, bytes);
+    await _avatarStore.write(fileName, bytes);
     return 'local-avatar:$fileName';
   }
 

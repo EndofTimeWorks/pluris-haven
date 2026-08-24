@@ -80,8 +80,12 @@ const _localAvatarEncryptionPreference =
 const _localAvatarEncryptionVersion = '1';
 
 class LocalHavenRepository implements HavenRepository {
-  LocalHavenRepository(this.database, {required this.crypto})
-    : _customization = LocalAppCustomizationStore(database) {
+  LocalHavenRepository(
+    this.database, {
+    required this.crypto,
+    LocalAvatarStore? avatarStore,
+  }) : _avatarStore = avatarStore ?? LocalAvatarStore(),
+       _customization = LocalAppCustomizationStore(database) {
     _tags = LocalTagStore(
       database,
       encryptText: _encryptLocalText,
@@ -175,6 +179,7 @@ class LocalHavenRepository implements HavenRepository {
 
   final AppDatabase database;
   final HavenCrypto crypto;
+  final LocalAvatarStore _avatarStore;
   final LocalAppCustomizationStore _customization;
   late final LocalTagStore _tags;
   late final LocalJournalStore _journals;
