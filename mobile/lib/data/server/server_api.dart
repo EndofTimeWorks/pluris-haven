@@ -488,12 +488,14 @@ class ServerApi {
     String token, {
     required String snapshotId,
     required int index,
+    required int maximumBytes,
   }) async {
     final response = await _request(
       'GET',
       '/v1/backups/snapshots/$snapshotId/chunks/$index',
       token: token,
       headers: {'Accept': 'application/octet-stream'},
+      maximumResponseBytes: maximumBytes,
     );
     return response.bodyBytes;
   }
@@ -592,7 +594,9 @@ class ServerApi {
     Map<String, Object?>? jsonBody,
     List<int>? body,
     Map<String, String>? headers,
+    int? maximumResponseBytes,
   }) async {
+    final responseLimit = maximumResponseBytes ?? _maximumResponseBytes;
     final request = http.Request(method, baseUri.resolve(path));
     request.followRedirects = false;
     request.headers.addAll({'Accept': 'application/json', ...?headers});
@@ -610,13 +614,13 @@ class ServerApi {
     try {
       streamed = await _client.send(request).timeout(_timeout);
       final declaredLength = streamed.contentLength;
-      if (declaredLength != null && declaredLength > _maximumResponseBytes) {
+      if (declaredLength != null && declaredLength > responseLimit) {
         throw const FormatException('Server response exceeds the size limit.');
       }
       final builder = BytesBuilder(copy: false);
       await streamed.stream
           .forEach((chunk) {
-            if (builder.length > _maximumResponseBytes - chunk.length) {
+            if (builder.length > responseLimit - chunk.length) {
               throw const FormatException(
                 'Server response exceeds the size limit.',
               );

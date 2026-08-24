@@ -292,6 +292,26 @@ void main() {
     );
   });
 
+  test('backup chunks use the restore size limit', () async {
+    final client = _StreamingClient(
+      http.StreamedResponse(Stream<List<int>>.value(utf8.encode('12345')), 200),
+    );
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: client,
+    );
+
+    await expectLater(
+      api.getBackupChunk(
+        'token',
+        snapshotId: 'snapshot',
+        index: 0,
+        maximumBytes: 4,
+      ),
+      throwsA(isA<ServerApiException>()),
+    );
+  });
+
   test('blocking uses the authenticated friends endpoint', () async {
     late http.Request captured;
     final api = ServerApi(
@@ -368,6 +388,21 @@ void main() {
       );
       expect(downloaded.snapshotId, 'mobile-test');
       expect(downloaded.chunks.single.ciphertext, 'ph1:ciphertext');
+
+      api.uploadedChunks[0] = List<int>.filled(
+        api.snapshotRows.single.totalBytes + 1,
+        0x61,
+      );
+      await expectLater(
+        controller.downloadBackup(api.snapshotRows.single),
+        throwsA(
+          isA<ServerApiException>().having(
+            (error) => error.message,
+            'message',
+            contains('declared size'),
+          ),
+        ),
+      );
 
       api
         ..rejectAccess = true
@@ -706,6 +741,7 @@ class FakeServerApi extends ServerApi {
     String token, {
     required String snapshotId,
     required int index,
+    required int maximumBytes,
   }) async => uploadedChunks[index];
 
   @override

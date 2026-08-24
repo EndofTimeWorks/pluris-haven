@@ -297,12 +297,28 @@ class ServerAccountController extends ChangeNotifier {
 
     return _authenticated((api, token) async {
       final chunks = <EncryptedBackupChunk>[];
+      var downloadedBytes = 0;
       for (var index = 0; index < metadata.chunkCount; index++) {
+        final remainingBytes = metadata.totalBytes - downloadedBytes;
+        if (remainingBytes < 1) {
+          throw const ServerApiException(
+            'This backup exceeds its declared size and cannot be restored.',
+          );
+        }
         final content = await api.getBackupChunk(
           token,
           snapshotId: metadata.snapshotId,
           index: index,
+          maximumBytes: remainingBytes < metadata.chunkSize!
+              ? remainingBytes
+              : metadata.chunkSize!,
         );
+        downloadedBytes += content.length;
+        if (downloadedBytes > metadata.totalBytes) {
+          throw const ServerApiException(
+            'This backup exceeds its declared size and cannot be restored.',
+          );
+        }
         final ciphertext = utf8.decode(content);
         chunks.add(
           EncryptedBackupChunk(
@@ -310,6 +326,11 @@ class ServerAccountController extends ChangeNotifier {
             ciphertext: ciphertext,
             sha256: await _sha256(content),
           ),
+        );
+      }
+      if (downloadedBytes != metadata.totalBytes) {
+        throw const ServerApiException(
+          'This backup does not match its declared size and cannot be restored.',
         );
       }
       return EncryptedBackupSnapshot(
