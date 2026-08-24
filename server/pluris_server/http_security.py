@@ -1,15 +1,19 @@
+import re
+
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class AuthBodyLimitMiddleware:
-    """Bound authentication request bodies before JSON parsing buffers them."""
+class RequestBodyLimitMiddleware:
+    """Bound all non-chunk request bodies before JSON parsing buffers them."""
+
+    _chunk_path = re.compile(r"^/v1/backups/snapshots/[^/]+/chunks/\d+$")
 
     def __init__(self, app: ASGIApp, *, maximum_bytes: int) -> None:
         self.app = app
         self.maximum_bytes = maximum_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or not scope["path"].startswith("/v1/auth/"):
+        if scope["type"] != "http" or self._chunk_path.fullmatch(scope["path"]):
             await self.app(scope, receive, send)
             return
 
@@ -17,7 +21,8 @@ class AuthBodyLimitMiddleware:
         content_length = headers.get(b"content-length")
         if content_length is not None:
             try:
-                if int(content_length) > self.maximum_bytes:
+                declared_length = int(content_length)
+                if declared_length < 0 or declared_length > self.maximum_bytes:
                     await self._reject(send)
                     return
             except ValueError:

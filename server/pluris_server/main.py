@@ -15,7 +15,7 @@ from pluris_server.backup_cleanup import sweep_backup_deletions, sweep_incomplet
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
-from pluris_server.http_security import AuthBodyLimitMiddleware, SecurityHeadersMiddleware
+from pluris_server.http_security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 from pluris_server.mail import create_email_sender
 from pluris_server.rate_limit import DatabaseRateLimiter
 from pluris_server.routers import auth, backups, friends, health, server_info
@@ -116,7 +116,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allowed_hosts=sorted(trusted_hosts),
     )
     app.add_middleware(
-        AuthBodyLimitMiddleware,
+        RequestBodyLimitMiddleware,
         maximum_bytes=active_settings.auth_max_body_bytes,
     )
     app.add_middleware(

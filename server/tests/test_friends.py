@@ -31,6 +31,16 @@ def connect_users(client: TestClient) -> tuple[dict, dict, dict]:
     return alice, bob, accepted.json()
 
 
+def test_friend_request_body_is_bounded_before_json_parsing(client: TestClient) -> None:
+    alice = register(client, "limited-body@example.com", "Limited body")
+    response = client.post(
+        "/v1/friends/requests",
+        headers=auth(alice["access_token"]),
+        content=b"x" * (client.app.state.settings.auth_max_body_bytes + 1),
+    )
+    assert response.status_code == 413
+
+
 def test_friend_view_handles_a_missing_related_user() -> None:
     db = SimpleNamespace(get=AsyncMock(return_value=None))
     friendship = SimpleNamespace(user_low_id="current", user_high_id="missing")
