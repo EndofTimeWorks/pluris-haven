@@ -522,6 +522,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get securityEventAccountDeleted => 'Server account deleted';
 
   @override
+  String get securityEventAccountDeletionRequested =>
+      'Server account deletion scheduled';
+
+  @override
+  String get securityEventAccountRecovered => 'Server account recovered';
+
+  @override
   String get securityEventUnknown => 'Security action recorded';
 
   @override
@@ -538,7 +545,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteServerAccountBody =>
-      'This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.';
+      'This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.';
 
   @override
   String get currentPasswordLabel => 'Current password';

@@ -1057,6 +1057,18 @@ abstract class AppLocalizations {
   /// **'Server account deleted'**
   String get securityEventAccountDeleted;
 
+  /// No description provided for @securityEventAccountDeletionRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Server account deletion scheduled'**
+  String get securityEventAccountDeletionRequested;
+
+  /// No description provided for @securityEventAccountRecovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Server account recovered'**
+  String get securityEventAccountRecovered;
+
   /// No description provided for @securityEventUnknown.
   ///
   /// In en, this message translates to:
@@ -1090,7 +1102,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteServerAccountBody.
   ///
   /// In en, this message translates to:
-  /// **'This permanently removes server sessions, friend data, and uploaded encrypted backups. Local app data stays on this device.'**
+  /// **'This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.'**
   String get deleteServerAccountBody;
 
   /// No description provided for @currentPasswordLabel.

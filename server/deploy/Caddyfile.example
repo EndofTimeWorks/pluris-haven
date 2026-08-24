@@ -5,6 +5,10 @@ friends.example.com {
         max_size 9MB
     }
 
+    request_body /v1/auth/* {
+        max_size 64KB
+    }
+
     @api path /health /ready /.well-known/pluris-haven /v1/*
     handle @api {
         reverse_proxy 127.0.0.1:8000

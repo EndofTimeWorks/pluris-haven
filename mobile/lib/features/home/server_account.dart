@@ -303,6 +303,8 @@ String _securityEventLabel(AppLocalizations l10n, String eventType) {
     'backup_recovery_started' => l10n.securityEventBackupRecoveryStarted,
     'backup_deleted' => l10n.securityEventBackupDeleted,
     'account_deleted' => l10n.securityEventAccountDeleted,
+    'account_deletion_requested' => l10n.securityEventAccountDeletionRequested,
+    'account_recovered' => l10n.securityEventAccountRecovered,
     _ => l10n.securityEventUnknown,
   };
 }
