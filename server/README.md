@@ -28,8 +28,12 @@ can access a snapshot.
 `GET /v1/auth/security-events` returns the signed-in user's privacy-minimised
 security history in newest-first order. Events contain only a type, timestamp,
 and cursor ID. They never contain IP addresses, email addresses, device names,
-tokens, snapshot names, or archive content. Account deletion unlinks its final
-event from the deleted user, leaving only an anonymous operational count.
+tokens, snapshot names, or archive content. Account deletion immediately
+revokes server sessions and schedules the account, friend data, and encrypted
+backups for permanent deletion after 30 days. The account holder can recover it
+during that window by signing in with the same email and password. Final
+deletion unlinks its security event from the deleted user, leaving only an
+anonymous operational count.
 
 ## Local development
 

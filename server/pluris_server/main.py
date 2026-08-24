@@ -1,5 +1,6 @@
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -40,8 +41,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 _app.state.backup_object_store,
             )
             await sweep_deleted_accounts(cleanup_session, _app.state.backup_object_store)
-        yield
-        await engine.dispose()
+
+        async def run_account_cleanup() -> None:
+            while True:
+                await asyncio.sleep(active_settings.account_cleanup_interval_seconds)
+                async with _app.state.session_factory() as cleanup_session:
+                    await sweep_deleted_accounts(
+                        cleanup_session,
+                        _app.state.backup_object_store,
+                    )
+
+        cleanup_task = asyncio.create_task(run_account_cleanup())
+        try:
+            yield
+        finally:
+            cleanup_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await cleanup_task
+            await engine.dispose()
 
     app = FastAPI(
         title="Pluris Haven Friends",
