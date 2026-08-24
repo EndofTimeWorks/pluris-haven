@@ -22,6 +22,7 @@ node_modules
 # Local export files
 export_*.json
 Avatars_*.zip
+local-history-backups.zip
 
 # OS
 .DS_Store
