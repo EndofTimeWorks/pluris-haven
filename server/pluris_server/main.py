@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -19,6 +20,8 @@ from pluris_server.http_security import RequestBodyLimitMiddleware, SecurityHead
 from pluris_server.mail import create_email_sender
 from pluris_server.rate_limit import DatabaseRateLimiter
 from pluris_server.routers import auth, backups, friends, health, server_info
+
+_logger = logging.getLogger("pluris.cleanup")
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -50,16 +53,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async def run_account_cleanup() -> None:
             while True:
                 await asyncio.sleep(active_settings.account_cleanup_interval_seconds)
-                async with _app.state.session_factory() as cleanup_session:
-                    await sweep_deleted_accounts(
-                        cleanup_session,
-                        _app.state.backup_object_store,
-                    )
-                    await sweep_incomplete_backup_snapshots(
-                        cleanup_session,
-                        _app.state.backup_object_store,
-                        ttl_seconds=active_settings.backup_incomplete_snapshot_ttl_seconds,
-                    )
+                try:
+                    async with _app.state.session_factory() as cleanup_session:
+                        await sweep_deleted_accounts(
+                            cleanup_session,
+                            _app.state.backup_object_store,
+                        )
+                        await sweep_incomplete_backup_snapshots(
+                            cleanup_session,
+                            _app.state.backup_object_store,
+                            ttl_seconds=active_settings.backup_incomplete_snapshot_ttl_seconds,
+                        )
+                except Exception:
+                    _logger.exception("Scheduled account cleanup failed")
 
         cleanup_task = asyncio.create_task(run_account_cleanup())
         try:

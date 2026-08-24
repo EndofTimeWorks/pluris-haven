@@ -24,16 +24,24 @@ async def sweep_deleted_accounts(
             purge_after = purge_after.replace(tzinfo=UTC)
         if purge_after is not None and purge_after <= now:
             users.append(user)
+    owner_ids = []
     for user in users:
+        owner_id = user.id
+        owner_ids.append(owner_id)
         snapshots = (
-            await db.scalars(select(BackupSnapshot).where(BackupSnapshot.user_id == user.id))
+            await db.scalars(select(BackupSnapshot).where(BackupSnapshot.user_id == owner_id))
         ).all()
         queue_backup_deletions(
-            db, owner_id=user.id, snapshot_ids=[row.snapshot_id for row in snapshots]
+            db, owner_id=owner_id, snapshot_ids=[row.snapshot_id for row in snapshots]
         )
-        db.add(SecurityEvent(user_id=user.id, event_type=SecurityEventType.ACCOUNT_DELETED))
+        db.add(
+            SecurityEvent(
+                user_id=owner_id,
+                event_type=SecurityEventType.ACCOUNT_DELETED.value,
+            )
+        )
         await db.delete(user)
     await db.commit()
-    for user in users:
-        await sweep_backup_deletions(db, store, owner_id=user.id)
+    for owner_id in owner_ids:
+        await sweep_backup_deletions(db, store, owner_id=owner_id)
     return len(users)
