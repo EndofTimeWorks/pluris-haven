@@ -1,11 +1,13 @@
 import asyncio
 import hashlib
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from pluris_server import security_events as security_event_store
+from pluris_server.account_cleanup import sweep_deleted_accounts
 from pluris_server.mail import MemoryEmailSender
 from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
 from pluris_server.routers import auth as auth_router
@@ -520,3 +522,35 @@ def test_account_deletion_can_be_recovered_within_30_days(client: TestClient) ->
     asyncio.run(assert_recovered())
     storage_root = client.app.state.backup_object_store.root
     assert any(storage_root.iterdir())
+
+
+def test_expired_account_deletion_is_purged(client: TestClient) -> None:
+    register(client, "expired-delete@example.com", "Expired Delete")
+
+    async def expire_and_purge() -> None:
+        async with client.app.state.session_factory() as session:
+            user = await session.scalar(
+                select(User).where(User.email == "expired-delete@example.com")
+            )
+            assert user is not None
+            user.disabled = True
+            user.deletion_requested_at = datetime.now(UTC) - timedelta(days=31)
+            user.deletion_purge_after = datetime.now(UTC) - timedelta(seconds=1)
+            await session.commit()
+
+        async with client.app.state.session_factory() as session:
+            assert (
+                await sweep_deleted_accounts(
+                    session,
+                    client.app.state.backup_object_store,
+                )
+                == 1
+            )
+
+        async with client.app.state.session_factory() as session:
+            assert (
+                await session.scalar(select(User).where(User.email == "expired-delete@example.com"))
+                is None
+            )
+
+    asyncio.run(expire_and_purge())
