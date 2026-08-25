@@ -192,6 +192,8 @@ abstract interface class HavenRepository {
 
   Future<void> setCustomAccentColor(String? colorHex);
 
+  Future<void> setAppearanceOverrides(HavenAppearanceOverrides overrides);
+
   Future<void> setCompactDashboard(bool compact);
 
   Future<void> setShowDashboardSubtitles(bool show);

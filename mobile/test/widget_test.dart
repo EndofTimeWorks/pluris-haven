@@ -2884,6 +2884,14 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setAppearanceOverrides(
+    HavenAppearanceOverrides overrides,
+  ) async {
+    _customization = _customization.copyWith(appearance: overrides);
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<void> setCompactDashboard(bool compact) async {
     _customization = _customization.copyWith(compactDashboard: compact);
     _customizationController.add(_customization);

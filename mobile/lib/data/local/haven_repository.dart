@@ -34,6 +34,7 @@ import 'tag_store.dart';
 export 'app_customization.dart'
     show
         AppCustomization,
+        HavenAppearanceOverrides,
         HavenAccentColor,
         HavenThemeMode,
         HavenVisualTheme,
@@ -306,6 +307,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> setCustomAccentColor(String? colorHex) =>
       _customization.setCustomAccentColor(colorHex);
+
+  @override
+  Future<void> setAppearanceOverrides(HavenAppearanceOverrides overrides) =>
+      _customization.setAppearanceOverrides(overrides);
 
   @override
   Future<void> setCompactDashboard(bool compact) =>

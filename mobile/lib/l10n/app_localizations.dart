@@ -7008,6 +7008,78 @@ abstract class AppLocalizations {
   /// **'None'**
   String get noneTitle;
 
+  /// No description provided for @appearanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceTitle;
+
+  /// No description provided for @appearanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'colours, shape and text size'**
+  String get appearanceSubtitle;
+
+  /// No description provided for @appearanceReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset appearance overrides'**
+  String get appearanceReset;
+
+  /// No description provided for @backgroundColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Background colour'**
+  String get backgroundColorLabel;
+
+  /// No description provided for @surfaceColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Surface colour'**
+  String get surfaceColorLabel;
+
+  /// No description provided for @cardColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Card colour'**
+  String get cardColorLabel;
+
+  /// No description provided for @textColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text colour'**
+  String get textColorLabel;
+
+  /// No description provided for @mutedTextColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Muted text colour'**
+  String get mutedTextColorLabel;
+
+  /// No description provided for @outlineColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline colour'**
+  String get outlineColorLabel;
+
+  /// No description provided for @cornerRadiusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Corner roundness'**
+  String get cornerRadiusLabel;
+
+  /// No description provided for @textScaleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text scale'**
+  String get textScaleLabel;
+
+  /// No description provided for @saveAppearanceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save appearance'**
+  String get saveAppearanceButton;
+
   /// No description provided for @systemCounts.
   ///
   /// In en, this message translates to:

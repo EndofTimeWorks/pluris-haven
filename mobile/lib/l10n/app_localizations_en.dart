@@ -4056,6 +4056,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noneTitle => 'None';
 
   @override
+  String get appearanceTitle => 'Appearance';
+
+  @override
+  String get appearanceSubtitle => 'colours, shape and text size';
+
+  @override
+  String get appearanceReset => 'Reset appearance overrides';
+
+  @override
+  String get backgroundColorLabel => 'Background colour';
+
+  @override
+  String get surfaceColorLabel => 'Surface colour';
+
+  @override
+  String get cardColorLabel => 'Card colour';
+
+  @override
+  String get textColorLabel => 'Text colour';
+
+  @override
+  String get mutedTextColorLabel => 'Muted text colour';
+
+  @override
+  String get outlineColorLabel => 'Outline colour';
+
+  @override
+  String get cornerRadiusLabel => 'Corner roundness';
+
+  @override
+  String get textScaleLabel => 'Text scale';
+
+  @override
+  String get saveAppearanceButton => 'Save appearance';
+
+  @override
   String systemCounts(int members, int groups) {
     String _temp0 = intl.Intl.pluralLogic(
       members,

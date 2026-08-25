@@ -48,6 +48,15 @@ class AppOptionsPage extends StatelessWidget {
                 repository: repository,
               ),
             ),
+            SpSettingsRow(
+              l10n.appearanceTitle,
+              l10n.appearanceSubtitle,
+              onTap: () => showAppearanceEditor(
+                context,
+                customization: customization,
+                repository: repository,
+              ),
+            ),
             SpSwitchRow(
               title: l10n.compactDashboardTitle,
               subtitle: l10n.compactDashboardSubtitle,
@@ -208,6 +217,171 @@ void showAccentPicker(
     builder: (context) =>
         AccentPickerSheet(customization: customization, repository: repository),
   );
+}
+
+void showAppearanceEditor(
+  BuildContext context, {
+  required AppCustomization customization,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => AppearanceEditorSheet(
+      customization: customization,
+      repository: repository,
+    ),
+  );
+}
+
+class AppearanceEditorSheet extends StatefulWidget {
+  const AppearanceEditorSheet({
+    super.key,
+    required this.customization,
+    required this.repository,
+  });
+
+  final AppCustomization customization;
+  final HavenRepository repository;
+
+  @override
+  State<AppearanceEditorSheet> createState() => _AppearanceEditorSheetState();
+}
+
+class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
+  late final List<TextEditingController> _colors;
+  late double _radius;
+  late double _scale;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final appearance = widget.customization.appearance;
+    _colors = [
+      appearance.backgroundHex,
+      appearance.surfaceHex,
+      appearance.cardHex,
+      appearance.textHex,
+      appearance.mutedTextHex,
+      appearance.outlineHex,
+    ].map((value) => TextEditingController(text: value ?? '')).toList();
+    _radius = appearance.cardRadius ?? 12;
+    _scale = appearance.textScale ?? 1;
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _colors) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = [
+      l10n.backgroundColorLabel,
+      l10n.surfaceColorLabel,
+      l10n.cardColorLabel,
+      l10n.textColorLabel,
+      l10n.mutedTextColorLabel,
+      l10n.outlineColorLabel,
+    ];
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: EdgeInsets.fromLTRB(
+          18,
+          0,
+          18,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        children: [
+          Text(
+            l10n.appearanceTitle,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          for (var index = 0; index < _colors.length; index++)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: TextField(
+                controller: _colors[index],
+                decoration: InputDecoration(
+                  labelText: labels[index],
+                  hintText: '#RRGGBB',
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(l10n.cornerRadiusLabel),
+          Slider(
+            value: _radius,
+            min: 0,
+            max: 32,
+            divisions: 32,
+            label: _radius.round().toString(),
+            onChanged: (value) => setState(() => _radius = value),
+          ),
+          Text(l10n.textScaleLabel),
+          Slider(
+            value: _scale,
+            min: .8,
+            max: 1.6,
+            divisions: 8,
+            label: _scale.toStringAsFixed(1),
+            onChanged: (value) => setState(() => _scale = value),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          FilledButton(
+            onPressed: _save,
+            child: Text(l10n.saveAppearanceButton),
+          ),
+          TextButton(onPressed: _reset, child: Text(l10n.appearanceReset)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final colors = _colors.map((controller) => controller.text.trim()).toList();
+    if (colors.any(
+      (color) => color.isNotEmpty && _normalizeUiHexColor(color) == null,
+    )) {
+      setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
+      return;
+    }
+    await widget.repository.setAppearanceOverrides(
+      HavenAppearanceOverrides(
+        backgroundHex: _normalizeUiHexColor(colors[0]),
+        surfaceHex: _normalizeUiHexColor(colors[1]),
+        cardHex: _normalizeUiHexColor(colors[2]),
+        textHex: _normalizeUiHexColor(colors[3]),
+        mutedTextHex: _normalizeUiHexColor(colors[4]),
+        outlineHex: _normalizeUiHexColor(colors[5]),
+        cardRadius: _radius,
+        textScale: _scale,
+      ),
+    );
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _reset() async {
+    await widget.repository.setAppearanceOverrides(
+      const HavenAppearanceOverrides(),
+    );
+    if (mounted) Navigator.pop(context);
+  }
 }
 
 void showVisualThemePicker(

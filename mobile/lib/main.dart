@@ -309,6 +309,14 @@ class PlurisHavenApp extends StatelessWidget {
         : highContrast
         ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
         : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
+    final appearance = customization.appearance;
+    final effectiveSurface = appearance.surfaceColor ?? surface;
+    final effectiveBackground = appearance.backgroundColor ?? background;
+    final effectiveCard = appearance.cardColor ?? card;
+    final effectiveOnSurface = appearance.textColor ?? onSurface;
+    final effectiveMuted = appearance.mutedTextColor ?? muted;
+    final effectiveOutline = appearance.outlineColor ?? outline;
+    final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme(
@@ -323,43 +331,43 @@ class PlurisHavenApp extends StatelessWidget {
         onTertiary: const Color(0xFF211B00),
         error: const Color(0xFFFFB4AB),
         onError: const Color(0xFF690005),
-        surface: surface,
-        surfaceContainerHighest: card,
-        onSurface: onSurface,
-        onSurfaceVariant: muted,
-        outline: outline,
-        outlineVariant: outline,
+        surface: effectiveSurface,
+        surfaceContainerHighest: effectiveCard,
+        onSurface: effectiveOnSurface,
+        onSurfaceVariant: effectiveMuted,
+        outline: effectiveOutline,
+        outlineVariant: effectiveOutline,
         shadow: Colors.black,
         inverseSurface: onSurface,
         onInverseSurface: surface,
         inversePrimary: accent,
         surfaceTint: accent,
       ),
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: effectiveBackground,
       visualDensity: customization.compactLists
           ? VisualDensity.compact
           : VisualDensity.standard,
       appBarTheme: AppBarTheme(
-        backgroundColor: surface,
-        foregroundColor: onSurface,
+        backgroundColor: effectiveSurface,
+        foregroundColor: effectiveOnSurface,
         elevation: 0,
         centerTitle: false,
       ),
       drawerTheme: DrawerThemeData(
-        backgroundColor: surface,
+        backgroundColor: effectiveSurface,
         scrimColor: Colors.black.withValues(alpha: 0.6),
       ),
-      dividerTheme: DividerThemeData(color: outline, thickness: 1),
+      dividerTheme: DividerThemeData(color: effectiveOutline, thickness: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: background,
+        fillColor: effectiveBackground,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       cardTheme: CardThemeData(
         color: card,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(simplyPlural ? 16 : 12),
+          borderRadius: BorderRadius.circular(cardRadius),
         ),
         margin: EdgeInsets.zero,
       ),
