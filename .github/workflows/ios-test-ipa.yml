@@ -1,0 +1,47 @@
+name: iOS Test IPA
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: macos-26-intel
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+          cache: true
+
+      - name: Select Xcode 26.4.1
+        run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
+
+      - name: Build unsigned test IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get
+          flutter build ios --release --no-codesign
+          mkdir -p build/ios/Payload
+          ditto build/ios/iphoneos/Runner.app build/ios/Payload/Runner.app
+          (
+            cd build/ios
+            ditto -c -k --keepParent Payload pluris-haven-ios-test-unsigned.ipa
+          )
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: pluris-haven-ios-test-unsigned
+          path: mobile/build/ios/pluris-haven-ios-test-unsigned.ipa
+          if-no-files-found: error
