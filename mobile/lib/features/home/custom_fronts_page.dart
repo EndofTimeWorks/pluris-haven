@@ -39,55 +39,44 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
             .where(_matchesFrontQuery)
             .toList(growable: false);
 
+        if (isSimplyPlural) {
+          return _buildSimplyPluralLayout(
+            context,
+            l10n,
+            customFronts,
+            namedCombinations,
+          );
+        }
+
         return SpPage(
           children: [
-            if (isSimplyPlural)
-              Row(
+            SpCard(
+              outlined: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      l10n.customFrontsTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
+                  SpSectionHeader(
+                    title: l10n.customFrontsTitle,
+                    trailing: StatusPill(text: '${customFronts.length}'),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.customFrontsDescription,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
                     ),
                   ),
-                  StatusPill(text: '${customFronts.length}'),
-                  const SizedBox(width: 4),
-                  IconButton.filledTonal(
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
                     key: const ValueKey('add-custom-front-page-button'),
-                    tooltip: l10n.addCustomFrontButton,
                     onPressed: () => _openEditor(),
                     icon: const Icon(Icons.add_rounded),
+                    label: Text(l10n.addCustomFrontButton),
                   ),
                 ],
-              )
-            else
-              SpCard(
-                outlined: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SpSectionHeader(
-                      title: l10n.customFrontsTitle,
-                      trailing: StatusPill(text: '${customFronts.length}'),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.customFrontsDescription,
-                      style: TextStyle(
-                        color: scheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    FilledButton.icon(
-                      key: const ValueKey('add-custom-front-page-button'),
-                      onPressed: () => _openEditor(),
-                      icon: const Icon(Icons.add_rounded),
-                      label: Text(l10n.addCustomFrontButton),
-                    ),
-                  ],
-                ),
               ),
+            ),
             const SizedBox(height: 10),
             SpSearchField(
               hintText: l10n.searchCustomFrontsHint,
@@ -102,21 +91,6 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                     ? l10n.customFrontsEmptyBody
                     : l10n.tryDifferentSearch,
               )
-            else if (isSimplyPlural)
-              for (final front in customFronts)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SpCard(
-                    child: _CustomFrontRow(
-                      front: front,
-                      showDivider: false,
-                      compactActions: true,
-                      onSet: () => _applyFront(front),
-                      onEdit: () => _openEditor(front),
-                      onDelete: () => _deleteFront(front),
-                    ),
-                  ),
-                )
             else
               SpCard(
                 padding: EdgeInsets.zero,
@@ -177,6 +151,130 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
       front.colorHex,
       front.avatarUrl,
     ]);
+  }
+
+  Widget _buildSimplyPluralLayout(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<NamedFront> customFronts,
+    List<NamedFront> namedCombinations,
+  ) {
+    final fronts = [...customFronts, ...namedCombinations];
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
+          sliver: SliverList.list(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.customFrontsTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  StatusPill(text: '${customFronts.length}'),
+                  const SizedBox(width: 4),
+                  IconButton.filledTonal(
+                    key: const ValueKey('add-custom-front-page-button'),
+                    tooltip: l10n.addCustomFrontButton,
+                    onPressed: () => _openEditor(),
+                    icon: const Icon(Icons.add_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SpSearchField(
+                hintText: l10n.searchCustomFrontsHint,
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              if (fronts.isEmpty) ...[
+                const SizedBox(height: 12),
+                SpEmptyState(
+                  title: _query.trim().isEmpty
+                      ? l10n.noCustomFronts
+                      : l10n.noMatches,
+                  body: _query.trim().isEmpty
+                      ? l10n.customFrontsEmptyBody
+                      : l10n.tryDifferentSearch,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (customFronts.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            sliver: SliverList.builder(
+              itemCount: customFronts.length,
+              itemBuilder: (context, index) {
+                final front = customFronts[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SpCard(
+                    child: _CustomFrontRow(
+                      front: front,
+                      showDivider: false,
+                      compactActions: true,
+                      onSet: () => _applyFront(front),
+                      onEdit: () => _openEditor(front),
+                      onDelete: () => _deleteFront(front),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        if (namedCombinations.isNotEmpty) ...[
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                l10n.namedCombinationsTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            sliver: SliverList.builder(
+              itemCount: namedCombinations.length,
+              itemBuilder: (context, index) {
+                final front = namedCombinations[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: SpCard(
+                    padding: EdgeInsets.zero,
+                    child: SpSettingsRow(
+                      front.name,
+                      l10n.memberShortcutLabel,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.setNamedFrontTooltip,
+                            onPressed: () => _applyFront(front),
+                            icon: const Icon(Icons.play_arrow_rounded),
+                          ),
+                          IconButton(
+                            tooltip: l10n.deleteNamedFrontTooltip,
+                            onPressed: () => _deleteFront(front),
+                            icon: const Icon(Icons.delete_outline_rounded),
+                          ),
+                        ],
+                      ),
+                      onTap: null,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Future<void> _openEditor([NamedFront? front]) {

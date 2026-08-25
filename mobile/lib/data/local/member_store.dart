@@ -148,72 +148,65 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
         )
         .watch()
         .asyncMap((rows) async {
-          final summaries = <MemberSummary>[];
-          for (final row in rows) {
-            final data = row.data;
-            final memberId = data['id'] as String;
-            final displayName = await decryptText(
-              memberId,
-              'display_name',
-              data['display_name'] as String,
-            );
-            if (displayName == null) {
-              throw StateError('Protected member name is unexpectedly null.');
-            }
-            summaries.add(
-              MemberSummary(
-                id: memberId,
-                displayName: displayName,
-                pronouns: await decryptText(
+          return Future.wait(
+            rows.map((row) async {
+              final data = row.data;
+              final memberId = data['id'] as String;
+              final values = await Future.wait([
+                decryptText(
                   memberId,
-                  'pronouns',
-                  data['pronouns'] as String?,
+                  'display_name',
+                  data['display_name'] as String,
                 ),
-                colorHex: await decryptText(
+                decryptText(memberId, 'pronouns', data['pronouns'] as String?),
+                decryptText(
                   memberId,
                   'color_hex',
                   data['color_hex'] as String?,
                 ),
-                birthday: await decryptText(
-                  memberId,
-                  'birthday',
-                  data['birthday'] as String?,
-                ),
-                emoji: await decryptText(
-                  memberId,
-                  'emoji',
-                  data['emoji'] as String?,
-                ),
-                privacy: await decryptText(
-                  memberId,
-                  'privacy',
-                  data['privacy'] as String?,
-                ),
-                description: await decryptText(
+                decryptText(memberId, 'birthday', data['birthday'] as String?),
+                decryptText(memberId, 'emoji', data['emoji'] as String?),
+                decryptText(memberId, 'privacy', data['privacy'] as String?),
+                decryptText(
                   memberId,
                   'description',
                   data['description'] as String?,
                 ),
-                avatarUrl: await decryptText(
+                decryptText(
                   memberId,
                   'avatar_url',
                   data['avatar_url'] as String?,
                 ),
-                pluralKitId: await decryptText(
+                decryptText(
                   memberId,
                   'pluralkit_id',
                   data['plural_kit_id'] as String?,
                 ),
+              ]);
+              final displayName = values[0];
+              if (displayName == null) {
+                throw StateError('Protected member name is unexpectedly null.');
+              }
+              return MemberSummary(
+                id: memberId,
+                displayName: displayName,
+                pronouns: values[1],
+                colorHex: values[2],
+                birthday: values[3],
+                emoji: values[4],
+                privacy: values[5],
+                description: values[6],
+                avatarUrl: values[7],
+                pluralKitId: values[8],
                 archived: _readSqlBool(data['archived']),
                 isCustomFront: _readSqlBool(data['is_custom_front']),
                 frameShape: data['frame_shape'] as String,
                 lexoRank: data['lexo_rank'] as String,
                 folderId: data['folder_id'] as String?,
                 groupIds: _splitJoinedIds(data['group_ids']),
-              ),
-            );
-          }
-          return summaries;
+              );
+            }),
+          );
         });
   }
 

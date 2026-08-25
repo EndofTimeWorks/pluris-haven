@@ -38,6 +38,22 @@ void main() {
     expect(provisioned.provisioned, isTrue);
   });
 
+  test('caches the derived crypto for repeated reads', () async {
+    final storage = MemorySecureValueStore();
+    final store = HavenMasterKeyStore(
+      storage: storage,
+      provisioningStore: MemoryMasterKeyProvisioningStore(),
+    );
+
+    await Future.wait([
+      store.loadOrCreateCrypto(),
+      store.loadOrCreateCrypto(),
+      store.loadOrCreateCrypto(),
+    ]);
+
+    expect(storage.readCount, 1);
+  });
+
   test('rejects a malformed stored master key', () async {
     final storage = MemorySecureValueStore()
       ..values['pluris_haven.master_key.v1'] = 'aW52YWxpZA==';
@@ -65,6 +81,7 @@ void main() {
 
 class MemorySecureValueStore implements SecureValueStore {
   final values = <String, String>{};
+  var readCount = 0;
 
   @override
   Future<void> delete(String key) async {
@@ -72,7 +89,10 @@ class MemorySecureValueStore implements SecureValueStore {
   }
 
   @override
-  Future<String?> read(String key) async => values[key];
+  Future<String?> read(String key) async {
+    readCount++;
+    return values[key];
+  }
 
   @override
   Future<void> write(String key, String value) async {

@@ -34,56 +34,65 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
       linksBySession.putIfAbsent(link.sessionId, () => []).add(link);
     }
 
-    final members = await (database.select(
-      database.members,
-    )..where((member) => member.systemId.equals(localSystemId))).get();
+    final memberIds = links.map((link) => link.memberId).toSet();
+    final members = memberIds.isEmpty
+        ? const <Member>[]
+        : await (database.select(database.members)..where(
+                (member) =>
+                    member.systemId.equals(localSystemId) &
+                    member.id.isIn(memberIds),
+              ))
+              .get();
     final namesById = <String, String>{};
-    for (final member in members) {
-      final name = (await _decryptMember(
-        member,
-        'display_name',
-        member.displayName,
-      ))?.trim();
+    final memberNames = await Future.wait(
+      members.map((member) async {
+        final name = (await _decryptMember(
+          member,
+          'display_name',
+          member.displayName,
+        ))?.trim();
+        return (id: member.id, name: name);
+      }),
+    );
+    for (final member in memberNames) {
+      final name = member.name;
       if (name != null && name.isNotEmpty) {
         namesById[member.id] = name;
       }
     }
 
-    final entries = <FrontHistoryEntry>[];
-    for (final row in rows) {
-      final sessionLinks = linksBySession[row.id] ?? const [];
-      final explicit = (await _decryptLocalText(
-        row.label,
-        'front_sessions',
-        row.id,
-        'label',
-      ))?.trim();
-      final label = explicit != null && explicit.isNotEmpty
-          ? explicit
-          : sessionLinks.isEmpty
-          ? 'Unknown front'
-          : sessionLinks
-                .map((link) => namesById[link.memberId])
-                .whereType<String>()
-                .where((name) => name.isNotEmpty)
-                .join(', ');
-      entries.add(
-        FrontHistoryEntry(
-          id: row.id,
-          label: label.isEmpty ? 'Unknown front' : label,
-          statusNote: await _decryptLocalText(
+    return Future.wait(
+      rows.map((row) async {
+        final sessionLinks = linksBySession[row.id] ?? const [];
+        final values = await Future.wait([
+          _decryptLocalText(row.label, 'front_sessions', row.id, 'label'),
+          _decryptLocalText(
             row.statusNote,
             'front_sessions',
             row.id,
             'status_note',
           ),
+        ]);
+        final explicit = values[0]?.trim();
+        final label = explicit != null && explicit.isNotEmpty
+            ? explicit
+            : sessionLinks.isEmpty
+            ? 'Unknown front'
+            : sessionLinks
+                  .map((link) => namesById[link.memberId])
+                  .whereType<String>()
+                  .where((name) => name.isNotEmpty)
+                  .join(', ');
+        return FrontHistoryEntry(
+          id: row.id,
+          label: label.isEmpty ? 'Unknown front' : label,
+          statusNote: values[1],
           startedAt: row.startedAt,
           endedAt: row.endedAt,
           memberIds: [for (final link in sessionLinks) link.memberId],
-        ),
-      );
-    }
-    return entries;
+        );
+      }),
+    );
   }
 
   Future<List<ReminderSummary>> _frontSetFrontMembers(

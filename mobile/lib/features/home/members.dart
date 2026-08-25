@@ -46,6 +46,9 @@ class _MembersPageState extends State<MembersPage> {
         final profileLayout =
             visualTheme == HavenVisualTheme.simplyPlural ||
             visualTheme == HavenVisualTheme.ampersand;
+        if (profileLayout) {
+          return _buildProfileLayout(context, l10n, filters, members);
+        }
 
         return SpPage(
           children: [
@@ -65,7 +68,85 @@ class _MembersPageState extends State<MembersPage> {
               ),
             ),
             const SizedBox(height: 12),
-            if (profileLayout) ...[
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: l10n.navigationMembers,
+                    trailing: StatusPill(
+                      text: '${widget.snapshot?.memberCount ?? 0}',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (members.isEmpty)
+                    SpEmptyState(
+                      title: _query.trim().isEmpty && _filter == 'all'
+                          ? l10n.noMembersSavedLocally
+                          : l10n.noMatchingMembers,
+                      body: _query.trim().isEmpty && _filter == 'all'
+                          ? l10n.membersEmptyBody
+                          : l10n.tryAnotherSearchOrFilter,
+                    )
+                  else
+                    for (final member in members) ...[
+                      MemberListTile(
+                        member: member,
+                        repository: widget.repository,
+                      ),
+                      if (member != members.last)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: l10n.addMemberButton,
+                    secondary: l10n.importTitle,
+                    onPrimary: () =>
+                        showAddMemberSheet(context, widget.repository),
+                    onSecondary: widget.onImport,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileLayout(
+    BuildContext context,
+    AppLocalizations l10n,
+    Map<String, String> filters,
+    List<MemberSummary> members,
+  ) {
+    final visualTheme = _visualThemeOf(context);
+    final padding = visualTheme == HavenVisualTheme.simplyPlural
+        ? const EdgeInsets.fromLTRB(8, 10, 8, 20)
+        : const EdgeInsets.fromLTRB(14, 12, 14, 24);
+    final empty = members.isEmpty;
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: padding.copyWith(bottom: 8),
+          sliver: SliverList.list(
+            children: [
+              SpSearchField(
+                hintText: l10n.searchMembersHint,
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 12),
+              SpFilterRow(
+                filters: filters.values.toList(growable: false),
+                selected: filters[_filter]!,
+                onSelected: (label) => setState(
+                  () => _filter = filters.entries
+                      .firstWhere((entry) => entry.value == label)
+                      .key,
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -84,8 +165,8 @@ class _MembersPageState extends State<MembersPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              if (members.isEmpty)
+              if (empty) ...[
+                const SizedBox(height: 8),
                 SpEmptyState(
                   title: _query.trim().isEmpty && _filter == 'all'
                       ? l10n.noMembersSavedLocally
@@ -93,72 +174,42 @@ class _MembersPageState extends State<MembersPage> {
                   body: _query.trim().isEmpty && _filter == 'all'
                       ? l10n.membersEmptyBody
                       : l10n.tryAnotherSearchOrFilter,
-                )
-              else
-                for (final member in members)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: SpCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      child: MemberListTile(
-                        member: member,
-                        repository: widget.repository,
-                      ),
-                    ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (!empty)
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: padding.left),
+            sliver: SliverList.builder(
+              itemCount: members.length,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SpCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-              const SizedBox(height: 6),
-              OutlinedButton.icon(
-                onPressed: widget.onImport,
-                icon: const Icon(Icons.file_download_outlined),
-                label: Text(l10n.importTitle),
-              ),
-            ] else
-              SpCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SpSectionHeader(
-                      title: l10n.navigationMembers,
-                      trailing: StatusPill(
-                        text: '${widget.snapshot?.memberCount ?? 0}',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (members.isEmpty)
-                      SpEmptyState(
-                        title: _query.trim().isEmpty && _filter == 'all'
-                            ? l10n.noMembersSavedLocally
-                            : l10n.noMatchingMembers,
-                        body: _query.trim().isEmpty && _filter == 'all'
-                            ? l10n.membersEmptyBody
-                            : l10n.tryAnotherSearchOrFilter,
-                      )
-                    else
-                      for (final member in members) ...[
-                        MemberListTile(
-                          member: member,
-                          repository: widget.repository,
-                        ),
-                        if (member != members.last)
-                          const Divider(height: 1, color: _spLine),
-                      ],
-                    const SizedBox(height: 14),
-                    SpActionRow(
-                      primary: l10n.addMemberButton,
-                      secondary: l10n.importTitle,
-                      onPrimary: () =>
-                          showAddMemberSheet(context, widget.repository),
-                      onSecondary: widget.onImport,
-                    ),
-                  ],
+                  child: MemberListTile(
+                    member: members[index],
+                    repository: widget.repository,
+                  ),
                 ),
               ),
-          ],
-        );
-      },
+            ),
+          ),
+        SliverPadding(
+          padding: padding.copyWith(top: 6),
+          sliver: SliverToBoxAdapter(
+            child: OutlinedButton.icon(
+              onPressed: widget.onImport,
+              icon: const Icon(Icons.file_download_outlined),
+              label: Text(l10n.importTitle),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1280,7 +1331,7 @@ class MemberAvatar extends StatelessWidget {
 }
 
 Future<Uint8List?> _localAvatarFile(String avatarUrl) =>
-    LocalAvatarStore().read(avatarUrl);
+    _localAvatarStore.read(avatarUrl);
 
 String _initialFor(String value) {
   final trimmed = value.trim();

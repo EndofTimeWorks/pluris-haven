@@ -82,8 +82,11 @@ class HavenMasterKeyStore {
   static const _masterKeyName = 'pluris_haven.master_key.v1';
   final SecureValueStore _storage;
   final MasterKeyProvisioningStore _provisioningStore;
+  late final Future<HavenCrypto> _crypto = _loadOrCreateCrypto();
 
-  Future<HavenCrypto> loadOrCreateCrypto() async {
+  Future<HavenCrypto> loadOrCreateCrypto() => _crypto;
+
+  Future<HavenCrypto> _loadOrCreateCrypto() async {
     final stored = await _storage.read(_masterKeyName);
     if (stored != null && stored.isNotEmpty) {
       final bytes = base64Url.decode(stored);

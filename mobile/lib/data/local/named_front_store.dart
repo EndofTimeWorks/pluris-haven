@@ -6,51 +6,44 @@ extension LocalHavenRepositoryNamedFronts on LocalHavenRepository {
       ..where((nf) => nf.systemId.equals(localSystemId))
       ..orderBy([(nf) => OrderingTerm(expression: nf.createdAt)]);
     return query.watch().asyncMap(
-      (rows) async => [
-        for (final row in rows)
-          row.copyWith(
-            name:
-                (await _decryptLocalText(
-                  row.name,
-                  'named_fronts',
-                  row.id,
-                  'name',
-                )) ??
-                '',
-            customLabel: Value(
-              await _decryptLocalText(
-                row.customLabel,
-                'named_fronts',
-                row.id,
-                'custom_label',
-              ),
+      (rows) => Future.wait(
+        rows.map((row) async {
+          final values = await Future.wait([
+            _decryptLocalText(row.name, 'named_fronts', row.id, 'name'),
+            _decryptLocalText(
+              row.customLabel,
+              'named_fronts',
+              row.id,
+              'custom_label',
             ),
-            colorHex: Value(
-              await _decryptLocalText(
-                row.colorHex,
-                'named_fronts',
-                row.id,
-                'color_hex',
-              ),
+            _decryptLocalText(
+              row.colorHex,
+              'named_fronts',
+              row.id,
+              'color_hex',
             ),
-            avatarUrl: Value(
-              await _decryptLocalText(
-                row.avatarUrl,
-                'named_fronts',
-                row.id,
-                'avatar_url',
-              ),
+            _decryptLocalText(
+              row.avatarUrl,
+              'named_fronts',
+              row.id,
+              'avatar_url',
             ),
-            description: Value(
-              await _decryptLocalText(
-                row.description,
-                'named_fronts',
-                row.id,
-                'description',
-              ),
+            _decryptLocalText(
+              row.description,
+              'named_fronts',
+              row.id,
+              'description',
             ),
-          ),
-      ],
+          ]);
+          return row.copyWith(
+            name: values[0] ?? '',
+            customLabel: Value(values[1]),
+            colorHex: Value(values[2]),
+            avatarUrl: Value(values[3]),
+            description: Value(values[4]),
+          );
+        }),
+      ),
     );
   }
 

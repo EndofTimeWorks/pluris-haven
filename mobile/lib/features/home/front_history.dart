@@ -16,16 +16,36 @@ class FrontHistoryPage extends StatefulWidget {
 
 class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _filter = 'all';
   String _query = '';
-  int _historyLimit = 100;
+  int _historyLimit = 25;
+  bool _loadingOlder = false;
   bool _showCalendar = true;
   DateTime _selectedDate = DateTime.now();
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadOlderAtEnd);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _loadOlderAtEnd() {
+    if (_loadingOlder || !_scrollController.hasClients) return;
+    if (_scrollController.position.extentAfter > 300) return;
+    final total = widget.snapshot?.frontHistoryCount ?? 0;
+    if (_historyLimit >= total) return;
+    setState(() {
+      _loadingOlder = true;
+      _historyLimit += 50;
+    });
   }
 
   @override
@@ -54,7 +74,17 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
             )
             .toList();
 
+        final hasMore =
+            (widget.snapshot?.frontHistoryCount ?? entries.length) >
+            entries.length;
+        if (_loadingOlder && (!hasMore || entries.length >= _historyLimit)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _loadingOlder = false);
+          });
+        }
+
         return CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(10, 14, 10, 0),
@@ -182,16 +212,21 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                   },
                 ),
               ),
-            if (entries.length >= _historyLimit &&
-                (widget.snapshot?.frontHistoryCount ?? entries.length) >
-                    entries.length)
+            if (hasMore)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(10, 12, 10, 0),
                 sliver: SliverToBoxAdapter(
-                  child: OutlinedButton.icon(
-                    onPressed: () => setState(() => _historyLimit += 250),
-                    icon: const Icon(Icons.expand_more_rounded),
-                    label: Text(l10n.loadOlderFronts),
+                  child: Center(
+                    child: _loadingOlder
+                        ? const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : const SizedBox(height: 1),
                   ),
                 ),
               ),
