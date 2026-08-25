@@ -258,6 +258,9 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
   late final List<TextEditingController> _colors;
   late double _radius;
   late double _scale;
+  late double _spacing;
+  late double _borderWidth;
+  late double _elevation;
   String? _error;
 
   @override
@@ -274,6 +277,9 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
     ].map((value) => TextEditingController(text: value ?? '')).toList();
     _radius = appearance.cardRadius ?? 12;
     _scale = appearance.textScale ?? 1;
+    _spacing = appearance.spacingScale ?? 1;
+    _borderWidth = appearance.borderWidth ?? 1;
+    _elevation = appearance.cardElevation ?? 0;
   }
 
   @override
@@ -339,6 +345,33 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
             label: _scale.toStringAsFixed(1),
             onChanged: (value) => setState(() => _scale = value),
           ),
+          Text(l10n.spacingScaleLabel),
+          Slider(
+            value: _spacing,
+            min: .8,
+            max: 1.4,
+            divisions: 6,
+            label: _spacing.toStringAsFixed(1),
+            onChanged: (value) => setState(() => _spacing = value),
+          ),
+          Text(l10n.borderWidthLabel),
+          Slider(
+            value: _borderWidth,
+            min: 0,
+            max: 4,
+            divisions: 8,
+            label: _borderWidth.toStringAsFixed(1),
+            onChanged: (value) => setState(() => _borderWidth = value),
+          ),
+          Text(l10n.cardElevationLabel),
+          Slider(
+            value: _elevation,
+            min: 0,
+            max: 12,
+            divisions: 12,
+            label: _elevation.round().toString(),
+            onChanged: (value) => setState(() => _elevation = value),
+          ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -375,6 +408,9 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
         outlineHex: _normalizeUiHexColor(colors[5]),
         cardRadius: _radius,
         textScale: _scale,
+        spacingScale: _spacing,
+        borderWidth: _borderWidth,
+        cardElevation: _elevation,
       ),
     );
     if (mounted) Navigator.pop(context);

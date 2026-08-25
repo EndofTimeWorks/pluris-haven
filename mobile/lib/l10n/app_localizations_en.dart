@@ -4096,6 +4096,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textScaleLabel => 'Text scale';
 
   @override
+  String get spacingScaleLabel => 'Spacing scale';
+
+  @override
+  String get borderWidthLabel => 'Border weight';
+
+  @override
+  String get cardElevationLabel => 'Card elevation';
+
+  @override
   String get saveAppearanceButton => 'Save appearance';
 
   @override

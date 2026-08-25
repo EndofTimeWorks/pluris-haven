@@ -89,6 +89,9 @@ class HavenAppearanceOverrides {
     this.outlineHex,
     this.cardRadius,
     this.textScale,
+    this.spacingScale,
+    this.borderWidth,
+    this.cardElevation,
   });
 
   final String? backgroundHex;
@@ -99,6 +102,9 @@ class HavenAppearanceOverrides {
   final String? outlineHex;
   final double? cardRadius;
   final double? textScale;
+  final double? spacingScale;
+  final double? borderWidth;
+  final double? cardElevation;
 
   Color? get backgroundColor => _color(backgroundHex);
   Color? get surfaceColor => _color(surfaceHex);
@@ -115,7 +121,10 @@ class HavenAppearanceOverrides {
       mutedTextHex == null &&
       outlineHex == null &&
       cardRadius == null &&
-      textScale == null;
+      textScale == null &&
+      spacingScale == null &&
+      borderWidth == null &&
+      cardElevation == null;
 
   Map<String, Object> toJson() => {
     'background': ?backgroundHex,
@@ -126,6 +135,9 @@ class HavenAppearanceOverrides {
     'outline': ?outlineHex,
     'cardRadius': ?cardRadius,
     'textScale': ?textScale,
+    'spacingScale': ?spacingScale,
+    'borderWidth': ?borderWidth,
+    'cardElevation': ?cardElevation,
   };
 
   static HavenAppearanceOverrides fromJson(String? value) {
@@ -153,6 +165,9 @@ class HavenAppearanceOverrides {
         outlineHex: normalizeHexColor(map['outline'] as String?),
         cardRadius: number('cardRadius', minimum: 0, maximum: 48),
         textScale: number('textScale', minimum: 0.8, maximum: 2),
+        spacingScale: number('spacingScale', minimum: 0.8, maximum: 1.4),
+        borderWidth: number('borderWidth', minimum: 0, maximum: 4),
+        cardElevation: number('cardElevation', minimum: 0, maximum: 12),
       );
     } on FormatException {
       return const HavenAppearanceOverrides();

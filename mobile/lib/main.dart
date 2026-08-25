@@ -314,6 +314,9 @@ class PlurisHavenApp extends StatelessWidget {
     final effectiveMuted = appearance.mutedTextColor ?? muted;
     final effectiveOutline = appearance.outlineColor ?? outline;
     final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
+    final spacingScale = appearance.spacingScale ?? 1;
+    final borderWidth = appearance.borderWidth ?? 1;
+    final cardElevation = appearance.cardElevation ?? 0;
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme(
@@ -341,9 +344,11 @@ class PlurisHavenApp extends StatelessWidget {
         surfaceTint: accent,
       ),
       scaffoldBackgroundColor: effectiveBackground,
-      visualDensity: customization.compactLists
-          ? VisualDensity.compact
-          : VisualDensity.standard,
+      visualDensity: VisualDensity(
+        vertical:
+            (customization.compactLists ? -1 : 0) + (1 - spacingScale) * 4,
+        horizontal: (1 - spacingScale) * 4,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: effectiveSurface,
         foregroundColor: effectiveOnSurface,
@@ -354,7 +359,10 @@ class PlurisHavenApp extends StatelessWidget {
         backgroundColor: effectiveSurface,
         scrimColor: Colors.black.withValues(alpha: 0.6),
       ),
-      dividerTheme: DividerThemeData(color: effectiveOutline, thickness: 1),
+      dividerTheme: DividerThemeData(
+        color: effectiveOutline,
+        thickness: borderWidth,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: effectiveBackground,
@@ -362,7 +370,7 @@ class PlurisHavenApp extends StatelessWidget {
       ),
       cardTheme: CardThemeData(
         color: card,
-        elevation: 0,
+        elevation: cardElevation,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
         ),

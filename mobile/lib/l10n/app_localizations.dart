@@ -7086,6 +7086,24 @@ abstract class AppLocalizations {
   /// **'Text scale'**
   String get textScaleLabel;
 
+  /// No description provided for @spacingScaleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spacing scale'**
+  String get spacingScaleLabel;
+
+  /// No description provided for @borderWidthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Border weight'**
+  String get borderWidthLabel;
+
+  /// No description provided for @cardElevationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Card elevation'**
+  String get cardElevationLabel;
+
   /// No description provided for @saveAppearanceButton.
   ///
   /// In en, this message translates to:
