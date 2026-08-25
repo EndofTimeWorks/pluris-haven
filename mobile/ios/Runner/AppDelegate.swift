@@ -56,6 +56,20 @@ import UniformTypeIdentifiers
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     timezoneChannel.setMethodCallHandler(handleTimezoneCall)
+    let screenCaptureChannel = FlutterMethodChannel(
+      name: "works.endoftime.plurishaven/screen_capture",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    screenCaptureChannel.setMethodCallHandler { call, result in
+      guard call.method == "setEnabled",
+            let enabled = (call.arguments as? [String: Any])?["enabled"] as? Bool
+      else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      UserDefaults.standard.set(enabled, forKey: "pluris_haven_screen_capture_protection")
+      result(nil)
+    }
   }
 
   // Android already excludes app data from backup entirely (allowBackup
@@ -187,6 +201,7 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
   private var pendingResult: FlutterResult?
   private var operation: Operation?
   private var maximumBytes = 32 * 1024 * 1024
+  private var allowedExtensions = Set<String>()
 
   init(presenter: @escaping () -> UIViewController?) {
     self.presenter = presenter
@@ -211,15 +226,16 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
         contentTypes = [.image]
       } else {
         let resolved = extensions.compactMap { UTType(filenameExtension: $0) }
-        contentTypes = resolved.isEmpty ? [.data] : resolved
+        contentTypes = resolved.count == extensions.count ? resolved : [.data]
       }
+      allowedExtensions = Set(extensions.map { $0.lowercased() })
       maximumBytes = (arguments?["maximumBytes"] as? NSNumber)?.intValue ?? 32 * 1024 * 1024
       guard maximumBytes > 0 else {
         result(FlutterError(code: "invalid_limit", message: "File size limit must be positive.", details: nil))
         return
       }
       try? FileManager.default.removeItem(at: pickedFilesDirectory)
-      let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: false)
+      let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: true)
       picker.allowsMultipleSelection = arguments?["allowMultiple"] as? Bool ?? false
       picker.delegate = self
       pendingResult = result
@@ -256,12 +272,27 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
       return
     }
     do {
+      for url in urls where !allowedExtensions.isEmpty {
+        let extension = url.pathExtension.lowercased()
+        guard allowedExtensions.contains(extension) else {
+          throw NSError(
+            domain: "PlurisHavenImport",
+            code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "Selected file type is not supported."]
+          )
+        }
+      }
       let files = try urls.map(copySelectionToTemporaryDirectory)
       result?(files)
     } catch let error as NSError {
-      let code = error.domain == "PlurisHavenImport" && error.code == 1
-        ? "pick_too_large"
-        : "pick_failed"
+      let code: String
+      if error.domain == "PlurisHavenImport" && error.code == 1 {
+        code = "pick_too_large"
+      } else if error.domain == "PlurisHavenImport" && error.code == 3 {
+        code = "pick_unsupported_type"
+      } else {
+        code = "pick_failed"
+      }
       result?(FlutterError(code: code, message: error.localizedDescription, details: nil))
     }
   }

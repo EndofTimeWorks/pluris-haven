@@ -140,8 +140,12 @@ class AppOptionsPage extends StatelessWidget {
               onChanged: repository.setAppLockEnabled,
             ),
             SpSwitchRow(
-              title: l10n.screenshotBlockingTitle,
-              subtitle: l10n.screenshotBlockingSubtitle,
+              title: defaultTargetPlatform == TargetPlatform.iOS
+                  ? l10n.iosPrivacyScreenTitle
+                  : l10n.screenshotBlockingTitle,
+              subtitle: defaultTargetPlatform == TargetPlatform.iOS
+                  ? l10n.iosPrivacyScreenSubtitle
+                  : l10n.screenshotBlockingSubtitle,
               value: customization.screenshotBlockingEnabled,
               onChanged: repository.setScreenshotBlockingEnabled,
             ),

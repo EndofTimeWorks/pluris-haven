@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -163,13 +162,11 @@ class PlurisHavenApp extends StatelessWidget {
       initialData: AppCustomization.defaults,
       builder: (context, snapshot) {
         final customization = snapshot.data ?? AppCustomization.defaults;
-        if (defaultTargetPlatform == TargetPlatform.android) {
-          unawaited(
-            ScreenCaptureProtection.setEnabled(
-              customization.screenshotBlockingEnabled,
-            ),
-          );
-        }
+        unawaited(
+          ScreenCaptureProtection.setEnabled(
+            customization.screenshotBlockingEnabled,
+          ),
+        );
 
         return DynamicColorBuilder(
           builder: (lightDynamic, darkDynamic) => _buildApp(

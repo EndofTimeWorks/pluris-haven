@@ -11,6 +11,10 @@ final class NativePickedFileTooLargeException implements Exception {
   const NativePickedFileTooLargeException();
 }
 
+final class NativePickedFileUnsupportedTypeException implements Exception {
+  const NativePickedFileUnsupportedTypeException();
+}
+
 class NativePlatformFile {
   const NativePlatformFile({
     required this.name,
@@ -98,6 +102,9 @@ class NativeFileDialog {
     } on PlatformException catch (error) {
       if (error.code == 'pick_too_large') {
         throw const NativePickedFileTooLargeException();
+      }
+      if (error.code == 'pick_unsupported_type') {
+        throw const NativePickedFileUnsupportedTypeException();
       }
       rethrow;
     }

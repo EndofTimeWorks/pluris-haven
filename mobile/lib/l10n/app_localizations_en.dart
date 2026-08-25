@@ -80,6 +80,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'hide app content from screenshots and screen recordings';
 
   @override
+  String get iosPrivacyScreenTitle => 'Privacy screen';
+
+  @override
+  String get iosPrivacyScreenSubtitle =>
+      'hide app content in the app switcher and during screen recording';
+
+  @override
   String get appLockReason => 'Unlock Pluris Haven';
 
   @override

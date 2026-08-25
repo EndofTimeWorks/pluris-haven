@@ -9,7 +9,7 @@ class ScreenCaptureProtection {
     try {
       await _channel.invokeMethod<void>('setEnabled', {'enabled': enabled});
     } on MissingPluginException {
-      // Screen capture protection is currently Android-only.
+      // Unsupported desktop and web targets intentionally have no native hook.
     }
   }
 }

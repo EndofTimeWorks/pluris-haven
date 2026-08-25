@@ -229,6 +229,18 @@ abstract class AppLocalizations {
   /// **'hide app content from screenshots and screen recordings'**
   String get screenshotBlockingSubtitle;
 
+  /// No description provided for @iosPrivacyScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy screen'**
+  String get iosPrivacyScreenTitle;
+
+  /// No description provided for @iosPrivacyScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'hide app content in the app switcher and during screen recording'**
+  String get iosPrivacyScreenSubtitle;
+
   /// No description provided for @appLockReason.
   ///
   /// In en, this message translates to:

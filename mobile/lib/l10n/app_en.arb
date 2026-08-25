@@ -25,6 +25,8 @@
   "appLockSubtitle": "require your device screen lock or biometrics to open the app",
   "screenshotBlockingTitle": "Block screenshots",
   "screenshotBlockingSubtitle": "hide app content from screenshots and screen recordings",
+  "iosPrivacyScreenTitle": "Privacy screen",
+  "iosPrivacyScreenSubtitle": "hide app content in the app switcher and during screen recording",
   "appLockReason": "Unlock Pluris Haven",
   "appLockedTitle": "Pluris Haven is locked",
   "appLockedBody": "Unlock your device to continue.",
