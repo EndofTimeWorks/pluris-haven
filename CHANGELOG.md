@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.3.0-pre-alpha.3 - 2026-08-24
+
+Beta hardening and import performance: `0.3.0-pre-alpha.3+3003`.
+
+### Mobile privacy and recovery
+
+- Local avatar files are encrypted at rest and legacy plaintext avatar files
+  migrate in place. A missing device encryption key now fails closed instead of
+  silently replacing the key and making existing data unrecoverable.
+- Local records use opaque identifiers rather than creation timestamps.
+- Account deletion now has a 30-day grace window. Password reset links can
+  recover a deletion-scheduled account; login no longer restores it silently.
+- Remote backup restore validates metadata and enforces the declared byte total
+  while downloading.
+
+### Import and performance
+
+- Simply Plural imports recognise avatar ZIPs and can repair prior remote-avatar
+  references through the configured rescue endpoint.
+- Member, custom-front, and front-history views decrypt and construct only the
+  records they need. Profile member/front lists are virtualised, and front
+  history loads older entries when the end of the page is reached.
+- Debug builds now use a separate Android package and label, so they can remain
+  installed beside the release app without a signing conflict.
+
+### Server and release hardening
+
+- Auth and non-chunk API requests have request-size limits. Backup snapshots
+  and cleanup jobs enforce bounded storage, incomplete-upload expiry, and
+  resilient scheduled deletion cleanup.
+- The server distinguishes recovery from ordinary login, hides
+  deletion-scheduled accounts from social flows, and requires explicit proxy
+  trust in Compose deployments.
+- CI now audits Python dependencies, verifies PostgreSQL migrations, bounds job
+  duration, and checks the website CSP header.
+
 ## 0.3.0-pre-alpha.2 - 2026-08-21
 
 Privacy follow-up and repository maintenance: `0.3.0-pre-alpha.2+3002`.
