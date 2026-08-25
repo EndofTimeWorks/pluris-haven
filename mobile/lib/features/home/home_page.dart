@@ -191,24 +191,32 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => NavigationBar(
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         selectedIndex: switch (_section) {
-          SpSection.members => 0,
-          SpSection.frontHistory => 1,
-          SpSection.customFronts => 2,
-          _ => 3,
+          SpSection.members => 1,
+          SpSection.frontHistory => 2,
+          SpSection.customFronts => 3,
+          SpSection.dashboard => 0,
+          _ => 4,
         },
         onDestinationSelected: (index) {
           switch (index) {
             case 0:
-              _selectSection(SpSection.members);
+              _selectSection(SpSection.dashboard);
             case 1:
-              _selectSection(SpSection.frontHistory);
+              _selectSection(SpSection.members);
             case 2:
-              _selectSection(SpSection.customFronts);
+              _selectSection(SpSection.frontHistory);
             case 3:
+              _selectSection(SpSection.customFronts);
+            case 4:
               Scaffold.of(context).openDrawer();
           }
         },
         destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            label: l10n.navigationDashboard,
+          ),
           NavigationDestination(
             icon: const Icon(Icons.people_outline_rounded),
             selectedIcon: const Icon(Icons.people_rounded),
