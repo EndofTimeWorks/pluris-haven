@@ -51,6 +51,22 @@ void main() {
       orderedEquals(original),
     );
   });
+
+  test('caches a decrypted avatar between tile rebuilds', () async {
+    final original = Uint8List.fromList([137, 80, 78, 71, 8, 9, 10]);
+
+    await store.write('member.png', original);
+    expect(
+      await store.read('local-avatar:member.png'),
+      orderedEquals(original),
+    );
+    await File('${root.path}/member.png').delete();
+
+    expect(
+      await store.read('local-avatar:member.png'),
+      orderedEquals(original),
+    );
+  });
 }
 
 final class _MemorySecureValueStore implements SecureValueStore {

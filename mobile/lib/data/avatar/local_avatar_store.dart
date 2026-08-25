@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../security/master_key_store.dart';
 
 const localAvatarReferencePrefix = 'local-avatar:';
+const _maximumCachedAvatarBytes = 16 * 1024 * 1024;
 
 final class LocalAvatarStore {
   LocalAvatarStore({HavenMasterKeyStore? keyStore, this._rootDirectory})
@@ -14,18 +15,28 @@ final class LocalAvatarStore {
 
   final HavenMasterKeyStore _keyStore;
   final Future<Directory> Function()? _rootDirectory;
+  final Map<String, Uint8List> _readCache = {};
+  var _cachedBytes = 0;
 
   Future<Uint8List?> read(String reference) async {
+    final cached = _readCache.remove(reference);
+    if (cached != null) {
+      _readCache[reference] = cached;
+      return cached;
+    }
     final file = await _fileForReference(reference);
     if (file == null || !await file.exists()) return null;
     final stored = await file.readAsBytes();
-    if (!_isEncrypted(stored)) return stored;
-    final name = file.uri.pathSegments.last;
-    final plain = await (await _keyStore.loadOrCreateCrypto()).decryptBytes(
-      utf8.decode(stored),
-      aad: utf8.encode('avatar:$name'),
-    );
-    return Uint8List.fromList(plain);
+    final bytes = _isEncrypted(stored)
+        ? Uint8List.fromList(
+            await (await _keyStore.loadOrCreateCrypto()).decryptBytes(
+              utf8.decode(stored),
+              aad: utf8.encode('avatar:${file.uri.pathSegments.last}'),
+            ),
+          )
+        : stored;
+    _cache(reference, bytes);
+    return bytes;
   }
 
   Future<void> write(String fileName, Uint8List bytes) async {
@@ -44,6 +55,7 @@ final class LocalAvatarStore {
     final temporary = File('${file.path}.tmp');
     await temporary.writeAsBytes(utf8.encode(encrypted), flush: true);
     await temporary.rename(file.path);
+    _evict('local-avatar:$fileName');
   }
 
   Future<void> migrateLegacyFiles() async {
@@ -90,4 +102,19 @@ final class LocalAvatarStore {
 
   bool _validFileName(String name) =>
       name.isNotEmpty && !name.contains('/') && !name.contains('\\');
+
+  void _cache(String reference, Uint8List bytes) {
+    if (bytes.length > _maximumCachedAvatarBytes) return;
+    while (_cachedBytes + bytes.length > _maximumCachedAvatarBytes &&
+        _readCache.isNotEmpty) {
+      _evict(_readCache.keys.first);
+    }
+    _readCache[reference] = bytes;
+    _cachedBytes += bytes.length;
+  }
+
+  void _evict(String reference) {
+    final existing = _readCache.remove(reference);
+    if (existing != null) _cachedBytes -= existing.length;
+  }
 }
