@@ -55,6 +55,28 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('appearance text scale reaches the app media contract', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.setAppearanceOverrides(
+      const HavenAppearanceOverrides(textScale: 1.25),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    final mediaQueries = tester.widgetList<MediaQuery>(find.byType(MediaQuery));
+    final appMediaQuery = mediaQueries.last;
+    expect(appMediaQuery.data.textScaler.scale(16), closeTo(20, 0.01));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   test('app customization defaults keep accessibility opt-in and explicit', () {
     expect(AppCustomization.defaults.reducedMotion, isFalse);
     expect(AppCustomization.defaults.highContrast, isFalse);

@@ -208,15 +208,21 @@ class PlurisHavenApp extends StatelessWidget {
       ),
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
+        final baseTextScaler = customization.largeText
+            ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
+            : mediaQuery.textScaler;
+        final appearanceTextScale = customization.appearance.textScale ?? 1;
         return MediaQuery(
           data: mediaQuery.copyWith(
             accessibleNavigation:
                 customization.reducedMotion || mediaQuery.accessibleNavigation,
             disableAnimations:
                 customization.reducedMotion || mediaQuery.disableAnimations,
-            textScaler: customization.largeText
-                ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
-                : mediaQuery.textScaler,
+            textScaler: appearanceTextScale == 1
+                ? baseTextScaler
+                : TextScaler.linear(
+                    baseTextScaler.scale(1) * appearanceTextScale,
+                  ),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -249,21 +255,43 @@ class PlurisHavenApp extends StatelessWidget {
     Brightness brightness, {
     ColorScheme? dynamicScheme,
   }) {
+    final appearance = customization.appearance;
+    final spacingScale = appearance.spacingScale ?? 1;
+    final borderWidth = appearance.borderWidth ?? 1;
+    final cardElevation = appearance.cardElevation ?? 0;
+    final visualDensity = VisualDensity(
+      vertical: (customization.compactLists ? -1 : 0) + (1 - spacingScale) * 4,
+      horizontal: (1 - spacingScale) * 4,
+    );
     if (customization.visualTheme == HavenVisualTheme.materialYou &&
         dynamicScheme != null) {
-      return ThemeData.from(
-        colorScheme: dynamicScheme,
-        useMaterial3: true,
-      ).copyWith(
+      final scheme = dynamicScheme.copyWith(
+        surface: appearance.surfaceColor ?? dynamicScheme.surface,
+        surfaceContainerHighest:
+            appearance.cardColor ?? dynamicScheme.surfaceContainerHighest,
+        onSurface: appearance.textColor ?? dynamicScheme.onSurface,
+        onSurfaceVariant:
+            appearance.mutedTextColor ?? dynamicScheme.onSurfaceVariant,
+        outline: appearance.outlineColor ?? dynamicScheme.outline,
+        outlineVariant: appearance.outlineColor ?? dynamicScheme.outlineVariant,
+      );
+      return ThemeData.from(colorScheme: scheme, useMaterial3: true).copyWith(
         extensions: [HavenVisualThemeExtension(customization.visualTheme)],
-        visualDensity: customization.compactLists
-            ? VisualDensity.compact
-            : VisualDensity.standard,
+        scaffoldBackgroundColor: appearance.backgroundColor ?? scheme.surface,
+        visualDensity: visualDensity,
+        appBarTheme: AppBarTheme(
+          backgroundColor: scheme.surface,
+          foregroundColor: scheme.onSurface,
+        ),
+        dividerTheme: DividerThemeData(
+          color: scheme.outline,
+          thickness: borderWidth,
+        ),
         cardTheme: CardThemeData(
-          color: dynamicScheme.surfaceContainerHighest,
-          elevation: 0,
+          color: scheme.surfaceContainerHighest,
+          elevation: cardElevation,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(appearance.cardRadius ?? 14),
           ),
           margin: EdgeInsets.zero,
         ),
@@ -306,7 +334,6 @@ class PlurisHavenApp extends StatelessWidget {
         : highContrast
         ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
         : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
-    final appearance = customization.appearance;
     final effectiveSurface = appearance.surfaceColor ?? surface;
     final effectiveBackground = appearance.backgroundColor ?? background;
     final effectiveCard = appearance.cardColor ?? card;
@@ -314,9 +341,6 @@ class PlurisHavenApp extends StatelessWidget {
     final effectiveMuted = appearance.mutedTextColor ?? muted;
     final effectiveOutline = appearance.outlineColor ?? outline;
     final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
-    final spacingScale = appearance.spacingScale ?? 1;
-    final borderWidth = appearance.borderWidth ?? 1;
-    final cardElevation = appearance.cardElevation ?? 0;
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme(
@@ -344,11 +368,7 @@ class PlurisHavenApp extends StatelessWidget {
         surfaceTint: accent,
       ),
       scaffoldBackgroundColor: effectiveBackground,
-      visualDensity: VisualDensity(
-        vertical:
-            (customization.compactLists ? -1 : 0) + (1 - spacingScale) * 4,
-        horizontal: (1 - spacingScale) * 4,
-      ),
+      visualDensity: visualDensity,
       appBarTheme: AppBarTheme(
         backgroundColor: effectiveSurface,
         foregroundColor: effectiveOnSurface,
