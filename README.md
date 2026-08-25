@@ -62,8 +62,9 @@ scripts/build-mobile.sh ios-check
 scripts/build-mobile.sh ios-debug
 ```
 
-The iOS targets require macOS and Xcode. They compile without code signing and
-do not produce an installable or App Store-ready IPA.
+The iOS targets require macOS and Xcode. They produce an unsigned IPA that can
+be re-signed for tester installation with AltStore, SideStore, or Sideloadly;
+it is not App Store-ready.
 
 ## Website
 
