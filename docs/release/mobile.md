@@ -17,11 +17,13 @@ Use a dev build for routine testing between versioned releases.
 3. Wait for the `CI` workflow.
 4. Open GitHub Releases and check that the new prerelease contains:
    - `pluris-haven-dev.apk`
+   - `pluris-haven-dev-unsigned.ipa`
    - `BUILD.txt`
    - `SHA256SUMS.txt`
 
 Nothing else is needed. On pushes to `main`, `CI` builds a release-mode APK with
-the configured Android upload key. The publish job reuses that signed artefact.
+the configured Android upload key and an unsigned iOS IPA. The publish job
+reuses those artefacts. Re-sign the IPA with AltStore, SideStore, or Sideloadly.
 If the version is not a `.dev.N` version, or its build number is not newer than
 the existing tags, publishing is skipped.
 

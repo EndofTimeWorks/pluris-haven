@@ -9,12 +9,14 @@ Primary pre-alpha builds are GitHub Releases APKs.
 - Repository: `https://github.com/EndofTimeWorks/pluris-haven`
 - Package id: `works.endoftime.plurishaven`
 - Dev APK asset: `pluris-haven-dev.apk`
+- Dev iOS asset: `pluris-haven-dev-unsigned.ipa`
 - Dev tags: `mobile-v0.2.0-pre-alpha.N.dev.N+BUILD`
 - Versioned tags: `mobile-v0.2.0-pre-alpha.N+BUILD`
 
 Dev prereleases are published automatically after the mobile CI job succeeds.
-They are release-mode APKs signed with the same Android upload key as versioned
-builds, so Obtainium can update them without exposing Flutter's debug service.
+They include a release-mode APK signed with the same Android upload key as
+versioned builds, so Obtainium can update it without exposing Flutter's debug
+service. They also include an unsigned, release-mode IPA for iOS testers.
 Versioned releases require a maintainer-pushed GPG-signed tag; GitHub then
 builds and publishes the Android and iOS artifacts automatically.
 
