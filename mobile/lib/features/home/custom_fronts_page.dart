@@ -339,7 +339,6 @@ class _CustomFrontRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final title = _frontTitle(front);
     final description = front.description?.trim();
-    final colorHex = front.colorHex?.trim();
 
     return Column(
       children: [
@@ -360,22 +359,13 @@ class _CustomFrontRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    colorHex == null || colorHex.isEmpty
-                        ? l10n.customFrontLabel
-                        : colorHex,
-                  ),
-                  if (description != null && description.isNotEmpty)
-                    Text(
+              subtitle: description == null || description.isEmpty
+                  ? null
+                  : Text(
                       description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                ],
-              ),
               onTap: onEdit,
               trailing: compactActions
                   ? Row(
