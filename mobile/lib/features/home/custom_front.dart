@@ -606,13 +606,14 @@ class _NamedFrontAvatar extends StatelessWidget {
     final label = front.customLabel?.trim().isNotEmpty == true
         ? front.customLabel!.trim()
         : front.name;
+    final avatarLabel = _customFrontAvatarInitial(label);
     final avatarUrl = front.avatarUrl;
 
     if (avatarUrl == null || avatarUrl.trim().isEmpty) {
       return SpAvatar(
         size: 34,
         color: color,
-        label: _initialFor(label),
+        label: avatarLabel,
         semanticLabel: l10n.avatarForLabel(label),
       );
     }
@@ -623,7 +624,7 @@ class _NamedFrontAvatar extends StatelessWidget {
           return SpAvatar(
             size: 34,
             color: color,
-            label: _initialFor(label),
+            label: avatarLabel,
             image: snapshot.data == null ? null : MemoryImage(snapshot.data!),
             semanticLabel: l10n.avatarForLabel(label),
           );
@@ -634,7 +635,7 @@ class _NamedFrontAvatar extends StatelessWidget {
       return SpAvatar(
         size: 34,
         color: color,
-        label: _initialFor(label),
+        label: avatarLabel,
         image: NetworkImage(avatarUrl),
         semanticLabel: l10n.avatarForLabel(label),
       );
@@ -642,8 +643,18 @@ class _NamedFrontAvatar extends StatelessWidget {
     return SpAvatar(
       size: 34,
       color: color,
-      label: _initialFor(label),
+      label: avatarLabel,
       semanticLabel: l10n.avatarForLabel(label),
     );
   }
+}
+
+String _customFrontAvatarInitial(String label) {
+  final withoutNumberPrefix = label.replaceFirst(
+    RegExp(r'^\d+\s*[:.)-]?\s*'),
+    '',
+  );
+  return _initialFor(
+    withoutNumberPrefix.trim().isEmpty ? label : withoutNumberPrefix,
+  );
 }
