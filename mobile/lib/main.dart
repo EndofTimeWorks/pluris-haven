@@ -20,9 +20,74 @@ import 'l10n/app_localizations_fallback.dart';
 import 'platform/native_file_dialog.dart';
 import 'platform/screen_capture_protection.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   appDebugLog('App startup');
+  runApp(const _BootstrapApp());
+}
+
+class _BootstrapApp extends StatefulWidget {
+  const _BootstrapApp();
+
+  @override
+  State<_BootstrapApp> createState() => _BootstrapAppState();
+}
+
+class _BootstrapAppState extends State<_BootstrapApp> {
+  LocalHavenRepository? _repository;
+  ServerAccountController? _serverAccount;
+  var _missingMasterKey = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_openLocalArchive());
+    });
+  }
+
+  Future<void> _openLocalArchive() async {
+    final database = AppDatabase();
+    late final HavenCrypto crypto;
+    try {
+      crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+    } on MissingMasterKeyException {
+      if (mounted) setState(() => _missingMasterKey = true);
+      return;
+    }
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+    await repository.migrateMemberNamesToEncryption();
+    final serverAccount = ServerAccountController();
+    appDebugLog('Local repository ready');
+
+    if (!mounted) return;
+    setState(() {
+      _repository = repository;
+      _serverAccount = serverAccount;
+    });
+    unawaited(_completeStartup());
+    unawaited(repository.repairRemoteAvatars());
+    unawaited(serverAccount.initialize());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_missingMasterKey) return const MissingMasterKeyApp();
+    final repository = _repository;
+    if (repository != null) {
+      return PlurisHavenApp(
+        repository: repository,
+        serverAccount: _serverAccount,
+      );
+    }
+    return const MaterialApp(
+      home: Scaffold(body: Center(child: CircularProgressIndicator())),
+    );
+  }
+}
+
+Future<void> _completeStartup() async {
   final staleExports =
       await NativeFileDialog.clearStaleExportTemporaryDirectories();
   if (staleExports > 0) {
@@ -46,24 +111,6 @@ Future<void> main() async {
       stackTrace: stackTrace,
     );
   }
-
-  final database = AppDatabase();
-  late final HavenCrypto crypto;
-  try {
-    crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
-  } on MissingMasterKeyException {
-    runApp(const MissingMasterKeyApp());
-    return;
-  }
-  final repository = LocalHavenRepository(database, crypto: crypto);
-  await repository.ensureLocalSystem();
-  await repository.migrateMemberNamesToEncryption();
-  final serverAccount = ServerAccountController();
-  appDebugLog('Local repository ready');
-
-  runApp(PlurisHavenApp(repository: repository, serverAccount: serverAccount));
-  unawaited(repository.repairRemoteAvatars());
-  unawaited(serverAccount.initialize());
 }
 
 class MissingMasterKeyApp extends StatelessWidget {
@@ -125,55 +172,62 @@ class PlurisHavenApp extends StatelessWidget {
         }
 
         return DynamicColorBuilder(
-          builder: (lightDynamic, darkDynamic) => MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Pluris Haven',
-            locale: _locale(customization.languageCode),
-            supportedLocales: supportedLanguageLocales,
-            localizationsDelegates: const [
-              FallbackAppLocalizationsDelegate(),
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-            ],
-            themeMode: _themeMode(customization.themeMode),
-            theme: _buildTheme(
-              customization,
-              Brightness.light,
-              dynamicScheme: lightDynamic,
-            ),
-            darkTheme: _buildTheme(
-              customization,
-              Brightness.dark,
-              dynamicScheme: darkDynamic,
-            ),
-            builder: (context, child) {
-              final mediaQuery = MediaQuery.of(context);
-              return MediaQuery(
-                data: mediaQuery.copyWith(
-                  accessibleNavigation:
-                      customization.reducedMotion ||
-                      mediaQuery.accessibleNavigation,
-                  disableAnimations:
-                      customization.reducedMotion ||
-                      mediaQuery.disableAnimations,
-                  textScaler: customization.largeText
-                      ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
-                      : mediaQuery.textScaler,
-                ),
-                child: child ?? const SizedBox.shrink(),
-              );
-            },
-            home: AppLockGate(
-              enabled: customization.appLockEnabled,
-              child: HomePage(
-                repository: repository,
-                serverAccount: serverAccount,
-              ),
-            ),
+          builder: (lightDynamic, darkDynamic) => _buildApp(
+            customization,
+            lightDynamic: lightDynamic,
+            darkDynamic: darkDynamic,
           ),
         );
       },
+    );
+  }
+
+  Widget _buildApp(
+    AppCustomization customization, {
+    ColorScheme? lightDynamic,
+    ColorScheme? darkDynamic,
+  }) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Pluris Haven',
+      locale: _locale(customization.languageCode),
+      supportedLocales: supportedLanguageLocales,
+      localizationsDelegates: const [
+        FallbackAppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      themeMode: _themeMode(customization.themeMode),
+      theme: _buildTheme(
+        customization,
+        Brightness.light,
+        dynamicScheme: lightDynamic,
+      ),
+      darkTheme: _buildTheme(
+        customization,
+        Brightness.dark,
+        dynamicScheme: darkDynamic,
+      ),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            accessibleNavigation:
+                customization.reducedMotion || mediaQuery.accessibleNavigation,
+            disableAnimations:
+                customization.reducedMotion || mediaQuery.disableAnimations,
+            textScaler: customization.largeText
+                ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
+                : mediaQuery.textScaler,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      home: AppLockGate(
+        enabled: customization.appLockEnabled,
+        child: HomePage(repository: repository, serverAccount: serverAccount),
+      ),
     );
   }
 
