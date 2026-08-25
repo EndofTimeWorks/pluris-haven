@@ -2,4 +2,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://pluris.endoftime.works/sitemap.xml
+Sitemap: https://pluris.endoftime.dev/sitemap.xml

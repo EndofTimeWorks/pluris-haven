@@ -68,10 +68,10 @@ class UsefulLinksPage extends StatelessWidget {
             ),
             SpSettingsRow(
               l10n.whatsNewTitle,
-              'pluris.endoftime.works/changelog',
+              'pluris.endoftime.dev/changelog',
               onTap: () => launchExternalUrl(
                 context,
-                Uri.https('pluris.endoftime.works', '/changelog'),
+                Uri.https('pluris.endoftime.dev', '/changelog'),
               ),
             ),
             SpSettingsRow(

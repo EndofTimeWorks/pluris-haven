@@ -179,7 +179,7 @@
   </section>
 
   <footer>
-    <span>pluris.endoftime.works</span>
+    <span>pluris.endoftime.dev</span>
     <div>
       <a href="https://github.com/EndofTimeWorks/pluris-haven">Source</a>
       <a href="https://github.com/EndofTimeWorks/pluris-haven/issues">Issues</a>
