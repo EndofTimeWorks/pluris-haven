@@ -224,9 +224,11 @@ class LocalHavenRepository implements HavenRepository {
   Stream<List<MemberSummary>> watchMembers({
     bool includeArchived = false,
     bool includeCustomFronts = false,
+    bool listOnly = false,
   }) => _members.watch(
     includeArchived: includeArchived,
     includeCustomFronts: includeCustomFronts,
+    listOnly: listOnly,
   );
 
   @override

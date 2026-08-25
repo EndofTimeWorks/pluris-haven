@@ -94,6 +94,7 @@ class LocalMemberStore {
   Stream<List<MemberSummary>> watch({
     bool includeArchived = false,
     bool includeCustomFronts = false,
+    bool listOnly = false,
   }) {
     return database
         .customSelect(
@@ -164,24 +165,32 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
                   'color_hex',
                   data['color_hex'] as String?,
                 ),
-                decryptText(memberId, 'birthday', data['birthday'] as String?),
-                decryptText(memberId, 'emoji', data['emoji'] as String?),
+                if (!listOnly)
+                  decryptText(
+                    memberId,
+                    'birthday',
+                    data['birthday'] as String?,
+                  ),
+                if (!listOnly)
+                  decryptText(memberId, 'emoji', data['emoji'] as String?),
                 decryptText(memberId, 'privacy', data['privacy'] as String?),
-                decryptText(
-                  memberId,
-                  'description',
-                  data['description'] as String?,
-                ),
+                if (!listOnly)
+                  decryptText(
+                    memberId,
+                    'description',
+                    data['description'] as String?,
+                  ),
                 decryptText(
                   memberId,
                   'avatar_url',
                   data['avatar_url'] as String?,
                 ),
-                decryptText(
-                  memberId,
-                  'pluralkit_id',
-                  data['plural_kit_id'] as String?,
-                ),
+                if (!listOnly)
+                  decryptText(
+                    memberId,
+                    'pluralkit_id',
+                    data['plural_kit_id'] as String?,
+                  ),
               ]);
               final displayName = values[0];
               if (displayName == null) {
@@ -192,12 +201,12 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
                 displayName: displayName,
                 pronouns: values[1],
                 colorHex: values[2],
-                birthday: values[3],
-                emoji: values[4],
-                privacy: values[5],
-                description: values[6],
-                avatarUrl: values[7],
-                pluralKitId: values[8],
+                birthday: listOnly ? null : values[3],
+                emoji: listOnly ? null : values[4],
+                privacy: values[listOnly ? 3 : 5],
+                description: listOnly ? null : values[6],
+                avatarUrl: values[listOnly ? 4 : 7],
+                pluralKitId: listOnly ? null : values[8],
                 archived: _readSqlBool(data['archived']),
                 isCustomFront: _readSqlBool(data['is_custom_front']),
                 frameShape: data['frame_shape'] as String,

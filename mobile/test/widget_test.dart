@@ -2749,6 +2749,7 @@ class FakeHavenRepository implements HavenRepository {
   Stream<List<MemberSummary>> watchMembers({
     bool includeArchived = false,
     bool includeCustomFronts = false,
+    bool listOnly = false,
   }) async* {
     List<MemberSummary> filtered(List<MemberSummary> members) {
       return [

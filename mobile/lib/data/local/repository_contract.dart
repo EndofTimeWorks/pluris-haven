@@ -151,6 +151,7 @@ abstract interface class HavenRepository {
   Stream<List<MemberSummary>> watchMembers({
     bool includeArchived = false,
     bool includeCustomFronts = false,
+    bool listOnly = false,
   });
 
   Stream<List<MemberSummary>> watchCurrentFrontMembers();

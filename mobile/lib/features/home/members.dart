@@ -36,7 +36,10 @@ class _MembersPageState extends State<MembersPage> {
       'archived': l10n.archivedFilter,
     };
     return StreamBuilder<List<MemberSummary>>(
-      stream: widget.repository.watchMembers(includeArchived: true),
+      stream: widget.repository.watchMembers(
+        includeArchived: true,
+        listOnly: true,
+      ),
       initialData: const [],
       builder: (context, membersSnapshot) {
         final members = _filteredMembers(
@@ -222,11 +225,7 @@ class _MembersPageState extends State<MembersPage> {
 
     return [
       for (final member in members)
-        if (_matchesQuery(_query, [
-              member.displayName,
-              member.pronouns,
-              member.description,
-            ]) &&
+        if (_matchesQuery(_query, [member.displayName, member.pronouns]) &&
             switch (_filter) {
               'archived' => member.archived,
               'fronting' => frontNames.contains(
@@ -269,7 +268,11 @@ class MemberListTile extends StatelessWidget {
           _subtitle(l10n),
           style: const TextStyle(color: _spMuted),
         ),
-        onTap: () => showMemberProfileSheet(context, repository, member),
+        onTap: () async {
+          final fullMember = await _fullMember();
+          if (!context.mounted) return;
+          showMemberProfileSheet(context, repository, fullMember);
+        },
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -295,12 +298,16 @@ class MemberListTile extends StatelessWidget {
                     );
                   }
                 } else if (value == 'edit') {
-                  showMemberSheet(context, repository, member: member);
+                  final fullMember = await _fullMember();
+                  if (!context.mounted) return;
+                  showMemberSheet(context, repository, member: fullMember);
                 } else if (value == 'duplicate') {
+                  final fullMember = await _fullMember();
+                  if (!context.mounted) return;
                   showMemberSheet(
                     context,
                     repository,
-                    initialDraft: _duplicateMemberDraft(member, l10n),
+                    initialDraft: _duplicateMemberDraft(fullMember, l10n),
                   );
                 } else if (value == 'archive') {
                   repository.archiveMember(member.id);
@@ -360,6 +367,11 @@ class MemberListTile extends StatelessWidget {
 
   Color _memberColor(MemberSummary member) {
     return _colorFromHex(member.colorHex);
+  }
+
+  Future<MemberSummary> _fullMember() async {
+    final members = await repository.watchMembers(includeArchived: true).first;
+    return members.firstWhere((candidate) => candidate.id == member.id);
   }
 }
 
