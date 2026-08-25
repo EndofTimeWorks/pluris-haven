@@ -12,6 +12,12 @@ class SceneDelegate: FlutterSceneDelegate {
       name: UIScreen.capturedDidChangeNotification,
       object: UIScreen.main
     )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(screenCaptureProtectionChanged),
+      name: .plurisHavenScreenCaptureProtectionChanged,
+      object: nil
+    )
   }
 
   deinit {
@@ -36,6 +42,15 @@ class SceneDelegate: FlutterSceneDelegate {
     if UIScreen.main.isCaptured {
       showPrivacyOverlay()
     } else if let window, window.isKeyWindow {
+      privacyOverlay?.isHidden = true
+    }
+  }
+
+  @objc private func screenCaptureProtectionChanged(_ notification: Notification) {
+    let enabled = notification.userInfo?["enabled"] as? Bool ?? true
+    if enabled && UIScreen.main.isCaptured {
+      showPrivacyOverlay()
+    } else {
       privacyOverlay?.isHidden = true
     }
   }

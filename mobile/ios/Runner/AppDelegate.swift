@@ -72,6 +72,11 @@ import UniformTypeIdentifiers
         return
       }
       UserDefaults.standard.set(enabled, forKey: "pluris_haven_screen_capture_protection")
+      NotificationCenter.default.post(
+        name: .plurisHavenScreenCaptureProtectionChanged,
+        object: nil,
+        userInfo: ["enabled": enabled]
+      )
       result(nil)
     }
   }
@@ -193,6 +198,12 @@ import UniformTypeIdentifiers
     backgroundEngine = nil
     task.setTaskCompleted(success: success)
   }
+}
+
+extension Notification.Name {
+  static let plurisHavenScreenCaptureProtectionChanged = Notification.Name(
+    "pluris_haven_screen_capture_protection_changed"
+  )
 }
 
 private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate {
