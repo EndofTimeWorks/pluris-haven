@@ -21,6 +21,10 @@ import UniformTypeIdentifiers
       at: FileManager.default.temporaryDirectory
         .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
     )
+    try? FileManager.default.removeItem(
+      at: FileManager.default.temporaryDirectory
+        .appendingPathComponent("pluris-haven-avatar-shares", isDirectory: true)
+    )
     excludeAvatarsFromBackup()
     BGTaskScheduler.shared.register(
       forTaskWithIdentifier: backgroundTaskIdentifier,
@@ -195,6 +199,7 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
   private enum Operation {
     case opening
     case exporting
+    case sharing
   }
 
   private let presenter: () -> UIViewController?
@@ -257,6 +262,37 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
       pendingResult = result
       operation = .exporting
       presenter.present(picker, animated: true)
+    case "shareFile":
+      guard
+        let sourcePath = arguments?["sourcePath"] as? String,
+        let fileName = arguments?["fileName"] as? String,
+        FileManager.default.fileExists(atPath: sourcePath)
+      else {
+        result(FlutterError(code: "invalid_share", message: "Missing share source or filename.", details: nil))
+        return
+      }
+      let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pluris-haven-avatar-shares", isDirectory: true)
+      let safeName = URL(fileURLWithPath: fileName).lastPathComponent
+      let destination = directory.appendingPathComponent("\(UUID().uuidString)-\(safeName)")
+      do {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(atPath: sourcePath, toPath: destination.path)
+      } catch {
+        result(FlutterError(code: "share_failed", message: error.localizedDescription, details: nil))
+        return
+      }
+      pendingResult = result
+      operation = .sharing
+      let share = UIActivityViewController(activityItems: [destination], applicationActivities: nil)
+      share.completionWithItemsHandler = { [weak self] _, completed, _, _ in
+        try? FileManager.default.removeItem(at: destination)
+        let pending = self?.pendingResult
+        self?.pendingResult = nil
+        self?.operation = nil
+        pending?(completed)
+      }
+      presenter.present(share, animated: true)
     default:
       result(FlutterMethodNotImplemented)
     }

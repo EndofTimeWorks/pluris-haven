@@ -218,6 +218,8 @@ abstract interface class HavenRepository {
 
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
 
+  Future<Uint8List?> readAvatar(String reference);
+
   Future<void> setLanguageCode(String languageCode);
 
   Future<void> updateSystemProfile(SystemProfileDraft draft);

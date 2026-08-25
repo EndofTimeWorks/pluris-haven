@@ -70,4 +70,31 @@ void main() {
       throwsA(isA<NativePickedFileTooLargeException>()),
     );
   });
+
+  test('stages one temporary file for native avatar sharing', () async {
+    const channel = MethodChannel('works.endoftime.plurishaven/file_dialog');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    String? sourcePath;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'shareFile');
+      final arguments = call.arguments! as Map<Object?, Object?>;
+      expect(arguments['fileName'], 'River.png');
+      expect(arguments['mimeType'], 'image/png');
+      sourcePath = arguments['sourcePath']! as String;
+      expect(await File(sourcePath!).readAsBytes(), <int>[1, 2, 3]);
+      return true;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    final shared = await NativeFileDialog.shareBytes(
+      fileName: 'River.png',
+      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+      mimeType: 'image/png',
+    );
+
+    expect(shared, isTrue);
+    expect(sourcePath, isNotNull);
+    expect(await File(sourcePath!).exists(), isFalse);
+  });
 }

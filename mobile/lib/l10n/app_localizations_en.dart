@@ -3045,6 +3045,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get avatarSavedStatus => 'Avatar saved on device.';
 
   @override
+  String get saveAvatarCopyButton => 'Save avatar copy';
+
+  @override
+  String get shareAvatarTemporarilyButton => 'Share temporarily';
+
+  @override
+  String get avatarExportUnavailable =>
+      'This avatar is no longer available on this device.';
+
+  @override
+  String get avatarCopySaved => 'Avatar copy saved.';
+
+  @override
   String couldNotSaveAvatar(Object error) {
     return 'Could not save avatar: $error';
   }

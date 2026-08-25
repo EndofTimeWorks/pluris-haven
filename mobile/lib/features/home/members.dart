@@ -628,6 +628,18 @@ class MemberProfileSheet extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
+                if (_hasLocalAvatar(member)) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => _saveAvatarCopy(context),
+                    icon: const Icon(Icons.download_outlined),
+                    label: Text(l10n.saveAvatarCopyButton),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _shareAvatar(context),
+                    icon: const Icon(Icons.ios_share_outlined),
+                    label: Text(l10n.shareAvatarTemporarilyButton),
+                  ),
+                ],
                 if (!member.archived)
                   FilledButton.icon(
                     onPressed: () async {
@@ -700,7 +712,87 @@ class MemberProfileSheet extends StatelessWidget {
       ),
     );
   }
+
+  bool _hasLocalAvatar(MemberSummary member) =>
+      member.avatarUrl?.trim().startsWith(localAvatarReferencePrefix) == true;
+
+  Future<void> _saveAvatarCopy(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final bytes = await _avatarBytes();
+    if (!context.mounted) return;
+    if (bytes == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      return;
+    }
+    final saved = await NativeFileDialog.saveBytes(
+      dialogTitle: l10n.saveAvatarCopyButton,
+      fileName: _avatarExportFileName(member),
+      bytes: bytes,
+      mimeType: _avatarMimeType(member.avatarUrl),
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(saved ? l10n.avatarCopySaved : l10n.saveCancelled),
+      ),
+    );
+  }
+
+  Future<void> _shareAvatar(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final bytes = await _avatarBytes();
+    if (!context.mounted) return;
+    if (bytes == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      return;
+    }
+    await NativeFileDialog.shareBytes(
+      fileName: _avatarExportFileName(member),
+      bytes: bytes,
+      mimeType: _avatarMimeType(member.avatarUrl),
+    );
+  }
+
+  Future<Uint8List?> _avatarBytes() {
+    final reference = member.avatarUrl?.trim();
+    if (reference == null || reference.isEmpty) return Future.value();
+    return repository.readAvatar(reference);
+  }
 }
+
+String _avatarExportFileName(MemberSummary member) {
+  final name = member.displayName
+      .trim()
+      .replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  final safeName = name.isEmpty
+      ? 'avatar'
+      : name.length > 96
+      ? name.substring(0, 96)
+      : name;
+  return '$safeName${_avatarExtension(member.avatarUrl)}';
+}
+
+String _avatarExtension(String? reference) {
+  final name = reference?.split('/').last.toLowerCase() ?? '';
+  for (final extension in <String>['.png', '.jpg', '.jpeg', '.webp', '.gif']) {
+    if (name.endsWith(extension)) return extension;
+  }
+  return '.png';
+}
+
+String _avatarMimeType(String? reference) =>
+    switch (_avatarExtension(reference)) {
+      '.jpg' || '.jpeg' => 'image/jpeg',
+      '.webp' => 'image/webp',
+      '.gif' => 'image/gif',
+      _ => 'image/png',
+    };
 
 class MemberTagsSection extends StatelessWidget {
   const MemberTagsSection({

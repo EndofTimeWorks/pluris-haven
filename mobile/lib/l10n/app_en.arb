@@ -1174,6 +1174,10 @@
   "selectedImageTooLargeError": "Choose an image smaller than 10 MB.",
   "selectedImageUnsupportedTypeError": "Choose a PNG, JPEG, WebP, or GIF image.",
   "avatarSavedStatus": "Avatar saved on device.",
+  "saveAvatarCopyButton": "Save avatar copy",
+  "shareAvatarTemporarilyButton": "Share temporarily",
+  "avatarExportUnavailable": "This avatar is no longer available on this device.",
+  "avatarCopySaved": "Avatar copy saved.",
   "couldNotSaveAvatar": "Could not save avatar: {error}",
   "@couldNotSaveAvatar": {
     "placeholders": { "error": { "type": "Object" } }

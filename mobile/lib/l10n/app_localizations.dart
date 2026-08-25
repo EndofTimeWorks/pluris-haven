@@ -5346,6 +5346,30 @@ abstract class AppLocalizations {
   /// **'Avatar saved on device.'**
   String get avatarSavedStatus;
 
+  /// No description provided for @saveAvatarCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save avatar copy'**
+  String get saveAvatarCopyButton;
+
+  /// No description provided for @shareAvatarTemporarilyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Share temporarily'**
+  String get shareAvatarTemporarilyButton;
+
+  /// No description provided for @avatarExportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This avatar is no longer available on this device.'**
+  String get avatarExportUnavailable;
+
+  /// No description provided for @avatarCopySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar copy saved.'**
+  String get avatarCopySaved;
+
   /// No description provided for @couldNotSaveAvatar.
   ///
   /// In en, this message translates to:

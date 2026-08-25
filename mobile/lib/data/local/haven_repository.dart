@@ -361,6 +361,10 @@ class LocalHavenRepository implements HavenRepository {
       _customization.setDashboardShortcutIds(shortcutIds);
 
   @override
+  Future<Uint8List?> readAvatar(String reference) =>
+      _avatarStore.read(reference);
+
+  @override
   Future<void> setLanguageCode(String languageCode) =>
       _customization.setLanguageCode(languageCode);
 

@@ -16,6 +16,7 @@ import android.view.WindowManager;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.Data;
@@ -134,6 +135,7 @@ public final class MainActivity extends FlutterFragmentActivity {
         // A killed process cannot run Dart's per-file cleanup. Clear any
         // plaintext import staging left by an interrupted previous session.
         purgePickedFiles();
+        purgeSharedAvatars();
         new MethodChannel(
                 flutterEngine.getDartExecutor().getBinaryMessenger(),
                 FILE_DIALOG_CHANNEL
@@ -277,6 +279,9 @@ public final class MainActivity extends FlutterFragmentActivity {
             case "saveFile":
                 openSaveDialog(call, result);
                 break;
+            case "shareFile":
+                openShareDialog(call, result);
+                break;
             default:
                 result.notImplemented();
         }
@@ -343,6 +348,49 @@ public final class MainActivity extends FlutterFragmentActivity {
         pendingSaveResult = result;
         pendingSaveSource = sourcePath;
         saveLauncher.launch(intent);
+    }
+
+    private void openShareDialog(MethodCall call, MethodChannel.Result result) {
+        String sourcePath = call.argument("sourcePath");
+        String fileName = call.argument("fileName");
+        String mimeType = call.argument("mimeType");
+        if (isBlank(sourcePath) || isBlank(fileName)) {
+            result.error("invalid_share", "Missing share source or filename.", null);
+            return;
+        }
+        File source = new File(sourcePath);
+        if (!source.isFile()) {
+            result.error("invalid_share", "Share source does not exist.", null);
+            return;
+        }
+        File directory = new File(getCacheDir(), "shared-avatars");
+        if (!directory.mkdirs() && !directory.isDirectory()) {
+            result.error("share_failed", "Could not create temporary share directory.", null);
+            return;
+        }
+        String safeName = fileName.replaceAll("[^A-Za-z0-9._ -]", "_");
+        File shared = new File(directory, System.currentTimeMillis() + "-" + safeName);
+        try (InputStream input = new FileInputStream(source);
+             OutputStream output = new FileOutputStream(shared)) {
+            byte[] buffer = new byte[64 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+            Uri uri = FileProvider.getUriForFile(
+                    this,
+                    getPackageName() + ".fileprovider",
+                    shared
+            );
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType(isBlank(mimeType) ? "application/octet-stream" : mimeType);
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.setClipData(ClipData.newRawUri("avatar", uri));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, null));
+            result.success(true);
+        } catch (Exception error) {
+            if (!shared.delete() && shared.exists()) shared.deleteOnExit();
+            result.error("share_failed", error.getMessage(), null);
+        }
     }
 
     private List<Uri> selectedUris(Intent intent) {
@@ -429,6 +477,15 @@ public final class MainActivity extends FlutterFragmentActivity {
         if (files == null) return;
         for (File file : files) {
             if (file.isFile()) file.delete();
+        }
+    }
+
+    private void purgeSharedAvatars() {
+        File directory = new File(getCacheDir(), "shared-avatars");
+        File[] files = directory.listFiles();
+        if (files == null) return;
+        for (File file : files) {
+            if (file.isFile() && !file.delete()) file.deleteOnExit();
         }
     }
 

@@ -148,6 +148,31 @@ class NativeFileDialog {
     }
   }
 
+  /// Makes one temporary plaintext copy available to the operating system's
+  /// share sheet. The native host owns that copy and removes it after sharing
+  /// (or at the next launch if the operating system interrupts the share).
+  static Future<bool> shareBytes({
+    required String fileName,
+    required Uint8List bytes,
+    String mimeType = 'application/octet-stream',
+  }) async {
+    final temporaryDirectory = await Directory.systemTemp.createTemp(
+      _exportTemporaryDirectoryPrefix,
+    );
+    final source = File('${temporaryDirectory.path}/$fileName');
+    try {
+      await source.writeAsBytes(bytes, flush: true);
+      return await _channel.invokeMethod<bool>('shareFile', <String, Object?>{
+            'sourcePath': source.path,
+            'fileName': fileName,
+            'mimeType': mimeType,
+          }) ??
+          false;
+    } finally {
+      await _deleteTemporaryDirectory(temporaryDirectory);
+    }
+  }
+
   static Future<void> _deleteTemporaryDirectory(Directory directory) async {
     for (var attempt = 0; attempt < 3; attempt++) {
       try {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2968,6 +2969,9 @@ class FakeHavenRepository implements HavenRepository {
     _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
     _customizationController.add(_customization);
   }
+
+  @override
+  Future<Uint8List?> readAvatar(String reference) async => null;
 
   @override
   Future<void> setLanguageCode(String languageCode) async {
