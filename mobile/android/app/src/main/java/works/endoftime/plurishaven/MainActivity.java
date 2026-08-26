@@ -27,6 +27,7 @@ import androidx.work.WorkManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
@@ -359,8 +361,8 @@ public final class MainActivity extends FlutterFragmentActivity {
             return;
         }
         File source = new File(sourcePath);
-        if (!source.isFile()) {
-            result.error("invalid_share", "Share source does not exist.", null);
+        if (!isOwnedExportSource(source)) {
+            result.error("invalid_share", "Share source is not an app export.", null);
             return;
         }
         File directory = new File(getCacheDir(), "shared-avatars");
@@ -369,7 +371,7 @@ public final class MainActivity extends FlutterFragmentActivity {
             return;
         }
         String safeName = fileName.replaceAll("[^A-Za-z0-9._ -]", "_");
-        File shared = new File(directory, System.currentTimeMillis() + "-" + safeName);
+        File shared = new File(directory, UUID.randomUUID() + "-" + safeName);
         try (InputStream input = new FileInputStream(source);
              OutputStream output = new FileOutputStream(shared)) {
             byte[] buffer = new byte[64 * 1024];
@@ -390,6 +392,23 @@ public final class MainActivity extends FlutterFragmentActivity {
         } catch (Exception error) {
             if (!shared.delete() && shared.exists()) shared.deleteOnExit();
             result.error("share_failed", error.getMessage(), null);
+        }
+    }
+
+    private boolean isOwnedExportSource(File source) {
+        try {
+            File canonicalSource = source.getCanonicalFile();
+            File stagingDirectory = canonicalSource.getParentFile();
+            if (stagingDirectory == null
+                    || !stagingDirectory.getName().startsWith("pluris-haven-export-")) {
+                return false;
+            }
+            File stagingParent = stagingDirectory.getParentFile();
+            return canonicalSource.isFile()
+                    && stagingParent != null
+                    && stagingParent.equals(getCacheDir().getCanonicalFile());
+        } catch (IOException error) {
+            return false;
         }
     }
 
