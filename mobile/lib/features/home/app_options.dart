@@ -322,7 +322,7 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
                 controller: _colors[index],
                 decoration: InputDecoration(
                   labelText: labels[index],
-                  hintText: '#RRGGBB',
+                  hintText: l10n.appearanceHexHint,
                 ),
               ),
             ),

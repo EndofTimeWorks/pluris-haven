@@ -4579,6 +4579,12 @@ abstract class AppLocalizations {
   /// **'Colour hex'**
   String get colorHexFieldLabel;
 
+  /// No description provided for @appearanceHexHint.
+  ///
+  /// In en, this message translates to:
+  /// **'#RRGGBB'**
+  String get appearanceHexHint;
+
   /// No description provided for @subsystemToggleTitle.
   ///
   /// In en, this message translates to:

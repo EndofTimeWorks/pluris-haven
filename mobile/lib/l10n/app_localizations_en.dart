@@ -2625,6 +2625,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get colorHexFieldLabel => 'Colour hex';
 
   @override
+  String get appearanceHexHint => '#RRGGBB';
+
+  @override
   String get subsystemToggleTitle => 'Subgroup / subsystem';
 
   @override

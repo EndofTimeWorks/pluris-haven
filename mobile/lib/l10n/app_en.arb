@@ -1017,6 +1017,7 @@
   "parentGroupFieldLabel": "Parent group",
   "noParentOption": "No parent",
   "colorHexFieldLabel": "Colour hex",
+  "appearanceHexHint": "#RRGGBB",
   "subsystemToggleTitle": "Subgroup / subsystem",
   "subsystemToggleBody": "Subsystem members can overlap with the main group.",
   "saveChangesButton": "Save changes",
