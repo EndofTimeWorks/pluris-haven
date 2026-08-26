@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.engine import make_url
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -18,8 +19,15 @@ from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
 from pluris_server.http_security import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
 from pluris_server.mail import create_email_sender
+from pluris_server.observability import (
+    SecurityOperation,
+    SecurityReason,
+    SecuritySignal,
+    log_security_signal,
+)
 from pluris_server.rate_limit import DatabaseRateLimiter
 from pluris_server.routers import auth, backups, friends, health, server_info
+from pluris_server.security import PasswordWorkSaturated
 
 _logger = logging.getLogger("pluris.cleanup")
 
@@ -84,6 +92,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         lifespan=lifespan,
     )
+
+    @app.exception_handler(PasswordWorkSaturated)
+    async def password_work_saturated_handler(
+        _request: Request, _error: PasswordWorkSaturated
+    ) -> JSONResponse:
+        log_security_signal(
+            SecuritySignal.CAPACITY_REJECTED,
+            operation=SecurityOperation.PASSWORD_WORK,
+            reason=SecurityReason.PASSWORD_CAPACITY,
+        )
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Authentication is busy. Try again shortly."},
+            headers={"Retry-After": "1"},
+        )
+
     app.state.settings = active_settings
     app.state.email_sender = create_email_sender(active_settings)
     app.state.engine = engine

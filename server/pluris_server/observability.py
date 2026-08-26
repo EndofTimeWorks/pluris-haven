@@ -11,6 +11,7 @@ class SecuritySignal(StrEnum):
 
 
 class SecurityOperation(StrEnum):
+    PASSWORD_WORK = "password_work"
     REGISTER = "register"
     LOGIN = "login"
     REFRESH = "refresh"
@@ -24,6 +25,7 @@ class SecurityOperation(StrEnum):
 
 
 class SecurityReason(StrEnum):
+    PASSWORD_CAPACITY = "password_capacity"
     INVALID_CREDENTIALS = "invalid_credentials"
     DISABLED_ACCOUNT = "disabled_account"
     REGISTRATION_DISABLED = "registration_disabled"

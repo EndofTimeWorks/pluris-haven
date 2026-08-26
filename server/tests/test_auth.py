@@ -11,6 +11,7 @@ from pluris_server.account_cleanup import sweep_deleted_accounts
 from pluris_server.mail import MemoryEmailSender
 from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
 from pluris_server.routers import auth as auth_router
+from pluris_server.security import PasswordWorkSaturated
 from tests.conftest import auth, register
 
 
@@ -28,6 +29,31 @@ def fast_passwords(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(auth_router, "hash_password", hash_password)
     monkeypatch.setattr(auth_router, "verify_password", verify_password)
     monkeypatch.setattr(client.app.state.auth_rate_limiter, "retry_after", retry_after)
+
+
+def test_password_capacity_returns_retryable_503(
+    client: TestClient,
+    fast_passwords: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register(client, "capacity@example.com", "Capacity user")
+
+    async def saturated_verify(_password: str, _encoded: str) -> bool:
+        raise PasswordWorkSaturated
+
+    monkeypatch.setattr(auth_router, "verify_password", saturated_verify)
+    response = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "capacity@example.com",
+            "password": "correct horse battery staple",
+            "device_name": "Phone",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "1"
+    assert response.json()["detail"] == "Authentication is busy. Try again shortly."
 
 
 def test_registration_login_refresh_and_session_revocation(client: TestClient) -> None:
