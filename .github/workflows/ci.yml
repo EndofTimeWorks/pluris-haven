@@ -385,7 +385,11 @@ jobs:
 
       - name: Smoke-test server container
         run: >-
-          docker run --rm pluris-haven-server:ci
+          docker run --rm
+          -e PLURIS_ENVIRONMENT=test
+          -e PLURIS_JWT_SECRET=ci-smoke-test-jwt-secret-not-for-production
+          -e PLURIS_FRIEND_CODE_PEPPER=ci-smoke-test-pepper-not-for-production
+          pluris-haven-server:ci
           python -c "import pluris_server.main"
 
   codeql:
