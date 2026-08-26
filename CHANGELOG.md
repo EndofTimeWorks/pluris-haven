@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0-pre-alpha.4 - 2026-08-25
+
+Security release: `0.3.0-pre-alpha.4+3004`.
+
+### Security and release hardening
+
+- Empty encrypted values are now authenticated like every other protected
+  field. Existing local records migrate before the stricter check is enabled,
+  so optional blank values remain intact while tampered empty ciphertext fails
+  closed.
+- The container smoke test now supplies isolated CI-only secrets, matching the
+  server's fail-loud startup requirements.
+
 ## 0.3.0-pre-alpha.3 - 2026-08-24
 
 Beta hardening and import performance: `0.3.0-pre-alpha.3+3003`.
