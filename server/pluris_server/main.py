@@ -38,6 +38,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if active_settings.database_url.startswith("sqlite"):
         database_path = make_url(active_settings.database_url).database
         if database_path not in {None, ":memory:", ""}:
+            assert database_path is not None
             Path(database_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine(active_settings.database_url)
 

@@ -74,7 +74,7 @@ async def _enforce_code_rotation_rate_limit(request: Request, user_id: str) -> N
 
 
 def _pair(first: str, second: str) -> tuple[str, str]:
-    return tuple(sorted((first, second)))
+    return (first, second) if first < second else (second, first)
 
 
 async def _blocked(db: Db, first: str, second: str) -> bool:
@@ -164,15 +164,15 @@ async def create_request(
         raise HTTPException(status_code=409, detail="You are already connected")
 
     low, high = _pair(auth.user.id, recipient.id)
-    request = await db.scalar(
+    friend_request = await db.scalar(
         select(FriendRequest).where(
             FriendRequest.pair_low_id == low,
             FriendRequest.pair_high_id == high,
         )
     )
     now = datetime.now(UTC)
-    if request is None:
-        request = FriendRequest(
+    if friend_request is None:
+        friend_request = FriendRequest(
             pair_low_id=low,
             pair_high_id=high,
             requester_id=auth.user.id,
@@ -181,18 +181,18 @@ async def create_request(
             created_at=now,
             updated_at=now,
         )
-        db.add(request)
-    elif request.status == RequestStatus.PENDING.value:
+        db.add(friend_request)
+    elif friend_request.status == RequestStatus.PENDING.value:
         raise HTTPException(status_code=409, detail="A request is already pending")
     else:
         if (
-            request.status == RequestStatus.DECLINED.value
-            and request.requester_id == auth.user.id
-            and request.recipient_id == recipient.id
-            and request.responded_at is not None
+            friend_request.status == RequestStatus.DECLINED.value
+            and friend_request.requester_id == auth.user.id
+            and friend_request.recipient_id == recipient.id
+            and friend_request.responded_at is not None
             and settings.friend_request_cooldown_seconds > 0
         ):
-            responded_at = request.responded_at
+            responded_at = friend_request.responded_at
             if responded_at.tzinfo is None:
                 responded_at = responded_at.replace(tzinfo=UTC)
             retry_after = (
@@ -204,19 +204,19 @@ async def create_request(
                     detail="You cannot send another request to this account yet",
                     headers={"Retry-After": str(max(1, ceil(retry_after)))},
                 )
-        request.requester_id = auth.user.id
-        request.recipient_id = recipient.id
-        request.status = RequestStatus.PENDING.value
-        request.created_at = now
-        request.updated_at = now
-        request.responded_at = None
+        friend_request.requester_id = auth.user.id
+        friend_request.recipient_id = recipient.id
+        friend_request.status = RequestStatus.PENDING.value
+        friend_request.created_at = now
+        friend_request.updated_at = now
+        friend_request.responded_at = None
     try:
         await db.commit()
     except IntegrityError as error:
         await db.rollback()
         raise HTTPException(status_code=409, detail="A request is already pending") from error
-    await db.refresh(request)
-    return _request_view(request, auth.user.id, recipient)
+    await db.refresh(friend_request)
+    return _request_view(friend_request, auth.user.id, recipient)
 
 
 @router.get("/requests", response_model=list[FriendRequestView])
@@ -474,13 +474,15 @@ async def list_blocks(auth: CurrentAuth, db: Db) -> list[BlockView]:
 
 @router.delete("/blocks/{user_id}", response_model=MessageResponse)
 async def unblock_user(user_id: str, auth: CurrentAuth, db: Db) -> MessageResponse:
-    result = await db.execute(
-        delete(UserBlock).where(
+    deleted_block_id = await db.scalar(
+        delete(UserBlock)
+        .where(
             UserBlock.blocker_id == auth.user.id,
             UserBlock.blocked_id == user_id,
         )
+        .returning(UserBlock.id)
     )
-    if result.rowcount == 0:
+    if deleted_block_id is None:
         raise HTTPException(status_code=404, detail="Block not found")
     await db.commit()
     return MessageResponse(detail="User unblocked")
