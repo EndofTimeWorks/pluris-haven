@@ -93,3 +93,18 @@ def test_owner_and_snapshot_are_separate_safe_path_segments(tmp_path) -> None:
 
     assert store.read_chunk(owner_id=owner_id, snapshot_id=snapshot_id, index=0) == payload
     assert (tmp_path / owner_id / snapshot_id / "000000000000.chunk").is_file()
+
+
+def test_legacy_snapshot_migration_requires_an_unambiguous_owner_id(tmp_path) -> None:
+    store = FilesystemBackupObjectStore(tmp_path)
+    owner_id = "00000000-0000-0000-0000-000000000001"
+    snapshot_id = "snapshot_with_underscores"
+    payload = b"opaque"
+    legacy_dir = tmp_path / f"{owner_id}_{snapshot_id}"
+    legacy_dir.mkdir()
+    (legacy_dir / "000000000000.chunk").write_bytes(payload)
+
+    assert store.read_chunk(owner_id=owner_id, snapshot_id=snapshot_id, index=0) == payload
+    assert not legacy_dir.exists()
+    assert (tmp_path / owner_id / snapshot_id / "000000000000.chunk").is_file()
+    assert store._legacy_snapshot_dir("owner_part", "snapshot_part") is None

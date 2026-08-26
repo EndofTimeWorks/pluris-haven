@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -122,6 +123,10 @@ class FilesystemBackupObjectStore:
         return self.root / owner_id / snapshot_id
 
     def _legacy_snapshot_dir(self, owner_id: str, snapshot_id: str) -> Path | None:
+        try:
+            uuid.UUID(owner_id)
+        except ValueError:
+            return None
         legacy_key = f"{owner_id}_{snapshot_id}"
         if not _SAFE_KEY.fullmatch(legacy_key):
             return None
