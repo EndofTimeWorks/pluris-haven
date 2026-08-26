@@ -124,8 +124,6 @@ def _password_reset_link(settings: AppSettings, token: str) -> str:
 async def register(
     request: Request, payload: RegisterRequest, db: Db, settings: AppSettings
 ) -> RegistrationResponse:
-    email = str(payload.email).strip().casefold()
-    await _enforce_rate_limit(request, SecurityOperation.REGISTER, email)
     if not settings.registration_enabled:
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
@@ -133,6 +131,8 @@ async def register(
             reason=SecurityReason.REGISTRATION_DISABLED,
         )
         raise HTTPException(status_code=503, detail="Account registration is not enabled")
+    email = str(payload.email).strip().casefold()
+    await _enforce_rate_limit(request, SecurityOperation.REGISTER, email)
     existing = await db.scalar(select(User).where(User.email == email))
     if existing is not None:
         log_security_signal(

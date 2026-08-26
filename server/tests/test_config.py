@@ -8,9 +8,16 @@ from pluris_server.http_security import RequestBodyLimitMiddleware
 from pluris_server.main import create_app
 
 
-def test_production_rejects_placeholder_secrets() -> None:
+@pytest.mark.parametrize("environment", ["development", "test", "production"])
+def test_placeholder_secrets_are_rejected_in_every_environment(environment: str) -> None:
     with pytest.raises(RuntimeError, match="JWT_SECRET"):
-        create_app(Settings(environment="production"))
+        create_app(
+            Settings(
+                environment=environment,
+                jwt_secret="development-only-change-me",
+                friend_code_pepper="development-only-change-me",
+            )
+        )
 
 
 def _production_settings(**overrides: object) -> Settings:
@@ -108,7 +115,7 @@ def test_friends_feature_is_closed_by_default(tmp_path) -> None:
     assert response.status_code == 503
 
 
-def test_registration_is_closed_by_default(tmp_path) -> None:
+def test_disabled_registration_does_not_touch_rate_limiter(tmp_path, monkeypatch) -> None:
     settings = Settings(
         environment="test",
         database_url=f"sqlite+aiosqlite:///{tmp_path / 'registration-disabled.db'}",
@@ -116,6 +123,14 @@ def test_registration_is_closed_by_default(tmp_path) -> None:
         friend_code_pepper="test-friend-code-pepper-that-is-different",
     )
     with TestClient(create_app(settings)) as client:
+        calls = 0
+
+        async def retry_after(_keys: list[str]) -> None:
+            nonlocal calls
+            calls += 1
+            return None
+
+        monkeypatch.setattr(client.app.state.auth_rate_limiter, "retry_after", retry_after)
         response = client.post(
             "/v1/auth/register",
             json={
@@ -126,6 +141,7 @@ def test_registration_is_closed_by_default(tmp_path) -> None:
             },
         )
     assert response.status_code == 503
+    assert calls == 0
 
 
 def test_auth_requests_reject_oversized_bodies(client: TestClient) -> None:

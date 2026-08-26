@@ -1,7 +1,12 @@
+import os
 from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+
+os.environ.setdefault("PLURIS_ENVIRONMENT", "test")
+os.environ.setdefault("PLURIS_JWT_SECRET", "test-jwt-secret-that-is-long-and-unique")
+os.environ.setdefault("PLURIS_FRIEND_CODE_PEPPER", "test-friend-code-pepper-that-is-different")
 
 from pluris_server.config import Settings
 from pluris_server.main import create_app

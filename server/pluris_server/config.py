@@ -66,17 +66,17 @@ class Settings(BaseSettings):
         return value
 
     def validate_for_startup(self) -> None:
-        if self.environment != "production":
-            return
         weak_values = {"", "development-only-change-me", "changeme"}
         if self.jwt_secret in weak_values or self.jwt_secret.startswith("replace-"):
-            raise RuntimeError("PLURIS_JWT_SECRET must be set in production")
+            raise RuntimeError("PLURIS_JWT_SECRET must be set")
         if len(self.jwt_secret) < 32:
             raise RuntimeError("PLURIS_JWT_SECRET must contain at least 32 characters")
         if self.friend_code_pepper in weak_values or self.friend_code_pepper.startswith("replace-"):
-            raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must be set in production")
+            raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must be set")
         if len(self.friend_code_pepper) < 32:
             raise RuntimeError("PLURIS_FRIEND_CODE_PEPPER must contain at least 32 characters")
+        if self.environment != "production":
+            return
         if not self.database_url.startswith(("postgresql://", "postgresql+")):
             raise RuntimeError("Production requires PostgreSQL")
         public_url = urlsplit(self.public_url)
