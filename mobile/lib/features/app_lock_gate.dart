@@ -7,10 +7,18 @@ import '../platform/app_lock.dart';
 /// (biometric or PIN/pattern/password) must pass before content shows.
 /// Re-locks whenever the app is backgrounded.
 class AppLockGate extends StatefulWidget {
-  const AppLockGate({super.key, required this.enabled, required this.child});
+  const AppLockGate({
+    super.key,
+    required this.enabled,
+    required this.child,
+    this.availability = AppLock.availability,
+    this.authenticate = AppLock.authenticate,
+  });
 
   final bool enabled;
   final Widget child;
+  final Future<AppLockAvailability> Function() availability;
+  final Future<bool> Function(String reason) authenticate;
 
   @override
   State<AppLockGate> createState() => _AppLockGateState();
@@ -49,7 +57,11 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!widget.enabled) return;
-    if (state == AppLifecycleState.paused && !_authenticating) {
+    if ((state == AppLifecycleState.inactive ||
+            state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused) &&
+        !_authenticating &&
+        _unlocked) {
       setState(() => _unlocked = false);
     } else if (state == AppLifecycleState.resumed &&
         !_unlocked &&
@@ -62,19 +74,22 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (!mounted || _unlocked || _authenticating) return;
     setState(() => _authenticating = true);
     // A device with no biometric or credential configured has nothing for
-    // the lock to check against, so treat the setting as a no-op there
-    // rather than showing an unlock screen that can never succeed.
-    if (!await AppLock.isAvailable()) {
+    // the lock to check against, so treat the setting as a no-op there.
+    // Platform errors remain locked instead of exposing private content.
+    final availability = await widget.availability();
+    if (availability != AppLockAvailability.available) {
       if (mounted) {
         setState(() {
           _authenticating = false;
-          _unlocked = true;
+          if (availability == AppLockAvailability.unsupported) {
+            _unlocked = true;
+          }
         });
       }
       return;
     }
     if (!mounted) return;
-    final ok = await AppLock.authenticate(
+    final ok = await widget.authenticate(
       AppLocalizations.of(context).appLockReason,
     );
     if (!mounted) return;

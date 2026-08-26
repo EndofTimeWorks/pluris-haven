@@ -8,9 +8,11 @@ import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/features/app_lock_gate.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
+import 'package:pluris_haven/platform/app_lock.dart';
 
 Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 50; attempt++) {
@@ -24,6 +26,68 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('app lock covers root navigator sheets after backgrounding', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => AppLockGate(
+          enabled: true,
+          availability: () async => AppLockAvailability.available,
+          authenticate: (_) async => true,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: FilledButton(
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (_) => const Text('Sensitive sheet'),
+              ),
+              child: const Text('Open sheet'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Open sheet'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sensitive sheet'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+
+    expect(find.text('Sensitive sheet'), findsNothing);
+    expect(find.text('Pluris Haven is locked'), findsOneWidget);
+  });
+
+  testWidgets('app lock stays closed when availability check fails', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppLockGate(
+          enabled: true,
+          availability: () async => AppLockAvailability.error,
+          authenticate: (_) async => true,
+          child: const Text('Protected content'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Protected content'), findsNothing);
+    expect(find.text('Pluris Haven is locked'), findsOneWidget);
+  });
+
   testWidgets('offers a report action for legitimate rejected imports', (
     tester,
   ) async {

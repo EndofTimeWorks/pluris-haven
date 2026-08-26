@@ -212,25 +212,26 @@ class PlurisHavenApp extends StatelessWidget {
             ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
             : mediaQuery.textScaler;
         final appearanceTextScale = customization.appearance.textScale ?? 1;
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            accessibleNavigation:
-                customization.reducedMotion || mediaQuery.accessibleNavigation,
-            disableAnimations:
-                customization.reducedMotion || mediaQuery.disableAnimations,
-            textScaler: appearanceTextScale == 1
-                ? baseTextScaler
-                : TextScaler.linear(
-                    baseTextScaler.scale(1) * appearanceTextScale,
-                  ),
+        return AppLockGate(
+          enabled: customization.appLockEnabled,
+          child: MediaQuery(
+            data: mediaQuery.copyWith(
+              accessibleNavigation:
+                  customization.reducedMotion ||
+                  mediaQuery.accessibleNavigation,
+              disableAnimations:
+                  customization.reducedMotion || mediaQuery.disableAnimations,
+              textScaler: appearanceTextScale == 1
+                  ? baseTextScaler
+                  : TextScaler.linear(
+                      baseTextScaler.scale(1) * appearanceTextScale,
+                    ),
+            ),
+            child: child ?? const SizedBox.shrink(),
           ),
-          child: child ?? const SizedBox.shrink(),
         );
       },
-      home: AppLockGate(
-        enabled: customization.appLockEnabled,
-        child: HomePage(repository: repository, serverAccount: serverAccount),
-      ),
+      home: HomePage(repository: repository, serverAccount: serverAccount),
     );
   }
 

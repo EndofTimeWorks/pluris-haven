@@ -1,5 +1,7 @@
 import 'package:local_auth/local_auth.dart';
 
+enum AppLockAvailability { available, unsupported, error }
+
 /// Thin wrapper around [LocalAuthentication] for the optional app-lock
 /// gate. Delegates to whatever the device already has configured
 /// (biometrics, PIN, pattern, or password) rather than storing a
@@ -9,13 +11,15 @@ class AppLock {
 
   static final _auth = LocalAuthentication();
 
-  /// Whether this device has any usable authentication method (biometric
-  /// or device credential) so the app-lock setting can be offered at all.
-  static Future<bool> isAvailable() async {
+  /// Whether this device has a usable authentication method. Platform failures
+  /// are distinct from a device that genuinely has no credentials configured.
+  static Future<AppLockAvailability> availability() async {
     try {
-      return await _auth.isDeviceSupported();
+      return await _auth.isDeviceSupported()
+          ? AppLockAvailability.available
+          : AppLockAvailability.unsupported;
     } on Object {
-      return false;
+      return AppLockAvailability.error;
     }
   }
 
