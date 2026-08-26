@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
@@ -2543,6 +2543,22 @@ void main() {
       const NoteDraft(title: 'Grounding', body: 'Water'),
     );
 
+    String? copiedArchive;
+    const clipboardChannel = MethodChannel(
+      'works.endoftime.plurishaven/clipboard',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(clipboardChannel, (call) async {
+          expect(call.method, 'copySensitive');
+          copiedArchive =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(clipboardChannel, null),
+    );
+
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
@@ -2571,6 +2587,13 @@ void main() {
     );
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Copy JSON'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy unencrypted archive'));
+    await tester.pumpAndSettle();
+    expect(find.text('Archive copied'), findsOneWidget);
+    expect(copiedArchive, contains('pluris_haven.local_archive'));
 
     await tester.tap(find.text('Save JSON file'));
     await tester.pumpAndSettle();
@@ -2625,6 +2648,47 @@ void main() {
     expect(find.text('Recovery codes do not match.'), findsOneWidget);
     expect(find.text('Save encrypted file'), findsOneWidget);
   });
+
+  testWidgets('offers file saving when a local archive is too large to copy', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+      localArchiveJson: '{"records":"${List.filled(512 * 1024, 'a').join()}"}',
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: LocalArchiveSheet(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey('copy-local-archive-button')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      find.text(
+        'This archive is too large to copy reliably. Save it as a JSON file instead.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
 
 Future<void> openDrawerSection(WidgetTester tester, String label) async {
@@ -2648,7 +2712,7 @@ Future<void> openDrawerSection(WidgetTester tester, String label) async {
 }
 
 class FakeHavenRepository implements HavenRepository {
-  FakeHavenRepository(this._snapshot) {
+  FakeHavenRepository(this._snapshot, {this._localArchiveJson}) {
     _controller = StreamController<HomeSnapshot>.broadcast(
       sync: true,
       onListen: () => _controller.add(_snapshot),
@@ -2752,6 +2816,7 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   HomeSnapshot _snapshot;
+  final String? _localArchiveJson;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
   List<GroupSummary> _groups = const [];
@@ -4017,6 +4082,7 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<String> buildLocalArchiveJson() async {
+    if (_localArchiveJson != null) return _localArchiveJson;
     return const JsonEncoder.withIndent('  ').convert({
       'format': 'pluris_haven.local_archive',
       'version': 1,

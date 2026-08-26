@@ -2282,6 +2282,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyPlainArchiveConfirmButton => 'Copy unencrypted archive';
 
   @override
+  String get archiveTooLargeToCopy =>
+      'This archive is too large to copy reliably. Save it as a JSON file instead.';
+
+  @override
   String get savePlainArchiveWarningTitle => 'Save unencrypted archive?';
 
   @override
@@ -2293,6 +2297,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get archiveCopied => 'Archive copied';
+
+  @override
+  String couldNotCopyArchive(String error) {
+    return 'Could not copy archive: $error';
+  }
 
   @override
   String get saveArchiveDialogTitle => 'Save Pluris Haven archive';

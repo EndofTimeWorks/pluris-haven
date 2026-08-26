@@ -4003,6 +4003,12 @@ abstract class AppLocalizations {
   /// **'Copy unencrypted archive'**
   String get copyPlainArchiveConfirmButton;
 
+  /// No description provided for @archiveTooLargeToCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'This archive is too large to copy reliably. Save it as a JSON file instead.'**
+  String get archiveTooLargeToCopy;
+
   /// No description provided for @savePlainArchiveWarningTitle.
   ///
   /// In en, this message translates to:
@@ -4026,6 +4032,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archive copied'**
   String get archiveCopied;
+
+  /// No description provided for @couldNotCopyArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy archive: {error}'**
+  String couldNotCopyArchive(String error);
 
   /// No description provided for @saveArchiveDialogTitle.
   ///

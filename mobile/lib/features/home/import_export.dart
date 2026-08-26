@@ -1,6 +1,7 @@
 part of 'home_page.dart';
 
 const _maximumPastedImportCharacters = 256 * 1024;
+const _maximumClipboardArchiveBytes = 512 * 1024;
 
 String _withoutRawImportPayloads(String archiveJson) {
   final decoded = jsonDecode(archiveJson);
@@ -1359,6 +1360,9 @@ class LocalArchiveSheet extends StatelessWidget {
         future: repository.buildLocalArchiveJson(),
         builder: (context, snapshot) {
           final archive = snapshot.data;
+          final canCopyArchive =
+              archive != null &&
+              utf8.encode(archive).length <= _maximumClipboardArchiveBytes;
 
           return SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
@@ -1422,10 +1426,19 @@ class LocalArchiveSheet extends StatelessWidget {
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     key: const ValueKey('copy-local-archive-button'),
-                    onPressed: () => _copyArchiveJson(context, archive!),
+                    onPressed: canCopyArchive
+                        ? () => _copyArchiveJson(context, archive)
+                        : null,
                     icon: const Icon(Icons.copy_rounded),
                     label: Text(l10n.copyJsonButton),
                   ),
+                  if (!canCopyArchive) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.archiveTooLargeToCopy,
+                      style: const TextStyle(color: _spMuted, height: 1.35),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Container(
                     constraints: const BoxConstraints(maxHeight: 320),
@@ -1479,8 +1492,16 @@ class LocalArchiveSheet extends StatelessWidget {
       return;
     }
     final messenger = ScaffoldMessenger.of(context);
-    await SensitiveClipboard.copy(archive);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.archiveCopied)));
+    try {
+      await SensitiveClipboard.copy(archive);
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.archiveCopied)));
+    } on Object catch (error) {
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.couldNotCopyArchive(error.toString()))),
+      );
+    }
   }
 
   Future<void> _saveArchiveJson(BuildContext context, String archive) async {
