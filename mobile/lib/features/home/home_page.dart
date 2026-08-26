@@ -131,19 +131,28 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final Stream<HomeSnapshot> _homeStream;
+  late final Stream<AppCustomization> _customizationStream;
   SpSection _section = SpSection.dashboard;
   final _sectionHistory = <SpSection>[];
 
   @override
+  void initState() {
+    super.initState();
+    _homeStream = widget.repository.watchHomeSnapshot();
+    _customizationStream = widget.repository.watchCustomization();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<HomeSnapshot>(
-      stream: widget.repository.watchHomeSnapshot(),
+      stream: _homeStream,
       builder: (context, snapshot) {
         final home = snapshot.data;
         final l10n = AppLocalizations.of(context);
 
         return StreamBuilder<AppCustomization>(
-          stream: widget.repository.watchCustomization(),
+          stream: _customizationStream,
           initialData: AppCustomization.defaults,
           builder: (context, customizationSnapshot) {
             final customization =
