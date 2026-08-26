@@ -15530,6 +15530,26 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PrivacyBucketsTable privacyBuckets = $PrivacyBucketsTable(this);
   late final $PrivacyBucketMembersTable privacyBucketMembers =
       $PrivacyBucketMembersTable(this);
+  late final Index membersListOrder = Index(
+    'members_list_order',
+    'CREATE INDEX members_list_order ON members (system_id, archived, is_custom_front, lexo_rank, created_at, id)',
+  );
+  late final Index groupMembersMemberId = Index(
+    'group_members_member_id',
+    'CREATE INDEX group_members_member_id ON group_members (member_id)',
+  );
+  late final Index frontSessionsHistoryOrder = Index(
+    'front_sessions_history_order',
+    'CREATE INDEX front_sessions_history_order ON front_sessions (system_id, started_at DESC)',
+  );
+  late final Index frontSessionsCurrent = Index(
+    'front_sessions_current',
+    'CREATE INDEX front_sessions_current ON front_sessions (system_id, ended_at, started_at)',
+  );
+  late final Index namedFrontsSystemOrder = Index(
+    'named_fronts_system_order',
+    'CREATE INDEX named_fronts_system_order ON named_fronts (system_id, created_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15567,6 +15587,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     namedFrontMembers,
     privacyBuckets,
     privacyBucketMembers,
+    membersListOrder,
+    groupMembersMemberId,
+    frontSessionsHistoryOrder,
+    frontSessionsCurrent,
+    namedFrontsSystemOrder,
   ];
 }
 

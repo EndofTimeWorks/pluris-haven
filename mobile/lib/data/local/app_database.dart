@@ -35,6 +35,10 @@ class SystemGroups extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@TableIndex.sql(
+  'CREATE INDEX members_list_order ON members '
+  '(system_id, archived, is_custom_front, lexo_rank, created_at, id)',
+)
 class Members extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -63,6 +67,7 @@ class Members extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@TableIndex(name: 'group_members_member_id', columns: {#memberId})
 class GroupMembers extends Table {
   TextColumn get groupId => text().references(SystemGroups, #id)();
   TextColumn get memberId => text().references(Members, #id)();
@@ -218,6 +223,14 @@ class PollVotes extends Table {
   Set<Column<Object>> get primaryKey => {pollId, optionId};
 }
 
+@TableIndex.sql(
+  'CREATE INDEX front_sessions_history_order ON front_sessions '
+  '(system_id, started_at DESC)',
+)
+@TableIndex.sql(
+  'CREATE INDEX front_sessions_current ON front_sessions '
+  '(system_id, ended_at, started_at)',
+)
 class FrontSessions extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -390,6 +403,10 @@ class PendingActions extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@TableIndex.sql(
+  'CREATE INDEX named_fronts_system_order ON named_fronts '
+  '(system_id, created_at)',
+)
 class NamedFronts extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -475,9 +492,9 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
-  // `migrator.createTable(x)` always creates `x` using its CURRENT (v18)
+  // `migrator.createTable(x)` always creates `x` using its CURRENT (v19)
   // Dart column definition - there is no per-historical-version table shape
   // stored anywhere, and `CREATE TABLE IF NOT EXISTS` means it happily
   // no-ops if the table is already there. That has a sharp edge: if a
@@ -658,6 +675,11 @@ class AppDatabase extends _$AppDatabase {
         // SQLite cannot silently insert the old shared tail sentinel.
         await migrator.alterTable(TableMigration(members));
       }
+      if (from < 19) {
+        for (final statement in _performanceIndexStatements) {
+          await migrator.database.customStatement(statement);
+        }
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -668,3 +690,16 @@ class AppDatabase extends _$AppDatabase {
     return openDatabaseConnection();
   }
 }
+
+const _performanceIndexStatements = [
+  'CREATE INDEX IF NOT EXISTS members_list_order ON members '
+      '(system_id, archived, is_custom_front, lexo_rank, created_at, id)',
+  'CREATE INDEX IF NOT EXISTS group_members_member_id ON group_members '
+      '(member_id)',
+  'CREATE INDEX IF NOT EXISTS front_sessions_history_order ON front_sessions '
+      '(system_id, started_at DESC)',
+  'CREATE INDEX IF NOT EXISTS front_sessions_current ON front_sessions '
+      '(system_id, ended_at, started_at)',
+  'CREATE INDEX IF NOT EXISTS named_fronts_system_order ON named_fronts '
+      '(system_id, created_at)',
+];
