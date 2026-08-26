@@ -320,8 +320,8 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
     }
     do {
       for url in urls where !allowedExtensions.isEmpty {
-        let extension = url.pathExtension.lowercased()
-        guard allowedExtensions.contains(extension) else {
+        let fileExtension = url.pathExtension.lowercased()
+        guard allowedExtensions.contains(fileExtension) else {
           throw NSError(
             domain: "PlurisHavenImport",
             code: 3,
