@@ -203,6 +203,8 @@ class LocalHavenRepository implements HavenRepository {
   late final LocalContentRevisionStore _revisions;
   final Map<(String, String), ({String? ciphertext, String? plaintext})>
   _memberDecryptCache = {};
+  final Map<(String, String, String), ({String? ciphertext, String? plaintext})>
+  _localTextDecryptCache = {};
 
   Future<void> ensureLocalSystem() => _ensureLocalSystem();
 

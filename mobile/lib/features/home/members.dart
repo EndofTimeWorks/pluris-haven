@@ -18,8 +18,18 @@ class MembersPage extends StatefulWidget {
 
 class _MembersPageState extends State<MembersPage> {
   final _searchController = TextEditingController();
+  late final Stream<List<MemberSummary>> _membersStream;
   String _query = '';
   String _filter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _membersStream = widget.repository.watchMembers(
+      includeArchived: true,
+      listOnly: true,
+    );
+  }
 
   @override
   void dispose() {
@@ -36,10 +46,7 @@ class _MembersPageState extends State<MembersPage> {
       'archived': l10n.archivedFilter,
     };
     return StreamBuilder<List<MemberSummary>>(
-      stream: widget.repository.watchMembers(
-        includeArchived: true,
-        listOnly: true,
-      ),
+      stream: _membersStream,
       initialData: const [],
       builder: (context, membersSnapshot) {
         final members = _filteredMembers(

@@ -11,7 +11,14 @@ class CustomFrontsPage extends StatefulWidget {
 
 class _CustomFrontsPageState extends State<CustomFrontsPage> {
   final _searchController = TextEditingController();
+  late final Stream<List<NamedFront>> _frontsStream;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _frontsStream = widget.repository.watchNamedFronts();
+  }
 
   @override
   void dispose() {
@@ -23,7 +30,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<NamedFront>>(
-      stream: widget.repository.watchNamedFronts(),
+      stream: _frontsStream,
       initialData: const [],
       builder: (context, snapshot) {
         final scheme = Theme.of(context).colorScheme;

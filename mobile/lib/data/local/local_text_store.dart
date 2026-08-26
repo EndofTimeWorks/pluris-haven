@@ -114,10 +114,17 @@ extension LocalHavenRepositoryLocalText on LocalHavenRepository {
     if (!stored.startsWith(_localEncryptedTextPrefix)) {
       throw StateError('Protected local text is not encrypted.');
     }
-    return crypto.decrypt(
+    final key = (table, rowId, column);
+    final cached = _localTextDecryptCache[key];
+    if (cached != null && cached.ciphertext == stored) {
+      return cached.plaintext;
+    }
+    final plaintext = await crypto.decrypt(
       stored.substring(_localEncryptedTextPrefix.length),
       aad: _localTextAad(table, rowId, column),
     );
+    _localTextDecryptCache[key] = (ciphertext: stored, plaintext: plaintext);
+    return plaintext;
   }
 
   Future<void> _migrateUnauthenticatedEmptyCiphertexts() async {

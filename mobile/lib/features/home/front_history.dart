@@ -17,6 +17,7 @@ class FrontHistoryPage extends StatefulWidget {
 class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  late Stream<List<FrontHistoryEntry>> _historyStream;
   String _filter = 'all';
   String _query = '';
   int _historyLimit = 25;
@@ -27,6 +28,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
   @override
   void initState() {
     super.initState();
+    _historyStream = widget.repository.watchRecentFrontHistory(
+      limit: _historyLimit,
+    );
     _scrollController.addListener(_loadOlderAtEnd);
   }
 
@@ -45,6 +49,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     setState(() {
       _loadingOlder = true;
       _historyLimit += 50;
+      _historyStream = widget.repository.watchRecentFrontHistory(
+        limit: _historyLimit,
+      );
     });
   }
 
@@ -58,7 +65,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
       'month': l10n.monthFilter,
     };
     return StreamBuilder<List<FrontHistoryEntry>>(
-      stream: widget.repository.watchRecentFrontHistory(limit: _historyLimit),
+      stream: _historyStream,
       initialData: const [],
       builder: (context, historySnapshot) {
         final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
