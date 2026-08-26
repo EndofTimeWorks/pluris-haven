@@ -40,10 +40,10 @@ class HavenCrypto {
   /// Encrypts [plaintext] and returns base64url(nonce || ciphertext || mac).
   ///
   /// Returns null for null input so callers can pass nullable columns
-  /// through unchanged. Returns '' for empty input.
+  /// through unchanged. Empty input is encrypted and authenticated like every
+  /// other value.
   Future<String?> encrypt(String? plaintext, {String aad = ''}) async {
     if (plaintext == null) return null;
-    if (plaintext.isEmpty) return '';
     return encryptBytes(utf8.encode(plaintext), aad: utf8.encode(aad));
   }
 
@@ -62,12 +62,11 @@ class HavenCrypto {
   }
 
   /// Decrypts a value produced by [encrypt]. Returns null for null input.
-  /// Returns the empty string for empty input. Throws on tampering or
-  /// key mismatch. Callers should treat throws as data corruption and
-  /// surface a clear error to the user (the master key is unrecoverable).
+  /// Throws on tampering or key mismatch. Callers should treat throws as data
+  /// corruption and surface a clear error to the user (the master key is
+  /// unrecoverable).
   Future<String?> decrypt(String? ciphertext, {String aad = ''}) async {
     if (ciphertext == null) return null;
-    if (ciphertext.isEmpty) return '';
     final plainBytes = await decryptBytes(ciphertext, aad: utf8.encode(aad));
     return utf8.decode(plainBytes);
   }
@@ -77,6 +76,9 @@ class HavenCrypto {
     String ciphertext, {
     List<int> aad = const [],
   }) async {
+    if (ciphertext.isEmpty) {
+      throw const FormatException('Ciphertext is empty.');
+    }
     final isCurrent = ciphertext.startsWith(_ciphertextV2Prefix);
     if (!isCurrent && !_legacyCiphertextAllowed) {
       throw const FormatException('Legacy ciphertext is no longer supported.');

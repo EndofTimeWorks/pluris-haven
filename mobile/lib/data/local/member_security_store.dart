@@ -43,10 +43,26 @@ extension LocalHavenRepositoryMemberSecurity on LocalHavenRepository {
     String field,
     String? legacyCiphertext,
   ) async {
-    final plaintext = member.profileEncryptionVersion == 0
-        ? legacyCiphertext
-        : await crypto.decrypt(legacyCiphertext);
+    final plaintext = await _decryptMemberMigrationValue(
+      member,
+      field,
+      legacyCiphertext,
+    );
     return _encryptMember(member.id, field, plaintext);
+  }
+
+  Future<String?> _decryptMemberMigrationValue(
+    Member member,
+    String field,
+    String? ciphertext,
+  ) {
+    if (member.profileEncryptionVersion == 0) return Future.value(ciphertext);
+    return crypto.decrypt(
+      ciphertext,
+      aad: ciphertext?.startsWith('v2:') == true
+          ? _memberAad(member.id, field)
+          : '',
+    );
   }
 
   Future<String?> _blindIndex(String plaintext) async {
@@ -92,9 +108,11 @@ extension LocalHavenRepositoryMemberSecurity on LocalHavenRepository {
           continue;
         }
 
-        final displayName = member.displayNameHash == null
-            ? member.displayName
-            : await crypto.decrypt(member.displayName);
+        final displayName = await _decryptMemberMigrationValue(
+          member,
+          'display_name',
+          member.displayName,
+        );
         if (displayName == null) {
           throw StateError('Member name could not be migrated: ${member.id}');
         }

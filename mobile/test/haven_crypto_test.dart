@@ -33,11 +33,16 @@ void main() {
       },
     );
 
-    test('null and empty pass through unchanged', () async {
+    test('null passes through and empty text is authenticated', () async {
       expect(await crypto.encrypt(null), isNull);
-      expect(await crypto.encrypt(''), equals(''));
+      final encryptedEmpty = await crypto.encrypt('', aad: 'notes:1:body');
+      expect(encryptedEmpty, startsWith('v2:'));
+      expect(
+        await crypto.decrypt(encryptedEmpty, aad: 'notes:1:body'),
+        equals(''),
+      );
       expect(await crypto.decrypt(null), isNull);
-      expect(await crypto.decrypt(''), equals(''));
+      await expectLater(crypto.decrypt(''), throwsFormatException);
     });
 
     test('decrypt throws on tampered ciphertext', () async {

@@ -56,6 +56,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
     final repository = LocalHavenRepository(database, crypto: crypto);
     await repository.ensureLocalSystem();
+    await repository.migrateUnauthenticatedEmptyCiphertexts();
     await repository.migrateMemberNamesToEncryption();
     final serverAccount = ServerAccountController();
     appDebugLog('Local repository ready');

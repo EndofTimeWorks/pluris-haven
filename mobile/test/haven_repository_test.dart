@@ -301,6 +301,88 @@ void main() {
     expect(member.description, 'Legacy private profile');
   });
 
+  test('migrates unauthenticated empty protected text', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final crypto = HavenCrypto(await generateMasterKey());
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+    final now = DateTime.now().toUtc();
+    await (database.update(database.pluralSystems)
+          ..where((row) => row.id.equals(localSystemId)))
+        .write(const PluralSystemsCompanion(name: Value('ph2:')));
+    await database
+        .into(database.members)
+        .insert(
+          MembersCompanion.insert(
+            id: 'member-empty',
+            systemId: localSystemId,
+            displayName: (await crypto.encrypt(
+              'River',
+              aad: 'members:member-empty:display_name',
+            ))!,
+            displayNameHash: Value(await crypto.blindIndex('River')),
+            profileEncryptionVersion: const Value(2),
+            pronouns: const Value(''),
+            lexoRank: '0|zzzzzz',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    await database
+        .into(database.members)
+        .insert(
+          MembersCompanion.insert(
+            id: 'member-partial-migration',
+            systemId: localSystemId,
+            displayName: (await crypto.encrypt(
+              'Mica',
+              aad: 'members:member-partial-migration:display_name',
+            ))!,
+            displayNameHash: Value(await crypto.blindIndex('Mica')),
+            profileEncryptionVersion: const Value(1),
+            pronouns: const Value(''),
+            lexoRank: '0|zzzzzz1',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await repository.migrateUnauthenticatedEmptyCiphertexts();
+    await repository.migrateMemberNamesToEncryption();
+
+    final system = await database.select(database.pluralSystems).getSingle();
+    final members = await database.select(database.members).get();
+    final member = members.singleWhere((row) => row.id == 'member-empty');
+    final partiallyMigrated = members.singleWhere(
+      (row) => row.id == 'member-partial-migration',
+    );
+    expect(system.name, startsWith('ph2:v2:'));
+    expect(member.pronouns, startsWith('v2:'));
+    expect(partiallyMigrated.pronouns, startsWith('v2:'));
+    expect(partiallyMigrated.profileEncryptionVersion, 2);
+    expect((await repository.loadHomeSnapshot()).systemName, '');
+    final summaries = await repository.watchMembers().first;
+    expect(
+      summaries.singleWhere((row) => row.id == 'member-empty').pronouns,
+      '',
+    );
+    expect(
+      summaries
+          .singleWhere((row) => row.id == 'member-partial-migration')
+          .displayName,
+      'Mica',
+    );
+    expect(
+      await (database.select(database.appPreferences)..where(
+            (row) => row.key.equals('internal.empty_ciphertext_sweep_version'),
+          ))
+          .getSingle()
+          .then((row) => row.value),
+      '1',
+    );
+  });
+
   test('stores members and links them to front sessions', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

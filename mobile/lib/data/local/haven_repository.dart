@@ -75,6 +75,9 @@ const _localEncryptedTextPrefix = 'ph2:';
 const _memberEncryptionSweepPreference =
     'internal.member_encryption_sweep_version';
 const _memberEncryptionSweepVersion = '2';
+const _emptyCiphertextSweepPreference =
+    'internal.empty_ciphertext_sweep_version';
+const _emptyCiphertextSweepVersion = '1';
 const _remoteAvatarRepairPreference = 'internal.remote_avatar_repair_version';
 const _remoteAvatarRepairVersion = '1';
 const _localAvatarEncryptionPreference =
@@ -202,6 +205,9 @@ class LocalHavenRepository implements HavenRepository {
   _memberDecryptCache = {};
 
   Future<void> ensureLocalSystem() => _ensureLocalSystem();
+
+  Future<void> migrateUnauthenticatedEmptyCiphertexts() =>
+      _migrateUnauthenticatedEmptyCiphertexts();
 
   Future<void> migrateMemberNamesToEncryption() =>
       _migrateMemberNamesToEncryption();
