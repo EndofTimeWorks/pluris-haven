@@ -107,43 +107,24 @@ DecodedImportFile _decodeZipImport({
   required String fileName,
   required Uint8List bytes,
 }) {
-  var declaredEntryCount = 0;
-  var declaredExpandedBytes = 0;
-  final archive = ZipDecoder().decodeBytes(
-    bytes,
-    verify: true,
-    callback: (entry) {
-      declaredEntryCount += 1;
-      if (declaredEntryCount > _maxZipEntries) {
-        throw const ImportFileDecodeException(
-          ImportFileDecodeFailure.tooManyZipEntries,
-        );
-      }
-      if (!entry.isFile) return;
-      if (entry.size < 0 ||
-          entry.size > _maxZipEntryBytes ||
-          declaredExpandedBytes > _maxZipExpandedBytes - entry.size) {
-        throw const ImportFileDecodeException(
-          ImportFileDecodeFailure.zipExpansionTooLarge,
-        );
-      }
-      declaredExpandedBytes += entry.size;
-    },
-  );
+  final directory = ZipDirectory()..read(InputMemoryStream(bytes));
+  if (directory.fileHeaders.length > _maxZipEntries) {
+    throw const ImportFileDecodeException(
+      ImportFileDecodeFailure.tooManyZipEntries,
+    );
+  }
   _ZipJsonCandidate? best;
   final avatarAssets = <ImportAvatarAsset>[];
   var expandedBytes = 0;
 
-  for (var entryIndex = 0; entryIndex < archive.length; entryIndex++) {
-    if (entryIndex >= _maxZipEntries) {
-      throw const ImportFileDecodeException(
-        ImportFileDecodeFailure.tooManyZipEntries,
-      );
+  for (final header in directory.fileHeaders) {
+    final entry = header.file;
+    if (entry == null || _isZipSymbolicLink(header)) {
+      throw const ImportFileDecodeException(ImportFileDecodeFailure.invalidZip);
     }
-    final entry = archive[entryIndex];
-    final name = entry.name;
+    final name = entry.filename;
     final lowerName = name.toLowerCase();
-    if (!entry.isFile) {
+    if (name.endsWith('/') || name.endsWith('\\')) {
       continue;
     }
 
@@ -152,16 +133,20 @@ DecodedImportFile _decodeZipImport({
     if (!isAvatar && !isJson) {
       continue;
     }
-    if (entry.size > _maxZipEntryBytes ||
-        expandedBytes > _maxZipExpandedBytes - entry.size) {
+    final remainingBytes = _maxZipExpandedBytes - expandedBytes;
+    if (remainingBytes <= 0) {
       throw const ImportFileDecodeException(
         ImportFileDecodeFailure.zipExpansionTooLarge,
       );
     }
-    expandedBytes += entry.size;
-
-    final fileBytes = entry.readBytes();
-    if (fileBytes == null || fileBytes.isEmpty) {
+    final fileBytes = _readBoundedZipEntry(
+      entry,
+      maximumBytes: remainingBytes < _maxZipEntryBytes
+          ? remainingBytes
+          : _maxZipEntryBytes,
+    );
+    expandedBytes += fileBytes.length;
+    if (fileBytes.isEmpty) {
       continue;
     }
 
@@ -212,6 +197,74 @@ DecodedImportFile _decodeZipImport({
     text: selected.text,
     avatarAssets: avatarAssets,
   );
+}
+
+bool _isZipSymbolicLink(ZipFileHeader header) {
+  const unixCreator = 3;
+  const symbolicLinkMode = 0xa000;
+  return header.versionMadeBy >> 8 == unixCreator &&
+      header.externalFileAttributes >> 16 & 0xf000 == symbolicLinkMode;
+}
+
+Uint8List _readBoundedZipEntry(ZipFile entry, {required int maximumBytes}) {
+  final output = _BoundedZipOutput(maximumBytes);
+  entry.decompress(output);
+  final bytes = output.bytes;
+  if (getCrc32(bytes) != entry.crc32) {
+    throw const ImportFileDecodeException(ImportFileDecodeFailure.invalidZip);
+  }
+  return bytes;
+}
+
+class _BoundedZipOutput extends OutputStream {
+  _BoundedZipOutput(this.maximumBytes)
+    : super(byteOrder: ByteOrder.littleEndian);
+
+  final int maximumBytes;
+  var _bytes = BytesBuilder(copy: false);
+  var _length = 0;
+
+  @override
+  int get length => _length;
+
+  Uint8List get bytes => _bytes.toBytes();
+
+  @override
+  void clear() {
+    _bytes = BytesBuilder(copy: false);
+    _length = 0;
+  }
+
+  @override
+  void flush() {}
+
+  @override
+  Uint8List subset(int start, [int? end]) => bytes.sublist(start, end);
+
+  @override
+  void writeByte(int value) => writeBytes(<int>[value]);
+
+  @override
+  void writeBytes(List<int> values, {int? length}) {
+    final count = length ?? values.length;
+    if (count < 0 || count > values.length || count > maximumBytes - _length) {
+      throw const ImportFileDecodeException(
+        ImportFileDecodeFailure.zipExpansionTooLarge,
+      );
+    }
+    _bytes.add(Uint8List.fromList(values.sublist(0, count)));
+    _length += count;
+  }
+
+  @override
+  void writeStream(InputStream stream) {
+    const chunkSize = 64 * 1024;
+    while (!stream.isEOS) {
+      final count = stream.length < chunkSize ? stream.length : chunkSize;
+      if (count <= 0) break;
+      writeBytes(stream.readBytes(count).toUint8List());
+    }
+  }
 }
 
 bool _looksLikeAvatarAsset(String lowerName, {required String zipFileName}) {

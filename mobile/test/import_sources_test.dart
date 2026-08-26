@@ -249,33 +249,40 @@ void main() {
     );
   });
 
-  test('rejects ZIP entries whose declared expansion is too large', () async {
+  test('does not trust an overstated ZIP entry size', () async {
     final archive = Archive()
       ..addFile(ArchiveFile('export.json', 50 * 1024 * 1024 + 1, [0x7b, 0x7d]));
 
-    await expectLater(
-      decodeImportFileBytes(
-        fileName: 'oversized.zip',
-        bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
-      ),
-      throwsA(
-        isA<ImportFileDecodeException>().having(
-          (error) => error.failure,
-          'failure',
-          ImportFileDecodeFailure.zipExpansionTooLarge,
-        ),
-      ),
+    final decoded = await decodeImportFileBytes(
+      fileName: 'overstated-size.zip',
+      bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
     );
+
+    expect(decoded.text, '{}');
   });
 
-  test('preflights expansion for unsupported ZIP entries', () async {
+  test('does not expand unselected ZIP entries', () async {
     final archive = Archive()
       ..addFile(ArchiveFile('unused.bin', 50 * 1024 * 1024 + 1, const [0x00]))
       ..addFile(ArchiveFile.string('export.json', '{"members":[]}'));
 
+    final decoded = await decodeImportFileBytes(
+      fileName: 'unselected-entry.zip',
+      bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+    );
+
+    expect(decoded.text, '{"members":[]}');
+  });
+
+  test('stops ZIP expansion at the actual entry size limit', () async {
+    final content = Uint8List(20 * 1024 * 1024 + 1)
+      ..fillRange(0, 20 * 1024 * 1024 + 1, 0x61);
+    final archive = Archive()
+      ..addFile(ArchiveFile('export.json', content.length, content));
+
     await expectLater(
       decodeImportFileBytes(
-        fileName: 'oversized-unused-entry.zip',
+        fileName: 'actual-oversized-entry.zip',
         bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
       ),
       throwsA(
