@@ -1,24 +1,28 @@
 # Engineering readiness
 
-Internal release notes, last reviewed 2026-08-16.
+Internal release notes, last reviewed 2026-08-25.
 
 ## Ready for alpha testing
 
-- Android release builds and ABI splits build with the configured signing key.
+- A fresh Android release APK builds with the configured upload key. The local
+  artefact identifies itself as `Pluris Haven (Release)` and has a verified v2
+  APK signature.
 - Local data, import, export, encrypted recovery, and migration tests pass.
 - Simply Plural import has a private local acceptance path. PluralKit has file
   and bounded live-token tests.
 - The static website builds and has generated-page accessibility and security
-  header checks.
+  header checks. The server test suite and a fresh SQLite migration upgrade and
+  schema check also pass.
 
 These are engineering checks, not a claim that every real export or device has
 been tested.
 
 ## Still conditional
 
-- Android needs a smoke test using the actual published release artefact.
-- iOS compiles unsigned in CI, but still needs signing, installation, and
-  physical-device testing.
+- Android needs a smoke test using the actual published release artefact. A
+  locally signed build is not a substitute for the CI-published download.
+- CI now packages an unsigned iOS IPA for testers, but it still needs signing,
+  installation, and physical-device testing.
 - Accessibility has widget and page checks, but still needs TalkBack,
   VoiceOver, keyboard, switch access, large text, contrast, and reduced-motion
   passes on devices.
