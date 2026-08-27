@@ -1153,6 +1153,17 @@ class MemberCustomFieldsSection extends StatelessWidget {
                           value == null || value.displayValue.trim().isEmpty
                               ? l10n.notSetLabel
                               : value.displayValue,
+                          subtitleWidget: CustomFieldValueDisplay(
+                            field: field,
+                            value: value,
+                            emptyLabel: l10n.notSetLabel,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
                           trailing: _customFieldPrivacyPill(field),
                           onTap: () => showCustomFieldValueSheet(
                             context,
@@ -1223,13 +1234,32 @@ class CustomFieldValueSheet extends StatefulWidget {
 
 class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
   late final TextEditingController _valueController;
+  late bool _booleanValue;
+  String? _selectedChoice;
+  late Set<String> _selectedChoices;
+  String? _valueError;
 
   @override
   void initState() {
     super.initState();
+    final value = widget.value?.value;
     _valueController = TextEditingController(
-      text: widget.value?.displayValue ?? '',
+      text: value is Map || value is List
+          ? const JsonEncoder.withIndent('  ').convert(value)
+          : displayCustomFieldValue(value),
     );
+    _booleanValue = value == true || value?.toString().toLowerCase() == 'true';
+    _selectedChoice = value is String ? value : null;
+    _selectedChoices = switch (value) {
+      List values => values.map((item) => item.toString()).toSet(),
+      String text when text.trim().isNotEmpty =>
+        text
+            .split(',')
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty)
+            .toSet(),
+      _ => <String>{},
+    };
   }
 
   @override
@@ -1260,24 +1290,13 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
             const SizedBox(height: 4),
             Text(
               [
-                widget.field.fieldType,
+                customFieldTypeLabel(l10n, widget.field.fieldType),
                 if (privacy != null && privacy.isNotEmpty) privacy,
               ].join(' - '),
               style: const TextStyle(color: _spMuted),
             ),
             const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('custom-field-value-field'),
-              controller: _valueController,
-              autofocus: true,
-              minLines: 1,
-              maxLines: 5,
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                labelText: l10n.valueFieldLabel,
-                hintText: l10n.leaveBlankToClearHint,
-              ),
-            ),
+            _buildValueEditor(context, l10n),
             const SizedBox(height: 14),
             Wrap(
               spacing: 8,
@@ -1302,11 +1321,142 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
     );
   }
 
+  Widget _buildValueEditor(BuildContext context, AppLocalizations l10n) {
+    final type = widget.field.fieldType;
+    final choices = customFieldChoices(widget.field);
+    if (type == 'boolean') {
+      return SwitchListTile.adaptive(
+        key: const ValueKey('custom-field-value-field'),
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.valueFieldLabel),
+        value: _booleanValue,
+        onChanged: (value) => setState(() => _booleanValue = value),
+      );
+    }
+    if (type == 'select' && choices.isNotEmpty) {
+      final values = <String>{...choices, ?_selectedChoice}.toList();
+      return DropdownButtonFormField<String>(
+        key: const ValueKey('custom-field-value-field'),
+        initialValue: _selectedChoice,
+        decoration: InputDecoration(labelText: l10n.valueFieldLabel),
+        items: [
+          for (final choice in values)
+            DropdownMenuItem(value: choice, child: Text(choice)),
+        ],
+        onChanged: (value) => setState(() => _selectedChoice = value),
+      );
+    }
+    if (type == 'multiselect' && choices.isNotEmpty) {
+      return InputDecorator(
+        key: const ValueKey('custom-field-value-field'),
+        decoration: InputDecoration(labelText: l10n.valueFieldLabel),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final choice in choices)
+              FilterChip(
+                label: Text(choice),
+                selected: _selectedChoices.contains(choice),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedChoices.add(choice);
+                    } else {
+                      _selectedChoices.remove(choice);
+                    }
+                  });
+                },
+              ),
+          ],
+        ),
+      );
+    }
+
+    final multiline =
+        type == 'long_text' || type == 'markdown' || type == 'json';
+    final noChoices =
+        (type == 'select' || type == 'multiselect') && choices.isEmpty;
+    return TextField(
+      key: const ValueKey('custom-field-value-field'),
+      controller: _valueController,
+      autofocus: true,
+      minLines: multiline ? 4 : 1,
+      maxLines: multiline ? 10 : 1,
+      keyboardType: switch (type) {
+        'number' => const TextInputType.numberWithOptions(
+          decimal: true,
+          signed: true,
+        ),
+        'url' => TextInputType.url,
+        _ => multiline ? TextInputType.multiline : TextInputType.text,
+      },
+      textInputAction: multiline
+          ? TextInputAction.newline
+          : TextInputAction.done,
+      readOnly: type == 'date' || type == 'datetime',
+      onTap: switch (type) {
+        'date' => _pickDate,
+        'datetime' => _pickDateTime,
+        _ => null,
+      },
+      decoration: InputDecoration(
+        labelText: l10n.valueFieldLabel,
+        hintText: noChoices
+            ? l10n.customFieldNoChoices
+            : l10n.leaveBlankToClearHint,
+        errorText: _valueError,
+        suffixIcon: switch (type) {
+          'date' || 'datetime' => const Icon(Icons.calendar_month_rounded),
+          'url' => const Icon(Icons.link_rounded),
+          'color' => const Icon(Icons.palette_outlined),
+          'markdown' => const Icon(Icons.text_fields_rounded),
+          'json' => const Icon(Icons.data_object_rounded),
+          _ => null,
+        },
+      ),
+    );
+  }
+
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    final text = _valueController.text.trim();
+    Object? value;
+    switch (widget.field.fieldType) {
+      case 'boolean':
+        value = _booleanValue;
+      case 'select':
+        value = customFieldChoices(widget.field).isEmpty
+            ? text
+            : _selectedChoice;
+      case 'multiselect':
+        value = customFieldChoices(widget.field).isEmpty
+            ? text
+            : _selectedChoices.toList(growable: false);
+      case 'number':
+        value = num.tryParse(text);
+        if (text.isNotEmpty && value == null) {
+          setState(() => _valueError = l10n.customFieldInvalidNumber);
+          return;
+        }
+      case 'json':
+        if (text.isEmpty) {
+          value = null;
+        } else {
+          try {
+            value = jsonDecode(text);
+          } on FormatException {
+            setState(() => _valueError = l10n.customFieldInvalidJson);
+            return;
+          }
+        }
+      default:
+        value = text;
+    }
     await widget.repository.setCustomFieldValue(
       fieldId: widget.field.id,
       memberId: widget.memberId,
-      value: _valueController.text,
+      value: value,
     );
     if (mounted) {
       Navigator.pop(context);
@@ -1317,13 +1467,60 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
     await widget.repository.setCustomFieldValue(
       fieldId: widget.field.id,
       memberId: widget.memberId,
-      value: '',
+      value: null,
     );
     if (mounted) {
       Navigator.pop(context);
     }
   }
+
+  Future<void> _pickDate() async {
+    final initial = DateTime.tryParse(_valueController.text) ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1),
+      lastDate: DateTime(9999, 12, 31),
+    );
+    if (picked == null) return;
+    setState(() {
+      _valueController.text = _dateOnlyText(picked);
+      _valueError = null;
+    });
+  }
+
+  Future<void> _pickDateTime() async {
+    final initial = DateTime.tryParse(_valueController.text) ?? DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1),
+      lastDate: DateTime(9999, 12, 31),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return;
+    final selected = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      _valueController.text = selected.toIso8601String();
+      _valueError = null;
+    });
+  }
 }
+
+String _dateOnlyText(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
 
 String _memberPronouns(MemberSummary member, AppLocalizations l10n) {
   final pronouns = member.pronouns?.trim();

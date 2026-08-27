@@ -138,7 +138,7 @@ class CustomFieldTile extends StatelessWidget {
         ),
         subtitle: Text(
           [
-            field.fieldType,
+            customFieldTypeLabel(l10n, field.fieldType),
             l10n.valueCount(field.valueCount),
             if (privacy != null && privacy.isNotEmpty) privacy,
           ].join(' - '),
@@ -238,7 +238,7 @@ void showCustomFieldDetailSheet(
                         const SizedBox(height: 4),
                         Text(
                           l10n.customFieldValueSummary(
-                            field.fieldType,
+                            customFieldTypeLabel(l10n, field.fieldType),
                             values.length,
                           ),
                           style: TextStyle(color: scheme.onSurfaceVariant),
@@ -257,10 +257,10 @@ void showCustomFieldDetailSheet(
                   l10n.systemLabel,
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
-                subtitle: Text(
-                  systemValue == null || systemValue.displayValue.trim().isEmpty
-                      ? l10n.notSetLabel
-                      : systemValue.displayValue,
+                subtitle: CustomFieldValueDisplay(
+                  field: field,
+                  value: systemValue,
+                  emptyLabel: l10n.notSetLabel,
                   style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
                 trailing: const Icon(Icons.edit_rounded, size: 18),
@@ -293,8 +293,9 @@ void showCustomFieldDetailSheet(
                           owner,
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
-                        subtitle: Text(
-                          value.displayValue,
+                        subtitle: CustomFieldValueDisplay(
+                          field: field,
+                          value: value,
                           style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                         trailing: const Icon(Icons.edit_rounded, size: 18),
@@ -343,7 +344,11 @@ class AddCustomFieldSheet extends StatefulWidget {
 class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   final _nameController = TextEditingController();
   final _privacyController = TextEditingController();
+  final _choicesController = TextEditingController();
+  final _customTypeController = TextEditingController();
   String _fieldType = 'text';
+  String? _typeError;
+  String? _choicesError;
   bool get _isEditing => widget.field != null;
 
   @override
@@ -355,13 +360,21 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
     }
     _nameController.text = field.name;
     _privacyController.text = field.privacy ?? '';
-    _fieldType = field.fieldType;
+    if (customFieldTypes.contains(field.fieldType)) {
+      _fieldType = field.fieldType;
+    } else {
+      _fieldType = _customFieldTypeSentinel;
+      _customTypeController.text = field.fieldType;
+    }
+    _choicesController.text = customFieldChoices(field).join('\n');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _privacyController.dispose();
+    _choicesController.dispose();
+    _customTypeController.dispose();
     super.dispose();
   }
 
@@ -370,7 +383,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           18,
           0,
@@ -404,22 +417,44 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
               key: const ValueKey('custom-field-type-field'),
               initialValue: _fieldType,
               decoration: InputDecoration(labelText: l10n.typeFieldLabel),
-              items: [
-                DropdownMenuItem(value: 'text', child: Text(l10n.textType)),
-                DropdownMenuItem(value: 'number', child: Text(l10n.numberType)),
-                DropdownMenuItem(value: 'date', child: Text(l10n.dateType)),
-                DropdownMenuItem(
-                  value: 'boolean',
-                  child: Text(l10n.booleanType),
-                ),
-                DropdownMenuItem(value: 'select', child: Text(l10n.selectType)),
-              ],
+              items: _customFieldTypeItems(l10n),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _fieldType = value);
+                  setState(() {
+                    _fieldType = value;
+                    _typeError = null;
+                    _choicesError = null;
+                  });
                 }
               },
             ),
+            if (_fieldType == _customFieldTypeSentinel) ...[
+              const SizedBox(height: 10),
+              TextField(
+                key: const ValueKey('custom-field-type-id-field'),
+                controller: _customTypeController,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: l10n.customFieldTypeIdLabel,
+                  hintText: l10n.customFieldTypeIdHint,
+                  errorText: _typeError,
+                ),
+              ),
+            ],
+            if (_fieldType == 'select' || _fieldType == 'multiselect') ...[
+              const SizedBox(height: 10),
+              TextField(
+                key: const ValueKey('custom-field-choices-field'),
+                controller: _choicesController,
+                minLines: 3,
+                maxLines: 6,
+                decoration: InputDecoration(
+                  labelText: l10n.customFieldChoicesLabel,
+                  hintText: l10n.customFieldChoicesHint,
+                  errorText: _choicesError,
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('custom-field-privacy-field'),
@@ -447,10 +482,34 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    final selectedType = _fieldType == _customFieldTypeSentinel
+        ? _customTypeController.text.trim()
+        : _fieldType;
+    if (selectedType.isEmpty) {
+      setState(() => _typeError = l10n.customFieldTypeIdRequired);
+      return;
+    }
+    final choices = _parseCustomFieldChoices(_choicesController.text);
+    if (choices.length > 100) {
+      setState(() => _choicesError = l10n.customFieldChoicesTooMany);
+      return;
+    }
+    if (choices.any((choice) => choice.length > 100)) {
+      setState(() => _choicesError = l10n.customFieldChoiceTooLong);
+      return;
+    }
+    final configuration = <String, Object?>{...?widget.field?.configuration};
+    if (selectedType == 'select' || selectedType == 'multiselect') {
+      configuration['choices'] = choices;
+    } else {
+      configuration.remove('choices');
+    }
     final draft = CustomFieldDraft(
       name: _nameController.text,
-      fieldType: _fieldType,
+      fieldType: selectedType,
       privacy: _privacyController.text,
+      configuration: configuration,
     );
     final field = widget.field;
     if (field == null) {
@@ -462,4 +521,164 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
       Navigator.pop(context);
     }
   }
+}
+
+const _customFieldTypeSentinel = '__custom__';
+
+List<DropdownMenuItem<String>> _customFieldTypeItems(AppLocalizations l10n) => [
+  DropdownMenuItem(value: 'text', child: Text(l10n.textType)),
+  DropdownMenuItem(value: 'long_text', child: Text(l10n.longTextType)),
+  DropdownMenuItem(value: 'markdown', child: Text(l10n.markdownType)),
+  DropdownMenuItem(value: 'number', child: Text(l10n.numberType)),
+  DropdownMenuItem(value: 'date', child: Text(l10n.dateType)),
+  DropdownMenuItem(value: 'datetime', child: Text(l10n.dateTimeType)),
+  DropdownMenuItem(value: 'boolean', child: Text(l10n.booleanType)),
+  DropdownMenuItem(value: 'url', child: Text(l10n.urlType)),
+  DropdownMenuItem(value: 'color', child: Text(l10n.colorType)),
+  DropdownMenuItem(value: 'select', child: Text(l10n.selectType)),
+  DropdownMenuItem(value: 'multiselect', child: Text(l10n.multiselectType)),
+  DropdownMenuItem(value: 'json', child: Text(l10n.jsonType)),
+  DropdownMenuItem(
+    value: _customFieldTypeSentinel,
+    child: Text(l10n.customFieldType),
+  ),
+];
+
+String customFieldTypeLabel(AppLocalizations l10n, String type) =>
+    switch (type) {
+      'text' => l10n.textType,
+      'long_text' => l10n.longTextType,
+      'markdown' => l10n.markdownType,
+      'number' => l10n.numberType,
+      'date' => l10n.dateType,
+      'datetime' => l10n.dateTimeType,
+      'boolean' => l10n.booleanType,
+      'url' => l10n.urlType,
+      'color' => l10n.colorType,
+      'select' => l10n.selectType,
+      'multiselect' => l10n.multiselectType,
+      'json' => l10n.jsonType,
+      _ => type,
+    };
+
+List<String> customFieldChoices(CustomFieldSummary field) {
+  Object? choices = field.configuration['choices'];
+  final options = field.configuration['options'];
+  if (choices == null && options is Map) choices = options['choices'];
+  if (choices is! List) return const [];
+  return [
+    for (final choice in choices)
+      if (choice is String && choice.trim().isNotEmpty) choice.trim(),
+  ];
+}
+
+List<String> _parseCustomFieldChoices(String text) {
+  final seen = <String>{};
+  final choices = <String>[];
+  for (final line in text.split('\n')) {
+    final choice = line.trim();
+    if (choice.isEmpty || !seen.add(choice.toLowerCase())) continue;
+    choices.add(choice);
+  }
+  return choices;
+}
+
+class CustomFieldValueDisplay extends StatelessWidget {
+  const CustomFieldValueDisplay({
+    super.key,
+    required this.field,
+    required this.value,
+    this.emptyLabel = '',
+    this.style,
+  });
+
+  final CustomFieldSummary field;
+  final CustomFieldValueSummary? value;
+  final String emptyLabel;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = value?.displayValue.trim() ?? '';
+    if (text.isEmpty) return Text(emptyLabel, style: style);
+    if (field.fieldType == 'markdown') {
+      return MarkdownBody(
+        data: text,
+        selectable: true,
+        shrinkWrap: true,
+        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+          p: style,
+          a: style?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+        imageBuilder: (uri, title, alt) => Semantics(
+          label: AppLocalizations.of(context).markdownImageBlockedLabel,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hide_image_outlined, size: 16),
+              if (alt != null && alt.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Flexible(child: Text(alt, style: style)),
+              ],
+            ],
+          ),
+        ),
+        onTapLink: (label, href, title) => _openCustomFieldLink(href),
+      );
+    }
+    if (field.fieldType == 'url') {
+      return InkWell(
+        onTap: () => _openCustomFieldLink(text),
+        child: Text(
+          text,
+          style: style?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+    if (field.fieldType == 'color') {
+      final color = _customFieldColor(text);
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (color != null) ...[
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(child: Text(text, style: style)),
+        ],
+      );
+    }
+    return Text(text, style: style);
+  }
+}
+
+Future<void> _openCustomFieldLink(String? value) async {
+  final uri = Uri.tryParse(value ?? '');
+  if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) return;
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+Color? _customFieldColor(String value) {
+  final normalized = value.trim().replaceFirst('#', '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$').hasMatch(normalized)) {
+    return null;
+  }
+  final argb = normalized.length == 6 ? 'ff$normalized' : normalized;
+  return Color(int.parse(argb, radix: 16));
 }

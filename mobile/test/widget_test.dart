@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
@@ -1288,7 +1289,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Favorite drink'), findsOneWidget);
-    expect(find.text('select - 0 values - private'), findsOneWidget);
+    expect(find.text('Select - 0 values - private'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Custom field actions'));
     await tester.pumpAndSettle();
@@ -1323,7 +1324,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('select - 1 value - private'), findsOneWidget);
+    expect(find.text('Select - 1 value - private'), findsOneWidget);
 
     await repository.saveMember(const MemberDraft(displayName: 'Iris'));
     final field = repository._customFields.single;
@@ -1350,7 +1351,7 @@ void main() {
     repository._customFieldValuesController.add(repository._customFieldValues);
     await tester.pumpAndSettle();
 
-    expect(find.text('select - 2 values - private'), findsOneWidget);
+    expect(find.text('Select - 2 values - private'), findsOneWidget);
 
     await tester.tap(find.text('Comfort drink'));
     await tester.pumpAndSettle();
@@ -1371,6 +1372,194 @@ void main() {
 
     expect(find.text('No custom fields yet'), findsOneWidget);
     expect(repository._customFieldValues, isEmpty);
+  });
+
+  testWidgets('configures and stores multiselect custom field values', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add field'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-name-field')),
+      'Comfort drinks',
+    );
+    await tester.tap(find.byKey(const ValueKey('custom-field-type-field')));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -320));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Multiple select').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-choices-field')),
+      'Coffee\nTea\ncoffee',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-custom-field-button')));
+    await tester.pumpAndSettle();
+
+    final field = repository._customFields.single;
+    expect(field.fieldType, 'multiselect');
+    expect(field.configuration['choices'], ['Coffee', 'Tea']);
+
+    await tester.tap(find.text('Comfort drinks'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Coffee'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Tea'));
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._customFieldValues.single.value, ['Coffee', 'Tea']);
+  });
+
+  testWidgets('stores boolean and structured JSON custom field values', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'boolean-field',
+        name: 'Needs support',
+        fieldType: 'boolean',
+        position: 0,
+        valueCount: 0,
+      ),
+      CustomFieldSummary(
+        id: 'json-field',
+        name: 'Structured profile',
+        fieldType: 'json',
+        position: 1,
+        valueCount: 0,
+      ),
+    ];
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Needs support'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('custom-field-value-field')));
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      repository._customFieldValues
+          .singleWhere((value) => value.fieldId == 'boolean-field')
+          .value,
+      isTrue,
+    );
+
+    await tester.tap(find.text('Structured profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-value-field')),
+      '{bad json',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Enter valid JSON.'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-value-field')),
+      '{"energy": 7, "safe": true}',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      repository._customFieldValues
+          .singleWhere((value) => value.fieldId == 'json-field')
+          .value,
+      const {'energy': 7, 'safe': true},
+    );
+  });
+
+  testWidgets('renders Markdown fields without loading embedded images', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'markdown-field',
+        name: 'Profile notes',
+        fieldType: 'markdown',
+        position: 0,
+        valueCount: 1,
+      ),
+    ];
+    repository._customFieldValues = const [
+      CustomFieldValueSummary(
+        id: 'markdown-value',
+        fieldId: 'markdown-field',
+        value:
+            '**Important** [reference](https://example.com) '
+            '![tracker](https://example.com/tracker.png)',
+      ),
+    ];
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Profile notes'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MarkdownBody), findsOneWidget);
+    expect(find.byIcon(Icons.hide_image_outlined), findsOneWidget);
   });
 
   testWidgets('shows custom field values on member profiles', (tester) async {

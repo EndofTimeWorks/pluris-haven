@@ -316,6 +316,7 @@ class SpSettingsRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.interactive = true,
+    this.subtitleWidget,
   });
 
   final String title;
@@ -323,6 +324,7 @@ class SpSettingsRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final bool interactive;
+  final Widget? subtitleWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -345,13 +347,14 @@ class SpSettingsRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
-                ),
+                subtitleWidget ??
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
               ],
             ),
           ),

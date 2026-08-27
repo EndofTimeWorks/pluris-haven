@@ -5670,6 +5670,18 @@ abstract class AppLocalizations {
   /// **'Text'**
   String get textType;
 
+  /// No description provided for @longTextType.
+  ///
+  /// In en, this message translates to:
+  /// **'Long text'**
+  String get longTextType;
+
+  /// No description provided for @markdownType.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown'**
+  String get markdownType;
+
   /// No description provided for @numberType.
   ///
   /// In en, this message translates to:
@@ -5682,17 +5694,119 @@ abstract class AppLocalizations {
   /// **'Date'**
   String get dateType;
 
+  /// No description provided for @dateTimeType.
+  ///
+  /// In en, this message translates to:
+  /// **'Date and time'**
+  String get dateTimeType;
+
   /// No description provided for @booleanType.
   ///
   /// In en, this message translates to:
   /// **'Boolean'**
   String get booleanType;
 
+  /// No description provided for @urlType.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get urlType;
+
+  /// No description provided for @colorType.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour'**
+  String get colorType;
+
   /// No description provided for @selectType.
   ///
   /// In en, this message translates to:
   /// **'Select'**
   String get selectType;
+
+  /// No description provided for @multiselectType.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple select'**
+  String get multiselectType;
+
+  /// No description provided for @jsonType.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured JSON'**
+  String get jsonType;
+
+  /// No description provided for @customFieldType.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom / imported type'**
+  String get customFieldType;
+
+  /// No description provided for @customFieldTypeIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type ID'**
+  String get customFieldTypeIdLabel;
+
+  /// No description provided for @customFieldTypeIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'example.app.rating'**
+  String get customFieldTypeIdHint;
+
+  /// No description provided for @customFieldTypeIdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a type ID.'**
+  String get customFieldTypeIdRequired;
+
+  /// No description provided for @customFieldChoicesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choices'**
+  String get customFieldChoicesLabel;
+
+  /// No description provided for @customFieldChoicesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One choice per line'**
+  String get customFieldChoicesHint;
+
+  /// No description provided for @customFieldChoicesTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Use no more than 100 choices.'**
+  String get customFieldChoicesTooMany;
+
+  /// No description provided for @customFieldChoiceTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep each choice under 100 characters.'**
+  String get customFieldChoiceTooLong;
+
+  /// No description provided for @customFieldInvalidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number.'**
+  String get customFieldInvalidNumber;
+
+  /// No description provided for @customFieldInvalidJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid JSON.'**
+  String get customFieldInvalidJson;
+
+  /// No description provided for @customFieldNoChoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Add choices to this field definition first.'**
+  String get customFieldNoChoices;
+
+  /// No description provided for @markdownImageBlockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image not loaded automatically'**
+  String get markdownImageBlockedLabel;
 
   /// No description provided for @privacyOptionsHint.
   ///

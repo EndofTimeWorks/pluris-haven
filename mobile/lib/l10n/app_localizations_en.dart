@@ -3259,16 +3259,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textType => 'Text';
 
   @override
+  String get longTextType => 'Long text';
+
+  @override
+  String get markdownType => 'Markdown';
+
+  @override
   String get numberType => 'Number';
 
   @override
   String get dateType => 'Date';
 
   @override
+  String get dateTimeType => 'Date and time';
+
+  @override
   String get booleanType => 'Boolean';
 
   @override
+  String get urlType => 'Link';
+
+  @override
+  String get colorType => 'Colour';
+
+  @override
   String get selectType => 'Select';
+
+  @override
+  String get multiselectType => 'Multiple select';
+
+  @override
+  String get jsonType => 'Structured JSON';
+
+  @override
+  String get customFieldType => 'Custom / imported type';
+
+  @override
+  String get customFieldTypeIdLabel => 'Type ID';
+
+  @override
+  String get customFieldTypeIdHint => 'example.app.rating';
+
+  @override
+  String get customFieldTypeIdRequired => 'Enter a type ID.';
+
+  @override
+  String get customFieldChoicesLabel => 'Choices';
+
+  @override
+  String get customFieldChoicesHint => 'One choice per line';
+
+  @override
+  String get customFieldChoicesTooMany => 'Use no more than 100 choices.';
+
+  @override
+  String get customFieldChoiceTooLong =>
+      'Keep each choice under 100 characters.';
+
+  @override
+  String get customFieldInvalidNumber => 'Enter a valid number.';
+
+  @override
+  String get customFieldInvalidJson => 'Enter valid JSON.';
+
+  @override
+  String get customFieldNoChoices =>
+      'Add choices to this field definition first.';
+
+  @override
+  String get markdownImageBlockedLabel => 'Image not loaded automatically';
 
   @override
   String get privacyOptionsHint => 'private, friends, public';
