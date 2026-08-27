@@ -24,12 +24,12 @@ void main() {
     );
 
     expect((source['members'] as List<Object?>), hasLength(65));
-    expect(decodedAvatars.avatarAssets, hasLength(17));
+    expect(decodedAvatars.avatarAssets, hasLength(18));
     expect(normalized.warnings, isEmpty);
     expect(normalized.counts, containsPair('members', 65));
     expect(normalized.counts, containsPair('custom_field_values', 520));
     expect(normalized.counts, containsPair('fronts', 195));
-    expect(normalized.counts, containsPair('avatar_assets', 17));
+    expect(normalized.counts, containsPair('avatar_assets', 18));
     expect(normalized.counts, containsPair('journals', 13));
     expect(normalized.counts, containsPair('polls', 1));
   });

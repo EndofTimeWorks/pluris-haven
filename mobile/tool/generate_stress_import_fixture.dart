@@ -186,6 +186,9 @@ StressImportFixture buildStressImportFixture(int memberCount) {
   }
 
   final archive = Archive();
+  archive.addFile(
+    ArchiveFile('avatars/system-avatar.png', _avatarPng.length, _avatarPng),
+  );
   for (var index = 0; index < avatarCount; index++) {
     final memberIndex = index * 4;
     archive.addFile(
@@ -199,7 +202,11 @@ StressImportFixture buildStressImportFixture(int memberCount) {
 
   return StressImportFixture(
     exportJson: const JsonEncoder.withIndent('  ').convert({
-      'system': {'name': 'Pluris stress fixture'},
+      'system': {
+        'name': 'Pluris stress fixture',
+        'color': colors.first,
+        'avatarUuid': 'system-avatar',
+      },
       'members': members,
       'groups': groups,
       'customFields': [
@@ -218,7 +225,7 @@ StressImportFixture buildStressImportFixture(int memberCount) {
         {'_id': 'bucket-2', 'name': 'Public', 'color': '3b82f6'},
       ],
       'frontHistory': frontHistory,
-      'customFronts': [
+      'frontStatuses': [
         for (var index = 0; index < max(1, memberCount ~/ 40); index++)
           {
             '_id': 'custom-front-$index',

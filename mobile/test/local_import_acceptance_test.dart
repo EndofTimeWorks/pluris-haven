@@ -78,10 +78,14 @@ void main() {
           (importedArchive['system'] as Map<String, dynamic>?)!;
       expect(importedSystem['color_hex'], isNotNull);
       expect(importedSystem['avatar_url'], startsWith('local-avatar:'));
-      final importedAvatar = _testAvatarFile(
-        importedSystem['avatar_url'] as String,
+      expect(
+        _archiveAvatarIds(importedArchive),
+        contains(
+          (importedSystem['avatar_url'] as String).substring(
+            'local-avatar:'.length,
+          ),
+        ),
       );
-      expect(await importedAvatar.exists(), isTrue);
       await _expectFrontMemberReferencesValid(database);
 
       final firstExport = await repository.buildLocalArchiveJson();
@@ -114,8 +118,6 @@ void main() {
         passphrase: recoveryCode.value,
       );
       expect(_archiveCollectionCounts(_decodeArchive(decrypted)), firstCounts);
-      await importedAvatar.delete();
-      expect(await importedAvatar.exists(), isFalse);
 
       final rehearsal = await repository.rehearseLocalArchiveRestore(
         decrypted,
@@ -143,8 +145,12 @@ void main() {
           (restoredArchive['system'] as Map<String, dynamic>?)!;
       expect(restoredSystem['avatar_url'], startsWith('local-avatar:'));
       expect(
-        await _testAvatarFile(restoredSystem['avatar_url'] as String).exists(),
-        isTrue,
+        _archiveAvatarIds(restoredArchive),
+        contains(
+          (restoredSystem['avatar_url'] as String).substring(
+            'local-avatar:'.length,
+          ),
+        ),
       );
       await _expectFrontMemberReferencesValid(restoredDatabase);
       final restoredExport = await restoredRepository.buildLocalArchiveJson();
@@ -234,6 +240,13 @@ Map<String, int> _archiveCollectionCounts(Map<String, dynamic> archive) => {
       entry.key: (entry.value as List).length,
 };
 
+Set<String> _archiveAvatarIds(Map<String, dynamic> archive) =>
+    (archive['avatar_assets'] as List<Object?>)
+        .whereType<Map<String, Object?>>()
+        .map((asset) => asset['id'])
+        .whereType<String>()
+        .toSet();
+
 void _expectImportedCounts(
   Map<String, int> imported,
   Map<String, dynamic> normalized,
@@ -257,11 +270,4 @@ Future<void> _expectFrontMemberReferencesValid(AppDatabase database) async {
 
   expect(links.every((link) => memberIds.contains(link.memberId)), isTrue);
   expect(links.every((link) => frontIds.contains(link.sessionId)), isTrue);
-}
-
-File _testAvatarFile(String avatarUrl) {
-  final fileName = avatarUrl.substring('local-avatar:'.length);
-  return File(
-    '${Directory.systemTemp.path}/pluris-haven-test/avatars/$fileName',
-  );
 }
