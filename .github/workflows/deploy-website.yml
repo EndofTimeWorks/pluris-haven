@@ -42,7 +42,7 @@ jobs:
             fi
           done
 
-      - name: Pull and build website over SSH
+      - name: Run website deployment over SSH
         run: |
           set -euo pipefail
 
@@ -58,8 +58,6 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="${known_hosts}" \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "site_path='${DEPLOY_PATH:-/srv/pluris-haven}'; \
+            "site_path='${DEPLOY_PATH:-/home/end/pluris-haven}'; \
              cd \"\${site_path}\" && \
-             git pull --ff-only origin main && \
-             pnpm --dir website install --frozen-lockfile && \
-             pnpm --dir website build"
+             ./deploy.sh"

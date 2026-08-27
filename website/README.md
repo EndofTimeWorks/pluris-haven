@@ -15,8 +15,9 @@ pnpm preview
 ## SSH deploy
 
 The repository includes a GitHub Actions deployment workflow. After a successful
-`CI` run on `main`, it can connect over SSH, pull the exact fast-forward update,
-install the locked website dependencies, and rebuild the static site.
+`CI` run on `main`, it can connect over SSH and run the deployment script that
+pulls the exact fast-forward update, installs the locked website dependencies,
+rebuilds the static site, and checks the live response.
 
 Configure these repository Actions secrets before enabling it:
 
@@ -24,27 +25,24 @@ Configure these repository Actions secrets before enabling it:
 - `WEBSITE_DEPLOY_USER`
 - `WEBSITE_DEPLOY_KEY`
 - `WEBSITE_DEPLOY_KNOWN_HOSTS`
-- `WEBSITE_DEPLOY_PATH` (optional; defaults to `/srv/pluris-haven`)
+- `WEBSITE_DEPLOY_PATH` (optional; defaults to `/home/end/pluris-haven`)
 
 The SSH key should be restricted to the deployment account and the known-hosts
 value should be generated from the intended host out of band. The host must
 already have repository access for `git pull`, Node.js, pnpm, and the static
 web-server configuration.
 
-The equivalent manual commands on the host are:
+The host deployment entrypoint is:
 
 ```sh
-cd /srv/pluris-haven
-git pull --ff-only
-cd website
-pnpm install --frozen-lockfile
-pnpm build
+cd /home/end/pluris-haven
+./deploy.sh
 ```
 
 Point nginx, Caddy, or another static file server at:
 
 ```text
-/srv/pluris-haven/website/build
+/home/end/pluris-haven/website/build
 ```
 
 The build uses `@sveltejs/adapter-static` with precompressed `.gz` and `.br`
