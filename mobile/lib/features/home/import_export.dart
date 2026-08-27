@@ -1440,23 +1440,13 @@ class LocalArchiveSheet extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 320),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _spSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _spLine),
-                    ),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        archive!,
-                        style: const TextStyle(
-                          color: _spMuted,
-                          fontFamily: 'monospace',
-                          fontSize: 11,
-                          height: 1.35,
-                        ),
+                  Semantics(
+                    container: true,
+                    label: l10n.localArchiveContentsHidden,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        l10n.localArchiveContentsHidden,
+                        style: const TextStyle(color: _spMuted, height: 1.35),
                       ),
                     ),
                   ),

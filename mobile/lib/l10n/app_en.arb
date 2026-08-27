@@ -886,6 +886,7 @@
   "@couldNotSaveEncryptedArchive": { "placeholders": { "error": { "type": "String" } } },
   "localArchiveTitle": "Local archive",
   "localArchiveDescription": "Unencrypted JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.",
+  "localArchiveContentsHidden": "Archive contents are hidden here for privacy. Save the JSON file to inspect it.",
   "buildingLocalArchiveSemanticLabel": "Building local archive. Please wait.",
   "buildingLocalArchiveStatus": "Building local archive...",
   "archiveErrorSemanticLabel": "Archive error: {error}",

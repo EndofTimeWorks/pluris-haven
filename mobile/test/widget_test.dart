@@ -2575,8 +2575,14 @@ void main() {
     expect(find.text('Save JSON file'), findsOneWidget);
     expect(find.text('Copy JSON'), findsOneWidget);
     expect(find.textContaining('Unencrypted JSON export'), findsOneWidget);
-    expect(find.textContaining('pluris_haven.local_archive'), findsOneWidget);
-    expect(find.textContaining('Caretakers'), findsOneWidget);
+    expect(
+      find.text(
+        'Archive contents are hidden here for privacy. Save the JSON file to inspect it.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('pluris_haven.local_archive'), findsNothing);
+    expect(find.textContaining('Caretakers'), findsNothing);
 
     await tester.tap(find.text('Copy JSON'));
     await tester.pumpAndSettle();

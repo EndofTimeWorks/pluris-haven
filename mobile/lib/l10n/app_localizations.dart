@@ -3949,6 +3949,12 @@ abstract class AppLocalizations {
   /// **'Unencrypted JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.'**
   String get localArchiveDescription;
 
+  /// No description provided for @localArchiveContentsHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive contents are hidden here for privacy. Save the JSON file to inspect it.'**
+  String get localArchiveContentsHidden;
+
   /// No description provided for @buildingLocalArchiveSemanticLabel.
   ///
   /// In en, this message translates to:

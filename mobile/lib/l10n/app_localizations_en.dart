@@ -2249,6 +2249,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unencrypted JSON export for backup or migration. It includes local members, groups, journals, notes, fronts, tags, polls, custom fields, and app preferences.';
 
   @override
+  String get localArchiveContentsHidden =>
+      'Archive contents are hidden here for privacy. Save the JSON file to inspect it.';
+
+  @override
   String get buildingLocalArchiveSemanticLabel =>
       'Building local archive. Please wait.';
 
