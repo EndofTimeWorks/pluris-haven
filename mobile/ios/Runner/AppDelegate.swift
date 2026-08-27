@@ -268,7 +268,7 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
     case "saveFile":
       guard
         let sourcePath = arguments?["sourcePath"] as? String,
-        FileManager.default.fileExists(atPath: sourcePath)
+        isOwnedExportSource(sourcePath)
       else {
         result(FlutterError(code: "invalid_save", message: "Missing export source.", details: nil))
         return
@@ -285,7 +285,7 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
       guard
         let sourcePath = arguments?["sourcePath"] as? String,
         let fileName = arguments?["fileName"] as? String,
-        FileManager.default.fileExists(atPath: sourcePath)
+        isOwnedExportSource(sourcePath)
       else {
         result(FlutterError(code: "invalid_share", message: "Missing share source or filename.", details: nil))
         return
@@ -433,5 +433,19 @@ private final class NativeFileDialogHandler: NSObject, UIDocumentPickerDelegate 
   private var pickedFilesDirectory: URL {
     FileManager.default.temporaryDirectory
       .appendingPathComponent("pluris-haven-picked-files", isDirectory: true)
+  }
+
+  private func isOwnedExportSource(_ path: String) -> Bool {
+    let source = URL(fileURLWithPath: path).resolvingSymlinksInPath()
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+      .resolvingSymlinksInPath()
+    let parent = source.deletingLastPathComponent()
+    guard
+      source.path.hasPrefix(temporaryDirectory.path + "/"),
+      parent.lastPathComponent.hasPrefix("pluris-haven-export-"),
+      FileManager.default.fileExists(atPath: source.path)
+    else { return false }
+    let values = try? source.resourceValues(forKeys: [.isRegularFileKey])
+    return values?.isRegularFile == true
   }
 }
