@@ -770,12 +770,14 @@ class _ExternalArchiveNormalizer {
           sourceExternalId ?? _anonymousExternalId('custom-field', name);
       final id = _stableId('custom-field', externalId);
       final rawType = field['type'] ?? field['field_type'];
+      final fieldType = _customFieldType(rawType);
       _customFieldIdsByExternalId[externalId] = id;
       _customFieldRawTypesByExternalId[externalId] = rawType;
       records.add({
         'id': id,
         'name': clampedName,
-        'field_type': _customFieldType(rawType),
+        'field_type': fieldType,
+        'configuration': _customFieldConfiguration(field, rawType),
         'privacy': _firstString(field, const ['privacy', 'private', 'bucket']),
         'position':
             _intValue(field['order']) ?? _intValue(field['position']) ?? index,
@@ -921,24 +923,23 @@ class _ExternalArchiveNormalizer {
     return records;
   }
 
-  String _customFieldValueForField(String fieldExternalId, Object? value) {
+  Object? _customFieldValueForField(String fieldExternalId, Object? value) {
     final rawType = _customFieldRawTypesByExternalId[fieldExternalId];
-    final textValue = _customFieldValue(value);
     final normalizedType = rawType?.toString().trim().toLowerCase();
     if (rawType == 1 || normalizedType == 'color') {
+      final textValue = _customFieldValue(value);
       return _normalizeColor(textValue) ?? textValue;
     }
     if (rawType == 2 ||
-        rawType == 3 ||
-        rawType == 4 ||
-        rawType == 5 ||
         rawType == 6 ||
-        rawType == 7 ||
         normalizedType == 'date' ||
         normalizedType == 'datetime' ||
         normalizedType == 'timestamp') {
+      final textValue = _customFieldValue(value);
       return _parseDateValue(value)?.toUtc().toIso8601String() ?? textValue;
     }
+    if (value is! String) return value;
+    final textValue = value;
     return _clamp(
       _replaceMemberPlaceholders(textValue) ?? textValue,
       _capCustomFieldValue,
@@ -2879,18 +2880,61 @@ int? _monthDayFromScheduleText(String text) {
 String _customFieldType(Object? value) {
   if (value is int) {
     return switch (value) {
-      2 || 6 => 'date',
-      _ => 'text',
+      0 => 'text',
+      1 => 'color',
+      2 => 'date',
+      3 => 'month',
+      4 => 'year',
+      5 => 'month_year',
+      6 => 'datetime',
+      7 => 'month_day',
+      _ => 'simply_plural.type_$value',
     };
   }
   final text = value?.toString().trim().toLowerCase();
   return switch (text) {
+    null || '' || 'string' => 'text',
     'number' || 'numeric' || 'integer' => 'number',
-    'date' || 'datetime' || 'timestamp' => 'date',
+    'date' => 'date',
+    'datetime' || 'timestamp' => 'datetime',
     'bool' || 'boolean' => 'boolean',
     'select' || 'choice' || 'dropdown' => 'select',
-    _ => 'text',
+    'multi_select' || 'multi-select' || 'multiselect' => 'multiselect',
+    'markdown' || 'md' => 'markdown',
+    'url' || 'uri' || 'link' => 'url',
+    'colour' || 'color' => 'color',
+    'json' || 'object' => 'json',
+    _ => _customFieldTypeId(text),
   };
+}
+
+Map<String, Object?> _customFieldConfiguration(
+  Map<String, Object?> field,
+  Object? rawType,
+) {
+  final configuration = <String, Object?>{};
+  final imported = _mapValue(field['configuration'] ?? field['config']);
+  if (imported != null) configuration.addAll(imported);
+
+  final options = field['options'];
+  if (options is Map) {
+    configuration['options'] = Map<String, Object?>.from(options);
+  } else if (options is List) {
+    configuration['choices'] = List<Object?>.from(options);
+  }
+  final choices = field['choices'];
+  if (choices is List) {
+    configuration['choices'] = List<Object?>.from(choices);
+  }
+  if (rawType != null) configuration['source_type'] = rawType;
+  return configuration;
+}
+
+String _customFieldTypeId(String value) {
+  final normalized = value
+      .replaceAll(RegExp(r'[\s-]+'), '_')
+      .replaceAll(RegExp(r'[^a-z0-9_.:]'), '');
+  return normalized.isEmpty ? 'text' : normalized;
 }
 
 String _customFieldValue(Object? value) {

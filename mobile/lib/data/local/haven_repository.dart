@@ -47,7 +47,13 @@ export 'chat_store.dart'
         ChatChannelDraft,
         ChatChannelSummary;
 export 'custom_field_store.dart'
-    show CustomFieldDraft, CustomFieldSummary, CustomFieldValueSummary;
+    show
+        CustomFieldDraft,
+        CustomFieldSummary,
+        CustomFieldValueSummary,
+        customFieldTypes,
+        displayCustomFieldValue,
+        isEmptyCustomFieldValue;
 export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
@@ -471,7 +477,7 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> setCustomFieldValue({
     required String fieldId,
     required String? memberId,
-    required String value,
+    required Object? value,
   }) => _customFields.setValue(
     fieldId: fieldId,
     memberId: memberId,

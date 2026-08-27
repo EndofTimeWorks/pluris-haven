@@ -3539,6 +3539,7 @@ class FakeHavenRepository implements HavenRepository {
         name: name,
         fieldType: draft.fieldType,
         privacy: _nullIfBlank(draft.privacy),
+        configuration: draft.configuration,
         position: _customFields.length,
         valueCount: 0,
       ),
@@ -3561,6 +3562,7 @@ class FakeHavenRepository implements HavenRepository {
             name: name,
             fieldType: draft.fieldType,
             privacy: _nullIfBlank(draft.privacy),
+            configuration: draft.configuration,
             position: field.position,
             valueCount: field.valueCount,
           )
@@ -3588,16 +3590,16 @@ class FakeHavenRepository implements HavenRepository {
   Future<void> setCustomFieldValue({
     required String fieldId,
     required String? memberId,
-    required String value,
+    required Object? value,
   }) async {
-    final trimmed = value.trim();
+    final normalized = value is String ? value.trim() : value;
     final ownerId = _nullIfBlank(memberId);
     final existingIndex = _customFieldValues.indexWhere(
       (fieldValue) =>
           fieldValue.fieldId == fieldId && fieldValue.memberId == ownerId,
     );
 
-    if (trimmed.isEmpty) {
+    if (isEmptyCustomFieldValue(normalized)) {
       if (existingIndex != -1) {
         _customFieldValues = [
           for (var index = 0; index < _customFieldValues.length; index++)
@@ -3611,7 +3613,7 @@ class FakeHavenRepository implements HavenRepository {
           id: 'fake-custom-field-value-${_customFieldValues.length + 1}',
           fieldId: fieldId,
           memberId: ownerId,
-          value: trimmed,
+          value: normalized,
         ),
       ];
     } else {
@@ -3622,7 +3624,7 @@ class FakeHavenRepository implements HavenRepository {
               id: _customFieldValues[index].id,
               fieldId: fieldId,
               memberId: ownerId,
-              value: trimmed,
+              value: normalized,
             )
           else
             _customFieldValues[index],
@@ -3636,6 +3638,7 @@ class FakeHavenRepository implements HavenRepository {
           name: field.name,
           fieldType: field.fieldType,
           privacy: field.privacy,
+          configuration: field.configuration,
           position: field.position,
           valueCount: _customFieldValues
               .where((value) => value.fieldId == field.id)

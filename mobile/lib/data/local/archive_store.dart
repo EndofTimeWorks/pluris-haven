@@ -2075,6 +2075,16 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           'privacy',
         ),
       ),
+      configuration: Value(
+        await _encryptNullableLocalText(
+          field['configuration'] is Map
+              ? jsonEncode(field['configuration'])
+              : null,
+          'custom_field_definitions',
+          id,
+          'configuration',
+        ),
+      ),
       position: Value(_intValue(field['position']) ?? 0),
       createdAt: _dateValue(field['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
@@ -2100,7 +2110,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       fieldId: fieldId,
       memberId: Value(_stringValue(value['member_id'])),
       value: await _encryptLocalText(
-        _stringValue(value['value']) ?? '',
+        encodeCustomFieldValue(value['value']),
         'custom_field_values',
         id,
         'value',

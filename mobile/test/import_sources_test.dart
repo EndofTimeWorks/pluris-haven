@@ -766,13 +766,13 @@ void main() {
       fields.singleWhere(
         (field) => field['name'] == 'Aura color',
       )['field_type'],
-      'text',
+      'color',
     );
     expect(
       fields.singleWhere(
         (field) => field['name'] == 'Known since',
       )['field_type'],
-      'date',
+      'datetime',
     );
     expect(
       valuesByField['simplyplural_file-custom-field-colorfield'],
@@ -783,6 +783,44 @@ void main() {
       '2026-01-01T00:00:00.000Z',
     );
   });
+
+  test(
+    'preserves unknown custom field types, options, and structured values',
+    () {
+      final archive = normalizeImportTextToLocalArchive(
+        source: ImportSource.simplyPlural,
+        fileName: 'future-fields.json',
+        importedAt: DateTime.utc(2026),
+        text: '''
+{
+  "members": [
+    {
+      "_id": "m1",
+      "name": "Iris",
+      "customFields": {"future": {"value": 7, "unit": "levels"}}
+    }
+  ],
+  "customFields": [
+    {
+      "id": "future",
+      "name": "Energy profile",
+      "type": "prism.slider",
+      "options": {"minimum": 0, "maximum": 10}
+    }
+  ]
+}
+''',
+      );
+
+      final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+      final field = (decoded['custom_fields'] as List).single;
+      final value = (decoded['custom_field_values'] as List).single;
+      expect(field['field_type'], 'prism.slider');
+      expect(field['configuration']['source_type'], 'prism.slider');
+      expect(field['configuration']['options']['maximum'], 10);
+      expect(value['value'], const {'value': 7, 'unit': 'levels'});
+    },
+  );
 
   test('normalizes Simply Plural epoch and Firebase timestamps', () {
     final archive = normalizeImportTextToLocalArchive(

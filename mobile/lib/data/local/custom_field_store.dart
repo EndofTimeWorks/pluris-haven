@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
@@ -10,6 +12,7 @@ class CustomFieldSummary {
     required this.name,
     required this.fieldType,
     this.privacy,
+    this.configuration = const {},
     required this.position,
     required this.valueCount,
   });
@@ -18,6 +21,7 @@ class CustomFieldSummary {
   final String name;
   final String fieldType;
   final String? privacy;
+  final Map<String, Object?> configuration;
   final int position;
   final int valueCount;
 }
@@ -27,11 +31,13 @@ class CustomFieldDraft {
     required this.name,
     this.fieldType = 'text',
     this.privacy,
+    this.configuration = const {},
   });
 
   final String name;
   final String fieldType;
   final String? privacy;
+  final Map<String, Object?> configuration;
 }
 
 class CustomFieldValueSummary {
@@ -45,7 +51,9 @@ class CustomFieldValueSummary {
   final String id;
   final String fieldId;
   final String? memberId;
-  final String value;
+  final Object? value;
+
+  String get displayValue => displayCustomFieldValue(value);
 }
 
 class LocalCustomFieldStore {
@@ -70,12 +78,13 @@ SELECT
   f.name,
   f.field_type,
   f.privacy,
+  f.configuration,
   f.position,
   COUNT(v.id) AS value_count
 FROM custom_field_definitions f
 LEFT JOIN custom_field_values v ON v.field_id = f.id
 WHERE f.system_id = ?
-GROUP BY f.id, f.name, f.field_type, f.privacy, f.position
+GROUP BY f.id, f.name, f.field_type, f.privacy, f.configuration, f.position
 ORDER BY f.position ASC
 ''',
           variables: [Variable<String>(localSystemId)],
@@ -104,6 +113,14 @@ ORDER BY f.position ASC
                   'custom_field_definitions',
                   row.read<String>('id'),
                   'privacy',
+                ),
+                configuration: decodeCustomFieldConfiguration(
+                  await decryptText(
+                    row.readNullable<String>('configuration'),
+                    'custom_field_definitions',
+                    row.read<String>('id'),
+                    'configuration',
+                  ),
                 ),
                 position: row.read<int>('position'),
                 valueCount: row.read<int>('value_count'),
@@ -135,14 +152,15 @@ WHERE f.system_id = ?
                 id: row.read<String>('id'),
                 fieldId: row.read<String>('field_id'),
                 memberId: row.readNullable<String>('member_id'),
-                value:
-                    (await decryptText(
-                      row.read<String>('value'),
-                      'custom_field_values',
-                      row.read<String>('id'),
-                      'value',
-                    )) ??
-                    '',
+                value: decodeCustomFieldValue(
+                  (await decryptText(
+                        row.read<String>('value'),
+                        'custom_field_values',
+                        row.read<String>('id'),
+                        'value',
+                      )) ??
+                      '',
+                ),
               ),
           ],
         );
@@ -152,9 +170,7 @@ WHERE f.system_id = ?
     final name = draft.name.trim();
     if (name.isEmpty) return;
 
-    final fieldType = _allowedTypes.contains(draft.fieldType)
-        ? draft.fieldType
-        : 'text';
+    final fieldType = normalizeCustomFieldType(draft.fieldType);
     final now = DateTime.now().toUtc();
     final fieldId = newLocalId('custom-field');
     final positionExpression = database.customFieldDefinitions.position.max();
@@ -188,6 +204,14 @@ WHERE f.system_id = ?
                 'privacy',
               ),
             ),
+            configuration: Value(
+              await encryptNullableText(
+                encodeCustomFieldConfiguration(draft.configuration),
+                'custom_field_definitions',
+                fieldId,
+                'configuration',
+              ),
+            ),
             position: Value((maxPosition ?? -1) + 1),
             createdAt: now,
             updatedAt: now,
@@ -199,9 +223,7 @@ WHERE f.system_id = ?
     final name = draft.name.trim();
     if (name.isEmpty) return;
 
-    final fieldType = _allowedTypes.contains(draft.fieldType)
-        ? draft.fieldType
-        : 'text';
+    final fieldType = normalizeCustomFieldType(draft.fieldType);
     await (database.update(database.customFieldDefinitions)..where(
           (field) =>
               field.id.equals(fieldId) & field.systemId.equals(localSystemId),
@@ -225,6 +247,14 @@ WHERE f.system_id = ?
                 'privacy',
               ),
             ),
+            configuration: Value(
+              await encryptNullableText(
+                encodeCustomFieldConfiguration(draft.configuration),
+                'custom_field_definitions',
+                fieldId,
+                'configuration',
+              ),
+            ),
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
@@ -246,7 +276,7 @@ WHERE f.system_id = ?
   Future<void> setValue({
     required String fieldId,
     required String? memberId,
-    required String value,
+    required Object? value,
   }) async {
     final field =
         await (database.select(database.customFieldDefinitions)..where(
@@ -257,7 +287,6 @@ WHERE f.system_id = ?
             .getSingleOrNull();
     if (field == null) return;
 
-    final trimmed = value.trim();
     final ownerId = _nullIfBlank(memberId);
     final existing =
         await (database.select(database.customFieldValues)..where(
@@ -269,7 +298,7 @@ WHERE f.system_id = ?
             ))
             .getSingleOrNull();
 
-    if (trimmed.isEmpty) {
+    if (isEmptyCustomFieldValue(value)) {
       if (existing != null) {
         await (database.delete(
           database.customFieldValues,
@@ -279,6 +308,7 @@ WHERE f.system_id = ?
     }
 
     final now = DateTime.now().toUtc();
+    final storedValue = encodeCustomFieldValue(value);
     if (existing == null) {
       final valueId = newLocalId('custom-field-value');
       await database
@@ -289,7 +319,7 @@ WHERE f.system_id = ?
               fieldId: fieldId,
               memberId: Value(ownerId),
               value: await encryptText(
-                trimmed,
+                storedValue,
                 'custom_field_values',
                 valueId,
                 'value',
@@ -307,7 +337,7 @@ WHERE f.system_id = ?
       CustomFieldValuesCompanion(
         value: Value(
           await encryptText(
-            trimmed,
+            storedValue,
             'custom_field_values',
             existing.id,
             'value',
@@ -324,4 +354,74 @@ WHERE f.system_id = ?
   }
 }
 
-const _allowedTypes = {'text', 'number', 'date', 'boolean', 'select'};
+const customFieldTypes = <String>{
+  'text',
+  'long_text',
+  'markdown',
+  'number',
+  'date',
+  'datetime',
+  'boolean',
+  'url',
+  'color',
+  'select',
+  'multiselect',
+  'json',
+};
+
+const _customFieldValuePrefix = 'phcf1:';
+
+String normalizeCustomFieldType(String value) {
+  final normalized = value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\s-]+'), '_')
+      .replaceAll(RegExp(r'[^a-z0-9_.:]'), '');
+  return normalized.isEmpty ? 'text' : normalized;
+}
+
+String? encodeCustomFieldConfiguration(Map<String, Object?> configuration) {
+  if (configuration.isEmpty) return null;
+  return jsonEncode(configuration);
+}
+
+Map<String, Object?> decodeCustomFieldConfiguration(String? stored) {
+  if (stored == null || stored.isEmpty) return const {};
+  try {
+    final decoded = jsonDecode(stored);
+    if (decoded is Map) {
+      return Map.unmodifiable(decoded.cast<String, Object?>());
+    }
+  } on FormatException {
+    // Keep malformed imported configuration from breaking the field list.
+  }
+  return const {};
+}
+
+String encodeCustomFieldValue(Object? value) =>
+    '$_customFieldValuePrefix${jsonEncode(value)}';
+
+Object? decodeCustomFieldValue(String stored) {
+  if (!stored.startsWith(_customFieldValuePrefix)) return stored;
+  try {
+    return jsonDecode(stored.substring(_customFieldValuePrefix.length));
+  } on FormatException {
+    return stored;
+  }
+}
+
+bool isEmptyCustomFieldValue(Object? value) {
+  if (value == null) return true;
+  if (value is String) return value.trim().isEmpty;
+  if (value is List) return value.isEmpty;
+  return false;
+}
+
+String displayCustomFieldValue(Object? value) {
+  if (value == null) return '';
+  if (value is String) return value;
+  if (value is bool) return value ? 'Yes' : 'No';
+  if (value is List) return value.map(displayCustomFieldValue).join(', ');
+  if (value is num) return value.toString();
+  return const JsonEncoder.withIndent('  ').convert(value);
+}

@@ -1150,9 +1150,9 @@ class MemberCustomFieldsSection extends StatelessWidget {
                         final value = valuesByField[field.id];
                         return SpSettingsRow(
                           field.name,
-                          value == null || value.value.trim().isEmpty
+                          value == null || value.displayValue.trim().isEmpty
                               ? l10n.notSetLabel
-                              : value.value,
+                              : value.displayValue,
                           trailing: _customFieldPrivacyPill(field),
                           onTap: () => showCustomFieldValueSheet(
                             context,
@@ -1227,7 +1227,9 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
   @override
   void initState() {
     super.initState();
-    _valueController = TextEditingController(text: widget.value?.value ?? '');
+    _valueController = TextEditingController(
+      text: widget.value?.displayValue ?? '',
+    );
   }
 
   @override

@@ -166,6 +166,7 @@ class CustomFieldDefinitions extends Table {
   TextColumn get name => text()();
   TextColumn get fieldType => text().withDefault(const Constant('text'))();
   TextColumn get privacy => text().nullable()();
+  TextColumn get configuration => text().nullable()();
   IntColumn get position => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -492,9 +493,9 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
-  // `migrator.createTable(x)` always creates `x` using its CURRENT (v19)
+  // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
   // stored anywhere, and `CREATE TABLE IF NOT EXISTS` means it happily
   // no-ops if the table is already there. That has a sharp edge: if a
@@ -679,6 +680,13 @@ class AppDatabase extends _$AppDatabase {
         for (final statement in _performanceIndexStatements) {
           await migrator.database.customStatement(statement);
         }
+      }
+      if (from < 20) {
+        await _addColumnIfMissing(
+          migrator,
+          customFieldDefinitions,
+          customFieldDefinitions.configuration,
+        );
       }
     },
     beforeOpen: (details) async {

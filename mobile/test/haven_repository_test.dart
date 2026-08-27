@@ -16,6 +16,67 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('preserves extensible custom fields and typed values', () async {
+    final sourceDatabase = AppDatabase(NativeDatabase.memory());
+    final source = testRepository(sourceDatabase);
+    await source.ensureLocalSystem();
+    await source.saveCustomField(
+      const CustomFieldDraft(
+        name: 'Energy profile',
+        fieldType: 'prism.slider',
+        privacy: 'trusted',
+        configuration: {'minimum': 0, 'maximum': 10, 'icon': 'battery'},
+      ),
+    );
+
+    final field = (await source.watchCustomFields().first).single;
+    expect(field.fieldType, 'prism.slider');
+    expect(field.configuration['maximum'], 10);
+    await source.setCustomFieldValue(
+      fieldId: field.id,
+      memberId: null,
+      value: const {'value': 7, 'unit': 'levels'},
+    );
+
+    final stored = (await source.watchCustomFieldValues().first).single;
+    expect(stored.value, const {'value': 7, 'unit': 'levels'});
+    final rawField = await sourceDatabase
+        .select(sourceDatabase.customFieldDefinitions)
+        .getSingle();
+    final rawValue = await sourceDatabase
+        .select(sourceDatabase.customFieldValues)
+        .getSingle();
+    expect(rawField.configuration, isNot(contains('battery')));
+    expect(rawValue.value, isNot(contains('levels')));
+
+    final archive = await source.buildLocalArchiveJson();
+    await sourceDatabase.close();
+    final decoded = jsonDecode(archive) as Map<String, dynamic>;
+    expect(
+      (decoded['custom_fields'] as List).single['configuration'],
+      containsPair('icon', 'battery'),
+    );
+    expect((decoded['custom_field_values'] as List).single['value'], const {
+      'value': 7,
+      'unit': 'levels',
+    });
+
+    final targetDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(targetDatabase.close);
+    final target = testRepository(targetDatabase);
+    await target.ensureLocalSystem();
+    await target.importLocalArchiveJson(
+      archive,
+      fileName: 'custom-fields.json',
+    );
+
+    final restoredField = (await target.watchCustomFields().first).single;
+    final restoredValue = (await target.watchCustomFieldValues().first).single;
+    expect(restoredField.fieldType, 'prism.slider');
+    expect(restoredField.configuration, field.configuration);
+    expect(restoredValue.value, stored.value);
+  });
+
   test('assigns distinct ordering ranks to new members', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

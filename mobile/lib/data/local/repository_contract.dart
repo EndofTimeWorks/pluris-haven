@@ -265,7 +265,7 @@ abstract interface class HavenRepository {
   Future<void> setCustomFieldValue({
     required String fieldId,
     required String? memberId,
-    required String value,
+    required Object? value,
   });
 
   Future<void> saveNote(NoteDraft draft);

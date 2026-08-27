@@ -339,6 +339,14 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       field.id,
       'privacy',
     ),
+    'configuration': decodeCustomFieldConfiguration(
+      await _decryptLocalText(
+        field.configuration,
+        'custom_field_definitions',
+        field.id,
+        'configuration',
+      ),
+    ),
     'position': field.position,
     'created_at': field.createdAt.toIso8601String(),
     'updated_at': field.updatedAt.toIso8601String(),
@@ -350,14 +358,15 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'id': value.id,
     'field_id': value.fieldId,
     'member_id': value.memberId,
-    'value':
-        (await _decryptLocalText(
-          value.value,
-          'custom_field_values',
-          value.id,
-          'value',
-        )) ??
-        '',
+    'value': decodeCustomFieldValue(
+      (await _decryptLocalText(
+            value.value,
+            'custom_field_values',
+            value.id,
+            'value',
+          )) ??
+          '',
+    ),
     'created_at': value.createdAt.toIso8601String(),
     'updated_at': value.updatedAt.toIso8601String(),
   };

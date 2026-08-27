@@ -5750,6 +5750,17 @@ class $CustomFieldDefinitionsTable extends CustomFieldDefinitions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _configurationMeta = const VerificationMeta(
+    'configuration',
+  );
+  @override
+  late final GeneratedColumn<String> configuration = GeneratedColumn<String>(
+    'configuration',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _positionMeta = const VerificationMeta(
     'position',
   );
@@ -5791,6 +5802,7 @@ class $CustomFieldDefinitionsTable extends CustomFieldDefinitions
     name,
     fieldType,
     privacy,
+    configuration,
     position,
     createdAt,
     updatedAt,
@@ -5838,6 +5850,15 @@ class $CustomFieldDefinitionsTable extends CustomFieldDefinitions
       context.handle(
         _privacyMeta,
         privacy.isAcceptableOrUnknown(data['privacy']!, _privacyMeta),
+      );
+    }
+    if (data.containsKey('configuration')) {
+      context.handle(
+        _configurationMeta,
+        configuration.isAcceptableOrUnknown(
+          data['configuration']!,
+          _configurationMeta,
+        ),
       );
     }
     if (data.containsKey('position')) {
@@ -5891,6 +5912,10 @@ class $CustomFieldDefinitionsTable extends CustomFieldDefinitions
         DriftSqlType.string,
         data['${effectivePrefix}privacy'],
       ),
+      configuration: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}configuration'],
+      ),
       position: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}position'],
@@ -5919,6 +5944,7 @@ class CustomFieldDefinition extends DataClass
   final String name;
   final String fieldType;
   final String? privacy;
+  final String? configuration;
   final int position;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -5928,6 +5954,7 @@ class CustomFieldDefinition extends DataClass
     required this.name,
     required this.fieldType,
     this.privacy,
+    this.configuration,
     required this.position,
     required this.createdAt,
     required this.updatedAt,
@@ -5941,6 +5968,9 @@ class CustomFieldDefinition extends DataClass
     map['field_type'] = Variable<String>(fieldType);
     if (!nullToAbsent || privacy != null) {
       map['privacy'] = Variable<String>(privacy);
+    }
+    if (!nullToAbsent || configuration != null) {
+      map['configuration'] = Variable<String>(configuration);
     }
     map['position'] = Variable<int>(position);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -5957,6 +5987,9 @@ class CustomFieldDefinition extends DataClass
       privacy: privacy == null && nullToAbsent
           ? const Value.absent()
           : Value(privacy),
+      configuration: configuration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(configuration),
       position: Value(position),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -5974,6 +6007,7 @@ class CustomFieldDefinition extends DataClass
       name: serializer.fromJson<String>(json['name']),
       fieldType: serializer.fromJson<String>(json['fieldType']),
       privacy: serializer.fromJson<String?>(json['privacy']),
+      configuration: serializer.fromJson<String?>(json['configuration']),
       position: serializer.fromJson<int>(json['position']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -5988,6 +6022,7 @@ class CustomFieldDefinition extends DataClass
       'name': serializer.toJson<String>(name),
       'fieldType': serializer.toJson<String>(fieldType),
       'privacy': serializer.toJson<String?>(privacy),
+      'configuration': serializer.toJson<String?>(configuration),
       'position': serializer.toJson<int>(position),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -6000,6 +6035,7 @@ class CustomFieldDefinition extends DataClass
     String? name,
     String? fieldType,
     Value<String?> privacy = const Value.absent(),
+    Value<String?> configuration = const Value.absent(),
     int? position,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -6009,6 +6045,9 @@ class CustomFieldDefinition extends DataClass
     name: name ?? this.name,
     fieldType: fieldType ?? this.fieldType,
     privacy: privacy.present ? privacy.value : this.privacy,
+    configuration: configuration.present
+        ? configuration.value
+        : this.configuration,
     position: position ?? this.position,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -6022,6 +6061,9 @@ class CustomFieldDefinition extends DataClass
       name: data.name.present ? data.name.value : this.name,
       fieldType: data.fieldType.present ? data.fieldType.value : this.fieldType,
       privacy: data.privacy.present ? data.privacy.value : this.privacy,
+      configuration: data.configuration.present
+          ? data.configuration.value
+          : this.configuration,
       position: data.position.present ? data.position.value : this.position,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -6036,6 +6078,7 @@ class CustomFieldDefinition extends DataClass
           ..write('name: $name, ')
           ..write('fieldType: $fieldType, ')
           ..write('privacy: $privacy, ')
+          ..write('configuration: $configuration, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -6050,6 +6093,7 @@ class CustomFieldDefinition extends DataClass
     name,
     fieldType,
     privacy,
+    configuration,
     position,
     createdAt,
     updatedAt,
@@ -6063,6 +6107,7 @@ class CustomFieldDefinition extends DataClass
           other.name == this.name &&
           other.fieldType == this.fieldType &&
           other.privacy == this.privacy &&
+          other.configuration == this.configuration &&
           other.position == this.position &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -6075,6 +6120,7 @@ class CustomFieldDefinitionsCompanion
   final Value<String> name;
   final Value<String> fieldType;
   final Value<String?> privacy;
+  final Value<String?> configuration;
   final Value<int> position;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -6085,6 +6131,7 @@ class CustomFieldDefinitionsCompanion
     this.name = const Value.absent(),
     this.fieldType = const Value.absent(),
     this.privacy = const Value.absent(),
+    this.configuration = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -6096,6 +6143,7 @@ class CustomFieldDefinitionsCompanion
     required String name,
     this.fieldType = const Value.absent(),
     this.privacy = const Value.absent(),
+    this.configuration = const Value.absent(),
     this.position = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -6111,6 +6159,7 @@ class CustomFieldDefinitionsCompanion
     Expression<String>? name,
     Expression<String>? fieldType,
     Expression<String>? privacy,
+    Expression<String>? configuration,
     Expression<int>? position,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -6122,6 +6171,7 @@ class CustomFieldDefinitionsCompanion
       if (name != null) 'name': name,
       if (fieldType != null) 'field_type': fieldType,
       if (privacy != null) 'privacy': privacy,
+      if (configuration != null) 'configuration': configuration,
       if (position != null) 'position': position,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -6135,6 +6185,7 @@ class CustomFieldDefinitionsCompanion
     Value<String>? name,
     Value<String>? fieldType,
     Value<String?>? privacy,
+    Value<String?>? configuration,
     Value<int>? position,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -6146,6 +6197,7 @@ class CustomFieldDefinitionsCompanion
       name: name ?? this.name,
       fieldType: fieldType ?? this.fieldType,
       privacy: privacy ?? this.privacy,
+      configuration: configuration ?? this.configuration,
       position: position ?? this.position,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -6171,6 +6223,9 @@ class CustomFieldDefinitionsCompanion
     if (privacy.present) {
       map['privacy'] = Variable<String>(privacy.value);
     }
+    if (configuration.present) {
+      map['configuration'] = Variable<String>(configuration.value);
+    }
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
@@ -6194,6 +6249,7 @@ class CustomFieldDefinitionsCompanion
           ..write('name: $name, ')
           ..write('fieldType: $fieldType, ')
           ..write('privacy: $privacy, ')
+          ..write('configuration: $configuration, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -22312,6 +22368,7 @@ typedef $$CustomFieldDefinitionsTableCreateCompanionBuilder =
       required String name,
       Value<String> fieldType,
       Value<String?> privacy,
+      Value<String?> configuration,
       Value<int> position,
       required DateTime createdAt,
       required DateTime updatedAt,
@@ -22324,6 +22381,7 @@ typedef $$CustomFieldDefinitionsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> fieldType,
       Value<String?> privacy,
+      Value<String?> configuration,
       Value<int> position,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -22410,6 +22468,11 @@ class $$CustomFieldDefinitionsTableFilterComposer
 
   ColumnFilters<String> get privacy => $composableBuilder(
     column: $table.privacy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configuration => $composableBuilder(
+    column: $table.configuration,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22506,6 +22569,11 @@ class $$CustomFieldDefinitionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get configuration => $composableBuilder(
+    column: $table.configuration,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get position => $composableBuilder(
     column: $table.position,
     builder: (column) => ColumnOrderings(column),
@@ -22565,6 +22633,11 @@ class $$CustomFieldDefinitionsTableAnnotationComposer
 
   GeneratedColumn<String> get privacy =>
       $composableBuilder(column: $table.privacy, builder: (column) => column);
+
+  GeneratedColumn<String> get configuration => $composableBuilder(
+    column: $table.configuration,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
@@ -22669,6 +22742,7 @@ class $$CustomFieldDefinitionsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> fieldType = const Value.absent(),
                 Value<String?> privacy = const Value.absent(),
+                Value<String?> configuration = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -22679,6 +22753,7 @@ class $$CustomFieldDefinitionsTableTableManager
                 name: name,
                 fieldType: fieldType,
                 privacy: privacy,
+                configuration: configuration,
                 position: position,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -22691,6 +22766,7 @@ class $$CustomFieldDefinitionsTableTableManager
                 required String name,
                 Value<String> fieldType = const Value.absent(),
                 Value<String?> privacy = const Value.absent(),
+                Value<String?> configuration = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
@@ -22701,6 +22777,7 @@ class $$CustomFieldDefinitionsTableTableManager
                 name: name,
                 fieldType: fieldType,
                 privacy: privacy,
+                configuration: configuration,
                 position: position,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

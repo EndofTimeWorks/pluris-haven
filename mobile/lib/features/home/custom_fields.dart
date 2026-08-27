@@ -258,9 +258,9 @@ void showCustomFieldDetailSheet(
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 subtitle: Text(
-                  systemValue == null || systemValue.value.trim().isEmpty
+                  systemValue == null || systemValue.displayValue.trim().isEmpty
                       ? l10n.notSetLabel
-                      : systemValue.value,
+                      : systemValue.displayValue,
                   style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
                 trailing: const Icon(Icons.edit_rounded, size: 18),
@@ -294,7 +294,7 @@ void showCustomFieldDetailSheet(
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         subtitle: Text(
-                          value.value,
+                          value.displayValue,
                           style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                         trailing: const Icon(Icons.edit_rounded, size: 18),
