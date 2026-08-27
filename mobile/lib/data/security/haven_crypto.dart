@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 /// Field-level encryption and blind-index HMAC for Pluris Haven.
 ///
@@ -109,12 +110,12 @@ class HavenCrypto {
   /// for use as a blind-index column. Two plaintexts that differ only in
   /// case or whitespace produce the same index.
   ///
-  /// Normalization: lowercase + trim + collapse internal whitespace.
+  /// Normalization: NFC + lowercase + trim + collapse internal whitespace.
   Future<String> blindIndex(String plaintext) async {
-    final normalized = plaintext.toLowerCase().trim().replaceAll(
-      RegExp(r'\s+'),
-      ' ',
-    );
+    final normalized = unorm
+        .nfc(plaintext.toLowerCase())
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
     final mac = await _mac.calculateMac(
       utf8.encode(normalized),
       secretKey: await _blindIndexKey,

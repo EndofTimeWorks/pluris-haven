@@ -72,6 +72,13 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
+    test('blindIndex normalizes canonically equivalent Unicode', () async {
+      final composed = await crypto.blindIndex('Caf\u00e9');
+      final decomposed = await crypto.blindIndex('Cafe\u0301');
+
+      expect(composed, decomposed);
+    });
+
     test('deriveMasterKey accepts only 32 random bytes', () async {
       final key = await deriveMasterKey(
         List<int>.generate(32, (index) => index),

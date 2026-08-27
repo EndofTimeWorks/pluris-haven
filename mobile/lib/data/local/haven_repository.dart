@@ -78,6 +78,9 @@ const _memberEncryptionSweepVersion = '2';
 const _emptyCiphertextSweepPreference =
     'internal.empty_ciphertext_sweep_version';
 const _emptyCiphertextSweepVersion = '1';
+const _blindIndexNormalizationPreference =
+    'internal.blind_index_normalization_version';
+const _blindIndexNormalizationVersion = '1';
 const _remoteAvatarRepairPreference = 'internal.remote_avatar_repair_version';
 const _remoteAvatarRepairVersion = '1';
 const _localAvatarEncryptionPreference =
@@ -213,6 +216,9 @@ class LocalHavenRepository implements HavenRepository {
 
   Future<void> migrateMemberNamesToEncryption() =>
       _migrateMemberNamesToEncryption();
+
+  Future<void> migrateBlindIndexesToUnicodeNormalization() =>
+      _migrateBlindIndexesToUnicodeNormalization();
 
   @override
   Stream<HomeSnapshot> watchHomeSnapshot() => _homeWatchSnapshot();

@@ -383,6 +383,48 @@ void main() {
     );
   });
 
+  test('reindexes existing member names with Unicode normalization', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final crypto = HavenCrypto(await generateMasterKey());
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.members)
+        .insert(
+          MembersCompanion.insert(
+            id: 'member-unicode',
+            systemId: localSystemId,
+            displayName: (await crypto.encrypt(
+              'Cafe\u0301',
+              aad: 'members:member-unicode:display_name',
+            ))!,
+            displayNameHash: const Value('legacy-normalization-hash'),
+            profileEncryptionVersion: const Value(2),
+            lexoRank: '0|zzzzzz',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await repository.migrateBlindIndexesToUnicodeNormalization();
+    final migrated = (await database.select(database.members).get()).single;
+    expect(migrated.displayNameHash, await crypto.blindIndex('Caf\u00e9'));
+
+    final changesAfterMigration = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
+    await repository.migrateBlindIndexesToUnicodeNormalization();
+    final changesAfterNoOp = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
+    expect(
+      changesAfterNoOp.read<int>('count'),
+      changesAfterMigration.read<int>('count'),
+    );
+  });
+
   test('stores members and links them to front sessions', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

@@ -177,6 +177,41 @@ extension LocalHavenRepositoryMemberSecurity on LocalHavenRepository {
     });
   }
 
+  Future<void> _migrateBlindIndexesToUnicodeNormalization() async {
+    if (await _preferenceEquals(
+      _blindIndexNormalizationPreference,
+      _blindIndexNormalizationVersion,
+    )) {
+      return;
+    }
+    await database.transaction(() async {
+      final members = await (database.select(
+        database.members,
+      )..where((member) => member.systemId.equals(localSystemId))).get();
+      for (final member in members) {
+        final displayName = await _decryptMember(
+          member,
+          'display_name',
+          member.displayName,
+        );
+        if (displayName == null) {
+          throw StateError('Member name could not be indexed: ${member.id}');
+        }
+        await (database.update(
+          database.members,
+        )..where((row) => row.id.equals(member.id))).write(
+          MembersCompanion(
+            displayNameHash: Value(await crypto.blindIndex(displayName)),
+          ),
+        );
+      }
+      await _writePreference(
+        _blindIndexNormalizationPreference,
+        _blindIndexNormalizationVersion,
+      );
+    });
+  }
+
   Future<void> _verifyEncryptedMemberProfile(Member member) async {
     await _decryptMember(member, 'display_name', member.displayName);
     await _decryptMember(member, 'pronouns', member.pronouns);

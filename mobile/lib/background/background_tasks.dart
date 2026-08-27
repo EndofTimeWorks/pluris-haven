@@ -50,6 +50,7 @@ Future<bool> _runBackgroundTask(
     await repository.ensureLocalSystem();
     await repository.migrateUnauthenticatedEmptyCiphertexts();
     await repository.migrateMemberNamesToEncryption();
+    await repository.migrateBlindIndexesToUnicodeNormalization();
     switch (task) {
       case importArchiveTaskName:
         final jobId = inputData['job_id'] as String?;

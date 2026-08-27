@@ -58,6 +58,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     await repository.ensureLocalSystem();
     await repository.migrateUnauthenticatedEmptyCiphertexts();
     await repository.migrateMemberNamesToEncryption();
+    await repository.migrateBlindIndexesToUnicodeNormalization();
     final serverAccount = ServerAccountController();
     appDebugLog('Local repository ready');
 
