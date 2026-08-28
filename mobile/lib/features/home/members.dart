@@ -1124,13 +1124,11 @@ class MemberCustomFieldsSection extends StatelessWidget {
       builder: (context, fieldsSnapshot) {
         final fields = fieldsSnapshot.data ?? const <CustomFieldSummary>[];
         return StreamBuilder<List<CustomFieldValueSummary>>(
-          stream: repository.watchCustomFieldValues(),
+          stream: repository.watchCustomFieldValues(memberId: memberId),
           initialData: const [],
           builder: (context, valuesSnapshot) {
             final values =
-                (valuesSnapshot.data ?? const <CustomFieldValueSummary>[])
-                    .where((value) => value.memberId == memberId)
-                    .toList(growable: false);
+                valuesSnapshot.data ?? const <CustomFieldValueSummary>[];
             final valuesByField = {
               for (final value in values) value.fieldId: value,
             };

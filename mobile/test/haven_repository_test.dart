@@ -77,6 +77,65 @@ void main() {
     expect(restoredValue.value, stored.value);
   });
 
+  test('decrypts only scoped custom field values', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final crypto = _CountingHavenCrypto();
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
+    final members = await repository.watchMembers().first;
+    final river = members.singleWhere(
+      (member) => member.displayName == 'River',
+    );
+    final juniper = members.singleWhere(
+      (member) => member.displayName == 'Juniper',
+    );
+
+    await repository.saveCustomField(const CustomFieldDraft(name: 'Mood'));
+    await repository.saveCustomField(const CustomFieldDraft(name: 'Energy'));
+    final fields = await repository.watchCustomFields().first;
+    final mood = fields.singleWhere((field) => field.name == 'Mood');
+    final energy = fields.singleWhere((field) => field.name == 'Energy');
+
+    await repository.setCustomFieldValue(
+      fieldId: mood.id,
+      memberId: river.id,
+      value: 'calm',
+    );
+    await repository.setCustomFieldValue(
+      fieldId: mood.id,
+      memberId: juniper.id,
+      value: 'focused',
+    );
+    await repository.setCustomFieldValue(
+      fieldId: energy.id,
+      memberId: river.id,
+      value: 7,
+    );
+
+    crypto.decryptCalls = 0;
+    expect(
+      await repository.watchCustomFieldValues(fieldId: mood.id).first,
+      hasLength(2),
+    );
+    expect(crypto.decryptCalls, 2);
+
+    expect(
+      await repository.watchCustomFieldValues(memberId: river.id).first,
+      hasLength(2),
+    );
+
+    expect(
+      await repository
+          .watchCustomFieldValues(fieldId: mood.id, memberId: river.id)
+          .first,
+      hasLength(1),
+    );
+  });
+
   test('assigns distinct ordering ranks to new members', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

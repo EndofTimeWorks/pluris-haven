@@ -261,8 +261,10 @@ class LocalHavenRepository implements HavenRepository {
       _customFields.watchFields();
 
   @override
-  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() =>
-      _customFields.watchValues();
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues({
+    String? fieldId,
+    String? memberId,
+  }) => _customFields.watchValues(fieldId: fieldId, memberId: memberId);
 
   @override
   Stream<List<GroupSummary>> watchGroups() => _groups.watch();

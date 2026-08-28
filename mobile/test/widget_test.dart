@@ -3140,8 +3140,18 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues() {
-    return _customFieldValuesController.stream.map(List.unmodifiable);
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues({
+    String? fieldId,
+    String? memberId,
+  }) {
+    return _customFieldValuesController.stream.map(
+      (values) => List.unmodifiable([
+        for (final value in values)
+          if ((fieldId == null || value.fieldId == fieldId) &&
+              (memberId == null || value.memberId == memberId))
+            value,
+      ]),
+    );
   }
 
   @override

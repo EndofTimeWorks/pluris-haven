@@ -23,78 +23,53 @@ class CustomFieldsPage extends StatelessWidget {
             .where((field) => field.valueCount > 0)
             .length;
 
-        return StreamBuilder<List<CustomFieldValueSummary>>(
-          stream: repository.watchCustomFieldValues(),
-          initialData: const [],
-          builder: (context, valuesSnapshot) {
-            final values = valuesSnapshot.data ?? const [];
-            return StreamBuilder<List<MemberSummary>>(
-              stream: repository.watchMembers(includeArchived: true),
-              initialData: const [],
-              builder: (context, membersSnapshot) {
-                final members = membersSnapshot.data ?? const <MemberSummary>[];
-                return SpPage(
-                  children: [
-                    SpCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SpSectionHeader(
-                            title: l10n.navigationCustomFields,
-                            trailing: StatusPill(text: '${fields.length}'),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            fields.isEmpty
-                                ? l10n.customFieldsImportDescription
-                                : l10n.customFieldsWithValues(fieldsWithValues),
-                            style: TextStyle(
-                              color: scheme.onSurfaceVariant,
-                              height: 1.35,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          if (fields.isEmpty)
-                            SpEmptyState(
-                              title: l10n.noCustomFieldsYet,
-                              body: l10n.customFieldsEmptyBody,
-                            )
-                          else
-                            for (
-                              var index = 0;
-                              index < fields.length;
-                              index++
-                            ) ...[
-                              CustomFieldTile(
-                                repository: repository,
-                                field: fields[index],
-                                values: values
-                                    .where(
-                                      (value) =>
-                                          value.fieldId == fields[index].id,
-                                    )
-                                    .toList(),
-                                members: members,
-                              ),
-                              if (index != fields.length - 1)
-                                const Divider(height: 1, color: _spLine),
-                            ],
-                          const SizedBox(height: 14),
-                          SpActionRow(
-                            primary: l10n.importTitle,
-                            secondary: l10n.addFieldButton,
-                            onPrimary: onImport,
-                            onSecondary: () =>
-                                showAddCustomFieldSheet(context, repository),
-                          ),
-                        ],
-                      ),
+        return SpPage(
+          children: [
+            SpCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: l10n.navigationCustomFields,
+                    trailing: StatusPill(text: '${fields.length}'),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    fields.isEmpty
+                        ? l10n.customFieldsImportDescription
+                        : l10n.customFieldsWithValues(fieldsWithValues),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
                     ),
-                  ],
-                );
-              },
-            );
-          },
+                  ),
+                  const SizedBox(height: 14),
+                  if (fields.isEmpty)
+                    SpEmptyState(
+                      title: l10n.noCustomFieldsYet,
+                      body: l10n.customFieldsEmptyBody,
+                    )
+                  else
+                    for (var index = 0; index < fields.length; index++) ...[
+                      CustomFieldTile(
+                        repository: repository,
+                        field: fields[index],
+                      ),
+                      if (index != fields.length - 1)
+                        const Divider(height: 1, color: _spLine),
+                    ],
+                  const SizedBox(height: 14),
+                  SpActionRow(
+                    primary: l10n.importTitle,
+                    secondary: l10n.addFieldButton,
+                    onPrimary: onImport,
+                    onSecondary: () =>
+                        showAddCustomFieldSheet(context, repository),
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
@@ -106,14 +81,10 @@ class CustomFieldTile extends StatelessWidget {
     super.key,
     required this.repository,
     required this.field,
-    required this.values,
-    required this.members,
   });
 
   final HavenRepository repository;
   final CustomFieldSummary field;
-  final List<CustomFieldValueSummary> values;
-  final List<MemberSummary> members;
 
   @override
   Widget build(BuildContext context) {
@@ -128,8 +99,6 @@ class CustomFieldTile extends StatelessWidget {
           context,
           repository: repository,
           field: field,
-          values: values,
-          members: members,
         ),
         leading: const AccentDot(),
         title: Text(
@@ -172,144 +141,178 @@ void showCustomFieldDetailSheet(
   BuildContext context, {
   required HavenRepository repository,
   required CustomFieldSummary field,
-  required List<CustomFieldValueSummary> values,
-  required List<MemberSummary> members,
 }) {
-  final namesById = {
-    for (final member in members) member.id: member.displayName,
-  };
-  CustomFieldValueSummary? systemValue;
-  for (final value in values) {
-    if (value.memberId == null) {
-      systemValue = value;
-      break;
-    }
-  }
-  final memberValues = values
-      .where((value) => value.memberId != null)
-      .toList(growable: false);
-
-  void openValueEditor(CustomFieldValueSummary? value, String? memberId) {
-    Navigator.pop(context);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) {
-        return;
-      }
-      showCustomFieldValueSheet(
-        context,
-        repository: repository,
-        field: field,
-        value: value,
-        memberId: memberId,
-      );
-    });
-  }
-
+  final originContext = context;
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) {
-      final l10n = AppLocalizations.of(context);
-      final scheme = Theme.of(context).colorScheme;
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const SpIconBubble(icon: Icons.view_list_rounded),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          field.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.customFieldValueSummary(
-                            customFieldTypeLabel(l10n, field.fieldType),
-                            values.length,
-                          ),
-                          style: TextStyle(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                key: const ValueKey('custom-field-system-value-row'),
-                contentPadding: EdgeInsets.zero,
-                leading: const SpIconBubble(icon: Icons.home_work_rounded),
-                title: Text(
-                  l10n.systemLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: CustomFieldValueDisplay(
-                  field: field,
-                  value: systemValue,
-                  emptyLabel: l10n.notSetLabel,
-                  style: TextStyle(color: scheme.onSurfaceVariant),
-                ),
-                trailing: const Icon(Icons.edit_rounded, size: 18),
-                onTap: () => openValueEditor(systemValue, null),
-              ),
-              if (memberValues.isNotEmpty)
-                const Divider(height: 1, color: _spLine),
-              if (memberValues.isEmpty)
-                SpEmptyState(
-                  title: l10n.noMemberValuesYet,
-                  body: l10n.memberValuesEmptyBody,
-                )
-              else
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 360),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: memberValues.length,
-                    separatorBuilder: (context, index) =>
-                        Divider(height: 1, color: scheme.outlineVariant),
-                    itemBuilder: (context, index) {
-                      final value = memberValues[index];
-                      final memberId = value.memberId;
-                      final owner =
-                          namesById[memberId] ?? l10n.unknownMemberLabel;
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const SpIconBubble(icon: Icons.person_rounded),
-                        title: Text(
-                          owner,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        subtitle: CustomFieldValueDisplay(
-                          field: field,
-                          value: value,
-                          style: TextStyle(color: scheme.onSurfaceVariant),
-                        ),
-                        trailing: const Icon(Icons.edit_rounded, size: 18),
-                        onTap: () => openValueEditor(value, memberId),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    },
+    builder: (context) => _CustomFieldDetailSheet(
+      repository: repository,
+      field: field,
+      originContext: originContext,
+    ),
   );
+}
+
+class _CustomFieldDetailSheet extends StatelessWidget {
+  const _CustomFieldDetailSheet({
+    required this.repository,
+    required this.field,
+    required this.originContext,
+  });
+
+  final HavenRepository repository;
+  final CustomFieldSummary field;
+  final BuildContext originContext;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<CustomFieldValueSummary>>(
+      stream: repository.watchCustomFieldValues(fieldId: field.id),
+      initialData: const [],
+      builder: (context, valuesSnapshot) {
+        final values = valuesSnapshot.data ?? const [];
+        final hasMemberValues = values.any((value) => value.memberId != null);
+        if (!hasMemberValues) return _buildContent(context, values, const []);
+        return StreamBuilder<List<MemberSummary>>(
+          stream: repository.watchMembers(includeArchived: true),
+          initialData: const [],
+          builder: (context, membersSnapshot) =>
+              _buildContent(context, values, membersSnapshot.data ?? const []),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    List<CustomFieldValueSummary> values,
+    List<MemberSummary> members,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final namesById = {
+      for (final member in members) member.id: member.displayName,
+    };
+    final systemValue = values
+        .where((value) => value.memberId == null)
+        .firstOrNull;
+    final memberValues = values
+        .where((value) => value.memberId != null)
+        .toList(growable: false);
+
+    void openValueEditor(CustomFieldValueSummary? value, String? memberId) {
+      Navigator.pop(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!originContext.mounted) return;
+        showCustomFieldValueSheet(
+          originContext,
+          repository: repository,
+          field: field,
+          value: value,
+          memberId: memberId,
+        );
+      });
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const SpIconBubble(icon: Icons.view_list_rounded),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        field.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.customFieldValueSummary(
+                          customFieldTypeLabel(l10n, field.fieldType),
+                          values.length,
+                        ),
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              key: const ValueKey('custom-field-system-value-row'),
+              contentPadding: EdgeInsets.zero,
+              leading: const SpIconBubble(icon: Icons.home_work_rounded),
+              title: Text(
+                l10n.systemLabel,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: CustomFieldValueDisplay(
+                field: field,
+                value: systemValue,
+                emptyLabel: l10n.notSetLabel,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+              trailing: const Icon(Icons.edit_rounded, size: 18),
+              onTap: () => openValueEditor(systemValue, null),
+            ),
+            if (memberValues.isNotEmpty)
+              const Divider(height: 1, color: _spLine),
+            if (memberValues.isEmpty)
+              SpEmptyState(
+                title: l10n.noMemberValuesYet,
+                body: l10n.memberValuesEmptyBody,
+              )
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 360),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: memberValues.length,
+                  separatorBuilder: (context, index) =>
+                      Divider(height: 1, color: scheme.outlineVariant),
+                  itemBuilder: (context, index) {
+                    final value = memberValues[index];
+                    final memberId = value.memberId;
+                    final owner =
+                        namesById[memberId] ?? l10n.unknownMemberLabel;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const SpIconBubble(icon: Icons.person_rounded),
+                      title: Text(
+                        owner,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: CustomFieldValueDisplay(
+                        field: field,
+                        value: value,
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                      trailing: const Icon(Icons.edit_rounded, size: 18),
+                      onTap: () => openValueEditor(value, memberId),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 void showAddCustomFieldSheet(BuildContext context, HavenRepository repository) {

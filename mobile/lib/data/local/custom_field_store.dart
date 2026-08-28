@@ -129,16 +129,29 @@ ORDER BY f.position ASC
         );
   }
 
-  Stream<List<CustomFieldValueSummary>> watchValues() {
+  Stream<List<CustomFieldValueSummary>> watchValues({
+    String? fieldId,
+    String? memberId,
+  }) {
+    final filters = <String>['f.system_id = ?'];
+    final variables = <Variable<Object>>[Variable<String>(localSystemId)];
+    if (fieldId != null) {
+      filters.add('v.field_id = ?');
+      variables.add(Variable<String>(fieldId));
+    }
+    if (memberId != null) {
+      filters.add('v.member_id = ?');
+      variables.add(Variable<String>(memberId));
+    }
     return database
         .customSelect(
           '''
 SELECT v.id, v.field_id, v.member_id, v.value
 FROM custom_field_values v
 INNER JOIN custom_field_definitions f ON f.id = v.field_id
-WHERE f.system_id = ?
+WHERE ${filters.join(' AND ')}
 ''',
-          variables: [Variable<String>(localSystemId)],
+          variables: variables,
           readsFrom: {
             database.customFieldDefinitions,
             database.customFieldValues,

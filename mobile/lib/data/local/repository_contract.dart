@@ -170,7 +170,10 @@ abstract interface class HavenRepository {
 
   Stream<List<CustomFieldSummary>> watchCustomFields();
 
-  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues();
+  Stream<List<CustomFieldValueSummary>> watchCustomFieldValues({
+    String? fieldId,
+    String? memberId,
+  });
 
   Stream<List<PollSummary>> watchPolls();
 
