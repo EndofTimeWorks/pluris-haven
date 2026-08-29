@@ -383,6 +383,7 @@ const customFieldTypes = <String>{
 };
 
 const _customFieldValuePrefix = 'phcf1:';
+const maximumCustomFieldConfigurationCharacters = 5000;
 
 String normalizeCustomFieldType(String value) {
   final normalized = value
@@ -395,7 +396,10 @@ String normalizeCustomFieldType(String value) {
 
 String? encodeCustomFieldConfiguration(Map<String, Object?> configuration) {
   if (configuration.isEmpty) return null;
-  return jsonEncode(configuration);
+  final encoded = jsonEncode(configuration);
+  return encoded.length <= maximumCustomFieldConfigurationCharacters
+      ? encoded
+      : null;
 }
 
 Map<String, Object?> decodeCustomFieldConfiguration(String? stored) {

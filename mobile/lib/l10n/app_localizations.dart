@@ -3559,6 +3559,12 @@ abstract class AppLocalizations {
   /// **'custom field name'**
   String get importTermCustomFieldName;
 
+  /// No description provided for @importTermCustomFieldConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'custom field configuration'**
+  String get importTermCustomFieldConfiguration;
+
   /// No description provided for @importTermContentTitle.
   ///
   /// In en, this message translates to:

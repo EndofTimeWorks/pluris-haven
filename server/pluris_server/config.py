@@ -93,6 +93,15 @@ class Settings(BaseSettings):
             )
         if self.server_id.int == 0:
             raise RuntimeError("PLURIS_SERVER_ID must be a stable, non-zero UUID")
+        required_smtp = {
+            "PLURIS_SMTP_HOST": self.smtp_host,
+            "PLURIS_SMTP_FROM_EMAIL": self.smtp_from_email,
+        }
+        missing_smtp = [name for name, value in required_smtp.items() if not value.strip()]
+        if missing_smtp:
+            raise RuntimeError(f"Production password reset requires: {', '.join(missing_smtp)}")
+        if bool(self.smtp_username.strip()) != bool(self.smtp_password.strip()):
+            raise RuntimeError("PLURIS_SMTP_USERNAME and PLURIS_SMTP_PASSWORD must be set together")
         if self.registration_enabled or self.friends_enabled:
             required_metadata = {
                 "PLURIS_PRIVACY_POLICY_URL": self.privacy_policy_url,

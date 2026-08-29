@@ -822,6 +822,35 @@ void main() {
     },
   );
 
+  test('caps oversized imported custom field configuration', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.simplyPlural,
+      fileName: 'oversized-field-configuration.json',
+      importedAt: DateTime.utc(2026),
+      text: jsonEncode({
+        'customFields': [
+          {
+            'id': 'future',
+            'name': 'Oversized choices',
+            'type': 'future.choice',
+            'choices': List.filled(5001, 'x'),
+          },
+        ],
+      }),
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, dynamic>;
+    final field = (decoded['custom_fields'] as List).single;
+    expect(field['configuration'], {'source_type': 'future.choice'});
+    final warning = archive.warnings.singleWhere(
+      (warning) =>
+          warning.code == ImportDiagnosticCode.stringClamped &&
+          warning.arguments['field'] ==
+              ImportDiagnosticTerm.customFieldConfiguration,
+    );
+    expect(warning.arguments['limit'], 5000);
+  });
+
   test('normalizes Simply Plural epoch and Firebase timestamps', () {
     final archive = normalizeImportTextToLocalArchive(
       source: ImportSource.simplyPlural,

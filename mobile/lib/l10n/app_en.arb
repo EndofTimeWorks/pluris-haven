@@ -782,6 +782,7 @@
   "importTermAvatarUrl": "avatar URL",
   "importTermGroupName": "group name",
   "importTermCustomFieldName": "custom field name",
+  "importTermCustomFieldConfiguration": "custom field configuration",
   "importTermContentTitle": "content title",
   "importTermLongTextField": "long text field",
   "importTermJournalBody": "journal body",

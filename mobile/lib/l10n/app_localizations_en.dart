@@ -1999,6 +1999,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importTermCustomFieldName => 'custom field name';
 
   @override
+  String get importTermCustomFieldConfiguration => 'custom field configuration';
+
+  @override
   String get importTermContentTitle => 'content title';
 
   @override

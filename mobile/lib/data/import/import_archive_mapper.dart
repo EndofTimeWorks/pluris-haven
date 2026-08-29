@@ -788,6 +788,39 @@ class _ExternalArchiveNormalizer {
     return records;
   }
 
+  Map<String, Object?> _customFieldConfiguration(
+    Map<String, Object?> field,
+    Object? rawType,
+  ) {
+    final configuration = <String, Object?>{};
+    final imported = _mapValue(field['configuration'] ?? field['config']);
+    if (imported != null) configuration.addAll(imported);
+
+    final options = field['options'];
+    if (options is Map) {
+      configuration['options'] = Map<String, Object?>.from(options);
+    } else if (options is List) {
+      configuration['choices'] = List<Object?>.from(options);
+    }
+    final choices = field['choices'];
+    if (choices is List) {
+      configuration['choices'] = List<Object?>.from(choices);
+    }
+    if (rawType != null) configuration['source_type'] = rawType;
+
+    final encoded = jsonEncode(configuration);
+    if (encoded.length > _capCustomFieldConfiguration.limit) {
+      _clamp(encoded, _capCustomFieldConfiguration);
+      if (rawType == null) return const {};
+
+      final fallback = <String, Object?>{'source_type': rawType};
+      return jsonEncode(fallback).length <= _capCustomFieldConfiguration.limit
+          ? fallback
+          : const {};
+    }
+    return configuration;
+  }
+
   List<Map<String, Object?>> _normalizeCustomFieldValues() {
     final records = <Map<String, Object?>>[];
     for (final value in _combinedRootLists(const [
@@ -2645,6 +2678,10 @@ const _capCustomFieldValue = _ImportTextCap(
   ImportDiagnosticTerm.customFieldValue,
   5000,
 );
+const _capCustomFieldConfiguration = _ImportTextCap(
+  ImportDiagnosticTerm.customFieldConfiguration,
+  5000,
+);
 const _capContentTitle = _ImportTextCap(ImportDiagnosticTerm.contentTitle, 200);
 const _capLongText = _ImportTextCap(ImportDiagnosticTerm.longTextField, 5000);
 const _capJournalBody = _ImportTextCap(ImportDiagnosticTerm.journalBody, 20000);
@@ -2906,28 +2943,6 @@ String _customFieldType(Object? value) {
     'json' || 'object' => 'json',
     _ => _customFieldTypeId(text),
   };
-}
-
-Map<String, Object?> _customFieldConfiguration(
-  Map<String, Object?> field,
-  Object? rawType,
-) {
-  final configuration = <String, Object?>{};
-  final imported = _mapValue(field['configuration'] ?? field['config']);
-  if (imported != null) configuration.addAll(imported);
-
-  final options = field['options'];
-  if (options is Map) {
-    configuration['options'] = Map<String, Object?>.from(options);
-  } else if (options is List) {
-    configuration['choices'] = List<Object?>.from(options);
-  }
-  final choices = field['choices'];
-  if (choices is List) {
-    configuration['choices'] = List<Object?>.from(choices);
-  }
-  if (rawType != null) configuration['source_type'] = rawType;
-  return configuration;
 }
 
 String _customFieldTypeId(String value) {

@@ -109,7 +109,12 @@ public final class MainActivity extends FlutterFragmentActivity {
                             result.success(false);
                             return;
                         }
-                        try (InputStream input = new FileInputStream(sourcePath);
+                        File source = new File(sourcePath);
+                        if (!isOwnedExportSource(source)) {
+                            result.error("invalid_save", "Save source is not an app export.", null);
+                            return;
+                        }
+                        try (InputStream input = new FileInputStream(source);
                              OutputStream output = getContentResolver()
                                      .openOutputStream(destination, "w")) {
                             if (output == null) {
@@ -340,6 +345,10 @@ public final class MainActivity extends FlutterFragmentActivity {
                     "Missing export source or filename.",
                     null
             );
+            return;
+        }
+        if (!isOwnedExportSource(new File(sourcePath))) {
+            result.error("invalid_save", "Save source is not an app export.", null);
             return;
         }
         String mimeType = call.argument("mimeType");

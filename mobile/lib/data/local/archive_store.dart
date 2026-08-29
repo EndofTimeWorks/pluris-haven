@@ -2057,6 +2057,12 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
   ) async {
     final id = _requiredString(field, 'id');
     final name = _requiredString(field, 'name');
+    final configuration = field['configuration'];
+    final encodedConfiguration = configuration is Map
+        ? encodeCustomFieldConfiguration(
+            Map<String, Object?>.from(configuration),
+          )
+        : null;
     final companion = CustomFieldDefinitionsCompanion.insert(
       id: id,
       systemId: localSystemId,
@@ -2077,9 +2083,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       ),
       configuration: Value(
         await _encryptNullableLocalText(
-          field['configuration'] is Map
-              ? jsonEncode(field['configuration'])
-              : null,
+          encodedConfiguration,
           'custom_field_definitions',
           id,
           'configuration',

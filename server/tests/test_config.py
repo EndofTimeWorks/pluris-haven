@@ -28,6 +28,8 @@ def _production_settings(**overrides: object) -> Settings:
         "friend_code_pepper": "test-friend-code-pepper-that-is-different",
         "server_id": "019ff449-469e-7630-8fb6-d295796ccb0a",
         "public_url": "https://api.example.test",
+        "smtp_host": "smtp.example.test",
+        "smtp_from_email": "pluris@example.test",
     }
     values.update(overrides)
     return Settings(**values)
@@ -48,6 +50,19 @@ def test_production_requires_https_public_url() -> None:
 def test_production_registration_is_closed_until_email_verification_exists() -> None:
     settings = _production_settings(registration_enabled=True)
     with pytest.raises(RuntimeError, match="verified email"):
+        settings.validate_for_startup()
+
+
+@pytest.mark.parametrize("setting", ["smtp_host", "smtp_from_email"])
+def test_production_requires_password_reset_delivery(setting: str) -> None:
+    settings = _production_settings(**{setting: ""})
+    with pytest.raises(RuntimeError, match="password reset"):
+        settings.validate_for_startup()
+
+
+def test_production_requires_complete_smtp_credentials() -> None:
+    settings = _production_settings(smtp_username="pluris")
+    with pytest.raises(RuntimeError, match="set together"):
         settings.validate_for_startup()
 
 

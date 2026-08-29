@@ -206,6 +206,8 @@ String localizeImportDiagnosticTerm(
     ImportDiagnosticTerm.avatarUrl => l10n.importTermAvatarUrl,
     ImportDiagnosticTerm.groupName => l10n.importTermGroupName,
     ImportDiagnosticTerm.customFieldName => l10n.importTermCustomFieldName,
+    ImportDiagnosticTerm.customFieldConfiguration =>
+      l10n.importTermCustomFieldConfiguration,
     ImportDiagnosticTerm.contentTitle => l10n.importTermContentTitle,
     ImportDiagnosticTerm.longTextField => l10n.importTermLongTextField,
     ImportDiagnosticTerm.journalBody => l10n.importTermJournalBody,

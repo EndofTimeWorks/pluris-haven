@@ -59,6 +59,7 @@ enum ImportDiagnosticTerm {
   avatarUrl,
   groupName,
   customFieldName,
+  customFieldConfiguration,
   contentTitle,
   longTextField,
   journalBody,

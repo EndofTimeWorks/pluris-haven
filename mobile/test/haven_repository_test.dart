@@ -136,6 +136,30 @@ void main() {
     );
   });
 
+  test('caps custom field configuration from local archive restores', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+
+    await repository.importLocalArchiveJson(
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'custom_fields': [
+          {
+            'id': 'field-1',
+            'name': 'Oversized choices',
+            'configuration': {'choices': List.filled(5001, 'x')},
+          },
+        ],
+      }),
+    );
+
+    final field = (await repository.watchCustomFields().first).single;
+    expect(field.configuration, isEmpty);
+  });
+
   test('assigns distinct ordering ranks to new members', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
