@@ -103,10 +103,15 @@ jobs:
         run: flutter pub get
 
       - name: Build unsigned iOS app
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: >
           flutter build ios --release --no-codesign
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.build }}"
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=production
 
       - name: Package unsigned IPA
         shell: bash
@@ -181,16 +186,26 @@ jobs:
         run: ../scripts/configure-android-signing.sh
 
       - name: Build release APK
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: >
           flutter --no-color build apk --release
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.build }}"
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=production
 
       - name: Build split per ABI APKs
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: >
           flutter --no-color build apk --release --split-per-abi
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.build }}"
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=production
 
       - name: Collect Android artifacts
         shell: bash

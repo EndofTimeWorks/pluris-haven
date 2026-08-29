@@ -16,13 +16,16 @@ import 'debug/debug_log.dart';
 import 'features/app_lock_gate.dart';
 import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
+import 'observability/crash_reporting.dart';
 import 'platform/native_file_dialog.dart';
 import 'platform/screen_capture_protection.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  appDebugLog('App startup');
-  runApp(const _BootstrapApp());
+Future<void> main() async {
+  await runWithCrashReporting(() {
+    WidgetsFlutterBinding.ensureInitialized();
+    appDebugLog('App startup');
+    runApp(const _BootstrapApp());
+  });
 }
 
 class _BootstrapApp extends StatefulWidget {

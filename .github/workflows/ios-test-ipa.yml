@@ -29,10 +29,15 @@ jobs:
 
       - name: Build unsigned test IPA
         shell: bash
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           set -euo pipefail
           flutter pub get
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign \
+            --dart-define=SENTRY_ENABLED=true \
+            --dart-define=SENTRY_DSN="$SENTRY_DSN" \
+            --dart-define=SENTRY_ENVIRONMENT=test
           mkdir -p build/ios/Payload
           ditto build/ios/iphoneos/Runner.app build/ios/Payload/Runner.app
           (

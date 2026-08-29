@@ -53,6 +53,7 @@ dependencies:
   http: ^1.6.0
   local_auth: ^2.3.0
   flutter_markdown_plus: ^1.0.12
+  sentry_flutter: ^9.28.0
 
 dev_dependencies:
   flutter_test:

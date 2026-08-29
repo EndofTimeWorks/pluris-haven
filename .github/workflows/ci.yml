@@ -116,7 +116,13 @@ jobs:
 
       - name: Build signed dev release APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: flutter build apk --release
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: >
+          flutter build apk --release
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=development
 
       - name: Upload signed dev release APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -263,7 +269,13 @@ jobs:
         run: flutter pub get
 
       - name: Build unsigned iOS app
-        run: flutter build ios --release --no-codesign
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: >
+          flutter build ios --release --no-codesign
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=development
 
       - name: Package unsigned IPA
         shell: bash
