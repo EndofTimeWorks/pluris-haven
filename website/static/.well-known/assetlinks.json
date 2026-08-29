@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "works.endoftime.plurishaven",
+      "sha256_cert_fingerprints": [
+        "5F:E6:37:A3:EC:B6:B8:30:44:23:4A:59:B3:71:30:F0:0A:0F:4A:58:4F:A4:B4:85:0E:E2:B6:CF:3F:EF:E7:23"
+      ]
+    }
+  }
+]
