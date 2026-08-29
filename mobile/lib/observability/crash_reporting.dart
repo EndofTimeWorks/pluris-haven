@@ -22,26 +22,32 @@ Future<void> runWithCrashReporting(void Function() appRunner) async {
     return;
   }
 
-  await SentryFlutter.init((options) {
-    options.dsn = _sentryDsn;
-    options.environment = _sentryEnvironment.isEmpty
-        ? 'production'
-        : _sentryEnvironment;
-    options.sendDefaultPii = false;
-    options.maxBreadcrumbs = 0;
-    options.beforeBreadcrumb = (_, _) => null;
-    options.enableAutoSessionTracking = false;
-    options.enableAutoNativeBreadcrumbs = false;
-    options.enableAutoPerformanceTracing = false;
-    options.enableUserInteractionBreadcrumbs = false;
-    options.enableUserInteractionTracing = false;
-    options.enableAppHangTracking = false;
-    options.enableWatchdogTerminationTracking = false;
-    options.enableFramesTracking = false;
-    options.enableNdkScopeSync = false;
-    options.tracesSampleRate = 0;
-    options.attachScreenshot = false;
-    options.reportViewHierarchyIdentifiers = false;
-    options.sendClientReports = false;
-  }, appRunner: appRunner);
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = _sentryDsn;
+      options.environment = _sentryEnvironment.isEmpty
+          ? 'production'
+          : _sentryEnvironment;
+      options.sendDefaultPii = false;
+      options.maxBreadcrumbs = 0;
+      options.beforeBreadcrumb = (_, _) => null;
+      options.enableAutoSessionTracking = false;
+      options.enableAutoNativeBreadcrumbs = false;
+      options.enableAutoPerformanceTracing = false;
+      options.enableUserInteractionBreadcrumbs = false;
+      options.enableUserInteractionTracing = false;
+      options.enableAppHangTracking = false;
+      options.enableWatchdogTerminationTracking = false;
+      options.enableFramesTracking = false;
+      options.enableNdkScopeSync = false;
+      options.tracesSampleRate = 0;
+      options.attachScreenshot = false;
+      options.reportViewHierarchyIdentifiers = false;
+      options.sendClientReports = false;
+    },
+    appRunner: () {
+      Sentry.configureScope((scope) => scope.setUser(SentryUser()));
+      appRunner();
+    },
+  );
 }
