@@ -55,22 +55,33 @@
   </section>
 
   <section>
-    <h2>Sync later</h2>
+    <h2>Optional hosted accounts and backups</h2>
     <p>
-      Sync, friends, hosted backup, push notifications, and web login are planned as opt-in
-      features. Local use should keep working without them.
+      The app works locally without an account. If you choose a hosted account, the server stores
+      your email address, display name, account ID, password hash, session and security records, and
+      encrypted backup metadata needed to operate that account.
+    </p>
+    <p>
+      Backup contents are encrypted on the device before upload. Pluris Haven stores the encrypted
+      chunks but cannot read the system records inside them. The app does not include advertising or
+      behavioral profiling.
+    </p>
+    <p>
+      Remote avatar downloads happen only when you import or choose a remote avatar. They contact
+      the URL you selected, whose operator has its own privacy practices.
     </p>
   </section>
 
   <section>
-    <h2>Before hosted accounts</h2>
+    <h2>Deletion and export</h2>
     <p>
-      The hosted version needs a written policy for account age, consent, deletion, export, abuse
-      handling, and public sharing before signups open. Until then, this page is a project
-      commitment, not a final legal policy.
+      You can export local data from the app. You can delete individual hosted backups without
+      deleting the account, or request account deletion in the app. Account deletion disables the
+      account immediately and permanently removes its hosted data after a 30-day recovery period.
     </p>
     <div class="actions">
       <a class="button" href="/terms">Read terms draft</a>
+      <a class="button" href="/account-deletion">Delete a hosted account</a>
       <a class="button" href="/support">Report a concern</a>
     </div>
   </section>
