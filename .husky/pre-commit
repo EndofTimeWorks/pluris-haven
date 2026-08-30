@@ -1,8 +1,22 @@
 #!/usr/bin/env sh
 
-pnpm format
-(cd mobile && dart format lib test)
-git add -u
+staged_files="$(mktemp)"
+mobile_dart_files="$(mktemp)"
+trap 'rm -f "$staged_files" "$mobile_dart_files"' EXIT HUP INT TERM
+
+git diff --cached --name-only -z --diff-filter=ACMR >"$staged_files"
+git diff --cached --name-only -z --diff-filter=ACMR -- mobile/lib mobile/test \
+  >"$mobile_dart_files"
+
+if [ -s "$staged_files" ]; then
+  xargs -0 pnpm exec prettier --write --ignore-unknown <"$staged_files"
+  xargs -0 git add -- <"$staged_files"
+fi
+
+if [ -s "$mobile_dart_files" ]; then
+  xargs -0 dart format <"$mobile_dart_files"
+  xargs -0 git add -- <"$mobile_dart_files"
+fi
 
 pnpm check:l10n
 uv run --directory server ruff format --check .
