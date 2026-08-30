@@ -301,9 +301,10 @@ class PlurisHavenApp extends StatelessWidget {
     final isDark = brightness == Brightness.dark;
     final simplyPlural =
         customization.visualTheme == HavenVisualTheme.simplyPlural;
-    final accent = simplyPlural
-        ? const Color(0xFFD9B45B)
-        : Color(customization.effectiveAccentArgb);
+    final accent = Color(customization.effectiveAccentArgb);
+    final onAccent = accent.computeLuminance() > .35
+        ? Colors.black
+        : Colors.white;
     final highContrast = customization.highContrast;
     final surface = simplyPlural
         ? (isDark ? const Color(0xFF20242B) : const Color(0xFFF5F5F2))
@@ -347,13 +348,11 @@ class PlurisHavenApp extends StatelessWidget {
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: accent,
-        onPrimary: Colors.white,
-        secondary: simplyPlural
-            ? const Color(0xFFD9B45B)
-            : const Color(0xFFF2C75C),
-        onSecondary: const Color(0xFF211B00),
-        tertiary: const Color(0xFFF2C75C),
-        onTertiary: const Color(0xFF211B00),
+        onPrimary: onAccent,
+        secondary: accent,
+        onSecondary: onAccent,
+        tertiary: accent,
+        onTertiary: onAccent,
         error: const Color(0xFFFFB4AB),
         onError: const Color(0xFF690005),
         surface: effectiveSurface,
@@ -409,7 +408,10 @@ class PlurisHavenApp extends StatelessWidget {
     required ColorScheme dynamicScheme,
   }) {
     final appearance = customization.appearance;
-    final useCustomPalette = appearance.hasColorOverrides;
+    final useCustomPalette =
+        appearance.hasColorOverrides ||
+        customization.customAccentHex != null ||
+        customization.accentColor != HavenAccentColor.purple;
     final baseScheme = useCustomPalette
         ? ColorScheme.fromSeed(
             seedColor: Color(customization.effectiveAccentArgb),

@@ -57,23 +57,24 @@ class SpNavigationEntry extends StatelessWidget {
 }
 
 class SpIconBubble extends StatelessWidget {
-  const SpIconBubble({super.key, required this.icon, this.color = _spGold});
+  const SpIconBubble({super.key, required this.icon, this.color});
 
   final IconData icon;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
     return ExcludeSemantics(
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.18),
+          color: effectiveColor.withValues(alpha: 0.18),
           shape: BoxShape.circle,
         ),
         child: SizedBox(
           width: 38,
           height: 38,
-          child: Icon(icon, color: color, size: 21),
+          child: Icon(icon, color: effectiveColor, size: 21),
         ),
       ),
     );

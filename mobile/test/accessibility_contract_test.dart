@@ -149,6 +149,53 @@ void main() {
     expect(scheme.surfaceContainerHighest, const Color(0xFF2B2E3D));
   });
 
+  test('Material You honours a custom accent without other overrides', () {
+    const dynamicScheme = ColorScheme.light(
+      primary: Color(0xFF00639B),
+      onPrimary: Colors.white,
+      surface: Color(0xFFF5FAFF),
+      surfaceContainerHighest: Color(0xFFDDE3EB),
+      onSurface: Color(0xFF151B20),
+      onSurfaceVariant: Color(0xFF41474D),
+      outline: Color(0xFF71787E),
+      outlineVariant: Color(0xFFC1C7CE),
+    );
+    final customization = AppCustomization.defaults.copyWith(
+      visualTheme: HavenVisualTheme.materialYou,
+      customAccentHex: '#12ABEF',
+    );
+
+    final scheme = PlurisHavenApp.materialYouColorScheme(
+      customization: customization,
+      brightness: Brightness.light,
+      dynamicScheme: dynamicScheme,
+    );
+    final expected = ColorScheme.fromSeed(
+      seedColor: Color(customization.effectiveAccentArgb),
+      brightness: Brightness.light,
+    );
+
+    expect(scheme.primary, expected.primary);
+  });
+
+  testWidgets('shared icon bubbles use the active accent colour', (
+    tester,
+  ) async {
+    const accent = Color(0xFF12ABEF);
+    final scheme = ColorScheme.fromSeed(seedColor: accent);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(colorScheme: scheme),
+        home: const Center(child: SpIconBubble(icon: Icons.person_rounded)),
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.person_rounded)).color,
+      scheme.primary,
+    );
+  });
+
   testWidgets('avatars expose named image semantics', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
