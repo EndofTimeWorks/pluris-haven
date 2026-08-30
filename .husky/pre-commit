@@ -5,7 +5,11 @@ mobile_dart_files="$(mktemp)"
 trap 'rm -f "$staged_files" "$mobile_dart_files"' EXIT HUP INT TERM
 
 git diff --cached --name-only -z --diff-filter=ACMR >"$staged_files"
-git diff --cached --name-only -z --diff-filter=ACMR -- mobile/lib mobile/test \
+git diff --cached --name-only -z --diff-filter=ACMR -- \
+  ':(glob)mobile/lib/*.dart' \
+  ':(glob)mobile/lib/**/*.dart' \
+  ':(glob)mobile/test/*.dart' \
+  ':(glob)mobile/test/**/*.dart' \
   >"$mobile_dart_files"
 
 if [ -s "$staged_files" ]; then
