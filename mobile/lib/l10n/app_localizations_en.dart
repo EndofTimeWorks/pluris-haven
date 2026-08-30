@@ -3320,6 +3320,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep each choice under 100 characters.';
 
   @override
+  String get customFieldConfigurationLabel => 'Advanced configuration (JSON)';
+
+  @override
+  String get customFieldConfigurationHint =>
+      'Optional object for app-specific settings';
+
+  @override
+  String get customFieldConfigurationObjectRequired =>
+      'Configuration must be a JSON object.';
+
+  @override
+  String get customFieldConfigurationTooLarge =>
+      'Keep configuration under 5,000 characters.';
+
+  @override
   String get customFieldInvalidNumber => 'Enter a valid number.';
 
   @override

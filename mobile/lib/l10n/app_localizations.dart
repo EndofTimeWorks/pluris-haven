@@ -5790,6 +5790,30 @@ abstract class AppLocalizations {
   /// **'Keep each choice under 100 characters.'**
   String get customFieldChoiceTooLong;
 
+  /// No description provided for @customFieldConfigurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced configuration (JSON)'**
+  String get customFieldConfigurationLabel;
+
+  /// No description provided for @customFieldConfigurationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional object for app-specific settings'**
+  String get customFieldConfigurationHint;
+
+  /// No description provided for @customFieldConfigurationObjectRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration must be a JSON object.'**
+  String get customFieldConfigurationObjectRequired;
+
+  /// No description provided for @customFieldConfigurationTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep configuration under 5,000 characters.'**
+  String get customFieldConfigurationTooLarge;
+
   /// No description provided for @customFieldInvalidNumber.
   ///
   /// In en, this message translates to:

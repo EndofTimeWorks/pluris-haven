@@ -348,16 +348,20 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
   final _nameController = TextEditingController();
   final _privacyController = TextEditingController();
   final _choicesController = TextEditingController();
+  final _configurationController = TextEditingController();
   final _customTypeController = TextEditingController();
   String _fieldType = 'text';
   String? _typeError;
   String? _choicesError;
+  String? _configurationError;
+  late bool _showConfiguration;
   bool get _isEditing => widget.field != null;
 
   @override
   void initState() {
     super.initState();
     final field = widget.field;
+    _showConfiguration = field?.configuration.isNotEmpty ?? false;
     if (field == null) {
       return;
     }
@@ -370,6 +374,11 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
       _customTypeController.text = field.fieldType;
     }
     _choicesController.text = customFieldChoices(field).join('\n');
+    if (field.configuration.isNotEmpty) {
+      _configurationController.text = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(field.configuration);
+    }
   }
 
   @override
@@ -377,6 +386,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
     _nameController.dispose();
     _privacyController.dispose();
     _choicesController.dispose();
+    _configurationController.dispose();
     _customTypeController.dispose();
     super.dispose();
   }
@@ -386,99 +396,130 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          0,
-          18,
-          18 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.customFieldTitle,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _isEditing
-                  ? l10n.editCustomFieldDescription
-                  : l10n.createCustomFieldDescription,
-              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('custom-field-name-field'),
-              controller: _nameController,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              key: const ValueKey('custom-field-type-field'),
-              initialValue: _fieldType,
-              decoration: InputDecoration(labelText: l10n.typeFieldLabel),
-              items: _customFieldTypeItems(l10n),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _fieldType = value;
-                    _typeError = null;
-                    _choicesError = null;
-                  });
-                }
-              },
-            ),
-            if (_fieldType == _customFieldTypeSentinel) ...[
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * .85,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            0,
+            18,
+            18 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.customFieldTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _isEditing
+                    ? l10n.editCustomFieldDescription
+                    : l10n.createCustomFieldDescription,
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('custom-field-name-field'),
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                key: const ValueKey('custom-field-type-field'),
+                initialValue: _fieldType,
+                decoration: InputDecoration(labelText: l10n.typeFieldLabel),
+                items: _customFieldTypeItems(l10n),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _fieldType = value;
+                      _typeError = null;
+                      _choicesError = null;
+                    });
+                  }
+                },
+              ),
+              if (_fieldType == _customFieldTypeSentinel) ...[
+                const SizedBox(height: 10),
+                TextField(
+                  key: const ValueKey('custom-field-type-id-field'),
+                  controller: _customTypeController,
+                  autocorrect: false,
+                  decoration: InputDecoration(
+                    labelText: l10n.customFieldTypeIdLabel,
+                    hintText: l10n.customFieldTypeIdHint,
+                    errorText: _typeError,
+                  ),
+                ),
+              ],
+              if (_fieldType == 'select' || _fieldType == 'multiselect') ...[
+                const SizedBox(height: 10),
+                TextField(
+                  key: const ValueKey('custom-field-choices-field'),
+                  controller: _choicesController,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    labelText: l10n.customFieldChoicesLabel,
+                    hintText: l10n.customFieldChoicesHint,
+                    errorText: _choicesError,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 4),
+              if (_showConfiguration)
+                TextField(
+                  key: const ValueKey('custom-field-configuration-field'),
+                  controller: _configurationController,
+                  autocorrect: false,
+                  minLines: 3,
+                  maxLines: 8,
+                  decoration: InputDecoration(
+                    labelText: l10n.customFieldConfigurationLabel,
+                    hintText: l10n.customFieldConfigurationHint,
+                    errorText: _configurationError,
+                  ),
+                )
+              else
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _showConfiguration = true),
+                    icon: const Icon(Icons.tune_rounded),
+                    label: Text(l10n.customFieldConfigurationLabel),
+                  ),
+                ),
               const SizedBox(height: 10),
               TextField(
-                key: const ValueKey('custom-field-type-id-field'),
-                controller: _customTypeController,
-                autocorrect: false,
+                key: const ValueKey('custom-field-privacy-field'),
+                controller: _privacyController,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
-                  labelText: l10n.customFieldTypeIdLabel,
-                  hintText: l10n.customFieldTypeIdHint,
-                  errorText: _typeError,
+                  labelText: l10n.privacyFieldLabel,
+                  hintText: l10n.privacyOptionsHint,
+                ),
+                onSubmitted: (_) => _save(),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                key: const ValueKey('save-custom-field-button'),
+                onPressed: _save,
+                icon: Icon(
+                  _isEditing ? Icons.save_outlined : Icons.add_rounded,
+                ),
+                label: Text(
+                  _isEditing ? l10n.saveFieldButton : l10n.createFieldButton,
                 ),
               ),
             ],
-            if (_fieldType == 'select' || _fieldType == 'multiselect') ...[
-              const SizedBox(height: 10),
-              TextField(
-                key: const ValueKey('custom-field-choices-field'),
-                controller: _choicesController,
-                minLines: 3,
-                maxLines: 6,
-                decoration: InputDecoration(
-                  labelText: l10n.customFieldChoicesLabel,
-                  hintText: l10n.customFieldChoicesHint,
-                  errorText: _choicesError,
-                ),
-              ),
-            ],
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('custom-field-privacy-field'),
-              controller: _privacyController,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: l10n.privacyFieldLabel,
-                hintText: l10n.privacyOptionsHint,
-              ),
-              onSubmitted: (_) => _save(),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              key: const ValueKey('save-custom-field-button'),
-              onPressed: _save,
-              icon: Icon(_isEditing ? Icons.save_outlined : Icons.add_rounded),
-              label: Text(
-                _isEditing ? l10n.saveFieldButton : l10n.createFieldButton,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -502,11 +543,42 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
       setState(() => _choicesError = l10n.customFieldChoiceTooLong);
       return;
     }
-    final configuration = <String, Object?>{...?widget.field?.configuration};
+    final configurationText = _configurationController.text.trim();
+    final configuration = <String, Object?>{};
+    if (configurationText.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(configurationText);
+        if (decoded is! Map) {
+          setState(
+            () => _configurationError =
+                l10n.customFieldConfigurationObjectRequired,
+          );
+          return;
+        }
+        configuration.addAll(Map<String, Object?>.from(decoded));
+      } on FormatException {
+        setState(() => _configurationError = l10n.customFieldInvalidJson);
+        return;
+      } on TypeError {
+        setState(
+          () =>
+              _configurationError = l10n.customFieldConfigurationObjectRequired,
+        );
+        return;
+      }
+    }
     if (selectedType == 'select' || selectedType == 'multiselect') {
       configuration['choices'] = choices;
-    } else {
+    } else if (widget.field?.fieldType == 'select' ||
+        widget.field?.fieldType == 'multiselect') {
       configuration.remove('choices');
+    }
+    if (jsonEncode(configuration).length >
+        maximumCustomFieldConfigurationCharacters) {
+      setState(
+        () => _configurationError = l10n.customFieldConfigurationTooLarge,
+      );
+      return;
     }
     final draft = CustomFieldDraft(
       name: _nameController.text,

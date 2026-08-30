@@ -1250,6 +1250,10 @@ void main() {
   testWidgets('adds a local custom field from custom fields section', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final repository = FakeHavenRepository(
       const HomeSnapshot(
         systemName: 'Local system',
@@ -1281,15 +1285,34 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Select').last);
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Advanced configuration (JSON)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-field-configuration-field')),
+      '{"icon":"local_cafe","display":"chips"}',
+    );
     await tester.enterText(
       find.byKey(const ValueKey('custom-field-privacy-field')),
       'private',
+    );
+    await tester.drag(
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -300),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-custom-field-button')),
     );
     await tester.tap(find.byKey(const ValueKey('save-custom-field-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Favorite drink'), findsOneWidget);
     expect(find.text('Select - 0 values - private'), findsOneWidget);
+    expect(repository._customFields.single.configuration, {
+      'icon': 'local_cafe',
+      'display': 'chips',
+      'choices': <String>[],
+    });
 
     await tester.tap(find.byTooltip('Custom field actions'));
     await tester.pumpAndSettle();
