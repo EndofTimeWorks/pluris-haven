@@ -271,15 +271,10 @@ class PlurisHavenApp extends StatelessWidget {
     );
     if (customization.visualTheme == HavenVisualTheme.materialYou &&
         dynamicScheme != null) {
-      final scheme = dynamicScheme.copyWith(
-        surface: appearance.surfaceColor ?? dynamicScheme.surface,
-        surfaceContainerHighest:
-            appearance.cardColor ?? dynamicScheme.surfaceContainerHighest,
-        onSurface: appearance.textColor ?? dynamicScheme.onSurface,
-        onSurfaceVariant:
-            appearance.mutedTextColor ?? dynamicScheme.onSurfaceVariant,
-        outline: appearance.outlineColor ?? dynamicScheme.outline,
-        outlineVariant: appearance.outlineColor ?? dynamicScheme.outlineVariant,
+      final scheme = materialYouColorScheme(
+        customization: customization,
+        brightness: brightness,
+        dynamicScheme: dynamicScheme,
       );
       return ThemeData.from(colorScheme: scheme, useMaterial3: true).copyWith(
         extensions: [HavenVisualThemeExtension(customization.visualTheme)],
@@ -395,7 +390,7 @@ class PlurisHavenApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       cardTheme: CardThemeData(
-        color: card,
+        color: effectiveCard,
         elevation: cardElevation,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
@@ -404,6 +399,41 @@ class PlurisHavenApp extends StatelessWidget {
       ),
       extensions: [HavenVisualThemeExtension(customization.visualTheme)],
       useMaterial3: true,
+    );
+  }
+
+  @visibleForTesting
+  static ColorScheme materialYouColorScheme({
+    required AppCustomization customization,
+    required Brightness brightness,
+    required ColorScheme dynamicScheme,
+  }) {
+    final appearance = customization.appearance;
+    final useCustomPalette = appearance.hasColorOverrides;
+    final baseScheme = useCustomPalette
+        ? ColorScheme.fromSeed(
+            seedColor: Color(customization.effectiveAccentArgb),
+            brightness: brightness,
+          )
+        : dynamicScheme;
+    return baseScheme.copyWith(
+      surface: appearance.surfaceColor ?? baseScheme.surface,
+      surfaceDim: appearance.surfaceColor ?? baseScheme.surfaceDim,
+      surfaceBright: appearance.surfaceColor ?? baseScheme.surfaceBright,
+      surfaceContainerLowest:
+          appearance.surfaceColor ?? baseScheme.surfaceContainerLowest,
+      surfaceContainerLow:
+          appearance.surfaceColor ?? baseScheme.surfaceContainerLow,
+      surfaceContainer: appearance.cardColor ?? baseScheme.surfaceContainer,
+      surfaceContainerHigh:
+          appearance.cardColor ?? baseScheme.surfaceContainerHigh,
+      surfaceContainerHighest:
+          appearance.cardColor ?? baseScheme.surfaceContainerHighest,
+      onSurface: appearance.textColor ?? baseScheme.onSurface,
+      onSurfaceVariant:
+          appearance.mutedTextColor ?? baseScheme.onSurfaceVariant,
+      outline: appearance.outlineColor ?? baseScheme.outline,
+      outlineVariant: appearance.outlineColor ?? baseScheme.outlineVariant,
     );
   }
 }

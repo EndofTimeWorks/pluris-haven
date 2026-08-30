@@ -126,6 +126,14 @@ class HavenAppearanceOverrides {
       borderWidth == null &&
       cardElevation == null;
 
+  bool get hasColorOverrides =>
+      backgroundHex != null ||
+      surfaceHex != null ||
+      cardHex != null ||
+      textHex != null ||
+      mutedTextHex != null ||
+      outlineHex != null;
+
   Map<String, Object> toJson() => {
     'background': ?backgroundHex,
     'surface': ?surfaceHex,

@@ -77,10 +77,76 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('card appearance override reaches the standard theme', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.setAppearanceOverrides(
+      const HavenAppearanceOverrides(cardHex: '#102030'),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.cardTheme.color, const Color(0xFF102030));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   test('app customization defaults keep accessibility opt-in and explicit', () {
     expect(AppCustomization.defaults.reducedMotion, isFalse);
     expect(AppCustomization.defaults.highContrast, isFalse);
     expect(AppCustomization.defaults.largeText, isFalse);
+  });
+
+  test('appearance distinguishes colour overrides from layout overrides', () {
+    expect(
+      const HavenAppearanceOverrides(cardRadius: 20).hasColorOverrides,
+      isFalse,
+    );
+    expect(
+      const HavenAppearanceOverrides(cardHex: '#20242B').hasColorOverrides,
+      isTrue,
+    );
+  });
+
+  test('Material You derives every role from a custom palette', () {
+    const dynamicScheme = ColorScheme.light(
+      primary: Color(0xFF00639B),
+      onPrimary: Colors.white,
+      surface: Color(0xFFF5FAFF),
+      surfaceContainerHighest: Color(0xFFDDE3EB),
+      onSurface: Color(0xFF151B20),
+      onSurfaceVariant: Color(0xFF41474D),
+      outline: Color(0xFF71787E),
+      outlineVariant: Color(0xFFC1C7CE),
+    );
+    final customization = AppCustomization.defaults.copyWith(
+      visualTheme: HavenVisualTheme.materialYou,
+      appearance: const HavenAppearanceOverrides(
+        backgroundHex: '#171922',
+        cardHex: '#2B2E3D',
+      ),
+    );
+
+    final scheme = PlurisHavenApp.materialYouColorScheme(
+      customization: customization,
+      brightness: Brightness.dark,
+      dynamicScheme: dynamicScheme,
+    );
+    final expected = ColorScheme.fromSeed(
+      seedColor: Color(customization.effectiveAccentArgb),
+      brightness: Brightness.dark,
+    );
+
+    expect(scheme.primary, expected.primary);
+    expect(scheme.outline, expected.outline);
+    expect(scheme.surfaceContainerHighest, const Color(0xFF2B2E3D));
   });
 
   testWidgets('avatars expose named image semantics', (tester) async {
