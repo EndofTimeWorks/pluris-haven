@@ -52,6 +52,17 @@ void main() {
     );
   });
 
+  test('rejects an encrypted avatar copied to a different filename', () async {
+    await store.write('river.png', Uint8List.fromList([137, 80, 78, 71, 1]));
+    final ciphertext = await File('${root.path}/river.png').readAsBytes();
+    await File('${root.path}/juniper.png').writeAsBytes(ciphertext);
+
+    await expectLater(
+      store.read('local-avatar:juniper.png'),
+      throwsA(anything),
+    );
+  });
+
   test('caches a decrypted avatar between tile rebuilds', () async {
     final original = Uint8List.fromList([137, 80, 78, 71, 8, 9, 10]);
 
