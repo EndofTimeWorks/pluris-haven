@@ -2063,6 +2063,7 @@ class RestoreRehearsalResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final visibleCounts = summary.visibleCounts.toList(growable: false);
     final title = summary.canRestore
         ? l10n.restoreRehearsalPassed
@@ -2086,12 +2087,12 @@ class RestoreRehearsalResult extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _spSurface,
+            color: scheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: summary.canRestore
-                  ? _spGold.withValues(alpha: 0.65)
-                  : Theme.of(context).colorScheme.error,
+                  ? scheme.primary.withValues(alpha: 0.65)
+                  : scheme.error,
             ),
           ),
           child: Column(
@@ -2103,9 +2104,7 @@ class RestoreRehearsalResult extends StatelessWidget {
                     summary.canRestore
                         ? Icons.verified_rounded
                         : Icons.error_outline_rounded,
-                    color: summary.canRestore
-                        ? _spGold
-                        : Theme.of(context).colorScheme.error,
+                    color: summary.canRestore ? scheme.primary : scheme.error,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -2118,7 +2117,10 @@ class RestoreRehearsalResult extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(body, style: const TextStyle(color: _spMuted, height: 1.35)),
+              Text(
+                body,
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+              ),
               if (visibleCounts.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Wrap(
@@ -2155,6 +2157,7 @@ class ImportProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final normalizedStatus = status?.toLowerCase() ?? '';
     final isQueued = normalizedStatus.contains('queued');
     final announcement = status ?? l10n.importReadyStatus;
@@ -2183,7 +2186,7 @@ class ImportProgressCard extends StatelessWidget {
                           ? Icons.schedule_rounded
                           : Icons.check_circle_rounded,
                       size: 18,
-                      color: _spGold,
+                      color: scheme.primary,
                     ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2234,6 +2237,7 @@ class RetainedImportPayloadsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<List<RetainedImportPayloadSummary>>(
       stream: repository.watchRetainedImportPayloads(),
       builder: (context, snapshot) {
@@ -2248,7 +2252,7 @@ class RetainedImportPayloadsCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 l10n.retainedImportPayloadsDescription,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 10),
               for (final item in retained)
