@@ -2327,6 +2327,7 @@ class ImportJobsCard extends StatelessWidget {
       builder: (context, snapshot) {
         final jobs = snapshot.data ?? const <BackgroundJobSummary>[];
         final l10n = AppLocalizations.of(context);
+        final scheme = Theme.of(context).colorScheme;
         return SpCard(
           outlined: true,
           child: Column(
@@ -2342,7 +2343,7 @@ class ImportJobsCard extends StatelessWidget {
               if (jobs.isEmpty)
                 Text(
                   l10n.noImportsQueued,
-                  style: const TextStyle(color: _spMuted),
+                  style: TextStyle(color: scheme.onSurfaceVariant),
                 )
               else
                 for (final job in jobs) ...[
@@ -2365,6 +2366,7 @@ class ImportJobRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final title = job.fileName ?? job.type;
     final subtitle = job.error == null
         ? '${job.status} - ${_shortDateTime(job.updatedAt)}'
@@ -2379,7 +2381,7 @@ class ImportJobRow extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           dense: true,
           onTap: () => _showJobDetails(context),
-          leading: Icon(_icon, color: _color, size: 20),
+          leading: Icon(_icon, color: _color(context), size: 20),
           title: Text(
             title,
             maxLines: 1,
@@ -2390,7 +2392,7 @@ class ImportJobRow extends StatelessWidget {
             subtitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: _spMuted),
+            style: TextStyle(color: scheme.onSurfaceVariant),
           ),
           trailing: StatusPill(text: job.status),
         ),
@@ -2404,7 +2406,7 @@ class ImportJobRow extends StatelessWidget {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      backgroundColor: _spCard,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.only(
@@ -2419,7 +2421,7 @@ class ImportJobRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(_icon, color: _color),
+                    Icon(_icon, color: _color(context)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -2454,7 +2456,9 @@ class ImportJobRow extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     l10n.noJobErrorRecorded,
-                    style: const TextStyle(color: _spMuted),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ],
@@ -2474,12 +2478,13 @@ class ImportJobRow extends StatelessWidget {
     };
   }
 
-  Color get _color {
+  Color _color(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return switch (job.status) {
-      'done' => _spGold,
-      'failed' => const Color(0xFFFFB4AB),
-      'running' => _spPurple,
-      _ => _spMuted,
+      'done' => scheme.primary,
+      'failed' => scheme.error,
+      'running' => scheme.secondary,
+      _ => scheme.onSurfaceVariant,
     };
   }
 }
@@ -2492,6 +2497,7 @@ class _JobErrorPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final preview = _boundedJobError(error, l10n);
     final isTruncated = preview.length < error.trim().length;
 
@@ -2522,7 +2528,7 @@ class _JobErrorPreview extends StatelessWidget {
         if (isTruncated) ...[
           Text(
             l10n.jobErrorPreviewTruncated,
-            style: const TextStyle(color: _spMuted),
+            style: TextStyle(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
         ],
@@ -2530,13 +2536,13 @@ class _JobErrorPreview extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _spSurface,
+            color: scheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _spLine),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: SelectableText(
             preview,
-            style: const TextStyle(color: _spMuted, height: 1.35),
+            style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
           ),
         ),
       ],
@@ -2571,6 +2577,7 @@ class _JobDetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -2580,8 +2587,8 @@ class _JobDetailLine extends StatelessWidget {
             width: 86,
             child: Text(
               label,
-              style: const TextStyle(
-                color: _spMuted,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -2606,6 +2613,7 @@ class ImportPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpCard(
       outlined: true,
       child: Column(
@@ -2639,8 +2647,8 @@ class ImportPlanCard extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               localizeImportPlanStep(l10n, step).detail,
-              style: const TextStyle(
-                color: _spMuted,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
                 fontSize: 13,
                 height: 1.35,
               ),
@@ -2651,8 +2659,8 @@ class ImportPlanCard extends StatelessWidget {
           for (final note in plan.privacyNotes) ...[
             Text(
               localizeImportPrivacyNote(l10n, note),
-              style: const TextStyle(
-                color: _spMuted,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -2673,6 +2681,7 @@ class ImportMetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2680,8 +2689,8 @@ class ImportMetaRow extends StatelessWidget {
           width: 64,
           child: Text(
             label,
-            style: const TextStyle(
-              color: _spMuted,
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
               fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
