@@ -55,8 +55,7 @@ class CustomFieldsPage extends StatelessWidget {
                         repository: repository,
                         field: fields[index],
                       ),
-                      if (index != fields.length - 1)
-                        const Divider(height: 1, color: _spLine),
+                      if (index != fields.length - 1) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(
@@ -270,8 +269,7 @@ class _CustomFieldDetailSheet extends StatelessWidget {
               trailing: const Icon(Icons.edit_rounded, size: 18),
               onTap: () => openValueEditor(systemValue, null),
             ),
-            if (memberValues.isNotEmpty)
-              const Divider(height: 1, color: _spLine),
+            if (memberValues.isNotEmpty) const Divider(height: 1),
             if (memberValues.isEmpty)
               SpEmptyState(
                 title: l10n.noMemberValuesYet,

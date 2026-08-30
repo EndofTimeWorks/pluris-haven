@@ -60,8 +60,7 @@ class RemindersPage extends StatelessWidget {
                   else
                     for (final reminder in reminders) ...[
                       ReminderTile(reminder: reminder, repository: repository),
-                      if (reminder != reminders.last)
-                        const Divider(height: 1, color: _spLine),
+                      if (reminder != reminders.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(

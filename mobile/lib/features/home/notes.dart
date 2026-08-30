@@ -101,8 +101,7 @@ class _NotesPageState extends State<NotesPage> {
                                 ? null
                                 : memberNamesById[note.memberId],
                           ),
-                          if (note != notes.last)
-                            const Divider(height: 1, color: _spLine),
+                          if (note != notes.last) const Divider(height: 1),
                         ],
                       const SizedBox(height: 14),
                       SpActionRow(

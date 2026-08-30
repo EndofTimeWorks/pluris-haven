@@ -114,7 +114,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                 : memberNamesById[message.boardMemberId],
                           ),
                           if (message != messages.last)
-                            const Divider(height: 1, color: _spLine),
+                            const Divider(height: 1),
                         ],
                       const SizedBox(height: 14),
                       SpActionRow(

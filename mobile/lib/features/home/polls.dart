@@ -39,8 +39,7 @@ class PollsPage extends StatelessWidget {
                   else
                     for (final poll in polls) ...[
                       PollTile(poll: poll, repository: repository),
-                      if (poll != polls.last)
-                        const Divider(height: 1, color: _spLine),
+                      if (poll != polls.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(

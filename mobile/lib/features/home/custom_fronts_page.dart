@@ -427,7 +427,7 @@ class _CustomFrontRow extends StatelessWidget {
             ),
           ),
         ),
-        if (showDivider) const Divider(height: 1, color: _spLine, indent: 64),
+        if (showDivider) const Divider(height: 1, indent: 64),
       ],
     );
   }

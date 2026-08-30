@@ -33,8 +33,7 @@ class NotificationHistoryPage extends StatelessWidget {
                   else
                     for (final event in events) ...[
                       NotificationEventTile(event: event),
-                      if (event != events.last)
-                        const Divider(height: 1, color: _spLine),
+                      if (event != events.last) const Divider(height: 1),
                     ],
                 ],
               ),

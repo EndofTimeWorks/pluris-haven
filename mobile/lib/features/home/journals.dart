@@ -77,8 +77,7 @@ class _JournalsPageState extends State<JournalsPage> {
                         entry: entry,
                         repository: widget.repository,
                       ),
-                      if (entry != entries.last)
-                        const Divider(height: 1, color: _spLine),
+                      if (entry != entries.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   FilledButton.icon(

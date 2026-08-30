@@ -85,7 +85,7 @@ class _GroupsPageState extends State<GroupsPage> {
                         repository: widget.repository,
                       ),
                       if (index != displayGroups.length - 1)
-                        const Divider(height: 1, color: _spLine),
+                        const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(

@@ -104,8 +104,7 @@ class _MembersPageState extends State<MembersPage> {
                         member: member,
                         repository: widget.repository,
                       ),
-                      if (member != members.last)
-                        const Divider(height: 1, color: _spLine),
+                      if (member != members.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
                   SpActionRow(

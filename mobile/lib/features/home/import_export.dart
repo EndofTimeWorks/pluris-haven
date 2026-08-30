@@ -2328,8 +2328,7 @@ class ImportJobsCard extends StatelessWidget {
               else
                 for (final job in jobs) ...[
                   ImportJobRow(job: job),
-                  if (job != jobs.last)
-                    const Divider(height: 1, color: _spLine),
+                  if (job != jobs.last) const Divider(height: 1),
                 ],
             ],
           ),

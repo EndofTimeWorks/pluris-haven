@@ -164,7 +164,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               },
             ),
             const SizedBox(height: 16),
-            const Divider(color: _spLine),
+            const Divider(),
             const SizedBox(height: 12),
             StreamBuilder<List<NamedFront>>(
               stream: widget.repository.watchNamedFronts(),
@@ -269,7 +269,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    const Divider(color: _spLine),
+                    const Divider(),
                     const SizedBox(height: 12),
                   ],
                 );
