@@ -69,7 +69,7 @@ class SpDashboardTile extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: _spCard,
+            backgroundColor: scheme.surfaceContainerHighest,
             foregroundColor: scheme.onSurface,
             elevation: 0,
             padding: const EdgeInsets.all(10),

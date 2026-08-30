@@ -194,7 +194,10 @@ class GroupListTile extends StatelessWidget {
                 ],
                 SpAvatar(
                   size: 42,
-                  color: _colorFromHex(group.colorHex, fallback: _spGold),
+                  color: _colorFromHex(
+                    group.colorHex,
+                    fallback: scheme.primary,
+                  ),
                   label: group.emoji?.trim().isNotEmpty == true
                       ? group.emoji!.trim()
                       : _initialFor(group.name),

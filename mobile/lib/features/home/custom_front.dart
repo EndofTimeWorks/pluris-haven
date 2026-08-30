@@ -92,8 +92,8 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                         l10n.selectedMembersSummary(selectedNames.join(', ')),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _spMuted,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -213,7 +213,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Material(
-                          color: _spCard,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                           clipBehavior: Clip.antiAlias,
                           child: ListTile(
@@ -536,7 +538,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: _spCard,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(
@@ -600,8 +602,8 @@ class _NamedFrontAvatar extends StatelessWidget {
     final color = _colorFromHex(
       front.colorHex,
       fallback: front.customLabel?.trim().isNotEmpty == true
-          ? _spGold
-          : _spPurple,
+          ? Theme.of(context).colorScheme.secondary
+          : Theme.of(context).colorScheme.primary,
     );
     final label = front.customLabel?.trim().isNotEmpty == true
         ? front.customLabel!.trim()

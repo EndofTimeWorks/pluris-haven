@@ -102,7 +102,7 @@ class ReminderTile extends StatelessWidget {
             reminder.enabled
                 ? Icons.notifications_active_rounded
                 : Icons.notifications_off_rounded,
-            color: _spGold,
+            color: scheme.primary,
             size: 20,
           ),
           const SizedBox(width: 10),
