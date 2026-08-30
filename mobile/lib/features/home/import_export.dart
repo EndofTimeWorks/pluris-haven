@@ -48,6 +48,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
   Widget build(BuildContext context) {
     final plan = _plan;
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     return SpPage(
       children: [
@@ -63,7 +64,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
               const SizedBox(height: 8),
               Text(
                 l10n.importDescription,
-                style: const TextStyle(color: _spMuted, height: 1.35),
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
               ),
             ],
           ),
@@ -1164,6 +1165,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -1182,7 +1184,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
             const SizedBox(height: 8),
             Text(
               l10n.encryptedExportDescription,
-              style: const TextStyle(color: _spMuted, height: 1.35),
+              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -1238,7 +1240,7 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
                 child: ExcludeSemantics(
                   child: Text(
                     _status!,
-                    style: const TextStyle(color: _spMuted),
+                    style: TextStyle(color: scheme.onSurfaceVariant),
                   ),
                 ),
               ),
@@ -1360,6 +1362,7 @@ class LocalArchiveSheet extends StatelessWidget {
         future: repository.buildLocalArchiveJson(),
         builder: (context, snapshot) {
           final archive = snapshot.data;
+          final scheme = Theme.of(context).colorScheme;
           final canCopyArchive =
               archive != null &&
               utf8.encode(archive).length <= _maximumClipboardArchiveBytes;
@@ -1412,7 +1415,7 @@ class LocalArchiveSheet extends StatelessWidget {
                     child: ExcludeSemantics(
                       child: Text(
                         l10n.couldNotBuildArchive(snapshot.error.toString()),
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                     ),
                   )
@@ -1436,7 +1439,10 @@ class LocalArchiveSheet extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       l10n.archiveTooLargeToCopy,
-                      style: const TextStyle(color: _spMuted, height: 1.35),
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -1446,7 +1452,10 @@ class LocalArchiveSheet extends StatelessWidget {
                     child: ExcludeSemantics(
                       child: Text(
                         l10n.localArchiveContentsHidden,
-                        style: const TextStyle(color: _spMuted, height: 1.35),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
                       ),
                     ),
                   ),
@@ -1854,6 +1863,7 @@ class ImportFileSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final detected = guess?.source;
     final label = detected == null
         ? l10n.chooseServiceStatus
@@ -1862,9 +1872,9 @@ class ImportFileSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _spSurface,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _spLine),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1878,7 +1888,11 @@ class ImportFileSummary extends StatelessWidget {
                   ? l10n.waitingForDetection
                   : localizeImportDetectionReason(l10n, guess!.reason),
             ].join(' - '),
-            style: const TextStyle(color: _spMuted, fontSize: 12, height: 1.35),
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontSize: 12,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 8),
           StatusPill(text: label),
@@ -1912,6 +1926,7 @@ class ImportPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final notableEvents = preview.warningsAndErrors;
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     return SpCard(
       outlined: true,
@@ -1929,7 +1944,7 @@ class ImportPreviewCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${localizeImportSource(l10n, preview.source)} - ${preview.fileName}',
-            style: const TextStyle(color: _spMuted, height: 1.35),
+            style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -1976,8 +1991,8 @@ class ImportPreviewCard extends StatelessWidget {
                         '${localizeImportDiagnostic(l10n, event.diagnostic)}',
                         style: TextStyle(
                           color: event.severity == ImportPreviewSeverity.error
-                              ? Theme.of(context).colorScheme.error
-                              : _spMuted,
+                              ? scheme.error
+                              : scheme.onSurfaceVariant,
                           fontSize: 12,
                           height: 1.35,
                         ),
