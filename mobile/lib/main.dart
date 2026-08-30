@@ -277,7 +277,13 @@ class PlurisHavenApp extends StatelessWidget {
         dynamicScheme: dynamicScheme,
       );
       return ThemeData.from(colorScheme: scheme, useMaterial3: true).copyWith(
-        extensions: [HavenVisualThemeExtension(customization.visualTheme)],
+        extensions: [
+          HavenVisualThemeExtension(
+            customization.visualTheme,
+            cardRadius: appearance.cardRadius,
+            spacingScale: appearance.spacingScale,
+          ),
+        ],
         scaffoldBackgroundColor: appearance.backgroundColor ?? scheme.surface,
         visualDensity: visualDensity,
         appBarTheme: AppBarTheme(
@@ -396,7 +402,13 @@ class PlurisHavenApp extends StatelessWidget {
         ),
         margin: EdgeInsets.zero,
       ),
-      extensions: [HavenVisualThemeExtension(customization.visualTheme)],
+      extensions: [
+        HavenVisualThemeExtension(
+          customization.visualTheme,
+          cardRadius: appearance.cardRadius,
+          spacingScale: appearance.spacingScale,
+        ),
+      ],
       useMaterial3: true,
     );
   }

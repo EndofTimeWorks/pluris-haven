@@ -196,6 +196,35 @@ void main() {
     );
   });
 
+  testWidgets('shared cards honour appearance layout overrides', (
+    tester,
+  ) async {
+    const extension = HavenVisualThemeExtension(
+      HavenVisualTheme.original,
+      cardRadius: 22,
+      spacingScale: .8,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(extensions: const [extension]),
+        home: Scaffold(
+          body: SpCard(
+            padding: const EdgeInsets.all(10),
+            child: const SizedBox(width: 10, height: 10),
+          ),
+        ),
+      ),
+    );
+
+    final decoration = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
+    final box = decoration.decoration as BoxDecoration;
+    expect(box.borderRadius, BorderRadius.circular(22));
+    expect(
+      tester.widget<Padding>(find.byType(Padding)).padding,
+      const EdgeInsets.all(8),
+    );
+  });
+
   testWidgets('avatars expose named image semantics', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(

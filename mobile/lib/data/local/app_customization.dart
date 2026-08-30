@@ -44,13 +44,26 @@ enum HavenVisualTheme {
 
 class HavenVisualThemeExtension
     extends ThemeExtension<HavenVisualThemeExtension> {
-  const HavenVisualThemeExtension(this.theme);
+  const HavenVisualThemeExtension(
+    this.theme, {
+    this.cardRadius,
+    this.spacingScale,
+  });
 
   final HavenVisualTheme theme;
+  final double? cardRadius;
+  final double? spacingScale;
 
   @override
-  HavenVisualThemeExtension copyWith({HavenVisualTheme? theme}) =>
-      HavenVisualThemeExtension(theme ?? this.theme);
+  HavenVisualThemeExtension copyWith({
+    HavenVisualTheme? theme,
+    double? cardRadius,
+    double? spacingScale,
+  }) => HavenVisualThemeExtension(
+    theme ?? this.theme,
+    cardRadius: cardRadius ?? this.cardRadius,
+    spacingScale: spacingScale ?? this.spacingScale,
+  );
 
   @override
   HavenVisualThemeExtension lerp(

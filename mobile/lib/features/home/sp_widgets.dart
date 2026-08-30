@@ -13,9 +13,17 @@ class SpNavigationEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final spacing =
+        Theme.of(
+          context,
+        ).extension<HavenVisualThemeExtension>()?.spacingScale ??
+        1;
     return SpCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      padding: EdgeInsets.symmetric(
+        horizontal: 18 * spacing,
+        vertical: 18 * spacing,
+      ),
       child: Row(
         children: [
           SpIconBubble(icon: item.icon),
@@ -89,16 +97,31 @@ class SpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visualTheme = _visualThemeOf(context);
+    final spacing =
+        Theme.of(
+          context,
+        ).extension<HavenVisualThemeExtension>()?.spacingScale ??
+        1;
     return ListView(
       padding: switch (visualTheme) {
-        HavenVisualTheme.simplyPlural => const EdgeInsets.fromLTRB(
-          8,
-          10,
-          8,
-          20,
+        HavenVisualTheme.simplyPlural => EdgeInsets.fromLTRB(
+          8 * spacing,
+          10 * spacing,
+          8 * spacing,
+          20 * spacing,
         ),
-        HavenVisualTheme.ampersand => const EdgeInsets.fromLTRB(14, 12, 14, 24),
-        _ => const EdgeInsets.fromLTRB(10, 14, 10, 24),
+        HavenVisualTheme.ampersand => EdgeInsets.fromLTRB(
+          14 * spacing,
+          12 * spacing,
+          14 * spacing,
+          24 * spacing,
+        ),
+        _ => EdgeInsets.fromLTRB(
+          10 * spacing,
+          14 * spacing,
+          10 * spacing,
+          24 * spacing,
+        ),
       },
       children: children,
     );
@@ -119,12 +142,15 @@ class SpSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final extension = Theme.of(context).extension<HavenVisualThemeExtension>();
     final scheme = Theme.of(context).colorScheme;
-    final radius = switch (_visualThemeOf(context)) {
-      HavenVisualTheme.simplyPlural => 10.0,
-      HavenVisualTheme.ampersand => 6.0,
-      _ => 12.0,
-    };
+    final radius =
+        extension?.cardRadius ??
+        switch (_visualThemeOf(context)) {
+          HavenVisualTheme.simplyPlural => 10.0,
+          HavenVisualTheme.ampersand => 6.0,
+          _ => 12.0,
+        };
     return TextField(
       controller: controller,
       onChanged: onChanged,
@@ -484,15 +510,17 @@ class SpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final visualTheme =
-        Theme.of(context).extension<HavenVisualThemeExtension>()?.theme ??
-        HavenVisualTheme.original;
-    final radius = switch (visualTheme) {
-      HavenVisualTheme.simplyPlural => 10.0,
-      HavenVisualTheme.ampersand => 8.0,
-      HavenVisualTheme.materialYou => 16.0,
-      HavenVisualTheme.original => 14.0,
-    };
+    final extension = Theme.of(context).extension<HavenVisualThemeExtension>();
+    final visualTheme = extension?.theme ?? HavenVisualTheme.original;
+    final radius =
+        extension?.cardRadius ??
+        switch (visualTheme) {
+          HavenVisualTheme.simplyPlural => 10.0,
+          HavenVisualTheme.ampersand => 8.0,
+          HavenVisualTheme.materialYou => 16.0,
+          HavenVisualTheme.original => 14.0,
+        };
+    final spacing = extension?.spacingScale ?? 1;
     final content = DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
@@ -501,8 +529,11 @@ class SpCard extends StatelessWidget {
       ),
       child: Padding(
         padding: visualTheme == HavenVisualTheme.simplyPlural
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
-            : padding,
+            ? EdgeInsets.symmetric(
+                horizontal: 12 * spacing,
+                vertical: 12 * spacing,
+              )
+            : padding * spacing,
         child: child,
       ),
     );
