@@ -1377,6 +1377,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       if (id == null || encodedBytes == null) {
         continue;
       }
+      if (assetsById.containsKey(id)) {
+        throw FormatException(
+          'Archive contains duplicate avatar asset ID: $id',
+        );
+      }
       try {
         assetsById[id] = _ImportAvatarBytes(
           id: id,

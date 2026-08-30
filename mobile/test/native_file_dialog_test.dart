@@ -97,4 +97,35 @@ void main() {
     expect(sourcePath, isNotNull);
     expect(await File(sourcePath!).exists(), isFalse);
   });
+
+  test(
+    'refuses export filenames that could escape temporary staging',
+    () async {
+      for (final fileName in const [
+        '',
+        '.',
+        '..',
+        '../archive.json',
+        'nested/archive.json',
+        r'nested\\archive.json',
+      ]) {
+        await expectLater(
+          NativeFileDialog.saveBytes(
+            fileName: fileName,
+            bytes: Uint8List.fromList(<int>[1, 2, 3]),
+          ),
+          throwsA(isA<ArgumentError>()),
+          reason: fileName,
+        );
+        await expectLater(
+          NativeFileDialog.shareBytes(
+            fileName: fileName,
+            bytes: Uint8List.fromList(<int>[1, 2, 3]),
+          ),
+          throwsA(isA<ArgumentError>()),
+          reason: fileName,
+        );
+      }
+    },
+  );
 }

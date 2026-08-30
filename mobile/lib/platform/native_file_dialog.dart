@@ -130,6 +130,7 @@ class NativeFileDialog {
     String? dialogTitle,
     String mimeType = 'application/octet-stream',
   }) async {
+    _validateExportFileName(fileName);
     final temporaryDirectory = await Directory.systemTemp.createTemp(
       _exportTemporaryDirectoryPrefix,
     );
@@ -156,6 +157,7 @@ class NativeFileDialog {
     required Uint8List bytes,
     String mimeType = 'application/octet-stream',
   }) async {
+    _validateExportFileName(fileName);
     final temporaryDirectory = await Directory.systemTemp.createTemp(
       _exportTemporaryDirectoryPrefix,
     );
@@ -183,6 +185,16 @@ class NativeFileDialog {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
     }
+  }
+}
+
+void _validateExportFileName(String fileName) {
+  if (fileName.trim().isEmpty ||
+      fileName == '.' ||
+      fileName == '..' ||
+      fileName.contains('/') ||
+      fileName.contains('\\')) {
+    throw ArgumentError.value(fileName, 'fileName', 'must be a plain filename');
   }
 }
 

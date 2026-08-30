@@ -295,6 +295,32 @@ void main() {
     );
   });
 
+  test(
+    'stops ZIP expansion when valid entries exceed the total limit',
+    () async {
+      final bytes = Uint8List(17 * 1024 * 1024)
+        ..fillRange(0, 17 * 1024 * 1024, 0x61);
+      final archive = Archive()
+        ..addFile(ArchiveFile('one.json', bytes.length, bytes))
+        ..addFile(ArchiveFile('two.json', bytes.length, bytes))
+        ..addFile(ArchiveFile('three.json', bytes.length, bytes));
+
+      await expectLater(
+        decodeImportFileBytes(
+          fileName: 'total-oversized.zip',
+          bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+        ),
+        throwsA(
+          isA<ImportFileDecodeException>().having(
+            (error) => error.failure,
+            'failure',
+            ImportFileDecodeFailure.zipExpansionTooLarge,
+          ),
+        ),
+      );
+    },
+  );
+
   test('stops ZIP parsing at the entry-count limit', () async {
     final archive = Archive();
     for (var index = 0; index <= 10_000; index++) {

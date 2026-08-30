@@ -232,6 +232,35 @@ void main() {
     expect(crypto.decryptCalls, 18);
   });
 
+  test('member list projections decrypt only visible fields', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final crypto = _CountingHavenCrypto();
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'River',
+        pronouns: 'they/them',
+        colorHex: '#123456',
+        birthday: '02-03',
+        emoji: 'R',
+        privacy: 'trusted',
+        description: 'Profile',
+        avatarUrl: 'local-avatar:river.png',
+        pluralKitId: 'pk-river',
+      ),
+    );
+
+    final member = (await repository.watchMembers(listOnly: true).first).single;
+
+    expect(crypto.decryptCalls, 5);
+    expect(member.displayName, 'River');
+    expect(member.pronouns, 'they/them');
+    expect(member.description, isNull);
+    expect(member.pluralKitId, isNull);
+  });
+
   test('filters archived members and custom fronts independently', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -1743,6 +1772,44 @@ void main() {
     expect(member.avatarUrl, startsWith('local-avatar:'));
     expect(member.avatarUrl, endsWith('.png'));
   });
+
+  test(
+    'rejects duplicate imported avatar IDs before database writes',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+
+      await expectLater(
+        repository.importLocalArchiveJson('''
+{
+  "format": "pluris_haven.local_archive",
+  "version": 1,
+  "members": [
+    {"id": "m1", "display_name": "Iris", "avatar_url": "local-avatar:avatar-1"}
+  ],
+  "avatar_assets": [
+    {
+      "id": "avatar-1",
+      "name": "first.png",
+      "bytes_base64": "iVBORw0KGgo="
+    },
+    {
+      "id": "avatar-1",
+      "name": "second.png",
+      "bytes_base64": "iVBORw0KGgo="
+    }
+  ]
+}
+'''),
+        throwsFormatException,
+      );
+
+      expect(await repository.watchMembers().first, isEmpty);
+    },
+  );
 
   test('uses avatar bytes instead of a misleading source extension', () async {
     final database = AppDatabase(NativeDatabase.memory());
