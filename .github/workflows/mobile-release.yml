@@ -37,6 +37,28 @@ jobs:
         run: |
           set -euo pipefail
 
+          trusted_release_fingerprint='3C3307FA57B3B9DE9BEE8C0F29437FC5D3D209F4'
+          GNUPGHOME="$(mktemp -d)"
+          export GNUPGHOME
+          trap 'rm -rf "${GNUPGHOME}"' EXIT
+          gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
+          imported_fingerprint="$(
+            gpg --batch --with-colons --fingerprint "${trusted_release_fingerprint}" |
+              awk -F: '$1 == "fpr" { print $10; exit }'
+          )"
+          if [[ "${imported_fingerprint}" != "${trusted_release_fingerprint}" ]]; then
+            echo 'Trusted release signing key fingerprint does not match.' >&2
+            exit 1
+          fi
+          if ! git cat-file -e "${GITHUB_REF_NAME}^{tag}" 2>/dev/null; then
+            echo 'Mobile release ref must be an annotated tag.' >&2
+            exit 1
+          fi
+          if ! git verify-tag "${GITHUB_REF_NAME}"; then
+            echo 'Mobile release tag must have a valid trusted signature.' >&2
+            exit 1
+          fi
+
           semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$'
           version_with_build="${GITHUB_REF_NAME#mobile-v}"
           if [[ "${version_with_build}" != *"+"* ]]; then
@@ -52,6 +74,14 @@ jobs:
           fi
           if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
             echo "Invalid build number: ${build}" >&2
+            exit 1
+          fi
+
+          release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          expected_subject="chore(release): mobile ${version_with_build}"
+          actual_subject="$(git show -s --format=%s "${release_commit}")"
+          if [[ "${actual_subject}" != "${expected_subject}" ]]; then
+            echo "Mobile release tag must point directly at '${expected_subject}'." >&2
             exit 1
           fi
 
