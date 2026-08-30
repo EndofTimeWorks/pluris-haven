@@ -50,7 +50,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<MemberSummary>>(
-              stream: widget.repository.watchMembers(),
+              stream: widget.repository.watchMembers(listOnly: true),
               initialData: const [],
               builder: (context, snapshot) {
                 final members = snapshot.data ?? const <MemberSummary>[];
@@ -400,7 +400,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<String> _selectedMemberFrontLabel() async {
     final ids = _selectedMemberIds.toSet();
-    final members = await widget.repository.watchMembers().first;
+    final members = await widget.repository.watchMembers(listOnly: true).first;
     final labels = [
       for (final member in members)
         if (ids.contains(member.id)) member.displayName,

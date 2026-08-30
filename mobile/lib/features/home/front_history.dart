@@ -603,7 +603,10 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             StreamBuilder<List<MemberSummary>>(
-              stream: widget.repository.watchMembers(includeArchived: true),
+              stream: widget.repository.watchMembers(
+                includeArchived: true,
+                listOnly: true,
+              ),
               initialData: const [],
               builder: (context, snapshot) {
                 final members = snapshot.data ?? const <MemberSummary>[];
