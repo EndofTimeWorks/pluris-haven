@@ -115,6 +115,12 @@ abstract class AppLocalizations {
   /// **'Visual style'**
   String get visualThemeRowTitle;
 
+  /// No description provided for @navigationLayoutRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation layout'**
+  String get navigationLayoutRowTitle;
+
   /// No description provided for @accentColorLabel.
   ///
   /// In en, this message translates to:

@@ -165,6 +165,32 @@ void main() {
     );
   });
 
+  testWidgets('uses the selected navigation layout', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await repository.setNavigationLayout(HavenNavigationLayout.bottom);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+
+    await repository.setNavigationLayout(HavenNavigationLayout.drawer);
+    await tester.pump();
+
+    expect(find.byIcon(Icons.category_outlined), findsNothing);
+    expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+  });
+
   testWidgets('keeps the current front readable in light theme', (
     tester,
   ) async {
@@ -3223,6 +3249,12 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> setVisualTheme(HavenVisualTheme theme) async {
     _customization = _customization.copyWith(visualTheme: theme);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setNavigationLayout(HavenNavigationLayout layout) async {
+    _customization = _customization.copyWith(navigationLayout: layout);
     _customizationController.add(_customization);
   }
 

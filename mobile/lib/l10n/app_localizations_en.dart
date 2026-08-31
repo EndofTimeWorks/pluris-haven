@@ -18,6 +18,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get visualThemeRowTitle => 'Visual style';
 
   @override
+  String get navigationLayoutRowTitle => 'Navigation layout';
+
+  @override
   String get accentColorLabel => 'Accent colour';
 
   @override

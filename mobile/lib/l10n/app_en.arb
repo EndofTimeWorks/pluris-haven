@@ -6,6 +6,7 @@
   },
   "themeRowTitle": "Theme",
   "visualThemeRowTitle": "Visual style",
+  "navigationLayoutRowTitle": "Navigation layout",
   "accentColorLabel": "Accent colour",
   "compactDashboardTitle": "Compact dashboard",
   "compactDashboardSubtitle": "smaller shortcuts, more room",

@@ -36,6 +36,7 @@ export 'app_customization.dart'
         AppCustomization,
         HavenAppearanceOverrides,
         HavenAccentColor,
+        HavenNavigationLayout,
         HavenThemeMode,
         HavenVisualTheme,
         HavenVisualThemeExtension,
@@ -321,6 +322,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> setVisualTheme(HavenVisualTheme theme) =>
       _customization.setVisualTheme(theme);
+
+  @override
+  Future<void> setNavigationLayout(HavenNavigationLayout layout) =>
+      _customization.setNavigationLayout(layout);
 
   @override
   Future<void> setAccentColor(HavenAccentColor color) =>

@@ -37,6 +37,15 @@ class AppOptionsPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
+              l10n.navigationLayoutRowTitle,
+              customization.navigationLayout.label,
+              onTap: () => showNavigationLayoutPicker(
+                context,
+                customization: customization,
+                repository: repository,
+              ),
+            ),
+            SpSettingsRow(
               l10n.accentColorLabel,
               customization.accentLabel,
               trailing: AccentSwatch(
@@ -447,6 +456,39 @@ void showVisualThemePicker(
               title: Text(theme.label),
               onTap: () async {
                 await repository.setVisualTheme(theme);
+                if (context.mounted) Navigator.of(context).pop();
+              },
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+}
+
+void showNavigationLayoutPicker(
+  BuildContext context, {
+  required AppCustomization customization,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final layout in HavenNavigationLayout.values)
+            ListTile(
+              leading: Icon(
+                customization.navigationLayout == layout
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(layout.label),
+              onTap: () async {
+                await repository.setNavigationLayout(layout);
                 if (context.mounted) Navigator.of(context).pop();
               },
             ),

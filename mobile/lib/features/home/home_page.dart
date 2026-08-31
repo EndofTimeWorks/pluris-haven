@@ -185,14 +185,18 @@ class _HomePageState extends State<HomePage> {
     AppCustomization customization,
     AppLocalizations l10n,
   ) {
-    return switch (customization.visualTheme) {
-      HavenVisualTheme.simplyPlural => _simplyPluralNavigation(l10n),
-      HavenVisualTheme.ampersand => _ampersandNavigation(l10n),
-      _ => null,
+    return switch (customization.navigationLayout) {
+      HavenNavigationLayout.drawer => null,
+      HavenNavigationLayout.bottom => _standardBottomNavigation(l10n),
+      HavenNavigationLayout.automatic => switch (customization.visualTheme) {
+        HavenVisualTheme.simplyPlural => _standardBottomNavigation(l10n),
+        HavenVisualTheme.ampersand => _ampersandNavigation(l10n),
+        _ => null,
+      },
     };
   }
 
-  Widget _simplyPluralNavigation(AppLocalizations l10n) {
+  Widget _standardBottomNavigation(AppLocalizations l10n) {
     return Builder(
       builder: (context) => NavigationBar(
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,

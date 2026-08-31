@@ -42,6 +42,24 @@ enum HavenVisualTheme {
   }
 }
 
+enum HavenNavigationLayout {
+  automatic('automatic', 'Match visual style'),
+  drawer('drawer', 'Drawer only'),
+  bottom('bottom', 'Bottom navigation');
+
+  const HavenNavigationLayout(this.storageValue, this.label);
+
+  final String storageValue;
+  final String label;
+
+  static HavenNavigationLayout fromStorage(String? value) {
+    return HavenNavigationLayout.values.firstWhere(
+      (layout) => layout.storageValue == value,
+      orElse: () => HavenNavigationLayout.automatic,
+    );
+  }
+}
+
 class HavenVisualThemeExtension
     extends ThemeExtension<HavenVisualThemeExtension> {
   const HavenVisualThemeExtension(
@@ -207,6 +225,7 @@ class AppCustomization {
   const AppCustomization({
     required this.themeMode,
     required this.visualTheme,
+    required this.navigationLayout,
     required this.accentColor,
     required this.customAccentHex,
     required this.appearance,
@@ -227,6 +246,7 @@ class AppCustomization {
 
   final HavenThemeMode themeMode;
   final HavenVisualTheme visualTheme;
+  final HavenNavigationLayout navigationLayout;
   final HavenAccentColor accentColor;
   final String? customAccentHex;
   final HavenAppearanceOverrides appearance;
@@ -254,6 +274,7 @@ class AppCustomization {
   static AppCustomization get defaults => AppCustomization(
     themeMode: HavenThemeMode.dark,
     visualTheme: HavenVisualTheme.original,
+    navigationLayout: HavenNavigationLayout.automatic,
     accentColor: HavenAccentColor.purple,
     customAccentHex: null,
     appearance: const HavenAppearanceOverrides(),
@@ -275,6 +296,7 @@ class AppCustomization {
   AppCustomization copyWith({
     HavenThemeMode? themeMode,
     HavenVisualTheme? visualTheme,
+    HavenNavigationLayout? navigationLayout,
     HavenAccentColor? accentColor,
     Object? customAccentHex = _unchanged,
     HavenAppearanceOverrides? appearance,
@@ -295,6 +317,7 @@ class AppCustomization {
     return AppCustomization(
       themeMode: themeMode ?? this.themeMode,
       visualTheme: visualTheme ?? this.visualTheme,
+      navigationLayout: navigationLayout ?? this.navigationLayout,
       accentColor: accentColor ?? this.accentColor,
       customAccentHex: identical(customAccentHex, _unchanged)
           ? this.customAccentHex
@@ -355,6 +378,9 @@ class LocalAppCustomizationStore {
 
   Future<void> setVisualTheme(HavenVisualTheme theme) =>
       _write(_visualThemeKey, theme.storageValue);
+
+  Future<void> setNavigationLayout(HavenNavigationLayout layout) =>
+      _write(_navigationLayoutKey, layout.storageValue);
 
   Future<void> setAccentColor(HavenAccentColor color) async {
     await _write(_accentColorKey, color.storageValue);
@@ -443,6 +469,9 @@ class LocalAppCustomizationStore {
     return AppCustomization(
       themeMode: HavenThemeMode.fromStorage(values[_themeModeKey]),
       visualTheme: HavenVisualTheme.fromStorage(values[_visualThemeKey]),
+      navigationLayout: HavenNavigationLayout.fromStorage(
+        values[_navigationLayoutKey],
+      ),
       accentColor: HavenAccentColor.fromStorage(values[_accentColorKey]),
       customAccentHex: normalizeHexColor(values[_customAccentHexKey]),
       appearance: HavenAppearanceOverrides.fromJson(
@@ -532,6 +561,7 @@ int? _argbFromHex(String? value) {
 const Object _unchanged = Object();
 const _themeModeKey = 'theme_mode';
 const _visualThemeKey = 'visual_theme';
+const _navigationLayoutKey = 'navigation_layout';
 const _accentColorKey = 'accent_color';
 const _customAccentHexKey = 'custom_accent_hex';
 const _appearanceOverridesKey = 'appearance_overrides';
