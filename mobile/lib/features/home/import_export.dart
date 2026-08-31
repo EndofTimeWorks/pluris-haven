@@ -1387,7 +1387,10 @@ class LocalArchiveSheet extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   l10n.localArchiveDescription,
-                  style: const TextStyle(color: _spMuted, height: 1.35),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 if (snapshot.connectionState != ConnectionState.done)

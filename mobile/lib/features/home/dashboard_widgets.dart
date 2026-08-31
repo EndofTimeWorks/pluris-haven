@@ -296,7 +296,12 @@ class CurrentFrontEntry extends StatelessWidget {
                                 ),
                                 child: MemberAvatar(
                                   member: member,
-                                  color: _colorFromHex(member.colorHex),
+                                  color: _colorFromHex(
+                                    member.colorHex,
+                                    fallback: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
                                   label: _initialFor(member.displayName),
                                   size: 28,
                                 ),

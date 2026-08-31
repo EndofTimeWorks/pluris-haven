@@ -257,13 +257,14 @@ class MemberListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: MemberAvatar(
           member: member,
-          color: _memberColor(member),
+          color: _memberColor(member, scheme.primary),
           label: _memberAvatarLabel(member),
         ),
         title: Text(
@@ -272,7 +273,7 @@ class MemberListTile extends StatelessWidget {
         ),
         subtitle: Text(
           _subtitle(l10n),
-          style: const TextStyle(color: _spMuted),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         onTap: () async {
           final fullMember = await _fullMember();
@@ -371,8 +372,8 @@ class MemberListTile extends StatelessWidget {
     return parts.join(' - ');
   }
 
-  Color _memberColor(MemberSummary member) {
-    return _colorFromHex(member.colorHex);
+  Color _memberColor(MemberSummary member, Color fallback) {
+    return _colorFromHex(member.colorHex, fallback: fallback);
   }
 
   Future<MemberSummary> _fullMember() async {
@@ -495,7 +496,8 @@ class MemberProfileSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final color = _colorFromHex(member.colorHex);
+    final scheme = Theme.of(context).colorScheme;
+    final color = _colorFromHex(member.colorHex, fallback: scheme.primary);
     final description = member.description?.trim();
     final pluralKitId = member.pluralKitId?.trim();
 
@@ -534,7 +536,10 @@ class MemberProfileSheet extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         _memberPronouns(member, l10n),
-                        style: const TextStyle(color: _spMuted, fontSize: 15),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -566,7 +571,7 @@ class MemberProfileSheet extends StatelessWidget {
               SpCard(
                 child: Text(
                   l10n.noDescriptionYet,
-                  style: const TextStyle(color: _spMuted),
+                  style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
               ),
             const SizedBox(height: 12),
@@ -826,7 +831,10 @@ class MemberTagsSection extends StatelessWidget {
               SpSettingsRow(
                 l10n.memberTagsTitle,
                 _tagSummary(tags, l10n),
-                trailing: const Icon(Icons.sell_outlined, color: _spMuted),
+                trailing: Icon(
+                  Icons.sell_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 onTap: () => showMemberTagsSheet(
                   context,
                   repository: repository,
@@ -894,6 +902,7 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -932,13 +941,16 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                     const SizedBox(height: 4),
                     Text(
                       l10n.memberTagsDescription,
-                      style: const TextStyle(color: _spMuted, height: 1.35),
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     if (allTags.isEmpty)
                       Text(
                         l10n.noTagsYet,
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(color: scheme.onSurfaceVariant),
                       )
                     else
                       Wrap(
@@ -991,10 +1003,10 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
                             decoration: BoxDecoration(
                               color: _colorFromHex(
                                 _normalizeUiHexColor(_colorController.text),
-                                fallback: _spGold,
+                                fallback: scheme.primary,
                               ),
                               shape: BoxShape.circle,
-                              border: Border.all(color: _spLine),
+                              border: Border.all(color: scheme.outlineVariant),
                             ),
                           ),
                         ),
@@ -1096,7 +1108,10 @@ class _TagDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _colorFromHex(tag.colorHex, fallback: _spGold),
+        color: _colorFromHex(
+          tag.colorHex,
+          fallback: Theme.of(context).colorScheme.primary,
+        ),
         shape: BoxShape.circle,
       ),
       child: const SizedBox(width: 12, height: 12),
@@ -1268,6 +1283,7 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final privacy = widget.field.privacy?.trim();
     return SafeArea(
       child: SingleChildScrollView(
@@ -1290,7 +1306,7 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
                 customFieldTypeLabel(l10n, widget.field.fieldType),
                 if (privacy != null && privacy.isNotEmpty) privacy,
               ].join(' - '),
-              style: const TextStyle(color: _spMuted),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             _buildValueEditor(context, l10n),
@@ -1645,7 +1661,7 @@ String _initialFor(String value) {
   return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
 }
 
-Color _colorFromHex(String? colorHex, {Color fallback = _spPurple}) {
+Color _colorFromHex(String? colorHex, {required Color fallback}) {
   final value = colorHex?.replaceFirst('#', '');
   if (value == null || value.length != 6) {
     return fallback;
@@ -1798,6 +1814,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final previewName = _nameController.text.trim().isEmpty
         ? l10n.memberPreviewName
         : _nameController.text;
@@ -1891,6 +1908,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                   ),
                   color: _colorFromHex(
                     _normalizeUiHexColor(_colorController.text),
+                    fallback: scheme.primary,
                   ),
                   label: _emojiController.text.trim().isEmpty
                       ? _initialFor(previewName)
@@ -1924,7 +1942,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               const SizedBox(height: 6),
               Text(
                 _avatarMessage!,
-                style: const TextStyle(color: _spMuted, fontSize: 12),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ],
             const SizedBox(height: 10),
