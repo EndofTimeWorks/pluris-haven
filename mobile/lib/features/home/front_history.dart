@@ -671,7 +671,10 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ],
             const SizedBox(height: 14),
             FilledButton.icon(
