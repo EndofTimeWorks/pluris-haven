@@ -223,6 +223,8 @@ abstract interface class HavenRepository {
 
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
 
+  Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds);
+
   Future<Uint8List?> readAvatar(String reference);
 
   Future<void> setLanguageCode(String languageCode);
@@ -234,6 +236,15 @@ abstract interface class HavenRepository {
   Future<void> moveDashboardShortcut(String shortcutId, int delta);
 
   Future<void> resetDashboardShortcuts();
+
+  Future<void> setBottomNavigationShortcutVisible(
+    String shortcutId,
+    bool visible,
+  );
+
+  Future<void> moveBottomNavigationShortcut(String shortcutId, int delta);
+
+  Future<void> resetBottomNavigationShortcuts();
 
   Future<void> saveMember(MemberDraft draft);
 

@@ -40,7 +40,9 @@ export 'app_customization.dart'
         HavenThemeMode,
         HavenVisualTheme,
         HavenVisualThemeExtension,
-        defaultDashboardShortcutIds;
+        defaultBottomNavigationShortcutIds,
+        defaultDashboardShortcutIds,
+        maximumBottomNavigationShortcuts;
 export 'chat_store.dart'
     show
         ChatCategoryDraft,
@@ -388,6 +390,10 @@ class LocalHavenRepository implements HavenRepository {
       _customization.setDashboardShortcutIds(shortcutIds);
 
   @override
+  Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds) =>
+      _customization.setBottomNavigationShortcutIds(shortcutIds);
+
+  @override
   Future<Uint8List?> readAvatar(String reference) =>
       _avatarStore.read(reference);
 
@@ -406,6 +412,20 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> resetDashboardShortcuts() =>
       _customization.resetDashboardShortcuts();
+
+  @override
+  Future<void> setBottomNavigationShortcutVisible(
+    String shortcutId,
+    bool visible,
+  ) => _customization.setBottomNavigationShortcutVisible(shortcutId, visible);
+
+  @override
+  Future<void> moveBottomNavigationShortcut(String shortcutId, int delta) =>
+      _customization.moveBottomNavigationShortcut(shortcutId, delta);
+
+  @override
+  Future<void> resetBottomNavigationShortcuts() =>
+      _customization.resetBottomNavigationShortcuts();
 
   @override
   Future<void> saveMember(MemberDraft draft) => _members.save(draft);

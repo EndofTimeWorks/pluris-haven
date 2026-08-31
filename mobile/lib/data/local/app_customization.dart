@@ -241,6 +241,7 @@ class AppCustomization {
     required this.largeText,
     required this.compactLists,
     required this.dashboardShortcutIds,
+    required this.bottomNavigationShortcutIds,
     required this.languageCode,
   });
 
@@ -262,6 +263,7 @@ class AppCustomization {
   final bool largeText;
   final bool compactLists;
   final List<String> dashboardShortcutIds;
+  final List<String> bottomNavigationShortcutIds;
   final String languageCode;
 
   int get effectiveAccentArgb =>
@@ -290,6 +292,7 @@ class AppCustomization {
     largeText: false,
     compactLists: false,
     dashboardShortcutIds: defaultDashboardShortcutIds,
+    bottomNavigationShortcutIds: defaultBottomNavigationShortcutIds,
     languageCode: systemLanguageCode,
   );
 
@@ -312,6 +315,7 @@ class AppCustomization {
     bool? largeText,
     bool? compactLists,
     List<String>? dashboardShortcutIds,
+    List<String>? bottomNavigationShortcutIds,
     String? languageCode,
   }) {
     return AppCustomization(
@@ -342,6 +346,9 @@ class AppCustomization {
       dashboardShortcutIds: List.unmodifiable(
         dashboardShortcutIds ?? this.dashboardShortcutIds,
       ),
+      bottomNavigationShortcutIds: List.unmodifiable(
+        bottomNavigationShortcutIds ?? this.bottomNavigationShortcutIds,
+      ),
       languageCode: languageCode ?? this.languageCode,
     );
   }
@@ -360,6 +367,13 @@ const defaultDashboardShortcutIds = [
   'reminders',
   'customize',
 ];
+
+const defaultBottomNavigationShortcutIds = [
+  'members',
+  'front-history',
+  'custom-fronts',
+];
+const maximumBottomNavigationShortcuts = 3;
 
 class LocalAppCustomizationStore {
   LocalAppCustomizationStore(this.database);
@@ -432,6 +446,14 @@ class LocalAppCustomizationStore {
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) =>
       _write(_dashboardShortcutIdsKey, _serializeIds(shortcutIds));
 
+  Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds) =>
+      _write(
+        _bottomNavigationShortcutIdsKey,
+        _serializeIds(
+          shortcutIds.take(maximumBottomNavigationShortcuts).toList(),
+        ),
+      );
+
   Future<void> setLanguageCode(String languageCode) =>
       _write(_languageCodeKey, supportedLanguageForCode(languageCode).code);
 
@@ -463,6 +485,39 @@ class LocalAppCustomizationStore {
 
   Future<void> resetDashboardShortcuts() =>
       setDashboardShortcutIds(defaultDashboardShortcutIds);
+
+  Future<void> setBottomNavigationShortcutVisible(
+    String shortcutId,
+    bool visible,
+  ) async {
+    final ids = (await load()).bottomNavigationShortcutIds.toList();
+    final existingIndex = ids.indexOf(shortcutId);
+    if (visible && existingIndex == -1) {
+      if (ids.length >= maximumBottomNavigationShortcuts) return;
+      ids.add(shortcutId);
+    } else if (!visible && existingIndex != -1) {
+      ids.removeAt(existingIndex);
+    }
+    await setBottomNavigationShortcutIds(ids);
+  }
+
+  Future<void> moveBottomNavigationShortcut(
+    String shortcutId,
+    int delta,
+  ) async {
+    if (delta == 0) return;
+    final ids = (await load()).bottomNavigationShortcutIds.toList();
+    final index = ids.indexOf(shortcutId);
+    if (index == -1) return;
+    final newIndex = (index + delta).clamp(0, ids.length - 1);
+    if (newIndex == index) return;
+    final id = ids.removeAt(index);
+    ids.insert(newIndex, id);
+    await setBottomNavigationShortcutIds(ids);
+  }
+
+  Future<void> resetBottomNavigationShortcuts() =>
+      setBottomNavigationShortcutIds(defaultBottomNavigationShortcutIds);
 
   AppCustomization _mapRows(List<AppPreference> rows) {
     final values = {for (final row in rows) row.key: row.value};
@@ -499,6 +554,9 @@ class LocalAppCustomizationStore {
       largeText: _readBool(values[_largeTextKey]),
       compactLists: _readBool(values[_compactListsKey]),
       dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
+      bottomNavigationShortcutIds: _readBottomNavigationShortcutIds(
+        values[_bottomNavigationShortcutIdsKey],
+      ),
       languageCode: supportedLanguageForCode(values[_languageCodeKey]).code,
     );
   }
@@ -517,6 +575,23 @@ class LocalAppCustomizationStore {
         .where((id) => id.isNotEmpty)
         .toList();
     return ids.isEmpty ? defaultDashboardShortcutIds : List.unmodifiable(ids);
+  }
+
+  List<String> _readBottomNavigationShortcutIds(String? value) {
+    if (value == null) return defaultBottomNavigationShortcutIds;
+    final stored = value.trim();
+    if (stored == _emptyShortcutIdsValue) return const [];
+    if (stored.isEmpty) return defaultBottomNavigationShortcutIds;
+    final ids = stored
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .take(maximumBottomNavigationShortcuts)
+        .toList();
+    return ids.isEmpty
+        ? defaultBottomNavigationShortcutIds
+        : List.unmodifiable(ids);
   }
 
   String _serializeIds(List<String> shortcutIds) {
@@ -577,5 +652,6 @@ const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
+const _bottomNavigationShortcutIdsKey = 'bottom_navigation_shortcut_ids';
 const _emptyShortcutIdsValue = '__empty__';
 const _languageCodeKey = 'language_code';

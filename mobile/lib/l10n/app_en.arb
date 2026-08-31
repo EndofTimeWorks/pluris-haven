@@ -77,6 +77,20 @@
   "chooseLanguageTitle": "Choose your language",
   "chooseLanguageSubtitle": "Interface text stays English until translations are added.",
   "dashboardShortcutsTitle": "Dashboard shortcuts",
+  "bottomNavigationShortcutsTitle": "Bottom navigation shortcuts",
+  "bottomNavigationShortcutsBody": "Choose up to three quick destinations. Dashboard and the menu stay available.",
+  "navigationShortcutShownLabel": "shown in bottom navigation",
+  "navigationShortcutHiddenLabel": "available in drawer",
+  "navigationShortcutSemanticLabel": "Bottom navigation shortcut {shortcutTitle}",
+  "@navigationShortcutSemanticLabel": {
+    "placeholders": {
+      "shortcutTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "resetNavigationTitle": "Reset navigation",
+  "resetNavigationValue": "restore default quick destinations",
   "shortcutShownLabel": "shown on dashboard",
   "shortcutHiddenLabel": "hidden",
   "moveUpTooltip": "Move up",

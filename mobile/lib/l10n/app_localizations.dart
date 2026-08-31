@@ -457,6 +457,48 @@ abstract class AppLocalizations {
   /// **'Dashboard shortcuts'**
   String get dashboardShortcutsTitle;
 
+  /// No description provided for @bottomNavigationShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bottom navigation shortcuts'**
+  String get bottomNavigationShortcutsTitle;
+
+  /// No description provided for @bottomNavigationShortcutsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to three quick destinations. Dashboard and the menu stay available.'**
+  String get bottomNavigationShortcutsBody;
+
+  /// No description provided for @navigationShortcutShownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'shown in bottom navigation'**
+  String get navigationShortcutShownLabel;
+
+  /// No description provided for @navigationShortcutHiddenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'available in drawer'**
+  String get navigationShortcutHiddenLabel;
+
+  /// No description provided for @navigationShortcutSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bottom navigation shortcut {shortcutTitle}'**
+  String navigationShortcutSemanticLabel(String shortcutTitle);
+
+  /// No description provided for @resetNavigationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset navigation'**
+  String get resetNavigationTitle;
+
+  /// No description provided for @resetNavigationValue.
+  ///
+  /// In en, this message translates to:
+  /// **'restore default quick destinations'**
+  String get resetNavigationValue;
+
   /// No description provided for @shortcutShownLabel.
   ///
   /// In en, this message translates to:

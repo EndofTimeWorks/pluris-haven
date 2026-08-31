@@ -203,6 +203,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardShortcutsTitle => 'Dashboard shortcuts';
 
   @override
+  String get bottomNavigationShortcutsTitle => 'Bottom navigation shortcuts';
+
+  @override
+  String get bottomNavigationShortcutsBody =>
+      'Choose up to three quick destinations. Dashboard and the menu stay available.';
+
+  @override
+  String get navigationShortcutShownLabel => 'shown in bottom navigation';
+
+  @override
+  String get navigationShortcutHiddenLabel => 'available in drawer';
+
+  @override
+  String navigationShortcutSemanticLabel(String shortcutTitle) {
+    return 'Bottom navigation shortcut $shortcutTitle';
+  }
+
+  @override
+  String get resetNavigationTitle => 'Reset navigation';
+
+  @override
+  String get resetNavigationValue => 'restore default quick destinations';
+
+  @override
   String get shortcutShownLabel => 'shown on dashboard';
 
   @override

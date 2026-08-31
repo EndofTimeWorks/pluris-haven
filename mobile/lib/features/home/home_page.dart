@@ -187,16 +187,19 @@ class _HomePageState extends State<HomePage> {
   ) {
     return switch (customization.navigationLayout) {
       HavenNavigationLayout.drawer => null,
-      HavenNavigationLayout.bottom => _standardBottomNavigation(l10n),
+      HavenNavigationLayout.bottom => _customBottomNavigation(
+        l10n,
+        customization.bottomNavigationShortcutIds,
+      ),
       HavenNavigationLayout.automatic => switch (customization.visualTheme) {
-        HavenVisualTheme.simplyPlural => _standardBottomNavigation(l10n),
+        HavenVisualTheme.simplyPlural => _simplyPluralNavigation(l10n),
         HavenVisualTheme.ampersand => _ampersandNavigation(l10n),
         _ => null,
       },
     };
   }
 
-  Widget _standardBottomNavigation(AppLocalizations l10n) {
+  Widget _simplyPluralNavigation(AppLocalizations l10n) {
     return Builder(
       builder: (context) => NavigationBar(
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -242,6 +245,57 @@ class _HomePageState extends State<HomePage> {
             selectedIcon: const Icon(Icons.category_rounded),
             label: l10n.navigationCustomFronts,
           ),
+          NavigationDestination(
+            icon: const Icon(Icons.menu_rounded),
+            label: MaterialLocalizations.of(context).openAppDrawerTooltip,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _customBottomNavigation(
+    AppLocalizations l10n,
+    List<String> shortcutIds,
+  ) {
+    final definitions = {
+      for (final shortcut in dashboardShortcuts) shortcut.id: shortcut,
+    };
+    final shortcuts = [for (final id in shortcutIds) ?definitions[id]];
+    final menuIndex = shortcuts.length + 1;
+    final shortcutIndex = shortcuts.indexWhere(
+      (item) => item.section == _section,
+    );
+    final selectedIndex = _section == SpSection.dashboard
+        ? 0
+        : shortcutIndex == -1
+        ? menuIndex
+        : shortcutIndex + 1;
+    return Builder(
+      builder: (context) => NavigationBar(
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (index) {
+          if (index == 0) {
+            _selectSection(SpSection.dashboard);
+          } else if (index == menuIndex) {
+            Scaffold.of(context).openDrawer();
+          } else {
+            _selectSection(shortcuts[index - 1].section);
+          }
+        },
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            label: l10n.navigationDashboard,
+          ),
+          for (final shortcut in shortcuts)
+            NavigationDestination(
+              icon: Icon(shortcut.icon),
+              selectedIcon: Icon(shortcut.icon),
+              label: shortcut.title(l10n),
+            ),
           NavigationDestination(
             icon: const Icon(Icons.menu_rounded),
             label: MaterialLocalizations.of(context).openAppDrawerTooltip,

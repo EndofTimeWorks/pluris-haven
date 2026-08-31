@@ -385,6 +385,10 @@ void main() {
     expect(customization.compactDashboard, isFalse);
     expect(customization.showDashboardSubtitles, isTrue);
     expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
+    expect(
+      customization.bottomNavigationShortcutIds,
+      defaultBottomNavigationShortcutIds,
+    );
     expect(customization.languageCode, 'system');
 
     await repository.setThemeMode(HavenThemeMode.system);
@@ -396,6 +400,12 @@ void main() {
     await repository.moveDashboardShortcut('analytics', -10);
     await repository.setDashboardShortcutVisible('notes', false);
     await repository.setLanguageCode('pt-BR');
+    await repository.setBottomNavigationShortcutIds(const [
+      'notes',
+      'groups',
+      'analytics',
+      'chat',
+    ]);
 
     customization = await repository.loadCustomization();
     expect(customization.themeMode, HavenThemeMode.system);
@@ -405,6 +415,11 @@ void main() {
     expect(customization.showDashboardSubtitles, isFalse);
     expect(customization.dashboardShortcutIds.first, 'analytics');
     expect(customization.dashboardShortcutIds, isNot(contains('notes')));
+    expect(customization.bottomNavigationShortcutIds, const [
+      'notes',
+      'groups',
+      'analytics',
+    ]);
     expect(customization.languageCode, 'pt-BR');
     expect(customization.language.label, 'português brasileiro');
 

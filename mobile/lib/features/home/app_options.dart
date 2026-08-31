@@ -184,6 +184,11 @@ class AppOptionsPage extends StatelessWidget {
           repository: repository,
         ),
         const SizedBox(height: 12),
+        BottomNavigationShortcutManager(
+          customization: customization,
+          repository: repository,
+        ),
+        const SizedBox(height: 12),
         SpSettingsGroup(
           title: l10n.localDefaultsTitle,
           rows: [
@@ -859,6 +864,10 @@ class DashboardShortcutRow extends StatelessWidget {
     required this.onVisibleChanged,
     required this.onMoveUp,
     required this.onMoveDown,
+    this.shownLabel,
+    this.hiddenLabel,
+    this.semanticLabel,
+    this.canEnable = true,
   });
 
   final DashboardShortcutDefinition shortcut;
@@ -868,6 +877,10 @@ class DashboardShortcutRow extends StatelessWidget {
   final ValueChanged<bool> onVisibleChanged;
   final VoidCallback onMoveUp;
   final VoidCallback onMoveDown;
+  final String? shownLabel;
+  final String? hiddenLabel;
+  final String? semanticLabel;
+  final bool canEnable;
 
   @override
   Widget build(BuildContext context) {
@@ -895,7 +908,9 @@ class DashboardShortcutRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  visible ? l10n.shortcutShownLabel : l10n.shortcutHiddenLabel,
+                  visible
+                      ? shownLabel ?? l10n.shortcutShownLabel
+                      : hiddenLabel ?? l10n.shortcutHiddenLabel,
                   style: TextStyle(
                     color: scheme.onSurfaceVariant,
                     fontSize: 13,
@@ -917,17 +932,83 @@ class DashboardShortcutRow extends StatelessWidget {
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),
           Semantics(
-            label: l10n.dashboardShortcutSemanticLabel(shortcut.title(l10n)),
+            label:
+                semanticLabel ??
+                l10n.dashboardShortcutSemanticLabel(shortcut.title(l10n)),
             toggled: visible,
             child: Switch(
               key: ValueKey('shortcut-visible-${shortcut.id}'),
               value: visible,
-              onChanged: onVisibleChanged,
+              onChanged: visible || canEnable ? onVisibleChanged : null,
               activeThumbColor: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class BottomNavigationShortcutManager extends StatelessWidget {
+  const BottomNavigationShortcutManager({
+    super.key,
+    required this.customization,
+    required this.repository,
+  });
+
+  final AppCustomization customization;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final activeIds = customization.bottomNavigationShortcutIds;
+    final definitions = {for (final item in dashboardShortcuts) item.id: item};
+    final ordered = <DashboardShortcutDefinition>[
+      for (final id in activeIds) ?definitions.remove(id),
+      ...definitions.values,
+    ];
+    return SpSettingsGroup(
+      title: l10n.bottomNavigationShortcutsTitle,
+      rows: [
+        SpSettingsRow(
+          l10n.bottomNavigationShortcutsTitle,
+          l10n.bottomNavigationShortcutsBody,
+          interactive: false,
+        ),
+        for (final shortcut in ordered)
+          DashboardShortcutRow(
+            shortcut: shortcut,
+            visible: activeIds.contains(shortcut.id),
+            canMoveUp: activeIds.indexOf(shortcut.id) > 0,
+            canMoveDown:
+                activeIds.contains(shortcut.id) &&
+                activeIds.indexOf(shortcut.id) < activeIds.length - 1,
+            canEnable:
+                activeIds.contains(shortcut.id) ||
+                activeIds.length < maximumBottomNavigationShortcuts,
+            shownLabel: l10n.navigationShortcutShownLabel,
+            hiddenLabel: l10n.navigationShortcutHiddenLabel,
+            semanticLabel: l10n.navigationShortcutSemanticLabel(
+              shortcut.title(l10n),
+            ),
+            onVisibleChanged: (visible) => repository
+                .setBottomNavigationShortcutVisible(shortcut.id, visible),
+            onMoveUp: () =>
+                repository.moveBottomNavigationShortcut(shortcut.id, -1),
+            onMoveDown: () =>
+                repository.moveBottomNavigationShortcut(shortcut.id, 1),
+          ),
+        SpSettingsRow(
+          l10n.resetNavigationTitle,
+          l10n.resetNavigationValue,
+          trailing: Icon(
+            Icons.restart_alt_rounded,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          onTap: repository.resetBottomNavigationShortcuts,
+        ),
+      ],
     );
   }
 }

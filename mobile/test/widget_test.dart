@@ -179,15 +179,30 @@ void main() {
     addTearDown(repository.close);
 
     await repository.setNavigationLayout(HavenNavigationLayout.bottom);
+    await repository.setBottomNavigationShortcutIds(const ['notes']);
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+    final navigationBar = find.byType(NavigationBar);
+    expect(
+      find.descendant(
+        of: navigationBar,
+        matching: find.byIcon(Icons.sticky_note_2_rounded),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: navigationBar,
+        matching: find.byIcon(Icons.people_alt_rounded),
+      ),
+      findsNothing,
+    );
 
     await repository.setNavigationLayout(HavenNavigationLayout.drawer);
     await tester.pump();
 
-    expect(find.byIcon(Icons.category_outlined), findsNothing);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(find.byTooltip('Open navigation menu'), findsOneWidget);
   });
 
@@ -3360,6 +3375,14 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds) async {
+    _customization = _customization.copyWith(
+      bottomNavigationShortcutIds: shortcutIds.take(3).toList(),
+    );
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<Uint8List?> readAvatar(String reference) async => null;
 
   @override
@@ -3415,6 +3438,38 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> resetDashboardShortcuts() {
     return setDashboardShortcutIds(defaultDashboardShortcutIds);
+  }
+
+  @override
+  Future<void> setBottomNavigationShortcutVisible(
+    String shortcutId,
+    bool visible,
+  ) {
+    final ids = _customization.bottomNavigationShortcutIds.toList();
+    final existingIndex = ids.indexOf(shortcutId);
+    if (visible && existingIndex == -1 && ids.length < 3) {
+      ids.add(shortcutId);
+    } else if (!visible && existingIndex != -1) {
+      ids.removeAt(existingIndex);
+    }
+    return setBottomNavigationShortcutIds(ids);
+  }
+
+  @override
+  Future<void> moveBottomNavigationShortcut(String shortcutId, int delta) {
+    final ids = _customization.bottomNavigationShortcutIds.toList();
+    final index = ids.indexOf(shortcutId);
+    if (index == -1 || delta == 0) return Future.value();
+    final nextIndex = (index + delta).clamp(0, ids.length - 1);
+    if (nextIndex == index) return Future.value();
+    final id = ids.removeAt(index);
+    ids.insert(nextIndex, id);
+    return setBottomNavigationShortcutIds(ids);
+  }
+
+  @override
+  Future<void> resetBottomNavigationShortcuts() {
+    return setBottomNavigationShortcutIds(defaultBottomNavigationShortcutIds);
   }
 
   @override
