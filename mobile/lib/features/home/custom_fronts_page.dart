@@ -494,7 +494,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
         : _nameController.text.trim();
     final previewColor = _colorFromHex(
       _normalizeUiHexColor(_colorController.text),
-      fallback: _spGold,
+      fallback: scheme.primary,
     );
 
     return SafeArea(
@@ -554,7 +554,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
                   builder: (context, value, child) {
                     final color = _colorFromHex(
                       _normalizeUiHexColor(value.text),
-                      fallback: _spGold,
+                      fallback: Theme.of(context).colorScheme.primary,
                     );
                     return Center(
                       widthFactor: 1,
@@ -564,7 +564,9 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
-                          border: Border.all(color: _spLine),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
                       ),
                     );

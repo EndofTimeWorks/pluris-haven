@@ -61,9 +61,6 @@ part 'custom_fronts_page.dart';
 part 'sp_widgets.dart';
 part 'server_account.dart';
 
-const _spLine = Color(0xFF3A3E50);
-const _spMuted = Color(0xFFC4C0CE);
-const _spGold = Color(0xFFF2C75C);
 final _localAvatarStore = LocalAvatarStore();
 
 enum SpSection {

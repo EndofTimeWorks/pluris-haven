@@ -279,8 +279,8 @@ class HowToCard extends StatelessWidget {
               children: [
                 Text(
                   '${i + 1}.',
-                  style: const TextStyle(
-                    color: _spGold,
+                  style: TextStyle(
+                    color: scheme.primary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),

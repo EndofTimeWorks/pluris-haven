@@ -54,7 +54,7 @@ class LocalPrivacyPage extends StatelessWidget {
                             icon: Icons.shield_outlined,
                             color: _colorFromHex(
                               bucket.colorHex,
-                              fallback: _spGold,
+                              fallback: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                           title: Text(bucket.name),
@@ -520,7 +520,9 @@ class AccountSettingsPage extends StatelessWidget {
                           : l10n.savedOnDeviceSubtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _spMuted),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

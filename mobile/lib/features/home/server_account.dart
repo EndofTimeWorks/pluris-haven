@@ -995,7 +995,9 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         l10n.noPendingRequests,
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   for (final request in controller.friendRequests)
@@ -1053,7 +1055,9 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         l10n.noFriendsYet,
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   for (final friend in controller.friends)
@@ -1108,7 +1112,9 @@ class _ServerFriendsPageState extends State<ServerFriendsPage> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         l10n.noBlockedUsers,
-                        style: const TextStyle(color: _spMuted),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   for (final block in controller.blocks)
@@ -1153,7 +1159,9 @@ class _ServerMessage extends StatelessWidget {
       child: Text(
         message,
         style: TextStyle(
-          color: error ? Theme.of(context).colorScheme.error : _spMuted,
+          color: error
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
