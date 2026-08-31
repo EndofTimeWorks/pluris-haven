@@ -46,6 +46,15 @@ class AppOptionsPage extends StatelessWidget {
               ),
             ),
             SpSettingsRow(
+              l10n.fontFamilyRowTitle,
+              customization.fontFamily.label,
+              onTap: () => showFontFamilyPicker(
+                context,
+                customization: customization,
+                repository: repository,
+              ),
+            ),
+            SpSettingsRow(
               l10n.accentColorLabel,
               customization.accentLabel,
               trailing: AccentSwatch(
@@ -494,6 +503,42 @@ void showNavigationLayoutPicker(
               title: Text(layout.label),
               onTap: () async {
                 await repository.setNavigationLayout(layout);
+                if (context.mounted) Navigator.of(context).pop();
+              },
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+}
+
+void showFontFamilyPicker(
+  BuildContext context, {
+  required AppCustomization customization,
+  required HavenRepository repository,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final family in HavenFontFamily.values)
+            ListTile(
+              leading: Icon(
+                customization.fontFamily == family
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(
+                family.label,
+                style: TextStyle(fontFamily: family.fontFamily),
+              ),
+              onTap: () async {
+                await repository.setFontFamily(family);
                 if (context.mounted) Navigator.of(context).pop();
               },
             ),

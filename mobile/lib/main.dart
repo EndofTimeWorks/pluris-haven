@@ -276,7 +276,14 @@ class PlurisHavenApp extends StatelessWidget {
         brightness: brightness,
         dynamicScheme: dynamicScheme,
       );
-      return ThemeData.from(colorScheme: scheme, useMaterial3: true).copyWith(
+      final baseTheme = ThemeData.from(colorScheme: scheme, useMaterial3: true);
+      return baseTheme.copyWith(
+        textTheme: baseTheme.textTheme.apply(
+          fontFamily: customization.fontFamily.fontFamily,
+        ),
+        primaryTextTheme: baseTheme.primaryTextTheme.apply(
+          fontFamily: customization.fontFamily.fontFamily,
+        ),
         extensions: [
           HavenVisualThemeExtension(
             customization.visualTheme,
@@ -349,8 +356,9 @@ class PlurisHavenApp extends StatelessWidget {
     final effectiveMuted = appearance.mutedTextColor ?? muted;
     final effectiveOutline = appearance.outlineColor ?? outline;
     final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
-    return ThemeData(
+    final baseTheme = ThemeData(
       brightness: brightness,
+      fontFamily: customization.fontFamily.fontFamily,
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: accent,
@@ -410,6 +418,14 @@ class PlurisHavenApp extends StatelessWidget {
         ),
       ],
       useMaterial3: true,
+    );
+    return baseTheme.copyWith(
+      textTheme: baseTheme.textTheme.apply(
+        fontFamily: customization.fontFamily.fontFamily,
+      ),
+      primaryTextTheme: baseTheme.primaryTextTheme.apply(
+        fontFamily: customization.fontFamily.fontFamily,
+      ),
     );
   }
 

@@ -121,6 +121,12 @@ abstract class AppLocalizations {
   /// **'Navigation layout'**
   String get navigationLayoutRowTitle;
 
+  /// No description provided for @fontFamilyRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get fontFamilyRowTitle;
+
   /// No description provided for @accentColorLabel.
   ///
   /// In en, this message translates to:

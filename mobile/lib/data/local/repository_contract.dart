@@ -193,6 +193,8 @@ abstract interface class HavenRepository {
 
   Future<void> setNavigationLayout(HavenNavigationLayout layout);
 
+  Future<void> setFontFamily(HavenFontFamily family);
+
   Future<void> setAccentColor(HavenAccentColor color);
 
   Future<void> setCustomAccentColor(String? colorHex);

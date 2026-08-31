@@ -7,6 +7,7 @@
   "themeRowTitle": "Theme",
   "visualThemeRowTitle": "Visual style",
   "navigationLayoutRowTitle": "Navigation layout",
+  "fontFamilyRowTitle": "Font",
   "accentColorLabel": "Accent colour",
   "compactDashboardTitle": "Compact dashboard",
   "compactDashboardSubtitle": "smaller shortcuts, more room",

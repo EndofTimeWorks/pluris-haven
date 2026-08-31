@@ -381,6 +381,7 @@ void main() {
     var customization = await repository.loadCustomization();
     expect(customization.themeMode, HavenThemeMode.dark);
     expect(customization.navigationLayout, HavenNavigationLayout.automatic);
+    expect(customization.fontFamily, HavenFontFamily.system);
     expect(customization.accentColor, HavenAccentColor.purple);
     expect(customization.compactDashboard, isFalse);
     expect(customization.showDashboardSubtitles, isTrue);
@@ -393,6 +394,7 @@ void main() {
 
     await repository.setThemeMode(HavenThemeMode.system);
     await repository.setNavigationLayout(HavenNavigationLayout.bottom);
+    await repository.setFontFamily(HavenFontFamily.serif);
     await repository.setAccentColor(HavenAccentColor.teal);
     await repository.setCompactDashboard(true);
     await repository.setShowDashboardSubtitles(false);
@@ -410,6 +412,7 @@ void main() {
     customization = await repository.loadCustomization();
     expect(customization.themeMode, HavenThemeMode.system);
     expect(customization.navigationLayout, HavenNavigationLayout.bottom);
+    expect(customization.fontFamily, HavenFontFamily.serif);
     expect(customization.accentColor, HavenAccentColor.teal);
     expect(customization.compactDashboard, isTrue);
     expect(customization.showDashboardSubtitles, isFalse);

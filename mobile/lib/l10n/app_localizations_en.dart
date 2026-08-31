@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationLayoutRowTitle => 'Navigation layout';
 
   @override
+  String get fontFamilyRowTitle => 'Font';
+
+  @override
   String get accentColorLabel => 'Accent colour';
 
   @override

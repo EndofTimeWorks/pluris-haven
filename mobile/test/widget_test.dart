@@ -206,6 +206,29 @@ void main() {
     expect(find.byTooltip('Open navigation menu'), findsOneWidget);
   });
 
+  testWidgets('applies the selected font family across the app theme', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setFontFamily(HavenFontFamily.serif);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.darkTheme?.textTheme.bodyMedium?.fontFamily, 'serif');
+  });
+
   testWidgets('keeps the current front readable in light theme', (
     tester,
   ) async {
@@ -3270,6 +3293,12 @@ class FakeHavenRepository implements HavenRepository {
   @override
   Future<void> setNavigationLayout(HavenNavigationLayout layout) async {
     _customization = _customization.copyWith(navigationLayout: layout);
+    _customizationController.add(_customization);
+  }
+
+  @override
+  Future<void> setFontFamily(HavenFontFamily family) async {
+    _customization = _customization.copyWith(fontFamily: family);
     _customizationController.add(_customization);
   }
 
