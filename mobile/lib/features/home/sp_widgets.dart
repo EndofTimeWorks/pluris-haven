@@ -4,6 +4,9 @@ HavenVisualTheme _visualThemeOf(BuildContext context) =>
     Theme.of(context).extension<HavenVisualThemeExtension>()?.theme ??
     HavenVisualTheme.original;
 
+double _spacingOf(BuildContext context) =>
+    Theme.of(context).extension<HavenVisualThemeExtension>()?.spacingScale ?? 1;
+
 class SpNavigationEntry extends StatelessWidget {
   const SpNavigationEntry({super.key, required this.item, this.onTap});
 
@@ -13,11 +16,7 @@ class SpNavigationEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final spacing =
-        Theme.of(
-          context,
-        ).extension<HavenVisualThemeExtension>()?.spacingScale ??
-        1;
+    final spacing = _spacingOf(context);
     return SpCard(
       onTap: onTap,
       padding: EdgeInsets.symmetric(
@@ -27,7 +26,7 @@ class SpNavigationEntry extends StatelessWidget {
       child: Row(
         children: [
           SpIconBubble(icon: item.icon),
-          const SizedBox(width: 16),
+          SizedBox(width: 16 * spacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +38,7 @@ class SpNavigationEntry extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4 * spacing),
                 Text(
                   item.subtitle,
                   style: TextStyle(
@@ -73,6 +72,7 @@ class SpIconBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+    final spacing = _spacingOf(context);
     return ExcludeSemantics(
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -80,9 +80,9 @@ class SpIconBubble extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: SizedBox(
-          width: 38,
-          height: 38,
-          child: Icon(icon, color: effectiveColor, size: 21),
+          width: 38 * spacing,
+          height: 38 * spacing,
+          child: Icon(icon, color: effectiveColor, size: 21 * spacing),
         ),
       ),
     );
@@ -97,11 +97,7 @@ class SpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visualTheme = _visualThemeOf(context);
-    final spacing =
-        Theme.of(
-          context,
-        ).extension<HavenVisualThemeExtension>()?.spacingScale ??
-        1;
+    final spacing = _spacingOf(context);
     return ListView(
       padding: switch (visualTheme) {
         HavenVisualTheme.simplyPlural => EdgeInsets.fromLTRB(
@@ -187,6 +183,7 @@ class SpFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = _spacingOf(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -201,7 +198,7 @@ class SpFilterRow extends StatelessWidget {
                   ? null
                   : (_) => onSelected!(filters[index]),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8 * spacing),
           ],
         ],
       ),
@@ -250,19 +247,21 @@ class SpEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final extension = Theme.of(context).extension<HavenVisualThemeExtension>();
+    final spacing = _spacingOf(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(extension?.cardRadius ?? 10),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16 * spacing),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
+            SizedBox(height: 6 * spacing),
             Text(
               body,
               style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
@@ -290,10 +289,11 @@ class SpActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = _spacingOf(context);
     return Row(
       children: [
         FilledButton(onPressed: onPrimary, child: Text(primary)),
-        const SizedBox(width: 10),
+        SizedBox(width: 10 * spacing),
         OutlinedButton(onPressed: onSecondary, child: Text(secondary)),
       ],
     );
@@ -308,13 +308,19 @@ class SpSettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = _spacingOf(context);
     return SpCard(
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            padding: EdgeInsets.fromLTRB(
+              16 * spacing,
+              14 * spacing,
+              16 * spacing,
+              8 * spacing,
+            ),
             child: Text(
               title,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
@@ -326,7 +332,7 @@ class SpSettingsGroup extends StatelessWidget {
               Divider(
                 height: 1,
                 color: Theme.of(context).colorScheme.outlineVariant,
-                indent: 16,
+                indent: 16 * spacing,
               ),
           ],
         ],
@@ -356,12 +362,16 @@ class SpSettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final spacing = _spacingOf(context);
     final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: EdgeInsets.symmetric(
+        horizontal: 16 * spacing,
+        vertical: 13 * spacing,
+      ),
       child: Row(
         children: [
           const AccentDot(),
-          const SizedBox(width: 14),
+          SizedBox(width: 14 * spacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,7 +383,7 @@ class SpSettingsRow extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3 * spacing),
                 subtitleWidget ??
                     Text(
                       subtitle,
@@ -455,13 +465,14 @@ class SpSwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = _spacingOf(context);
     return Material(
       color: Colors.transparent,
       child: SwitchListTile(
         value: value,
         onChanged: onChanged,
         dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16 * spacing),
         activeThumbColor: Theme.of(context).colorScheme.primary,
         title: Text(
           title,
@@ -545,7 +556,7 @@ class SpCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(radius),
         onTap: onTap,
         child: content,
       ),

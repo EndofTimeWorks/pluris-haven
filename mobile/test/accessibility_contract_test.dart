@@ -210,6 +210,7 @@ void main() {
         home: Scaffold(
           body: SpCard(
             padding: const EdgeInsets.all(10),
+            onTap: () {},
             child: const SizedBox(width: 10, height: 10),
           ),
         ),
@@ -222,6 +223,10 @@ void main() {
     expect(
       tester.widget<Padding>(find.byType(Padding)).padding,
       const EdgeInsets.all(8),
+    );
+    expect(
+      tester.widget<InkWell>(find.byType(InkWell)).borderRadius,
+      BorderRadius.circular(22),
     );
   });
 
