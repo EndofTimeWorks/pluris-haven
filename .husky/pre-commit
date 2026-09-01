@@ -13,13 +13,40 @@ git diff --cached --name-only -z --diff-filter=ACMR -- \
   >"$mobile_dart_files"
 
 if [ -s "$staged_files" ]; then
-  xargs -0 pnpm exec prettier --write --ignore-unknown <"$staged_files"
-  xargs -0 git add -- <"$staged_files"
+  xargs -0 -r -n 1 sh -c '
+    path="$1"
+    git diff --quiet -- "$path" || exit 0
+
+    filename="${path##*/}"
+    case "$filename" in
+      *.*) extension="${filename##*.}" ;;
+      *) extension="tmp" ;;
+    esac
+    input="$(mktemp "${TMPDIR:-/tmp}/pluris-haven-staged.XXXXXX.${extension}")"
+    trap "rm -f \"$input\"" EXIT HUP INT TERM
+
+    git show ":$path" >"$input"
+    pnpm exec prettier --write --ignore-unknown "$input" >/dev/null
+    mode="$(git ls-files -s -- "$path" | awk "NR == 1 { print \$1 }")"
+    object="$(git hash-object -w "$input")"
+    git update-index --cacheinfo "$mode,$object,$path"
+  ' sh <"$staged_files"
 fi
 
 if [ -s "$mobile_dart_files" ]; then
-  xargs -0 dart format <"$mobile_dart_files"
-  xargs -0 git add -- <"$mobile_dart_files"
+  xargs -0 -r -n 1 sh -c '
+    path="$1"
+    git diff --quiet -- "$path" || exit 0
+
+    input="$(mktemp "${TMPDIR:-/tmp}/pluris-haven-staged.XXXXXX.dart")"
+    trap "rm -f \"$input\"" EXIT HUP INT TERM
+
+    git show ":$path" >"$input"
+    dart format "$input" >/dev/null
+    mode="$(git ls-files -s -- "$path" | awk "NR == 1 { print \$1 }")"
+    object="$(git hash-object -w "$input")"
+    git update-index --cacheinfo "$mode,$object,$path"
+  ' sh <"$mobile_dart_files"
 fi
 
 pnpm check:l10n
