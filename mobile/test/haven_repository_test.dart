@@ -334,6 +334,39 @@ void main() {
     expect(history.single.isActive, isFalse);
   });
 
+  test('adds fronts without replacing the current front', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    final members = await repository.watchMembers().first;
+    final iris = members.singleWhere((member) => member.displayName == 'Iris');
+    final sage = members.singleWhere((member) => member.displayName == 'Sage');
+
+    await repository.setFrontMembers([iris.id]);
+    expect((await repository.loadHomeSnapshot()).currentFrontText, 'Iris');
+
+    await repository.addFrontMembers([sage.id]);
+    expect(
+      (await repository.loadHomeSnapshot()).currentFrontText,
+      'Iris, Sage',
+    );
+
+    await repository.setCustomFront('Away');
+    await repository.addCustomFront('Asleep');
+    await repository.addFrontMembers([iris.id]);
+    expect(
+      (await repository.loadHomeSnapshot()).currentFrontText,
+      'Away, Asleep, Iris',
+    );
+
+    await repository.setFrontMembers([sage.id]);
+    expect((await repository.loadHomeSnapshot()).currentFrontText, 'Sage');
+  });
+
   test('creates and edits historical front intervals', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

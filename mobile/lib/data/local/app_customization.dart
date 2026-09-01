@@ -60,6 +60,22 @@ enum HavenNavigationLayout {
   }
 }
 
+enum HavenFrontAction {
+  add('add'),
+  replace('replace');
+
+  const HavenFrontAction(this.storageValue);
+
+  final String storageValue;
+
+  static HavenFrontAction fromStorage(String? value) {
+    return HavenFrontAction.values.firstWhere(
+      (action) => action.storageValue == value,
+      orElse: () => HavenFrontAction.add,
+    );
+  }
+}
+
 enum HavenFontFamily {
   system('system', 'System', null),
   sansSerif('sans_serif', 'Sans serif', 'sans-serif'),
@@ -261,6 +277,7 @@ class AppCustomization {
     required this.highContrast,
     required this.largeText,
     required this.compactLists,
+    required this.frontAction,
     required this.dashboardShortcutIds,
     required this.bottomNavigationShortcutIds,
     required this.languageCode,
@@ -284,6 +301,7 @@ class AppCustomization {
   final bool highContrast;
   final bool largeText;
   final bool compactLists;
+  final HavenFrontAction frontAction;
   final List<String> dashboardShortcutIds;
   final List<String> bottomNavigationShortcutIds;
   final String languageCode;
@@ -314,6 +332,7 @@ class AppCustomization {
     highContrast: false,
     largeText: false,
     compactLists: false,
+    frontAction: HavenFrontAction.add,
     dashboardShortcutIds: defaultDashboardShortcutIds,
     bottomNavigationShortcutIds: defaultBottomNavigationShortcutIds,
     languageCode: systemLanguageCode,
@@ -338,6 +357,7 @@ class AppCustomization {
     bool? highContrast,
     bool? largeText,
     bool? compactLists,
+    HavenFrontAction? frontAction,
     List<String>? dashboardShortcutIds,
     List<String>? bottomNavigationShortcutIds,
     String? languageCode,
@@ -368,6 +388,7 @@ class AppCustomization {
       highContrast: highContrast ?? this.highContrast,
       largeText: largeText ?? this.largeText,
       compactLists: compactLists ?? this.compactLists,
+      frontAction: frontAction ?? this.frontAction,
       dashboardShortcutIds: List.unmodifiable(
         dashboardShortcutIds ?? this.dashboardShortcutIds,
       ),
@@ -470,6 +491,9 @@ class LocalAppCustomizationStore {
 
   Future<void> setCompactLists(bool value) =>
       _write(_compactListsKey, value.toString());
+
+  Future<void> setFrontAction(HavenFrontAction action) =>
+      _write(_frontActionKey, action.storageValue);
 
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) =>
       _write(_dashboardShortcutIdsKey, _serializeIds(shortcutIds));
@@ -582,6 +606,7 @@ class LocalAppCustomizationStore {
       highContrast: _readBool(values[_highContrastKey]),
       largeText: _readBool(values[_largeTextKey]),
       compactLists: _readBool(values[_compactListsKey]),
+      frontAction: HavenFrontAction.fromStorage(values[_frontActionKey]),
       dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
       bottomNavigationShortcutIds: _readBottomNavigationShortcutIds(
         values[_bottomNavigationShortcutIdsKey],
@@ -681,6 +706,7 @@ const _appLockEnabledKey = 'app_lock_enabled';
 const _highContrastKey = 'high_contrast';
 const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';
+const _frontActionKey = 'front_action';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
 const _bottomNavigationShortcutIdsKey = 'bottom_navigation_shortcut_ids';
 const _emptyShortcutIdsValue = '__empty__';

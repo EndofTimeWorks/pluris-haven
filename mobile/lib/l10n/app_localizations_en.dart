@@ -2943,6 +2943,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setAsFrontButton => 'Set as front';
 
   @override
+  String get frontActionPickerTooltip => 'Choose front action';
+
+  @override
   String get noActionButton => 'No action';
 
   @override

@@ -255,10 +255,12 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  tooltip: l10n.setSavedFrontTooltip,
-                                  onPressed: () => _applyNamedFront(front),
-                                  icon: const Icon(Icons.play_arrow_rounded),
+                                _FrontActionButton(
+                                  repository: widget.repository,
+                                  actionKey:
+                                      'dashboard-named-front-${front.id}',
+                                  onPressed: (action) =>
+                                      _applyNamedFront(front, action),
                                 ),
                                 IconButton(
                                   tooltip: l10n.deleteSavedFrontTooltip,
@@ -379,8 +381,13 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     }
   }
 
-  Future<void> _applyNamedFront(NamedFront front) async {
-    final reminders = await widget.repository.applyNamedFront(front.id);
+  Future<void> _applyNamedFront(
+    NamedFront front,
+    HavenFrontAction action,
+  ) async {
+    final reminders = action == HavenFrontAction.add
+        ? await widget.repository.addNamedFront(front.id)
+        : await widget.repository.applyNamedFront(front.id);
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }

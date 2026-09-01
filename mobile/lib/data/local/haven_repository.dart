@@ -37,6 +37,7 @@ export 'app_customization.dart'
         HavenAppearanceOverrides,
         HavenAccentColor,
         HavenFontFamily,
+        HavenFrontAction,
         HavenNavigationLayout,
         HavenThemeMode,
         HavenVisualTheme,
@@ -391,6 +392,10 @@ class LocalHavenRepository implements HavenRepository {
       _customization.setCompactLists(compact);
 
   @override
+  Future<void> setFrontAction(HavenFrontAction action) =>
+      _customization.setFrontAction(action);
+
+  @override
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) =>
       _customization.setDashboardShortcutIds(shortcutIds);
 
@@ -453,6 +458,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) =>
       _frontSetFrontMembers(memberIds);
+
+  @override
+  Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds) =>
+      _frontAddFrontMembers(memberIds);
 
   @override
   Future<void> updateFrontStatusNote(String frontId, String? statusNote) =>
@@ -614,6 +623,10 @@ class LocalHavenRepository implements HavenRepository {
       _frontSetCustomFront(label);
 
   @override
+  Future<List<ReminderSummary>> addCustomFront(String label) =>
+      _frontAddCustomFront(label);
+
+  @override
   Future<void> clearCurrentFront() => _frontClearCurrentFront();
 
   @override
@@ -741,6 +754,10 @@ class LocalHavenRepository implements HavenRepository {
       _namedFrontApply(namedFrontId);
 
   @override
+  Future<List<ReminderSummary>> addNamedFront(String namedFrontId) =>
+      _namedFrontAdd(namedFrontId);
+
+  @override
   Future<void> deleteNamedFront(String namedFrontId) =>
       _namedFrontDelete(namedFrontId);
 
@@ -769,21 +786,6 @@ class LocalHavenRepository implements HavenRepository {
     return (database.update(database.frontSessions)..where(
           (session) =>
               session.systemId.equals(localSystemId) & session.endedAt.isNull(),
-        ))
-        .write(
-          FrontSessionsCompanion(
-            endedAt: Value(endedAt),
-            updatedAt: Value(endedAt),
-          ),
-        );
-  }
-
-  Future<void> _endFrontSession(String sessionId, DateTime endedAt) {
-    return (database.update(database.frontSessions)..where(
-          (session) =>
-              session.systemId.equals(localSystemId) &
-              session.id.equals(sessionId) &
-              session.endedAt.isNull(),
         ))
         .write(
           FrontSessionsCompanion(

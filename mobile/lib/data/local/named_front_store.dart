@@ -115,7 +115,16 @@ extension LocalHavenRepositoryNamedFronts on LocalHavenRepository {
     });
   }
 
-  Future<List<ReminderSummary>> _namedFrontApply(String namedFrontId) async {
+  Future<List<ReminderSummary>> _namedFrontApply(String namedFrontId) =>
+      _namedFrontUse(namedFrontId, replaceExisting: true);
+
+  Future<List<ReminderSummary>> _namedFrontAdd(String namedFrontId) =>
+      _namedFrontUse(namedFrontId, replaceExisting: false);
+
+  Future<List<ReminderSummary>> _namedFrontUse(
+    String namedFrontId, {
+    required bool replaceExisting,
+  }) async {
     final namedFront = await (database.select(
       database.namedFronts,
     )..where((front) => front.id.equals(namedFrontId))).getSingleOrNull();
@@ -130,8 +139,13 @@ extension LocalHavenRepositoryNamedFronts on LocalHavenRepository {
         'custom_label',
       ),
     );
-    if (members.isEmpty && label != null) return setCustomFront(label);
-    return setFrontMembers(members.map((m) => m.memberId).toList());
+    if (members.isEmpty && label != null) {
+      return replaceExisting ? setCustomFront(label) : addCustomFront(label);
+    }
+    final memberIds = members.map((member) => member.memberId).toList();
+    return replaceExisting
+        ? setFrontMembers(memberIds)
+        : addFrontMembers(memberIds);
   }
 
   Future<void> _namedFrontDelete(String namedFrontId) async {

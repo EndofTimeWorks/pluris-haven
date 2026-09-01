@@ -223,6 +223,8 @@ abstract interface class HavenRepository {
 
   Future<void> setCompactLists(bool compact);
 
+  Future<void> setFrontAction(HavenFrontAction action);
+
   Future<void> setDashboardShortcutIds(List<String> shortcutIds);
 
   Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds);
@@ -259,6 +261,8 @@ abstract interface class HavenRepository {
   Future<void> deleteMember(String memberId);
 
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds);
+
+  Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds);
 
   Future<void> updateFrontStatusNote(String frontId, String? statusNote);
 
@@ -333,6 +337,8 @@ abstract interface class HavenRepository {
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
   Future<List<ReminderSummary>> setCustomFront(String label);
+
+  Future<List<ReminderSummary>> addCustomFront(String label);
 
   Future<void> clearCurrentFront();
 
@@ -420,6 +426,8 @@ abstract interface class HavenRepository {
   Future<void> saveNamedFront(NamedFront front, List<String> memberIds);
 
   Future<List<ReminderSummary>> applyNamedFront(String namedFrontId);
+
+  Future<List<ReminderSummary>> addNamedFront(String namedFrontId);
 
   Future<void> deleteNamedFront(String namedFrontId);
 

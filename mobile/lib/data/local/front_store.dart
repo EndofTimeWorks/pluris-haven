@@ -95,16 +95,23 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     );
   }
 
-  Future<List<ReminderSummary>> _frontSetFrontMembers(
-    List<String> memberIds,
-  ) async {
+  Future<List<ReminderSummary>> _frontSetFrontMembers(List<String> memberIds) =>
+      _frontApplyMembers(memberIds, replaceExisting: true);
+
+  Future<List<ReminderSummary>> _frontAddFrontMembers(List<String> memberIds) =>
+      _frontApplyMembers(memberIds, replaceExisting: false);
+
+  Future<List<ReminderSummary>> _frontApplyMembers(
+    List<String> memberIds, {
+    required bool replaceExisting,
+  }) async {
     final ids = memberIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList();
     if (ids.isEmpty) {
-      await _frontClearCurrentFront();
+      if (replaceExisting) await _frontClearCurrentFront();
       return const [];
     }
 
@@ -118,7 +125,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
             ))
             .get();
     if (members.isEmpty) {
-      await _frontClearCurrentFront();
+      if (replaceExisting) await _frontClearCurrentFront();
       return const [];
     }
 
@@ -139,37 +146,26 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
               database.frontSessionMembers,
             )..where((link) => link.sessionId.isIn(openSessionIds))).get();
 
-      final sessionsByMember = <String, Set<String>>{};
+      final activeMemberIds = <String>{};
       for (final link in openLinks) {
-        sessionsByMember
-            .putIfAbsent(link.memberId, () => <String>{})
-            .add(link.sessionId);
+        activeMemberIds.add(link.memberId);
       }
-      final desiredIds = members.map((member) => member.id).toSet();
-      final sessionsToClose = <String>{};
-      for (final entry in sessionsByMember.entries) {
-        if (!desiredIds.contains(entry.key)) {
-          sessionsToClose.addAll(entry.value);
-        }
+      final desiredMemberIds = members.map((member) => member.id).toSet();
+      final hasCustomFront = openSessions.any(
+        (session) => session.label != null,
+      );
+      if (replaceExisting &&
+          !hasCustomFront &&
+          activeMemberIds.length == desiredMemberIds.length &&
+          activeMemberIds.containsAll(desiredMemberIds)) {
+        return const <ReminderSummary>[];
       }
-
-      for (final sessionId in sessionsToClose) {
-        await _endFrontSession(sessionId, now);
-      }
-
-      final remainingActiveMemberIds = <String>{};
-      for (final entry in sessionsByMember.entries) {
-        if (entry.value.any(
-          (sessionId) => !sessionsToClose.contains(sessionId),
-        )) {
-          remainingActiveMemberIds.add(entry.key);
-        }
-      }
+      if (replaceExisting) await _endOpenFrontSessions(now);
 
       var offset = 0;
       final newlyStartedMemberIds = <String>{};
       for (final member in members) {
-        if (remainingActiveMemberIds.contains(member.id)) {
+        if (!replaceExisting && activeMemberIds.contains(member.id)) {
           continue;
         }
         final startedAt = now.add(Duration(microseconds: offset++));
@@ -351,10 +347,19 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     });
   }
 
-  Future<List<ReminderSummary>> _frontSetCustomFront(String label) async {
+  Future<List<ReminderSummary>> _frontSetCustomFront(String label) =>
+      _frontApplyCustomFront(label, replaceExisting: true);
+
+  Future<List<ReminderSummary>> _frontAddCustomFront(String label) =>
+      _frontApplyCustomFront(label, replaceExisting: false);
+
+  Future<List<ReminderSummary>> _frontApplyCustomFront(
+    String label, {
+    required bool replaceExisting,
+  }) async {
     final trimmed = label.trim();
     if (trimmed.isEmpty) {
-      await _frontClearCurrentFront();
+      if (replaceExisting) await _frontClearCurrentFront();
       return const [];
     }
 
@@ -368,17 +373,29 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
                     front.endedAt.isNull(),
               ))
               .get();
-      for (final front in existing) {
-        if ((await _decryptLocalText(
-              front.label,
-              'front_sessions',
-              front.id,
-              'label',
-            ))?.trim() ==
-            trimmed) {
-          return const <ReminderSummary>[];
+      if (!replaceExisting) {
+        for (final front in existing) {
+          if ((await _decryptLocalText(
+                front.label,
+                'front_sessions',
+                front.id,
+                'label',
+              ))?.trim().toLowerCase() ==
+              trimmed.toLowerCase()) {
+            return const <ReminderSummary>[];
+          }
         }
+      } else if (existing.length == 1 &&
+          (await _decryptLocalText(
+                existing.single.label,
+                'front_sessions',
+                existing.single.id,
+                'label',
+              ))?.trim().toLowerCase() ==
+              trimmed.toLowerCase()) {
+        return const <ReminderSummary>[];
       }
+      if (replaceExisting) await _endOpenFrontSessions(now);
 
       final frontId = newLocalId('front');
       await database

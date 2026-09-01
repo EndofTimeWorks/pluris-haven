@@ -5142,6 +5142,12 @@ abstract class AppLocalizations {
   /// **'Set as front'**
   String get setAsFrontButton;
 
+  /// No description provided for @frontActionPickerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose front action'**
+  String get frontActionPickerTooltip;
+
   /// No description provided for @noActionButton.
   ///
   /// In en, this message translates to:

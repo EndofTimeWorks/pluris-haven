@@ -1144,6 +1144,7 @@
   "setFrontButton": "Set front",
   "addToFrontButton": "Add to front",
   "setAsFrontButton": "Set as front",
+  "frontActionPickerTooltip": "Choose front action",
   "noActionButton": "No action",
   "duplicateButton": "Duplicate",
   "restoreButton": "Restore",

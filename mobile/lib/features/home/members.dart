@@ -284,11 +284,21 @@ class MemberListTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!member.archived)
-              IconButton(
-                tooltip: l10n.setFrontButton,
-                onPressed: () =>
-                    showMemberFrontActionSheet(context, repository, member),
-                icon: const Icon(Icons.add_rounded),
+              _FrontActionButton(
+                repository: repository,
+                actionKey: 'member-${member.id}',
+                onPressed: (action) async {
+                  final reminders = action == HavenFrontAction.add
+                      ? await repository.addFrontMembers([member.id])
+                      : await repository.setFrontMembers([member.id]);
+                  if (context.mounted) {
+                    await deliverAfterFrontReminders(
+                      context,
+                      repository,
+                      reminders,
+                    );
+                  }
+                },
               ),
             PopupMenuButton<String>(
               tooltip: l10n.memberActionsTooltip,
@@ -382,83 +392,55 @@ class MemberListTile extends StatelessWidget {
   }
 }
 
-Future<void> showMemberFrontActionSheet(
-  BuildContext context,
-  HavenRepository repository,
-  MemberSummary member,
-) async {
-  final action = await showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              member.displayName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            _MemberFrontAction(
-              icon: Icons.add_rounded,
-              label: AppLocalizations.of(context).addToFrontButton,
-              value: 'add',
-            ),
-            _MemberFrontAction(
-              icon: Icons.arrow_upward_rounded,
-              label: AppLocalizations.of(context).setAsFrontButton,
-              value: 'set',
-            ),
-            _MemberFrontAction(
-              icon: Icons.close_rounded,
-              label: AppLocalizations.of(context).noActionButton,
-              value: 'none',
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-  if (!context.mounted || action == null || action == 'none') {
-    return;
-  }
-
-  final ids = action == 'set'
-      ? [member.id]
-      : [
-          for (final current
-              in await repository.watchCurrentFrontMembers().first)
-            current.id,
-          member.id,
-        ];
-  final reminders = await repository.setFrontMembers(ids.toSet().toList());
-  if (context.mounted) {
-    await deliverAfterFrontReminders(context, repository, reminders);
-  }
-}
-
-class _MemberFrontAction extends StatelessWidget {
-  const _MemberFrontAction({
-    required this.icon,
-    required this.label,
-    required this.value,
+class _FrontActionButton extends StatelessWidget {
+  const _FrontActionButton({
+    required this.repository,
+    required this.actionKey,
+    required this.onPressed,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final HavenRepository repository;
+  final String actionKey;
+  final Future<void> Function(HavenFrontAction action) onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-      onTap: () => Navigator.of(context).pop(value),
+    final l10n = AppLocalizations.of(context);
+    return StreamBuilder<AppCustomization>(
+      stream: repository.watchCustomization(),
+      initialData: AppCustomization.defaults,
+      builder: (context, snapshot) {
+        final action = snapshot.data?.frontAction ?? HavenFrontAction.add;
+        final isAdd = action == HavenFrontAction.add;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              key: ValueKey('front-action-button-$actionKey'),
+              tooltip: isAdd ? l10n.addToFrontButton : l10n.setAsFrontButton,
+              onPressed: () => onPressed(action),
+              icon: Icon(isAdd ? Icons.add_rounded : Icons.play_arrow_rounded),
+            ),
+            PopupMenuButton<HavenFrontAction>(
+              key: ValueKey('front-action-picker-$actionKey'),
+              tooltip: l10n.frontActionPickerTooltip,
+              onSelected: repository.setFrontAction,
+              itemBuilder: (context) => [
+                CheckedPopupMenuItem(
+                  value: HavenFrontAction.add,
+                  checked: isAdd,
+                  child: Text(l10n.addToFrontButton),
+                ),
+                CheckedPopupMenuItem(
+                  value: HavenFrontAction.replace,
+                  checked: !isAdd,
+                  child: Text(l10n.setAsFrontButton),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

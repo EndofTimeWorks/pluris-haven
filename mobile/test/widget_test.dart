@@ -567,7 +567,11 @@ void main() {
     ]);
 
     await tester.ensureVisible(find.text('River + Sage'));
-    await tester.tap(find.byTooltip('Set saved front').last);
+    await tester.tap(
+      find.byKey(
+        ValueKey('front-action-button-dashboard-named-front-${combo.id}'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
     expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
@@ -648,7 +652,23 @@ void main() {
     expect(repository._namedFronts.single.customLabel, 'Away');
     expect(find.text('Away'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Set custom front'));
+    final frontActionKey = 'named-front-${repository._namedFronts.single.id}';
+    await tester.tap(
+      find.byKey(ValueKey('front-action-picker-$frontActionKey')),
+    );
+    await tester.pumpAndSettle();
+    final setAsFront = find.ancestor(
+      of: find.text('Set as front'),
+      matching: find.byType(CheckedPopupMenuItem<HavenFrontAction>),
+    );
+    await tester.ensureVisible(setAsFront);
+    await tester.tap(setAsFront);
+    await tester.pumpAndSettle();
+    expect(repository._customization.frontAction, HavenFrontAction.replace);
+
+    await tester.tap(
+      find.byKey(ValueKey('front-action-button-$frontActionKey')),
+    );
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'Away');
 
@@ -3153,6 +3173,7 @@ class FakeHavenRepository implements HavenRepository {
   List<Tag> _tags = const [];
   List<JournalEntry> _journals = const [];
   List<String> _currentFrontMemberIds = const [];
+  List<String> _currentCustomFrontLabels = const [];
   String? lastRehearsedArchiveJson;
   final Map<String, List<String>> _namedFrontMembers = {};
   Map<String, List<String>> _memberTagIds = const {};
@@ -3433,6 +3454,12 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> setFrontAction(HavenFrontAction action) async {
+    _customization = _customization.copyWith(frontAction: action);
+    _customizationController.add(_customization);
+  }
+
+  @override
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
     _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
     _customizationController.add(_customization);
@@ -3689,14 +3716,35 @@ class FakeHavenRepository implements HavenRepository {
       return const [];
     }
 
-    _emitSnapshot(
-      frontHistoryCount: _snapshot.frontHistoryCount + 1,
-      currentFrontLabel: selected
-          .map((member) => member.displayName)
-          .join(', '),
-    );
+    _currentCustomFrontLabels = const [];
     _currentFrontMemberIds = [for (final member in selected) member.id];
     _emitCurrentFrontMembers();
+    _emitSnapshot(
+      frontHistoryCount: _snapshot.frontHistoryCount + 1,
+      currentFrontLabel: _currentFrontLabel(),
+    );
+    _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
+    return const [];
+  }
+
+  @override
+  Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds) async {
+    final ids = memberIds.toSet();
+    final selected = _visibleMembers
+        .where((member) => ids.contains(member.id))
+        .where((member) => !_currentFrontMemberIds.contains(member.id))
+        .toList(growable: false);
+    if (selected.isEmpty) return const [];
+
+    _currentFrontMemberIds = [
+      ..._currentFrontMemberIds,
+      for (final member in selected) member.id,
+    ];
+    _emitCurrentFrontMembers();
+    _emitSnapshot(
+      frontHistoryCount: _snapshot.frontHistoryCount + 1,
+      currentFrontLabel: _currentFrontLabel(),
+    );
     _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
     return const [];
   }
@@ -4444,13 +4492,37 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<List<ReminderSummary>> setCustomFront(String label) async {
+    final trimmed = label.trim();
+    if (trimmed.isEmpty) {
+      await clearCurrentFront();
+      return const [];
+    }
     _currentFrontMemberIds = const [];
+    _currentCustomFrontLabels = [trimmed];
     _emitCurrentFrontMembers();
     _emitSnapshot(
       frontHistoryCount: _snapshot.frontHistoryCount + 1,
-      currentFrontLabel: label,
+      currentFrontLabel: _currentFrontLabel(),
     );
-    _addFrontHistoryEntry(label);
+    _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
+    return const [];
+  }
+
+  @override
+  Future<List<ReminderSummary>> addCustomFront(String label) async {
+    final trimmed = label.trim();
+    if (trimmed.isEmpty ||
+        _currentCustomFrontLabels.any(
+          (current) => current.toLowerCase() == trimmed.toLowerCase(),
+        )) {
+      return const [];
+    }
+    _currentCustomFrontLabels = [..._currentCustomFrontLabels, trimmed];
+    _emitSnapshot(
+      frontHistoryCount: _snapshot.frontHistoryCount + 1,
+      currentFrontLabel: _currentFrontLabel(),
+    );
+    _addFrontHistoryEntry(_snapshot.currentFrontLabel!);
     return const [];
   }
 
@@ -4458,6 +4530,7 @@ class FakeHavenRepository implements HavenRepository {
   Future<void> clearCurrentFront() async {
     _endOpenFrontHistory();
     _currentFrontMemberIds = const [];
+    _currentCustomFrontLabels = const [];
     _emitCurrentFrontMembers();
     _emitSnapshot(clearCurrentFront: true);
   }
@@ -4755,6 +4828,23 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<List<ReminderSummary>> addNamedFront(String namedFrontId) async {
+    NamedFront? front;
+    for (final candidate in _namedFronts) {
+      if (candidate.id == namedFrontId) {
+        front = candidate;
+        break;
+      }
+    }
+    if (front == null) return const [];
+    final customLabel = front.customLabel?.trim();
+    if (customLabel != null && customLabel.isNotEmpty) {
+      return addCustomFront(customLabel);
+    }
+    return addFrontMembers(_namedFrontMembers[namedFrontId] ?? const []);
+  }
+
+  @override
   Future<void> deleteNamedFront(String namedFrontId) async {
     _namedFronts = [
       for (final front in _namedFronts)
@@ -4848,6 +4938,11 @@ class FakeHavenRepository implements HavenRepository {
   void _emitCurrentFrontMembers() {
     _currentFrontMembersController.add(_currentFrontMembers());
   }
+
+  String _currentFrontLabel() => [
+    ..._currentCustomFrontLabels,
+    for (final member in _currentFrontMembers()) member.displayName,
+  ].join(', ');
 
   void _addFrontHistoryEntry(String label) {
     final now = DateTime(2026, 1, 1, 12, _frontHistory.length);

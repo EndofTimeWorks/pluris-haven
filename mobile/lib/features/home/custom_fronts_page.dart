@@ -105,10 +105,12 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                   children: [
                     for (var index = 0; index < customFronts.length; index++)
                       _CustomFrontRow(
+                        repository: widget.repository,
                         front: customFronts[index],
                         showDivider: index != customFronts.length - 1,
                         compactActions: false,
-                        onSet: () => _applyFront(customFronts[index]),
+                        onUse: (action) =>
+                            _applyFront(customFronts[index], action),
                         onEdit: () => _openEditor(customFronts[index]),
                         onDelete: () => _deleteFront(customFronts[index]),
                       ),
@@ -127,10 +129,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            tooltip: l10n.setNamedFrontTooltip,
-                            onPressed: () => _applyFront(front),
-                            icon: const Icon(Icons.play_arrow_rounded),
+                          _FrontActionButton(
+                            repository: widget.repository,
+                            actionKey: 'named-front-${front.id}',
+                            onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
                             tooltip: l10n.deleteNamedFrontTooltip,
@@ -222,10 +224,11 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: SpCard(
                     child: _CustomFrontRow(
+                      repository: widget.repository,
                       front: front,
                       showDivider: false,
                       compactActions: true,
-                      onSet: () => _applyFront(front),
+                      onUse: (action) => _applyFront(front, action),
                       onEdit: () => _openEditor(front),
                       onDelete: () => _deleteFront(front),
                     ),
@@ -260,10 +263,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            tooltip: l10n.setNamedFrontTooltip,
-                            onPressed: () => _applyFront(front),
-                            icon: const Icon(Icons.play_arrow_rounded),
+                          _FrontActionButton(
+                            repository: widget.repository,
+                            actionKey: 'named-front-${front.id}',
+                            onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
                             tooltip: l10n.deleteNamedFrontTooltip,
@@ -294,8 +297,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
     );
   }
 
-  Future<void> _applyFront(NamedFront front) async {
-    final reminders = await widget.repository.applyNamedFront(front.id);
+  Future<void> _applyFront(NamedFront front, HavenFrontAction action) async {
+    final reminders = action == HavenFrontAction.add
+        ? await widget.repository.addNamedFront(front.id)
+        : await widget.repository.applyNamedFront(front.id);
     if (!mounted) {
       return;
     }
@@ -326,18 +331,20 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
 
 class _CustomFrontRow extends StatelessWidget {
   const _CustomFrontRow({
+    required this.repository,
     required this.front,
     required this.showDivider,
     required this.compactActions,
-    required this.onSet,
+    required this.onUse,
     required this.onEdit,
     required this.onDelete,
   });
 
+  final HavenRepository repository;
   final NamedFront front;
   final bool showDivider;
   final bool compactActions;
-  final VoidCallback onSet;
+  final Future<void> Function(HavenFrontAction action) onUse;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -378,10 +385,10 @@ class _CustomFrontRow extends StatelessWidget {
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          tooltip: l10n.setCustomFrontTooltip,
-                          onPressed: onSet,
-                          icon: const Icon(Icons.add_rounded),
+                        _FrontActionButton(
+                          repository: repository,
+                          actionKey: 'named-front-${front.id}',
+                          onPressed: onUse,
                         ),
                         PopupMenuButton<String>(
                           onSelected: (value) {
@@ -407,10 +414,10 @@ class _CustomFrontRow extends StatelessWidget {
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          tooltip: l10n.setCustomFrontTooltip,
-                          onPressed: onSet,
-                          icon: const Icon(Icons.play_arrow_rounded),
+                        _FrontActionButton(
+                          repository: repository,
+                          actionKey: 'named-front-${front.id}',
+                          onPressed: onUse,
                         ),
                         IconButton(
                           tooltip: l10n.editCustomFrontTooltip,
