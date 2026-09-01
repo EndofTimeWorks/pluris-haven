@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          trusted_release_fingerprint='3C3307FA57B3B9DE9BEE8C0F29437FC5D3D209F4'
+          trusted_release_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
           GNUPGHOME="$(mktemp -d)"
           export GNUPGHOME
           trap 'rm -rf "${GNUPGHOME}"' EXIT
