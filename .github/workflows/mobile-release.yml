@@ -3,8 +3,8 @@ name: Mobile Release
 on:
   push:
     tags:
-      - 'mobile-v*'
-      - '!mobile-v*.dev.*'
+      - "mobile-v*"
+      - "!mobile-v*.dev.*"
 
 permissions: {}
 
@@ -122,7 +122,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: '3.44.4'
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
@@ -165,7 +165,7 @@ jobs:
           if-no-files-found: error
 
   android:
-    name: Build Android APKs
+    name: Build Android release artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: metadata
@@ -185,12 +185,12 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: '3.44.4'
+          flutter-version: "3.44.4"
           channel: stable
           cache: true
 
@@ -226,6 +226,17 @@ jobs:
           --dart-define=SENTRY_DSN="$SENTRY_DSN"
           --dart-define=SENTRY_ENVIRONMENT=production
 
+      - name: Build release app bundle
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: >
+          flutter --no-color build appbundle --release
+          --build-name "${{ needs.metadata.outputs.version }}"
+          --build-number "${{ needs.metadata.outputs.build }}"
+          --dart-define=SENTRY_ENABLED=true
+          --dart-define=SENTRY_DSN="$SENTRY_DSN"
+          --dart-define=SENTRY_ENVIRONMENT=production
+
       - name: Build split per ABI APKs
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
@@ -245,6 +256,8 @@ jobs:
           mkdir -p ../release/android
           cp build/app/outputs/flutter-apk/app-release.apk \
             "../release/android/pluris-haven-${{ needs.metadata.outputs.version }}+${{ needs.metadata.outputs.build }}-universal.apk"
+          cp build/app/outputs/bundle/release/app-release.aab \
+            "../release/android/pluris-haven-${{ needs.metadata.outputs.version }}+${{ needs.metadata.outputs.build }}.aab"
           for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
             abi="${apk#build/app/outputs/flutter-apk/app-}"
             abi="${abi%-release.apk}"
@@ -305,7 +318,7 @@ jobs:
             echo "run=${GITHUB_RUN_NUMBER}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > release/mobile/BUILD.txt
-          (cd release/mobile && sha256sum -- ./*.apk ./*.ipa ./BUILD.txt > SHA256SUMS.txt)
+          (cd release/mobile && sha256sum -- ./*.aab ./*.apk ./*.ipa ./BUILD.txt > SHA256SUMS.txt)
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
