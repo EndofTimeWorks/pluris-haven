@@ -346,6 +346,12 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
                 decoration: InputDecoration(
                   labelText: labels[index],
                   hintText: l10n.appearanceHexHint,
+                  suffixIcon: IconButton(
+                    key: ValueKey('appearance-color-picker-$index'),
+                    tooltip: l10n.openColorPickerTooltip,
+                    onPressed: () => _pickColor(index),
+                    icon: const Icon(Icons.colorize_rounded),
+                  ),
                 ),
               ),
             ),
@@ -437,6 +443,18 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
       ),
     );
     if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _pickColor(int index) async {
+    final color = await showHavenColorPicker(
+      context,
+      initialColor: _colorFromHex(
+        _colors[index].text,
+        fallback: Theme.of(context).colorScheme.primary,
+      ),
+    );
+    if (!mounted || color == null) return;
+    setState(() => _colors[index].text = _hexFromColor(color));
   }
 
   Future<void> _reset() async {
@@ -682,6 +700,13 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
               ),
             ),
             const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const ValueKey('pick-custom-accent-colour-button'),
+              onPressed: _pickCustomColor,
+              icon: const Icon(Icons.colorize_rounded),
+              label: Text(l10n.pickCustomColorButton),
+            ),
+            const SizedBox(height: 8),
             FilledButton.icon(
               key: const ValueKey('save-custom-accent-button'),
               onPressed: _save,
@@ -723,6 +748,19 @@ class _AccentPickerSheetState extends State<AccentPickerSheet> {
     }
   }
 
+  Future<void> _pickCustomColor() async {
+    final color = await showHavenColorPicker(
+      context,
+      initialColor: _colorFromHex(
+        _controller.text,
+        fallback: Color(widget.customization.effectiveAccentArgb),
+      ),
+    );
+    if (!mounted || color == null) return;
+    _controller.text = _hexFromColor(color);
+    await _save();
+  }
+
   Future<void> _clearCustom() async {
     await widget.repository.setCustomAccentColor(null);
     if (mounted) {
@@ -737,6 +775,51 @@ String? _normalizeUiHexColor(String value) {
     return null;
   }
   return '#${trimmed.toUpperCase()}';
+}
+
+String _hexFromColor(Color color) =>
+    '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+Future<Color?> showHavenColorPicker(
+  BuildContext context, {
+  required Color initialColor,
+}) {
+  final l10n = AppLocalizations.of(context);
+  return showDialog<Color>(
+    context: context,
+    builder: (context) {
+      var selectedColor = initialColor;
+      return StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.selectColorDialogTitle),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: selectedColor,
+              onColorChanged: (color) {
+                setDialogState(() => selectedColor = color);
+              },
+              paletteType: PaletteType.hsvWithHue,
+              enableAlpha: false,
+              displayThumbColor: true,
+              hexInputBar: true,
+              labelTypes: const [ColorLabelType.hex, ColorLabelType.rgb],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            ),
+            FilledButton(
+              key: const ValueKey('apply-picked-colour-button'),
+              onPressed: () => Navigator.pop(context, selectedColor),
+              child: Text(l10n.applyColorButton),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 void showLanguagePicker(

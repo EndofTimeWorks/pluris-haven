@@ -27,6 +27,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accentColorLabel => 'Accent colour';
 
   @override
+  String get openColorPickerTooltip => 'Open colour picker';
+
+  @override
+  String get pickCustomColorButton => 'Pick a custom colour';
+
+  @override
+  String get selectColorDialogTitle => 'Select colour';
+
+  @override
+  String get applyColorButton => 'Use colour';
+
+  @override
   String get compactDashboardTitle => 'Compact dashboard';
 
   @override
@@ -4270,6 +4282,18 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get accentColorLabel => 'Accent color';
+
+  @override
+  String get openColorPickerTooltip => 'Open color picker';
+
+  @override
+  String get pickCustomColorButton => 'Pick a custom color';
+
+  @override
+  String get selectColorDialogTitle => 'Select color';
+
+  @override
+  String get applyColorButton => 'Use color';
 
   @override
   String get currentColorLabel => 'Current color';

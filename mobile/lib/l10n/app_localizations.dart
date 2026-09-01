@@ -133,6 +133,30 @@ abstract class AppLocalizations {
   /// **'Accent colour'**
   String get accentColorLabel;
 
+  /// No description provided for @openColorPickerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open colour picker'**
+  String get openColorPickerTooltip;
+
+  /// No description provided for @pickCustomColorButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a custom colour'**
+  String get pickCustomColorButton;
+
+  /// No description provided for @selectColorDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select colour'**
+  String get selectColorDialogTitle;
+
+  /// No description provided for @applyColorButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use colour'**
+  String get applyColorButton;
+
   /// No description provided for @compactDashboardTitle.
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
@@ -27,6 +28,40 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('colour picker returns an arbitrary selected colour', (
+    tester,
+  ) async {
+    Color? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: FilledButton(
+            onPressed: () async {
+              selected = await showHavenColorPicker(
+                tester.element(find.byType(FilledButton)),
+                initialColor: Colors.purple,
+              );
+            },
+            child: const Text('Open picker'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open picker'));
+    await tester.pumpAndSettle();
+    final picker = tester.widget<ColorPicker>(find.byType(ColorPicker));
+    picker.onColorChanged(const Color(0xFF12ABEF));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('apply-picked-colour-button')));
+    await tester.pumpAndSettle();
+
+    expect(selected, const Color(0xFF12ABEF));
+  });
+
   testWidgets('app lock covers root navigator sheets after backgrounding', (
     tester,
   ) async {
