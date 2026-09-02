@@ -28,11 +28,31 @@ class NotificationCopy {
 }
 
 class NotificationService {
-  NotificationService._();
+  NotificationService._([
+    this._permissionChecker,
+    this._permissionRequester,
+    this._triggeredReminderDelivery,
+  ]);
   static final NotificationService instance = NotificationService._();
   static const frontStatusNotificationId = 1001;
 
+  @visibleForTesting
+  factory NotificationService.forTesting({
+    required Future<bool> Function() permissionChecker,
+    required Future<bool> Function() permissionRequester,
+    Future<bool> Function()? triggeredReminderDelivery,
+  }) {
+    return NotificationService._(
+      permissionChecker,
+      permissionRequester,
+      triggeredReminderDelivery,
+    );
+  }
+
   FlutterLocalNotificationsPlugin? _plugin;
+  final Future<bool> Function()? _permissionChecker;
+  final Future<bool> Function()? _permissionRequester;
+  final Future<bool> Function()? _triggeredReminderDelivery;
   bool _initialized = false;
   bool _setupFailed = false;
 
@@ -64,6 +84,18 @@ class NotificationService {
 
   Future<bool> _requestPermission() async {
     if (_plugin == null) return false;
+    final ios = _plugin!
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (ios != null) {
+      final granted = await ios.requestPermissions(
+        alert: true,
+        badge: false,
+        sound: true,
+      );
+      return granted ?? false;
+    }
     final android = _plugin!
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -71,6 +103,27 @@ class NotificationService {
     if (android == null) return true;
     final granted = await android.requestNotificationsPermission();
     return granted ?? false;
+  }
+
+  /// Requests permission only from an explicit notification-delivery action.
+  Future<bool> requestPermission() =>
+      _permissionRequester?.call() ?? _requestPermission();
+
+  Future<bool> notificationsPermitted() async {
+    final permissionChecker = _permissionChecker;
+    if (permissionChecker != null) return permissionChecker();
+    if (_plugin == null) return false;
+    final ios = _plugin!
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (ios != null) return (await ios.checkPermissions())?.isEnabled ?? false;
+    final android = _plugin!
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    return android == null ||
+        (await android.areNotificationsEnabled() ?? false);
   }
 
   int reminderNotificationId(String reminderId) {
@@ -81,7 +134,7 @@ class NotificationService {
     return hash == 0 ? 1 : hash;
   }
 
-  Future<void> scheduleReminderNotification({
+  Future<bool> scheduleReminderNotification({
     required String reminderId,
     required String title,
     String? body,
@@ -91,8 +144,7 @@ class NotificationService {
     int? monthDay,
     required NotificationCopy copy,
   }) async {
-    if (_plugin == null) return;
-    await _requestPermission();
+    if (!await notificationsPermitted() || _plugin == null) return false;
 
     final id = reminderNotificationId(reminderId);
     final now = tz.TZDateTime.now(tz.local);
@@ -133,21 +185,24 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: repeat,
     );
+    return true;
   }
 
   Future<void> cancelReminderNotification(String reminderId) {
     return cancelNotification(reminderNotificationId(reminderId));
   }
 
-  Future<void> showTriggeredReminderNotification({
+  Future<bool> showTriggeredReminderNotification({
     required String reminderId,
     required String title,
     String? body,
     Duration delay = Duration.zero,
     required NotificationCopy copy,
   }) async {
-    if (_plugin == null) return;
-    await _requestPermission();
+    if (!await notificationsPermitted()) return false;
+    final triggeredReminderDelivery = _triggeredReminderDelivery;
+    if (triggeredReminderDelivery != null) return triggeredReminderDelivery();
+    if (_plugin == null) return false;
 
     final androidDetails = AndroidNotificationDetails(
       'reminders',
@@ -175,7 +230,7 @@ class NotificationService {
         body: notificationBody,
         notificationDetails: details,
       );
-      return;
+      return true;
     }
 
     await _plugin!.zonedSchedule(
@@ -186,21 +241,22 @@ class NotificationService {
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
+    return true;
   }
 
-  Future<void> showFrontStatusNotification({
+  Future<bool> showFrontStatusNotification({
     required String? frontLabel,
     required NotificationCopy copy,
     bool showOnLockScreen = false,
     bool revealMemberName = false,
   }) async {
-    if (_plugin == null) return;
+    if (_plugin == null) return false;
     final label = frontLabel?.trim();
     if (label == null || label.isEmpty) {
       await cancelFrontStatusNotification();
-      return;
+      return false;
     }
-    await _requestPermission();
+    if (!await notificationsPermitted()) return false;
 
     final androidDetails = AndroidNotificationDetails(
       'front_status',
@@ -238,6 +294,7 @@ class NotificationService {
       body: hideContent ? copy.privateBody : label,
       notificationDetails: details,
     );
+    return true;
   }
 
   Future<void> cancelFrontStatusNotification() {

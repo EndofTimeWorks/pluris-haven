@@ -9,6 +9,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
+import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
 import 'package:pluris_haven/features/app_lock_gate.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
@@ -26,6 +27,15 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   }
   fail('Timed out waiting for the requested widget.');
 }
+
+const _testHomeSnapshot = HomeSnapshot(
+  systemName: 'Local system',
+  memberCount: 0,
+  groupCount: 0,
+  noteCount: 0,
+  frontHistoryCount: 0,
+  currentFrontLabel: null,
+);
 
 void main() {
   testWidgets('colour picker returns an arbitrary selected colour', (
@@ -2203,6 +2213,290 @@ void main() {
     expect(reminder.delaySeconds, 0);
     expect(find.text('After Iris fronts'), findsOneWidget);
   });
+
+  testWidgets(
+    'reminder setup checks granted notification permission without requesting again',
+    (tester) async {
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      var permissionChecks = 0;
+      var permissionRequests = 0;
+      final notifications = NotificationService.forTesting(
+        permissionChecker: () async {
+          permissionChecks++;
+          return true;
+        },
+        permissionRequester: () async {
+          permissionRequests++;
+          return true;
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AddReminderSheet(
+              repository: repository,
+              notificationService: notifications,
+            ),
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('reminder-title-field')),
+        'Medication',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+      await tester.pumpAndSettle();
+
+      expect(repository._reminders, hasLength(1));
+      expect(permissionChecks, greaterThanOrEqualTo(1));
+      expect(permissionRequests, 0);
+    },
+  );
+
+  testWidgets('reminder remains saved when notification permission is denied', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    var permissionChecks = 0;
+    var permissionRequests = 0;
+    final notifications = NotificationService.forTesting(
+      permissionChecker: () async {
+        permissionChecks++;
+        return false;
+      },
+      permissionRequester: () async {
+        permissionRequests++;
+        return false;
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AddReminderSheet(
+            repository: repository,
+            notificationService: notifications,
+          ),
+        ),
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository._reminders, hasLength(1));
+    expect(permissionChecks, greaterThanOrEqualTo(1));
+    expect(permissionRequests, 1);
+    expect(
+      find.text(
+        'Notification permission was not granted. Your reminders stay saved.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('after-front reminders never request notification permission', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Check in',
+        scheduleText: 'After a front starts',
+        scheduleKind: 'after_front',
+        triggerType: 'event',
+        triggerEvent: 'front_started',
+      ),
+    );
+    var permissionChecks = 0;
+    var permissionRequests = 0;
+    final notifications = NotificationService.forTesting(
+      permissionChecker: () async {
+        permissionChecks++;
+        return false;
+      },
+      permissionRequester: () async {
+        permissionRequests++;
+        return true;
+      },
+    );
+    late BuildContext context;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (value) {
+            context = value;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    await deliverAfterFrontReminders(
+      context,
+      repository,
+      repository._reminders,
+      notificationService: notifications,
+    );
+
+    expect(permissionChecks, 1);
+    expect(permissionRequests, 0);
+    expect(repository._notificationEvents, isEmpty);
+  });
+
+  testWidgets('after-front reminders record an event only after delivery', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Check in',
+        scheduleText: 'After a front starts',
+        scheduleKind: 'after_front',
+        triggerType: 'event',
+        triggerEvent: 'front_started',
+      ),
+    );
+    var permissionRequests = 0;
+    var deliveries = 0;
+    final notifications = NotificationService.forTesting(
+      permissionChecker: () async => true,
+      permissionRequester: () async {
+        permissionRequests++;
+        return true;
+      },
+      triggeredReminderDelivery: () async {
+        deliveries++;
+        return true;
+      },
+    );
+    late BuildContext context;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (value) {
+            context = value;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    await deliverAfterFrontReminders(
+      context,
+      repository,
+      repository._reminders,
+      notificationService: notifications,
+    );
+
+    expect(permissionRequests, 0);
+    expect(deliveries, 1);
+    expect(repository._notificationEvents, hasLength(1));
+  });
+
+  testWidgets(
+    'front status notification only requests permission when needed',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      var permissionChecks = 0;
+      var permissionRequests = 0;
+      final notifications = NotificationService.forTesting(
+        permissionChecker: () async {
+          permissionChecks++;
+          return true;
+        },
+        permissionRequester: () async {
+          permissionRequests++;
+          return true;
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AppOptionsPage(
+              snapshot: _testHomeSnapshot,
+              customization: AppCustomization.defaults,
+              repository: repository,
+              notificationService: notifications,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Fronting notification'));
+      await tester.pumpAndSettle();
+
+      expect(permissionChecks, 1);
+      expect(permissionRequests, 0);
+      expect(repository._customization.frontStatusNotification, isTrue);
+    },
+  );
+
+  testWidgets(
+    'front status notification stays disabled when permission is denied',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      var permissionRequests = 0;
+      final notifications = NotificationService.forTesting(
+        permissionChecker: () async => false,
+        permissionRequester: () async {
+          permissionRequests++;
+          return false;
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AppOptionsPage(
+              snapshot: _testHomeSnapshot,
+              customization: AppCustomization.defaults,
+              repository: repository,
+              notificationService: notifications,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Fronting notification'));
+      await tester.pumpAndSettle();
+
+      expect(permissionRequests, 1);
+      expect(repository._customization.frontStatusNotification, isFalse);
+      expect(
+        find.text(
+          'Notification permission was not granted. Your reminders stay saved.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('creates and votes on a local poll', (tester) async {
     final repository = FakeHavenRepository(

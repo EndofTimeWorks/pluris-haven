@@ -14,14 +14,17 @@ NotificationCopy _notificationCopy(AppLocalizations l10n) {
 }
 
 class RemindersPage extends StatelessWidget {
-  const RemindersPage({
+  RemindersPage({
     super.key,
     required this.repository,
     required this.onNotificationSettings,
-  });
+    NotificationService? notificationService,
+  }) : notificationService =
+           notificationService ?? NotificationService.instance;
 
   final HavenRepository repository;
   final VoidCallback onNotificationSettings;
+  final NotificationService notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +37,7 @@ class RemindersPage extends StatelessWidget {
 
         return SpPage(
           children: [
-            if (NotificationService.instance.setupFailed) ...[
+            if (notificationService.setupFailed) ...[
               SpCard(
                 child: SpEmptyState(
                   title: l10n.notificationsUnavailableTitle,
@@ -66,7 +69,11 @@ class RemindersPage extends StatelessWidget {
                   SpActionRow(
                     primary: l10n.addReminderButton,
                     secondary: l10n.notificationSettingsButton,
-                    onPrimary: () => showAddReminderSheet(context, repository),
+                    onPrimary: () => showAddReminderSheet(
+                      context,
+                      repository,
+                      notificationService: notificationService,
+                    ),
                     onSecondary: onNotificationSettings,
                   ),
                 ],
@@ -175,20 +182,33 @@ class ReminderTile extends StatelessWidget {
   }
 }
 
-void showAddReminderSheet(BuildContext context, HavenRepository repository) {
+void showAddReminderSheet(
+  BuildContext context,
+  HavenRepository repository, {
+  NotificationService? notificationService,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) => AddReminderSheet(repository: repository),
+    builder: (context) => AddReminderSheet(
+      repository: repository,
+      notificationService: notificationService,
+    ),
   );
 }
 
 class AddReminderSheet extends StatefulWidget {
-  const AddReminderSheet({super.key, required this.repository});
+  AddReminderSheet({
+    super.key,
+    required this.repository,
+    NotificationService? notificationService,
+  }) : notificationService =
+           notificationService ?? NotificationService.instance;
 
   final HavenRepository repository;
+  final NotificationService notificationService;
 
   @override
   State<AddReminderSheet> createState() => _AddReminderSheetState();
@@ -398,6 +418,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
@@ -430,12 +451,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             : null,
       ),
     );
-    if (mounted) {
+    if (mounted && reminderId != null) {
+      final notificationPermission = await ensureNotificationPermissionForSetup(
+        widget.notificationService,
+      );
       final time = _parseTime(scheduleTime ?? '');
-      if (reminderId != null &&
-          time != null &&
-          _scheduleKind != ReminderScheduleKind.afterFront) {
-        NotificationService.instance.scheduleReminderNotification(
+      if (time != null && _scheduleKind != ReminderScheduleKind.afterFront) {
+        await widget.notificationService.scheduleReminderNotification(
           reminderId: reminderId,
           title: title,
           body: body.isEmpty ? null : body,
@@ -455,7 +477,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           copy: _notificationCopy(l10n),
         );
       }
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
+      if (!notificationPermission) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.notificationsPermissionDeniedBody)),
+        );
+      }
     }
   }
 
@@ -584,27 +611,41 @@ Future<void> scheduleReminderSummary(
 Future<void> deliverAfterFrontReminders(
   BuildContext context,
   HavenRepository repository,
-  List<ReminderSummary> reminders,
-) async {
+  List<ReminderSummary> reminders, {
+  NotificationService? notificationService,
+}) async {
   if (reminders.isEmpty) return;
+  final notifications = notificationService ?? NotificationService.instance;
   final l10n = AppLocalizations.of(context);
   final copy = _notificationCopy(l10n);
   for (final reminder in reminders) {
-    await NotificationService.instance.showTriggeredReminderNotification(
+    final delivered = await notifications.showTriggeredReminderNotification(
       reminderId: reminder.id,
       title: reminder.title,
       body: reminder.body,
       delay: Duration(seconds: reminder.delaySeconds ?? 0),
       copy: copy,
     );
-    await repository.recordNotificationEvent(
-      NotificationEventDraft(
-        kind: 'reminder',
-        title: reminder.title,
-        body: reminder.body ?? reminder.scheduleText,
-      ),
-    );
+    if (delivered) {
+      await repository.recordNotificationEvent(
+        NotificationEventDraft(
+          kind: 'reminder',
+          title: reminder.title,
+          body: reminder.body ?? reminder.scheduleText,
+        ),
+      );
+    }
   }
+}
+
+/// Requests notification permission only after a user explicitly configures
+/// notification delivery, and avoids repeating the OS request when it is
+/// already granted.
+Future<bool> ensureNotificationPermissionForSetup(
+  NotificationService notifications,
+) async {
+  if (await notifications.notificationsPermitted()) return true;
+  return notifications.requestPermission();
 }
 
 ReminderScheduleKind? _kindFromScheduleText(String text) {

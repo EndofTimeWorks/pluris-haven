@@ -1,16 +1,19 @@
 part of 'home_page.dart';
 
 class AppOptionsPage extends StatelessWidget {
-  const AppOptionsPage({
+  AppOptionsPage({
     super.key,
     required this.snapshot,
     required this.customization,
     required this.repository,
-  });
+    NotificationService? notificationService,
+  }) : notificationService =
+           notificationService ?? NotificationService.instance;
 
   final HomeSnapshot? snapshot;
   final AppCustomization customization;
   final HavenRepository repository;
+  final NotificationService notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +106,7 @@ class AppOptionsPage extends StatelessWidget {
         SpSettingsGroup(
           title: l10n.accessibilityGroupTitle,
           rows: [
-            if (NotificationService.instance.setupFailed)
+            if (notificationService.setupFailed)
               SpSettingsRow(
                 l10n.notificationsUnavailableTitle,
                 l10n.notificationsUnavailableBody,
@@ -119,10 +122,22 @@ class AppOptionsPage extends StatelessWidget {
               subtitle: l10n.frontingNotificationSubtitle,
               value: customization.frontStatusNotification,
               onChanged: (enabled) async {
+                if (enabled &&
+                    !await ensureNotificationPermissionForSetup(
+                      notificationService,
+                    )) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.notificationsPermissionDeniedBody),
+                      ),
+                    );
+                  }
+                  return;
+                }
                 await repository.setFrontStatusNotification(enabled);
                 if (!enabled) {
-                  await NotificationService.instance
-                      .cancelFrontStatusNotification();
+                  await notificationService.cancelFrontStatusNotification();
                 }
               },
             ),
@@ -155,7 +170,23 @@ class AppOptionsPage extends StatelessWidget {
               title: l10n.appLockTitle,
               subtitle: l10n.appLockSubtitle,
               value: customization.appLockEnabled,
-              onChanged: repository.setAppLockEnabled,
+              onChanged: (enabled) async {
+                if (!enabled) {
+                  await repository.setAppLockEnabled(false);
+                  return;
+                }
+                final availability = await AppLock.availability();
+                final result = availability == AppLockAvailability.available
+                    ? await AppLock.authenticate(l10n.appLockReason)
+                    : AppLockAuthenticationResult.unavailable;
+                if (result == AppLockAuthenticationResult.authenticated) {
+                  await repository.setAppLockEnabled(true);
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.appLockCredentialsRestoreBody)),
+                  );
+                }
+              },
             ),
             SpSwitchRow(
               title: defaultTargetPlatform == TargetPlatform.iOS
