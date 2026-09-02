@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -297,7 +298,7 @@ def test_password_reset_is_single_use_and_revokes_sessions(
     )
     assert requested.status_code == 202
     assert len(sender.sent) == 1
-    token = sender.sent[0].link.split("token=", maxsplit=1)[1]
+    token = sender.sent[0].token
 
     reset = client.post(
         "/v1/auth/password/reset",
@@ -323,6 +324,16 @@ def test_password_reset_is_single_use_and_revokes_sessions(
     )
     assert old_login.status_code == 401
 
+    new_login = client.post(
+        "/v1/auth/login",
+        json={
+            "email": "recover@example.com",
+            "password": "new correct horse battery staple",
+            "device_name": "New password",
+        },
+    )
+    assert new_login.status_code == 200
+
     unknown = client.post(
         "/v1/auth/password/reset-request",
         json={"email": "missing@example.com"},
@@ -330,6 +341,33 @@ def test_password_reset_is_single_use_and_revokes_sessions(
     assert unknown.status_code == 202
     assert unknown.json() == requested.json()
     assert len(sender.sent) == 1
+
+
+def test_password_reset_request_hides_delivery_failure(
+    client: TestClient,
+    fast_passwords: None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FailingEmailSender:
+        async def send_password_reset(self, _recipient: str, _token: str) -> None:
+            raise OSError("SMTP server unavailable")
+
+    register(client, "delivery@example.com", "Delivery User")
+    client.app.state.email_sender = FailingEmailSender()
+
+    with caplog.at_level(logging.ERROR, logger="pluris.auth"):
+        known = client.post(
+            "/v1/auth/password/reset-request",
+            json={"email": "delivery@example.com"},
+        )
+    unknown = client.post(
+        "/v1/auth/password/reset-request",
+        json={"email": "missing@example.com"},
+    )
+
+    assert known.status_code == 202
+    assert known.json() == unknown.json()
+    assert "Password reset email delivery failed" in caplog.text
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:
@@ -521,7 +559,7 @@ def test_account_deletion_can_be_recovered_with_password_reset(client: TestClien
     assert isinstance(sender, MemoryEmailSender)
     requested = client.post("/v1/auth/password/reset-request", json={"email": "delete@example.com"})
     assert requested.status_code == 202
-    token = sender.sent[-1].link.split("token=", maxsplit=1)[1]
+    token = sender.sent[-1].token
     reset = client.post(
         "/v1/auth/password/reset",
         json={"token": token, "new_password": "new correct horse battery staple"},

@@ -1,8 +1,9 @@
+import logging
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -51,6 +52,14 @@ from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 ACCOUNT_DELETION_GRACE = timedelta(days=30)
+_logger = logging.getLogger("pluris.auth")
+
+
+async def _deliver_password_reset(email_sender: object, recipient: str, token: str) -> None:
+    try:
+        await email_sender.send_password_reset(recipient, token)
+    except Exception:
+        _logger.exception("Password reset email delivery failed")
 
 
 def _deletion_recovery_open(user: User, now: datetime) -> bool:
@@ -114,10 +123,6 @@ async def _assign_friend_code(db: Db, user: User, pepper: str) -> str:
             user.friend_code_digest = digest
             return code
     raise HTTPException(status_code=503, detail="Could not allocate a friend code")
-
-
-def _password_reset_link(settings: AppSettings, token: str) -> str:
-    return f"{settings.public_url.rstrip('/')}/reset-password?token={token}"
 
 
 @router.post("/register", response_model=RegistrationResponse, status_code=status.HTTP_201_CREATED)
@@ -306,6 +311,7 @@ async def change_password(
 @router.post("/password/reset-request", response_model=MessageResponse, status_code=202)
 async def request_password_reset(
     request: Request,
+    background_tasks: BackgroundTasks,
     payload: PasswordResetRequest,
     db: Db,
     settings: AppSettings,
@@ -330,11 +336,13 @@ async def request_password_reset(
             )
         )
         await db.commit()
-        await request.app.state.email_sender.send_password_reset(
+        background_tasks.add_task(
+            _deliver_password_reset,
+            request.app.state.email_sender,
             user.email,
-            _password_reset_link(settings, token),
+            token,
         )
-    return MessageResponse(detail="If that account exists, a reset link has been sent")
+    return MessageResponse(detail="If that account exists, a reset token has been sent")
 
 
 @router.post("/password/reset", response_model=MessageResponse)
