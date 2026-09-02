@@ -3,8 +3,8 @@ name: Mobile Release
 on:
   push:
     tags:
-      - "mobile-v*"
-      - "!mobile-v*.dev.*"
+      - 'mobile-v*'
+      - '!mobile-v*.dev.*'
 
 permissions: {}
 
@@ -76,6 +76,10 @@ jobs:
             echo "Invalid build number: ${build}" >&2
             exit 1
           fi
+          if [[ "${version}" == *.dev.* ]]; then
+            echo "Versioned mobile releases cannot use a .dev.N version." >&2
+            exit 1
+          fi
 
           release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
           expected_subject="chore(release): mobile ${version_with_build}"
@@ -122,7 +126,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -185,12 +189,12 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: "3.44.4"
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
@@ -360,3 +364,151 @@ jobs:
               "${latest_flag[@]}" \
               "${prerelease_flag[@]}"
           fi
+
+  play-internal:
+    name: Upload app bundle to Play internal testing
+    needs:
+      - metadata
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Download Android release artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pluris-haven-android-release
+          path: release/android
+
+      - name: Authenticate to Google Play
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          service_account: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Commit app bundle to Play internal testing
+        shell: bash
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+          PLAY_BUILD: ${{ needs.metadata.outputs.build }}
+          PLAY_VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          : "${PLAY_ACCESS_TOKEN:?Google Play access token was not generated.}"
+          bundle="release/android/pluris-haven-${PLAY_VERSION}+${PLAY_BUILD}.aab"
+          test -f "${bundle}" || { echo "Missing release app bundle: ${bundle}" >&2; exit 1; }
+
+          package_name='works.endoftime.plurishaven'
+          publisher_base='https://androidpublisher.googleapis.com/androidpublisher/v3'
+          authorization="Authorization: Bearer ${PLAY_ACCESS_TOKEN}"
+
+          edit="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "${authorization}" \
+              --header 'Content-Type: application/json' \
+              "${publisher_base}/applications/${package_name}/edits"
+          )"
+          edit_id="$(jq -er '.id' <<<"${edit}")"
+
+          uploaded_bundle="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "${authorization}" \
+              --header 'Content-Type: application/octet-stream' \
+              --data-binary @"${bundle}" \
+              "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${package_name}/edits/${edit_id}/bundles"
+          )"
+          version_code="$(jq -er '.versionCode | tostring' <<<"${uploaded_bundle}")"
+          if [[ "${version_code}" != "${PLAY_BUILD}" ]]; then
+            echo "Uploaded bundle version code ${version_code} does not match ${PLAY_BUILD}." >&2
+            exit 1
+          fi
+
+          release="$(jq -nc --arg version_code "${version_code}" \
+            '{releases: [{versionCodes: [$version_code], status: "completed"}]}')"
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --header "${authorization}" \
+            --header 'Content-Type: application/json' \
+            --data "${release}" \
+            "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/internal" \
+            >/dev/null
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "${authorization}" \
+            "${publisher_base}/applications/${package_name}/edits/${edit_id}:commit" \
+            >/dev/null
+
+  website-metadata:
+    name: Publish website release metadata
+    needs:
+      - metadata
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: website/pnpm-lock.yaml
+
+      - name: Install website dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: website
+
+      - name: Generate website release metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag }}
+        run: scripts/update-website-release.sh
+
+      - name: Validate website release metadata
+        run: |
+          pnpm check
+          pnpm build
+          pnpm check:a11y
+          pnpm check:headers
+        working-directory: website
+
+      - name: Commit website release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add website/src/lib/release.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(website): update mobile release metadata"
+          git push origin HEAD:main
+
+  deploy-website:
+    name: Deploy website release metadata
+    needs: website-metadata
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-website.yml
+    secrets: inherit

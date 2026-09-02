@@ -1,8 +1,6 @@
-name: Update website release metadata
+name: Repair website release metadata
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -29,10 +27,7 @@ jobs:
 
       - name: Resolve release tag
         id: release
-        env:
-          RELEASE_EVENT_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_INPUT_TAG: ${{ inputs.tag }}
-        run: echo "tag=${RELEASE_EVENT_TAG:-${RELEASE_INPUT_TAG}}" >> "$GITHUB_OUTPUT"
+        run: echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
 
       - name: Generate website release metadata
         env:
@@ -48,3 +43,11 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "chore(website): update mobile release metadata"
           git push origin HEAD:main
+
+  deploy:
+    name: Deploy repaired website metadata
+    needs: update
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-website.yml
+    secrets: inherit

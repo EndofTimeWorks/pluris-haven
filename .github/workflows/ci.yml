@@ -173,7 +173,7 @@ jobs:
             echo "Invalid Android build number: ${build}" >&2
             exit 1
           fi
-          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-pre-alpha(\.[0-9]+)?\.dev\.[0-9]+$ ]]; then
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(pre-alpha|alpha|beta)(\.[0-9]+)?\.dev\.[0-9]+$ ]]; then
             echo "should_publish=false" >> "${GITHUB_OUTPUT}"
             echo "Version ${version_line} is not a dev prerelease." >> "${GITHUB_STEP_SUMMARY}"
             exit 0
@@ -239,7 +239,7 @@ jobs:
             release/mobile-dev/BUILD.txt \
             release/mobile-dev/SHA256SUMS.txt \
             --target "${GITHUB_SHA}" \
-            --title "Pluris Haven Mobile pre-alpha dev ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
+            --title "Pluris Haven Mobile dev ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
             --notes "Release-mode Android APK and unsigned iOS IPA from ${GITHUB_SHA}." \
             --generate-notes \
             --prerelease \

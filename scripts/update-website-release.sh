@@ -5,7 +5,16 @@ set -euo pipefail
 : "${RELEASE_TAG:?RELEASE_TAG is required}"
 
 release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
-version="$(jq -r '.tag_name | sub("^mobile-v"; "")' <<<"${release_json}")"
+actual_tag="$(jq -r '.tag_name' <<<"${release_json}")"
+if [[ "${actual_tag}" != "${RELEASE_TAG}" || "${RELEASE_TAG}" != mobile-v* ]]; then
+  echo "Release metadata requires a mobile release tag." >&2
+  exit 1
+fi
+version="${RELEASE_TAG#mobile-v}"
+if [[ "${version}" == *.dev.* ]]; then
+  echo "Development releases cannot update production website metadata." >&2
+  exit 1
+fi
 published="$(jq -r '.published_at' <<<"${release_json}")"
 published_label="$(date -u -d "${published}" '+%-d %B %Y')"
 
