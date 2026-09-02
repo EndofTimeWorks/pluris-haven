@@ -2,6 +2,8 @@
 
 staged_files="$(mktemp)"
 mobile_dart_files="$(mktemp)"
+prettier_config="$(git rev-parse --show-toplevel)/.prettierrc.json"
+export prettier_config
 trap 'rm -f "$staged_files" "$mobile_dart_files"' EXIT HUP INT TERM
 
 git diff --cached --name-only -z --diff-filter=ACMR >"$staged_files"
@@ -26,7 +28,7 @@ if [ -s "$staged_files" ]; then
     trap "rm -f \"$input\"" EXIT HUP INT TERM
 
     git show ":$path" >"$input"
-    pnpm exec prettier --write --ignore-unknown "$input" >/dev/null
+    pnpm exec prettier --config "$prettier_config" --write --ignore-unknown "$input" >/dev/null
     mode="$(git ls-files -s -- "$path" | awk "NR == 1 { print \$1 }")"
     object="$(git hash-object -w "$input")"
     git update-index --cacheinfo "$mode,$object,$path"
