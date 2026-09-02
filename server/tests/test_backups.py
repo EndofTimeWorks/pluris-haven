@@ -9,6 +9,7 @@ from pluris_server.backup_cleanup import (
     sweep_backup_deletions,
     sweep_incomplete_backup_snapshots,
 )
+from pluris_server.main import _sweep_scheduled_cleanup
 from pluris_server.models import BackupDeletion, BackupSnapshot
 from tests.conftest import auth, register
 
@@ -406,3 +407,23 @@ def test_backup_cleanup_can_be_scoped_to_one_owner(client: TestClient) -> None:
             assert remaining.owner_id == "owner-two"
 
     asyncio.run(run_cleanup())
+
+
+def test_scheduled_cleanup_retries_queued_backup_deletions(client: TestClient) -> None:
+    async def queue_deletion() -> None:
+        async with client.app.state.session_factory() as session:
+            queue_backup_deletions(
+                session,
+                owner_id="retry-owner",
+                snapshot_ids=["retry-snapshot"],
+            )
+            await session.commit()
+
+    asyncio.run(queue_deletion())
+    asyncio.run(_sweep_scheduled_cleanup(client.app))
+
+    async def assert_deleted() -> None:
+        async with client.app.state.session_factory() as session:
+            assert await session.scalar(select(func.count(BackupDeletion.id))) == 0
+
+    asyncio.run(assert_deleted())

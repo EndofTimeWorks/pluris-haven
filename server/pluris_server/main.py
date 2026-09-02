@@ -32,6 +32,20 @@ from pluris_server.security import PasswordWorkSaturated
 _logger = logging.getLogger("pluris.cleanup")
 
 
+async def _sweep_scheduled_cleanup(app: FastAPI) -> None:
+    async with app.state.session_factory() as cleanup_session:
+        await sweep_backup_deletions(
+            cleanup_session,
+            app.state.backup_object_store,
+        )
+        await sweep_deleted_accounts(cleanup_session, app.state.backup_object_store)
+        await sweep_incomplete_backup_snapshots(
+            cleanup_session,
+            app.state.backup_object_store,
+            ttl_seconds=app.state.settings.backup_incomplete_snapshot_ttl_seconds,
+        )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     active_settings = settings or get_settings()
     active_settings.validate_for_startup()
@@ -63,16 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             while True:
                 await asyncio.sleep(active_settings.account_cleanup_interval_seconds)
                 try:
-                    async with _app.state.session_factory() as cleanup_session:
-                        await sweep_deleted_accounts(
-                            cleanup_session,
-                            _app.state.backup_object_store,
-                        )
-                        await sweep_incomplete_backup_snapshots(
-                            cleanup_session,
-                            _app.state.backup_object_store,
-                            ttl_seconds=active_settings.backup_incomplete_snapshot_ttl_seconds,
-                        )
+                    await _sweep_scheduled_cleanup(_app)
                 except Exception:
                     _logger.exception("Scheduled account cleanup failed")
 
