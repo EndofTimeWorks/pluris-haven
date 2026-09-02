@@ -295,6 +295,18 @@ abstract class AppLocalizations {
   /// **'Unlock your device to continue.'**
   String get appLockedBody;
 
+  /// No description provided for @appLockLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading private settings…'**
+  String get appLockLoadingBody;
+
+  /// No description provided for @appLockCredentialsRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Device authentication is unavailable. Restore your device PIN, passcode, or biometrics to unlock Pluris Haven.'**
+  String get appLockCredentialsRestoreBody;
+
   /// No description provided for @appLockUnlockButton.
   ///
   /// In en, this message translates to:
@@ -360,6 +372,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pluris Haven could not start this device\'s notification service. Reminders stay saved, but they may not appear outside the app until it restarts successfully.'**
   String get notificationsUnavailableBody;
+
+  /// No description provided for @notificationsPermissionDeniedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was not granted. Your reminders stay saved.'**
+  String get notificationsPermissionDeniedBody;
 
   /// No description provided for @highContrastTitle.
   ///

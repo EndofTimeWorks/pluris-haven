@@ -1,6 +1,9 @@
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_platform_interface/types/auth_exception.dart';
 
 enum AppLockAvailability { available, unsupported, error }
+
+enum AppLockAuthenticationResult { authenticated, unavailable, failed }
 
 /// Thin wrapper around [LocalAuthentication] for the optional app-lock
 /// gate. Delegates to whatever the device already has configured
@@ -23,20 +26,27 @@ class AppLock {
     }
   }
 
-  /// Prompts the device's own unlock UI. Returns false on any failure or
-  /// cancellation rather than throwing, so a platform quirk never locks
-  /// someone out of their own local data.
-  static Future<bool> authenticate(String reason) async {
+  /// Prompts the device's own unlock UI. A missing device credential is
+  /// distinct from a cancellation or platform failure so callers can avoid
+  /// claiming that App Lock remains enabled when it cannot work.
+  static Future<AppLockAuthenticationResult> authenticate(String reason) async {
     try {
-      return await _auth.authenticate(
+      final authenticated = await _auth.authenticate(
         localizedReason: reason,
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
         ),
       );
+      return authenticated
+          ? AppLockAuthenticationResult.authenticated
+          : AppLockAuthenticationResult.failed;
+    } on LocalAuthException catch (error) {
+      return error.code == LocalAuthExceptionCode.noCredentialsSet
+          ? AppLockAuthenticationResult.unavailable
+          : AppLockAuthenticationResult.failed;
     } on Object {
-      return false;
+      return AppLockAuthenticationResult.failed;
     }
   }
 }

@@ -18,6 +18,7 @@ import 'features/home/home_page.dart';
 import 'l10n/app_localizations_fallback.dart';
 import 'observability/crash_reporting.dart';
 import 'platform/native_file_dialog.dart';
+import 'platform/app_lock.dart';
 import 'platform/screen_capture_protection.dart';
 
 Future<void> main() async {
@@ -156,18 +157,23 @@ class PlurisHavenApp extends StatelessWidget {
     super.key,
     required this.repository,
     this.serverAccount,
+    this.appLockAvailability = AppLock.availability,
+    this.appLockAuthenticate = AppLock.authenticate,
   });
 
   final HavenRepository repository;
   final ServerAccountController? serverAccount;
+  final Future<AppLockAvailability> Function() appLockAvailability;
+  final Future<AppLockAuthenticationResult> Function(String reason)
+  appLockAuthenticate;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AppCustomization>(
       stream: repository.watchCustomization(),
-      initialData: AppCustomization.defaults,
       builder: (context, snapshot) {
         final customization = snapshot.data ?? AppCustomization.defaults;
+        final customizationLoaded = snapshot.hasData;
         unawaited(
           ScreenCaptureProtection.setEnabled(
             customization.screenshotBlockingEnabled,
@@ -177,6 +183,7 @@ class PlurisHavenApp extends StatelessWidget {
         return DynamicColorBuilder(
           builder: (lightDynamic, darkDynamic) => _buildApp(
             customization,
+            customizationLoaded: customizationLoaded,
             lightDynamic: lightDynamic,
             darkDynamic: darkDynamic,
           ),
@@ -187,6 +194,7 @@ class PlurisHavenApp extends StatelessWidget {
 
   Widget _buildApp(
     AppCustomization customization, {
+    required bool customizationLoaded,
     ColorScheme? lightDynamic,
     ColorScheme? darkDynamic,
   }) {
@@ -220,6 +228,9 @@ class PlurisHavenApp extends StatelessWidget {
         final appearanceTextScale = customization.appearance.textScale ?? 1;
         return AppLockGate(
           enabled: customization.appLockEnabled,
+          ready: customizationLoaded,
+          availability: appLockAvailability,
+          authenticate: appLockAuthenticate,
           child: MediaQuery(
             data: mediaQuery.copyWith(
               accessibleNavigation:

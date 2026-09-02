@@ -10,29 +10,33 @@ class AppLockGate extends StatefulWidget {
   const AppLockGate({
     super.key,
     required this.enabled,
+    this.ready = true,
     required this.child,
     this.availability = AppLock.availability,
     this.authenticate = AppLock.authenticate,
   });
 
   final bool enabled;
+  final bool ready;
   final Widget child;
   final Future<AppLockAvailability> Function() availability;
-  final Future<bool> Function(String reason) authenticate;
+  final Future<AppLockAuthenticationResult> Function(String reason)
+  authenticate;
 
   @override
   State<AppLockGate> createState() => _AppLockGateState();
 }
 
 class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
-  late bool _unlocked = !widget.enabled;
+  late bool _unlocked = widget.ready && !widget.enabled;
   bool _authenticating = false;
+  bool _credentialsUnavailable = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (widget.enabled) {
+    if (widget.ready && widget.enabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryUnlock());
     }
   }
@@ -40,10 +44,12 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant AppLockGate oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.enabled && !oldWidget.enabled) {
+    if (!widget.ready) {
+      setState(() => _unlocked = false);
+    } else if (widget.enabled && (!oldWidget.enabled || !oldWidget.ready)) {
       setState(() => _unlocked = false);
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryUnlock());
-    } else if (!widget.enabled && oldWidget.enabled) {
+    } else if (!widget.enabled && (oldWidget.enabled || !oldWidget.ready)) {
       setState(() => _unlocked = true);
     }
   }
@@ -56,7 +62,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!widget.enabled) return;
+    if (!widget.ready || !widget.enabled) return;
     if ((state == AppLifecycleState.inactive ||
             state == AppLifecycleState.hidden ||
             state == AppLifecycleState.paused) &&
@@ -71,31 +77,31 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   }
 
   Future<void> _tryUnlock() async {
-    if (!mounted || _unlocked || _authenticating) return;
+    if (!mounted || !widget.ready || _unlocked || _authenticating) return;
     setState(() => _authenticating = true);
-    // A device with no biometric or credential configured has nothing for
-    // the lock to check against, so treat the setting as a no-op there.
-    // Platform errors remain locked instead of exposing private content.
     final availability = await widget.availability();
     if (availability != AppLockAvailability.available) {
       if (mounted) {
         setState(() {
           _authenticating = false;
-          if (availability == AppLockAvailability.unsupported) {
-            _unlocked = true;
-          }
+          _credentialsUnavailable =
+              availability == AppLockAvailability.unsupported;
         });
       }
       return;
     }
     if (!mounted) return;
-    final ok = await widget.authenticate(
+    final result = await widget.authenticate(
       AppLocalizations.of(context).appLockReason,
     );
     if (!mounted) return;
     setState(() {
       _authenticating = false;
-      if (ok) _unlocked = true;
+      _credentialsUnavailable =
+          result == AppLockAuthenticationResult.unavailable;
+      if (result == AppLockAuthenticationResult.authenticated) {
+        _unlocked = true;
+      }
     });
   }
 
@@ -126,10 +132,19 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      Text(l10n.appLockedBody, textAlign: TextAlign.center),
+                      Text(
+                        _credentialsUnavailable
+                            ? l10n.appLockCredentialsRestoreBody
+                            : widget.ready
+                            ? l10n.appLockedBody
+                            : l10n.appLockLoadingBody,
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
-                        onPressed: _authenticating ? null : _tryUnlock,
+                        onPressed: !widget.ready || _authenticating
+                            ? null
+                            : _tryUnlock,
                         icon: const Icon(Icons.lock_open_rounded),
                         label: Text(l10n.appLockUnlockButton),
                       ),

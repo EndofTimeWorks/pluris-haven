@@ -114,6 +114,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLockedBody => 'Unlock your device to continue.';
 
   @override
+  String get appLockLoadingBody => 'Loading private settings…';
+
+  @override
+  String get appLockCredentialsRestoreBody =>
+      'Device authentication is unavailable. Restore your device PIN, passcode, or biometrics to unlock Pluris Haven.';
+
+  @override
   String get appLockUnlockButton => 'Unlock';
 
   @override
@@ -148,6 +155,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsUnavailableBody =>
       'Pluris Haven could not start this device\'s notification service. Reminders stay saved, but they may not appear outside the app until it restarts successfully.';
+
+  @override
+  String get notificationsPermissionDeniedBody =>
+      'Notification permission was not granted. Your reminders stay saved.';
 
   @override
   String get highContrastTitle => 'High contrast';

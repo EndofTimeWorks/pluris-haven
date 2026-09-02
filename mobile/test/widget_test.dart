@@ -72,7 +72,7 @@ void main() {
         builder: (context, child) => AppLockGate(
           enabled: true,
           availability: () async => AppLockAvailability.available,
-          authenticate: (_) async => true,
+          authenticate: (_) async => AppLockAuthenticationResult.authenticated,
           child: child ?? const SizedBox.shrink(),
         ),
         home: Builder(
@@ -112,7 +112,7 @@ void main() {
         home: AppLockGate(
           enabled: true,
           availability: () async => AppLockAvailability.error,
-          authenticate: (_) async => true,
+          authenticate: (_) async => AppLockAuthenticationResult.authenticated,
           child: const Text('Protected content'),
         ),
       ),
@@ -122,6 +122,32 @@ void main() {
 
     expect(find.text('Protected content'), findsNothing);
     expect(find.text('Pluris Haven is locked'), findsOneWidget);
+  });
+
+  testWidgets('app lock stays closed when device credentials are unavailable', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppLockGate(
+          enabled: true,
+          availability: () async => AppLockAvailability.available,
+          authenticate: (_) async => AppLockAuthenticationResult.unavailable,
+          child: const Text('Protected content'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Protected content'), findsNothing);
+    expect(find.text('Pluris Haven is locked'), findsOneWidget);
+    expect(
+      find.textContaining('Device authentication is unavailable'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('offers a report action for legitimate rejected imports', (
@@ -168,6 +194,42 @@ void main() {
     expect(find.text('Front History'), findsOneWidget);
     expect(find.text('Customize'), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
+  });
+
+  testWidgets('keeps the app locked until customization loads', (tester) async {
+    var authenticationCalls = 0;
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+      emitCustomizationOnWatch: false,
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(
+      PlurisHavenApp(
+        repository: repository,
+        appLockAvailability: () async => AppLockAvailability.available,
+        appLockAuthenticate: (_) async {
+          authenticationCalls++;
+          return AppLockAuthenticationResult.authenticated;
+        },
+      ),
+    );
+    expect(find.text('Pluris Haven is locked'), findsOneWidget);
+    expect(find.text('Dashboard'), findsNothing);
+    expect(authenticationCalls, 0);
+
+    repository.emitCustomization();
+    await tester.pump();
+
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(authenticationCalls, 0);
   });
 
   testWidgets('uses Simply Plural fronting navigation', (tester) async {
@@ -3049,7 +3111,11 @@ Future<void> openDrawerSection(WidgetTester tester, String label) async {
 }
 
 class FakeHavenRepository implements HavenRepository {
-  FakeHavenRepository(this._snapshot, {this._localArchiveJson}) {
+  FakeHavenRepository(
+    this._snapshot, {
+    this.emitCustomizationOnWatch = true,
+    this._localArchiveJson,
+  }) {
     _controller = StreamController<HomeSnapshot>.broadcast(
       sync: true,
       onListen: () => _controller.add(_snapshot),
@@ -3153,6 +3219,7 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   HomeSnapshot _snapshot;
+  final bool emitCustomizationOnWatch;
   final String? _localArchiveJson;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
@@ -3327,9 +3394,11 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Stream<AppCustomization> watchCustomization() async* {
-    yield _customization;
+    if (emitCustomizationOnWatch) yield _customization;
     yield* _customizationController.stream;
   }
+
+  void emitCustomization() => _customizationController.add(_customization);
 
   @override
   Future<AppCustomization> loadCustomization() async => _customization;

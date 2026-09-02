@@ -35,6 +35,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/import_diagnostic_localizations.dart';
 import '../../l10n/import_plan_localizations.dart';
 import '../../platform/native_file_dialog.dart';
+import '../../platform/app_lock.dart';
 import '../../platform/sensitive_clipboard.dart';
 
 part 'dashboard.dart';
