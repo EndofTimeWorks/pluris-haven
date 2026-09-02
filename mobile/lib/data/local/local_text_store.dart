@@ -127,6 +127,55 @@ extension LocalHavenRepositoryLocalText on LocalHavenRepository {
     return plaintext;
   }
 
+  Future<void> _migrateLegacyLocalTextToAad() async {
+    if (await _preferenceEquals(
+      _localTextAadMigrationPreference,
+      _localTextAadMigrationVersion,
+    )) {
+      return;
+    }
+    await database.transaction(() async {
+      for (final column in _protectedLocalTextColumns) {
+        final rows = await database
+            .customSelect(
+              'SELECT id, ${column.column} AS value FROM ${column.table} '
+              'WHERE ${column.column} LIKE ?',
+              variables: [
+                Variable.withString('$_legacyLocalEncryptedTextPrefix%'),
+              ],
+            )
+            .get();
+        for (final row in rows) {
+          final id = row.read<String>('id');
+          final stored = row.read<String>('value');
+          final plaintext = await crypto.decrypt(
+            stored.substring(_legacyLocalEncryptedTextPrefix.length),
+          );
+          if (plaintext == null) {
+            throw StateError('Legacy local text decryption returned no value.');
+          }
+          final encrypted = await _encryptLocalText(
+            plaintext,
+            column.table,
+            id,
+            column.column,
+          );
+          await database.customUpdate(
+            'UPDATE ${column.table} SET ${column.column} = ? WHERE id = ?',
+            variables: [
+              Variable.withString(encrypted),
+              Variable.withString(id),
+            ],
+          );
+        }
+      }
+      await _writePreference(
+        _localTextAadMigrationPreference,
+        _localTextAadMigrationVersion,
+      );
+    });
+  }
+
   Future<void> _migrateUnauthenticatedEmptyCiphertexts() async {
     if (await _preferenceEquals(
       _emptyCiphertextSweepPreference,

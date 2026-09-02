@@ -83,6 +83,10 @@ part 'revision_restore_store.dart';
 part 'repository_contract.dart';
 
 const _localEncryptedTextPrefix = 'ph2:';
+const _legacyLocalEncryptedTextPrefix = 'ph1:';
+const _localTextAadMigrationPreference =
+    'internal.local_text_aad_migration_version';
+const _localTextAadMigrationVersion = '1';
 const _memberEncryptionSweepPreference =
     'internal.member_encryption_sweep_version';
 const _memberEncryptionSweepVersion = '2';
@@ -221,6 +225,8 @@ class LocalHavenRepository implements HavenRepository {
   _localTextDecryptCache = {};
 
   Future<void> ensureLocalSystem() => _ensureLocalSystem();
+
+  Future<void> migrateLegacyLocalTextToAad() => _migrateLegacyLocalTextToAad();
 
   Future<void> migrateUnauthenticatedEmptyCiphertexts() =>
       _migrateUnauthenticatedEmptyCiphertexts();

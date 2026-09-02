@@ -610,6 +610,49 @@ void main() {
     );
   });
 
+  test('migrates legacy ph1 local text to context-bound ph2', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final masterKey = await generateMasterKey();
+    final repository = LocalHavenRepository(
+      database,
+      crypto: HavenCrypto(masterKey),
+    );
+    await repository.ensureLocalSystem();
+    await repository.saveNote(
+      const NoteDraft(title: 'Current title', body: 'Current body'),
+    );
+    final note = (await database.select(database.notes).get()).single;
+    await (database.update(
+      database.notes,
+    )..where((row) => row.id.equals(note.id))).write(
+      NotesCompanion(
+        title: Value(await _legacyLocalText(masterKey, 'Legacy title')),
+        body: Value(await _legacyLocalText(masterKey, 'Legacy body')),
+      ),
+    );
+
+    await repository.migrateLegacyLocalTextToAad();
+    final migrated = (await database.select(database.notes).get()).single;
+
+    expect(migrated.title, startsWith('ph2:v2:'));
+    expect(migrated.body, startsWith('ph2:v2:'));
+    expect((await repository.watchNotes().first).single.title, 'Legacy title');
+    expect((await repository.watchNotes().first).single.body, 'Legacy body');
+
+    final changesAfterMigration = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
+    await repository.migrateLegacyLocalTextToAad();
+    final changesAfterNoOp = await database
+        .customSelect('SELECT total_changes() AS count')
+        .getSingle();
+    expect(
+      changesAfterNoOp.read<int>('count'),
+      changesAfterMigration.read<int>('count'),
+    );
+  });
+
   test('reindexes existing member names with Unicode normalization', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -1981,6 +2024,20 @@ Future<String> _encryptedLocalText(
     aad: 'pluris-haven:local-text:v2\u0000$table\u0000$rowId\u0000$column',
   );
   return 'ph2:$ciphertext';
+}
+
+Future<String> _legacyLocalText(SecretKey masterKey, String value) async {
+  final rawKey = await masterKey.extractBytes();
+  final keyHash = await Sha256().hash([
+    ...utf8.encode('pluris-haven:content:v1'),
+    0,
+    ...rawKey,
+  ]);
+  final secretBox = await Xchacha20.poly1305Aead().encrypt(
+    utf8.encode(value),
+    secretKey: SecretKey(keyHash.bytes.sublist(0, 32)),
+  );
+  return 'ph1:${base64Url.encode(secretBox.concatenation())}';
 }
 
 class _CountingHavenCrypto extends HavenCrypto {

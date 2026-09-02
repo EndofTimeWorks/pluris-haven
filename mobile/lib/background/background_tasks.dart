@@ -48,6 +48,7 @@ Future<bool> _runBackgroundTask(
   final repository = LocalHavenRepository(database, crypto: crypto);
   try {
     await repository.ensureLocalSystem();
+    await repository.migrateLegacyLocalTextToAad();
     await repository.migrateUnauthenticatedEmptyCiphertexts();
     await repository.migrateMemberNamesToEncryption();
     await repository.migrateBlindIndexesToUnicodeNormalization();
