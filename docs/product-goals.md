@@ -8,28 +8,44 @@ defaults, not requirements.
 
 ## What works now
 
-The mobile app stores members, groups, tags, custom fields, fronts, notes,
-journals, messages, polls, reminders, and preferences locally. It does not need
-an account.
+The mobile app stores the main local system data without requiring an account,
+including members, groups, tags, custom fields, fronts, notes, journals,
+messages, polls, reminders, preferences, import history and recovery data.
 
-It imports Simply Plural and PluralKit data, previews changes before applying
-them, and keeps source information that it does not understand yet.
+Simply Plural and PluralKit have tested import paths. Tupperbox, PluralSpace and
+Ampersand have current file-normalisation paths with checked-in mapper coverage.
+OpenPlural import is wanted but currently missing after an earlier history
+rewrite; restoring it is current product work. Do not advertise a source as
+fully compatible merely because a parser or mapper exists.
 
-Password-protected archives are the portable recovery path. Server snapshots
-use the device key, upload in checked chunks, and can be restored only by a
-client that retains that device key.
+Password-protected archives are the portable recovery path. Encrypted server
+snapshots use device-held key material, upload in checked chunks, and can be
+downloaded/restored by a client that still has the required key. Server
+snapshots do not replace portable recovery archives.
 
-Accounts and friends are optional. Friends are experimental and disabled by
-default.
+Accounts and friends are optional. Friends remain experimental and disabled by
+default. There is no friendship directory; discovery should be deliberate
+through exact handles, rotating codes, links or QR.
+
+Hosted password recovery uses a one-time emailed token. Public registration
+remains disabled until its remaining safety gates, including verified email,
+are actually implemented.
 
 ## Rules for the product
 
 - Local features must keep working without an account or network connection.
 - Private content must not leave the device as plaintext by default.
+- Sync must be transport-independent; a central server is optional
+  infrastructure rather than the owner of the data model.
 - Import and export are maintained features, not one-off migration tools.
-- Self-hosted servers use the same public protocol as the official server.
+- Self-hosted servers use the same public protocol as the official server where
+  that protocol is implemented.
 - Accessibility is part of release work.
 - The app must not ask anyone to prove or medicalise their identity.
+- Friendship and collaboration are separate; friendship shares nothing by
+  default.
+- Product/docs/store claims must distinguish implemented, verified and merely
+  planned functionality.
 
 Local text is encrypted with a device key. The SQLite file still exposes some
 metadata, including row counts, relationships, timestamps, and status flags.
@@ -52,28 +68,42 @@ Reducing that exposure would need a separate full-database encryption design.
 - Preserve an imported tool's terms and data without applying those terms to
   everyone else.
 
-## Next
+## Current completion direction
 
-- Add verified email and account recovery before public registration.
-- Add download and restore for server snapshots without presenting them as a
-  replacement for portable recovery archives.
-- Finish abuse controls and device accessibility testing for friends.
-- Test TalkBack, VoiceOver, switch access, keyboard navigation, large text,
-  contrast, and reduced motion on real devices.
-- Finish signed iOS distribution and physical-device testing.
-- Split the local repository by feature as those areas are changed.
+- Restore and verify OpenPlural import through the current import framework.
+- Finish local chats/messages/categories/channels already represented in the
+  data model and product decisions.
+- Finish Markdown revision/history/restore flows for notes and journals, plus
+  message history where designed.
+- Build the scoped, revocable, permission-based local API as a near-term
+  integration surface; it must not expose ambient decrypted-vault access.
+- Finish the already-decided advanced reminder, poll, front-audit and System
+  Safety paths.
+- Finish low-cognitive-load, terminology, customization and accessibility gaps.
+- Prepare Play closed alpha testing in addition to the existing internal-test
+  release path, and verify the real CI/release workflows.
+- Complete remaining real-device accessibility and Apple signing/runtime tests.
+- Keep registration disabled until verified email and other production gates are
+  genuinely ready.
 
-## Later
+Trusted recovery contacts are wanted, but their exact cryptographic share and
+threshold scheme remains unresolved. Do not invent that cryptography simply to
+mark the feature complete.
 
-- Portable identity and server federation.
-- Desktop and browser clients.
-- A permission-based local API for integrations.
-- An optional design that also encrypts local database metadata.
+## Later / deferred
+
+- Full portable-identity and federation protocol implementation.
+- Desktop and private browser clients.
+- Watch clients and plugin ecosystems.
+- Authenticated PluralSpace API import.
+- Optional full-database encryption that also hides local metadata.
+- Other platform work explicitly recorded as deferred in `docs/project-state.md`.
 
 ## Not planned
 
 - Requiring an account for local features.
 - Copying another plurality app screen for screen.
-- A public directory without explicit opt-in.
+- A friendship browsing/search directory.
 - Routine scanning of private content.
 - Paid feature tiers on the official server.
+- CLI/TUI clients.

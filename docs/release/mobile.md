@@ -1,124 +1,151 @@
-# Mobile Releases
+# Mobile releases
 
-There are two release types. Dev builds are automatic. Versioned releases use a
-GPG-signed tag created on your machine.
+There are two automation paths: development prereleases from `main`, and
+versioned releases from a maintainer-created GPG-signed tag.
+
+Pluris Haven is currently **PRE-ALPHA**. Alpha is next; beta is later. Do not
+change maturity merely because a store/testing path exists.
 
 ## Dev prerelease
 
 Use a dev build for routine testing between versioned releases.
 
-1. Set a new version in `mobile/pubspec.yaml`:
+1. Set a newer `.dev.N` version/build in `mobile/pubspec.yaml`, for example after
+   the current `0.3.0-pre-alpha.4+3004` baseline:
 
    ```yaml
-   version: 0.2.0-pre-alpha.2.dev.1+2009
+   version: 0.3.0-pre-alpha.4.dev.1+3005
    ```
 
 2. Commit and push `main`.
 3. Wait for the `CI` workflow.
-4. Open GitHub Releases and check that the new prerelease contains:
+4. When the version/build is newer than published mobile tags, the dev
+   prerelease contains:
    - `pluris-haven-dev.apk`
    - `pluris-haven-dev-unsigned.ipa`
    - `BUILD.txt`
    - `SHA256SUMS.txt`
 
-Nothing else is needed. On pushes to `main`, `CI` builds a release-mode APK with
-the configured Android upload key and an unsigned iOS IPA. The publish job
-reuses those artefacts. Re-sign the IPA with AltStore, SideStore, or Sideloadly.
-If the version is not a `.dev.N` version, or its build number is not newer than
-the existing tags, publishing is skipped.
+The dev APK is release-mode and uses the configured Android upload key. The IPA
+is unsigned and can be re-signed with AltStore, SideStore, Sideloadly, or a
+Developer-managed device. A non-dev version or non-monotonic build number is not
+automatically published as a dev prerelease.
 
 ## Versioned prerelease
 
-Use this for a named alpha milestone such as `0.2.0-pre-alpha.2+2008`.
+Use this for an explicitly approved named pre-alpha/alpha milestone.
 
-1. Set the release version in `mobile/pubspec.yaml`. Remove `.dev.N` and increase
-   the number after `+`.
-2. Move the current changelog notes under a heading for that version and date.
-3. The website release metadata is updated automatically after GitHub publishes
-   the release.
-4. Run the release checks:
+The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not move to
+`0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
+version. The current candidate for a future monotonic first alpha is
+`0.3.1-alpha.1+3005`, but it must not be set/tagged/released without explicit
+approval.
+
+1. Set the approved release version in `mobile/pubspec.yaml`. Versioned releases
+   must not contain `.dev.N`, and the build after `+` must increase.
+2. Move current changelog notes under the approved version/date.
+3. Run the local release checks appropriate to the changed tree, including at
+   minimum:
 
    ```sh
    pnpm lint
    pnpm test:server
+   pnpm --dir website check
    pnpm --dir website build
+   pnpm --dir website check:a11y
+   pnpm --dir website check:headers
    cd mobile
    flutter analyze
    flutter test
    cd ..
-   ```
-
-5. Review and commit the release files with GPG signing:
-
-   ```sh
+   actionlint .github/workflows/*.yml
    git diff --check
-   git diff
-   git add mobile/pubspec.yaml CHANGELOG.md \
-     website/src/routes/changelog/+page.svelte \
-     website/src/routes/distribution/+page.svelte \
-     website/src/routes/download/+page.svelte
-   git commit -S -m "chore(release): mobile VERSION+BUILD"
    ```
 
-6. Push `main`:
-
-   ```sh
-   git push origin main
-   ```
-
-   Wait for `CI` to pass. The next command refuses to continue until the exact
-   commit at `HEAD` has a successful CI run.
-
-7. Create the checked, GPG-signed tag:
+4. Review and GPG-sign the release-preparation commit.
+5. Push `main` and require successful GitHub-hosted CI for the exact commit.
+   Local test parity alone is not enough.
+6. Create the checked GPG-signed release tag:
 
    ```sh
    scripts/tag-mobile-release.sh
    ```
 
-8. Run the exact `git push origin refs/tags/...` command printed by the script.
-9. Wait for `Mobile Release` to pass.
-10. Open the GitHub prerelease and check for:
-    - universal APK
-    - arm64-v8a, armeabi-v7a and x86_64 APKs
-    - unsigned IPA
-    - `BUILD.txt`
-    - `SHA256SUMS.txt`
+7. Review the exact tag push command printed by the script, then push the tag
+   only when release publication is authorized.
+8. Watch `Mobile Release` through completion and inspect failed job logs rather
+   than treating static workflow validation as a release test.
 
-The tag push is intentionally manual. CI cannot create your GPG signature
-without a copy of your private key, and that key does not belong in GitHub
-Secrets.
+The manual tag remains intentional: the maintainer GPG private key does not
+belong in GitHub Secrets.
 
 ## Version rules
 
-- `.dev.N` means an automatic release-mode dev prerelease.
-- A version without `.dev.N` means a signed, versioned release.
-- The number after `+` is Android's build number and iOS's bundle version.
-- Increase both the prerelease version and the build number. Do not publish a
-  second release with the same values.
-- Keep build numbers above `2000`; older builds already used that range.
+- `.dev.N` means an automatic release-mode development prerelease.
+- Versioned tags may use the intended prerelease channels `pre-alpha`, `alpha`,
+  and later `beta`.
+- A versioned release must not use `.dev.N`.
+- The number after `+` is Android's version code/build number and iOS's bundle
+  version.
+- Core/prerelease ordering and the build number must both move forward relative
+  to the releases being upgraded.
+- The Android package ID is `works.endoftime.plurishaven`.
 
-The Android package ID is `works.endoftime.plurishaven`. Old experimental builds
-used `support.plurishaven` and must be uninstalled once before upgrading.
+Old experimental Android builds used other package ids/signing states and may
+need a one-time uninstall before the current package can be installed.
 
-## What CI does
+## What the versioned workflow does
 
-`Mobile Release` reads the version from the tag, then builds Android and iOS in
-parallel. Android APKs are release-signed. The IPA is unsigned and must be
-re-signed with AltStore, SideStore or Sideloadly. The final job creates the
-checksums and GitHub prerelease; it is the only release job with write access.
+`Mobile Release`:
+
+1. verifies the pushed tag and its GPG signature;
+2. validates tag/version/build consistency and rejects `.dev.N`;
+3. builds Android release APKs and the release AAB;
+4. builds an unsigned iOS IPA on `macos-26-intel` with Xcode 26.4.1;
+5. writes build metadata and SHA-256 checksums;
+6. creates/updates the canonical GitHub prerelease;
+7. after GitHub publication, independently:
+   - uploads the AAB to Play internal testing; and
+   - updates/validates/deploys website release metadata.
+
+A Play failure does not invalidate an existing GitHub Release or block website
+metadata. A website-metadata failure does not recreate release artifacts. These
+independent targets need explicit retry/repair behavior rather than pretending
+to be transactionally atomic.
+
+Current Play automation covers **internal testing**. Closed testing is decided
+for the alpha distribution path but still needs implementation/configuration and
+real external verification.
+
+## Google Play authentication
+
+The current internal-upload job uses `google-github-actions/auth` with the
+configured Google Play service-account JSON secret to obtain an Android
+Publisher access token.
+
+Never commit credentials. Release hardening should evaluate GitHub OIDC / Google
+Workload Identity Federation if it fits the actual publisher path cleanly; do
+not replace a working path with brittle custom authentication merely for the
+label.
 
 ## iOS support
 
 - Deployment target: iOS 14.
-- Build runner: macOS Tahoe with Xcode 26.4.1.
+- GitHub build runner: `macos-26-intel`.
+- Workflow-selected Xcode: 26.4.1.
 - Building with a newer SDK does not change the iOS 14 deployment target.
-- iOS 12 and earlier are not supported by the current Flutter line.
-- Features that require a newer iOS version must have an iOS 14 fallback.
+- Features that require a newer iOS version need an iOS 14 fallback.
+- Unsigned CI IPA output is compile/package evidence, not TestFlight/App Store
+  verification.
 
-## Local Import Acceptance
+Real-device/simulator work still includes notification permission timing,
+App Lock/passcode behavior, screen-capture privacy, accessibility and upgrade
+smoke tests.
+
+## Local import acceptance
 
 Large Simply Plural exports can exercise import, deduplication, encrypted
-backup rehearsal, and clean restore without adding the source data to Git:
+backup rehearsal, and clean restore without adding private source data to Git:
 
 ```sh
 cd mobile
@@ -127,6 +154,7 @@ PLURIS_SP_AVATARS=/absolute/path/to/avatars.zip \
 flutter test test/local_import_acceptance_test.dart --reporter expanded
 ```
 
-The test uses in-memory databases and checks import, re-import, encryption,
-restore rehearsal and clean restore. Device-key snapshots are not portable to a
-new device. Use the password-protected archive export for that.
+The test uses temporary/in-memory state and checks import, re-import, encryption,
+restore rehearsal and clean restore. Device-key server snapshots are not
+portable to a new device; use the password-protected archive export for portable
+recovery.
