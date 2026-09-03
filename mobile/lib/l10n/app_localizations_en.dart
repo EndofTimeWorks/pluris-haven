@@ -946,6 +946,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose one member, or trigger for any newly started front.';
 
   @override
+  String get afterFrontDelayLabel => 'Delay after fronting (seconds)';
+
+  @override
+  String get afterFrontDelayHelper =>
+      'Deliver this reminder after this many seconds. Use 0 for immediately.';
+
+  @override
+  String get afterFrontDelayError =>
+      'Enter zero or a positive whole number of seconds.';
+
+  @override
   String get anyFrontStartsOption => 'Any front starts';
 
   @override
@@ -978,6 +989,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String afterFrontLabel(String detail) {
     return 'After $detail fronts';
+  }
+
+  @override
+  String afterFrontDelayedLabel(int delay, String detail) {
+    return '$delay seconds after $detail fronts';
   }
 
   @override

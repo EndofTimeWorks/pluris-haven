@@ -1830,6 +1830,24 @@ abstract class AppLocalizations {
   /// **'Choose one member, or trigger for any newly started front.'**
   String get afterFrontTargetHelper;
 
+  /// No description provided for @afterFrontDelayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay after fronting (seconds)'**
+  String get afterFrontDelayLabel;
+
+  /// No description provided for @afterFrontDelayHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver this reminder after this many seconds. Use 0 for immediately.'**
+  String get afterFrontDelayHelper;
+
+  /// No description provided for @afterFrontDelayError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter zero or a positive whole number of seconds.'**
+  String get afterFrontDelayError;
+
   /// No description provided for @anyFrontStartsOption.
   ///
   /// In en, this message translates to:
@@ -1883,6 +1901,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'After {detail} fronts'**
   String afterFrontLabel(String detail);
+
+  /// No description provided for @afterFrontDelayedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{delay} seconds after {detail} fronts'**
+  String afterFrontDelayedLabel(int delay, String detail);
 
   /// No description provided for @importTitle.
   ///

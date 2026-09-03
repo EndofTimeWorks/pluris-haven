@@ -236,6 +236,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   final _timeController = TextEditingController(text: '09:00');
+  final _afterFrontDelayController = TextEditingController(text: '0');
   ReminderScheduleKind _scheduleKind = ReminderScheduleKind.daily;
   String _weekday = 'Monday';
   int _monthDay = 1;
@@ -247,6 +248,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     _titleController.dispose();
     _bodyController.dispose();
     _timeController.dispose();
+    _afterFrontDelayController.dispose();
     super.dispose();
   }
 
@@ -384,6 +386,16 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 },
               ),
               const SizedBox(height: 10),
+              TextField(
+                key: const ValueKey('reminder-after-front-delay-field'),
+                controller: _afterFrontDelayController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: l10n.afterFrontDelayLabel,
+                  helperText: l10n.afterFrontDelayHelper,
+                ),
+              ),
+              const SizedBox(height: 10),
             ],
             if (_scheduleKind != ReminderScheduleKind.afterFront) ...[
               TextField(
@@ -421,6 +433,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     final messenger = ScaffoldMessenger.of(context);
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
+    if (_scheduleKind == ReminderScheduleKind.afterFront &&
+        !_hasValidAfterFrontDelay) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.afterFrontDelayError)),
+      );
+      return;
+    }
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
         ? null
         : _normalizedTimeText;
@@ -447,7 +466,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             ? 'front_started'
             : null,
         delaySeconds: _scheduleKind == ReminderScheduleKind.afterFront
-            ? 0
+            ? _afterFrontDelaySeconds
             : null,
       ),
     );
@@ -511,7 +530,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             ? '${l10n.monthlySchedule} ${l10n.dayFieldLabel.toLowerCase()} $_monthDay'
             : l10n.monthlyScheduleAt(_monthDay, time),
       ReminderScheduleKind.afterFront =>
-        detail.isEmpty
+        _afterFrontDelaySeconds > 0
+            ? l10n.afterFrontDelayedLabel(
+                _afterFrontDelaySeconds,
+                detail.isEmpty ? l10n.anyFrontStartsOption : detail,
+              )
+            : detail.isEmpty
             ? l10n.afterSelectedFrontStarts
             : l10n.afterFrontLabel(detail),
     };
@@ -521,6 +545,16 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     final time = _parseTime(_timeController.text.trim());
     if (time == null) return '';
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  int get _afterFrontDelaySeconds {
+    final value = int.tryParse(_afterFrontDelayController.text.trim());
+    return value == null || value < 0 ? 0 : value;
+  }
+
+  bool get _hasValidAfterFrontDelay {
+    final value = int.tryParse(_afterFrontDelayController.text.trim());
+    return value != null && value >= 0;
   }
 }
 

@@ -2332,6 +2332,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Iris').last);
     await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-after-front-delay-field')),
+      '90',
+    );
     await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
     await tester.pumpAndSettle();
 
@@ -2340,8 +2344,8 @@ void main() {
     expect(reminder.triggerType, 'event');
     expect(reminder.triggerMemberId, 'fake-member-1');
     expect(reminder.triggerEvent, 'front_started');
-    expect(reminder.delaySeconds, 0);
-    expect(find.text('After Iris fronts'), findsOneWidget);
+    expect(reminder.delaySeconds, 90);
+    expect(find.text('90 seconds after Iris fronts'), findsOneWidget);
   });
 
   testWidgets(
