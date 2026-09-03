@@ -5,6 +5,8 @@ import 'import_diagnostic.dart';
 import 'import_file_decoder.dart';
 import 'import_sources.dart';
 
+part 'openplural_mapper.dart';
+
 class NormalizedImportArchive {
   const NormalizedImportArchive({
     required this.source,
@@ -51,11 +53,18 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
     );
   }
 
+  // OpenPlural v0.1 uses an envelope with source-specific collections. Map it
+  // to the generic loose archive shape before using the shared normalizer.
+  // Unknown extension data stays in `raw_payloads` through that normalizer.
+  var effectiveDecoded = decoded;
+  if (source == ImportSource.openPlural) {
+    effectiveDecoded = _openPluralEnvelopeToLooseArchive(decoded);
+  }
+
   // Ampersand nests its whole export under a `database` envelope alongside
   // `revision`/`config` metadata. Flatten that one level so the generic
   // root-list/root-map lookups below can find `members`, `systems`, etc.
   // directly, the same way every other source's flat export shape does.
-  var effectiveDecoded = decoded;
   if (source == ImportSource.ampersand) {
     final database = decoded['database'];
     if (database is Map<String, Object?>) {

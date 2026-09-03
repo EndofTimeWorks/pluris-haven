@@ -74,6 +74,18 @@ enum ImportSource {
     status: ImporterStatus.ready,
     dedupeKeys: ['PluralSpace IDs', 'normalized names'],
   ),
+  openPlural(
+    label: 'OpenPlural',
+    subtitle: 'OpenPlural v0.1 export or archive',
+    inputKinds: [ImportInputKind.file],
+    status: ImporterStatus.ready,
+    dedupeKeys: [
+      'OpenPlural IDs',
+      'source IDs',
+      'PluralKit IDs',
+      'normalized names',
+    ],
+  ),
   prism(
     label: 'Prism',
     subtitle: 'Encrypted .prism export',
@@ -110,6 +122,7 @@ enum ImportSource {
     ImportSource.pluralKitLive => 'pluralkit_api',
     ImportSource.tupperbox => 'tupperbox_file',
     ImportSource.pluralSpace => 'pluralspace_file',
+    ImportSource.openPlural => 'openplural_file',
     ImportSource.prism => 'prism_file',
     ImportSource.ampersand => 'ampersand_file',
   };

@@ -2820,6 +2820,14 @@ void main() {
     expect(find.text('pk;token'), findsOneWidget);
     expect(find.text('PluralKit live plan'), findsOneWidget);
     expect(find.text('needs network'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OpenPlural').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('OpenPlural plan'), findsOneWidget);
+    expect(find.text('offline preview'), findsOneWidget);
   });
 
   testWidgets('back from import page returns to dashboard', (tester) async {

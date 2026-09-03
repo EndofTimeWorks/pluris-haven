@@ -10,6 +10,7 @@ String localizeImportSource(AppLocalizations l10n, ImportSource source) {
     ImportSource.pluralKitLive => l10n.importSourcePluralKitLive,
     ImportSource.tupperbox => l10n.importSourceTupperbox,
     ImportSource.pluralSpace => l10n.importSourcePluralSpace,
+    ImportSource.openPlural => l10n.importSourceOpenPlural,
     ImportSource.prism => l10n.importSourcePrism,
     ImportSource.ampersand => l10n.importSourceAmpersand,
   };
@@ -22,6 +23,7 @@ String localizeImportInput(AppLocalizations l10n, ImportSource source) {
     ImportSource.pluralKitFile ||
     ImportSource.tupperbox ||
     ImportSource.pluralSpace ||
+    ImportSource.openPlural ||
     ImportSource.ampersand => l10n.importInputFile,
     ImportSource.pluralKitLive => l10n.importInputLiveToken,
     ImportSource.prism => l10n.importInputEncryptedFile,
@@ -36,6 +38,7 @@ String localizeImportDedupe(AppLocalizations l10n, ImportSource source) {
     ImportSource.pluralKitLive => l10n.importDedupePluralKitLive,
     ImportSource.tupperbox => l10n.importDedupeTupperbox,
     ImportSource.pluralSpace => l10n.importDedupePluralSpace,
+    ImportSource.openPlural => l10n.importDedupeOpenPlural,
     ImportSource.prism => l10n.importDedupePrism,
     ImportSource.ampersand => l10n.importDedupeAmpersand,
   };
@@ -79,6 +82,8 @@ String localizeImportDetectionReason(
       l10n.importReasonTupperboxFileName,
     ImportDetectionReason.pluralSpaceFileName =>
       l10n.importReasonPluralSpaceFileName,
+    ImportDetectionReason.openPluralFileName =>
+      l10n.importReasonOpenPluralFileName,
     ImportDetectionReason.chooseAfterUpload =>
       l10n.importReasonChooseAfterUpload,
     ImportDetectionReason.encryptedPlurisArchive =>
@@ -91,6 +96,8 @@ String localizeImportDetectionReason(
       l10n.importReasonSimplyPluralFields,
     ImportDetectionReason.pluralSpaceMarkers =>
       l10n.importReasonPluralSpaceMarkers,
+    ImportDetectionReason.openPluralMarkers =>
+      l10n.importReasonOpenPluralMarkers,
     ImportDetectionReason.ambiguousMemberGroupJson =>
       l10n.importReasonAmbiguousMemberGroupJson,
     ImportDetectionReason.unrecognised => l10n.importReasonUnrecognised,
@@ -217,6 +224,18 @@ String localizeImportPlanCount(AppLocalizations l10n, ImportPlanCount count) {
       title: l10n.importStepReviewMatchesTitle,
       detail: l10n.importStepReviewPluralSpaceDetail,
     ),
+    ImportPlanStep.readOpenPlural => (
+      title: l10n.importStepReadExportTitle,
+      detail: l10n.importStepReadOpenPluralDetail,
+    ),
+    ImportPlanStep.mapOpenPlural => (
+      title: l10n.importStepMapRecordsTitle,
+      detail: l10n.importStepMapOpenPluralDetail,
+    ),
+    ImportPlanStep.reviewOpenPlural => (
+      title: l10n.importStepReviewMatchesTitle,
+      detail: l10n.importStepReviewOpenPluralDetail,
+    ),
     ImportPlanStep.choosePrism => (
       title: l10n.importStepChoosePrismTitle,
       detail: l10n.importStepChoosePrismDetail,
@@ -272,6 +291,10 @@ String localizeImportPrivacyNote(
       l10n.importPrivacyPluralSpaceIdentifiers,
     ImportPrivacyNote.pluralSpaceUnknownFields =>
       l10n.importPrivacyPluralSpaceUnknownFields,
+    ImportPrivacyNote.openPluralIdentifiers =>
+      l10n.importPrivacyOpenPluralIdentifiers,
+    ImportPrivacyNote.openPluralExtensions =>
+      l10n.importPrivacyOpenPluralExtensions,
     ImportPrivacyNote.prismPassphraseMemoryOnly =>
       l10n.importPrivacyPrismPassphraseMemoryOnly,
     ImportPrivacyNote.prismIdentifiers => l10n.importPrivacyPrismIdentifiers,

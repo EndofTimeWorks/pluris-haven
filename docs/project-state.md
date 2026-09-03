@@ -42,9 +42,12 @@ from implementation; it is not an alpha feature checklist.
 
 - **DECIDED:** Simply Plural import is core. PluralKit file/live import exists;
   bidirectional sync is future.
-- **REGRESSED:** OpenPlural import is wanted. Its importer disappearing was a
-  history casualty, not deliberate removal; restore it through the current
-  import architecture. OpenPlural export/standard governance remains separate.
+- **IMPLEMENTED / VERIFIED (local):** OpenPlural v0.1 file/archive import uses
+  the current preview/review/publish path, stable source-ID dedupe, asset
+  extraction and encrypted raw-extension preservation. Representative fixture
+  coverage exists; do not claim compatibility beyond the supported v0.1 shape
+  without real-export evidence. OpenPlural export/standard governance remains
+  separate.
 - **DEFERRED:** Authenticated PluralSpace API import.
 - **DECIDED:** No friendship directory. Deliberate handles, rotating codes,
   links and QR discovery are preferred.

@@ -25,7 +25,8 @@ for local use.
 - local member, group, tag, custom-field, front, note, journal, poll, reminder,
   message, and preference storage
 - mobile navigation, dashboard, themes, terminology, and accessibility settings
-- tested Simply Plural and PluralKit file/live import paths
+- tested Simply Plural and PluralKit file/live import paths, plus OpenPlural
+  v0.1 file/archive fixture coverage
 - Tupperbox, PluralSpace, and Ampersand file-normalisation paths with checked-in
   mapper coverage
 - local export, password-protected portable recovery, and encrypted server
@@ -37,10 +38,11 @@ for local use.
 - Android AAB/APK release artifacts and Play internal-testing automation after a
   canonical GitHub release
 
-OpenPlural import is wanted but currently missing after an earlier history
-rewrite. The local API, complete chat/revision product surfaces, Play closed
-alpha testing, public registration, federation, browser access to private data,
-and signed iOS/TestFlight distribution are not ready yet.
+The local API, complete chat/revision product surfaces, Play closed alpha
+testing, public registration, federation, browser access to private data, and
+signed iOS/TestFlight distribution are not ready yet. OpenPlural compatibility
+is currently limited to the verified v0.1 file/archive shape; real-export
+evidence is still needed before making a broader claim.
 
 ## Docs
 

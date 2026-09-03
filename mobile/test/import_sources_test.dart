@@ -55,6 +55,7 @@ void main() {
         'PluralKit live',
         'Tupperbox',
         'PluralSpace',
+        'OpenPlural',
         'Prism',
       ]),
     );
@@ -71,6 +72,8 @@ void main() {
     expect(ImportSource.pluralKitFile.status, ImporterStatus.ready);
     expect(ImportSource.tupperbox.status, ImporterStatus.ready);
     expect(ImportSource.pluralSpace.status, ImporterStatus.ready);
+    expect(ImportSource.openPlural.status, ImporterStatus.ready);
+    expect(ImportSource.openPlural.jobSource, 'openplural_file');
     expect(ImportSource.prism.status, ImporterStatus.planned);
   });
 
@@ -130,6 +133,17 @@ void main() {
         textPreview: '{"switches":[],"members":[],"pluralkit":true}',
       ).source,
       ImportSource.pluralKitFile,
+    );
+    expect(
+      guessImportSourceFromFile(fileName: 'backup.openplural.json').source,
+      ImportSource.openPlural,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: '{"openplural_version":"0.1","front_periods":[]}',
+      ).source,
+      ImportSource.openPlural,
     );
     expect(
       guessImportSourceFromFile(
@@ -206,6 +220,31 @@ void main() {
     expect(decoded.avatarAssets, hasLength(1));
     expect(decoded.avatarAssets.single.id, 'avatar-1');
     expect(decoded.avatarAssets.single.mimeType, 'image/png');
+  });
+
+  test('extracts OpenPlural bundle JSON and image assets', () async {
+    final archive = Archive()
+      ..addFile(
+        ArchiveFile.string(
+          'openplural.json',
+          jsonEncode({
+            'openplural_version': '0.1',
+            'members': [
+              {'id': 'm1', 'name': 'Iris'},
+            ],
+          }),
+        ),
+      )
+      ..addFile(ArchiveFile('assets/avatar.png', 3, [1, 2, 3]));
+
+    final decoded = await decodeImportFileBytes(
+      fileName: 'export.openplural.zip',
+      bytes: Uint8List.fromList(ZipEncoder().encode(archive)),
+    );
+
+    expect(decoded.displayName, contains('openplural.json'));
+    expect(decoded.text, contains('"openplural_version"'));
+    expect(decoded.avatarAssets, hasLength(1));
   });
 
   test('extracts avatar-only Simply Plural backup zips', () async {
@@ -2062,6 +2101,78 @@ void main() {
     final member = members.single! as Map<String, Object?>;
     expect(member['source_member_id'], 'pluralspace_file-member-member-uuid');
     expect(member['pluralkit_id'], isNull);
+  });
+
+  test('normalizes OpenPlural v0.1 records and preserves extensions', () {
+    final archive = normalizeImportTextToLocalArchive(
+      source: ImportSource.openPlural,
+      fileName: 'openplural.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{
+  "openplural_version": "0.1",
+  "systems": [{"id": "s1", "name": "Open House", "color": "#3366ff"}],
+  "assets": [{"id": "a1", "uri": "https://example.invalid/avatar.png"}],
+  "members": [{
+    "id": "m1", "name": "Iris", "display_name": "Iris Local",
+    "avatar_asset_id": "a1",
+    "source_refs": [{"app": "pluralkit", "collection": "members", "id": "abcde"}]
+  }],
+  "groups": [{"id": "g1", "name": "Main"}],
+  "group_memberships": [{"group_id": "g1", "member_id": "m1"}],
+  "custom_fields": [{"id": "cf1", "name": "Role", "field_type": "text"}],
+  "custom_field_values": [{"field_id": "cf1", "subject_id": "m1", "value": "host"}],
+  "front_periods": [{"id": "fp1", "started_at": "2026-01-01T00:00:00Z", "assignments": [{"member_id": "m1"}]}],
+  "notes": [{"id": "n1", "title": "Grounding", "body": "Drink water", "member_id": "m1"}],
+  "boards": {"posts": [{"id": "msg1", "body": "hello", "author_member_id": "m1"}]},
+  "extensions": {"sheaf": {"reminders": [{"id": "r1", "name": "Meds", "schedule": "daily"}], "polls": [{"id": "p1", "question": "Dinner?", "options": [{"id": "o1", "text": "Soup"}, {"id": "o2", "text": "Rice"}]}], "future_data": {"keep": true}}}
+}
+''',
+    );
+
+    final decoded = jsonDecode(archive.archiveJson) as Map<String, Object?>;
+    final members = decoded['members']! as List<Object?>;
+    final member = members.single! as Map<String, Object?>;
+    expect(archive.counts['members'], 1);
+    expect(archive.counts['groups'], 1);
+    expect(archive.counts['group_members'], 1);
+    expect(archive.counts['custom_fields'], 1);
+    expect(archive.counts['custom_field_values'], 1);
+    expect(archive.counts['fronts'], 1);
+    expect(archive.counts['front_members'], 1);
+    expect(archive.counts['notes'], 1);
+    expect(archive.counts['messages'], 1);
+    expect(archive.counts['reminders'], 1);
+    expect(archive.counts['polls'], 1);
+    expect(
+      member['source_member_id'],
+      'openplural_file-member-pluralkit-members-abcde',
+    );
+    expect(member['pluralkit_id'], 'abcde');
+    expect(archive.counts['raw_payloads'], 1);
+    expect(
+      archive.archiveJson,
+      contains('"collection": "openplural_extensions"'),
+    );
+
+    final preview = previewImportText(
+      fileName: 'openplural.json',
+      text:
+          '''{"openplural_version":"0.1","members":[{"id":"m1","name":"Iris"}]}''',
+    );
+    expect(preview.source, ImportSource.openPlural);
+    expect(preview.canApply, isTrue);
+  });
+
+  test('rejects unsupported OpenPlural versions', () {
+    expect(
+      () => normalizeImportTextToLocalArchive(
+        source: ImportSource.openPlural,
+        fileName: 'openplural.json',
+        text: '{"openplural_version":"0.2"}',
+      ),
+      throwsFormatException,
+    );
   });
 
   test('normalizes an Ampersand database export', () {

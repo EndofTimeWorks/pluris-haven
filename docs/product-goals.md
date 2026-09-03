@@ -12,11 +12,12 @@ The mobile app stores the main local system data without requiring an account,
 including members, groups, tags, custom fields, fronts, notes, journals,
 messages, polls, reminders, preferences, import history and recovery data.
 
-Simply Plural and PluralKit have tested import paths. Tupperbox, PluralSpace and
+Simply Plural and PluralKit have tested import paths. OpenPlural v0.1 has a
+current file/archive import path with representative fixture coverage, stable
+source-ID dedupe and raw-extension preservation. Tupperbox, PluralSpace and
 Ampersand have current file-normalisation paths with checked-in mapper coverage.
-OpenPlural import is wanted but currently missing after an earlier history
-rewrite; restoring it is current product work. Do not advertise a source as
-fully compatible merely because a parser or mapper exists.
+Do not advertise a source as fully compatible merely because a parser or mapper
+exists.
 
 Password-protected archives are the portable recovery path. Encrypted server
 snapshots use device-held key material, upload in checked chunks, and can be
@@ -70,7 +71,6 @@ Reducing that exposure would need a separate full-database encryption design.
 
 ## Current completion direction
 
-- Restore and verify OpenPlural import through the current import framework.
 - Finish local chats/messages/categories/channels already represented in the
   data model and product decisions.
 - Finish Markdown revision/history/restore flows for notes and journals, plus

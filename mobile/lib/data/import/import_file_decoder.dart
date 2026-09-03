@@ -269,7 +269,13 @@ class _BoundedZipOutput extends OutputStream {
 
 bool _looksLikeAvatarAsset(String lowerName, {required String zipFileName}) {
   final lowerZipName = zipFileName.toLowerCase();
-  if (!lowerName.contains('avatar') && !lowerZipName.contains('avatar')) {
+  final isOpenPluralAsset =
+      (lowerZipName.contains('openplural') ||
+          lowerZipName.contains('open-plural')) &&
+      lowerName.startsWith('assets/');
+  if (!lowerName.contains('avatar') &&
+      !lowerZipName.contains('avatar') &&
+      !isOpenPluralAsset) {
     return false;
   }
   return lowerName.endsWith('.png') ||
@@ -309,11 +315,17 @@ int _jsonCandidateScore(String name, String text, int length) {
   if (lowerName.contains('export')) {
     score += 30;
   }
+  if (lowerName.endsWith('openplural.json')) {
+    score += 120;
+  }
   if (lowerName.contains('simply') || lowerName.contains('plural')) {
     score += 20;
   }
   if (compactText.contains('pluris_haven.local_archive')) {
     score += 80;
+  }
+  if (compactText.contains('"openplural_version"')) {
+    score += 90;
   }
   if (compactText.contains('"members"') ||
       compactText.contains('"memberslist"') ||

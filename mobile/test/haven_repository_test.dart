@@ -1689,6 +1689,47 @@ void main() {
     expect(reExported, isNot(contains('"collection": "members"')));
   });
 
+  test('publishes OpenPlural records and dedupes a repeat import', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+
+    final normalized = normalizeImportTextToLocalArchive(
+      source: ImportSource.openPlural,
+      fileName: 'openplural.json',
+      importedAt: DateTime.utc(2026),
+      text: '''
+{"openplural_version":"0.1","members":[{"id":"m1","name":"Iris"}],"front_periods":[{"id":"f1","started_at":"2026-01-01T00:00:00Z","assignments":[{"member_id":"m1"}]}],"extensions":{"sheaf":{"future_data":{"kept":true}}}}
+''',
+    );
+
+    await repository.importLocalArchiveJson(
+      normalized.archiveJson,
+      source: ImportSource.openPlural,
+      fileName: normalized.fileName,
+    );
+    await repository.importLocalArchiveJson(
+      normalized.archiveJson,
+      source: ImportSource.openPlural,
+      fileName: normalized.fileName,
+    );
+
+    expect(await repository.watchMembers().first, hasLength(1));
+    expect(await repository.watchFrontHistory().first, hasLength(1));
+    final records = await database.select(database.importRecords).get();
+    expect(records, hasLength(2));
+    expect(
+      records.map((record) => record.source),
+      everyElement('openplural_file'),
+    );
+    final payloads = await database.select(database.importPayloads).get();
+    expect(
+      payloads.map((payload) => payload.collection),
+      contains('openplural_extensions'),
+    );
+  });
+
   test(
     're-imports Simply Plural front history without foreign key failures',
     () async {

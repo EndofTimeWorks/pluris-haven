@@ -92,8 +92,9 @@ registration ready.
 - **Ampersand:** normalized database-export mapper coverage.
 - **Prism:** source/plan scaffolding exists, but it is not a verified current
   compatibility claim.
-- **OpenPlural:** currently regressed/missing after history rewrite and must be
-  restored before claiming current support.
+- **OpenPlural:** current v0.1 file/archive path has mapper, preview/review,
+  source-ID dedupe, ZIP asset and raw-extension fixture coverage. Obtain and
+  test a real export before making a broad compatibility claim.
 
 Do not claim real-export compatibility merely because a source shape, parser or
 mapper test exists.

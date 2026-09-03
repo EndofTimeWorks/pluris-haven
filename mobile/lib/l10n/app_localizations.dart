@@ -2406,6 +2406,12 @@ abstract class AppLocalizations {
   /// **'PluralSpace'**
   String get importSourcePluralSpace;
 
+  /// No description provided for @importSourceOpenPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenPlural'**
+  String get importSourceOpenPlural;
+
   /// No description provided for @importSourcePrism.
   ///
   /// In en, this message translates to:
@@ -2471,6 +2477,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PluralSpace IDs, normalized names'**
   String get importDedupePluralSpace;
+
+  /// No description provided for @importDedupeOpenPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalized names'**
+  String get importDedupeOpenPlural;
 
   /// No description provided for @importDedupePrism.
   ///
@@ -2580,6 +2592,12 @@ abstract class AppLocalizations {
   /// **'filename looks like a PluralSpace export'**
   String get importReasonPluralSpaceFileName;
 
+  /// No description provided for @importReasonOpenPluralFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like an OpenPlural export'**
+  String get importReasonOpenPluralFileName;
+
   /// No description provided for @importReasonChooseAfterUpload.
   ///
   /// In en, this message translates to:
@@ -2621,6 +2639,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'file contains PluralSpace markers'**
   String get importReasonPluralSpaceMarkers;
+
+  /// No description provided for @importReasonOpenPluralMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains OpenPlural v0.1 markers'**
+  String get importReasonOpenPluralMarkers;
 
   /// No description provided for @importReasonAmbiguousMemberGroupJson.
   ///
@@ -3108,6 +3132,24 @@ abstract class AppLocalizations {
   /// **'Dedupe by source ID, then normalized name.'**
   String get importStepReviewPluralSpaceDetail;
 
+  /// No description provided for @importStepReadOpenPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept an OpenPlural v0.1 JSON export or archive.'**
+  String get importStepReadOpenPluralDetail;
+
+  /// No description provided for @importStepMapOpenPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage members, groups, custom fields, notes, boards, reminders, polls, and fronting history.'**
+  String get importStepMapOpenPluralDetail;
+
+  /// No description provided for @importStepReviewOpenPluralDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.'**
+  String get importStepReviewOpenPluralDetail;
+
   /// No description provided for @importStepChoosePrismTitle.
   ///
   /// In en, this message translates to:
@@ -3227,6 +3269,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown fields are kept in the preview until a mapper exists.'**
   String get importPrivacyPluralSpaceUnknownFields;
+
+  /// No description provided for @importPrivacyOpenPluralIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenPlural and source identifiers are retained for re-import dedupe.'**
+  String get importPrivacyOpenPluralIdentifiers;
+
+  /// No description provided for @importPrivacyOpenPluralExtensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.'**
+  String get importPrivacyOpenPluralExtensions;
 
   /// No description provided for @importPrivacyPrismPassphraseMemoryOnly.
   ///

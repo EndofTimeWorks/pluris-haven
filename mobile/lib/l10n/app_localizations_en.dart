@@ -1306,6 +1306,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importSourcePluralSpace => 'PluralSpace';
 
   @override
+  String get importSourceOpenPlural => 'OpenPlural';
+
+  @override
   String get importSourcePrism => 'Prism';
 
   @override
@@ -1341,6 +1344,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importDedupePluralSpace => 'PluralSpace IDs, normalized names';
+
+  @override
+  String get importDedupeOpenPlural =>
+      'OpenPlural IDs, source IDs, PluralKit IDs, normalized names';
 
   @override
   String get importDedupePrism => 'Prism IDs, normalized names';
@@ -1404,6 +1411,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'filename looks like a PluralSpace export';
 
   @override
+  String get importReasonOpenPluralFileName =>
+      'filename looks like an OpenPlural export';
+
+  @override
   String get importReasonChooseAfterUpload => 'pick a service after upload';
 
   @override
@@ -1429,6 +1440,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importReasonPluralSpaceMarkers =>
       'file contains PluralSpace markers';
+
+  @override
+  String get importReasonOpenPluralMarkers =>
+      'file contains OpenPlural v0.1 markers';
 
   @override
   String get importReasonAmbiguousMemberGroupJson =>
@@ -1709,6 +1724,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dedupe by source ID, then normalized name.';
 
   @override
+  String get importStepReadOpenPluralDetail =>
+      'Accept an OpenPlural v0.1 JSON export or archive.';
+
+  @override
+  String get importStepMapOpenPluralDetail =>
+      'Stage members, groups, custom fields, notes, boards, reminders, polls, and fronting history.';
+
+  @override
+  String get importStepReviewOpenPluralDetail =>
+      'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.';
+
+  @override
   String get importStepChoosePrismTitle => 'Choose .prism file';
 
   @override
@@ -1784,6 +1811,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importPrivacyPluralSpaceUnknownFields =>
       'Unknown fields are kept in the preview until a mapper exists.';
+
+  @override
+  String get importPrivacyOpenPluralIdentifiers =>
+      'OpenPlural and source identifiers are retained for re-import dedupe.';
+
+  @override
+  String get importPrivacyOpenPluralExtensions =>
+      'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.';
 
   @override
   String get importPrivacyPrismPassphraseMemoryOnly =>
