@@ -251,6 +251,7 @@ class _NoteSheetState extends State<NoteSheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   String? _memberId;
+  bool _preview = false;
 
   bool get _isEditing => widget.note != null;
 
@@ -332,14 +333,38 @@ class _NoteSheetState extends State<NoteSheet> {
               },
             ),
             const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('note-body-field'),
-              controller: _bodyController,
-              minLines: 5,
-              maxLines: 8,
-              decoration: InputDecoration(labelText: l10n.noteFieldLabel),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _preview = !_preview),
+                icon: Icon(
+                  _preview ? Icons.edit_outlined : Icons.preview_outlined,
+                ),
+                label: Text(
+                  _preview
+                      ? l10n.markdownEditButton
+                      : l10n.markdownPreviewButton,
+                ),
+              ),
             ),
+            if (_preview)
+              _MarkdownPreview(body: _bodyController.text)
+            else
+              TextField(
+                key: const ValueKey('note-body-field'),
+                controller: _bodyController,
+                minLines: 5,
+                maxLines: 8,
+                decoration: InputDecoration(labelText: l10n.noteFieldLabel),
+              ),
             const SizedBox(height: 14),
+            if (_isEditing)
+              OutlinedButton.icon(
+                onPressed: _showHistory,
+                icon: const Icon(Icons.history_rounded),
+                label: Text(l10n.revisionHistoryButton),
+              ),
+            if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-note-button'),
               onPressed: _save,
@@ -367,5 +392,17 @@ class _NoteSheetState extends State<NoteSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _showHistory() async {
+    final note = widget.note;
+    if (note == null) return;
+    final restored = await showContentRevisionSheet(
+      context,
+      repository: widget.repository,
+      targetType: 'note',
+      targetId: note.id,
+    );
+    if (restored && mounted) Navigator.pop(context);
   }
 }

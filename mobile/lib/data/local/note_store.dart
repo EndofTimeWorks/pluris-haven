@@ -33,11 +33,19 @@ class LocalNoteStore {
     this.database, {
     required this.encryptText,
     required this.decryptText,
+    required this.recordRevision,
   });
 
   final AppDatabase database;
   final EncryptLocalText encryptText;
   final DecryptLocalText decryptText;
+  final Future<void> Function({
+    required String targetType,
+    required String targetId,
+    String? title,
+    required String body,
+  })
+  recordRevision;
 
   Stream<List<NoteSummary>> watch() {
     final query = database.select(database.notes)
@@ -93,6 +101,26 @@ class LocalNoteStore {
     final body = draft.body.trim();
     if (title.isEmpty && body.isEmpty) return;
 
+    final existing =
+        await (database.select(database.notes)..where(
+              (note) =>
+                  note.systemId.equals(localSystemId) & note.id.equals(noteId),
+            ))
+            .getSingleOrNull();
+    if (existing == null) return;
+    final previousTitle =
+        await decryptText(existing.title, 'notes', noteId, 'title') ?? '';
+    final previousBody =
+        await decryptText(existing.body, 'notes', noteId, 'body') ?? '';
+    final resolvedTitle = title.isEmpty ? 'Untitled note' : title;
+    if (previousTitle != resolvedTitle || previousBody != body) {
+      await recordRevision(
+        targetType: 'note',
+        targetId: noteId,
+        title: previousTitle,
+        body: previousBody,
+      );
+    }
     final now = DateTime.now().toUtc();
     await (database.update(database.notes)..where(
           (note) =>
@@ -102,12 +130,7 @@ class LocalNoteStore {
           NotesCompanion(
             memberId: Value(_nullIfBlank(draft.memberId)),
             title: Value(
-              await encryptText(
-                title.isEmpty ? 'Untitled note' : title,
-                'notes',
-                noteId,
-                'title',
-              ),
+              await encryptText(resolvedTitle, 'notes', noteId, 'title'),
             ),
             body: Value(await encryptText(body, 'notes', noteId, 'body')),
             updatedAt: Value(now),

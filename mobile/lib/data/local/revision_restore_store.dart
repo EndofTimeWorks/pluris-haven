@@ -42,6 +42,30 @@ extension LocalHavenRepositoryRevisionRestore on LocalHavenRepository {
           ),
         );
       case 'note':
+        final current = await (database.select(
+          database.notes,
+        )..where((note) => note.id.equals(targetId))).getSingleOrNull();
+        if (current == null) return;
+        final currentTitle =
+            await _decryptLocalText(
+              current.title,
+              'notes',
+              targetId,
+              'title',
+            ) ??
+            '';
+        final currentBody =
+            await _decryptLocalText(current.body, 'notes', targetId, 'body') ??
+            '';
+        if (currentTitle != (revisionTitle ?? '') ||
+            currentBody != revisionBody) {
+          await _recordRevision(
+            targetType: 'note',
+            targetId: targetId,
+            title: currentTitle,
+            body: currentBody,
+          );
+        }
         await (database.update(
           database.notes,
         )..where((n) => n.id.equals(targetId))).write(
@@ -61,6 +85,32 @@ extension LocalHavenRepositoryRevisionRestore on LocalHavenRepository {
           ),
         );
       case 'journal':
+        final current = await (database.select(
+          database.journalEntries,
+        )..where((journal) => journal.id.equals(targetId))).getSingleOrNull();
+        if (current == null) return;
+        final currentTitle = await _decryptLocalText(
+          current.title,
+          'journal_entries',
+          targetId,
+          'title',
+        );
+        final currentBody =
+            await _decryptLocalText(
+              current.body,
+              'journal_entries',
+              targetId,
+              'body',
+            ) ??
+            '';
+        if (currentTitle != revisionTitle || currentBody != revisionBody) {
+          await _recordRevision(
+            targetType: 'journal',
+            targetId: targetId,
+            title: currentTitle,
+            body: currentBody,
+          );
+        }
         await (database.update(
           database.journalEntries,
         )..where((j) => j.id.equals(targetId))).write(

@@ -833,6 +833,93 @@ void main() {
     expect(raw.body, startsWith('ph2:'));
   });
 
+  test(
+    'keeps note revisions for edits and restores without losing the draft',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveNote(
+        const NoteDraft(title: 'First title', body: '# First body'),
+      );
+      final note = (await repository.watchNotes().first).single;
+
+      await repository.updateNote(
+        note.id,
+        const NoteDraft(title: 'Second title', body: '## Second body'),
+      );
+
+      var revisions = await repository.watchRevisions('note', note.id).first;
+      expect(revisions, hasLength(1));
+      expect(revisions.single.title, 'First title');
+      expect(revisions.single.body, '# First body');
+
+      await repository.restoreRevision(revisions.single.id, 'note', note.id);
+
+      final restored = (await repository.watchNotes().first).single;
+      expect(restored.title, 'First title');
+      expect(restored.body, '# First body');
+      revisions = await repository.watchRevisions('note', note.id).first;
+      expect(revisions, hasLength(2));
+      expect(
+        revisions.map((revision) => revision.title),
+        contains('Second title'),
+      );
+    },
+  );
+
+  test(
+    'keeps journal revisions for edits and restores the previous entry',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      final createdAt = DateTime.utc(2026, 9, 3);
+      const entryId = 'journal-history';
+      await repository.saveJournal(
+        JournalEntry(
+          id: entryId,
+          systemId: localSystemId,
+          title: 'Morning',
+          body: 'Initial *entry*',
+          visibility: 'system',
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      await repository.saveJournal(
+        JournalEntry(
+          id: entryId,
+          systemId: localSystemId,
+          title: 'Afternoon',
+          body: 'Changed **entry**',
+          visibility: 'system',
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      var revisions = await repository.watchRevisions('journal', entryId).first;
+      expect(revisions, hasLength(1));
+      expect(revisions.single.title, 'Morning');
+      expect(revisions.single.body, 'Initial *entry*');
+
+      await repository.restoreRevision(revisions.single.id, 'journal', entryId);
+
+      final restored = (await repository.watchJournals().first).single;
+      expect(restored.title, 'Morning');
+      expect(restored.body, 'Initial *entry*');
+      revisions = await repository.watchRevisions('journal', entryId).first;
+      expect(revisions, hasLength(2));
+      expect(
+        revisions.map((revision) => revision.title),
+        contains('Afternoon'),
+      );
+    },
+  );
+
   test('stores edits assigns and deletes privacy buckets', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

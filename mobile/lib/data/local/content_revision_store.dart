@@ -1,13 +1,54 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'local_id.dart';
 import 'local_text_codec.dart';
 
 class LocalContentRevisionStore {
-  LocalContentRevisionStore(this.database, {required this.decryptText});
+  LocalContentRevisionStore(
+    this.database, {
+    required this.encryptText,
+    required this.encryptNullableText,
+    required this.decryptText,
+  });
 
   final AppDatabase database;
+  final EncryptLocalText encryptText;
+  final EncryptNullableLocalText encryptNullableText;
   final DecryptLocalText decryptText;
+
+  Future<void> record({
+    required String targetType,
+    required String targetId,
+    String? title,
+    required String body,
+  }) async {
+    final revisionId = newLocalId('revision');
+    await database
+        .into(database.contentRevisions)
+        .insert(
+          ContentRevisionsCompanion.insert(
+            id: revisionId,
+            targetType: targetType,
+            targetId: targetId,
+            title: Value(
+              await encryptNullableText(
+                title,
+                'content_revisions',
+                revisionId,
+                'title',
+              ),
+            ),
+            body: await encryptText(
+              body,
+              'content_revisions',
+              revisionId,
+              'body',
+            ),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
+  }
 
   Stream<List<ContentRevision>> watch(String targetType, String targetId) {
     final query = database.select(database.contentRevisions)

@@ -4393,6 +4393,60 @@ abstract class AppLocalizations {
   /// **'Save note'**
   String get saveNoteButton;
 
+  /// No description provided for @markdownPreviewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get markdownPreviewButton;
+
+  /// No description provided for @markdownEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get markdownEditButton;
+
+  /// No description provided for @revisionHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get revisionHistoryButton;
+
+  /// No description provided for @revisionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision history'**
+  String get revisionHistoryTitle;
+
+  /// No description provided for @noRevisionsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No earlier revisions yet.'**
+  String get noRevisionsYet;
+
+  /// No description provided for @restoreRevisionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this revision'**
+  String get restoreRevisionButton;
+
+  /// No description provided for @pinRevisionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin revision'**
+  String get pinRevisionTooltip;
+
+  /// No description provided for @unpinRevisionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin revision'**
+  String get unpinRevisionTooltip;
+
+  /// No description provided for @revisionRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision restored.'**
+  String get revisionRestored;
+
   /// No description provided for @pollsTitle.
   ///
   /// In en, this message translates to:

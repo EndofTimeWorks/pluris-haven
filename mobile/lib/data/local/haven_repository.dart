@@ -120,11 +120,13 @@ class LocalHavenRepository implements HavenRepository {
       encryptText: _encryptLocalText,
       encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
+      recordRevision: _recordRevision,
     );
     _notes = LocalNoteStore(
       database,
       encryptText: _encryptLocalText,
       decryptText: _decryptLocalText,
+      recordRevision: _recordRevision,
     );
     _messages = LocalMessageStore(
       database,
@@ -196,6 +198,8 @@ class LocalHavenRepository implements HavenRepository {
     );
     _revisions = LocalContentRevisionStore(
       database,
+      encryptText: _encryptLocalText,
+      encryptNullableText: _encryptNullableLocalText,
       decryptText: _decryptLocalText,
     );
   }
@@ -223,6 +227,18 @@ class LocalHavenRepository implements HavenRepository {
   _memberDecryptCache = {};
   final Map<(String, String, String), ({String? ciphertext, String? plaintext})>
   _localTextDecryptCache = {};
+
+  Future<void> _recordRevision({
+    required String targetType,
+    required String targetId,
+    String? title,
+    required String body,
+  }) => _revisions.record(
+    targetType: targetType,
+    targetId: targetId,
+    title: title,
+    body: body,
+  );
 
   Future<void> ensureLocalSystem() => _ensureLocalSystem();
 

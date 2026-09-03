@@ -9,12 +9,20 @@ class LocalJournalStore {
     required this.encryptText,
     required this.encryptNullableText,
     required this.decryptText,
+    required this.recordRevision,
   });
 
   final AppDatabase database;
   final EncryptLocalText encryptText;
   final EncryptNullableLocalText encryptNullableText;
   final DecryptLocalText decryptText;
+  final Future<void> Function({
+    required String targetType,
+    required String targetId,
+    String? title,
+    required String body,
+  })
+  recordRevision;
 
   Stream<List<JournalEntry>> watch({String? memberId}) {
     final query = database.select(database.journalEntries)
@@ -47,6 +55,33 @@ class LocalJournalStore {
   }
 
   Future<void> save(JournalEntry entry) async {
+    final existing = await (database.select(
+      database.journalEntries,
+    )..where((row) => row.id.equals(entry.id))).getSingleOrNull();
+    if (existing != null) {
+      final previousTitle = await decryptText(
+        existing.title,
+        'journal_entries',
+        entry.id,
+        'title',
+      );
+      final previousBody =
+          await decryptText(
+            existing.body,
+            'journal_entries',
+            entry.id,
+            'body',
+          ) ??
+          '';
+      if (previousTitle != entry.title || previousBody != entry.body) {
+        await recordRevision(
+          targetType: 'journal',
+          targetId: entry.id,
+          title: previousTitle,
+          body: previousBody,
+        );
+      }
+    }
     final now = DateTime.now().toUtc();
     await database
         .into(database.journalEntries)

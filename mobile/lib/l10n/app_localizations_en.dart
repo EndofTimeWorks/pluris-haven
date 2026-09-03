@@ -2509,6 +2509,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveNoteButton => 'Save note';
 
   @override
+  String get markdownPreviewButton => 'Preview';
+
+  @override
+  String get markdownEditButton => 'Edit';
+
+  @override
+  String get revisionHistoryButton => 'History';
+
+  @override
+  String get revisionHistoryTitle => 'Revision history';
+
+  @override
+  String get noRevisionsYet => 'No earlier revisions yet.';
+
+  @override
+  String get restoreRevisionButton => 'Restore this revision';
+
+  @override
+  String get pinRevisionTooltip => 'Pin revision';
+
+  @override
+  String get unpinRevisionTooltip => 'Unpin revision';
+
+  @override
+  String get revisionRestored => 'Revision restored.';
+
+  @override
   String get pollsTitle => 'Polls';
 
   @override

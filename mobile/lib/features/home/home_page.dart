@@ -20,7 +20,7 @@ import '../../data/import/member_dedupe.dart';
 import '../../data/import/pluralkit_live_client.dart';
 import '../../data/backup/repository_backup.dart';
 import '../../data/local/app_database.dart'
-    show JournalEntry, NamedFront, Tag, localSystemId;
+    show ContentRevision, JournalEntry, NamedFront, Tag, localSystemId;
 import '../../data/local/custom_field_store.dart'
     show maximumCustomFieldConfigurationCharacters;
 import '../../data/notifications/notification_service.dart';

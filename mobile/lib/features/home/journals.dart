@@ -206,6 +206,7 @@ class JournalEntrySheet extends StatefulWidget {
 class _JournalEntrySheetState extends State<JournalEntrySheet> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+  bool _preview = false;
 
   bool get _isEditing => widget.entry != null;
 
@@ -256,15 +257,39 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               decoration: InputDecoration(labelText: l10n.titleFieldLabel),
             ),
             const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('journal-body-field'),
-              controller: _bodyController,
-              minLines: 8,
-              maxLines: 12,
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(labelText: l10n.entryFieldLabel),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _preview = !_preview),
+                icon: Icon(
+                  _preview ? Icons.edit_outlined : Icons.preview_outlined,
+                ),
+                label: Text(
+                  _preview
+                      ? l10n.markdownEditButton
+                      : l10n.markdownPreviewButton,
+                ),
+              ),
             ),
+            if (_preview)
+              _MarkdownPreview(body: _bodyController.text)
+            else
+              TextField(
+                key: const ValueKey('journal-body-field'),
+                controller: _bodyController,
+                minLines: 8,
+                maxLines: 12,
+                textInputAction: TextInputAction.newline,
+                decoration: InputDecoration(labelText: l10n.entryFieldLabel),
+              ),
             const SizedBox(height: 14),
+            if (_isEditing)
+              OutlinedButton.icon(
+                onPressed: _showHistory,
+                icon: const Icon(Icons.history_rounded),
+                label: Text(l10n.revisionHistoryButton),
+              ),
+            if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-journal-entry-button'),
               onPressed: _save,
@@ -303,5 +328,161 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _showHistory() async {
+    final entry = widget.entry;
+    if (entry == null) return;
+    final restored = await showContentRevisionSheet(
+      context,
+      repository: widget.repository,
+      targetType: 'journal',
+      targetId: entry.id,
+    );
+    if (restored && mounted) Navigator.pop(context);
+  }
+}
+
+class _MarkdownPreview extends StatelessWidget {
+  const _MarkdownPreview({required this.body});
+
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: MarkdownBody(
+          data: body,
+          selectable: true,
+          imageBuilder: (uri, title, alt) => Semantics(
+            label: l10n.markdownImageBlockedLabel,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.hide_image_outlined, size: 16),
+                if (alt != null && alt.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Flexible(child: Text(alt)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<bool> showContentRevisionSheet(
+  BuildContext context, {
+  required HavenRepository repository,
+  required String targetType,
+  required String targetId,
+}) async {
+  return await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        builder: (context) => _ContentRevisionSheet(
+          repository: repository,
+          targetType: targetType,
+          targetId: targetId,
+        ),
+      ) ??
+      false;
+}
+
+class _ContentRevisionSheet extends StatelessWidget {
+  const _ContentRevisionSheet({
+    required this.repository,
+    required this.targetType,
+    required this.targetId,
+  });
+
+  final HavenRepository repository;
+  final String targetType;
+  final String targetId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: StreamBuilder<List<ContentRevision>>(
+        stream: repository.watchRevisions(targetType, targetId),
+        initialData: const [],
+        builder: (context, snapshot) {
+          final revisions = snapshot.data ?? const <ContentRevision>[];
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+            children: [
+              Text(
+                l10n.revisionHistoryTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (revisions.isEmpty)
+                Text(l10n.noRevisionsYet)
+              else
+                for (final revision in revisions) ...[
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      revision.title?.trim().isNotEmpty == true
+                          ? revision.title!
+                          : l10n.untitledEntry,
+                    ),
+                    subtitle: Text(_shortDateTime(revision.createdAt)),
+                    trailing: IconButton(
+                      tooltip: revision.pinnedAt == null
+                          ? l10n.pinRevisionTooltip
+                          : l10n.unpinRevisionTooltip,
+                      onPressed: () => revision.pinnedAt == null
+                          ? repository.pinRevision(revision.id)
+                          : repository.unpinRevision(revision.id),
+                      icon: Icon(
+                        revision.pinnedAt == null
+                            ? Icons.push_pin_outlined
+                            : Icons.push_pin,
+                      ),
+                    ),
+                  ),
+                  _MarkdownPreview(body: revision.body),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await repository.restoreRevision(
+                        revision.id,
+                        targetType,
+                        targetId,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.revisionRestored)),
+                        );
+                        Navigator.pop(context, true);
+                      }
+                    },
+                    icon: const Icon(Icons.restore_rounded),
+                    label: Text(l10n.restoreRevisionButton),
+                  ),
+                  const Divider(height: 28),
+                ],
+            ],
+          );
+        },
+      ),
+    );
   }
 }
