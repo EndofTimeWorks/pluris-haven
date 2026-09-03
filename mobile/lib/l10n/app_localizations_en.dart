@@ -4054,8 +4054,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get disabledStatusLabel => 'disabled';
 
   @override
+  String get enabledStatusLabel => 'enabled';
+
+  @override
   String get tokensDescription =>
-      'There is no local API token surface yet. Imports do not need a Pluris Haven token.';
+      'Manage local API access. Import tokens are entered during the relevant import and are not stored here.';
 
   @override
   String get tokenStatusTitle => 'Token status';
@@ -4065,6 +4068,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyStatusLabel => 'empty';
+
+  @override
+  String get localApiUnavailable =>
+      'Local API controls are unavailable until this device\'s encrypted local archive is ready.';
+
+  @override
+  String get localApiDescription =>
+      'The local API listens only on this device\'s loopback address. Create a separate, revocable client token for each integration.';
+
+  @override
+  String get localApiEnableTitle => 'Enable local API';
+
+  @override
+  String get localApiLoopbackOnly =>
+      'Local device only. It is not exposed to your network.';
+
+  @override
+  String localApiListeningAt(String origin) {
+    return 'Listening at $origin';
+  }
+
+  @override
+  String localApiPortUnavailable(String origin) {
+    return 'The saved address $origin is unavailable. Another app may be using its port.';
+  }
+
+  @override
+  String get localApiStartFailed =>
+      'The local API could not start on this device.';
+
+  @override
+  String get localApiClientsTitle => 'Local API clients';
+
+  @override
+  String get localApiCreateClient => 'Create client';
+
+  @override
+  String get localApiCreateClientSubtitle =>
+      'Choose a name and only the data it needs';
+
+  @override
+  String get localApiClientName => 'Client name';
+
+  @override
+  String get localApiClientTokenTitle => 'Copy this client token now';
+
+  @override
+  String get localApiClientRevoked => 'revoked';
+
+  @override
+  String get localApiRevokeClient => 'Revoke client';
 
   @override
   String get pluralKitLiveImportTitle => 'PluralKit live import';

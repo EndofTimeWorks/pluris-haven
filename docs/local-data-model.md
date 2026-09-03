@@ -63,3 +63,11 @@ General bidirectional content sync, sharing grants, remote messaging and
 federation are not implemented. None of them is required for local use. The
 long-term sync model is transport-independent rather than inherently tied to the
 official server.
+
+## Optional local API
+
+The native local API is separate from the optional hosted server. It is disabled
+by default, runs only while the encrypted archive is available and App Lock is
+unlocked, and exposes stable repository summaries rather than raw SQLite data.
+Its client grants are encrypted local preferences; raw client tokens are never
+stored. See [`local-api.md`](local-api.md) for the v1 contract and scope model.

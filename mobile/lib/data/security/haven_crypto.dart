@@ -122,6 +122,17 @@ class HavenCrypto {
     );
     return mac.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
+
+  /// Returns an exact, keyed fingerprint for a machine-generated credential.
+  /// Unlike [blindIndex], credentials are case-sensitive and must not be
+  /// normalized before comparison.
+  Future<String> credentialFingerprint(String credential) async {
+    final mac = await _mac.calculateMac(
+      utf8.encode(credential),
+      secretKey: await _blindIndexKey,
+    );
+    return base64UrlEncode(mac.bytes).replaceAll('=', '');
+  }
 }
 
 Future<SecretKey> _deriveLegacySubkey(SecretKey masterKey, String label) async {

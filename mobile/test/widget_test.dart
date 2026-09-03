@@ -160,6 +160,45 @@ void main() {
     );
   });
 
+  testWidgets('reports unlocked state only after the lock gate is ready', (
+    tester,
+  ) async {
+    final states = <bool>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppLockGate(
+          enabled: false,
+          ready: false,
+          onUnlockedChanged: states.add,
+          child: const Text('Protected content'),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(states, [false]);
+    expect(find.text('Protected content'), findsNothing);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppLockGate(
+          enabled: false,
+          ready: true,
+          onUnlockedChanged: states.add,
+          child: const Text('Protected content'),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(states.last, isTrue);
+    expect(find.text('Protected content'), findsOneWidget);
+  });
+
   testWidgets('offers a report action for legitimate rejected imports', (
     tester,
   ) async {

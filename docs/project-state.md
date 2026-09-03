@@ -69,15 +69,19 @@ from implementation; it is not an alpha feature checklist.
 - **DECIDED:** Hosted accounts are 13+. Rooted/jailbroken devices warn, not
   block. Low-cognitive-load mode remains wanted. CLI/TUI is **SUPERSEDED** and
   dropped.
-- **DECIDED:** A scoped, consented, revocable local API is a near-term priority;
-  it must not grant ambient decrypted-data access. It is not implemented yet.
+- **IMPLEMENTED / VERIFIED (local):** The first native scoped local API is
+  consented, disabled by default, loopback-only and bound to the unlocked app.
+  Its persisted endpoint and serialized lifecycle do not silently rotate or
+  outlive a later lock. It has per-client encrypted grants, revocation, narrow
+  read scopes and deterministic errors; it intentionally exposes no writes or
+  raw vault access.
 
 ## Current completion priorities
 
-The next completion work includes OpenPlural restoration, local chats/messages,
-note/journal/message revision product flows, the near-term local API, advanced
-reminders and polls, System Safety/front-audit gaps, customization/accessibility
-gaps, Play closed testing, release automation hardening and alpha readiness.
+The next completion work includes local chats/messages, note/journal/message
+revision product flows, advanced reminders and polls, System Safety/front-audit
+gaps, customization/accessibility gaps, Play closed testing, release automation
+hardening and alpha readiness.
 
 Full federation/portable-identity protocol work, desktop/private-web/watch
 clients, plugins, authenticated PluralSpace API import and other explicitly

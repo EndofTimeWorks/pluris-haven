@@ -12,6 +12,7 @@ class AppLockGate extends StatefulWidget {
     required this.enabled,
     this.ready = true,
     required this.child,
+    this.onUnlockedChanged,
     this.availability = AppLock.availability,
     this.authenticate = AppLock.authenticate,
   });
@@ -19,6 +20,7 @@ class AppLockGate extends StatefulWidget {
   final bool enabled;
   final bool ready;
   final Widget child;
+  final ValueChanged<bool>? onUnlockedChanged;
   final Future<AppLockAvailability> Function() availability;
   final Future<AppLockAuthenticationResult> Function(String reason)
   authenticate;
@@ -39,6 +41,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (widget.ready && widget.enabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryUnlock());
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportUnlockState());
   }
 
   @override
@@ -46,11 +49,14 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     super.didUpdateWidget(oldWidget);
     if (!widget.ready) {
       setState(() => _unlocked = false);
+      _reportUnlockState();
     } else if (widget.enabled && (!oldWidget.enabled || !oldWidget.ready)) {
       setState(() => _unlocked = false);
+      _reportUnlockState();
       WidgetsBinding.instance.addPostFrameCallback((_) => _tryUnlock());
     } else if (!widget.enabled && (oldWidget.enabled || !oldWidget.ready)) {
       setState(() => _unlocked = true);
+      _reportUnlockState();
     }
   }
 
@@ -69,6 +75,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
         !_authenticating &&
         _unlocked) {
       setState(() => _unlocked = false);
+      _reportUnlockState();
     } else if (state == AppLifecycleState.resumed &&
         !_unlocked &&
         !_authenticating) {
@@ -103,7 +110,10 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
         _unlocked = true;
       }
     });
+    _reportUnlockState();
   }
+
+  void _reportUnlockState() => widget.onUnlockedChanged?.call(_unlocked);
 
   @override
   Widget build(BuildContext context) {

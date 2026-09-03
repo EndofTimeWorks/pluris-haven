@@ -54,8 +54,9 @@ broken:
 - Finish exposed local chat/message/category/channel product paths.
 - Finish note/journal/message revision/history/restore behaviour that is already
   decided.
-- Implement the scoped/revocable near-term local API before exposing it as an
-  alpha feature.
+- Keep the narrow scoped/revocable local API contract, client lifecycle and
+  device/App Lock behaviour verified as it expands; do not expose raw vault
+  access or sensitive writes without explicit scope and safety design.
 - Finish the already-decided advanced reminder, poll, front-audit and System
   Safety gaps that are exposed in the alpha UI.
 - Reconcile customization, terminology, low-cognitive-load and accessibility

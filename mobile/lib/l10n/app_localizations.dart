@@ -7032,10 +7032,16 @@ abstract class AppLocalizations {
   /// **'disabled'**
   String get disabledStatusLabel;
 
+  /// No description provided for @enabledStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'enabled'**
+  String get enabledStatusLabel;
+
   /// No description provided for @tokensDescription.
   ///
   /// In en, this message translates to:
-  /// **'There is no local API token surface yet. Imports do not need a Pluris Haven token.'**
+  /// **'Manage local API access. Import tokens are entered during the relevant import and are not stored here.'**
   String get tokensDescription;
 
   /// No description provided for @tokenStatusTitle.
@@ -7055,6 +7061,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'empty'**
   String get emptyStatusLabel;
+
+  /// No description provided for @localApiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Local API controls are unavailable until this device\'s encrypted local archive is ready.'**
+  String get localApiUnavailable;
+
+  /// No description provided for @localApiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The local API listens only on this device\'s loopback address. Create a separate, revocable client token for each integration.'**
+  String get localApiDescription;
+
+  /// No description provided for @localApiEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable local API'**
+  String get localApiEnableTitle;
+
+  /// No description provided for @localApiLoopbackOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Local device only. It is not exposed to your network.'**
+  String get localApiLoopbackOnly;
+
+  /// No description provided for @localApiListeningAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening at {origin}'**
+  String localApiListeningAt(String origin);
+
+  /// No description provided for @localApiPortUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved address {origin} is unavailable. Another app may be using its port.'**
+  String localApiPortUnavailable(String origin);
+
+  /// No description provided for @localApiStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The local API could not start on this device.'**
+  String get localApiStartFailed;
+
+  /// No description provided for @localApiClientsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local API clients'**
+  String get localApiClientsTitle;
+
+  /// No description provided for @localApiCreateClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Create client'**
+  String get localApiCreateClient;
+
+  /// No description provided for @localApiCreateClientSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a name and only the data it needs'**
+  String get localApiCreateClientSubtitle;
+
+  /// No description provided for @localApiClientName.
+  ///
+  /// In en, this message translates to:
+  /// **'Client name'**
+  String get localApiClientName;
+
+  /// No description provided for @localApiClientTokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this client token now'**
+  String get localApiClientTokenTitle;
+
+  /// No description provided for @localApiClientRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'revoked'**
+  String get localApiClientRevoked;
+
+  /// No description provided for @localApiRevokeClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke client'**
+  String get localApiRevokeClient;
 
   /// No description provided for @pluralKitLiveImportTitle.
   ///

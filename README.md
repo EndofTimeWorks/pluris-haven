@@ -37,12 +37,14 @@ for local use.
   Actions
 - Android AAB/APK release artifacts and Play internal-testing automation after a
   canonical GitHub release
+- an optional native loopback local API with explicit per-client read scopes and
+  revocation; see `docs/local-api.md`
 
-The local API, complete chat/revision product surfaces, Play closed alpha
-testing, public registration, federation, browser access to private data, and
-signed iOS/TestFlight distribution are not ready yet. OpenPlural compatibility
-is currently limited to the verified v0.1 file/archive shape; real-export
-evidence is still needed before making a broader claim.
+Complete chat/revision product surfaces, Play closed alpha testing, public
+registration, federation, browser access to private data, and signed
+iOS/TestFlight distribution are not ready yet. OpenPlural compatibility is
+currently limited to the verified v0.1 file/archive shape; real-export evidence
+is still needed before making a broader claim.
 
 ## Docs
 
@@ -53,6 +55,7 @@ evidence is still needed before making a broader claim.
 - `docs/mobile-accessibility.md` - mobile accessibility rules and device checks
 - `docs/product-goals.md` - product boundaries and inclusive language rules
 - `docs/local-data-model.md` - local storage, encryption, and archive boundaries
+- `docs/local-api.md` - scoped native loopback integration contract
 - `docs/distribution.md` - install channels, Play/GitHub distribution, and
   funding metadata
 

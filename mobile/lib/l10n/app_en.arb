@@ -1513,10 +1513,35 @@
   "membersTitle": "Members",
   "nameRequiredError": "Name is required.",
   "disabledStatusLabel": "disabled",
-  "tokensDescription": "There is no local API token surface yet. Imports do not need a Pluris Haven token.",
+  "enabledStatusLabel": "enabled",
+  "tokensDescription": "Manage local API access. Import tokens are entered during the relevant import and are not stored here.",
   "tokenStatusTitle": "Token status",
   "localTokenStoreTitle": "Local token store",
   "emptyStatusLabel": "empty",
+  "localApiUnavailable": "Local API controls are unavailable until this device's encrypted local archive is ready.",
+  "localApiDescription": "The local API listens only on this device's loopback address. Create a separate, revocable client token for each integration.",
+  "localApiEnableTitle": "Enable local API",
+  "localApiLoopbackOnly": "Local device only. It is not exposed to your network.",
+  "localApiListeningAt": "Listening at {origin}",
+  "@localApiListeningAt": {
+    "placeholders": {
+      "origin": { "type": "String" }
+    }
+  },
+  "localApiPortUnavailable": "The saved address {origin} is unavailable. Another app may be using its port.",
+  "@localApiPortUnavailable": {
+    "placeholders": {
+      "origin": { "type": "String" }
+    }
+  },
+  "localApiStartFailed": "The local API could not start on this device.",
+  "localApiClientsTitle": "Local API clients",
+  "localApiCreateClient": "Create client",
+  "localApiCreateClientSubtitle": "Choose a name and only the data it needs",
+  "localApiClientName": "Client name",
+  "localApiClientTokenTitle": "Copy this client token now",
+  "localApiClientRevoked": "revoked",
+  "localApiRevokeClient": "Revoke client",
   "pluralKitLiveImportTitle": "PluralKit live import",
   "pasteTokenDuringImportSubtitle": "paste a token during import",
   "syncTokensTitle": "Sync tokens",

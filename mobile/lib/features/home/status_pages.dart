@@ -297,54 +297,300 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
   }
 }
 
-class LocalTokensPage extends StatelessWidget {
-  const LocalTokensPage({super.key, required this.onSelect});
+class LocalTokensPage extends StatefulWidget {
+  const LocalTokensPage({super.key, required this.onSelect, this.controller});
 
   final ValueChanged<SpSection> onSelect;
+  final LocalApiController? controller;
+
+  @override
+  State<LocalTokensPage> createState() => _LocalTokensPageState();
+}
+
+class _LocalTokensPageState extends State<LocalTokensPage> {
+  Future<_LocalApiPageData>? _data;
+  var _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
+    final controller = widget.controller;
+    _data = controller == null
+        ? null
+        : Future.wait([controller.status(), controller.listClients()]).then(
+            (values) => _LocalApiPageData(
+              values[0] as LocalApiStatus,
+              values[1] as List<LocalApiClient>,
+            ),
+          );
+  }
+
+  Future<void> _setEnabled(bool enabled) async {
+    final controller = widget.controller;
+    if (controller == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      if (enabled) {
+        await controller.enable();
+      } else {
+        await controller.disable();
+      }
+      if (mounted) setState(_refresh);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).localApiStartFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _createClient() async {
+    final controller = widget.controller;
+    if (controller == null || _busy) return;
+    final credential = await showDialog<LocalApiClientCredential>(
+      context: context,
+      builder: (context) => _LocalApiClientDialog(controller: controller),
+    );
+    if (credential == null || !mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).localApiClientTokenTitle),
+        content: SelectableText(credential.token),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await SensitiveClipboard.copy(credential.token);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(AppLocalizations.of(context).copyReportButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+          ),
+        ],
+      ),
+    );
+    if (mounted) setState(_refresh);
+  }
+
+  Future<void> _revokeClient(LocalApiClient client) async {
+    final controller = widget.controller;
+    if (controller == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await controller.revokeClient(client.id);
+      if (mounted) setState(_refresh);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    return SpPage(
-      children: [
-        SpCard(
-          outlined: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final controller = widget.controller;
+    if (controller == null) {
+      return SpPage(
+        children: [
+          SpEmptyState(
+            title: l10n.navigationTokens,
+            body: l10n.localApiUnavailable,
+          ),
+        ],
+      );
+    }
+    return FutureBuilder<_LocalApiPageData>(
+      future: _data,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) {
+          return const SpPage(
             children: [
-              SpSectionHeader(
-                title: l10n.navigationTokens,
-                trailing: StatusPill(text: l10n.disabledStatusLabel),
-              ),
-              SizedBox(height: 8),
-              Text(
-                l10n.tokensDescription,
-                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        SpSettingsGroup(
-          title: l10n.tokenStatusTitle,
-          rows: [
-            SpSettingsRow(
-              l10n.localTokenStoreTitle,
-              l10n.emptyStatusLabel,
-              interactive: false,
+          );
+        }
+        final status = data.status;
+        final scheme = Theme.of(context).colorScheme;
+        return SpPage(
+          children: [
+            SpCard(
+              outlined: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SpSectionHeader(
+                    title: l10n.navigationTokens,
+                    trailing: StatusPill(
+                      text: status.enabled
+                          ? l10n.enabledStatusLabel
+                          : l10n.disabledStatusLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.localApiDescription,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.localApiEnableTitle),
+                    subtitle: Text(
+                      status.isListening && status.origin != null
+                          ? l10n.localApiListeningAt(status.origin.toString())
+                          : status.enabled && status.origin != null
+                          ? l10n.localApiPortUnavailable(
+                              status.origin.toString(),
+                            )
+                          : l10n.localApiLoopbackOnly,
+                    ),
+                    value: status.enabled,
+                    onChanged: _busy ? null : _setEnabled,
+                  ),
+                ],
+              ),
             ),
-            SpSettingsRow(
-              l10n.pluralKitLiveImportTitle,
-              l10n.pasteTokenDuringImportSubtitle,
-              onTap: () => onSelect(SpSection.importExport),
-            ),
-            SpSettingsRow(
-              l10n.syncTokensTitle,
-              l10n.requiresSyncSetupSubtitle,
-              onTap: () => onSelect(SpSection.sync),
+            const SizedBox(height: 12),
+            SpSettingsGroup(
+              title: l10n.localApiClientsTitle,
+              rows: [
+                SpSettingsRow(
+                  l10n.localApiCreateClient,
+                  l10n.localApiCreateClientSubtitle,
+                  onTap: status.enabled && !_busy ? _createClient : null,
+                ),
+                for (final client in data.clients)
+                  SpSettingsRow(
+                    client.label,
+                    client.isRevoked
+                        ? l10n.localApiClientRevoked
+                        : client.scopes.map((scope) => scope.value).join(', '),
+                    trailing: client.isRevoked
+                        ? null
+                        : IconButton(
+                            tooltip: l10n.localApiRevokeClient,
+                            icon: const Icon(Icons.block_outlined),
+                            onPressed: _busy
+                                ? null
+                                : () => _revokeClient(client),
+                          ),
+                    interactive: false,
+                  ),
+              ],
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _LocalApiPageData {
+  const _LocalApiPageData(this.status, this.clients);
+
+  final LocalApiStatus status;
+  final List<LocalApiClient> clients;
+}
+
+class _LocalApiClientDialog extends StatefulWidget {
+  const _LocalApiClientDialog({required this.controller});
+
+  final LocalApiController controller;
+
+  @override
+  State<_LocalApiClientDialog> createState() => _LocalApiClientDialogState();
+}
+
+class _LocalApiClientDialogState extends State<_LocalApiClientDialog> {
+  final _label = TextEditingController();
+  final _scopes = <LocalApiScope>{};
+  var _submitting = false;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    try {
+      final credential = await widget.controller.createClient(
+        label: _label.text,
+        scopes: _scopes,
+      );
+      if (mounted) Navigator.pop(context, credential);
+    } on FormatException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.localApiCreateClient),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _label,
+              autofocus: true,
+              decoration: InputDecoration(labelText: l10n.localApiClientName),
+            ),
+            for (final scope in LocalApiScope.values)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _scopes.contains(scope),
+                title: Text(scope.value),
+                onChanged: _submitting
+                    ? null
+                    : (selected) => setState(() {
+                        if (selected ?? false) {
+                          _scopes.add(scope);
+                        } else {
+                          _scopes.remove(scope);
+                        }
+                      }),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: Text(l10n.localApiCreateClient),
         ),
       ],
     );

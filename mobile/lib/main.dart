@@ -8,6 +8,7 @@ import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/supported_language.dart';
+import 'data/local_api/local_api_controller.dart';
 import 'data/notifications/notification_service.dart';
 import 'data/security/haven_crypto.dart';
 import 'data/security/master_key_store.dart';
@@ -39,6 +40,7 @@ class _BootstrapApp extends StatefulWidget {
 class _BootstrapAppState extends State<_BootstrapApp> {
   LocalHavenRepository? _repository;
   ServerAccountController? _serverAccount;
+  LocalApiController? _localApi;
   var _missingMasterKey = false;
 
   @override
@@ -65,16 +67,38 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     await repository.migrateMemberNamesToEncryption();
     await repository.migrateBlindIndexesToUnicodeNormalization();
     final serverAccount = ServerAccountController();
+    final localApi = LocalApiController(repository);
     appDebugLog('Local repository ready');
 
     if (!mounted) return;
     setState(() {
       _repository = repository;
       _serverAccount = serverAccount;
+      _localApi = localApi;
     });
     unawaited(_completeStartup());
     unawaited(repository.repairRemoteAvatars());
     unawaited(serverAccount.initialize());
+  }
+
+  Future<void> _updateLocalApiAccess(bool unlocked) async {
+    final localApi = _localApi;
+    if (localApi == null) return;
+    try {
+      await localApi.setAccessAllowed(unlocked);
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Local API setup unavailable',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_localApi?.close() ?? Future<void>.value());
+    super.dispose();
   }
 
   @override
@@ -85,6 +109,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return PlurisHavenApp(
         repository: repository,
         serverAccount: _serverAccount,
+        localApi: _localApi,
+        onLocalApiAccessChanged: _updateLocalApiAccess,
       );
     }
     return const MaterialApp(
@@ -157,12 +183,16 @@ class PlurisHavenApp extends StatelessWidget {
     super.key,
     required this.repository,
     this.serverAccount,
+    this.localApi,
+    this.onLocalApiAccessChanged,
     this.appLockAvailability = AppLock.availability,
     this.appLockAuthenticate = AppLock.authenticate,
   });
 
   final HavenRepository repository;
   final ServerAccountController? serverAccount;
+  final LocalApiController? localApi;
+  final ValueChanged<bool>? onLocalApiAccessChanged;
   final Future<AppLockAvailability> Function() appLockAvailability;
   final Future<AppLockAuthenticationResult> Function(String reason)
   appLockAuthenticate;
@@ -231,6 +261,7 @@ class PlurisHavenApp extends StatelessWidget {
           ready: customizationLoaded,
           availability: appLockAvailability,
           authenticate: appLockAuthenticate,
+          onUnlockedChanged: onLocalApiAccessChanged,
           child: MediaQuery(
             data: mediaQuery.copyWith(
               accessibleNavigation:
@@ -248,7 +279,11 @@ class PlurisHavenApp extends StatelessWidget {
           ),
         );
       },
-      home: HomePage(repository: repository, serverAccount: serverAccount),
+      home: HomePage(
+        repository: repository,
+        serverAccount: serverAccount,
+        localApi: localApi,
+      ),
     );
   }
 

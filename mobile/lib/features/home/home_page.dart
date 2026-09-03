@@ -27,6 +27,7 @@ import '../../data/notifications/notification_service.dart';
 import '../../data/local/haven_repository.dart';
 import '../../data/local/local_id.dart';
 import '../../data/local/supported_language.dart';
+import '../../data/local_api/local_api_controller.dart';
 import '../../data/security/archive_encryption.dart';
 import '../../data/server/server_account_controller.dart';
 import '../../data/server/server_api.dart' show ServerBackupSnapshot;
@@ -120,10 +121,16 @@ enum SpSection {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.repository, this.serverAccount});
+  const HomePage({
+    super.key,
+    required this.repository,
+    this.serverAccount,
+    this.localApi,
+  });
 
   final HavenRepository repository;
   final ServerAccountController? serverAccount;
+  final LocalApiController? localApi;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -469,7 +476,10 @@ class _HomePageState extends State<HomePage> {
           onSelect: _selectSection,
         );
       case SpSection.tokens:
-        return LocalTokensPage(onSelect: _selectSection);
+        return LocalTokensPage(
+          onSelect: _selectSection,
+          controller: widget.localApi,
+        );
       case SpSection.userReport:
         return UserReportPage(snapshot: home, onSelect: _selectSection);
       case SpSection.notificationHistory:
