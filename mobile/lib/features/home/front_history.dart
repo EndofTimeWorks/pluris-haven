@@ -463,6 +463,16 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
+              onPressed: () => showFrontAuditSheet(
+                context,
+                repository: widget.repository,
+                frontId: widget.entry.id,
+              ),
+              icon: const Icon(Icons.history_rounded),
+              label: Text(l10n.frontAuditHistoryButton),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
                 showFrontHistoryEditor(
@@ -495,6 +505,55 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
       ),
     );
   }
+}
+
+void showFrontAuditSheet(
+  BuildContext context, {
+  required HavenRepository repository,
+  required String frontId,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: StreamBuilder<List<FrontAuditEvent>>(
+        stream: repository.watchFrontAuditEvents(frontId),
+        initialData: const [],
+        builder: (context, snapshot) {
+          final events = snapshot.data ?? const <FrontAuditEvent>[];
+          final l10n = AppLocalizations.of(context);
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+            children: [
+              Text(
+                l10n.frontAuditHistoryTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (events.isEmpty)
+                Text(l10n.noFrontAuditEvents)
+              else
+                for (final event in events)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_shortDateTime(event.createdAt)),
+                    subtitle: Text(
+                      '${event.beforeSnapshot ?? '{}'}\n→ ${event.afterSnapshot ?? '{}'}',
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }
 
 void showFrontHistoryEditor(

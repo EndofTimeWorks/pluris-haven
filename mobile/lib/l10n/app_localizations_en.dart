@@ -2525,6 +2525,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveNoteButton => 'Save note';
 
   @override
+  String get frontAuditHistoryButton => 'Change history';
+
+  @override
+  String get frontAuditHistoryTitle => 'Front change history';
+
+  @override
+  String get noFrontAuditEvents => 'No recorded changes yet.';
+
+  @override
   String get markdownPreviewButton => 'Preview';
 
   @override

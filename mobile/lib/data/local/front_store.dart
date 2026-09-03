@@ -204,6 +204,8 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     String frontId,
     String? statusNote,
   ) async {
+    final before = await _frontSnapshot(frontId);
+    if (before == null) return;
     await (database.update(database.frontSessions)..where(
           (front) =>
               front.systemId.equals(localSystemId) & front.id.equals(frontId),
@@ -221,6 +223,8 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+    final after = await _frontSnapshot(frontId);
+    if (after != null) await _frontRecordAudit(frontId, before, after);
   }
 
   Future<void> _frontSaveFrontHistoryEntry(FrontHistoryDraft draft) async {
@@ -258,6 +262,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
       throw const FormatException('Choose members or enter a front label.');
     }
     await database.transaction(() async {
+      final before = create ? null : await _frontSnapshot(frontId);
       if (create) {
         await database
             .into(database.frontSessions)
@@ -331,7 +336,77 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
               mode: InsertMode.insertOrIgnore,
             );
       }
+      if (before != null) {
+        final after = await _frontSnapshot(frontId);
+        if (after != null && after != before) {
+          await _frontRecordAudit(frontId, before, after);
+        }
+      }
     });
+  }
+
+  Future<String?> _frontSnapshot(String frontId) async {
+    final front =
+        await (database.select(database.frontSessions)..where(
+              (session) =>
+                  session.id.equals(frontId) &
+                  session.systemId.equals(localSystemId),
+            ))
+            .getSingleOrNull();
+    if (front == null) return null;
+    final links = await (database.select(
+      database.frontSessionMembers,
+    )..where((link) => link.sessionId.equals(frontId))).get();
+    return jsonEncode({
+      'label': await _decryptLocalText(
+        front.label,
+        'front_sessions',
+        frontId,
+        'label',
+      ),
+      'status_note': await _decryptLocalText(
+        front.statusNote,
+        'front_sessions',
+        frontId,
+        'status_note',
+      ),
+      'started_at': front.startedAt.toIso8601String(),
+      'ended_at': front.endedAt?.toIso8601String(),
+      'member_ids': [for (final link in links) link.memberId],
+    });
+  }
+
+  Future<void> _frontRecordAudit(
+    String frontId,
+    String before,
+    String after,
+  ) async {
+    final auditId = newLocalId('front-audit');
+    await database
+        .into(database.frontAuditEvents)
+        .insert(
+          FrontAuditEventsCompanion.insert(
+            id: auditId,
+            frontId: frontId,
+            beforeSnapshot: Value(
+              await _encryptNullableLocalText(
+                before,
+                'front_audit_events',
+                auditId,
+                'before_snapshot',
+              ),
+            ),
+            afterSnapshot: Value(
+              await _encryptNullableLocalText(
+                after,
+                'front_audit_events',
+                auditId,
+                'after_snapshot',
+              ),
+            ),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
   }
 
   Future<void> _frontDeleteFrontSession(String frontId) async {

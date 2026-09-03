@@ -4417,6 +4417,24 @@ abstract class AppLocalizations {
   /// **'Save note'**
   String get saveNoteButton;
 
+  /// No description provided for @frontAuditHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change history'**
+  String get frontAuditHistoryButton;
+
+  /// No description provided for @frontAuditHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front change history'**
+  String get frontAuditHistoryTitle;
+
+  /// No description provided for @noFrontAuditEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded changes yet.'**
+  String get noFrontAuditEvents;
+
   /// No description provided for @markdownPreviewButton.
   ///
   /// In en, this message translates to:

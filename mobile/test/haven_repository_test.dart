@@ -402,6 +402,12 @@ void main() {
     expect(history.single.label, 'Blurry');
     expect(history.single.memberIds, isEmpty);
     expect(history.single.endedAt?.toUtc(), DateTime.utc(2026, 1, 1, 12));
+    final audit = await repository
+        .watchFrontAuditEvents(history.single.id)
+        .first;
+    expect(audit, hasLength(1));
+    expect(audit.single.beforeSnapshot, contains('Morning'));
+    expect(audit.single.afterSnapshot, contains('Blurry'));
   });
 
   test('stores app customization in the local database', () async {
