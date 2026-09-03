@@ -42,6 +42,7 @@ class PollSummary {
     this.description,
     required this.kind,
     required this.closed,
+    this.restrictVotingToFronters = false,
     required this.options,
     required this.updatedAt,
   });
@@ -51,6 +52,7 @@ class PollSummary {
   final String? description;
   final PollKind kind;
   final bool closed;
+  final bool restrictVotingToFronters;
   final List<PollOptionSummary> options;
   final DateTime updatedAt;
 
@@ -65,12 +67,14 @@ class PollDraft {
     this.description,
     required this.kind,
     required this.options,
+    this.restrictVotingToFronters = false,
   });
 
   final String question;
   final String? description;
   final PollKind kind;
   final List<String> options;
+  final bool restrictVotingToFronters;
 }
 
 class LocalPollStore {
@@ -157,6 +161,7 @@ class LocalPollStore {
       ),
       kind: PollKind.fromStorage(row.kind),
       closed: row.closed,
+      restrictVotingToFronters: row.restrictVotingToFronters,
       updatedAt: row.updatedAt,
       options: [
         for (final option in options)
@@ -206,6 +211,7 @@ class LocalPollStore {
                 ),
               ),
               kind: Value(draft.kind.storageValue),
+              restrictVotingToFronters: Value(draft.restrictVotingToFronters),
               createdAt: now,
               updatedAt: now,
             ),
@@ -242,6 +248,7 @@ class LocalPollStore {
             ))
             .getSingleOrNull();
     if (poll == null || poll.closed) return;
+    if (poll.restrictVotingToFronters && !await _hasCurrentFront()) return;
 
     final option =
         await (database.select(database.pollOptions)..where(
@@ -336,6 +343,16 @@ class LocalPollStore {
             OrderingTerm(expression: event.createdAt, mode: OrderingMode.desc),
       ]);
     return query.watch();
+  }
+
+  Future<bool> _hasCurrentFront() async {
+    final current =
+        await (database.select(database.frontSessions)..where(
+              (front) =>
+                  front.systemId.equals(localSystemId) & front.endedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    return current != null;
   }
 
   List<String> _cleanOptions(List<String> options) {

@@ -2640,6 +2640,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get multipleChoicePollKind => 'Multiple choice';
 
   @override
+  String get pollFrontersOnlyLabel =>
+      'Only currently-fronting members can vote';
+
+  @override
+  String get pollFrontersOnlyHelper =>
+      'Voting stays unavailable until at least one member is fronting.';
+
+  @override
   String get searchJournalsHint => 'Search journals';
 
   @override

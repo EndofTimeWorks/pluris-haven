@@ -1266,6 +1266,37 @@ void main() {
     expect(polls, isEmpty);
   });
 
+  test(
+    'enforces a currently-fronting requirement for restricted polls',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.savePoll(
+        const PollDraft(
+          question: 'Take a break?',
+          kind: PollKind.singleChoice,
+          options: ['Yes', 'No'],
+          restrictVotingToFronters: true,
+        ),
+      );
+      var poll = (await repository.watchPolls().first).single;
+      expect(poll.restrictVotingToFronters, isTrue);
+
+      await repository.togglePollOption(poll.id, poll.options.first.id);
+      poll = (await repository.watchPolls().first).single;
+      expect(poll.selectedCount, 0);
+
+      await repository.setFrontMembers([member.id]);
+      await repository.togglePollOption(poll.id, poll.options.first.id);
+      poll = (await repository.watchPolls().first).single;
+      expect(poll.selectedCount, 1);
+    },
+  );
+
   test('exports a versioned local archive', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

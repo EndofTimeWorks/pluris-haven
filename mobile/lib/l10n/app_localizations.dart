@@ -4603,6 +4603,18 @@ abstract class AppLocalizations {
   /// **'Multiple choice'**
   String get multipleChoicePollKind;
 
+  /// No description provided for @pollFrontersOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Only currently-fronting members can vote'**
+  String get pollFrontersOnlyLabel;
+
+  /// No description provided for @pollFrontersOnlyHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Voting stays unavailable until at least one member is fronting.'**
+  String get pollFrontersOnlyHelper;
+
   /// No description provided for @searchJournalsHint.
   ///
   /// In en, this message translates to:

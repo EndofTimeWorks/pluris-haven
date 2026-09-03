@@ -97,6 +97,16 @@ class PollTile extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (poll.restrictVotingToFronters) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.pollFrontersOnlyLabel,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -202,6 +212,7 @@ class _AddPollSheetState extends State<AddPollSheet> {
   final _descriptionController = TextEditingController();
   final _optionControllers = [TextEditingController(), TextEditingController()];
   PollKind _kind = PollKind.singleChoice;
+  bool _restrictVotingToFronters = false;
 
   @override
   void dispose() {
@@ -270,6 +281,15 @@ class _AddPollSheetState extends State<AddPollSheet> {
               },
             ),
             const SizedBox(height: 12),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.pollFrontersOnlyLabel),
+              subtitle: Text(l10n.pollFrontersOnlyHelper),
+              value: _restrictVotingToFronters,
+              onChanged: (value) =>
+                  setState(() => _restrictVotingToFronters = value),
+            ),
+            const SizedBox(height: 12),
             for (var index = 0; index < _optionControllers.length; index++) ...[
               TextField(
                 key: ValueKey('poll-option-field-$index'),
@@ -311,6 +331,7 @@ class _AddPollSheetState extends State<AddPollSheet> {
         description: _descriptionController.text,
         kind: _kind,
         options: [for (final controller in _optionControllers) controller.text],
+        restrictVotingToFronters: _restrictVotingToFronters,
       ),
     );
     if (mounted) {
