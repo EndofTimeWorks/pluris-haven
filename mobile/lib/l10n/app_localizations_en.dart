@@ -2860,6 +2860,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberBoardLabel => 'Member board';
 
   @override
+  String get channelBoardLabel => 'Channel';
+
+  @override
+  String get channelFilter => 'Channel';
+
+  @override
+  String channelBoardMessageMetadata(
+    String channel,
+    String sender,
+    String date,
+    String replyMarker,
+  ) {
+    return '$channel channel - $sender - $date$replyMarker';
+  }
+
+  @override
+  String get manageChannelsButton => 'Manage channels';
+
+  @override
+  String get channelsTitle => 'Channels';
+
+  @override
+  String get categoriesTitle => 'Categories';
+
+  @override
+  String get addChannelButton => 'Add channel';
+
+  @override
+  String get addCategoryButton => 'Add category';
+
+  @override
+  String get editChannelTitle => 'Edit channel';
+
+  @override
+  String get editCategoryTitle => 'Edit category';
+
+  @override
+  String get channelNameFieldLabel => 'Channel name';
+
+  @override
+  String get categoryNameFieldLabel => 'Category name';
+
+  @override
+  String get categoryFieldLabel => 'Category';
+
+  @override
+  String get noCategoryLabel => 'No category';
+
+  @override
+  String get chooseChannelFirst => 'Choose a channel first.';
+
+  @override
+  String get deleteChannelTitle => 'Delete channel?';
+
+  @override
+  String get deleteChannelBody => 'Messages will remain on the system board.';
+
+  @override
+  String get deleteCategoryTitle => 'Delete category?';
+
+  @override
+  String get deleteCategoryBody => 'Its channels will remain uncategorised.';
+
+  @override
   String replyingToMessage(String message) {
     return 'Replying to: $message';
   }

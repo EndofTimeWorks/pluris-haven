@@ -2124,6 +2124,97 @@ void main() {
     expect(find.text('No messages yet'), findsOneWidget);
   });
 
+  testWidgets('sends a local message to a configured channel', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveChatChannel(const ChatChannelDraft(name: 'kitchen'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Chat');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add message'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('message-board-kind-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Channel').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('message-channel-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('kitchen').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('message-body-field')),
+      'Tea is ready.',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-message-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._messages.single.boardKind, 'channel');
+    expect(repository._messages.single.channelId, 'fake-chat-channel-1');
+    expect(find.textContaining('kitchen channel'), findsOneWidget);
+  });
+
+  testWidgets('manages local chat categories and channels', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Chat');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Manage channels'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-chat-category-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('chat-category-name-field')),
+      'Daily life',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-chat-category-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('add-chat-channel-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('chat-channel-name-field')),
+      'kitchen',
+    );
+    await tester.tap(find.byKey(const ValueKey('chat-channel-category-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily life').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-chat-channel-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._chatCategories.single.name, 'Daily life');
+    expect(repository._chatChannels.single.name, 'kitchen');
+    expect(
+      repository._chatChannels.single.categoryId,
+      repository._chatCategories.single.id,
+    );
+  });
+
   testWidgets('adds a local reminder from the reminders section', (
     tester,
   ) async {
@@ -3671,13 +3762,19 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<ChatCategorySummary>> watchChatCategories() {
-    return _chatCategoriesController.stream.map(List.unmodifiable);
+  Stream<List<ChatCategorySummary>> watchChatCategories() async* {
+    yield List.unmodifiable(_chatCategories);
+    await for (final categories in _chatCategoriesController.stream) {
+      yield List.unmodifiable(categories);
+    }
   }
 
   @override
-  Stream<List<ChatChannelSummary>> watchChatChannels() {
-    return _chatChannelsController.stream.map(List.unmodifiable);
+  Stream<List<ChatChannelSummary>> watchChatChannels() async* {
+    yield List.unmodifiable(_chatChannels);
+    await for (final channels in _chatChannelsController.stream) {
+      yield List.unmodifiable(channels);
+    }
   }
 
   @override

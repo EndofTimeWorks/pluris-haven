@@ -1113,6 +1113,54 @@ void main() {
   });
 
   test(
+    'keeps local chat categories, channels, and channel messages connected',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+
+      await repository.saveChatCategory(
+        const ChatCategoryDraft(name: 'Daily life', description: 'Check-ins'),
+      );
+      final category = (await repository.watchChatCategories().first).single;
+      await repository.saveChatChannel(
+        ChatChannelDraft(
+          name: 'kitchen',
+          categoryId: category.id,
+          description: 'Food and drinks',
+        ),
+      );
+      final channel = (await repository.watchChatChannels().first).single;
+      await repository.saveMessage(
+        MessageDraft(
+          body: 'Tea is ready.',
+          boardKind: 'channel',
+          channelId: channel.id,
+        ),
+      );
+
+      final message = (await repository.watchMessages().first).single;
+      expect(message.boardKind, 'channel');
+      expect(message.channelId, channel.id);
+      expect(channel.name, 'kitchen');
+      expect(channel.description, 'Food and drinks');
+
+      await repository.deleteChatCategory(category.id);
+      expect(await repository.watchChatCategories().first, isEmpty);
+      expect(
+        (await repository.watchChatChannels().first).single.categoryId,
+        isNull,
+      );
+
+      await repository.deleteChatChannel(channel.id);
+      final unassigned = (await repository.watchMessages().first).single;
+      expect(unassigned.boardKind, 'system');
+      expect(unassigned.channelId, isNull);
+    },
+  );
+
+  test(
     'after-front reminders fire only for newly started matching fronts',
     () async {
       final database = AppDatabase(NativeDatabase.memory());

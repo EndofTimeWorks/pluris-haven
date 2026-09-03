@@ -293,9 +293,15 @@ class LocalChatStore {
 
   Future<void> deleteChannel(String channelId) async {
     await database.transaction(() async {
-      await (database.update(database.messages)
-            ..where((message) => message.channelId.equals(channelId)))
-          .write(const MessagesCompanion(channelId: Value(null)));
+      await (database.update(
+        database.messages,
+      )..where((message) => message.channelId.equals(channelId))).write(
+        const MessagesCompanion(
+          boardKind: Value('system'),
+          boardMemberId: Value(null),
+          channelId: Value(null),
+        ),
+      );
       await (database.delete(database.chatChannels)..where(
             (channel) =>
                 channel.systemId.equals(localSystemId) &

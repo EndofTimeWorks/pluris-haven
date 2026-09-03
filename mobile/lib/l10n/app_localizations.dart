@@ -4998,6 +4998,125 @@ abstract class AppLocalizations {
   /// **'Member board'**
   String get memberBoardLabel;
 
+  /// No description provided for @channelBoardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get channelBoardLabel;
+
+  /// No description provided for @channelFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get channelFilter;
+
+  /// No description provided for @channelBoardMessageMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'{channel} channel - {sender} - {date}{replyMarker}'**
+  String channelBoardMessageMetadata(
+    String channel,
+    String sender,
+    String date,
+    String replyMarker,
+  );
+
+  /// No description provided for @manageChannelsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage channels'**
+  String get manageChannelsButton;
+
+  /// No description provided for @channelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get channelsTitle;
+
+  /// No description provided for @categoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categoriesTitle;
+
+  /// No description provided for @addChannelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add channel'**
+  String get addChannelButton;
+
+  /// No description provided for @addCategoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get addCategoryButton;
+
+  /// No description provided for @editChannelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit channel'**
+  String get editChannelTitle;
+
+  /// No description provided for @editCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit category'**
+  String get editCategoryTitle;
+
+  /// No description provided for @channelNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel name'**
+  String get channelNameFieldLabel;
+
+  /// No description provided for @categoryNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name'**
+  String get categoryNameFieldLabel;
+
+  /// No description provided for @categoryFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryFieldLabel;
+
+  /// No description provided for @noCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get noCategoryLabel;
+
+  /// No description provided for @chooseChannelFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a channel first.'**
+  String get chooseChannelFirst;
+
+  /// No description provided for @deleteChannelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete channel?'**
+  String get deleteChannelTitle;
+
+  /// No description provided for @deleteChannelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages will remain on the system board.'**
+  String get deleteChannelBody;
+
+  /// No description provided for @deleteCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category?'**
+  String get deleteCategoryTitle;
+
+  /// No description provided for @deleteCategoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its channels will remain uncategorised.'**
+  String get deleteCategoryBody;
+
   /// No description provided for @replyingToMessage.
   ///
   /// In en, this message translates to:
