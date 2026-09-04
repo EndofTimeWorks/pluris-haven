@@ -114,8 +114,13 @@ independent targets need explicit retry/repair behavior rather than pretending
 to be transactionally atomic.
 
 Current Play automation covers **internal testing**. Closed testing is decided
-for the alpha distribution path but still needs implementation/configuration and
-real external verification.
+for the alpha distribution path. Use the manually dispatched `Publish existing
+mobile release to Google Play track` workflow after the canonical GitHub
+Release exists, supplying the exact configured Console track identifier. The
+workflow verifies the signed tag and release AAB checksum, does not
+recreate GitHub artifacts, and exits successfully when that version is already
+on the requested track. Console configuration and real external verification
+remain required.
 
 ## Google Play authentication
 

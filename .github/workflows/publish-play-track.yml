@@ -1,0 +1,189 @@
+name: Publish existing mobile release to Google Play track
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing signed mobile release tag
+        required: true
+        type: string
+      track:
+        description: Exact configured Play Console track identifier
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: play-track-${{ inputs.tag }}-${{ inputs.track }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Upload existing AAB to requested Play track
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate existing mobile release
+        id: release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PLAY_TRACK: ${{ inputs.track }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          trusted_release_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
+          GNUPGHOME="$(mktemp -d)"
+          export GNUPGHOME
+          trap 'rm -rf "${GNUPGHOME}"' EXIT
+          gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
+          imported_fingerprint="$(
+            gpg --batch --with-colons --fingerprint "${trusted_release_fingerprint}" |
+              awk -F: '$1 == "fpr" { print $10; exit }'
+          )"
+          if [[ "${imported_fingerprint}" != "${trusted_release_fingerprint}" ]]; then
+            echo 'Trusted release signing key fingerprint does not match.' >&2
+            exit 1
+          fi
+          if [[ ! "${RELEASE_TAG}" =~ ^mobile-v ]]; then
+            echo 'Play publication requires a mobile-v release tag.' >&2
+            exit 1
+          fi
+          if ! git cat-file -e "${RELEASE_TAG}^{tag}" 2>/dev/null || ! git verify-tag "${RELEASE_TAG}"; then
+            echo 'Play publication requires an existing valid signed annotated tag.' >&2
+            exit 1
+          fi
+          if [[ ! "${PLAY_TRACK}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+            echo 'Play track must be an exact non-empty Console track identifier.' >&2
+            exit 1
+          fi
+
+          version_with_build="${RELEASE_TAG#mobile-v}"
+          version="${version_with_build%%+*}"
+          build="${version_with_build##*+}"
+          if [[ "${version_with_build}" != *+* ]] || [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'Mobile release tag must include a numeric build number.' >&2
+            exit 1
+          fi
+          if [[ "${version}" == *.dev.* ]]; then
+            echo 'Development releases cannot be published to Play tracks.' >&2
+            exit 1
+          fi
+          gh release view "${RELEASE_TAG}" >/dev/null
+
+          {
+            echo "version=${version}"
+            echo "build=${build}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Download and verify release AAB
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_BUILD: ${{ steps.release.outputs.build }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p release/mobile
+          aab="pluris-haven-${RELEASE_VERSION}+${RELEASE_BUILD}.aab"
+          gh release download "${RELEASE_TAG}" \
+            --pattern "${aab}" \
+            --pattern SHA256SUMS.txt \
+            --dir release/mobile
+          test -f "release/mobile/${aab}" || { echo 'Release AAB is missing.' >&2; exit 1; }
+          test -f release/mobile/SHA256SUMS.txt || { echo 'Release checksums are missing.' >&2; exit 1; }
+          (
+            cd release/mobile
+            grep -F "  ./${aab}" SHA256SUMS.txt | sha256sum --check --status -
+          ) || { echo 'Release AAB checksum does not match SHA256SUMS.txt.' >&2; exit 1; }
+
+      - name: Authenticate to Google Play
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          service_account: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Commit verified AAB to requested Play track
+        shell: bash
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+          PLAY_TRACK: ${{ inputs.track }}
+          PLAY_BUILD: ${{ steps.release.outputs.build }}
+          PLAY_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          : "${PLAY_ACCESS_TOKEN:?Google Play access token was not generated.}"
+          bundle="release/mobile/pluris-haven-${PLAY_VERSION}+${PLAY_BUILD}.aab"
+          test -f "${bundle}" || { echo "Missing verified release app bundle: ${bundle}" >&2; exit 1; }
+
+          package_name='works.endoftime.plurishaven'
+          publisher_base='https://androidpublisher.googleapis.com/androidpublisher/v3'
+          authorization="Authorization: Bearer ${PLAY_ACCESS_TOKEN}"
+          edit="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "${authorization}" \
+              --header 'Content-Type: application/json' \
+              "${publisher_base}/applications/${package_name}/edits"
+          )"
+          edit_id="$(jq -er '.id' <<<"${edit}")"
+          track_state="$(
+            curl --fail-with-body --silent --show-error \
+              --header "${authorization}" \
+              "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}"
+          )"
+          if jq -e --arg version_code "${PLAY_BUILD}" \
+            '[.releases[]?.versionCodes[]? | tostring] | index($version_code) != null' \
+            <<<"${track_state}" >/dev/null; then
+            echo "Version ${PLAY_BUILD} is already present on Play track ${PLAY_TRACK}; no upload was needed."
+            exit 0
+          fi
+
+          uploaded_bundle="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "${authorization}" \
+              --header 'Content-Type: application/octet-stream' \
+              --data-binary @"${bundle}" \
+              "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${package_name}/edits/${edit_id}/bundles"
+          )"
+          version_code="$(jq -er '.versionCode | tostring' <<<"${uploaded_bundle}")"
+          if [[ "${version_code}" != "${PLAY_BUILD}" ]]; then
+            echo "Uploaded bundle version code ${version_code} does not match ${PLAY_BUILD}." >&2
+            exit 1
+          fi
+
+          release="$(jq -nc --arg version_code "${version_code}" \
+            '{releases: [{versionCodes: [$version_code], status: "completed"}]}')"
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --header "${authorization}" \
+            --header 'Content-Type: application/json' \
+            --data "${release}" \
+            "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}" \
+            >/dev/null
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "${authorization}" \
+            "${publisher_base}/applications/${package_name}/edits/${edit_id}:commit" \
+            >/dev/null
+          echo "Published version ${PLAY_BUILD} to Play track ${PLAY_TRACK}."

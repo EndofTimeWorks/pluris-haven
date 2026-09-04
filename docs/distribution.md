@@ -56,8 +56,12 @@ metadata blocked behind Play.
 Current Play state:
 
 - **IMPLEMENTED:** internal-track upload automation;
-- **DECIDED / PENDING:** configurable closed testing for the alpha distribution
-  path;
+- **IMPLEMENTED (local/static):** a manually dispatched existing-release path
+  for any explicitly supplied Play Console track, including the intended closed
+  alpha track. It verifies the release AAB checksum and treats an already
+  present version as a no-op; it never recreates GitHub release artifacts.
+- **BLOCKED-EXTERNAL:** configure the actual closed track in Play Console and
+  observe a real upload/promotion;
 - **NOT YET CLAIMED VERIFIED:** a real Play Console upload/promotion must be
   observed successfully before the external service path is called verified.
 
