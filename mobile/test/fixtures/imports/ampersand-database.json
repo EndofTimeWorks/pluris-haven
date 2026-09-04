@@ -1,0 +1,49 @@
+{
+  "revision": { "count": 42, "humanReadable": "0.3.0" },
+  "database": {
+    "systems": [{ "uuid": "system-1", "name": "Sanitised Ampersand system" }],
+    "members": [
+      {
+        "uuid": "member-iris",
+        "system": "system-1",
+        "name": "Iris",
+        "pronouns": "she/they",
+        "customFields": { "field-age": "20s" }
+      }
+    ],
+    "customFields": [{ "uuid": "field-age", "name": "Age", "priority": 0 }],
+    "frontingEntries": [
+      {
+        "uuid": "front-iris",
+        "member": "member-iris",
+        "startTime": "2026-01-01T10:00:00Z",
+        "endTime": "2026-01-01T11:00:00Z"
+      }
+    ],
+    "journalPosts": [
+      {
+        "uuid": "journal-1",
+        "members": ["member-iris"],
+        "date": "2026-01-01T09:00:00Z",
+        "title": "Check in",
+        "body": "Sanitised journal entry"
+      }
+    ],
+    "notes": [{ "uuid": "note-1", "title": "Grounding", "content": "Water" }],
+    "boardMessages": [{ "uuid": "message-1", "members": ["member-iris"], "body": "Hello" }],
+    "reminders": [
+      {
+        "uuid": "reminder-1",
+        "active": true,
+        "title": "Check in",
+        "message": "Water",
+        "trigger": "fronting",
+        "members": ["member-iris"],
+        "delay": 900000
+      }
+    ],
+    "tags": [],
+    "assets": [],
+    "filterQueries": []
+  }
+}

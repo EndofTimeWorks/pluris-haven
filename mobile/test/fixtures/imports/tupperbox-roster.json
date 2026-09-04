@@ -1,0 +1,11 @@
+{
+  "tuppers": [
+    {
+      "id": "tupper-iris",
+      "name": "Iris",
+      "brackets": ["[text]"],
+      "description": "Sanitised representative Tupperbox roster entry",
+      "avatar_url": "https://example.invalid/iris.png"
+    }
+  ]
+}

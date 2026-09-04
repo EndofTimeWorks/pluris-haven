@@ -1,0 +1,24 @@
+{
+  "pluralspace": true,
+  "system": { "name": "Sanitised PluralSpace system" },
+  "groups": [{ "id": "group-main", "name": "Main" }],
+  "members": [
+    {
+      "id": "member-iris",
+      "name": "Iris",
+      "pronouns": "they/them",
+      "groupId": "group-main"
+    }
+  ],
+  "fronts": [
+    {
+      "id": "front-iris",
+      "member_ids": ["member-iris"],
+      "started_at": "2026-01-01T00:00:00Z",
+      "ended_at": "2026-01-01T01:00:00Z"
+    }
+  ],
+  "notes": [
+    { "id": "note-grounding", "title": "Grounding", "body": "Water", "member_id": "member-iris" }
+  ]
+}

@@ -86,11 +86,12 @@ registration ready.
 - **Simply Plural:** importer/re-import coverage plus private/local acceptance
   tooling for realistic exports.
 - **PluralKit:** file and bounded live-token coverage.
-- **Tupperbox:** normalized member-mapper coverage; do not claim broad real-export
+- **Tupperbox:** a sanitised roster fixture covers preview, normalisation,
+  publish and source-ID re-import dedupe; do not claim broad real-export
   compatibility without representative exports.
-- **PluralSpace:** normalized roster/front mapper coverage; authenticated live
-  API import remains deferred.
-- **Ampersand:** normalized database-export mapper coverage.
+- **PluralSpace:** a sanitised roster/front fixture covers that same local path;
+  authenticated live API import remains deferred.
+- **Ampersand:** a sanitised database-export fixture covers that same local path.
 - **Prism:** source/plan scaffolding exists, but it is not a verified current
   compatibility claim.
 - **OpenPlural:** current v0.1 file/archive path has mapper, preview/review,

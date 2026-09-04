@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
@@ -8,6 +9,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_file_decoder.dart';
+import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
@@ -1901,6 +1903,78 @@ void main() {
       contains('openplural_extensions'),
     );
   });
+
+  for (final fixture in const [
+    (
+      source: ImportSource.tupperbox,
+      fileName: 'tupperbox-roster.json',
+      expectedMembers: 1,
+      expectedFronts: 0,
+    ),
+    (
+      source: ImportSource.pluralSpace,
+      fileName: 'pluralspace-export.json',
+      expectedMembers: 1,
+      expectedFronts: 1,
+    ),
+    (
+      source: ImportSource.ampersand,
+      fileName: 'ampersand-database.json',
+      expectedMembers: 1,
+      expectedFronts: 1,
+    ),
+  ]) {
+    test(
+      'publishes and dedupes the sanitised ${fixture.source.label} fixture',
+      () async {
+        final database = AppDatabase(NativeDatabase.memory());
+        addTearDown(database.close);
+        final repository = testRepository(database);
+        await repository.ensureLocalSystem();
+        final text = await File(
+          'test/fixtures/imports/${fixture.fileName}',
+        ).readAsString();
+        final preview = previewImportText(
+          fileName: fixture.fileName,
+          text: text,
+          selectedSource: fixture.source,
+        );
+        expect(preview.canApply, isTrue, reason: fixture.source.label);
+
+        final normalized = normalizeImportTextToLocalArchive(
+          source: fixture.source,
+          fileName: fixture.fileName,
+          text: text,
+          importedAt: DateTime.utc(2026),
+        );
+        await repository.importLocalArchiveJson(
+          normalized.archiveJson,
+          source: fixture.source,
+          fileName: normalized.fileName,
+        );
+        await repository.importLocalArchiveJson(
+          normalized.archiveJson,
+          source: fixture.source,
+          fileName: normalized.fileName,
+        );
+
+        expect(
+          await repository.watchMembers().first,
+          hasLength(fixture.expectedMembers),
+        );
+        expect(
+          await repository.watchFrontHistory().first,
+          hasLength(fixture.expectedFronts),
+        );
+        final records = await database.select(database.importRecords).get();
+        expect(records, hasLength(2));
+        expect(
+          records.map((record) => record.source),
+          everyElement(fixture.source.jobSource),
+        );
+      },
+    );
+  }
 
   test(
     're-imports Simply Plural front history without foreign key failures',
