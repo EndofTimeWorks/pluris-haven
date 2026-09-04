@@ -5004,6 +5004,12 @@ abstract class AppLocalizations {
   /// **'Message actions'**
   String get messageActionsTooltip;
 
+  /// No description provided for @messageEditedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get messageEditedLabel;
+
   /// No description provided for @replyButton.
   ///
   /// In en, this message translates to:

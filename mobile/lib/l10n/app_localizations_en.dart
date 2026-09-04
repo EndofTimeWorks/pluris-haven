@@ -2868,6 +2868,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionsTooltip => 'Message actions';
 
   @override
+  String get messageEditedLabel => 'Edited';
+
+  @override
   String get replyButton => 'Reply';
 
   @override

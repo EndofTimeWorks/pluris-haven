@@ -1107,6 +1107,26 @@ void main() {
     );
     final updatedMessages = await repository.watchMessages().first;
     expect(updatedMessages.single.body, 'Remember to check in after dinner.');
+    expect(updatedMessages.single.edited, isTrue);
+    var revisions = await repository
+        .watchRevisions('message', updatedMessages.single.id)
+        .first;
+    expect(revisions, hasLength(1));
+    expect(revisions.single.title, isNull);
+    expect(revisions.single.body, 'Remember to check in.');
+    await repository.restoreRevision(
+      revisions.single.id,
+      'message',
+      updatedMessages.single.id,
+    );
+    expect(
+      (await repository.watchMessages().first).single.body,
+      'Remember to check in.',
+    );
+    revisions = await repository
+        .watchRevisions('message', updatedMessages.single.id)
+        .first;
+    expect(revisions, hasLength(2));
     await repository.deleteMessage(updatedMessages.single.id);
     expect(await repository.watchMessages().first, isEmpty);
 

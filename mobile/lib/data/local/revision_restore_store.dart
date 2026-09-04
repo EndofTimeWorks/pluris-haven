@@ -135,6 +135,33 @@ extension LocalHavenRepositoryRevisionRestore on LocalHavenRepository {
           ),
         );
       case 'message':
+        final current =
+            await (database.select(database.messages)..where(
+                  (message) =>
+                      message.systemId.equals(localSystemId) &
+                      message.id.equals(targetId),
+                ))
+                .getSingleOrNull();
+        if (current == null) return;
+        final currentBody =
+            await _decryptLocalText(
+              current.body,
+              'messages',
+              targetId,
+              'body',
+            ) ??
+            '';
+        if (currentBody != revisionBody) {
+          await _recordRevision(
+            targetType: 'message',
+            targetId: targetId,
+            body: currentBody,
+          );
+        }
+        final now = DateTime.now().toUtc();
+        final updatedAt = now.isAfter(current.updatedAt)
+            ? now
+            : current.updatedAt.add(const Duration(microseconds: 1));
         await (database.update(
           database.messages,
         )..where((m) => m.id.equals(targetId))).write(
@@ -147,7 +174,7 @@ extension LocalHavenRepositoryRevisionRestore on LocalHavenRepository {
                 'body',
               ),
             ),
-            updatedAt: Value(now),
+            updatedAt: Value(updatedAt),
           ),
         );
     }

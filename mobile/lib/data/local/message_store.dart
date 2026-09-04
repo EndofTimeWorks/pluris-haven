@@ -14,6 +14,8 @@ class MessageSummary {
     this.parentMessageId,
     this.channelId,
     required this.createdAt,
+    this.updatedAt,
+    this.edited = false,
     this.archived = false,
   });
 
@@ -25,6 +27,8 @@ class MessageSummary {
   final String? parentMessageId;
   final String? channelId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
+  final bool edited;
   final bool archived;
 }
 
@@ -51,11 +55,19 @@ class LocalMessageStore {
     this.database, {
     required this.encryptText,
     required this.decryptText,
+    required this.recordRevision,
   });
 
   final AppDatabase database;
   final EncryptLocalText encryptText;
   final DecryptLocalText decryptText;
+  final Future<void> Function({
+    required String targetType,
+    required String targetId,
+    String? title,
+    required String body,
+  })
+  recordRevision;
 
   Stream<List<MessageSummary>> watch() {
     final query = database.select(database.messages)
@@ -83,6 +95,8 @@ class LocalMessageStore {
             parentMessageId: row.parentMessageId,
             channelId: row.channelId,
             createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            edited: await _hasRevision(row.id),
             archived: row.archived,
           ),
       ],
@@ -125,7 +139,27 @@ class LocalMessageStore {
     final body = draft.body.trim();
     if (body.isEmpty) return;
 
+    final existing =
+        await (database.select(database.messages)..where(
+              (message) =>
+                  message.systemId.equals(localSystemId) &
+                  message.id.equals(messageId),
+            ))
+            .getSingleOrNull();
+    if (existing == null) return;
+    final previousBody =
+        await decryptText(existing.body, 'messages', messageId, 'body') ?? '';
+    if (previousBody != body) {
+      await recordRevision(
+        targetType: 'message',
+        targetId: messageId,
+        body: previousBody,
+      );
+    }
     final now = DateTime.now().toUtc();
+    final updatedAt = now.isAfter(existing.updatedAt)
+        ? now
+        : existing.updatedAt.add(const Duration(microseconds: 1));
     await (database.update(database.messages)..where(
           (message) =>
               message.systemId.equals(localSystemId) &
@@ -149,7 +183,7 @@ class LocalMessageStore {
             ),
             archived: const Value(false),
             deletedAt: const Value(null),
-            updatedAt: Value(now),
+            updatedAt: Value(updatedAt),
           ),
         );
   }
@@ -173,6 +207,19 @@ class LocalMessageStore {
   String _boardKind(String value) {
     if (value == 'member' || value == 'channel') return value;
     return 'system';
+  }
+
+  Future<bool> _hasRevision(String messageId) async {
+    final revision =
+        await (database.select(database.contentRevisions)
+              ..where(
+                (revision) =>
+                    revision.targetType.equals('message') &
+                    revision.targetId.equals(messageId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return revision != null;
   }
 
   String? _nullIfBlank(String? value) {

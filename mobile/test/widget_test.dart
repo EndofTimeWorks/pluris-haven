@@ -2103,6 +2103,7 @@ void main() {
 
     await tester.tap(find.text('Check in after dinner.'));
     await tester.pumpAndSettle();
+    expect(find.text('History'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('message-body-field')),
       'Check in after dinner. Bring water.',

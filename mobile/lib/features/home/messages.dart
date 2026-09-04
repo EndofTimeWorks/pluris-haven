@@ -222,29 +222,58 @@ class MessageTile extends StatelessWidget {
                 ),
           style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
         ),
-        trailing: PopupMenuButton<String>(
-          tooltip: l10n.messageActionsTooltip,
-          onSelected: (action) {
-            if (action == 'reply') {
-              showMessageSheet(context, repository, parentMessage: message);
-            } else if (action == 'delete') {
-              confirmDelete(
-                context,
-                title: l10n.deleteMessageTitle,
-                body: l10n.deleteMessageBody,
-                onDelete: () => repository.deleteMessage(message.id),
-              );
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(value: 'reply', child: Text(l10n.replyButton)),
-            PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (message.edited)
+              Tooltip(
+                message: l10n.messageEditedLabel,
+                child: const Icon(Icons.edit_outlined, size: 18),
+              ),
+            PopupMenuButton<String>(
+              tooltip: l10n.messageActionsTooltip,
+              onSelected: (action) {
+                if (action == 'reply') {
+                  showMessageSheet(context, repository, parentMessage: message);
+                } else if (action == 'history') {
+                  showMessageRevisionHistory(context, repository, message);
+                } else if (action == 'delete') {
+                  confirmDelete(
+                    context,
+                    title: l10n.deleteMessageTitle,
+                    body: l10n.deleteMessageBody,
+                    onDelete: () => repository.deleteMessage(message.id),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'reply', child: Text(l10n.replyButton)),
+                PopupMenuItem(
+                  value: 'history',
+                  child: Text(l10n.revisionHistoryButton),
+                ),
+                PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
+              ],
+            ),
           ],
         ),
         onTap: () => showMessageSheet(context, repository, message: message),
       ),
     );
   }
+}
+
+Future<void> showMessageRevisionHistory(
+  BuildContext context,
+  HavenRepository repository,
+  MessageSummary message,
+) async {
+  await showContentRevisionSheet(
+    context,
+    repository: repository,
+    targetType: 'message',
+    targetId: message.id,
+  );
 }
 
 void showMessageSheet(
@@ -477,6 +506,13 @@ class _MessageSheetState extends State<MessageSheet> {
               decoration: InputDecoration(labelText: l10n.messageFieldLabel),
             ),
             const SizedBox(height: 14),
+            if (_isEditing)
+              OutlinedButton.icon(
+                onPressed: _showHistory,
+                icon: const Icon(Icons.history_rounded),
+                label: Text(l10n.revisionHistoryButton),
+              ),
+            if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-message-button'),
               onPressed: _save,
@@ -525,6 +561,18 @@ class _MessageSheetState extends State<MessageSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _showHistory() async {
+    final message = widget.message;
+    if (message == null) return;
+    final restored = await showContentRevisionSheet(
+      context,
+      repository: widget.repository,
+      targetType: 'message',
+      targetId: message.id,
+    );
+    if (restored && mounted) Navigator.pop(context);
   }
 }
 

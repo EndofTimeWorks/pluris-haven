@@ -132,6 +132,7 @@ class LocalHavenRepository implements HavenRepository {
       database,
       encryptText: _encryptLocalText,
       decryptText: _decryptLocalText,
+      recordRevision: _recordRevision,
     );
     _chat = LocalChatStore(
       database,

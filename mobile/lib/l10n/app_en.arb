@@ -1116,6 +1116,7 @@
   },
   "messageReplyMarker": " - reply",
   "messageActionsTooltip": "Message actions",
+  "messageEditedLabel": "Edited",
   "replyButton": "Reply",
   "deleteMessageTitle": "Delete message?",
   "deleteMessageBody": "This message will be hidden from the local board.",
