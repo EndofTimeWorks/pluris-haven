@@ -1284,6 +1284,22 @@ void main() {
     polls = await repository.watchPolls().first;
     expect(polls.single.selectedCount, 1);
     expect(polls.single.options.first.selected, isTrue);
+    var voteEvents = await repository
+        .watchPollVoteEvents(polls.single.id)
+        .first;
+    expect(voteEvents, hasLength(1));
+    expect(voteEvents.single.action, 'selected');
+    expect(voteEvents.single.optionId, polls.single.options.first.id);
+
+    await repository.togglePollOption(
+      polls.single.id,
+      polls.single.options.last.id,
+    );
+    voteEvents = await repository.watchPollVoteEvents(polls.single.id).first;
+    expect(
+      voteEvents.map((event) => event.action),
+      containsAll(['selected', 'cleared']),
+    );
 
     await repository.closePoll(polls.single.id);
     polls = await repository.watchPolls().first;

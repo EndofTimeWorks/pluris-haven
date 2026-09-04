@@ -264,6 +264,9 @@ class LocalPollStore {
                   vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
             ))
             .getSingleOrNull();
+    final selectedVotes = await (database.select(
+      database.pollVotes,
+    )..where((vote) => vote.pollId.equals(pollId))).get();
     final now = DateTime.now().toUtc();
 
     await database.transaction(() async {
@@ -271,6 +274,14 @@ class LocalPollStore {
         await (database.delete(
           database.pollVotes,
         )..where((vote) => vote.pollId.equals(pollId))).go();
+        for (final vote in selectedVotes) {
+          await _recordVoteEvent(
+            pollId: pollId,
+            optionId: vote.optionId,
+            action: 'cleared',
+            createdAt: now,
+          );
+        }
         if (existing == null) {
           await database
               .into(database.pollVotes)
@@ -281,6 +292,12 @@ class LocalPollStore {
                   createdAt: now,
                 ),
               );
+          await _recordVoteEvent(
+            pollId: pollId,
+            optionId: optionId,
+            action: 'selected',
+            createdAt: now,
+          );
         }
       } else if (existing == null) {
         await database
@@ -292,12 +309,24 @@ class LocalPollStore {
                 createdAt: now,
               ),
             );
+        await _recordVoteEvent(
+          pollId: pollId,
+          optionId: optionId,
+          action: 'selected',
+          createdAt: now,
+        );
       } else {
         await (database.delete(database.pollVotes)..where(
               (vote) =>
                   vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
             ))
             .go();
+        await _recordVoteEvent(
+          pollId: pollId,
+          optionId: optionId,
+          action: 'cleared',
+          createdAt: now,
+        );
       }
 
       await (database.update(database.polls)
@@ -321,6 +350,9 @@ class LocalPollStore {
 
   Future<void> delete(String pollId) {
     return database.transaction(() async {
+      await (database.delete(
+        database.pollVoteEvents,
+      )..where((event) => event.pollId.equals(pollId))).go();
       await (database.delete(
         database.pollVotes,
       )..where((vote) => vote.pollId.equals(pollId))).go();
@@ -353,6 +385,25 @@ class LocalPollStore {
             ))
             .getSingleOrNull();
     return current != null;
+  }
+
+  Future<void> _recordVoteEvent({
+    required String pollId,
+    required String optionId,
+    required String action,
+    required DateTime createdAt,
+  }) {
+    return database
+        .into(database.pollVoteEvents)
+        .insert(
+          PollVoteEventsCompanion.insert(
+            id: newLocalId('poll-vote-event'),
+            pollId: pollId,
+            optionId: optionId,
+            action: action,
+            createdAt: createdAt,
+          ),
+        );
   }
 
   List<String> _cleanOptions(List<String> options) {

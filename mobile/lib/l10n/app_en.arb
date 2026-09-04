@@ -1028,6 +1028,19 @@
   "multipleChoicePollKind": "Multiple choice",
   "pollFrontersOnlyLabel": "Only currently-fronting members can vote",
   "pollFrontersOnlyHelper": "Voting stays unavailable until at least one member is fronting.",
+  "pollVoteHistoryButton": "Vote history",
+  "pollVoteHistoryTitle": "Vote history",
+  "noPollVoteEvents": "No vote changes recorded yet.",
+  "unknownPollOptionLabel": "Unknown option",
+  "pollVoteSelected": "selected",
+  "pollVoteCleared": "cleared",
+  "pollVoteEventLabel": "{option}: {action}",
+  "@pollVoteEventLabel": {
+    "placeholders": {
+      "option": { "type": "String" },
+      "action": { "type": "String" }
+    }
+  },
   "searchJournalsHint": "Search journals",
   "journalsTitle": "Journals",
   "noJournalEntriesYet": "No journal entries yet",

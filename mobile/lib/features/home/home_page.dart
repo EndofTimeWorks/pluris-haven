@@ -25,6 +25,7 @@ import '../../data/local/app_database.dart'
         FrontAuditEvent,
         JournalEntry,
         NamedFront,
+        PollVoteEvent,
         Tag,
         localSystemId;
 import '../../data/local/custom_field_store.dart'

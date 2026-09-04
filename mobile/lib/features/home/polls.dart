@@ -170,6 +170,14 @@ class PollTile extends StatelessWidget {
                   onPressed: () => repository.closePoll(poll.id),
                   child: Text(l10n.closeButton),
                 ),
+              TextButton(
+                onPressed: () => showPollVoteHistory(
+                  context,
+                  repository: repository,
+                  poll: poll,
+                ),
+                child: Text(l10n.pollVoteHistoryButton),
+              ),
               IconButton(
                 tooltip: l10n.deletePollTooltip,
                 onPressed: () => confirmDelete(
@@ -186,6 +194,64 @@ class PollTile extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> showPollVoteHistory(
+  BuildContext context, {
+  required HavenRepository repository,
+  required PollSummary poll,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      final optionNames = {
+        for (final option in poll.options) option.id: option.body,
+      };
+      return SafeArea(
+        child: StreamBuilder<List<PollVoteEvent>>(
+          stream: repository.watchPollVoteEvents(poll.id),
+          initialData: const [],
+          builder: (context, snapshot) {
+            final events = snapshot.data ?? const <PollVoteEvent>[];
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              children: [
+                Text(
+                  l10n.pollVoteHistoryTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (events.isEmpty)
+                  Text(l10n.noPollVoteEvents)
+                else
+                  for (final event in events)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        l10n.pollVoteEventLabel(
+                          optionNames[event.optionId] ??
+                              l10n.unknownPollOptionLabel,
+                          event.action == 'selected'
+                              ? l10n.pollVoteSelected
+                              : l10n.pollVoteCleared,
+                        ),
+                      ),
+                      subtitle: Text(_shortDateTime(event.createdAt)),
+                    ),
+              ],
+            );
+          },
+        ),
+      );
+    },
+  );
 }
 
 void showAddPollSheet(BuildContext context, HavenRepository repository) {

@@ -2669,12 +2669,14 @@ void main() {
       find.byKey(const ValueKey('poll-option-field-1')),
       'Rice',
     );
+    await tester.ensureVisible(find.byKey(const ValueKey('save-poll-button')));
     await tester.tap(find.byKey(const ValueKey('save-poll-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Dinner?'), findsOneWidget);
     expect(find.text('Soup'), findsOneWidget);
     expect(find.text('Rice'), findsOneWidget);
+    expect(find.text('Vote history'), findsOneWidget);
 
     await tester.tap(find.text('Soup'));
     await tester.pumpAndSettle();

@@ -2657,6 +2657,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Voting stays unavailable until at least one member is fronting.';
 
   @override
+  String get pollVoteHistoryButton => 'Vote history';
+
+  @override
+  String get pollVoteHistoryTitle => 'Vote history';
+
+  @override
+  String get noPollVoteEvents => 'No vote changes recorded yet.';
+
+  @override
+  String get unknownPollOptionLabel => 'Unknown option';
+
+  @override
+  String get pollVoteSelected => 'selected';
+
+  @override
+  String get pollVoteCleared => 'cleared';
+
+  @override
+  String pollVoteEventLabel(String option, String action) {
+    return '$option: $action';
+  }
+
+  @override
   String get searchJournalsHint => 'Search journals';
 
   @override

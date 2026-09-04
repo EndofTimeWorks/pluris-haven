@@ -4633,6 +4633,48 @@ abstract class AppLocalizations {
   /// **'Voting stays unavailable until at least one member is fronting.'**
   String get pollFrontersOnlyHelper;
 
+  /// No description provided for @pollVoteHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote history'**
+  String get pollVoteHistoryButton;
+
+  /// No description provided for @pollVoteHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote history'**
+  String get pollVoteHistoryTitle;
+
+  /// No description provided for @noPollVoteEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No vote changes recorded yet.'**
+  String get noPollVoteEvents;
+
+  /// No description provided for @unknownPollOptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown option'**
+  String get unknownPollOptionLabel;
+
+  /// No description provided for @pollVoteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'selected'**
+  String get pollVoteSelected;
+
+  /// No description provided for @pollVoteCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'cleared'**
+  String get pollVoteCleared;
+
+  /// No description provided for @pollVoteEventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{option}: {action}'**
+  String pollVoteEventLabel(String option, String action);
+
   /// No description provided for @searchJournalsHint.
   ///
   /// In en, this message translates to:
