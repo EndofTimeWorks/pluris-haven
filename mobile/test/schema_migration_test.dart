@@ -611,6 +611,25 @@ void main() {
     expect(await _indexNames(database), containsAll(_performanceIndexNames));
   });
 
+  test('refuses a newer schema without changing its version', () async {
+    final dbPath = '${tempDir.path}/newer_schema.sqlite';
+    _seedLegacyDatabase(path: dbPath, version: 23, statements: const []);
+
+    final database = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(database.close);
+    await expectLater(
+      database.customSelect('PRAGMA user_version').getSingle(),
+      throwsA(isA<StateError>()),
+    );
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    try {
+      expect(raw.userVersion, 23);
+    } finally {
+      raw.close();
+    }
+  });
+
   test('migrates a version-1 database up to the current schema (v22)', () async {
     final dbPath = '${tempDir.path}/legacy_v1.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());

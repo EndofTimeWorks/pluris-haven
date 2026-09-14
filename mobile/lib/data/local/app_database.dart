@@ -717,6 +717,14 @@ class AppDatabase extends _$AppDatabase {
       }
     },
     beforeOpen: (details) async {
+      final version = await customSelect('PRAGMA user_version').getSingle();
+      final userVersion = version.read<int>('user_version');
+      if (userVersion > schemaVersion) {
+        throw StateError(
+          'This database was created by a newer version of Pluris Haven. '
+          'Update this app before changing local data.',
+        );
+      }
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
