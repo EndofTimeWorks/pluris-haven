@@ -111,7 +111,9 @@ class PollTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              StatusPill(text: poll.statusLabel),
+              StatusPill(
+                text: poll.closed ? l10n.pollClosedStatus : l10n.pollOpenStatus,
+              ),
             ],
           ),
           const SizedBox(height: 10),

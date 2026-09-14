@@ -2690,6 +2690,7 @@ void main() {
     expect(find.text('Dinner?'), findsOneWidget);
     expect(find.text('Soup'), findsOneWidget);
     expect(find.text('Rice'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
 
     await tester.tap(find.text('Soup'));
@@ -2701,6 +2702,7 @@ void main() {
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(repository._polls.single.closed, isTrue);
+    expect(find.text('Closed'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Delete poll'));
     await tester.pumpAndSettle();

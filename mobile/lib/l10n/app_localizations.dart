@@ -4501,6 +4501,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{none open} =1{1 open} other{{count} open}}'**
   String openPollCount(int count);
 
+  /// No description provided for @pollOpenStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get pollOpenStatus;
+
+  /// No description provided for @pollClosedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get pollClosedStatus;
+
   /// No description provided for @noPollsYet.
   ///
   /// In en, this message translates to:

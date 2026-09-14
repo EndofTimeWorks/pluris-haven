@@ -57,8 +57,6 @@ class PollSummary {
   final DateTime updatedAt;
 
   int get selectedCount => options.where((option) => option.selected).length;
-
-  String get statusLabel => closed ? 'closed' : 'open';
 }
 
 class PollDraft {

@@ -999,6 +999,8 @@
   "pollsTitle": "Polls",
   "openPollCount": "{count, plural, =0{none open} =1{1 open} other{{count} open}}",
   "@openPollCount": { "placeholders": { "count": { "type": "int" } } },
+  "pollOpenStatus": "Open",
+  "pollClosedStatus": "Closed",
   "noPollsYet": "No polls yet",
   "pollsEmptyBody": "Create a local vote for system decisions.",
   "createPollButton": "Create poll",

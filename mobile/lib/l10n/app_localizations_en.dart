@@ -2576,6 +2576,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pollOpenStatus => 'Open';
+
+  @override
+  String get pollClosedStatus => 'Closed';
+
+  @override
   String get noPollsYet => 'No polls yet';
 
   @override
