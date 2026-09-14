@@ -29,8 +29,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       system.id,
       'description',
     ),
-    'created_at': system.createdAt.toIso8601String(),
-    'updated_at': system.updatedAt.toIso8601String(),
+    'created_at': system.createdAt.toUtc().toIso8601String(),
+    'updated_at': system.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _memberToJson(Member member) async {
@@ -76,9 +76,9 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'pluralkit_id': pluralKitId,
       'is_custom_front': member.isCustomFront,
       'archived': member.archived,
-      'deleted_at': member.deletedAt?.toIso8601String(),
-      'created_at': member.createdAt.toIso8601String(),
-      'updated_at': member.updatedAt.toIso8601String(),
+      'deleted_at': member.deletedAt?.toUtc().toIso8601String(),
+      'created_at': member.createdAt.toUtc().toIso8601String(),
+      'updated_at': member.updatedAt.toUtc().toIso8601String(),
     };
   }
 
@@ -111,8 +111,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       group.id,
       'emoji',
     ),
-    'created_at': group.createdAt.toIso8601String(),
-    'updated_at': group.updatedAt.toIso8601String(),
+    'created_at': group.createdAt.toUtc().toIso8601String(),
+    'updated_at': group.updatedAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _groupMemberToJson(GroupMember link) => {
@@ -127,8 +127,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
         (await _decryptLocalText(note.title, 'notes', note.id, 'title')) ?? '',
     'body':
         (await _decryptLocalText(note.body, 'notes', note.id, 'body')) ?? '',
-    'created_at': note.createdAt.toIso8601String(),
-    'updated_at': note.updatedAt.toIso8601String(),
+    'created_at': note.createdAt.toUtc().toIso8601String(),
+    'updated_at': note.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _messageToJson(Message message) async => {
@@ -146,10 +146,10 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'board_member_id': message.boardMemberId,
     'parent_message_id': message.parentMessageId,
     'channel_id': message.channelId,
-    'deleted_at': message.deletedAt?.toIso8601String(),
+    'deleted_at': message.deletedAt?.toUtc().toIso8601String(),
     'archived': message.archived,
-    'created_at': message.createdAt.toIso8601String(),
-    'updated_at': message.updatedAt.toIso8601String(),
+    'created_at': message.createdAt.toUtc().toIso8601String(),
+    'updated_at': message.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _chatCategoryToJson(
@@ -171,8 +171,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'description',
     ),
     'position': category.position,
-    'created_at': category.createdAt.toIso8601String(),
-    'updated_at': category.updatedAt.toIso8601String(),
+    'created_at': category.createdAt.toUtc().toIso8601String(),
+    'updated_at': category.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _chatChannelToJson(ChatChannel channel) async =>
@@ -200,8 +200,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           'color_hex',
         ),
         'position': channel.position,
-        'created_at': channel.createdAt.toIso8601String(),
-        'updated_at': channel.updatedAt.toIso8601String(),
+        'created_at': channel.createdAt.toUtc().toIso8601String(),
+        'updated_at': channel.updatedAt.toUtc().toIso8601String(),
       };
 
   Future<Map<String, Object?>> _reminderToJson(Reminder reminder) async => {
@@ -252,9 +252,9 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'schedule_dom': reminder.scheduleDom,
     'delay_seconds': reminder.delaySeconds,
     'enabled': reminder.enabled,
-    'last_fired_at': reminder.lastFiredAt?.toIso8601String(),
-    'created_at': reminder.createdAt.toIso8601String(),
-    'updated_at': reminder.updatedAt.toIso8601String(),
+    'last_fired_at': reminder.lastFiredAt?.toUtc().toIso8601String(),
+    'created_at': reminder.createdAt.toUtc().toIso8601String(),
+    'updated_at': reminder.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _tagToJson(Tag tag) async => {
@@ -266,8 +266,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       tag.id,
       'color_hex',
     ),
-    'created_at': tag.createdAt.toIso8601String(),
-    'updated_at': tag.updatedAt.toIso8601String(),
+    'created_at': tag.createdAt.toUtc().toIso8601String(),
+    'updated_at': tag.updatedAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _memberTagToJson(MemberTag link) => {
@@ -293,8 +293,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
         )) ??
         '',
     'visibility': journal.visibility,
-    'created_at': journal.createdAt.toIso8601String(),
-    'updated_at': journal.updatedAt.toIso8601String(),
+    'created_at': journal.createdAt.toUtc().toIso8601String(),
+    'updated_at': journal.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _contentRevisionToJson(
@@ -317,8 +317,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           'body',
         )) ??
         '',
-    'pinned_at': revision.pinnedAt?.toIso8601String(),
-    'created_at': revision.createdAt.toIso8601String(),
+    'pinned_at': revision.pinnedAt?.toUtc().toIso8601String(),
+    'created_at': revision.createdAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _customFieldToJson(
@@ -349,8 +349,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       ),
     ),
     'position': field.position,
-    'created_at': field.createdAt.toIso8601String(),
-    'updated_at': field.updatedAt.toIso8601String(),
+    'created_at': field.createdAt.toUtc().toIso8601String(),
+    'updated_at': field.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _customFieldValueToJson(
@@ -368,8 +368,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           )) ??
           '',
     ),
-    'created_at': value.createdAt.toIso8601String(),
-    'updated_at': value.updatedAt.toIso8601String(),
+    'created_at': value.createdAt.toUtc().toIso8601String(),
+    'updated_at': value.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _pollToJson(Poll poll) async => {
@@ -389,9 +389,12 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'description',
     ),
     'kind': poll.kind,
+    'restrict_voting_to_fronters': poll.restrictVotingToFronters,
+    'closes_at': poll.closesAt?.toUtc().toIso8601String(),
+    'retention_days': poll.retentionDays,
     'closed': poll.closed,
-    'created_at': poll.createdAt.toIso8601String(),
-    'updated_at': poll.updatedAt.toIso8601String(),
+    'created_at': poll.createdAt.toUtc().toIso8601String(),
+    'updated_at': poll.updatedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _pollOptionToJson(PollOption option) async => {
@@ -411,7 +414,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
   Map<String, Object?> _pollVoteToJson(PollVote vote) => {
     'poll_id': vote.pollId,
     'option_id': vote.optionId,
-    'created_at': vote.createdAt.toIso8601String(),
+    'created_at': vote.createdAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _pollVoteEventToJson(PollVoteEvent event) => {
@@ -419,7 +422,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'poll_id': event.pollId,
     'option_id': event.optionId,
     'action': event.action,
-    'created_at': event.createdAt.toIso8601String(),
+    'created_at': event.createdAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _frontToJson(FrontSession front) async => {
@@ -436,10 +439,10 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       front.id,
       'status_note',
     ),
-    'started_at': front.startedAt.toIso8601String(),
-    'ended_at': front.endedAt?.toIso8601String(),
-    'created_at': front.createdAt.toIso8601String(),
-    'updated_at': front.updatedAt.toIso8601String(),
+    'started_at': front.startedAt.toUtc().toIso8601String(),
+    'ended_at': front.endedAt?.toUtc().toIso8601String(),
+    'created_at': front.createdAt.toUtc().toIso8601String(),
+    'updated_at': front.updatedAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _frontMemberToJson(FrontSessionMember link) => {
@@ -464,7 +467,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       event.id,
       'after_snapshot',
     ),
-    'created_at': event.createdAt.toIso8601String(),
+    'created_at': event.createdAt.toUtc().toIso8601String(),
   };
 
   List<Map<String, Object?>> _jsonObjectList(Object? value) {
@@ -552,8 +555,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       front.id,
       'description',
     ),
-    'created_at': front.createdAt.toIso8601String(),
-    'updated_at': front.updatedAt.toIso8601String(),
+    'created_at': front.createdAt.toUtc().toIso8601String(),
+    'updated_at': front.updatedAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _namedFrontMemberToJson(NamedFrontMember link) => {
@@ -586,8 +589,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'color_hex',
     ),
     'position': bucket.position,
-    'created_at': bucket.createdAt.toIso8601String(),
-    'updated_at': bucket.updatedAt.toIso8601String(),
+    'created_at': bucket.createdAt.toUtc().toIso8601String(),
+    'updated_at': bucket.updatedAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _privacyBucketMemberToJson(PrivacyBucketMember link) => {
@@ -611,7 +614,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           record.id,
           'summary_json',
         ),
-        'imported_at': record.importedAt.toIso8601String(),
+        'imported_at': record.importedAt.toUtc().toIso8601String(),
       };
 
   Future<Map<String, Object?>> _importPayloadToJson(
@@ -629,7 +632,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           'payload_json',
         )) ??
         '',
-    'imported_at': payload.importedAt.toIso8601String(),
+    'imported_at': payload.importedAt.toUtc().toIso8601String(),
   };
 
   Future<Map<String, Object?>> _notificationEventToJson(
@@ -653,14 +656,14 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           'body',
         )) ??
         '',
-    'read_at': event.readAt?.toIso8601String(),
-    'created_at': event.createdAt.toIso8601String(),
+    'read_at': event.readAt?.toUtc().toIso8601String(),
+    'created_at': event.createdAt.toUtc().toIso8601String(),
   };
 
   Map<String, Object?> _preferenceToJson(AppPreference preference) => {
     'key': preference.key,
     'value': preference.value,
-    'updated_at': preference.updatedAt.toIso8601String(),
+    'updated_at': preference.updatedAt.toUtc().toIso8601String(),
   };
 }
 

@@ -1671,6 +1671,57 @@ void main() {
     },
   );
 
+  test('round-trips persisted poll closing and retention settings', () async {
+    final sourceDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(sourceDatabase.close);
+    final source = testRepository(sourceDatabase);
+    await source.ensureLocalSystem();
+    await source.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.multipleChoice,
+        options: ['Soup', 'Rice'],
+      ),
+    );
+    final sourcePoll = await sourceDatabase
+        .select(sourceDatabase.polls)
+        .getSingle();
+    final closesAt = DateTime.utc(2026, 10, 1, 12);
+    await (sourceDatabase.update(
+      sourceDatabase.polls,
+    )..where((poll) => poll.id.equals(sourcePoll.id))).write(
+      PollsCompanion(
+        restrictVotingToFronters: const Value(true),
+        closesAt: Value(closesAt),
+        retentionDays: const Value(30),
+      ),
+    );
+
+    final archive = await source.buildLocalArchiveJson();
+    final exported = jsonDecode(archive) as Map<String, dynamic>;
+    final exportedPoll =
+        (exported['polls'] as List).single as Map<String, dynamic>;
+    expect(exportedPoll['restrict_voting_to_fronters'], isTrue);
+    expect(exportedPoll['closes_at'], closesAt.toIso8601String());
+    expect(exportedPoll['retention_days'], 30);
+
+    final targetDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(targetDatabase.close);
+    final target = testRepository(targetDatabase);
+    await target.ensureLocalSystem();
+    await target.importLocalArchiveJson(
+      archive,
+      strategy: ImportConflictStrategy.update,
+    );
+
+    final restored = await targetDatabase
+        .select(targetDatabase.polls)
+        .getSingle();
+    expect(restored.restrictVotingToFronters, isTrue);
+    expect(restored.closesAt?.toUtc(), closesAt);
+    expect(restored.retentionDays, 30);
+  });
+
   test('exports a versioned local archive', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

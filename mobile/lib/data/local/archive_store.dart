@@ -2202,6 +2202,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       kind: Value(
         PollKind.fromStorage(_stringValue(poll['kind'])).storageValue,
       ),
+      restrictVotingToFronters: Value(
+        poll['restrict_voting_to_fronters'] == true,
+      ),
+      closesAt: Value(_dateValue(poll['closes_at'])),
+      retentionDays: Value(_intValue(poll['retention_days'])),
       closed: Value(poll['closed'] == true),
       createdAt: _dateValue(poll['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
