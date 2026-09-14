@@ -790,6 +790,262 @@ void main() {
     expect(snapshot.memberCount, 0);
   });
 
+  test(
+    'tombstones a member without breaking dependent local history',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      final now = DateTime.utc(2026, 9, 14);
+      final system =
+          (await database.select(database.pluralSystems).get()).single;
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      Future<String> encrypt(
+        String value,
+        String table,
+        String rowId,
+        String column,
+      ) => _encryptedLocalText(testCrypto(), value, table, rowId, column);
+
+      await database
+          .into(database.systemGroups)
+          .insert(
+            SystemGroupsCompanion.insert(
+              id: 'group-1',
+              systemId: system.id,
+              name: await encrypt('group', 'system_groups', 'group-1', 'name'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.groupMembers)
+          .insert(
+            GroupMembersCompanion.insert(
+              groupId: 'group-1',
+              memberId: member.id,
+            ),
+          );
+      await database
+          .into(database.frontSessions)
+          .insert(
+            FrontSessionsCompanion.insert(
+              id: 'front-1',
+              systemId: system.id,
+              startedAt: now,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.frontSessionMembers)
+          .insert(
+            FrontSessionMembersCompanion.insert(
+              sessionId: 'front-1',
+              memberId: member.id,
+            ),
+          );
+      await database
+          .into(database.notes)
+          .insert(
+            NotesCompanion.insert(
+              id: 'note-1',
+              systemId: system.id,
+              memberId: Value(member.id),
+              title: await encrypt('note', 'notes', 'note-1', 'title'),
+              body: await encrypt('body', 'notes', 'note-1', 'body'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.messages)
+          .insert(
+            MessagesCompanion.insert(
+              id: 'message-1',
+              systemId: system.id,
+              memberId: Value(member.id),
+              boardMemberId: Value(member.id),
+              body: await encrypt('body', 'messages', 'message-1', 'body'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.reminders)
+          .insert(
+            RemindersCompanion.insert(
+              id: 'reminder-1',
+              systemId: system.id,
+              title: await encrypt('title', 'reminders', 'reminder-1', 'title'),
+              scheduleText: await encrypt(
+                'daily',
+                'reminders',
+                'reminder-1',
+                'schedule_text',
+              ),
+              triggerMemberId: Value(member.id),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.customFieldDefinitions)
+          .insert(
+            CustomFieldDefinitionsCompanion.insert(
+              id: 'field-1',
+              systemId: system.id,
+              name: await encrypt(
+                'field',
+                'custom_field_definitions',
+                'field-1',
+                'name',
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.customFieldValues)
+          .insert(
+            CustomFieldValuesCompanion.insert(
+              id: 'value-1',
+              fieldId: 'field-1',
+              memberId: Value(member.id),
+              value: await encrypt(
+                'value',
+                'custom_field_values',
+                'value-1',
+                'value',
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.journalEntries)
+          .insert(
+            JournalEntriesCompanion.insert(
+              id: 'journal-1',
+              systemId: system.id,
+              memberId: Value(member.id),
+              body: await encrypt(
+                'body',
+                'journal_entries',
+                'journal-1',
+                'body',
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.namedFronts)
+          .insert(
+            NamedFrontsCompanion.insert(
+              id: 'named-front-1',
+              systemId: system.id,
+              name: await encrypt(
+                'template',
+                'named_fronts',
+                'named-front-1',
+                'name',
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.namedFrontMembers)
+          .insert(
+            NamedFrontMembersCompanion.insert(
+              namedFrontId: 'named-front-1',
+              memberId: member.id,
+            ),
+          );
+      await database
+          .into(database.privacyBuckets)
+          .insert(
+            PrivacyBucketsCompanion.insert(
+              id: 'privacy-1',
+              systemId: system.id,
+              name: await encrypt(
+                'privacy',
+                'privacy_buckets',
+                'privacy-1',
+                'name',
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.privacyBucketMembers)
+          .insert(
+            PrivacyBucketMembersCompanion.insert(
+              bucketId: 'privacy-1',
+              memberId: member.id,
+            ),
+          );
+
+      await repository.deleteMember(member.id);
+
+      expect(
+        await repository.watchMembers(includeArchived: true).first,
+        isEmpty,
+      );
+      final storedMember = await (database.select(
+        database.members,
+      )..where((row) => row.id.equals(member.id))).getSingle();
+      expect(storedMember.deletedAt, isNotNull);
+      expect(await repository.setFrontMembers([member.id]), isEmpty);
+      expect(await database.select(database.groupMembers).get(), hasLength(1));
+      expect(
+        await database.select(database.frontSessionMembers).get(),
+        hasLength(1),
+      );
+      expect(await database.select(database.notes).get(), hasLength(1));
+      expect(await database.select(database.messages).get(), hasLength(1));
+      expect(await database.select(database.reminders).get(), hasLength(1));
+      expect(
+        await database.select(database.customFieldValues).get(),
+        hasLength(1),
+      );
+      expect(
+        await database.select(database.journalEntries).get(),
+        hasLength(1),
+      );
+      expect(
+        await database.select(database.namedFrontMembers).get(),
+        hasLength(1),
+      );
+      expect(
+        await database.select(database.privacyBucketMembers).get(),
+        hasLength(1),
+      );
+
+      final archive =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      final archivedMember =
+          (archive['members'] as List).single as Map<String, dynamic>;
+      expect(archivedMember['deleted_at'], isNotNull);
+
+      final restoredDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(restoredDatabase.close);
+      final restored = testRepository(restoredDatabase);
+      await restored.ensureLocalSystem();
+      await restored.importLocalArchiveJson(jsonEncode(archive));
+      expect(await restored.watchMembers(includeArchived: true).first, isEmpty);
+      final restoredMember = await (restoredDatabase.select(
+        restoredDatabase.members,
+      )..where((row) => row.id.equals(member.id))).getSingle();
+      expect(restoredMember.deletedAt, isNotNull);
+    },
+  );
+
   test('fails closed when a protected member name is corrupted', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

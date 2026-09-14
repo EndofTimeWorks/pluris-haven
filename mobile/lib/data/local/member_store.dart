@@ -120,6 +120,7 @@ FROM members m
 LEFT JOIN group_members gm ON gm.member_id = m.id
 WHERE
   m.system_id = ?
+  AND m.deleted_at IS NULL
   AND (? = 1 OR m.archived = 0)
   AND (? = 1 OR m.is_custom_front = 0)
 GROUP BY
@@ -468,18 +469,18 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
 
   Future<void> delete(String memberId) async {
     await database.transaction(() async {
-      await (database.delete(
-        database.frontSessionMembers,
-      )..where((frontMember) => frontMember.memberId.equals(memberId))).go();
-      await (database.delete(
-        database.groupMembers,
-      )..where((groupMember) => groupMember.memberId.equals(memberId))).go();
-      await (database.delete(database.members)..where(
+      await (database.update(database.members)..where(
             (member) =>
                 member.systemId.equals(localSystemId) &
                 member.id.equals(memberId),
           ))
-          .go();
+          .write(
+            MembersCompanion(
+              archived: const Value(true),
+              deletedAt: Value(DateTime.now().toUtc()),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
     });
     onDeleted(memberId);
   }

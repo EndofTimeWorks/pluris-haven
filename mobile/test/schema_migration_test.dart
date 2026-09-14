@@ -5,7 +5,7 @@
 // so there is no version-by-version JSON to diff against. Instead, the
 // historical shape of each schema version is reconstructed mechanically from
 // onUpgrade itself: `migrator.createTable(x)` and `migrator.addColumn(t, c)`
-// always operate against the CURRENT (v21) Dart column/table definition, so
+// always operate against the CURRENT (v22) Dart column/table definition, so
 // "what did version N look like" is exactly "the current table/column set,
 // minus everything added by an `if (from < M)` block for M > N". That
 // subtraction is done by hand below (see the comments next to each raw
@@ -15,7 +15,7 @@
 // existed at some historical version, stamps `PRAGMA user_version` to that
 // version, closes it, then reopens the SAME file with the real,
 // unmodified `AppDatabase` class. Opening triggers the real
-// `onUpgrade(migrator, from, 21)` path end-to-end.
+// `onUpgrade(migrator, from, 22)` path end-to-end.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
@@ -611,14 +611,14 @@ void main() {
     expect(await _indexNames(database), containsAll(_performanceIndexNames));
   });
 
-  test('migrates a version-1 database up to the current schema (v21)', () async {
+  test('migrates a version-1 database up to the current schema (v22)', () async {
     final dbPath = '${tempDir.path}/legacy_v1.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());
 
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
 
-    // Merely opening the database runs onUpgrade(1, 21); this must not throw.
+    // Merely opening the database runs onUpgrade(1, 22); this must not throw.
     await database.customSelect('SELECT 1').getSingle();
 
     // v8: displayNameHash / frameShape / lexoRank on members.
@@ -710,7 +710,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 21);
+    expect(version.data['user_version'], 22);
   });
 
   test('migrates a version-8 database (right after the largest migration '
@@ -783,7 +783,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 21);
+    expect(version.data['user_version'], 22);
   });
 
   test('a real row written before migration survives the v1 -> v20 upgrade '
@@ -892,7 +892,7 @@ void main() {
     expect(reminder.data['body'], 'legacy reminder');
     expect(reminder.data['trigger_type'], 'repeated');
     expect(reminder.data['schedule_kind'], isNull);
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 21);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 22);
   });
 
   test('v12 member, front, and group relationships survive to v20', () async {
@@ -979,7 +979,7 @@ void main() {
       ),
       'Grounded',
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 21);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 22);
   });
 
   test('v16 chat and privacy relationships survive the final migration', () async {
@@ -1073,7 +1073,7 @@ void main() {
       ),
       0,
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 21);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 22);
   });
 
   test('private content survives the v8 -> v20 upgrade', () async {
@@ -1283,6 +1283,6 @@ void main() {
       ),
       'front-1',
     );
-    expect(await value('PRAGMA user_version', 'user_version'), 21);
+    expect(await value('PRAGMA user_version', 'user_version'), 22);
   });
 }

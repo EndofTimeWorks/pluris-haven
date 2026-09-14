@@ -1782,6 +1782,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       ),
       isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
+      deletedAt: Value(_dateValue(member['deleted_at'])),
       lexoRank: await _members.rankForImport(
         id,
         _stringValue(member['lexo_rank']),

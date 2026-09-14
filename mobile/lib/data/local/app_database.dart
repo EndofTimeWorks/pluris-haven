@@ -60,6 +60,7 @@ class Members extends Table {
   BoolColumn get isCustomFront =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -500,7 +501,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
@@ -681,6 +682,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 18) {
         // New member writes always assign a unique rank. Rebuild the table so
         // SQLite cannot silently insert the old shared tail sentinel.
+        // The rebuild uses the current member shape, so later nullable columns
+        // must exist before Drift copies the historical rows.
+        await _addColumnIfMissing(migrator, members, members.deletedAt);
         await migrator.alterTable(TableMigration(members));
       }
       if (from < 19) {
@@ -707,6 +711,9 @@ class AppDatabase extends _$AppDatabase {
             },
           ),
         );
+      }
+      if (from < 22) {
+        await _addColumnIfMissing(migrator, members, members.deletedAt);
       }
     },
     beforeOpen: (details) async {

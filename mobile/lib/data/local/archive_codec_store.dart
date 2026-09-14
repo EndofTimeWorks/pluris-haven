@@ -76,6 +76,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'pluralkit_id': pluralKitId,
       'is_custom_front': member.isCustomFront,
       'archived': member.archived,
+      'deleted_at': member.deletedAt?.toIso8601String(),
       'created_at': member.createdAt.toIso8601String(),
       'updated_at': member.updatedAt.toIso8601String(),
     };

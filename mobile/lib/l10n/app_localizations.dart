@@ -5468,7 +5468,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'{name} will be permanently removed from this local system.'**
+  /// **'{name} will be removed from member lists. Existing local history keeps an attribution record.'**
   String deleteMemberBody(String name);
 
   /// No description provided for @setFrontButton.

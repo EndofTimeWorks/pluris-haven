@@ -120,6 +120,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
               (member) =>
                   member.systemId.equals(localSystemId) &
                   member.archived.equals(false) &
+                  member.deletedAt.isNull() &
                   member.isCustomFront.equals(false) &
                   member.id.isIn(ids),
             ))

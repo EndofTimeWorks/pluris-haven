@@ -1314,6 +1314,17 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1356,6 +1367,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     lexoRank,
     isCustomFront,
     archived,
+    deletedAt,
     createdAt,
     updatedAt,
   ];
@@ -1502,6 +1514,12 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1599,6 +1617,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.bool,
         data['${effectivePrefix}archived'],
       )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1635,6 +1657,7 @@ class Member extends DataClass implements Insertable<Member> {
   final String lexoRank;
   final bool isCustomFront;
   final bool archived;
+  final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Member({
@@ -1656,6 +1679,7 @@ class Member extends DataClass implements Insertable<Member> {
     required this.lexoRank,
     required this.isCustomFront,
     required this.archived,
+    this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1700,6 +1724,9 @@ class Member extends DataClass implements Insertable<Member> {
     map['lexo_rank'] = Variable<String>(lexoRank);
     map['is_custom_front'] = Variable<bool>(isCustomFront);
     map['archived'] = Variable<bool>(archived);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1745,6 +1772,9 @@ class Member extends DataClass implements Insertable<Member> {
       lexoRank: Value(lexoRank),
       isCustomFront: Value(isCustomFront),
       archived: Value(archived),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1776,6 +1806,7 @@ class Member extends DataClass implements Insertable<Member> {
       lexoRank: serializer.fromJson<String>(json['lexoRank']),
       isCustomFront: serializer.fromJson<bool>(json['isCustomFront']),
       archived: serializer.fromJson<bool>(json['archived']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1804,6 +1835,7 @@ class Member extends DataClass implements Insertable<Member> {
       'lexoRank': serializer.toJson<String>(lexoRank),
       'isCustomFront': serializer.toJson<bool>(isCustomFront),
       'archived': serializer.toJson<bool>(archived),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1828,6 +1860,7 @@ class Member extends DataClass implements Insertable<Member> {
     String? lexoRank,
     bool? isCustomFront,
     bool? archived,
+    Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Member(
@@ -1852,6 +1885,7 @@ class Member extends DataClass implements Insertable<Member> {
     lexoRank: lexoRank ?? this.lexoRank,
     isCustomFront: isCustomFront ?? this.isCustomFront,
     archived: archived ?? this.archived,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1889,6 +1923,7 @@ class Member extends DataClass implements Insertable<Member> {
           ? data.isCustomFront.value
           : this.isCustomFront,
       archived: data.archived.present ? data.archived.value : this.archived,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1915,6 +1950,7 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('lexoRank: $lexoRank, ')
           ..write('isCustomFront: $isCustomFront, ')
           ..write('archived: $archived, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1922,7 +1958,7 @@ class Member extends DataClass implements Insertable<Member> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     systemId,
     displayName,
@@ -1941,9 +1977,10 @@ class Member extends DataClass implements Insertable<Member> {
     lexoRank,
     isCustomFront,
     archived,
+    deletedAt,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1966,6 +2003,7 @@ class Member extends DataClass implements Insertable<Member> {
           other.lexoRank == this.lexoRank &&
           other.isCustomFront == this.isCustomFront &&
           other.archived == this.archived &&
+          other.deletedAt == this.deletedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1989,6 +2027,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<String> lexoRank;
   final Value<bool> isCustomFront;
   final Value<bool> archived;
+  final Value<DateTime?> deletedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2011,6 +2050,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.lexoRank = const Value.absent(),
     this.isCustomFront = const Value.absent(),
     this.archived = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2034,6 +2074,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     required String lexoRank,
     this.isCustomFront = const Value.absent(),
     this.archived = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2062,6 +2103,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<String>? lexoRank,
     Expression<bool>? isCustomFront,
     Expression<bool>? archived,
+    Expression<DateTime>? deletedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2086,6 +2128,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (lexoRank != null) 'lexo_rank': lexoRank,
       if (isCustomFront != null) 'is_custom_front': isCustomFront,
       if (archived != null) 'archived': archived,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2111,6 +2154,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<String>? lexoRank,
     Value<bool>? isCustomFront,
     Value<bool>? archived,
+    Value<DateTime?>? deletedAt,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -2135,6 +2179,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       lexoRank: lexoRank ?? this.lexoRank,
       isCustomFront: isCustomFront ?? this.isCustomFront,
       archived: archived ?? this.archived,
+      deletedAt: deletedAt ?? this.deletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2200,6 +2245,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     if (archived.present) {
       map['archived'] = Variable<bool>(archived.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2233,6 +2281,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('lexoRank: $lexoRank, ')
           ..write('isCustomFront: $isCustomFront, ')
           ..write('archived: $archived, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -18303,6 +18352,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       required String lexoRank,
       Value<bool> isCustomFront,
       Value<bool> archived,
+      Value<DateTime?> deletedAt,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -18327,6 +18377,7 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<String> lexoRank,
       Value<bool> isCustomFront,
       Value<bool> archived,
+      Value<DateTime?> deletedAt,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -18590,6 +18641,11 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<bool> get archived => $composableBuilder(
     column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18896,6 +18952,11 @@ class $$MembersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -19003,6 +19064,9 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<bool> get archived =>
       $composableBuilder(column: $table.archived, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -19268,6 +19332,7 @@ class $$MembersTableTableManager
                 Value<String> lexoRank = const Value.absent(),
                 Value<bool> isCustomFront = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19290,6 +19355,7 @@ class $$MembersTableTableManager
                 lexoRank: lexoRank,
                 isCustomFront: isCustomFront,
                 archived: archived,
+                deletedAt: deletedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -19314,6 +19380,7 @@ class $$MembersTableTableManager
                 required String lexoRank,
                 Value<bool> isCustomFront = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -19336,6 +19403,7 @@ class $$MembersTableTableManager
                 lexoRank: lexoRank,
                 isCustomFront: isCustomFront,
                 archived: archived,
+                deletedAt: deletedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
