@@ -829,6 +829,22 @@ void main() {
             ),
           );
       await database
+          .into(database.tags)
+          .insert(
+            TagsCompanion.insert(
+              id: 'tag-1',
+              systemId: system.id,
+              name: await encrypt('tag', 'tags', 'tag-1', 'name'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.memberTags)
+          .insert(
+            MemberTagsCompanion.insert(tagId: 'tag-1', memberId: member.id),
+          );
+      await database
           .into(database.frontSessions)
           .insert(
             FrontSessionsCompanion.insert(
@@ -1001,11 +1017,17 @@ void main() {
       )..where((row) => row.id.equals(member.id))).getSingle();
       expect(storedMember.deletedAt, isNotNull);
       expect(await repository.setFrontMembers([member.id]), isEmpty);
-      expect(await database.select(database.groupMembers).get(), hasLength(1));
+      expect(await database.select(database.groupMembers).get(), isEmpty);
+      expect(await database.select(database.memberTags).get(), isEmpty);
       expect(
         await database.select(database.frontSessionMembers).get(),
         hasLength(1),
       );
+      final front = await database.select(database.frontSessions).getSingle();
+      expect(front.endedAt, isNotNull);
+      final history = await repository.watchFrontHistory().first;
+      expect(history.single.memberIds, [member.id]);
+      expect(history.single.label, 'River');
       expect(await database.select(database.notes).get(), hasLength(1));
       expect(await database.select(database.messages).get(), hasLength(1));
       expect(await database.select(database.reminders).get(), hasLength(1));
@@ -1017,13 +1039,10 @@ void main() {
         await database.select(database.journalEntries).get(),
         hasLength(1),
       );
-      expect(
-        await database.select(database.namedFrontMembers).get(),
-        hasLength(1),
-      );
+      expect(await database.select(database.namedFrontMembers).get(), isEmpty);
       expect(
         await database.select(database.privacyBucketMembers).get(),
-        hasLength(1),
+        isEmpty,
       );
 
       final archive =

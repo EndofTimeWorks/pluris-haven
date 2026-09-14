@@ -469,6 +469,44 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
 
   Future<void> delete(String memberId) async {
     await database.transaction(() async {
+      final now = DateTime.now().toUtc();
+      final frontLinks = await (database.select(
+        database.frontSessionMembers,
+      )..where((link) => link.memberId.equals(memberId))).get();
+      final linkedSessionIds = frontLinks
+          .map((link) => link.sessionId)
+          .toSet()
+          .toList(growable: false);
+      if (linkedSessionIds.isNotEmpty) {
+        await (database.update(database.frontSessions)..where(
+              (session) =>
+                  session.systemId.equals(localSystemId) &
+                  session.id.isIn(linkedSessionIds) &
+                  session.endedAt.isNull(),
+            ))
+            .write(
+              FrontSessionsCompanion(
+                endedAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+      }
+
+      // These are current membership/configuration relationships. They are
+      // owned by the member's active profile, unlike historical content and
+      // front links, which remain attributable through the tombstone.
+      await (database.delete(
+        database.groupMembers,
+      )..where((link) => link.memberId.equals(memberId))).go();
+      await (database.delete(
+        database.memberTags,
+      )..where((link) => link.memberId.equals(memberId))).go();
+      await (database.delete(
+        database.namedFrontMembers,
+      )..where((link) => link.memberId.equals(memberId))).go();
+      await (database.delete(
+        database.privacyBucketMembers,
+      )..where((link) => link.memberId.equals(memberId))).go();
       await (database.update(database.members)..where(
             (member) =>
                 member.systemId.equals(localSystemId) &
@@ -477,8 +515,8 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
           .write(
             MembersCompanion(
               archived: const Value(true),
-              deletedAt: Value(DateTime.now().toUtc()),
-              updatedAt: Value(DateTime.now().toUtc()),
+              deletedAt: Value(now),
+              updatedAt: Value(now),
             ),
           );
     });
