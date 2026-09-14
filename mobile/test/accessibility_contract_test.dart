@@ -288,7 +288,9 @@ void main() {
 
     final l10n = AppLocalizations.of(tester.element(find.byType(SpDrawer)));
     final drawerList = find.byType(Scrollable);
-    for (final section in SpSection.values) {
+    for (final section in SpSection.values.where(
+      (section) => section != SpSection.tokens,
+    )) {
       final label = section.label(l10n);
       final text = find.text(label);
       await tester.scrollUntilVisible(text, 180, scrollable: drawerList);
@@ -297,6 +299,10 @@ void main() {
         findsOneWidget,
       );
     }
+    expect(
+      find.bySemanticsLabel(RegExp('^${RegExp.escape(l10n.navigationTokens)}')),
+      findsNothing,
+    );
   });
 
   testWidgets('import and restore progress announce their current status', (
