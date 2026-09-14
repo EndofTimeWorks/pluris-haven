@@ -49,6 +49,7 @@ if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
   echo "Invalid mobile build number: ${build}" >&2
   exit 1
 fi
+node scripts/check-mobile-release-version.mjs "${version_with_build}"
 if ! grep -Fq "${version_with_build}" CHANGELOG.md; then
   echo "CHANGELOG.md does not mention ${version_with_build}." >&2
   exit 1

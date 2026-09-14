@@ -89,12 +89,8 @@ jobs:
             exit 1
           fi
 
-          max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
-          max_tagged_build="${max_tagged_build:-0}"
-          if (( build < max_tagged_build )); then
-            echo "Build ${build} is older than the highest tagged mobile build ${max_tagged_build}." >&2
-            exit 1
-          fi
+          node scripts/check-mobile-release-version.mjs \
+            "${version_with_build}" "${GITHUB_REF_NAME}"
 
           prerelease=false
           if [[ "${version}" == 0.* || "${version}" == *-* ]]; then
