@@ -3126,7 +3126,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteMemberBody(String name) {
-    return '$name will be removed from member lists. Existing local history keeps an attribution record.';
+    return "$name will be removed from member lists and cannot be selected for new fronts. Existing front history, group links, templates, notes, messages, reminders, and attribution stay in this device's history.";
   }
 
   @override
