@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
 from pluris_server.backup_storage import BackupChunkIntegrityError
@@ -278,6 +278,12 @@ async def put_chunk(
             await db.rollback()
             raise HTTPException(
                 status_code=409, detail="Backup chunk key already exists"
+            ) from error
+        except SQLAlchemyError as error:
+            await db.rollback()
+            raise HTTPException(
+                status_code=503,
+                detail="Backup chunk finalization failed; retry safely",
             ) from error
     return BackupChunkView(
         snapshot_id=snapshot.snapshot_id,

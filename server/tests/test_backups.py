@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from pluris_server.backup_cleanup import (
     queue_backup_deletions,
@@ -313,6 +315,72 @@ def test_backup_retry_repairs_corrupt_stored_blob(client: TestClient) -> None:
     repaired = client.get(chunk_url, headers=headers)
     assert repaired.status_code == 200
     assert repaired.content == body
+
+
+def test_backup_retry_finishes_after_stored_state_commit_failure(
+    client: TestClient, monkeypatch
+) -> None:
+    user = register(client, "finalize-retry@example.com", "Finalize retry")
+    headers = auth(user["access_token"])
+    body = b"durable before final database commit"
+    digest = hashlib.sha256(body).hexdigest()
+    snapshot_id = "finalize-retry"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 1,
+                "total_bytes": len(body),
+            },
+        ).status_code
+        == 201
+    )
+
+    original_commit = AsyncSession.commit
+
+    async def fail_stored_state_commit(session: AsyncSession) -> None:
+        if any(
+            isinstance(value, BackupChunk) and value.stored_at is not None
+            for value in session.dirty
+        ):
+            raise SQLAlchemyError("injected stored-state commit failure")
+        await original_commit(session)
+
+    monkeypatch.setattr(AsyncSession, "commit", fail_stored_state_commit)
+    chunk_url = f"/v1/backups/snapshots/{snapshot_id}/chunks/0"
+    failed = client.put(
+        chunk_url,
+        headers={**headers, "X-Content-SHA256": digest},
+        content=body,
+    )
+    assert failed.status_code == 503
+    assert failed.json()["detail"] == "Backup chunk finalization failed; retry safely"
+    assert next(client.app.state.backup_object_store.root.rglob("*.chunk")).read_bytes() == body
+
+    async def assert_pending() -> None:
+        async with client.app.state.session_factory() as session:
+            chunk = await session.scalar(
+                select(BackupChunk)
+                .join(BackupSnapshot)
+                .where(BackupSnapshot.snapshot_id == snapshot_id)
+            )
+            assert chunk is not None
+            assert chunk.stored_at is None
+
+    asyncio.run(assert_pending())
+    monkeypatch.setattr(AsyncSession, "commit", original_commit)
+    assert (
+        client.put(
+            chunk_url,
+            headers={**headers, "X-Content-SHA256": digest},
+            content=body,
+        ).status_code
+        == 200
+    )
+    assert client.get(chunk_url, headers=headers).content == body
 
 
 def test_backup_snapshot_quotas_reserve_declared_storage(client: TestClient) -> None:
