@@ -9,6 +9,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PersistableBundle;
 import android.provider.OpenableColumns;
 import android.view.WindowManager;
@@ -56,6 +58,7 @@ public final class MainActivity extends FlutterFragmentActivity {
             "works.endoftime.plurishaven/clipboard";
     private static final String SCREEN_CAPTURE_CHANNEL =
             "works.endoftime.plurishaven/screen_capture";
+    private static final long SENSITIVE_CLIPBOARD_CLEAR_DELAY_MILLIS = 60_000L;
 
     private MethodChannel.Result pendingPickResult;
     private long pendingPickMaximumBytes = 32L * 1024L * 1024L;
@@ -192,6 +195,16 @@ public final class MainActivity extends FlutterFragmentActivity {
             clip.getDescription().setExtras(extras);
         }
         clipboard.setPrimaryClip(clip);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (!clipboard.hasPrimaryClip()) return;
+            ClipData current = clipboard.getPrimaryClip();
+            if (current == null || current.getItemCount() != 1) return;
+            CharSequence currentText = current.getItemAt(0).coerceToText(this);
+            if (!text.contentEquals(currentText)) return;
+            // Do not clear a newer clipboard value copied by the user or
+            // another app. An empty clip is supported on older Android APIs.
+            clipboard.setPrimaryClip(ClipData.newPlainText("", ""));
+        }, SENSITIVE_CLIPBOARD_CLEAR_DELAY_MILLIS);
         result.success(null);
     }
 
