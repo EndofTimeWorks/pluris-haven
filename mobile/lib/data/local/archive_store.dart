@@ -2187,6 +2187,24 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
   ) async {
     final id = _requiredString(poll, 'id');
     final question = _requiredString(poll, 'question');
+    if (await _pollHasVotes(id)) {
+      // A restore may contain an older or divergent definition. Once the
+      // target has votes, changing the question, choices, or voting rules
+      // would reinterpret those votes. A closed archive may still advance
+      // the terminal state, but it must never reopen a poll.
+      if (poll['closed'] == true) {
+        await (database.update(database.polls)..where(
+              (existing) =>
+                  existing.systemId.equals(localSystemId) &
+                  existing.id.equals(id) &
+                  existing.closed.equals(false),
+            ))
+            .write(
+              PollsCompanion(closed: const Value(true), updatedAt: Value(now)),
+            );
+      }
+      return;
+    }
     final companion = PollsCompanion.insert(
       id: id,
       systemId: localSystemId,
@@ -2221,6 +2239,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     ImportConflictStrategy strategy,
   ) async {
     final id = _requiredString(option, 'id');
+    if (await _pollHasVotes(_requiredString(option, 'poll_id'))) {
+      return;
+    }
     final companion = PollOptionsCompanion.insert(
       id: id,
       pollId: _requiredString(option, 'poll_id'),
@@ -2233,6 +2254,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       position: _intValue(option['position']) ?? 0,
     );
     await _insertArchiveRow(database.pollOptions, companion, strategy);
+  }
+
+  Future<bool> _pollHasVotes(String pollId) async {
+    final vote = await (database.select(
+      database.pollVotes,
+    )..where((existing) => existing.pollId.equals(pollId))).getSingleOrNull();
+    return vote != null;
   }
 
   Future<void> _importPollVote(Map<String, Object?> vote) {

@@ -1660,6 +1660,66 @@ void main() {
   });
 
   test(
+    'does not rewrite poll semantics from an archive after voting',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.savePoll(
+        const PollDraft(
+          question: 'Dinner?',
+          description: 'Pick one.',
+          kind: PollKind.singleChoice,
+          options: ['Soup', 'Rice'],
+          restrictVotingToFronters: false,
+        ),
+      );
+      var poll = (await repository.watchPolls().first).single;
+      await repository.togglePollOption(poll.id, poll.options.first.id);
+
+      final archive =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      final archivedPoll =
+          (archive['polls'] as List).single as Map<String, dynamic>;
+      archivedPoll['question'] = 'Changed question';
+      archivedPoll['description'] = 'Changed description';
+      archivedPoll['kind'] = PollKind.multipleChoice.storageValue;
+      archivedPoll['restrict_voting_to_fronters'] = true;
+      final archivedOptions = (archive['poll_options'] as List)
+          .cast<Map<String, dynamic>>();
+      archivedOptions.first['body'] = 'Changed option';
+      archivedOptions.add({
+        'id': '${poll.id}-option-extra',
+        'poll_id': poll.id,
+        'body': 'Extra option',
+        'position': 2,
+      });
+
+      await repository.importLocalArchiveJson(
+        jsonEncode(archive),
+        strategy: ImportConflictStrategy.update,
+      );
+
+      poll = (await repository.watchPolls().first).single;
+      expect(poll.question, 'Dinner?');
+      expect(poll.description, 'Pick one.');
+      expect(poll.kind, PollKind.singleChoice);
+      expect(poll.restrictVotingToFronters, isFalse);
+      expect(poll.options.map((option) => option.body), ['Soup', 'Rice']);
+      expect(poll.selectedCount, 1);
+
+      archivedPoll['closed'] = true;
+      await repository.importLocalArchiveJson(
+        jsonEncode(archive),
+        strategy: ImportConflictStrategy.update,
+      );
+      expect((await repository.watchPolls().first).single.closed, isTrue);
+    },
+  );
+
+  test(
     'enforces a currently-fronting requirement for restricted polls',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
