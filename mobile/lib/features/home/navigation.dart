@@ -199,12 +199,6 @@ class SpDrawer extends StatelessWidget {
               onSelect: onSelect,
             ),
             DrawerEntry(
-              label: SpSection.tokens.label(l10n),
-              section: SpSection.tokens,
-              selected: selected,
-              onSelect: onSelect,
-            ),
-            DrawerEntry(
               label: SpSection.userReport.label(l10n),
               section: SpSection.userReport,
               selected: selected,

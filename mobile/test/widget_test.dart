@@ -1338,10 +1338,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Trusted'), findsOneWidget);
 
-    await openDrawerSection(tester, 'Tokens');
-    expect(find.text('PluralKit live import'), findsOneWidget);
-
-    await openDrawerSection(tester, 'User Report');
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+    final drawer = find.byType(Drawer);
+    expect(
+      find.descendant(of: drawer, matching: find.text('Tokens')),
+      findsNothing,
+    );
+    final userReport = find.descendant(
+      of: drawer,
+      matching: find.text('User Report'),
+    );
+    await tester.scrollUntilVisible(
+      userReport,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(userReport.last);
+    await tester.pumpAndSettle();
     expect(find.text('User Report'), findsWidgets);
     expect(find.widgetWithText(FilledButton, 'Copy report'), findsOneWidget);
     final report = tester

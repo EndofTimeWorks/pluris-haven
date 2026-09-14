@@ -329,13 +329,6 @@ final dashboardShortcuts = [
     icon: Icons.privacy_tip_rounded,
   ),
   DashboardShortcutDefinition(
-    id: 'tokens',
-    title: (l10n) => l10n.dashboardShortcutTokensTitle,
-    subtitle: (l10n) => l10n.dashboardShortcutTokensSubtitle,
-    section: SpSection.tokens,
-    icon: Icons.verified_user_rounded,
-  ),
-  DashboardShortcutDefinition(
     id: 'user-report',
     title: (l10n) => l10n.dashboardShortcutUserReportTitle,
     subtitle: (l10n) => l10n.dashboardShortcutUserReportSubtitle,
