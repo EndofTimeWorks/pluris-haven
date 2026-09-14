@@ -48,13 +48,15 @@ async def sweep_incomplete_backup_snapshots(
 ) -> int:
     """Expire stale upload reservations that never received a complete snapshot."""
     cutoff = (now or datetime.now(UTC)) - timedelta(seconds=ttl_seconds)
-    uploaded_chunks = func.count(BackupChunk.id)
-    uploaded_bytes = func.coalesce(func.sum(BackupChunk.size), 0)
+    uploaded_chunks = func.count(BackupChunk.id).filter(BackupChunk.stored_at.is_not(None))
+    uploaded_bytes = func.coalesce(
+        func.sum(BackupChunk.size).filter(BackupChunk.stored_at.is_not(None)), 0
+    )
     snapshots = (
         await db.scalars(
             select(BackupSnapshot)
             .outerjoin(BackupChunk, BackupChunk.snapshot_id == BackupSnapshot.id)
-            .where(BackupSnapshot.created_at <= cutoff)
+            .where(BackupSnapshot.upload_started_at <= cutoff)
             .group_by(BackupSnapshot.id)
             .having(
                 or_(

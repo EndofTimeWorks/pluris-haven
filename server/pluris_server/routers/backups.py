@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from pluris_server.backup_cleanup import queue_backup_deletions, sweep_backup_deletions
-from pluris_server.backup_storage import BackupChunkConflict, BackupChunkIntegrityError
+from pluris_server.backup_storage import BackupChunkIntegrityError
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
 from pluris_server.models import BackupChunk, BackupSnapshot, SecurityEventType, User
 from pluris_server.observability import (
@@ -24,6 +24,14 @@ from pluris_server.schemas import (
 from pluris_server.security_events import record_security_event
 
 router = APIRouter(prefix="/v1/backups", tags=["backups"])
+
+
+def _stored_chunk_count() -> object:
+    return func.count(BackupChunk.id).filter(BackupChunk.stored_at.is_not(None))
+
+
+def _stored_chunk_bytes() -> object:
+    return func.coalesce(func.sum(BackupChunk.size).filter(BackupChunk.stored_at.is_not(None)), 0)
 
 
 async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
@@ -57,8 +65,8 @@ async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
 async def _snapshot_view(db: Db, snapshot: BackupSnapshot) -> BackupSnapshotView:
     result = await db.execute(
         select(
-            func.count(BackupChunk.id),
-            func.coalesce(func.sum(BackupChunk.size), 0),
+            _stored_chunk_count(),
+            _stored_chunk_bytes(),
         ).where(BackupChunk.snapshot_id == snapshot.id)
     )
     uploaded_chunks, uploaded_bytes = result.one()
@@ -162,8 +170,8 @@ async def list_snapshots(auth: CurrentAuth, db: Db) -> list[BackupSnapshotView]:
         await db.execute(
             select(
                 BackupSnapshot,
-                func.count(BackupChunk.id),
-                func.coalesce(func.sum(BackupChunk.size), 0),
+                _stored_chunk_count(),
+                _stored_chunk_bytes(),
             )
             .outerjoin(BackupChunk, BackupChunk.snapshot_id == BackupSnapshot.id)
             .where(BackupSnapshot.user_id == auth.user.id)
@@ -219,53 +227,63 @@ async def put_chunk(
     if existing is not None:
         if existing.sha256 != digest or existing.size != len(content):
             raise HTTPException(status_code=409, detail="Backup chunk key already exists")
-        return BackupChunkView(
-            snapshot_id=snapshot.snapshot_id,
+    else:
+        reserved_bytes = await db.scalar(
+            select(func.coalesce(func.sum(BackupChunk.size), 0)).where(
+                BackupChunk.snapshot_id == snapshot.id
+            )
+        )
+        if int(reserved_bytes or 0) + len(content) > snapshot.total_bytes:
+            log_security_signal(
+                SecuritySignal.CAPACITY_REJECTED,
+                operation=SecurityOperation.BACKUP_CHUNK,
+                reason=SecurityReason.PAYLOAD_TOO_LARGE,
+            )
+            raise HTTPException(
+                status_code=413, detail="Backup chunks exceed the snapshot manifest"
+            )
+        existing = BackupChunk(
+            snapshot_id=snapshot.id,
             index=index,
-            sha256=existing.sha256,
-            size=existing.size,
+            sha256=digest,
+            size=len(content),
         )
-
-    uploaded_bytes = await db.scalar(
-        select(func.coalesce(func.sum(BackupChunk.size), 0)).where(
-            BackupChunk.snapshot_id == snapshot.id
-        )
-    )
-    if int(uploaded_bytes or 0) + len(content) > snapshot.total_bytes:
-        log_security_signal(
-            SecuritySignal.CAPACITY_REJECTED,
-            operation=SecurityOperation.BACKUP_CHUNK,
-            reason=SecurityReason.PAYLOAD_TOO_LARGE,
-        )
-        raise HTTPException(status_code=413, detail="Backup chunks exceed the snapshot manifest")
+        db.add(existing)
+        try:
+            await db.commit()
+        except IntegrityError as error:
+            await db.rollback()
+            raise HTTPException(
+                status_code=409, detail="Backup chunk key already exists"
+            ) from error
 
     try:
-        request.app.state.backup_object_store.put_chunk(
+        request.app.state.backup_object_store.repair_chunk(
             owner_id=auth.user.id,
             snapshot_id=snapshot.snapshot_id,
             index=index,
             ciphertext=content,
             sha256=digest,
         )
-    except BackupChunkConflict as error:
-        raise HTTPException(status_code=409, detail="Backup chunk key already exists") from error
     except BackupChunkIntegrityError as error:
         raise HTTPException(
             status_code=400, detail="Backup chunk integrity check failed"
         ) from error
 
-    chunk = BackupChunk(snapshot_id=snapshot.id, index=index, sha256=digest, size=len(content))
-    db.add(chunk)
-    try:
-        await db.commit()
-    except IntegrityError as error:
-        await db.rollback()
-        raise HTTPException(status_code=409, detail="Backup chunk key already exists") from error
+    if existing.stored_at is None:
+        existing.stored_at = datetime.now(UTC)
+        try:
+            await db.commit()
+        except IntegrityError as error:
+            await db.rollback()
+            raise HTTPException(
+                status_code=409, detail="Backup chunk key already exists"
+            ) from error
     return BackupChunkView(
         snapshot_id=snapshot.snapshot_id,
         index=index,
-        sha256=digest,
-        size=len(content),
+        sha256=existing.sha256,
+        size=existing.size,
     )
 
 
@@ -279,7 +297,7 @@ async def get_chunk(
             BackupChunk.snapshot_id == snapshot.id, BackupChunk.index == index
         )
     )
-    if chunk is None:
+    if chunk is None or chunk.stored_at is None:
         raise HTTPException(status_code=404, detail="Backup chunk not found")
     try:
         content = request.app.state.backup_object_store.read_chunk(
@@ -288,7 +306,11 @@ async def get_chunk(
             index=index,
         )
     except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Backup chunk is not available") from error
+        raise HTTPException(
+            status_code=500, detail="Backup chunk storage is unavailable"
+        ) from error
+    if len(content) != chunk.size or hashlib.sha256(content).hexdigest() != chunk.sha256:
+        raise HTTPException(status_code=500, detail="Backup chunk storage failed integrity check")
     if index == 0:
         await record_security_event(
             db,

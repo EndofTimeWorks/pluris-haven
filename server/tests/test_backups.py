@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
@@ -10,7 +11,7 @@ from pluris_server.backup_cleanup import (
     sweep_incomplete_backup_snapshots,
 )
 from pluris_server.main import _sweep_scheduled_cleanup
-from pluris_server.models import BackupDeletion, BackupSnapshot
+from pluris_server.models import BackupChunk, BackupDeletion, BackupSnapshot
 from tests.conftest import auth, register
 
 
@@ -195,7 +196,7 @@ def test_backup_upload_rejects_stream_after_chunk_limit(client: TestClient) -> N
     assert not any(client.app.state.backup_object_store.root.rglob("*.chunk"))
 
 
-def test_incomplete_backup_snapshots_expire(client: TestClient) -> None:
+def test_incomplete_backup_expiry_uses_server_upload_start(client: TestClient) -> None:
     user = register(client, "expired-backup@example.com", "Expired backup")
     headers = auth(user["access_token"])
     created = client.post(
@@ -219,8 +220,99 @@ def test_incomplete_backup_snapshots_expire(client: TestClient) -> None:
                 ttl_seconds=3600,
             )
 
+    # An old client capture time is provenance only; the fresh server-side
+    # reservation must remain available for upload.
+    assert asyncio.run(sweep()) == 0
+
+    async def make_upload_stale() -> None:
+        async with client.app.state.session_factory() as session:
+            snapshot = await session.scalar(
+                select(BackupSnapshot).where(BackupSnapshot.snapshot_id == "expired-upload")
+            )
+            assert snapshot is not None
+            snapshot.upload_started_at = datetime(2000, 1, 1, tzinfo=UTC)
+            await session.commit()
+
+    asyncio.run(make_upload_stale())
     assert asyncio.run(sweep()) == 1
     assert client.get("/v1/backups/snapshots", headers=headers).json() == []
+
+
+def test_pending_backup_chunks_are_not_visible_or_restorable(client: TestClient) -> None:
+    user = register(client, "pending-backup@example.com", "Pending backup")
+    headers = auth(user["access_token"])
+    payload = {
+        "snapshot_id": "pending-upload",
+        "manifest_sha256": "a" * 64,
+        "chunk_count": 1,
+        "total_bytes": 5,
+    }
+    assert client.post("/v1/backups/snapshots", headers=headers, json=payload).status_code == 201
+
+    async def reserve_pending_chunk() -> None:
+        async with client.app.state.session_factory() as session:
+            snapshot = await session.scalar(
+                select(BackupSnapshot).where(BackupSnapshot.snapshot_id == "pending-upload")
+            )
+            assert snapshot is not None
+            session.add(
+                BackupChunk(
+                    snapshot_id=snapshot.id,
+                    index=0,
+                    sha256=hashlib.sha256(b"chunk").hexdigest(),
+                    size=5,
+                )
+            )
+            await session.commit()
+
+    asyncio.run(reserve_pending_chunk())
+    listed = client.get("/v1/backups/snapshots", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["uploaded_chunks"] == 0
+    assert listed.json()[0]["uploaded_bytes"] == 0
+    assert (
+        client.get("/v1/backups/snapshots/pending-upload/chunks/0", headers=headers).status_code
+        == 404
+    )
+
+
+def test_backup_retry_repairs_corrupt_stored_blob(client: TestClient) -> None:
+    user = register(client, "repair-backup@example.com", "Repair backup")
+    headers = auth(user["access_token"])
+    body = b"known ciphertext"
+    digest = hashlib.sha256(body).hexdigest()
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": "repair-upload",
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 1,
+                "total_bytes": len(body),
+            },
+        ).status_code
+        == 201
+    )
+    chunk_url = "/v1/backups/snapshots/repair-upload/chunks/0"
+    assert (
+        client.put(
+            chunk_url, headers={**headers, "X-Content-SHA256": digest}, content=body
+        ).status_code
+        == 200
+    )
+    chunk_path = next(client.app.state.backup_object_store.root.rglob("*.chunk"))
+    chunk_path.write_bytes(b"corrupt")
+    assert client.get(chunk_url, headers=headers).status_code == 500
+    assert (
+        client.put(
+            chunk_url, headers={**headers, "X-Content-SHA256": digest}, content=body
+        ).status_code
+        == 200
+    )
+    repaired = client.get(chunk_url, headers=headers)
+    assert repaired.status_code == 200
+    assert repaired.content == body
 
 
 def test_backup_snapshot_quotas_reserve_declared_storage(client: TestClient) -> None:

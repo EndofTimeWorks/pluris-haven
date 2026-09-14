@@ -79,6 +79,7 @@ class FilesystemBackupObjectStore:
                 handle.write(ciphertext)
                 handle.flush()
                 os.fsync(handle.fileno())
+            self._fsync_directory(destination.parent)
         except FileExistsError as error:
             existing = destination.read_bytes()
             if existing != ciphertext:
@@ -89,6 +90,47 @@ class FilesystemBackupObjectStore:
             destination.unlink(missing_ok=True)
             raise
 
+        return StoredBackupChunk(snapshot_id, index, sha256, len(ciphertext))
+
+    def repair_chunk(
+        self,
+        *,
+        owner_id: str,
+        snapshot_id: str,
+        index: int,
+        ciphertext: bytes,
+        sha256: str,
+    ) -> StoredBackupChunk:
+        """Make a known DB-authoritative chunk durable again.
+
+        Callers must first verify [ciphertext]'s digest and size against their
+        persisted metadata. That boundary prevents a retry from overwriting a
+        blob with merely client-supplied alternate content.
+        """
+        if index < 0:
+            raise ValueError("index must be non-negative")
+        if len(ciphertext) > self.max_chunk_bytes:
+            raise ValueError("backup chunk exceeds configured size limit")
+        if hashlib.sha256(ciphertext).hexdigest() != sha256:
+            raise BackupChunkIntegrityError("backup chunk digest does not match content")
+
+        snapshot_dir = self._snapshot_dir(owner_id, snapshot_id)
+        self._migrate_legacy_snapshot(owner_id, snapshot_id, snapshot_dir)
+        destination = snapshot_dir / f"{index:012d}.chunk"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists() and destination.read_bytes() == ciphertext:
+            return StoredBackupChunk(snapshot_id, index, sha256, len(ciphertext))
+
+        temporary = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.part")
+        try:
+            with temporary.open("xb") as handle:
+                handle.write(ciphertext)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, destination)
+            self._fsync_directory(destination.parent)
+        finally:
+            temporary.unlink(missing_ok=True)
         return StoredBackupChunk(snapshot_id, index, sha256, len(ciphertext))
 
     def read_chunk(self, *, owner_id: str, snapshot_id: str, index: int) -> bytes:
@@ -143,3 +185,11 @@ class FilesystemBackupObjectStore:
     def _validate_key(value: str, name: str) -> None:
         if not _SAFE_KEY.fullmatch(value):
             raise ValueError(f"{name} contains unsafe characters")
+
+    @staticmethod
+    def _fsync_directory(path: Path) -> None:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)

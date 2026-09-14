@@ -196,6 +196,9 @@ class BackupSnapshot(Base):
     chunk_count: Mapped[int]
     total_bytes: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    upload_started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
 
 
 class BackupChunk(Base):
@@ -211,6 +214,7 @@ class BackupChunk(Base):
     index: Mapped[int]
     sha256: Mapped[str] = mapped_column(String(64))
     size: Mapped[int]
+    stored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class BackupDeletion(Base):
