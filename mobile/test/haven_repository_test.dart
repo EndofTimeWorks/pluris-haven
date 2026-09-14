@@ -1915,6 +1915,56 @@ void main() {
     expect(preferences.single['value'], 'light');
   });
 
+  test(
+    'does not activate device or security-local preferences from an archive',
+    () async {
+      final sourceDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(sourceDatabase.close);
+      final source = testRepository(sourceDatabase);
+      await source.ensureLocalSystem();
+      await sourceDatabase
+          .into(sourceDatabase.appPreferences)
+          .insert(
+            AppPreferencesCompanion.insert(
+              key: 'theme_mode',
+              value: 'dark',
+              updatedAt: DateTime.utc(2026, 9, 14),
+            ),
+          );
+
+      final archive =
+          jsonDecode(await source.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      (archive['preferences'] as List).addAll([
+        {
+          'key': 'app_lock_enabled',
+          'value': 'true',
+          'updated_at': '2026-09-14T00:00:00.000Z',
+        },
+        {
+          'key': 'local_api.clients.v1',
+          'value': 'v2:not-portable',
+          'updated_at': '2026-09-14T00:00:00.000Z',
+        },
+      ]);
+
+      final targetDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(targetDatabase.close);
+      final target = testRepository(targetDatabase);
+      await target.ensureLocalSystem();
+      await target.importLocalArchiveJson(
+        jsonEncode(archive),
+        strategy: ImportConflictStrategy.update,
+      );
+
+      final preferences = await targetDatabase
+          .select(targetDatabase.appPreferences)
+          .get();
+      expect(preferences.map((preference) => preference.key), ['theme_mode']);
+      expect(preferences.single.value, 'dark');
+    },
+  );
+
   test('imports a local archive into an empty database', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
     final source = testRepository(sourceDatabase);
