@@ -8,6 +8,8 @@ import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/server/server_account_controller.dart';
 import 'package:pluris_haven/data/server/server_api.dart';
 
+import 'test_repository.dart';
+
 class _StreamingClient extends http.BaseClient {
   _StreamingClient(this._response);
 
@@ -364,30 +366,30 @@ void main() {
       );
       expect(api.passwordChanged, isTrue);
 
-      await controller.uploadBackup(
-        EncryptedBackupSnapshot(
-          snapshotId: 'mobile-test',
-          createdAt: DateTime.utc(2026, 8, 9),
-          chunkSize: 1024,
-          chunks: const [
-            EncryptedBackupChunk(
-              index: 0,
-              ciphertext: 'ph1:ciphertext',
-              sha256:
-                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            ),
-          ],
-        ),
+      final encryptedBackup = await EncryptedBackupSnapshot.create(
+        snapshotId: 'mobile-test',
+        createdAt: DateTime.utc(2026, 8, 9),
+        chunkSize: 1024,
+        archiveJson: 'x' * 1024,
+        crypto: testCrypto(),
       );
+      await controller.uploadBackup(encryptedBackup);
 
-      expect(api.uploadedChunks, [utf8.encode('ph1:ciphertext')]);
+      expect(api.uploadedChunks.single.length, greaterThan(1024));
       expect(controller.uploadCompletedChunks, 1);
 
       final downloaded = await controller.downloadBackup(
         api.snapshotRows.single,
       );
       expect(downloaded.snapshotId, 'mobile-test');
-      expect(downloaded.chunks.single.ciphertext, 'ph1:ciphertext');
+      expect(
+        downloaded.chunks.single.ciphertext,
+        encryptedBackup.chunks.single.ciphertext,
+      );
+      expect(
+        api.requestedMaximumBytes.single,
+        maxSerializedEncryptedBackupChunkBytes(1024),
+      );
 
       api.uploadedChunks[0] = List<int>.filled(
         api.snapshotRows.single.totalBytes + 1,
@@ -551,6 +553,7 @@ class FakeServerApi extends ServerApi {
       );
 
   final uploadedChunks = <List<int>>[];
+  final requestedMaximumBytes = <int>[];
   final snapshotRows = <ServerBackupSnapshot>[];
   final refreshNonces = <String?>[];
   bool passwordChanged = false;
@@ -742,7 +745,10 @@ class FakeServerApi extends ServerApi {
     required String snapshotId,
     required int index,
     required int maximumBytes,
-  }) async => uploadedChunks[index];
+  }) async {
+    requestedMaximumBytes.add(maximumBytes);
+    return uploadedChunks[index];
+  }
 
   @override
   Future<void> logout(String token) async {}

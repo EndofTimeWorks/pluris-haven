@@ -277,7 +277,7 @@ class ServerAccountController extends ChangeNotifier {
       );
     }
     if (metadata.format != encryptedBackupFormat ||
-        metadata.version == null ||
+        metadata.version != encryptedBackupVersion ||
         metadata.chunkSize == null) {
       throw const ServerApiException(
         'This backup predates online restore metadata and cannot be restored.',
@@ -309,9 +309,10 @@ class ServerAccountController extends ChangeNotifier {
           token,
           snapshotId: metadata.snapshotId,
           index: index,
-          maximumBytes: remainingBytes < metadata.chunkSize!
-              ? remainingBytes
-              : metadata.chunkSize!,
+          maximumBytes: min(
+            remainingBytes,
+            maxSerializedEncryptedBackupChunkBytes(metadata.chunkSize!),
+          ),
         );
         downloadedBytes += content.length;
         if (downloadedBytes > metadata.totalBytes) {

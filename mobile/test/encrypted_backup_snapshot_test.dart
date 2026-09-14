@@ -7,6 +7,25 @@ import 'package:pluris_haven/data/backup/encrypted_backup_snapshot.dart';
 import 'test_repository.dart';
 
 void main() {
+  test(
+    'serialized v2 ciphertext bound permits authentication expansion',
+    () async {
+      final snapshot = await EncryptedBackupSnapshot.create(
+        snapshotId: 'transport-bound',
+        archiveJson: 'x' * 1024,
+        crypto: testCrypto(),
+        chunkSize: 1024,
+      );
+
+      final ciphertextLength = snapshot.chunks.single.ciphertext.length;
+      expect(ciphertextLength, greaterThan(snapshot.chunkSize));
+      expect(
+        ciphertextLength,
+        maxSerializedEncryptedBackupChunkBytes(snapshot.chunkSize),
+      );
+    },
+  );
+
   test('creates an opaque chunked snapshot and restores it', () async {
     final crypto = testCrypto();
     final archive = jsonEncode({

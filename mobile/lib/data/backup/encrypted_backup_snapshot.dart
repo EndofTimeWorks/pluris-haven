@@ -16,6 +16,24 @@ const maxEncryptedBackupChunkCount = 1024;
 const maxEncryptedBackupPlainBytes = 100 * 1024 * 1024;
 const maxEncryptedBackupCiphertextLength = 8 * 1024 * 1024;
 
+/// Returns the largest UTF-8 serialized v2 ciphertext for a plaintext chunk.
+///
+/// Version 2 stores a `ph2:` archive prefix and Haven's inner `v2:` prefix,
+/// followed by padded base64url encoding of the 24-byte nonce, plaintext, and
+/// 16-byte authentication tag.
+int maxSerializedEncryptedBackupChunkBytes(int plainChunkBytes) {
+  if (plainChunkBytes < 0) {
+    throw ArgumentError.value(plainChunkBytes, 'plainChunkBytes');
+  }
+  const nonceBytes = 24;
+  const macBytes = 16;
+  final encryptedBytes = plainChunkBytes + nonceBytes + macBytes;
+  const innerCiphertextPrefixLength = 3; // `v2:`
+  return encryptedBackupCiphertextPrefix.length +
+      innerCiphertextPrefixLength +
+      ((encryptedBytes + 2) ~/ 3) * 4;
+}
+
 final _sha256Pattern = RegExp(r'^[a-f0-9]{64}$');
 
 /// A client-encrypted, immutable snapshot suitable for uploading as opaque
