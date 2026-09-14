@@ -387,7 +387,8 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         .insert(
           FrontAuditEventsCompanion.insert(
             id: auditId,
-            frontId: frontId,
+            frontId: Value(frontId),
+            historicalFrontId: frontId,
             beforeSnapshot: Value(
               await _encryptNullableLocalText(
                 before,

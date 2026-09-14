@@ -1,5 +1,50 @@
 part of 'haven_repository.dart';
 
+enum _ArchivePreferencePortability {
+  portableUserIntent,
+  deviceLocal,
+  securityLocal,
+  internal,
+  unknown,
+}
+
+_ArchivePreferencePortability _archivePreferencePortability(String key) {
+  switch (key) {
+    case 'theme_mode':
+    case 'visual_theme':
+    case 'navigation_layout':
+    case 'font_family':
+    case 'accent_color':
+    case 'custom_accent_hex':
+    case 'appearance_overrides':
+    case 'compact_dashboard':
+    case 'show_dashboard_subtitles':
+    case 'reduced_motion':
+    case 'high_contrast':
+    case 'large_text':
+    case 'compact_lists':
+    case 'front_action':
+    case 'dashboard_shortcut_ids':
+    case 'bottom_navigation_shortcut_ids':
+    case 'language_code':
+      return _ArchivePreferencePortability.portableUserIntent;
+    case 'app_lock_enabled':
+    case 'screenshot_blocking_enabled':
+    case 'front_status_notification':
+    case 'front_status_show_on_lock_screen':
+    case 'front_status_reveal_member_name':
+    case 'local_api.enabled':
+    case 'local_api.port':
+      return _ArchivePreferencePortability.deviceLocal;
+    case 'local_api.clients.v1':
+      return _ArchivePreferencePortability.securityLocal;
+  }
+  if (key.startsWith('internal.')) {
+    return _ArchivePreferencePortability.internal;
+  }
+  return _ArchivePreferencePortability.unknown;
+}
+
 extension LocalHavenRepositoryArchive on LocalHavenRepository {
   Future<int> repairRemoteAvatars() async {
     if (!await _preferenceEquals(
@@ -330,8 +375,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       ],
       'front_audit_events': [
         for (final event in frontAuditEvents)
-          if (frontIds.contains(event.frontId))
-            await _frontAuditEventToJson(event),
+          await _frontAuditEventToJson(event),
       ],
       'named_fronts': [
         for (final front in namedFronts) await _namedFrontToJson(front),
@@ -363,7 +407,10 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           await _notificationEventToJson(event),
       ],
       'preferences': [
-        for (final preference in preferences) _preferenceToJson(preference),
+        for (final preference in preferences)
+          if (_archivePreferencePortability(preference.key) ==
+              _ArchivePreferencePortability.portableUserIntent)
+            _preferenceToJson(preference),
       ],
     };
 
@@ -2264,9 +2311,14 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     DateTime now,
   ) async {
     final id = _requiredString(event, 'id');
+    final historicalFrontId = _requiredString(event, 'front_id');
+    final front = await (database.select(
+      database.frontSessions,
+    )..where((front) => front.id.equals(historicalFrontId))).getSingleOrNull();
     final companion = FrontAuditEventsCompanion.insert(
       id: id,
-      frontId: _requiredString(event, 'front_id'),
+      frontId: Value(front == null ? null : historicalFrontId),
+      historicalFrontId: historicalFrontId,
       beforeSnapshot: Value(
         await _encryptNullableLocalText(
           _stringValue(event['before_snapshot']),
@@ -2441,8 +2493,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     ImportConflictStrategy strategy,
     DateTime now,
   ) {
+    final key = _requiredString(preference, 'key');
+    if (_archivePreferencePortability(key) !=
+        _ArchivePreferencePortability.portableUserIntent) {
+      return Future.value();
+    }
     final companion = AppPreferencesCompanion.insert(
-      key: _requiredString(preference, 'key'),
+      key: key,
       value: _requiredString(preference, 'value'),
       updatedAt: strategy == ImportConflictStrategy.update
           ? now

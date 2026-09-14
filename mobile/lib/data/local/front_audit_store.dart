@@ -11,7 +11,7 @@ class LocalFrontAuditStore {
 
   Stream<List<FrontAuditEvent>> watch(String frontSessionId) {
     final query = database.select(database.frontAuditEvents)
-      ..where((event) => event.frontId.equals(frontSessionId))
+      ..where((event) => event.historicalFrontId.equals(frontSessionId))
       ..orderBy([
         (event) =>
             OrderingTerm(expression: event.createdAt, mode: OrderingMode.desc),

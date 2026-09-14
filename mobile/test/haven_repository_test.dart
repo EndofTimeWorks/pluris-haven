@@ -412,6 +412,43 @@ void main() {
     expect(audit.single.afterSnapshot, contains('Blurry'));
   });
 
+  test(
+    'deleting an edited front detaches but preserves its audit history',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      final started = DateTime.utc(2026, 1, 1, 10);
+      await repository.saveFrontHistoryEntry(
+        FrontHistoryDraft(
+          startedAt: started,
+          endedAt: started.add(const Duration(hours: 1)),
+          memberIds: [member.id],
+          label: 'Edited',
+        ),
+      );
+      final front = (await repository.watchFrontHistory().first).single;
+      await repository.updateFrontHistoryEntry(
+        front.id,
+        FrontHistoryDraft(
+          startedAt: started,
+          endedAt: started.add(const Duration(hours: 2)),
+          memberIds: [member.id],
+        ),
+      );
+
+      await repository.deleteFrontSession(front.id);
+
+      final stored = await database.select(database.frontAuditEvents).get();
+      expect(stored, hasLength(1));
+      expect(stored.single.frontId, isNull);
+      expect(stored.single.historicalFrontId, front.id);
+    },
+  );
+
   test('stores app customization in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -839,6 +876,43 @@ void main() {
     final raw = (await database.select(database.notes).get()).single;
     expect(raw.title, startsWith('ph2:'));
     expect(raw.body, startsWith('ph2:'));
+  });
+
+  test('rejects a revision restore for a different target', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveNote(const NoteDraft(title: 'One', body: 'First'));
+    await repository.saveNote(const NoteDraft(title: 'Two', body: 'Second'));
+    final notes = await repository.watchNotes().first;
+    final revisionId = 'mismatched-revision';
+    await database
+        .into(database.contentRevisions)
+        .insert(
+          ContentRevisionsCompanion.insert(
+            id: revisionId,
+            targetType: 'note',
+            targetId: notes.first.id,
+            body: await _encryptedLocalText(
+              testCrypto(),
+              'Earlier body',
+              'content_revisions',
+              revisionId,
+              'body',
+            ),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
+
+    await expectLater(
+      repository.restoreRevision(revisionId, 'note', notes.last.id),
+      throwsArgumentError,
+    );
+    expect(
+      (await repository.watchNotes().first).map((note) => note.body),
+      containsAll(['First', 'Second']),
+    );
   });
 
   test(
@@ -1432,7 +1506,8 @@ void main() {
         .insert(
           FrontAuditEventsCompanion.insert(
             id: 'front-audit-1',
-            frontId: front.id,
+            frontId: Value(front.id),
+            historicalFrontId: front.id,
             beforeSnapshot: const Value(null),
             afterSnapshot: Value(
               await _encryptedLocalText(
@@ -1538,6 +1613,50 @@ void main() {
         jsonDecode(await repository.buildLocalArchiveJson())
             as Map<String, dynamic>;
     expect(archive.keys, containsAll(archivedTables.values));
+  });
+
+  test('archives only portable preference intent', () async {
+    final sourceDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(sourceDatabase.close);
+    final source = testRepository(sourceDatabase);
+    await source.ensureLocalSystem();
+    final updatedAt = DateTime.utc(2026, 9, 13);
+    await sourceDatabase
+        .into(sourceDatabase.appPreferences)
+        .insert(
+          AppPreferencesCompanion.insert(
+            key: 'theme_mode',
+            value: 'light',
+            updatedAt: updatedAt,
+          ),
+        );
+    await sourceDatabase
+        .into(sourceDatabase.appPreferences)
+        .insert(
+          AppPreferencesCompanion.insert(
+            key: 'app_lock_enabled',
+            value: 'true',
+            updatedAt: updatedAt,
+          ),
+        );
+    await sourceDatabase
+        .into(sourceDatabase.appPreferences)
+        .insert(
+          AppPreferencesCompanion.insert(
+            key: 'local_api.clients.v1',
+            value: 'v2:not-portable',
+            updatedAt: updatedAt,
+          ),
+        );
+
+    final archive =
+        jsonDecode(await source.buildLocalArchiveJson())
+            as Map<String, dynamic>;
+    final preferences = (archive['preferences'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(preferences, hasLength(1));
+    expect(preferences.single['key'], 'theme_mode');
+    expect(preferences.single['value'], 'light');
   });
 
   test('imports a local archive into an empty database', () async {
@@ -1650,7 +1769,8 @@ void main() {
         .insert(
           FrontAuditEventsCompanion.insert(
             id: 'front-audit-1',
-            frontId: front.id,
+            frontId: Value(front.id),
+            historicalFrontId: front.id,
             beforeSnapshot: const Value(null),
             afterSnapshot: Value(
               await _encryptedLocalText(

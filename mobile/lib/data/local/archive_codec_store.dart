@@ -450,7 +450,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     FrontAuditEvent event,
   ) async => {
     'id': event.id,
-    'front_id': event.frontId,
+    'front_id': event.historicalFrontId,
     'before_snapshot': await _decryptLocalText(
       event.beforeSnapshot,
       'front_audit_events',

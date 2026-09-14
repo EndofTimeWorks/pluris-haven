@@ -368,7 +368,14 @@ class ContentRevisions extends Table {
 
 class FrontAuditEvents extends Table {
   TextColumn get id => text()();
-  TextColumn get frontId => text().references(FrontSessions, #id)();
+  TextColumn get frontId => text().nullable().references(
+    FrontSessions,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  // Retains the stable historical identity after the live front session is
+  // deleted and the foreign key above is detached.
+  TextColumn get historicalFrontId => text()();
   TextColumn get beforeSnapshot => text().nullable()();
   TextColumn get afterSnapshot => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -493,7 +500,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
@@ -686,6 +693,19 @@ class AppDatabase extends _$AppDatabase {
           migrator,
           customFieldDefinitions,
           customFieldDefinitions.configuration,
+        );
+      }
+      if (from < 21) {
+        await migrator.alterTable(
+          TableMigration(
+            frontAuditEvents,
+            newColumns: [frontAuditEvents.historicalFrontId],
+            columnTransformer: {
+              frontAuditEvents.historicalFrontId: const CustomExpression(
+                'front_id',
+              ),
+            },
+          ),
         );
       }
     },

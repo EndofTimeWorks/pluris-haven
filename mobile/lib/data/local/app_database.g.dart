@@ -12635,13 +12635,25 @@ class $FrontAuditEventsTable extends FrontAuditEvents
   late final GeneratedColumn<String> frontId = GeneratedColumn<String>(
     'front_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES front_sessions (id)',
+      'REFERENCES front_sessions (id) ON DELETE SET NULL',
     ),
   );
+  static const VerificationMeta _historicalFrontIdMeta = const VerificationMeta(
+    'historicalFrontId',
+  );
+  @override
+  late final GeneratedColumn<String> historicalFrontId =
+      GeneratedColumn<String>(
+        'historical_front_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
   static const VerificationMeta _beforeSnapshotMeta = const VerificationMeta(
     'beforeSnapshot',
   );
@@ -12679,6 +12691,7 @@ class $FrontAuditEventsTable extends FrontAuditEvents
   List<GeneratedColumn> get $columns => [
     id,
     frontId,
+    historicalFrontId,
     beforeSnapshot,
     afterSnapshot,
     createdAt,
@@ -12705,8 +12718,17 @@ class $FrontAuditEventsTable extends FrontAuditEvents
         _frontIdMeta,
         frontId.isAcceptableOrUnknown(data['front_id']!, _frontIdMeta),
       );
+    }
+    if (data.containsKey('historical_front_id')) {
+      context.handle(
+        _historicalFrontIdMeta,
+        historicalFrontId.isAcceptableOrUnknown(
+          data['historical_front_id']!,
+          _historicalFrontIdMeta,
+        ),
+      );
     } else if (isInserting) {
-      context.missing(_frontIdMeta);
+      context.missing(_historicalFrontIdMeta);
     }
     if (data.containsKey('before_snapshot')) {
       context.handle(
@@ -12750,6 +12772,10 @@ class $FrontAuditEventsTable extends FrontAuditEvents
       frontId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}front_id'],
+      ),
+      historicalFrontId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}historical_front_id'],
       )!,
       beforeSnapshot: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -12774,13 +12800,15 @@ class $FrontAuditEventsTable extends FrontAuditEvents
 
 class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
   final String id;
-  final String frontId;
+  final String? frontId;
+  final String historicalFrontId;
   final String? beforeSnapshot;
   final String? afterSnapshot;
   final DateTime createdAt;
   const FrontAuditEvent({
     required this.id,
-    required this.frontId,
+    this.frontId,
+    required this.historicalFrontId,
     this.beforeSnapshot,
     this.afterSnapshot,
     required this.createdAt,
@@ -12789,7 +12817,10 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['front_id'] = Variable<String>(frontId);
+    if (!nullToAbsent || frontId != null) {
+      map['front_id'] = Variable<String>(frontId);
+    }
+    map['historical_front_id'] = Variable<String>(historicalFrontId);
     if (!nullToAbsent || beforeSnapshot != null) {
       map['before_snapshot'] = Variable<String>(beforeSnapshot);
     }
@@ -12803,7 +12834,10 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
   FrontAuditEventsCompanion toCompanion(bool nullToAbsent) {
     return FrontAuditEventsCompanion(
       id: Value(id),
-      frontId: Value(frontId),
+      frontId: frontId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(frontId),
+      historicalFrontId: Value(historicalFrontId),
       beforeSnapshot: beforeSnapshot == null && nullToAbsent
           ? const Value.absent()
           : Value(beforeSnapshot),
@@ -12821,7 +12855,8 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FrontAuditEvent(
       id: serializer.fromJson<String>(json['id']),
-      frontId: serializer.fromJson<String>(json['frontId']),
+      frontId: serializer.fromJson<String?>(json['frontId']),
+      historicalFrontId: serializer.fromJson<String>(json['historicalFrontId']),
       beforeSnapshot: serializer.fromJson<String?>(json['beforeSnapshot']),
       afterSnapshot: serializer.fromJson<String?>(json['afterSnapshot']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -12832,7 +12867,8 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'frontId': serializer.toJson<String>(frontId),
+      'frontId': serializer.toJson<String?>(frontId),
+      'historicalFrontId': serializer.toJson<String>(historicalFrontId),
       'beforeSnapshot': serializer.toJson<String?>(beforeSnapshot),
       'afterSnapshot': serializer.toJson<String?>(afterSnapshot),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -12841,13 +12877,15 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
 
   FrontAuditEvent copyWith({
     String? id,
-    String? frontId,
+    Value<String?> frontId = const Value.absent(),
+    String? historicalFrontId,
     Value<String?> beforeSnapshot = const Value.absent(),
     Value<String?> afterSnapshot = const Value.absent(),
     DateTime? createdAt,
   }) => FrontAuditEvent(
     id: id ?? this.id,
-    frontId: frontId ?? this.frontId,
+    frontId: frontId.present ? frontId.value : this.frontId,
+    historicalFrontId: historicalFrontId ?? this.historicalFrontId,
     beforeSnapshot: beforeSnapshot.present
         ? beforeSnapshot.value
         : this.beforeSnapshot,
@@ -12860,6 +12898,9 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
     return FrontAuditEvent(
       id: data.id.present ? data.id.value : this.id,
       frontId: data.frontId.present ? data.frontId.value : this.frontId,
+      historicalFrontId: data.historicalFrontId.present
+          ? data.historicalFrontId.value
+          : this.historicalFrontId,
       beforeSnapshot: data.beforeSnapshot.present
           ? data.beforeSnapshot.value
           : this.beforeSnapshot,
@@ -12875,6 +12916,7 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
     return (StringBuffer('FrontAuditEvent(')
           ..write('id: $id, ')
           ..write('frontId: $frontId, ')
+          ..write('historicalFrontId: $historicalFrontId, ')
           ..write('beforeSnapshot: $beforeSnapshot, ')
           ..write('afterSnapshot: $afterSnapshot, ')
           ..write('createdAt: $createdAt')
@@ -12883,14 +12925,21 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, frontId, beforeSnapshot, afterSnapshot, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    frontId,
+    historicalFrontId,
+    beforeSnapshot,
+    afterSnapshot,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FrontAuditEvent &&
           other.id == this.id &&
           other.frontId == this.frontId &&
+          other.historicalFrontId == this.historicalFrontId &&
           other.beforeSnapshot == this.beforeSnapshot &&
           other.afterSnapshot == this.afterSnapshot &&
           other.createdAt == this.createdAt);
@@ -12898,7 +12947,8 @@ class FrontAuditEvent extends DataClass implements Insertable<FrontAuditEvent> {
 
 class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
   final Value<String> id;
-  final Value<String> frontId;
+  final Value<String?> frontId;
+  final Value<String> historicalFrontId;
   final Value<String?> beforeSnapshot;
   final Value<String?> afterSnapshot;
   final Value<DateTime> createdAt;
@@ -12906,6 +12956,7 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
   const FrontAuditEventsCompanion({
     this.id = const Value.absent(),
     this.frontId = const Value.absent(),
+    this.historicalFrontId = const Value.absent(),
     this.beforeSnapshot = const Value.absent(),
     this.afterSnapshot = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -12913,17 +12964,19 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
   });
   FrontAuditEventsCompanion.insert({
     required String id,
-    required String frontId,
+    this.frontId = const Value.absent(),
+    required String historicalFrontId,
     this.beforeSnapshot = const Value.absent(),
     this.afterSnapshot = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       frontId = Value(frontId),
+       historicalFrontId = Value(historicalFrontId),
        createdAt = Value(createdAt);
   static Insertable<FrontAuditEvent> custom({
     Expression<String>? id,
     Expression<String>? frontId,
+    Expression<String>? historicalFrontId,
     Expression<String>? beforeSnapshot,
     Expression<String>? afterSnapshot,
     Expression<DateTime>? createdAt,
@@ -12932,6 +12985,7 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (frontId != null) 'front_id': frontId,
+      if (historicalFrontId != null) 'historical_front_id': historicalFrontId,
       if (beforeSnapshot != null) 'before_snapshot': beforeSnapshot,
       if (afterSnapshot != null) 'after_snapshot': afterSnapshot,
       if (createdAt != null) 'created_at': createdAt,
@@ -12941,7 +12995,8 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
 
   FrontAuditEventsCompanion copyWith({
     Value<String>? id,
-    Value<String>? frontId,
+    Value<String?>? frontId,
+    Value<String>? historicalFrontId,
     Value<String?>? beforeSnapshot,
     Value<String?>? afterSnapshot,
     Value<DateTime>? createdAt,
@@ -12950,6 +13005,7 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
     return FrontAuditEventsCompanion(
       id: id ?? this.id,
       frontId: frontId ?? this.frontId,
+      historicalFrontId: historicalFrontId ?? this.historicalFrontId,
       beforeSnapshot: beforeSnapshot ?? this.beforeSnapshot,
       afterSnapshot: afterSnapshot ?? this.afterSnapshot,
       createdAt: createdAt ?? this.createdAt,
@@ -12965,6 +13021,9 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
     }
     if (frontId.present) {
       map['front_id'] = Variable<String>(frontId.value);
+    }
+    if (historicalFrontId.present) {
+      map['historical_front_id'] = Variable<String>(historicalFrontId.value);
     }
     if (beforeSnapshot.present) {
       map['before_snapshot'] = Variable<String>(beforeSnapshot.value);
@@ -12986,6 +13045,7 @@ class FrontAuditEventsCompanion extends UpdateCompanion<FrontAuditEvent> {
     return (StringBuffer('FrontAuditEventsCompanion(')
           ..write('id: $id, ')
           ..write('frontId: $frontId, ')
+          ..write('historicalFrontId: $historicalFrontId, ')
           ..write('beforeSnapshot: $beforeSnapshot, ')
           ..write('afterSnapshot: $afterSnapshot, ')
           ..write('createdAt: $createdAt, ')
@@ -15649,6 +15709,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     frontSessionsCurrent,
     namedFrontsSystemOrder,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'front_sessions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('front_audit_events', kind: UpdateKind.update)],
+    ),
+  ]);
 }
 
 typedef $$PluralSystemsTableCreateCompanionBuilder =
@@ -29229,7 +29299,8 @@ typedef $$ContentRevisionsTableProcessedTableManager =
 typedef $$FrontAuditEventsTableCreateCompanionBuilder =
     FrontAuditEventsCompanion Function({
       required String id,
-      required String frontId,
+      Value<String?> frontId,
+      required String historicalFrontId,
       Value<String?> beforeSnapshot,
       Value<String?> afterSnapshot,
       required DateTime createdAt,
@@ -29238,7 +29309,8 @@ typedef $$FrontAuditEventsTableCreateCompanionBuilder =
 typedef $$FrontAuditEventsTableUpdateCompanionBuilder =
     FrontAuditEventsCompanion Function({
       Value<String> id,
-      Value<String> frontId,
+      Value<String?> frontId,
+      Value<String> historicalFrontId,
       Value<String?> beforeSnapshot,
       Value<String?> afterSnapshot,
       Value<DateTime> createdAt,
@@ -29257,9 +29329,9 @@ final class $$FrontAuditEventsTableReferences
   static $FrontSessionsTable _frontIdTable(_$AppDatabase db) => db.frontSessions
       .createAlias('front_audit_events__front_id__front_sessions__id');
 
-  $$FrontSessionsTableProcessedTableManager get frontId {
-    final $_column = $_itemColumn<String>('front_id')!;
-
+  $$FrontSessionsTableProcessedTableManager? get frontId {
+    final $_column = $_itemColumn<String>('front_id');
+    if ($_column == null) return null;
     final manager = $$FrontSessionsTableTableManager(
       $_db,
       $_db.frontSessions,
@@ -29283,6 +29355,11 @@ class $$FrontAuditEventsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get historicalFrontId => $composableBuilder(
+    column: $table.historicalFrontId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29339,6 +29416,11 @@ class $$FrontAuditEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get historicalFrontId => $composableBuilder(
+    column: $table.historicalFrontId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get beforeSnapshot => $composableBuilder(
     column: $table.beforeSnapshot,
     builder: (column) => ColumnOrderings(column),
@@ -29389,6 +29471,11 @@ class $$FrontAuditEventsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get historicalFrontId => $composableBuilder(
+    column: $table.historicalFrontId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get beforeSnapshot => $composableBuilder(
     column: $table.beforeSnapshot,
@@ -29458,7 +29545,8 @@ class $$FrontAuditEventsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> frontId = const Value.absent(),
+                Value<String?> frontId = const Value.absent(),
+                Value<String> historicalFrontId = const Value.absent(),
                 Value<String?> beforeSnapshot = const Value.absent(),
                 Value<String?> afterSnapshot = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -29466,6 +29554,7 @@ class $$FrontAuditEventsTableTableManager
               }) => FrontAuditEventsCompanion(
                 id: id,
                 frontId: frontId,
+                historicalFrontId: historicalFrontId,
                 beforeSnapshot: beforeSnapshot,
                 afterSnapshot: afterSnapshot,
                 createdAt: createdAt,
@@ -29474,7 +29563,8 @@ class $$FrontAuditEventsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String frontId,
+                Value<String?> frontId = const Value.absent(),
+                required String historicalFrontId,
                 Value<String?> beforeSnapshot = const Value.absent(),
                 Value<String?> afterSnapshot = const Value.absent(),
                 required DateTime createdAt,
@@ -29482,6 +29572,7 @@ class $$FrontAuditEventsTableTableManager
               }) => FrontAuditEventsCompanion.insert(
                 id: id,
                 frontId: frontId,
+                historicalFrontId: historicalFrontId,
                 beforeSnapshot: beforeSnapshot,
                 afterSnapshot: afterSnapshot,
                 createdAt: createdAt,
