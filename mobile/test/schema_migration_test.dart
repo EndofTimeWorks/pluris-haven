@@ -630,6 +630,52 @@ void main() {
     }
   });
 
+  test(
+    'rolls back a failed upgrade without advancing the schema version',
+    () async {
+      final dbPath = '${tempDir.path}/failed_upgrade.sqlite';
+      _seedLegacyDatabase(
+        path: dbPath,
+        version: 1,
+        statements: [
+          ..._v1Statements(),
+          // v21 tries to rebuild this table after earlier migration statements.
+          // A conflicting view forces a real SQLite failure after those
+          // statements have run, exercising the upgrade transaction.
+          'CREATE VIEW front_audit_events AS SELECT 1 AS id',
+        ],
+      );
+
+      final database = AppDatabase(NativeDatabase(File(dbPath)));
+      await expectLater(
+        database.customSelect('SELECT 1').getSingle(),
+        throwsA(anything),
+      );
+      await database.close();
+
+      final raw = sqlite3.sqlite3.open(dbPath);
+      try {
+        expect(raw.userVersion, 1);
+        expect(
+          raw.select(
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'app_preferences'",
+          ),
+          isEmpty,
+        );
+        expect(
+          raw.select(
+            "SELECT name FROM sqlite_master WHERE type = 'view' "
+            "AND name = 'front_audit_events'",
+          ),
+          isNotEmpty,
+        );
+      } finally {
+        raw.close();
+      }
+    },
+  );
+
   test('migrates a version-1 database up to the current schema (v22)', () async {
     final dbPath = '${tempDir.path}/legacy_v1.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());
