@@ -1554,6 +1554,27 @@ void main() {
     expect(revisions, hasLength(2));
     await repository.deleteMessage(updatedMessages.single.id);
     expect(await repository.watchMessages().first, isEmpty);
+    final trashed = await repository.watchDeletedMessages().first;
+    expect(trashed.single.id, updatedMessages.single.id);
+    expect(trashed.single.body, 'Remember to check in.');
+    await repository.restoreMessage(updatedMessages.single.id);
+    expect(
+      (await repository.watchMessages().first).single.body,
+      'Remember to check in.',
+    );
+    await repository.deleteMessage(updatedMessages.single.id);
+    await repository.purgeMessage(updatedMessages.single.id);
+    expect(await repository.watchDeletedMessages().first, isEmpty);
+    final tombstone = await (database.select(
+      database.messages,
+    )..where((row) => row.id.equals(updatedMessages.single.id))).getSingle();
+    expect(tombstone.purgedAt, isNotNull);
+    expect(
+      await repository
+          .watchRevisions('message', updatedMessages.single.id)
+          .first,
+      isEmpty,
+    );
 
     expect(reminders.single.title, 'Medication');
     expect(reminders.single.scheduleText, 'Daily');
@@ -1599,18 +1620,25 @@ void main() {
       expect(channel.name, 'kitchen');
       expect(channel.description, 'Food and drinks');
 
-      await repository.deleteChatCategory(category.id);
-      expect(await repository.watchChatCategories().first, isEmpty);
-      expect(
-        (await repository.watchChatChannels().first).single.categoryId,
-        isNull,
-      );
-
       await repository.deleteChatChannel(channel.id);
       expect(await repository.watchChatChannels().first, isEmpty);
+      final historicalChannel =
+          (await repository.watchChatChannels(includeArchived: true).first)
+              .single;
+      expect(historicalChannel.id, channel.id);
+      expect(historicalChannel.categoryId, category.id);
       final retained = (await repository.watchMessages().first).single;
       expect(retained.boardKind, 'channel');
       expect(retained.channelId, channel.id);
+
+      await repository.deleteChatCategory(category.id);
+      expect(await repository.watchChatCategories().first, isEmpty);
+      expect(
+        (await repository.watchChatChannels(includeArchived: true).first)
+            .single
+            .categoryId,
+        isNull,
+      );
     },
   );
 
