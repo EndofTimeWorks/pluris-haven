@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pluris_server.backup_cleanup import (
     queue_backup_deletions,
+    reconcile_legacy_backup_chunks,
     sweep_backup_deletions,
     sweep_incomplete_backup_snapshots,
 )
@@ -276,6 +277,89 @@ def test_pending_backup_chunks_are_not_visible_or_restorable(client: TestClient)
         client.get("/v1/backups/snapshots/pending-upload/chunks/0", headers=headers).status_code
         == 404
     )
+
+
+def test_legacy_chunk_reconciliation_requires_valid_bytes_and_is_idempotent(
+    client: TestClient,
+) -> None:
+    user = register(client, "legacy-reconcile@example.com", "Legacy reconcile")
+    headers = auth(user["access_token"])
+    snapshot_id = "legacy-reconcile"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 4,
+                "total_bytes": 20,
+            },
+        ).status_code
+        == 201
+    )
+    valid = b"valid"
+    wrong_size = b"bad"
+    wrong_hash = b"hash!"
+
+    async def seed_and_reconcile() -> None:
+        async with client.app.state.session_factory() as session:
+            snapshot = await session.scalar(
+                select(BackupSnapshot).where(BackupSnapshot.snapshot_id == snapshot_id)
+            )
+            assert snapshot is not None
+            owner_id = snapshot.user_id
+            for index, content, digest in (
+                (0, valid, hashlib.sha256(valid).hexdigest()),
+                (1, b"missing", hashlib.sha256(b"missing").hexdigest()),
+                (2, valid, hashlib.sha256(valid).hexdigest()),
+                (3, valid, hashlib.sha256(valid).hexdigest()),
+                (4, valid, hashlib.sha256(valid).hexdigest()),
+            ):
+                session.add(
+                    BackupChunk(
+                        snapshot_id=snapshot.id,
+                        index=index,
+                        sha256=digest,
+                        size=len(content),
+                    )
+                )
+            await session.commit()
+            store = client.app.state.backup_object_store
+            store.put_chunk(
+                owner_id=owner_id,
+                snapshot_id=snapshot_id,
+                index=0,
+                ciphertext=valid,
+                sha256=hashlib.sha256(valid).hexdigest(),
+            )
+            store.put_chunk(
+                owner_id=owner_id,
+                snapshot_id=snapshot_id,
+                index=2,
+                ciphertext=wrong_size,
+                sha256=hashlib.sha256(wrong_size).hexdigest(),
+            )
+            store.put_chunk(
+                owner_id=owner_id,
+                snapshot_id=snapshot_id,
+                index=3,
+                ciphertext=wrong_hash,
+                sha256=hashlib.sha256(wrong_hash).hexdigest(),
+            )
+            assert await reconcile_legacy_backup_chunks(session, store) == 1
+            assert await reconcile_legacy_backup_chunks(session, store) == 0
+            chunks = (
+                await session.scalars(
+                    select(BackupChunk).where(BackupChunk.snapshot_id == snapshot.id)
+                )
+            ).all()
+            assert [chunk.index for chunk in chunks if chunk.stored_at is not None] == [0]
+
+    asyncio.run(seed_and_reconcile())
+    progress = client.get("/v1/backups/snapshots", headers=headers)
+    assert progress.status_code == 200
+    assert progress.json()[0]["uploaded_chunks"] == 1
 
 
 def test_backup_retry_repairs_corrupt_stored_blob(client: TestClient) -> None:
