@@ -1355,7 +1355,10 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
 
     frontAuditEvents.removeWhere((event) {
       final frontId = _stringValue(event['front_id']);
-      final keep = frontId != null && frontIds.contains(frontId);
+      final historicalFrontId = _stringValue(event['historical_front_id']);
+      final keep =
+          (frontId != null && frontIds.contains(frontId)) ||
+          historicalFrontId != null;
       if (!keep) {
         cleanupCount++;
       }
@@ -1783,6 +1786,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       isCustomFront: Value(member['is_custom_front'] == true),
       archived: Value(member['archived'] == true),
       deletedAt: Value(_dateValue(member['deleted_at'])),
+      purgedAt: Value(_dateValue(member['purged_at'])),
       lexoRank: await _members.rankForImport(
         id,
         _stringValue(member['lexo_rank']),
@@ -1851,6 +1855,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       channelId: Value(_stringValue(message['channel_id'])),
       deletedAt: Value(_dateValue(message['deleted_at'])),
       archived: Value(message['archived'] == true),
+      purgedAt: Value(_dateValue(message['purged_at'])),
       createdAt: _dateValue(message['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -1924,6 +1929,8 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         ),
       ),
       position: Value(_intValue(channel['position']) ?? 0),
+      archived: Value(channel['archived'] == true),
+      deletedAt: Value(_dateValue(channel['deleted_at'])),
       createdAt: _dateValue(channel['created_at']) ?? now,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
@@ -2257,9 +2264,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
   }
 
   Future<bool> _pollHasVotes(String pollId) async {
-    final vote = await (database.select(
-      database.pollVotes,
-    )..where((existing) => existing.pollId.equals(pollId))).getSingleOrNull();
+    final vote =
+        await (database.select(database.pollVotes)
+              ..where((existing) => existing.pollId.equals(pollId))
+              ..limit(1))
+            .getSingleOrNull();
     return vote != null;
   }
 
@@ -2345,7 +2354,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     DateTime now,
   ) async {
     final id = _requiredString(event, 'id');
-    final historicalFrontId = _requiredString(event, 'front_id');
+    final historicalFrontId =
+        _stringValue(event['historical_front_id']) ??
+        _requiredString(event, 'front_id');
     final front = await (database.select(
       database.frontSessions,
     )..where((front) => front.id.equals(historicalFrontId))).getSingleOrNull();

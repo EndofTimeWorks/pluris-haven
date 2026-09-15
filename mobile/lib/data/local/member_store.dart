@@ -111,6 +111,7 @@ class LocalMemberStore {
     bool includeArchived = false,
     bool includeCustomFronts = false,
     bool listOnly = false,
+    bool deletedOnly = false,
   }) {
     return database
         .customSelect(
@@ -136,7 +137,8 @@ FROM members m
 LEFT JOIN group_members gm ON gm.member_id = m.id
 WHERE
   m.system_id = ?
-  AND m.deleted_at IS NULL
+  AND ((? = 1 AND m.deleted_at IS NOT NULL) OR (? = 0 AND m.deleted_at IS NULL))
+  AND m.purged_at IS NULL
   AND (? = 1 OR m.archived = 0)
   AND (? = 1 OR m.is_custom_front = 0)
 GROUP BY
@@ -159,6 +161,8 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
           ''',
           variables: [
             Variable<String>(localSystemId),
+            Variable<int>(deletedOnly ? 1 : 0),
+            Variable<int>(deletedOnly ? 1 : 0),
             Variable<int>(includeArchived ? 1 : 0),
             Variable<int>(includeCustomFronts ? 1 : 0),
           ],
@@ -235,6 +239,13 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
           );
         });
   }
+
+  Stream<List<MemberSummary>> watchDeleted({bool listOnly = false}) => watch(
+    includeArchived: true,
+    includeCustomFronts: true,
+    listOnly: listOnly,
+    deletedOnly: true,
+  );
 
   Stream<List<MemberSummary>> watchCurrentFront() {
     final query = database.select(database.frontSessions)
@@ -473,7 +484,9 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
     return (database.update(database.members)..where(
           (member) =>
               member.systemId.equals(localSystemId) &
-              member.id.equals(memberId),
+              member.id.equals(memberId) &
+              member.deletedAt.isNull() &
+              member.purgedAt.isNull(),
         ))
         .write(
           MembersCompanion(
@@ -542,9 +555,39 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
             );
       }
 
-      // These are current membership/configuration relationships. They are
-      // owned by the member's active profile, unlike historical content and
-      // front links, which remain attributable through the tombstone.
+      // Soft deletion retains relationships for historical attribution and a
+      // non-lossy restore. Active-front links above are ended, not removed.
+      await (database.update(database.members)..where(
+            (member) =>
+                member.systemId.equals(localSystemId) &
+                member.id.equals(memberId) &
+                member.purgedAt.isNull(),
+          ))
+          .write(
+            MembersCompanion(deletedAt: Value(now), updatedAt: Value(now)),
+          );
+    });
+    onDeleted(memberId);
+  }
+
+  Future<void> restoreDeleted(String memberId) {
+    return (database.update(database.members)..where(
+          (member) =>
+              member.systemId.equals(localSystemId) &
+              member.id.equals(memberId) &
+              member.deletedAt.isNotNull() &
+              member.purgedAt.isNull(),
+        ))
+        .write(
+          MembersCompanion(
+            deletedAt: const Value(null),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  Future<void> purge(String memberId) {
+    return database.transaction(() async {
       await (database.delete(
         database.groupMembers,
       )..where((link) => link.memberId.equals(memberId))).go();
@@ -557,20 +600,45 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
       await (database.delete(
         database.privacyBucketMembers,
       )..where((link) => link.memberId.equals(memberId))).go();
+      await (database.delete(
+        database.customFieldValues,
+      )..where((value) => value.memberId.equals(memberId))).go();
+      // Keep a minimal ID-only tombstone instead of physically deleting the
+      // row: front history, messages, notes, journals, reminders and imported
+      // provenance may retain this stable identifier. Every profile field is
+      // replaced or cleared in the same transaction.
+      final now = DateTime.now().toUtc();
       await (database.update(database.members)..where(
             (member) =>
                 member.systemId.equals(localSystemId) &
-                member.id.equals(memberId),
+                member.id.equals(memberId) &
+                member.deletedAt.isNotNull() &
+                member.purgedAt.isNull(),
           ))
           .write(
             MembersCompanion(
-              archived: const Value(true),
-              deletedAt: Value(now),
+              displayName: Value(
+                (await encryptText(
+                  memberId,
+                  'display_name',
+                  'Deleted member',
+                ))!,
+              ),
+              displayNameHash: const Value(null),
+              pronouns: const Value(null),
+              colorHex: const Value(null),
+              birthday: const Value(null),
+              emoji: const Value(null),
+              privacy: const Value(null),
+              description: const Value(null),
+              avatarUrl: const Value(null),
+              pluralKitId: const Value(null),
+              folderId: const Value(null),
+              purgedAt: Value(now),
               updatedAt: Value(now),
             ),
           );
     });
-    onDeleted(memberId);
   }
 
   Future<void> reorder(String memberId, String? prevRank, String? nextRank) {

@@ -33,7 +33,7 @@ class _MessagesPageState extends State<MessagesPage> {
       initialData: const [],
       builder: (context, snapshot) {
         return StreamBuilder<List<ChatChannelSummary>>(
-          stream: widget.repository.watchChatChannels(),
+          stream: widget.repository.watchChatChannels(includeArchived: true),
           initialData: const [],
           builder: (context, channelSnapshot) {
             final channelNamesById = {

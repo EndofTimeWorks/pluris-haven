@@ -101,49 +101,60 @@ class LocalNoteStore {
     final body = draft.body.trim();
     if (title.isEmpty && body.isEmpty) return;
 
-    final existing =
-        await (database.select(database.notes)..where(
-              (note) =>
-                  note.systemId.equals(localSystemId) & note.id.equals(noteId),
-            ))
-            .getSingleOrNull();
-    if (existing == null) return;
-    final previousTitle =
-        await decryptText(existing.title, 'notes', noteId, 'title') ?? '';
-    final previousBody =
-        await decryptText(existing.body, 'notes', noteId, 'body') ?? '';
-    final resolvedTitle = title.isEmpty ? 'Untitled note' : title;
-    if (previousTitle != resolvedTitle || previousBody != body) {
-      await recordRevision(
-        targetType: 'note',
-        targetId: noteId,
-        title: previousTitle,
-        body: previousBody,
-      );
-    }
-    final now = DateTime.now().toUtc();
-    await (database.update(database.notes)..where(
-          (note) =>
-              note.systemId.equals(localSystemId) & note.id.equals(noteId),
-        ))
-        .write(
-          NotesCompanion(
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            title: Value(
-              await encryptText(resolvedTitle, 'notes', noteId, 'title'),
-            ),
-            body: Value(await encryptText(body, 'notes', noteId, 'body')),
-            updatedAt: Value(now),
-          ),
+    await database.transaction(() async {
+      final existing =
+          await (database.select(database.notes)..where(
+                (note) =>
+                    note.systemId.equals(localSystemId) &
+                    note.id.equals(noteId),
+              ))
+              .getSingleOrNull();
+      if (existing == null) return;
+      final previousTitle =
+          await decryptText(existing.title, 'notes', noteId, 'title') ?? '';
+      final previousBody =
+          await decryptText(existing.body, 'notes', noteId, 'body') ?? '';
+      final resolvedTitle = title.isEmpty ? 'Untitled note' : title;
+      if (previousTitle != resolvedTitle || previousBody != body) {
+        await recordRevision(
+          targetType: 'note',
+          targetId: noteId,
+          title: previousTitle,
+          body: previousBody,
         );
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(database.notes)..where(
+            (note) =>
+                note.systemId.equals(localSystemId) & note.id.equals(noteId),
+          ))
+          .write(
+            NotesCompanion(
+              memberId: Value(_nullIfBlank(draft.memberId)),
+              title: Value(
+                await encryptText(resolvedTitle, 'notes', noteId, 'title'),
+              ),
+              body: Value(await encryptText(body, 'notes', noteId, 'body')),
+              updatedAt: Value(now),
+            ),
+          );
+    });
   }
 
   Future<void> delete(String noteId) {
-    return (database.delete(database.notes)..where(
-          (note) =>
-              note.systemId.equals(localSystemId) & note.id.equals(noteId),
-        ))
-        .go();
+    return database.transaction(() async {
+      await (database.delete(database.contentRevisions)..where(
+            (revision) =>
+                revision.targetType.equals('note') &
+                revision.targetId.equals(noteId),
+          ))
+          .go();
+      await (database.delete(database.notes)..where(
+            (note) =>
+                note.systemId.equals(localSystemId) & note.id.equals(noteId),
+          ))
+          .go();
+    });
   }
 
   String? _nullIfBlank(String? value) {

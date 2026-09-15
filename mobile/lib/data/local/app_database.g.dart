@@ -1325,6 +1325,17 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _purgedAtMeta = const VerificationMeta(
+    'purgedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> purgedAt = GeneratedColumn<DateTime>(
+    'purged_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1368,6 +1379,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     isCustomFront,
     archived,
     deletedAt,
+    purgedAt,
     createdAt,
     updatedAt,
   ];
@@ -1520,6 +1532,12 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('purged_at')) {
+      context.handle(
+        _purgedAtMeta,
+        purgedAt.isAcceptableOrUnknown(data['purged_at']!, _purgedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1621,6 +1639,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
+      purgedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}purged_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1658,6 +1680,7 @@ class Member extends DataClass implements Insertable<Member> {
   final bool isCustomFront;
   final bool archived;
   final DateTime? deletedAt;
+  final DateTime? purgedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Member({
@@ -1680,6 +1703,7 @@ class Member extends DataClass implements Insertable<Member> {
     required this.isCustomFront,
     required this.archived,
     this.deletedAt,
+    this.purgedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1726,6 +1750,9 @@ class Member extends DataClass implements Insertable<Member> {
     map['archived'] = Variable<bool>(archived);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || purgedAt != null) {
+      map['purged_at'] = Variable<DateTime>(purgedAt);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1775,6 +1802,9 @@ class Member extends DataClass implements Insertable<Member> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      purgedAt: purgedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purgedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1807,6 +1837,7 @@ class Member extends DataClass implements Insertable<Member> {
       isCustomFront: serializer.fromJson<bool>(json['isCustomFront']),
       archived: serializer.fromJson<bool>(json['archived']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      purgedAt: serializer.fromJson<DateTime?>(json['purgedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1836,6 +1867,7 @@ class Member extends DataClass implements Insertable<Member> {
       'isCustomFront': serializer.toJson<bool>(isCustomFront),
       'archived': serializer.toJson<bool>(archived),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'purgedAt': serializer.toJson<DateTime?>(purgedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1861,6 +1893,7 @@ class Member extends DataClass implements Insertable<Member> {
     bool? isCustomFront,
     bool? archived,
     Value<DateTime?> deletedAt = const Value.absent(),
+    Value<DateTime?> purgedAt = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Member(
@@ -1886,6 +1919,7 @@ class Member extends DataClass implements Insertable<Member> {
     isCustomFront: isCustomFront ?? this.isCustomFront,
     archived: archived ?? this.archived,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    purgedAt: purgedAt.present ? purgedAt.value : this.purgedAt,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1924,6 +1958,7 @@ class Member extends DataClass implements Insertable<Member> {
           : this.isCustomFront,
       archived: data.archived.present ? data.archived.value : this.archived,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      purgedAt: data.purgedAt.present ? data.purgedAt.value : this.purgedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1951,6 +1986,7 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('isCustomFront: $isCustomFront, ')
           ..write('archived: $archived, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('purgedAt: $purgedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1978,6 +2014,7 @@ class Member extends DataClass implements Insertable<Member> {
     isCustomFront,
     archived,
     deletedAt,
+    purgedAt,
     createdAt,
     updatedAt,
   ]);
@@ -2004,6 +2041,7 @@ class Member extends DataClass implements Insertable<Member> {
           other.isCustomFront == this.isCustomFront &&
           other.archived == this.archived &&
           other.deletedAt == this.deletedAt &&
+          other.purgedAt == this.purgedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2028,6 +2066,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<bool> isCustomFront;
   final Value<bool> archived;
   final Value<DateTime?> deletedAt;
+  final Value<DateTime?> purgedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2051,6 +2090,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.isCustomFront = const Value.absent(),
     this.archived = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.purgedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2075,6 +2115,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.isCustomFront = const Value.absent(),
     this.archived = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.purgedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2104,6 +2145,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<bool>? isCustomFront,
     Expression<bool>? archived,
     Expression<DateTime>? deletedAt,
+    Expression<DateTime>? purgedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2129,6 +2171,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (isCustomFront != null) 'is_custom_front': isCustomFront,
       if (archived != null) 'archived': archived,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (purgedAt != null) 'purged_at': purgedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2155,6 +2198,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<bool>? isCustomFront,
     Value<bool>? archived,
     Value<DateTime?>? deletedAt,
+    Value<DateTime?>? purgedAt,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -2180,6 +2224,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       isCustomFront: isCustomFront ?? this.isCustomFront,
       archived: archived ?? this.archived,
       deletedAt: deletedAt ?? this.deletedAt,
+      purgedAt: purgedAt ?? this.purgedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2248,6 +2293,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
+    if (purgedAt.present) {
+      map['purged_at'] = Variable<DateTime>(purgedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2282,6 +2330,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('isCustomFront: $isCustomFront, ')
           ..write('archived: $archived, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('purgedAt: $purgedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -3524,6 +3573,32 @@ class $ChatChannelsTable extends ChatChannels
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3555,6 +3630,8 @@ class $ChatChannelsTable extends ChatChannels
     description,
     colorHex,
     position,
+    archived,
+    deletedAt,
     createdAt,
     updatedAt,
   ];
@@ -3618,6 +3695,18 @@ class $ChatChannelsTable extends ChatChannels
         position.isAcceptableOrUnknown(data['position']!, _positionMeta),
       );
     }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -3671,6 +3760,14 @@ class $ChatChannelsTable extends ChatChannels
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -3696,6 +3793,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
   final String? description;
   final String? colorHex;
   final int position;
+  final bool archived;
+  final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   const ChatChannel({
@@ -3706,6 +3805,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     this.description,
     this.colorHex,
     required this.position,
+    required this.archived,
+    this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -3725,6 +3826,10 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       map['color_hex'] = Variable<String>(colorHex);
     }
     map['position'] = Variable<int>(position);
+    map['archived'] = Variable<bool>(archived);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -3745,6 +3850,10 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           ? const Value.absent()
           : Value(colorHex),
       position: Value(position),
+      archived: Value(archived),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -3763,6 +3872,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       description: serializer.fromJson<String?>(json['description']),
       colorHex: serializer.fromJson<String?>(json['colorHex']),
       position: serializer.fromJson<int>(json['position']),
+      archived: serializer.fromJson<bool>(json['archived']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -3778,6 +3889,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       'description': serializer.toJson<String?>(description),
       'colorHex': serializer.toJson<String?>(colorHex),
       'position': serializer.toJson<int>(position),
+      'archived': serializer.toJson<bool>(archived),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -3791,6 +3904,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     Value<String?> description = const Value.absent(),
     Value<String?> colorHex = const Value.absent(),
     int? position,
+    bool? archived,
+    Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => ChatChannel(
@@ -3801,6 +3916,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     description: description.present ? description.value : this.description,
     colorHex: colorHex.present ? colorHex.value : this.colorHex,
     position: position ?? this.position,
+    archived: archived ?? this.archived,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -3817,6 +3934,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           : this.description,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       position: data.position.present ? data.position.value : this.position,
+      archived: data.archived.present ? data.archived.value : this.archived,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -3832,6 +3951,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           ..write('description: $description, ')
           ..write('colorHex: $colorHex, ')
           ..write('position: $position, ')
+          ..write('archived: $archived, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3847,6 +3968,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     description,
     colorHex,
     position,
+    archived,
+    deletedAt,
     createdAt,
     updatedAt,
   );
@@ -3861,6 +3984,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           other.description == this.description &&
           other.colorHex == this.colorHex &&
           other.position == this.position &&
+          other.archived == this.archived &&
+          other.deletedAt == this.deletedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -3873,6 +3998,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
   final Value<String?> description;
   final Value<String?> colorHex;
   final Value<int> position;
+  final Value<bool> archived;
+  final Value<DateTime?> deletedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -3884,6 +4011,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     this.description = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.position = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -3896,6 +4025,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     this.description = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.position = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -3912,6 +4043,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     Expression<String>? description,
     Expression<String>? colorHex,
     Expression<int>? position,
+    Expression<bool>? archived,
+    Expression<DateTime>? deletedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -3924,6 +4057,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
       if (description != null) 'description': description,
       if (colorHex != null) 'color_hex': colorHex,
       if (position != null) 'position': position,
+      if (archived != null) 'archived': archived,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -3938,6 +4073,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     Value<String?>? description,
     Value<String?>? colorHex,
     Value<int>? position,
+    Value<bool>? archived,
+    Value<DateTime?>? deletedAt,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -3950,6 +4087,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
       description: description ?? this.description,
       colorHex: colorHex ?? this.colorHex,
       position: position ?? this.position,
+      archived: archived ?? this.archived,
+      deletedAt: deletedAt ?? this.deletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -3980,6 +4119,12 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4002,6 +4147,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
           ..write('description: $description, ')
           ..write('colorHex: $colorHex, ')
           ..write('position: $position, ')
+          ..write('archived: $archived, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4132,6 +4279,17 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _purgedAtMeta = const VerificationMeta(
+    'purgedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> purgedAt = GeneratedColumn<DateTime>(
+    'purged_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4166,6 +4324,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     channelId,
     deletedAt,
     archived,
+    purgedAt,
     createdAt,
     updatedAt,
   ];
@@ -4250,6 +4409,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
       );
     }
+    if (data.containsKey('purged_at')) {
+      context.handle(
+        _purgedAtMeta,
+        purgedAt.isAcceptableOrUnknown(data['purged_at']!, _purgedAtMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4315,6 +4480,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         DriftSqlType.bool,
         data['${effectivePrefix}archived'],
       )!,
+      purgedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}purged_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4343,6 +4512,7 @@ class Message extends DataClass implements Insertable<Message> {
   final String? channelId;
   final DateTime? deletedAt;
   final bool archived;
+  final DateTime? purgedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Message({
@@ -4356,6 +4526,7 @@ class Message extends DataClass implements Insertable<Message> {
     this.channelId,
     this.deletedAt,
     required this.archived,
+    this.purgedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -4382,6 +4553,9 @@ class Message extends DataClass implements Insertable<Message> {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     map['archived'] = Variable<bool>(archived);
+    if (!nullToAbsent || purgedAt != null) {
+      map['purged_at'] = Variable<DateTime>(purgedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -4409,6 +4583,9 @@ class Message extends DataClass implements Insertable<Message> {
           ? const Value.absent()
           : Value(deletedAt),
       archived: Value(archived),
+      purgedAt: purgedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purgedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -4430,6 +4607,7 @@ class Message extends DataClass implements Insertable<Message> {
       channelId: serializer.fromJson<String?>(json['channelId']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       archived: serializer.fromJson<bool>(json['archived']),
+      purgedAt: serializer.fromJson<DateTime?>(json['purgedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -4448,6 +4626,7 @@ class Message extends DataClass implements Insertable<Message> {
       'channelId': serializer.toJson<String?>(channelId),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'archived': serializer.toJson<bool>(archived),
+      'purgedAt': serializer.toJson<DateTime?>(purgedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -4464,6 +4643,7 @@ class Message extends DataClass implements Insertable<Message> {
     Value<String?> channelId = const Value.absent(),
     Value<DateTime?> deletedAt = const Value.absent(),
     bool? archived,
+    Value<DateTime?> purgedAt = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Message(
@@ -4481,6 +4661,7 @@ class Message extends DataClass implements Insertable<Message> {
     channelId: channelId.present ? channelId.value : this.channelId,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     archived: archived ?? this.archived,
+    purgedAt: purgedAt.present ? purgedAt.value : this.purgedAt,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -4500,6 +4681,7 @@ class Message extends DataClass implements Insertable<Message> {
       channelId: data.channelId.present ? data.channelId.value : this.channelId,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       archived: data.archived.present ? data.archived.value : this.archived,
+      purgedAt: data.purgedAt.present ? data.purgedAt.value : this.purgedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4518,6 +4700,7 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('channelId: $channelId, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('archived: $archived, ')
+          ..write('purgedAt: $purgedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4536,6 +4719,7 @@ class Message extends DataClass implements Insertable<Message> {
     channelId,
     deletedAt,
     archived,
+    purgedAt,
     createdAt,
     updatedAt,
   );
@@ -4553,6 +4737,7 @@ class Message extends DataClass implements Insertable<Message> {
           other.channelId == this.channelId &&
           other.deletedAt == this.deletedAt &&
           other.archived == this.archived &&
+          other.purgedAt == this.purgedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4568,6 +4753,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<String?> channelId;
   final Value<DateTime?> deletedAt;
   final Value<bool> archived;
+  final Value<DateTime?> purgedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -4582,6 +4768,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.channelId = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.archived = const Value.absent(),
+    this.purgedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4597,6 +4784,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.channelId = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.archived = const Value.absent(),
+    this.purgedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -4616,6 +4804,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<String>? channelId,
     Expression<DateTime>? deletedAt,
     Expression<bool>? archived,
+    Expression<DateTime>? purgedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -4631,6 +4820,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (channelId != null) 'channel_id': channelId,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (archived != null) 'archived': archived,
+      if (purgedAt != null) 'purged_at': purgedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -4648,6 +4838,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Value<String?>? channelId,
     Value<DateTime?>? deletedAt,
     Value<bool>? archived,
+    Value<DateTime?>? purgedAt,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -4663,6 +4854,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       channelId: channelId ?? this.channelId,
       deletedAt: deletedAt ?? this.deletedAt,
       archived: archived ?? this.archived,
+      purgedAt: purgedAt ?? this.purgedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -4702,6 +4894,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (archived.present) {
       map['archived'] = Variable<bool>(archived.value);
     }
+    if (purgedAt.present) {
+      map['purged_at'] = Variable<DateTime>(purgedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4727,6 +4922,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('channelId: $channelId, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('archived: $archived, ')
+          ..write('purgedAt: $purgedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -18353,6 +18549,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<bool> isCustomFront,
       Value<bool> archived,
       Value<DateTime?> deletedAt,
+      Value<DateTime?> purgedAt,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -18378,6 +18575,7 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<bool> isCustomFront,
       Value<bool> archived,
       Value<DateTime?> deletedAt,
+      Value<DateTime?> purgedAt,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -18646,6 +18844,11 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get purgedAt => $composableBuilder(
+    column: $table.purgedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18957,6 +19160,11 @@ class $$MembersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get purgedAt => $composableBuilder(
+    column: $table.purgedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -19067,6 +19275,9 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get purgedAt =>
+      $composableBuilder(column: $table.purgedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -19333,6 +19544,7 @@ class $$MembersTableTableManager
                 Value<bool> isCustomFront = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime?> purgedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19356,6 +19568,7 @@ class $$MembersTableTableManager
                 isCustomFront: isCustomFront,
                 archived: archived,
                 deletedAt: deletedAt,
+                purgedAt: purgedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -19381,6 +19594,7 @@ class $$MembersTableTableManager
                 Value<bool> isCustomFront = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime?> purgedAt = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -19404,6 +19618,7 @@ class $$MembersTableTableManager
                 isCustomFront: isCustomFront,
                 archived: archived,
                 deletedAt: deletedAt,
+                purgedAt: purgedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -20816,6 +21031,8 @@ typedef $$ChatChannelsTableCreateCompanionBuilder =
       Value<String?> description,
       Value<String?> colorHex,
       Value<int> position,
+      Value<bool> archived,
+      Value<DateTime?> deletedAt,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -20829,6 +21046,8 @@ typedef $$ChatChannelsTableUpdateCompanionBuilder =
       Value<String?> description,
       Value<String?> colorHex,
       Value<int> position,
+      Value<bool> archived,
+      Value<DateTime?> deletedAt,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -20925,6 +21144,16 @@ class $$ChatChannelsTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
     column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21044,6 +21273,16 @@ class $$ChatChannelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -21126,6 +21365,12 @@ class $$ChatChannelsTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -21244,6 +21489,8 @@ class $$ChatChannelsTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -21255,6 +21502,8 @@ class $$ChatChannelsTableTableManager
                 description: description,
                 colorHex: colorHex,
                 position: position,
+                archived: archived,
+                deletedAt: deletedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -21268,6 +21517,8 @@ class $$ChatChannelsTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -21279,6 +21530,8 @@ class $$ChatChannelsTableTableManager
                 description: description,
                 colorHex: colorHex,
                 position: position,
+                archived: archived,
+                deletedAt: deletedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -21406,6 +21659,7 @@ typedef $$MessagesTableCreateCompanionBuilder =
       Value<String?> channelId,
       Value<DateTime?> deletedAt,
       Value<bool> archived,
+      Value<DateTime?> purgedAt,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -21422,6 +21676,7 @@ typedef $$MessagesTableUpdateCompanionBuilder =
       Value<String?> channelId,
       Value<DateTime?> deletedAt,
       Value<bool> archived,
+      Value<DateTime?> purgedAt,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -21512,6 +21767,11 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<bool> get archived => $composableBuilder(
     column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get purgedAt => $composableBuilder(
+    column: $table.purgedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21621,6 +21881,11 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get purgedAt => $composableBuilder(
+    column: $table.purgedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -21715,6 +21980,9 @@ class $$MessagesTableAnnotationComposer
   GeneratedColumn<bool> get archived =>
       $composableBuilder(column: $table.archived, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get purgedAt =>
+      $composableBuilder(column: $table.purgedAt, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -21806,6 +22074,7 @@ class $$MessagesTableTableManager
                 Value<String?> channelId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<DateTime?> purgedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -21820,6 +22089,7 @@ class $$MessagesTableTableManager
                 channelId: channelId,
                 deletedAt: deletedAt,
                 archived: archived,
+                purgedAt: purgedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -21836,6 +22106,7 @@ class $$MessagesTableTableManager
                 Value<String?> channelId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<DateTime?> purgedAt = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -21850,6 +22121,7 @@ class $$MessagesTableTableManager
                 channelId: channelId,
                 deletedAt: deletedAt,
                 archived: archived,
+                purgedAt: purgedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

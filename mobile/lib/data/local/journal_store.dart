@@ -55,64 +55,74 @@ class LocalJournalStore {
   }
 
   Future<void> save(JournalEntry entry) async {
-    final existing = await (database.select(
-      database.journalEntries,
-    )..where((row) => row.id.equals(entry.id))).getSingleOrNull();
-    if (existing != null) {
-      final previousTitle = await decryptText(
-        existing.title,
-        'journal_entries',
-        entry.id,
-        'title',
-      );
-      final previousBody =
-          await decryptText(
-            existing.body,
-            'journal_entries',
-            entry.id,
-            'body',
-          ) ??
-          '';
-      if (previousTitle != entry.title || previousBody != entry.body) {
-        await recordRevision(
-          targetType: 'journal',
-          targetId: entry.id,
-          title: previousTitle,
-          body: previousBody,
+    await database.transaction(() async {
+      final existing = await (database.select(
+        database.journalEntries,
+      )..where((row) => row.id.equals(entry.id))).getSingleOrNull();
+      if (existing != null) {
+        final previousTitle = await decryptText(
+          existing.title,
+          'journal_entries',
+          entry.id,
+          'title',
         );
-      }
-    }
-    final now = DateTime.now().toUtc();
-    await database
-        .into(database.journalEntries)
-        .insertOnConflictUpdate(
-          JournalEntriesCompanion.insert(
-            id: entry.id,
-            systemId: localSystemId,
-            memberId: Value(entry.memberId),
-            title: Value(
-              await encryptNullableText(
-                entry.title,
-                'journal_entries',
-                entry.id,
-                'title',
-              ),
-            ),
-            body: await encryptText(
-              entry.body,
+        final previousBody =
+            await decryptText(
+              existing.body,
               'journal_entries',
               entry.id,
               'body',
+            ) ??
+            '';
+        if (previousTitle != entry.title || previousBody != entry.body) {
+          await recordRevision(
+            targetType: 'journal',
+            targetId: entry.id,
+            title: previousTitle,
+            body: previousBody,
+          );
+        }
+      }
+      final now = DateTime.now().toUtc();
+      await database
+          .into(database.journalEntries)
+          .insertOnConflictUpdate(
+            JournalEntriesCompanion.insert(
+              id: entry.id,
+              systemId: localSystemId,
+              memberId: Value(entry.memberId),
+              title: Value(
+                await encryptNullableText(
+                  entry.title,
+                  'journal_entries',
+                  entry.id,
+                  'title',
+                ),
+              ),
+              body: await encryptText(
+                entry.body,
+                'journal_entries',
+                entry.id,
+                'body',
+              ),
+              createdAt: entry.createdAt,
+              updatedAt: now,
             ),
-            createdAt: entry.createdAt,
-            updatedAt: now,
-          ),
-        );
+          );
+    });
   }
 
   Future<void> delete(String entryId) {
-    return (database.delete(
-      database.journalEntries,
-    )..where((entry) => entry.id.equals(entryId))).go();
+    return database.transaction(() async {
+      await (database.delete(database.contentRevisions)..where(
+            (revision) =>
+                revision.targetType.equals('journal') &
+                revision.targetId.equals(entryId),
+          ))
+          .go();
+      await (database.delete(
+        database.journalEntries,
+      )..where((entry) => entry.id.equals(entryId))).go();
+    });
   }
 }

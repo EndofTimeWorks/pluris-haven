@@ -61,6 +61,10 @@ class Members extends Table {
       boolean().withDefault(const Constant(false))();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
+  // A purged member remains as an ID-only tombstone for historical
+  // attribution and foreign-key integrity. Its private profile payload is
+  // erased by LocalMemberStore.purge.
+  DateTimeColumn get purgedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -112,6 +116,8 @@ class ChatChannels extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get colorHex => text().nullable()();
   IntColumn get position => integer().withDefault(const Constant(0))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -130,6 +136,8 @@ class Messages extends Table {
   TextColumn get channelId => text().nullable().references(ChatChannels, #id)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  // A purged message remains as an ID-only reply-topology tombstone.
+  DateTimeColumn get purgedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -501,7 +509,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 24;
 
   // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
@@ -540,6 +548,16 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       await transaction(() async {
+        // v18 rebuilds members using the current table definition. Add fields
+        // introduced after v18 before that rebuild so direct upgrades from an
+        // older installed version do not attempt to copy columns that do not
+        // yet exist.
+        if (from < 18) {
+          await _addColumnIfMissing(migrator, members, members.purgedAt);
+          if (from >= 3) {
+            await _addColumnIfMissing(migrator, messages, messages.purgedAt);
+          }
+        }
         if (from < 2) {
           await migrator.createTable(appPreferences);
         }
@@ -743,6 +761,22 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 22) {
           await _addColumnIfMissing(migrator, members, members.deletedAt);
+        }
+        if (from < 23) {
+          await _addColumnIfMissing(
+            migrator,
+            chatChannels,
+            chatChannels.archived,
+          );
+          await _addColumnIfMissing(
+            migrator,
+            chatChannels,
+            chatChannels.deletedAt,
+          );
+        }
+        if (from < 24) {
+          await _addColumnIfMissing(migrator, members, members.purgedAt);
+          await _addColumnIfMissing(migrator, messages, messages.purgedAt);
         }
       });
     },

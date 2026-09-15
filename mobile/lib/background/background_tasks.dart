@@ -56,9 +56,9 @@ Future<bool> _runBackgroundTask(
       case importArchiveTaskName:
         final jobId = inputData['job_id'] as String?;
         if (jobId == null || jobId.isEmpty) return false;
-        return repository.runBackgroundJob(jobId);
+        return await repository.runBackgroundJob(jobId);
       case iosImportArchiveTaskIdentifier:
-        return repository.runQueuedImportJobs();
+        return await repository.runQueuedImportJobs();
       case syncTaskName:
         return true;
       default:

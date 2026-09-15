@@ -100,9 +100,17 @@ class LocalChatStore {
     );
   }
 
-  Stream<List<ChatChannelSummary>> watchChannels() {
+  Stream<List<ChatChannelSummary>> watchChannels({
+    bool includeArchived = false,
+  }) {
     final query = database.select(database.chatChannels)
-      ..where((channel) => channel.systemId.equals(localSystemId))
+      ..where(
+        (channel) =>
+            channel.systemId.equals(localSystemId) &
+            (includeArchived
+                ? const Constant(true)
+                : channel.archived.equals(false)),
+      )
       ..orderBy([(channel) => OrderingTerm(expression: channel.position)]);
     return query.watch().asyncMap(
       (rows) async => [
@@ -293,21 +301,19 @@ class LocalChatStore {
 
   Future<void> deleteChannel(String channelId) async {
     await database.transaction(() async {
-      await (database.update(
-        database.messages,
-      )..where((message) => message.channelId.equals(channelId))).write(
-        const MessagesCompanion(
-          boardKind: Value('system'),
-          boardMemberId: Value(null),
-          channelId: Value(null),
-        ),
-      );
-      await (database.delete(database.chatChannels)..where(
+      final now = DateTime.now().toUtc();
+      await (database.update(database.chatChannels)..where(
             (channel) =>
                 channel.systemId.equals(localSystemId) &
                 channel.id.equals(channelId),
           ))
-          .go();
+          .write(
+            ChatChannelsCompanion(
+              archived: const Value(true),
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
     });
   }
 

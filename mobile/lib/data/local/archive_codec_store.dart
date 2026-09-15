@@ -77,6 +77,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'is_custom_front': member.isCustomFront,
       'archived': member.archived,
       'deleted_at': member.deletedAt?.toUtc().toIso8601String(),
+      'purged_at': member.purgedAt?.toUtc().toIso8601String(),
       'created_at': member.createdAt.toUtc().toIso8601String(),
       'updated_at': member.updatedAt.toUtc().toIso8601String(),
     };
@@ -147,6 +148,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'parent_message_id': message.parentMessageId,
     'channel_id': message.channelId,
     'deleted_at': message.deletedAt?.toUtc().toIso8601String(),
+    'purged_at': message.purgedAt?.toUtc().toIso8601String(),
     'archived': message.archived,
     'created_at': message.createdAt.toUtc().toIso8601String(),
     'updated_at': message.updatedAt.toUtc().toIso8601String(),
@@ -200,6 +202,8 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
           'color_hex',
         ),
         'position': channel.position,
+        'archived': channel.archived,
+        'deleted_at': channel.deletedAt?.toUtc().toIso8601String(),
         'created_at': channel.createdAt.toUtc().toIso8601String(),
         'updated_at': channel.updatedAt.toUtc().toIso8601String(),
       };

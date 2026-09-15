@@ -138,6 +138,66 @@ void main() {
     );
   });
 
+  test(
+    'preflights populated custom-field type changes without reinterpretation',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveCustomField(
+        const CustomFieldDraft(name: 'Biography', fieldType: 'text'),
+      );
+      final field = (await repository.watchCustomFields().first).single;
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: null,
+        value: 'exact source text',
+      );
+
+      final textLike = await repository.previewCustomFieldTypeChange(
+        field.id,
+        'markdown',
+      );
+      expect(textLike.canApply, isTrue);
+      expect(textLike.losslessValueIds, hasLength(1));
+      await repository.updateCustomField(
+        field.id,
+        const CustomFieldDraft(name: 'Biography', fieldType: 'markdown'),
+      );
+      expect(
+        (await repository.watchCustomFields().first).single.fieldType,
+        'markdown',
+      );
+      expect(
+        (await repository.watchCustomFieldValues().first).single.value,
+        'exact source text',
+      );
+
+      final number = await repository.previewCustomFieldTypeChange(
+        field.id,
+        'number',
+      );
+      expect(number.canApply, isFalse);
+      expect(number.unresolvedValueIds, hasLength(1));
+      await expectLater(
+        repository.updateCustomField(
+          field.id,
+          const CustomFieldDraft(name: 'Biography', fieldType: 'number'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        (await repository.watchCustomFields().first).single.fieldType,
+        'markdown',
+      );
+      expect(
+        (await repository.watchCustomFieldValues().first).single.value,
+        'exact source text',
+      );
+    },
+  );
+
   test('caps custom field configuration from local archive restores', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -1015,17 +1075,19 @@ void main() {
 
       await repository.deleteMember(member.id);
 
+      expect(await repository.watchMembers().first, isEmpty);
       expect(
         await repository.watchMembers(includeArchived: true).first,
         isEmpty,
       );
+      expect(await repository.watchDeletedMembers().first, hasLength(1));
       final storedMember = await (database.select(
         database.members,
       )..where((row) => row.id.equals(member.id))).getSingle();
       expect(storedMember.deletedAt, isNotNull);
       expect(await repository.setFrontMembers([member.id]), isEmpty);
-      expect(await database.select(database.groupMembers).get(), isEmpty);
-      expect(await database.select(database.memberTags).get(), isEmpty);
+      expect(await database.select(database.groupMembers).get(), hasLength(1));
+      expect(await database.select(database.memberTags).get(), hasLength(1));
       expect(
         await database.select(database.frontSessionMembers).get(),
         hasLength(1),
@@ -1046,10 +1108,13 @@ void main() {
         await database.select(database.journalEntries).get(),
         hasLength(1),
       );
-      expect(await database.select(database.namedFrontMembers).get(), isEmpty);
+      expect(
+        await database.select(database.namedFrontMembers).get(),
+        hasLength(1),
+      );
       expect(
         await database.select(database.privacyBucketMembers).get(),
-        isEmpty,
+        hasLength(1),
       );
 
       final archive =
@@ -1064,11 +1129,15 @@ void main() {
       final restored = testRepository(restoredDatabase);
       await restored.ensureLocalSystem();
       await restored.importLocalArchiveJson(jsonEncode(archive));
-      expect(await restored.watchMembers(includeArchived: true).first, isEmpty);
       final restoredMember = await (restoredDatabase.select(
         restoredDatabase.members,
       )..where((row) => row.id.equals(member.id))).getSingle();
       expect(restoredMember.deletedAt, isNotNull);
+      expect(await restored.watchMembers(includeArchived: true).first, isEmpty);
+      expect(await restored.watchDeletedMembers().first, hasLength(1));
+
+      await restored.restoreDeletedMember(member.id);
+      expect(await restored.watchMembers().first, hasLength(1));
     },
   );
 
@@ -1538,9 +1607,10 @@ void main() {
       );
 
       await repository.deleteChatChannel(channel.id);
-      final unassigned = (await repository.watchMessages().first).single;
-      expect(unassigned.boardKind, 'system');
-      expect(unassigned.channelId, isNull);
+      expect(await repository.watchChatChannels().first, isEmpty);
+      final retained = (await repository.watchMessages().first).single;
+      expect(retained.boardKind, 'channel');
+      expect(retained.channelId, channel.id);
     },
   );
 

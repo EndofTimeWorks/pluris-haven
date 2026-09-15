@@ -56,6 +56,26 @@ class CustomFieldValueSummary {
   String get displayValue => displayCustomFieldValue(value);
 }
 
+/// A non-destructive type-change preflight. Unresolved values require an
+/// explicit per-value resolution flow; callers must not apply the change.
+class CustomFieldTypeMigrationPreview {
+  const CustomFieldTypeMigrationPreview({
+    required this.fieldId,
+    required this.fromType,
+    required this.toType,
+    required this.losslessValueIds,
+    required this.unresolvedValueIds,
+  });
+
+  final String fieldId;
+  final String fromType;
+  final String toType;
+  final List<String> losslessValueIds;
+  final List<String> unresolvedValueIds;
+
+  bool get canApply => unresolvedValueIds.isEmpty;
+}
+
 class LocalCustomFieldStore {
   LocalCustomFieldStore(
     this.database, {
@@ -237,6 +257,22 @@ WHERE ${filters.join(' AND ')}
     if (name.isEmpty) return;
 
     final fieldType = normalizeCustomFieldType(draft.fieldType);
+    final existing =
+        await (database.select(database.customFieldDefinitions)..where(
+              (field) =>
+                  field.id.equals(fieldId) &
+                  field.systemId.equals(localSystemId),
+            ))
+            .getSingleOrNull();
+    if (existing == null) return;
+    if (existing.fieldType != fieldType) {
+      final preview = await previewTypeChange(fieldId, fieldType);
+      if (!preview.canApply) {
+        throw StateError(
+          'Custom field type change has values requiring explicit resolution.',
+        );
+      }
+    }
     await (database.update(database.customFieldDefinitions)..where(
           (field) =>
               field.id.equals(fieldId) & field.systemId.equals(localSystemId),
@@ -271,6 +307,48 @@ WHERE ${filters.join(' AND ')}
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+  }
+
+  Future<CustomFieldTypeMigrationPreview> previewTypeChange(
+    String fieldId,
+    String requestedType,
+  ) async {
+    final field =
+        await (database.select(database.customFieldDefinitions)..where(
+              (row) =>
+                  row.id.equals(fieldId) & row.systemId.equals(localSystemId),
+            ))
+            .getSingleOrNull();
+    if (field == null) throw StateError('Custom field does not exist.');
+    final targetType = normalizeCustomFieldType(requestedType);
+    final values = await (database.select(
+      database.customFieldValues,
+    )..where((row) => row.fieldId.equals(fieldId))).get();
+    final lossless = <String>[];
+    final unresolved = <String>[];
+    for (final row in values) {
+      final value = decodeCustomFieldValue(
+        (await decryptText(
+              row.value,
+              'custom_field_values',
+              row.id,
+              'value',
+            )) ??
+            '',
+      );
+      if (_isLosslessTypeChange(field.fieldType, targetType, value)) {
+        lossless.add(row.id);
+      } else {
+        unresolved.add(row.id);
+      }
+    }
+    return CustomFieldTypeMigrationPreview(
+      fieldId: fieldId,
+      fromType: field.fieldType,
+      toType: targetType,
+      losslessValueIds: List.unmodifiable(lossless),
+      unresolvedValueIds: List.unmodifiable(unresolved),
+    );
   }
 
   Future<void> delete(String fieldId) async {
@@ -365,6 +443,14 @@ WHERE ${filters.join(' AND ')}
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+}
+
+bool _isLosslessTypeChange(String fromType, String toType, Object? value) {
+  if (fromType == toType) return true;
+  const textLike = {'text', 'long_text', 'markdown'};
+  return textLike.contains(fromType) &&
+      textLike.contains(toType) &&
+      value is String;
 }
 
 const customFieldTypes = <String>{

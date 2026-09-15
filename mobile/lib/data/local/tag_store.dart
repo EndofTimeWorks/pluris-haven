@@ -57,12 +57,14 @@ class LocalTagStore {
   }
 
   Future<void> delete(String tagId) async {
-    await (database.delete(
-      database.memberTags,
-    )..where((memberTag) => memberTag.tagId.equals(tagId))).go();
-    await (database.delete(
-      database.tags,
-    )..where((tag) => tag.id.equals(tagId))).go();
+    await database.transaction(() async {
+      await (database.delete(
+        database.memberTags,
+      )..where((memberTag) => memberTag.tagId.equals(tagId))).go();
+      await (database.delete(
+        database.tags,
+      )..where((tag) => tag.id.equals(tagId))).go();
+    });
   }
 
   Stream<List<Tag>> watchForMember(String memberId) {

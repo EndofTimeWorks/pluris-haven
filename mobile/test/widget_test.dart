@@ -3761,6 +3761,10 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Stream<List<MemberSummary>> watchDeletedMembers({bool listOnly = false}) =>
+      Stream.value(const []);
+
+  @override
   Stream<List<MemberSummary>> watchCurrentFrontMembers() {
     return _currentFrontMembersController.stream.map(List.unmodifiable);
   }
@@ -3789,6 +3793,9 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Stream<List<MessageSummary>> watchDeletedMessages() => const Stream.empty();
+
+  @override
   Stream<List<ChatCategorySummary>> watchChatCategories() async* {
     yield List.unmodifiable(_chatCategories);
     await for (final categories in _chatCategoriesController.stream) {
@@ -3797,7 +3804,9 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<ChatChannelSummary>> watchChatChannels() async* {
+  Stream<List<ChatChannelSummary>> watchChatChannels({
+    bool includeArchived = false,
+  }) async* {
     yield List.unmodifiable(_chatChannels);
     await for (final channels in _chatChannelsController.stream) {
       yield List.unmodifiable(channels);
@@ -4239,6 +4248,12 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> restoreDeletedMember(String memberId) async {}
+
+  @override
+  Future<void> purgeMember(String memberId) async {}
+
+  @override
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId) async =>
       const MemberDeletionImpact(
         groupLinks: 0,
@@ -4538,6 +4553,18 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<CustomFieldTypeMigrationPreview> previewCustomFieldTypeChange(
+    String fieldId,
+    String requestedType,
+  ) async => CustomFieldTypeMigrationPreview(
+    fieldId: fieldId,
+    fromType: 'text',
+    toType: requestedType,
+    losslessValueIds: const [],
+    unresolvedValueIds: const [],
+  );
+
+  @override
   Future<void> deleteCustomField(String fieldId) async {
     _customFields = [
       for (final field in _customFields)
@@ -4728,6 +4755,12 @@ class FakeHavenRepository implements HavenRepository {
     ];
     _messagesController.add(_messages);
   }
+
+  @override
+  Future<void> restoreMessage(String messageId) async {}
+
+  @override
+  Future<void> purgeMessage(String messageId) async {}
 
   @override
   Future<void> saveChatCategory(ChatCategoryDraft draft) async {

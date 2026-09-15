@@ -205,27 +205,29 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     String frontId,
     String? statusNote,
   ) async {
-    final before = await _frontSnapshot(frontId);
-    if (before == null) return;
-    await (database.update(database.frontSessions)..where(
-          (front) =>
-              front.systemId.equals(localSystemId) & front.id.equals(frontId),
-        ))
-        .write(
-          FrontSessionsCompanion(
-            statusNote: Value(
-              await _encryptNullableLocalText(
-                _nullIfBlank(statusNote),
-                'front_sessions',
-                frontId,
-                'status_note',
+    await database.transaction(() async {
+      final before = await _frontSnapshot(frontId);
+      if (before == null) return;
+      await (database.update(database.frontSessions)..where(
+            (front) =>
+                front.systemId.equals(localSystemId) & front.id.equals(frontId),
+          ))
+          .write(
+            FrontSessionsCompanion(
+              statusNote: Value(
+                await _encryptNullableLocalText(
+                  _nullIfBlank(statusNote),
+                  'front_sessions',
+                  frontId,
+                  'status_note',
+                ),
               ),
+              updatedAt: Value(DateTime.now().toUtc()),
             ),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-    final after = await _frontSnapshot(frontId);
-    if (after != null) await _frontRecordAudit(frontId, before, after);
+          );
+      final after = await _frontSnapshot(frontId);
+      if (after != null) await _frontRecordAudit(frontId, before, after);
+    });
   }
 
   Future<void> _frontSaveFrontHistoryEntry(FrontHistoryDraft draft) async {

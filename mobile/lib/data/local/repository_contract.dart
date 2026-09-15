@@ -154,6 +154,8 @@ abstract interface class HavenRepository {
     bool listOnly = false,
   });
 
+  Stream<List<MemberSummary>> watchDeletedMembers({bool listOnly = false});
+
   Stream<List<MemberSummary>> watchCurrentFrontMembers();
 
   Stream<List<GroupSummary>> watchGroups();
@@ -162,9 +164,13 @@ abstract interface class HavenRepository {
 
   Stream<List<MessageSummary>> watchMessages();
 
+  Stream<List<MessageSummary>> watchDeletedMessages();
+
   Stream<List<ChatCategorySummary>> watchChatCategories();
 
-  Stream<List<ChatChannelSummary>> watchChatChannels();
+  Stream<List<ChatChannelSummary>> watchChatChannels({
+    bool includeArchived = false,
+  });
 
   Stream<List<ReminderSummary>> watchReminders();
 
@@ -260,6 +266,10 @@ abstract interface class HavenRepository {
 
   Future<void> deleteMember(String memberId);
 
+  Future<void> restoreDeletedMember(String memberId);
+
+  Future<void> purgeMember(String memberId);
+
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId);
 
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds);
@@ -284,6 +294,11 @@ abstract interface class HavenRepository {
 
   Future<void> updateCustomField(String fieldId, CustomFieldDraft draft);
 
+  Future<CustomFieldTypeMigrationPreview> previewCustomFieldTypeChange(
+    String fieldId,
+    String requestedType,
+  );
+
   Future<void> deleteCustomField(String fieldId);
 
   Future<void> setCustomFieldValue({
@@ -303,6 +318,10 @@ abstract interface class HavenRepository {
   Future<void> updateMessage(String messageId, MessageDraft draft);
 
   Future<void> deleteMessage(String messageId);
+
+  Future<void> restoreMessage(String messageId);
+
+  Future<void> purgeMessage(String messageId);
 
   Future<void> saveChatCategory(ChatCategoryDraft draft);
 

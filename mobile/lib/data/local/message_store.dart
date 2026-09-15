@@ -69,12 +69,14 @@ class LocalMessageStore {
   })
   recordRevision;
 
-  Stream<List<MessageSummary>> watch() {
+  Stream<List<MessageSummary>> watch({bool deletedOnly = false}) {
     final query = database.select(database.messages)
       ..where(
         (message) =>
             message.systemId.equals(localSystemId) &
-            message.archived.equals(false),
+            (deletedOnly
+                ? message.archived.equals(true) & message.purgedAt.isNull()
+                : message.archived.equals(false)),
       )
       ..orderBy([
         (message) => OrderingTerm(
@@ -102,6 +104,8 @@ class LocalMessageStore {
       ],
     );
   }
+
+  Stream<List<MessageSummary>> watchDeleted() => watch(deletedOnly: true);
 
   Future<void> save(MessageDraft draft) async {
     final body = draft.body.trim();
@@ -139,53 +143,60 @@ class LocalMessageStore {
     final body = draft.body.trim();
     if (body.isEmpty) return;
 
-    final existing =
-        await (database.select(database.messages)..where(
-              (message) =>
-                  message.systemId.equals(localSystemId) &
-                  message.id.equals(messageId),
-            ))
-            .getSingleOrNull();
-    if (existing == null) return;
-    final previousBody =
-        await decryptText(existing.body, 'messages', messageId, 'body') ?? '';
-    if (previousBody != body) {
-      await recordRevision(
-        targetType: 'message',
-        targetId: messageId,
-        body: previousBody,
-      );
-    }
-    final now = DateTime.now().toUtc();
-    final updatedAt = now.isAfter(existing.updatedAt)
-        ? now
-        : existing.updatedAt.add(const Duration(microseconds: 1));
-    await (database.update(database.messages)..where(
-          (message) =>
-              message.systemId.equals(localSystemId) &
-              message.id.equals(messageId),
-        ))
-        .write(
-          MessagesCompanion(
-            memberId: Value(_nullIfBlank(draft.memberId)),
-            body: Value(await encryptText(body, 'messages', messageId, 'body')),
-            boardKind: Value(_boardKind(draft.boardKind)),
-            boardMemberId: Value(
-              draft.boardKind == 'member'
-                  ? _nullIfBlank(draft.boardMemberId)
-                  : null,
-            ),
-            parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
-            channelId: Value(
-              draft.boardKind == 'channel'
-                  ? _nullIfBlank(draft.channelId)
-                  : null,
-            ),
-            archived: const Value(false),
-            deletedAt: const Value(null),
-            updatedAt: Value(updatedAt),
-          ),
+    await database.transaction(() async {
+      final existing =
+          await (database.select(database.messages)..where(
+                (message) =>
+                    message.systemId.equals(localSystemId) &
+                    message.id.equals(messageId) &
+                    message.purgedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (existing == null) return;
+      final previousBody =
+          await decryptText(existing.body, 'messages', messageId, 'body') ?? '';
+      if (previousBody != body) {
+        await recordRevision(
+          targetType: 'message',
+          targetId: messageId,
+          body: previousBody,
         );
+      }
+      final now = DateTime.now().toUtc();
+      final updatedAt = now.isAfter(existing.updatedAt)
+          ? now
+          : existing.updatedAt.add(const Duration(microseconds: 1));
+      await (database.update(database.messages)..where(
+            (message) =>
+                message.systemId.equals(localSystemId) &
+                message.id.equals(messageId) &
+                message.purgedAt.isNull(),
+          ))
+          .write(
+            MessagesCompanion(
+              memberId: Value(_nullIfBlank(draft.memberId)),
+              body: Value(
+                await encryptText(body, 'messages', messageId, 'body'),
+              ),
+              boardKind: Value(_boardKind(draft.boardKind)),
+              boardMemberId: Value(
+                draft.boardKind == 'member'
+                    ? _nullIfBlank(draft.boardMemberId)
+                    : null,
+              ),
+              parentMessageId: Value(_nullIfBlank(draft.parentMessageId)),
+              channelId: Value(
+                draft.boardKind == 'channel'
+                    ? _nullIfBlank(draft.channelId)
+                    : null,
+              ),
+              archived: const Value(false),
+              deletedAt: const Value(null),
+              purgedAt: const Value(null),
+              updatedAt: Value(updatedAt),
+            ),
+          );
+    });
   }
 
   Future<void> delete(String messageId) async {
@@ -193,7 +204,8 @@ class LocalMessageStore {
     await (database.update(database.messages)..where(
           (message) =>
               message.systemId.equals(localSystemId) &
-              message.id.equals(messageId),
+              message.id.equals(messageId) &
+              message.purgedAt.isNull(),
         ))
         .write(
           MessagesCompanion(
@@ -202,6 +214,53 @@ class LocalMessageStore {
             updatedAt: Value(now),
           ),
         );
+  }
+
+  Future<void> restore(String messageId) {
+    final now = DateTime.now().toUtc();
+    return (database.update(database.messages)..where(
+          (message) =>
+              message.systemId.equals(localSystemId) &
+              message.id.equals(messageId) &
+              message.archived.equals(true) &
+              message.purgedAt.isNull(),
+        ))
+        .write(
+          MessagesCompanion(
+            archived: const Value(false),
+            deletedAt: const Value(null),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<void> purge(String messageId) async {
+    return database.transaction(() async {
+      await (database.delete(database.contentRevisions)..where(
+            (revision) =>
+                revision.targetType.equals('message') &
+                revision.targetId.equals(messageId),
+          ))
+          .go();
+      // Keep an ID-only encrypted tombstone so replies do not become dangling,
+      // while erasing the content payload and all content-bearing revisions.
+      await (database.update(database.messages)..where(
+            (message) =>
+                message.systemId.equals(localSystemId) &
+                message.id.equals(messageId) &
+                message.archived.equals(true) &
+                message.purgedAt.isNull(),
+          ))
+          .write(
+            MessagesCompanion(
+              body: Value(await encryptText('', 'messages', messageId, 'body')),
+              memberId: const Value(null),
+              boardMemberId: const Value(null),
+              purgedAt: Value(DateTime.now().toUtc()),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+    });
   }
 
   String _boardKind(String value) {

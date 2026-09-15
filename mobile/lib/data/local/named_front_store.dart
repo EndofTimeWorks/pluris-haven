@@ -149,11 +149,13 @@ extension LocalHavenRepositoryNamedFronts on LocalHavenRepository {
   }
 
   Future<void> _namedFrontDelete(String namedFrontId) async {
-    await (database.delete(
-      database.namedFrontMembers,
-    )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).go();
-    await (database.delete(
-      database.namedFronts,
-    )..where((nf) => nf.id.equals(namedFrontId))).go();
+    await database.transaction(() async {
+      await (database.delete(
+        database.namedFrontMembers,
+      )..where((nfm) => nfm.namedFrontId.equals(namedFrontId))).go();
+      await (database.delete(
+        database.namedFronts,
+      )..where((nf) => nf.id.equals(namedFrontId))).go();
+    });
   }
 }

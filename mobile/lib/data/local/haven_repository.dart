@@ -55,6 +55,7 @@ export 'custom_field_store.dart'
     show
         CustomFieldDraft,
         CustomFieldSummary,
+        CustomFieldTypeMigrationPreview,
         CustomFieldValueSummary,
         customFieldTypes,
         displayCustomFieldValue,
@@ -286,6 +287,10 @@ class LocalHavenRepository implements HavenRepository {
       _members.watchCurrentFront();
 
   @override
+  Stream<List<MemberSummary>> watchDeletedMembers({bool listOnly = false}) =>
+      _members.watchDeleted(listOnly: listOnly);
+
+  @override
   Stream<List<CustomFieldSummary>> watchCustomFields() =>
       _customFields.watchFields();
 
@@ -309,11 +314,17 @@ class LocalHavenRepository implements HavenRepository {
   Stream<List<MessageSummary>> watchMessages() => _messages.watch();
 
   @override
+  Stream<List<MessageSummary>> watchDeletedMessages() =>
+      _messages.watchDeleted();
+
+  @override
   Stream<List<ChatCategorySummary>> watchChatCategories() =>
       _chat.watchCategories();
 
   @override
-  Stream<List<ChatChannelSummary>> watchChatChannels() => _chat.watchChannels();
+  Stream<List<ChatChannelSummary>> watchChatChannels({
+    bool includeArchived = false,
+  }) => _chat.watchChannels(includeArchived: includeArchived);
 
   @override
   Stream<List<ReminderSummary>> watchReminders() => _reminders.watch();
@@ -480,6 +491,13 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> deleteMember(String memberId) => _members.delete(memberId);
 
   @override
+  Future<void> restoreDeletedMember(String memberId) =>
+      _members.restoreDeleted(memberId);
+
+  @override
+  Future<void> purgeMember(String memberId) => _members.purge(memberId);
+
+  @override
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId) =>
       _members.previewDeletion(memberId);
 
@@ -539,6 +557,12 @@ class LocalHavenRepository implements HavenRepository {
       _customFields.update(fieldId, draft);
 
   @override
+  Future<CustomFieldTypeMigrationPreview> previewCustomFieldTypeChange(
+    String fieldId,
+    String requestedType,
+  ) => _customFields.previewTypeChange(fieldId, requestedType);
+
+  @override
   Future<void> deleteCustomField(String fieldId) =>
       _customFields.delete(fieldId);
 
@@ -572,6 +596,12 @@ class LocalHavenRepository implements HavenRepository {
 
   @override
   Future<void> deleteMessage(String messageId) => _messages.delete(messageId);
+
+  @override
+  Future<void> restoreMessage(String messageId) => _messages.restore(messageId);
+
+  @override
+  Future<void> purgeMessage(String messageId) => _messages.purge(messageId);
 
   @override
   Future<void> saveChatCategory(ChatCategoryDraft draft) =>
