@@ -13,7 +13,11 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from pluris_server import __version__
 from pluris_server.account_cleanup import sweep_deleted_accounts
-from pluris_server.backup_cleanup import sweep_backup_deletions, sweep_incomplete_backup_snapshots
+from pluris_server.backup_cleanup import (
+    reconcile_legacy_backup_chunks,
+    sweep_backup_deletions,
+    sweep_incomplete_backup_snapshots,
+)
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.config import Settings, get_settings
 from pluris_server.database import Base, create_engine, create_session_factory
@@ -34,6 +38,7 @@ _logger = logging.getLogger("pluris.cleanup")
 
 async def _sweep_scheduled_cleanup(app: FastAPI) -> None:
     async with app.state.session_factory() as cleanup_session:
+        await reconcile_legacy_backup_chunks(cleanup_session, app.state.backup_object_store)
         await sweep_backup_deletions(
             cleanup_session,
             app.state.backup_object_store,
@@ -62,6 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             async with engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
         async with _app.state.session_factory() as cleanup_session:
+            await reconcile_legacy_backup_chunks(cleanup_session, _app.state.backup_object_store)
             await sweep_backup_deletions(
                 cleanup_session,
                 _app.state.backup_object_store,

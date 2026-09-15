@@ -298,6 +298,8 @@ async def get_chunk(
     snapshot_id: str, index: int, request: Request, auth: CurrentAuth, db: Db
 ) -> Response:
     snapshot = await _get_snapshot(snapshot_id, auth, db)
+    if index < 0 or index >= snapshot.chunk_count:
+        raise HTTPException(status_code=404, detail="Backup chunk not found")
     chunk = await db.scalar(
         select(BackupChunk).where(
             BackupChunk.snapshot_id == snapshot.id, BackupChunk.index == index

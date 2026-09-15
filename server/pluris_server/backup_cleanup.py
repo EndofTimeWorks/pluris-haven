@@ -1,3 +1,4 @@
+import hashlib
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 
@@ -6,6 +7,42 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from pluris_server.backup_storage import FilesystemBackupObjectStore
 from pluris_server.models import BackupChunk, BackupDeletion, BackupSnapshot
+
+
+async def reconcile_legacy_backup_chunks(
+    db: AsyncSession,
+    object_store: FilesystemBackupObjectStore,
+) -> int:
+    """Only mark legacy chunks durable after validating stored bytes.
+
+    Missing and corrupt blobs deliberately remain pending for a normal retry;
+    a database row alone must never make them downloadable or complete.
+    """
+    chunks = (await db.scalars(select(BackupChunk).where(BackupChunk.stored_at.is_(None)))).all()
+    reconciled = 0
+    for chunk in chunks:
+        snapshot = await db.scalar(
+            select(BackupSnapshot).where(BackupSnapshot.id == chunk.snapshot_id)
+        )
+        if snapshot is None:
+            continue
+        if chunk.index < 0 or chunk.index >= snapshot.chunk_count:
+            continue
+        try:
+            content = object_store.read_chunk(
+                owner_id=snapshot.user_id,
+                snapshot_id=snapshot.snapshot_id,
+                index=chunk.index,
+            )
+        except FileNotFoundError:
+            continue
+        if len(content) != chunk.size or hashlib.sha256(content).hexdigest() != chunk.sha256:
+            continue
+        chunk.stored_at = datetime.now(UTC)
+        reconciled += 1
+    if reconciled:
+        await db.commit()
+    return reconciled
 
 
 def queue_backup_deletions(db: AsyncSession, *, owner_id: str, snapshot_ids: Iterable[str]) -> None:

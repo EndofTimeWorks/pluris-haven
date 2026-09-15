@@ -23,16 +23,20 @@ def upgrade() -> None:
         "backup_snapshots",
         ["upload_started_at"],
     )
+    # 20260913_01 marked every pre-existing metadata row stored using the
+    # client capture time. Clear only that identifiable backfill so startup
+    # reconciliation must verify the blob before it is counted again.
+    op.execute(
+        "UPDATE backup_chunks SET stored_at = NULL "
+        "WHERE EXISTS (SELECT 1 FROM backup_snapshots "
+        "WHERE backup_snapshots.id = backup_chunks.snapshot_id "
+        "AND backup_chunks.stored_at = backup_snapshots.created_at)"
+    )
     op.execute(
         """
         UPDATE backup_snapshots
         SET upload_started_at = CURRENT_TIMESTAMP
         WHERE upload_started_at = created_at
-          AND NOT EXISTS (
-            SELECT 1
-            FROM backup_chunks
-            WHERE backup_chunks.snapshot_id = backup_snapshots.id
-          )
         """
     )
 

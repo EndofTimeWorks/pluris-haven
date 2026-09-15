@@ -28,11 +28,8 @@ def upgrade() -> None:
         "backup_chunks",
         sa.Column("stored_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.execute(
-        "UPDATE backup_chunks SET stored_at = backup_snapshots.created_at "
-        "FROM backup_snapshots "
-        "WHERE backup_chunks.snapshot_id = backup_snapshots.id"
-    )
+    # A legacy DB row does not prove its opaque blob survived. Leave every
+    # legacy chunk pending until runtime reconciliation validates its bytes.
 
 
 def downgrade() -> None:
