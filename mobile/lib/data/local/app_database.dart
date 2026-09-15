@@ -112,6 +112,8 @@ class ChatChannels extends Table {
   TextColumn get systemId => text().references(PluralSystems, #id)();
   TextColumn get categoryId =>
       text().nullable().references(ChatCategories, #id)();
+  TextColumn get historicalCategoryId => text().nullable()();
+  TextColumn get historicalCategoryName => text().nullable()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
   TextColumn get colorHex => text().nullable()();
@@ -509,7 +511,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
@@ -777,6 +779,18 @@ class AppDatabase extends _$AppDatabase {
         if (from < 24) {
           await _addColumnIfMissing(migrator, members, members.purgedAt);
           await _addColumnIfMissing(migrator, messages, messages.purgedAt);
+        }
+        if (from < 25) {
+          await _addColumnIfMissing(
+            migrator,
+            chatChannels,
+            chatChannels.historicalCategoryId,
+          );
+          await _addColumnIfMissing(
+            migrator,
+            chatChannels,
+            chatChannels.historicalCategoryName,
+          );
         }
       });
     },

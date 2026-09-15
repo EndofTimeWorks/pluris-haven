@@ -1639,6 +1639,11 @@ void main() {
             .categoryId,
         isNull,
       );
+      final categoryTombstone =
+          (await repository.watchChatChannels(includeArchived: true).first)
+              .single;
+      expect(categoryTombstone.historicalCategoryId, category.id);
+      expect(categoryTombstone.historicalCategoryName, 'Daily life');
     },
   );
 

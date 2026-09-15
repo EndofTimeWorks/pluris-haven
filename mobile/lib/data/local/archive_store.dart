@@ -1906,6 +1906,17 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       id: id,
       systemId: localSystemId,
       categoryId: Value(_stringValue(channel['category_id'])),
+      historicalCategoryId: Value(
+        _stringValue(channel['historical_category_id']),
+      ),
+      historicalCategoryName: Value(
+        await _encryptNullableLocalText(
+          _stringValue(channel['historical_category_name']),
+          'chat_channels',
+          id,
+          'historical_category_name',
+        ),
+      ),
       name: await _encryptLocalText(
         _requiredString(channel, 'name'),
         'chat_channels',

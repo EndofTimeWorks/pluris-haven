@@ -3530,6 +3530,28 @@ class $ChatChannelsTable extends ChatChannels
       'REFERENCES chat_categories (id)',
     ),
   );
+  static const VerificationMeta _historicalCategoryIdMeta =
+      const VerificationMeta('historicalCategoryId');
+  @override
+  late final GeneratedColumn<String> historicalCategoryId =
+      GeneratedColumn<String>(
+        'historical_category_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _historicalCategoryNameMeta =
+      const VerificationMeta('historicalCategoryName');
+  @override
+  late final GeneratedColumn<String> historicalCategoryName =
+      GeneratedColumn<String>(
+        'historical_category_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -3626,6 +3648,8 @@ class $ChatChannelsTable extends ChatChannels
     id,
     systemId,
     categoryId,
+    historicalCategoryId,
+    historicalCategoryName,
     name,
     description,
     colorHex,
@@ -3664,6 +3688,24 @@ class $ChatChannelsTable extends ChatChannels
       context.handle(
         _categoryIdMeta,
         categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('historical_category_id')) {
+      context.handle(
+        _historicalCategoryIdMeta,
+        historicalCategoryId.isAcceptableOrUnknown(
+          data['historical_category_id']!,
+          _historicalCategoryIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('historical_category_name')) {
+      context.handle(
+        _historicalCategoryNameMeta,
+        historicalCategoryName.isAcceptableOrUnknown(
+          data['historical_category_name']!,
+          _historicalCategoryNameMeta,
+        ),
       );
     }
     if (data.containsKey('name')) {
@@ -3744,6 +3786,14 @@ class $ChatChannelsTable extends ChatChannels
         DriftSqlType.string,
         data['${effectivePrefix}category_id'],
       ),
+      historicalCategoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}historical_category_id'],
+      ),
+      historicalCategoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}historical_category_name'],
+      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -3789,6 +3839,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
   final String id;
   final String systemId;
   final String? categoryId;
+  final String? historicalCategoryId;
+  final String? historicalCategoryName;
   final String name;
   final String? description;
   final String? colorHex;
@@ -3801,6 +3853,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     required this.id,
     required this.systemId,
     this.categoryId,
+    this.historicalCategoryId,
+    this.historicalCategoryName,
     required this.name,
     this.description,
     this.colorHex,
@@ -3817,6 +3871,14 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     map['system_id'] = Variable<String>(systemId);
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || historicalCategoryId != null) {
+      map['historical_category_id'] = Variable<String>(historicalCategoryId);
+    }
+    if (!nullToAbsent || historicalCategoryName != null) {
+      map['historical_category_name'] = Variable<String>(
+        historicalCategoryName,
+      );
     }
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
@@ -3842,6 +3904,12 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
           : Value(categoryId),
+      historicalCategoryId: historicalCategoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(historicalCategoryId),
+      historicalCategoryName: historicalCategoryName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(historicalCategoryName),
       name: Value(name),
       description: description == null && nullToAbsent
           ? const Value.absent()
@@ -3868,6 +3936,12 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       id: serializer.fromJson<String>(json['id']),
       systemId: serializer.fromJson<String>(json['systemId']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
+      historicalCategoryId: serializer.fromJson<String?>(
+        json['historicalCategoryId'],
+      ),
+      historicalCategoryName: serializer.fromJson<String?>(
+        json['historicalCategoryName'],
+      ),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
       colorHex: serializer.fromJson<String?>(json['colorHex']),
@@ -3885,6 +3959,10 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       'id': serializer.toJson<String>(id),
       'systemId': serializer.toJson<String>(systemId),
       'categoryId': serializer.toJson<String?>(categoryId),
+      'historicalCategoryId': serializer.toJson<String?>(historicalCategoryId),
+      'historicalCategoryName': serializer.toJson<String?>(
+        historicalCategoryName,
+      ),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
       'colorHex': serializer.toJson<String?>(colorHex),
@@ -3900,6 +3978,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     String? id,
     String? systemId,
     Value<String?> categoryId = const Value.absent(),
+    Value<String?> historicalCategoryId = const Value.absent(),
+    Value<String?> historicalCategoryName = const Value.absent(),
     String? name,
     Value<String?> description = const Value.absent(),
     Value<String?> colorHex = const Value.absent(),
@@ -3912,6 +3992,12 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     id: id ?? this.id,
     systemId: systemId ?? this.systemId,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    historicalCategoryId: historicalCategoryId.present
+        ? historicalCategoryId.value
+        : this.historicalCategoryId,
+    historicalCategoryName: historicalCategoryName.present
+        ? historicalCategoryName.value
+        : this.historicalCategoryName,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
     colorHex: colorHex.present ? colorHex.value : this.colorHex,
@@ -3928,6 +4014,12 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
+      historicalCategoryId: data.historicalCategoryId.present
+          ? data.historicalCategoryId.value
+          : this.historicalCategoryId,
+      historicalCategoryName: data.historicalCategoryName.present
+          ? data.historicalCategoryName.value
+          : this.historicalCategoryName,
       name: data.name.present ? data.name.value : this.name,
       description: data.description.present
           ? data.description.value
@@ -3947,6 +4039,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('historicalCategoryId: $historicalCategoryId, ')
+          ..write('historicalCategoryName: $historicalCategoryName, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('colorHex: $colorHex, ')
@@ -3964,6 +4058,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
     id,
     systemId,
     categoryId,
+    historicalCategoryId,
+    historicalCategoryName,
     name,
     description,
     colorHex,
@@ -3980,6 +4076,8 @@ class ChatChannel extends DataClass implements Insertable<ChatChannel> {
           other.id == this.id &&
           other.systemId == this.systemId &&
           other.categoryId == this.categoryId &&
+          other.historicalCategoryId == this.historicalCategoryId &&
+          other.historicalCategoryName == this.historicalCategoryName &&
           other.name == this.name &&
           other.description == this.description &&
           other.colorHex == this.colorHex &&
@@ -3994,6 +4092,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
   final Value<String> id;
   final Value<String> systemId;
   final Value<String?> categoryId;
+  final Value<String?> historicalCategoryId;
+  final Value<String?> historicalCategoryName;
   final Value<String> name;
   final Value<String?> description;
   final Value<String?> colorHex;
@@ -4007,6 +4107,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     this.id = const Value.absent(),
     this.systemId = const Value.absent(),
     this.categoryId = const Value.absent(),
+    this.historicalCategoryId = const Value.absent(),
+    this.historicalCategoryName = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
     this.colorHex = const Value.absent(),
@@ -4021,6 +4123,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     required String id,
     required String systemId,
     this.categoryId = const Value.absent(),
+    this.historicalCategoryId = const Value.absent(),
+    this.historicalCategoryName = const Value.absent(),
     required String name,
     this.description = const Value.absent(),
     this.colorHex = const Value.absent(),
@@ -4039,6 +4143,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     Expression<String>? id,
     Expression<String>? systemId,
     Expression<String>? categoryId,
+    Expression<String>? historicalCategoryId,
+    Expression<String>? historicalCategoryName,
     Expression<String>? name,
     Expression<String>? description,
     Expression<String>? colorHex,
@@ -4053,6 +4159,10 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
       if (id != null) 'id': id,
       if (systemId != null) 'system_id': systemId,
       if (categoryId != null) 'category_id': categoryId,
+      if (historicalCategoryId != null)
+        'historical_category_id': historicalCategoryId,
+      if (historicalCategoryName != null)
+        'historical_category_name': historicalCategoryName,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
       if (colorHex != null) 'color_hex': colorHex,
@@ -4069,6 +4179,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     Value<String>? id,
     Value<String>? systemId,
     Value<String?>? categoryId,
+    Value<String?>? historicalCategoryId,
+    Value<String?>? historicalCategoryName,
     Value<String>? name,
     Value<String?>? description,
     Value<String?>? colorHex,
@@ -4083,6 +4195,9 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
       id: id ?? this.id,
       systemId: systemId ?? this.systemId,
       categoryId: categoryId ?? this.categoryId,
+      historicalCategoryId: historicalCategoryId ?? this.historicalCategoryId,
+      historicalCategoryName:
+          historicalCategoryName ?? this.historicalCategoryName,
       name: name ?? this.name,
       description: description ?? this.description,
       colorHex: colorHex ?? this.colorHex,
@@ -4106,6 +4221,16 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (historicalCategoryId.present) {
+      map['historical_category_id'] = Variable<String>(
+        historicalCategoryId.value,
+      );
+    }
+    if (historicalCategoryName.present) {
+      map['historical_category_name'] = Variable<String>(
+        historicalCategoryName.value,
+      );
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -4143,6 +4268,8 @@ class ChatChannelsCompanion extends UpdateCompanion<ChatChannel> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('historicalCategoryId: $historicalCategoryId, ')
+          ..write('historicalCategoryName: $historicalCategoryName, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('colorHex: $colorHex, ')
@@ -21027,6 +21154,8 @@ typedef $$ChatChannelsTableCreateCompanionBuilder =
       required String id,
       required String systemId,
       Value<String?> categoryId,
+      Value<String?> historicalCategoryId,
+      Value<String?> historicalCategoryName,
       required String name,
       Value<String?> description,
       Value<String?> colorHex,
@@ -21042,6 +21171,8 @@ typedef $$ChatChannelsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> systemId,
       Value<String?> categoryId,
+      Value<String?> historicalCategoryId,
+      Value<String?> historicalCategoryName,
       Value<String> name,
       Value<String?> description,
       Value<String?> colorHex,
@@ -21124,6 +21255,16 @@ class $$ChatChannelsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get historicalCategoryId => $composableBuilder(
+    column: $table.historicalCategoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get historicalCategoryName => $composableBuilder(
+    column: $table.historicalCategoryName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21253,6 +21394,16 @@ class $$ChatChannelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get historicalCategoryId => $composableBuilder(
+    column: $table.historicalCategoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get historicalCategoryName => $composableBuilder(
+    column: $table.historicalCategoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -21351,6 +21502,16 @@ class $$ChatChannelsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get historicalCategoryId => $composableBuilder(
+    column: $table.historicalCategoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get historicalCategoryName => $composableBuilder(
+    column: $table.historicalCategoryName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -21485,6 +21646,8 @@ class $$ChatChannelsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> systemId = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
+                Value<String?> historicalCategoryId = const Value.absent(),
+                Value<String?> historicalCategoryName = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
@@ -21498,6 +21661,8 @@ class $$ChatChannelsTableTableManager
                 id: id,
                 systemId: systemId,
                 categoryId: categoryId,
+                historicalCategoryId: historicalCategoryId,
+                historicalCategoryName: historicalCategoryName,
                 name: name,
                 description: description,
                 colorHex: colorHex,
@@ -21513,6 +21678,8 @@ class $$ChatChannelsTableTableManager
                 required String id,
                 required String systemId,
                 Value<String?> categoryId = const Value.absent(),
+                Value<String?> historicalCategoryId = const Value.absent(),
+                Value<String?> historicalCategoryName = const Value.absent(),
                 required String name,
                 Value<String?> description = const Value.absent(),
                 Value<String?> colorHex = const Value.absent(),
@@ -21526,6 +21693,8 @@ class $$ChatChannelsTableTableManager
                 id: id,
                 systemId: systemId,
                 categoryId: categoryId,
+                historicalCategoryId: historicalCategoryId,
+                historicalCategoryName: historicalCategoryName,
                 name: name,
                 description: description,
                 colorHex: colorHex,

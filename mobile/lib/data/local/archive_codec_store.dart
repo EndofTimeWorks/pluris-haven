@@ -181,6 +181,13 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       {
         'id': channel.id,
         'category_id': channel.categoryId,
+        'historical_category_id': channel.historicalCategoryId,
+        'historical_category_name': await _decryptLocalText(
+          channel.historicalCategoryName,
+          'chat_channels',
+          channel.id,
+          'historical_category_name',
+        ),
         'name':
             (await _decryptLocalText(
               channel.name,

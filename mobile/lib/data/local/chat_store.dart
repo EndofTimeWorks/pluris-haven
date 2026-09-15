@@ -31,6 +31,8 @@ class ChatChannelSummary {
     required this.id,
     required this.name,
     this.categoryId,
+    this.historicalCategoryId,
+    this.historicalCategoryName,
     this.description,
     this.colorHex,
     required this.position,
@@ -39,6 +41,8 @@ class ChatChannelSummary {
   final String id;
   final String name;
   final String? categoryId;
+  final String? historicalCategoryId;
+  final String? historicalCategoryName;
   final String? description;
   final String? colorHex;
   final int position;
@@ -121,6 +125,13 @@ class LocalChatStore {
                 await decryptText(row.name, 'chat_channels', row.id, 'name') ??
                 '',
             categoryId: row.categoryId,
+            historicalCategoryId: row.historicalCategoryId,
+            historicalCategoryName: await decryptText(
+              row.historicalCategoryName,
+              'chat_channels',
+              row.id,
+              'historical_category_name',
+            ),
             description: await decryptText(
               row.description,
               'chat_channels',
@@ -209,9 +220,41 @@ class LocalChatStore {
 
   Future<void> deleteCategory(String categoryId) async {
     await database.transaction(() async {
-      await (database.update(database.chatChannels)
-            ..where((channel) => channel.categoryId.equals(categoryId)))
-          .write(const ChatChannelsCompanion(categoryId: Value(null)));
+      final category =
+          await (database.select(database.chatCategories)..where(
+                (row) =>
+                    row.systemId.equals(localSystemId) &
+                    row.id.equals(categoryId),
+              ))
+              .getSingleOrNull();
+      if (category == null) return;
+      final historicalName = await decryptText(
+        category.name,
+        'chat_categories',
+        category.id,
+        'name',
+      );
+      final channels = await (database.select(
+        database.chatChannels,
+      )..where((channel) => channel.categoryId.equals(categoryId))).get();
+      for (final channel in channels) {
+        await (database.update(
+          database.chatChannels,
+        )..where((row) => row.id.equals(channel.id))).write(
+          ChatChannelsCompanion(
+            categoryId: const Value(null),
+            historicalCategoryId: Value(categoryId),
+            historicalCategoryName: Value(
+              await encryptNullableText(
+                historicalName,
+                'chat_channels',
+                channel.id,
+                'historical_category_name',
+              ),
+            ),
+          ),
+        );
+      }
       await (database.delete(database.chatCategories)..where(
             (category) =>
                 category.systemId.equals(localSystemId) &
