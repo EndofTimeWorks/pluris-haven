@@ -958,6 +958,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Removal summary — group links: 0'),
+      findsOneWidget,
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
@@ -4233,6 +4237,16 @@ class FakeHavenRepository implements HavenRepository {
     _emitGroups();
     _emitSnapshot(memberCount: _visibleMembers.length);
   }
+
+  @override
+  Future<MemberDeletionImpact> previewMemberDeletion(String memberId) async =>
+      const MemberDeletionImpact(
+        groupLinks: 0,
+        tagLinks: 0,
+        namedFrontLinks: 0,
+        privacyBucketLinks: 0,
+        activeFrontSessions: 0,
+      );
 
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) async {

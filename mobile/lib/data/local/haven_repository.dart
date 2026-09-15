@@ -62,7 +62,8 @@ export 'custom_field_store.dart'
 export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
-export 'member_store.dart' show MemberDraft, MemberSummary;
+export 'member_store.dart'
+    show MemberDeletionImpact, MemberDraft, MemberSummary;
 export 'notification_event_store.dart'
     show NotificationEventDraft, NotificationEventSummary;
 export 'poll_store.dart'
@@ -477,6 +478,10 @@ class LocalHavenRepository implements HavenRepository {
 
   @override
   Future<void> deleteMember(String memberId) => _members.delete(memberId);
+
+  @override
+  Future<MemberDeletionImpact> previewMemberDeletion(String memberId) =>
+      _members.previewDeletion(memberId);
 
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) =>

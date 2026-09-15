@@ -1006,6 +1006,13 @@ void main() {
             ),
           );
 
+      final impact = await repository.previewMemberDeletion(member.id);
+      expect(impact.groupLinks, 1);
+      expect(impact.tagLinks, 1);
+      expect(impact.namedFrontLinks, 1);
+      expect(impact.privacyBucketLinks, 1);
+      expect(impact.activeFrontSessions, 1);
+
       await repository.deleteMember(member.id);
 
       expect(

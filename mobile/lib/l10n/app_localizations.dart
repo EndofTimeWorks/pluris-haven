@@ -5483,6 +5483,18 @@ abstract class AppLocalizations {
   /// **'{name} will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Current group links, tags, saved-front membership, privacy-bucket membership, and active fronting are removed.'**
   String deleteMemberBody(String name);
 
+  /// No description provided for @deleteMemberImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Removal summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket links: {privacyBucketLinks}; active front sessions ending: {activeFrontSessions}.'**
+  String deleteMemberImpact(
+    int groupLinks,
+    int tagLinks,
+    int namedFrontLinks,
+    int privacyBucketLinks,
+    int activeFrontSessions,
+  );
+
   /// No description provided for @setFrontButton.
   ///
   /// In en, this message translates to:

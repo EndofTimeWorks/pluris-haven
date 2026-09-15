@@ -260,6 +260,8 @@ abstract interface class HavenRepository {
 
   Future<void> deleteMember(String memberId);
 
+  Future<MemberDeletionImpact> previewMemberDeletion(String memberId);
+
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds);
 
   Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds);

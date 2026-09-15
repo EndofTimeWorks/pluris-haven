@@ -76,6 +76,22 @@ class MemberDraft {
   final List<String>? groupIds;
 }
 
+class MemberDeletionImpact {
+  const MemberDeletionImpact({
+    required this.groupLinks,
+    required this.tagLinks,
+    required this.namedFrontLinks,
+    required this.privacyBucketLinks,
+    required this.activeFrontSessions,
+  });
+
+  final int groupLinks;
+  final int tagLinks;
+  final int namedFrontLinks;
+  final int privacyBucketLinks;
+  final int activeFrontSessions;
+}
+
 class LocalMemberStore {
   LocalMemberStore(
     this.database, {
@@ -465,6 +481,40 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+  }
+
+  Future<MemberDeletionImpact> previewDeletion(String memberId) async {
+    final groupLinks = await (database.select(
+      database.groupMembers,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    final tagLinks = await (database.select(
+      database.memberTags,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    final namedFrontLinks = await (database.select(
+      database.namedFrontMembers,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    final privacyBucketLinks = await (database.select(
+      database.privacyBucketMembers,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    final activeFrontSessions = await database
+        .customSelect(
+          '''
+SELECT COUNT(DISTINCT fs.id) AS count
+FROM front_sessions fs
+INNER JOIN front_session_members fsm ON fsm.session_id = fs.id
+WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
+          ''',
+          variables: [Variable<String>(localSystemId), Variable(memberId)],
+          readsFrom: {database.frontSessions, database.frontSessionMembers},
+        )
+        .getSingle();
+    return MemberDeletionImpact(
+      groupLinks: groupLinks.length,
+      tagLinks: tagLinks.length,
+      namedFrontLinks: namedFrontLinks.length,
+      privacyBucketLinks: privacyBucketLinks.length,
+      activeFrontSessions: activeFrontSessions.read<int>('count'),
+    );
   }
 
   Future<void> delete(String memberId) async {

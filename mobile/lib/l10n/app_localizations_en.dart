@@ -3136,6 +3136,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String deleteMemberImpact(
+    int groupLinks,
+    int tagLinks,
+    int namedFrontLinks,
+    int privacyBucketLinks,
+    int activeFrontSessions,
+  ) {
+    return 'Removal summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket links: $privacyBucketLinks; active front sessions ending: $activeFrontSessions.';
+  }
+
+  @override
   String get setFrontButton => 'Set front';
 
   @override

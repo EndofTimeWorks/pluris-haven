@@ -331,10 +331,16 @@ class MemberListTile extends StatelessWidget {
                 } else if (value == 'restore') {
                   repository.restoreMember(member.id);
                 } else if (value == 'delete') {
+                  final impact = await repository.previewMemberDeletion(
+                    member.id,
+                  );
+                  if (!context.mounted) return;
                   confirmDelete(
                     context,
                     title: l10n.deleteMemberTitle,
-                    body: l10n.deleteMemberBody(member.displayName),
+                    body:
+                        '${l10n.deleteMemberBody(member.displayName)}\n\n'
+                        '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.activeFrontSessions)}',
                     onDelete: () => repository.deleteMember(member.id),
                   );
                 }
