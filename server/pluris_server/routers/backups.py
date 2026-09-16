@@ -26,14 +26,6 @@ from pluris_server.security_events import record_security_event
 router = APIRouter(prefix="/v1/backups", tags=["backups"])
 
 
-def _stored_chunk_count() -> object:
-    return func.count(BackupChunk.id).filter(BackupChunk.stored_at.is_not(None))
-
-
-def _stored_chunk_bytes() -> object:
-    return func.coalesce(func.sum(BackupChunk.size).filter(BackupChunk.stored_at.is_not(None)), 0)
-
-
 async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
     content_length = request.headers.get("content-length")
     if content_length is not None:
@@ -65,8 +57,8 @@ async def _read_limited_body(request: Request, maximum_bytes: int) -> bytes:
 async def _snapshot_view(db: Db, snapshot: BackupSnapshot) -> BackupSnapshotView:
     result = await db.execute(
         select(
-            _stored_chunk_count(),
-            _stored_chunk_bytes(),
+            func.count(BackupChunk.id).filter(BackupChunk.stored_at.is_not(None)),
+            func.coalesce(func.sum(BackupChunk.size).filter(BackupChunk.stored_at.is_not(None)), 0),
         ).where(BackupChunk.snapshot_id == snapshot.id)
     )
     uploaded_chunks, uploaded_bytes = result.one()
@@ -170,8 +162,10 @@ async def list_snapshots(auth: CurrentAuth, db: Db) -> list[BackupSnapshotView]:
         await db.execute(
             select(
                 BackupSnapshot,
-                _stored_chunk_count(),
-                _stored_chunk_bytes(),
+                func.count(BackupChunk.id).filter(BackupChunk.stored_at.is_not(None)),
+                func.coalesce(
+                    func.sum(BackupChunk.size).filter(BackupChunk.stored_at.is_not(None)), 0
+                ),
             )
             .outerjoin(BackupChunk, BackupChunk.snapshot_id == BackupSnapshot.id)
             .where(BackupSnapshot.user_id == auth.user.id)

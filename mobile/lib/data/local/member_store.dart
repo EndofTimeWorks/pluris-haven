@@ -418,7 +418,7 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
         ? await _memberGroupIds(memberId)
         : _normalizedGroupIds(draft);
     final folderId = preserveGroups
-        ? existing?.folderId
+        ? existing.folderId
         : requestedFolderId ?? _firstOrNull(groupIds);
     final now = DateTime.now().toUtc();
 
