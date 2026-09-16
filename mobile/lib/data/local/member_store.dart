@@ -406,9 +406,12 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
         await (database.select(database.members)..where(
               (member) =>
                   member.systemId.equals(localSystemId) &
-                  member.id.equals(memberId),
+                  member.id.equals(memberId) &
+                  member.deletedAt.isNull() &
+                  member.purgedAt.isNull(),
             ))
             .getSingleOrNull();
+    if (existing == null) return;
     final requestedFolderId = _nullIfBlank(draft.folderId);
     final preserveGroups = draft.groupIds == null && requestedFolderId == null;
     final groupIds = preserveGroups
@@ -641,6 +644,18 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
 
   Future<void> purge(String memberId) {
     return database.transaction(() async {
+      final customFieldValueIds =
+          await (database.select(database.customFieldValues)
+                ..where((value) => value.memberId.equals(memberId)))
+              .map((value) => value.id)
+              .get();
+      if (customFieldValueIds.isNotEmpty) {
+        await (database.delete(database.customFieldValueMigrationProvenance)
+              ..where(
+                (provenance) => provenance.valueId.isIn(customFieldValueIds),
+              ))
+            .go();
+      }
       await (database.delete(
         database.groupMembers,
       )..where((link) => link.memberId.equals(memberId))).go();

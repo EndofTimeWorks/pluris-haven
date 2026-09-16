@@ -1419,6 +1419,63 @@ END;
     expect(repository.watchMembers().first, throwsA(anything));
   });
 
+  test(
+    'purge removes member migration provenance and rejects stale updates',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.saveCustomField(
+        const CustomFieldDraft(name: 'Biography', fieldType: 'text'),
+      );
+      final field = (await repository.watchCustomFields().first).single;
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: member.id,
+        value: 'private source text',
+      );
+      await repository.updateCustomField(
+        field.id,
+        const CustomFieldDraft(name: 'Biography', fieldType: 'markdown'),
+      );
+      expect(
+        await database
+            .select(database.customFieldValueMigrationProvenance)
+            .get(),
+        hasLength(1),
+      );
+
+      await repository.deleteMember(member.id);
+      await repository.purgeMember(member.id);
+      await repository.updateMember(
+        member.id,
+        const MemberDraft(
+          displayName: 'Stale private name',
+          description: 'stale',
+        ),
+      );
+
+      expect(
+        await database
+            .select(database.customFieldValueMigrationProvenance)
+            .get(),
+        isEmpty,
+      );
+      final archive =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      expect(archive['custom_field_value_migration_provenance'], isEmpty);
+      final tombstone = await (database.select(
+        database.members,
+      )..where((row) => row.id.equals(member.id))).getSingle();
+      expect(tombstone.purgedAt, isNotNull);
+      expect(tombstone.description, isNull);
+    },
+  );
+
   test('rejects local ciphertext moved between rows or columns', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
