@@ -165,9 +165,11 @@ void main() {
         field.id,
         const CustomFieldDraft(name: 'Biography', fieldType: 'markdown'),
       );
+      final migratedField = (await repository.watchCustomFields().first).single;
+      expect(migratedField.fieldType, 'markdown');
       expect(
-        (await repository.watchCustomFields().first).single.fieldType,
-        'markdown',
+        migratedField.configuration['_pluris_type_migrations'],
+        isA<List>().having((history) => history, 'history', hasLength(1)),
       );
       expect(
         (await repository.watchCustomFieldValues().first).single.value,

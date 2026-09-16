@@ -265,6 +265,7 @@ WHERE ${filters.join(' AND ')}
             ))
             .getSingleOrNull();
     if (existing == null) return;
+    var configuration = draft.configuration;
     if (existing.fieldType != fieldType) {
       final preview = await previewTypeChange(fieldId, fieldType);
       if (!preview.canApply) {
@@ -272,6 +273,27 @@ WHERE ${filters.join(' AND ')}
           'Custom field type change has values requiring explicit resolution.',
         );
       }
+      final previousConfiguration = decodeCustomFieldConfiguration(
+        await decryptText(
+          existing.configuration,
+          'custom_field_definitions',
+          fieldId,
+          'configuration',
+        ),
+      );
+      final history = previousConfiguration['_pluris_type_migrations'];
+      configuration = {
+        ...draft.configuration,
+        '_pluris_type_migrations': [
+          if (history is List) ...history,
+          {
+            'from_type': existing.fieldType,
+            'to_type': fieldType,
+            'value_ids': preview.losslessValueIds,
+            'at': DateTime.now().toUtc().toIso8601String(),
+          },
+        ],
+      };
     }
     await (database.update(database.customFieldDefinitions)..where(
           (field) =>
@@ -298,7 +320,7 @@ WHERE ${filters.join(' AND ')}
             ),
             configuration: Value(
               await encryptNullableText(
-                encodeCustomFieldConfiguration(draft.configuration),
+                encodeCustomFieldConfiguration(configuration),
                 'custom_field_definitions',
                 fieldId,
                 'configuration',
