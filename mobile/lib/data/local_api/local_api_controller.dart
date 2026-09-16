@@ -376,20 +376,20 @@ class _LocalApiService implements LocalApiListener {
   Future<void> _handle(HttpRequest request) async {
     try {
       if (request.method != 'GET') {
-        return _error(request, 405, 'method_not_allowed');
+        return await _error(request, 405, 'method_not_allowed');
       }
       final path = request.uri.path;
       if (path == '/v1/health') {
-        return _json(request, 200, {'version': 'v1', 'status': 'ok'});
+        return await _json(request, 200, {'version': 'v1', 'status': 'ok'});
       }
       final client = await _authenticate(_bearerToken(request));
-      if (client == null) return _error(request, 401, 'invalid_client');
+      if (client == null) return await _error(request, 401, 'invalid_client');
       if (path == '/v1/system') {
         if (!_hasScope(client, LocalApiScope.systemRead)) {
-          return _scopeError(request);
+          return await _scopeError(request);
         }
         final value = await _repository.watchHomeSnapshot().first;
-        return _json(request, 200, {
+        return await _json(request, 200, {
           'id': localSystemId,
           'name': value.systemName,
           'member_count': value.memberCount,
@@ -399,10 +399,10 @@ class _LocalApiService implements LocalApiListener {
       }
       if (path == '/v1/members') {
         if (!_hasScope(client, LocalApiScope.membersRead)) {
-          return _scopeError(request);
+          return await _scopeError(request);
         }
         final members = await _repository.watchMembers().first;
-        return _json(request, 200, {
+        return await _json(request, 200, {
           'members': [
             for (final member in members)
               {
@@ -416,19 +416,19 @@ class _LocalApiService implements LocalApiListener {
       }
       if (path == '/v1/front') {
         if (!_hasScope(client, LocalApiScope.frontsRead)) {
-          return _scopeError(request);
+          return await _scopeError(request);
         }
         final members = await _repository.watchCurrentFrontMembers().first;
-        return _json(request, 200, {
+        return await _json(request, 200, {
           'members': [
             for (final member in members)
               {'id': member.id, 'name': member.displayName},
           ],
         });
       }
-      return _error(request, 404, 'not_found');
+      return await _error(request, 404, 'not_found');
     } on Object {
-      return _error(request, 500, 'internal_error');
+      return await _error(request, 500, 'internal_error');
     }
   }
 
