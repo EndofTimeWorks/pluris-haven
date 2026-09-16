@@ -475,6 +475,41 @@ void main() {
   });
 
   test(
+    'rolls back a front mutation when its required audit insert fails',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      final started = DateTime.utc(2026, 1, 1, 10);
+      await repository.saveFrontHistoryEntry(
+        FrontHistoryDraft(
+          startedAt: started,
+          endedAt: started.add(const Duration(hours: 1)),
+          label: 'Original label',
+          statusNote: 'Original status',
+        ),
+      );
+      final front = (await repository.watchFrontHistory().first).single;
+      await database.customStatement('''
+CREATE TRIGGER reject_front_audit_insert
+BEFORE INSERT ON front_audit_events
+BEGIN
+  SELECT RAISE(ABORT, 'injected front audit failure');
+END;
+''');
+
+      await expectLater(
+        repository.updateFrontStatusNote(front.id, 'Changed status'),
+        throwsA(anything),
+      );
+      final unchanged = (await repository.watchFrontHistory().first).single;
+      expect(unchanged.statusNote, 'Original status');
+      expect(await repository.watchFrontAuditEvents(front.id).first, isEmpty);
+    },
+  );
+
+  test(
     'deleting an edited front detaches but preserves its audit history',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
