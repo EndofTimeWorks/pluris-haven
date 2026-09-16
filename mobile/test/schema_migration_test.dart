@@ -15,7 +15,7 @@
 // existed at some historical version, stamps `PRAGMA user_version` to that
 // version, closes it, then reopens the SAME file with the real,
 // unmodified `AppDatabase` class. Opening triggers the real
-// `onUpgrade(migrator, from, 22)` path end-to-end.
+// `onUpgrade` path end-to-end.
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
@@ -816,7 +816,7 @@ void main() {
 
     await database.customSelect('SELECT 1').getSingle();
 
-    // v9-v20 columns/tables should all be present.
+    // Later columns and tables should all be present.
     await database
         .customSelect(
           'SELECT color_hex, avatar_url, description FROM named_fronts LIMIT 0',
@@ -879,7 +879,7 @@ void main() {
     expect(version.data['user_version'], 26);
   });
 
-  test('a real row written before migration survives the v1 -> v20 upgrade '
+  test('a real row written before migration survives the current upgrade '
       'and new columns read back with their schema defaults', () async {
     final dbPath = '${tempDir.path}/legacy_v1_data.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 1, statements: _v1Statements());
@@ -988,92 +988,95 @@ void main() {
     expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
   });
 
-  test('v12 member, front, and group relationships survive to v20', () async {
-    final dbPath = '${tempDir.path}/legacy_v12_data.sqlite';
-    _seedLegacyDatabase(
-      path: dbPath,
-      version: 12,
-      statements: _v12Statements(),
-    );
+  test(
+    'v12 member, front, and group relationships survive the current upgrade',
+    () async {
+      final dbPath = '${tempDir.path}/legacy_v12_data.sqlite';
+      _seedLegacyDatabase(
+        path: dbPath,
+        version: 12,
+        statements: _v12Statements(),
+      );
 
-    final raw = sqlite3.sqlite3.open(dbPath);
-    const timestamp = 1723300000;
-    try {
-      raw.execute(
-        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?)',
-        ['sys-1', 'Legacy System', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO system_groups (id, system_id, name, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?, ?)',
-        ['group-1', 'sys-1', 'Caretakers', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO members (id, system_id, display_name, birthday, emoji, '
-        'privacy, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          'mem-1',
-          'sys-1',
-          'River',
-          '02-03',
-          '🌊',
-          'private',
-          timestamp,
-          timestamp,
-        ],
-      );
-      raw.execute(
-        'INSERT INTO group_members (group_id, member_id) VALUES (?, ?)',
-        ['group-1', 'mem-1'],
-      );
-      raw.execute(
-        'INSERT INTO front_sessions (id, system_id, label, status_note, '
-        'started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-          'front-1',
-          'sys-1',
-          'River front',
-          'Grounded',
-          timestamp,
-          timestamp,
-          timestamp,
-        ],
-      );
-    } finally {
-      raw.close();
-    }
+      final raw = sqlite3.sqlite3.open(dbPath);
+      const timestamp = 1723300000;
+      try {
+        raw.execute(
+          'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?)',
+          ['sys-1', 'Legacy System', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO system_groups (id, system_id, name, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?, ?)',
+          ['group-1', 'sys-1', 'Caretakers', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO members (id, system_id, display_name, birthday, emoji, '
+          'privacy, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            'mem-1',
+            'sys-1',
+            'River',
+            '02-03',
+            '🌊',
+            'private',
+            timestamp,
+            timestamp,
+          ],
+        );
+        raw.execute(
+          'INSERT INTO group_members (group_id, member_id) VALUES (?, ?)',
+          ['group-1', 'mem-1'],
+        );
+        raw.execute(
+          'INSERT INTO front_sessions (id, system_id, label, status_note, '
+          'started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'front-1',
+            'sys-1',
+            'River front',
+            'Grounded',
+            timestamp,
+            timestamp,
+            timestamp,
+          ],
+        );
+      } finally {
+        raw.close();
+      }
 
-    final database = AppDatabase(NativeDatabase(File(dbPath)));
-    addTearDown(database.close);
+      final database = AppDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(database.close);
 
-    final member = await database
-        .customSelect(
-          "SELECT birthday, emoji, privacy, profile_encryption_version FROM members WHERE id = 'mem-1'",
-        )
-        .getSingle();
-    expect(member.data['birthday'], '02-03');
-    expect(member.data['emoji'], '🌊');
-    expect(member.data['privacy'], 'private');
-    expect(member.data['profile_encryption_version'], 0);
-    expect(
-      await _value(
-        database,
-        "SELECT COUNT(*) AS count FROM group_members WHERE group_id = 'group-1' AND member_id = 'mem-1'",
-        'count',
-      ),
-      1,
-    );
-    expect(
-      await _value(
-        database,
-        "SELECT status_note FROM front_sessions WHERE id = 'front-1'",
-        'status_note',
-      ),
-      'Grounded',
-    );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
-  });
+      final member = await database
+          .customSelect(
+            "SELECT birthday, emoji, privacy, profile_encryption_version FROM members WHERE id = 'mem-1'",
+          )
+          .getSingle();
+      expect(member.data['birthday'], '02-03');
+      expect(member.data['emoji'], '🌊');
+      expect(member.data['privacy'], 'private');
+      expect(member.data['profile_encryption_version'], 0);
+      expect(
+        await _value(
+          database,
+          "SELECT COUNT(*) AS count FROM group_members WHERE group_id = 'group-1' AND member_id = 'mem-1'",
+          'count',
+        ),
+        1,
+      );
+      expect(
+        await _value(
+          database,
+          "SELECT status_note FROM front_sessions WHERE id = 'front-1'",
+          'status_note',
+        ),
+        'Grounded',
+      );
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+    },
+  );
 
   test('v16 chat and privacy relationships survive the final migration', () async {
     final dbPath = '${tempDir.path}/legacy_v16_data.sqlite';
@@ -1169,7 +1172,7 @@ void main() {
     expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
   });
 
-  test('private content survives the v8 -> v20 upgrade', () async {
+  test('private content survives the v8 upgrade', () async {
     final dbPath = '${tempDir.path}/legacy_v8_private_data.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 8, statements: _v8Statements());
 

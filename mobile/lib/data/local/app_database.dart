@@ -529,7 +529,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 26;
 
-  // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
+  // `migrator.createTable(x)` always creates `x` using its current
   // Dart column definition - there is no per-historical-version table shape
   // stored anywhere, and `CREATE TABLE IF NOT EXISTS` means it happily
   // no-ops if the table is already there. That has a sharp edge: if a
