@@ -16,6 +16,7 @@ From the repo root, use the pinned SDK:
 mise trust
 mise install
 cd mobile
+./tool/bootstrap_android_studio.sh
 flutter run
 ```
 

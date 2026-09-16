@@ -65,6 +65,7 @@ is still needed before making a broader claim.
 mise trust
 mise install
 cd mobile
+./tool/bootstrap_android_studio.sh
 flutter analyze
 flutter test
 flutter run
