@@ -1603,7 +1603,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           return null;
         }
 
-        return _storeAvatarBytes(
+        return await _storeAvatarBytes(
           id: uri.pathSegments.isEmpty
               ? 'remote-avatar'
               : uri.pathSegments.last,
