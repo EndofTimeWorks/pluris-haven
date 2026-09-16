@@ -613,7 +613,7 @@ void main() {
 
   test('refuses a newer schema without changing its version', () async {
     final dbPath = '${tempDir.path}/newer_schema.sqlite';
-    _seedLegacyDatabase(path: dbPath, version: 25, statements: const []);
+    _seedLegacyDatabase(path: dbPath, version: 26, statements: const []);
 
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
@@ -624,7 +624,7 @@ void main() {
 
     final raw = sqlite3.sqlite3.open(dbPath);
     try {
-      expect(raw.userVersion, 25);
+      expect(raw.userVersion, 26);
     } finally {
       raw.close();
     }
@@ -775,7 +775,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 24);
+    expect(version.data['user_version'], 25);
   });
 
   test('migrates a version-8 database (right after the largest migration '
@@ -848,7 +848,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 24);
+    expect(version.data['user_version'], 25);
   });
 
   test('a real row written before migration survives the v1 -> v20 upgrade '
@@ -957,7 +957,7 @@ void main() {
     expect(reminder.data['body'], 'legacy reminder');
     expect(reminder.data['trigger_type'], 'repeated');
     expect(reminder.data['schedule_kind'], isNull);
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 24);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
   });
 
   test('v12 member, front, and group relationships survive to v20', () async {
@@ -1044,7 +1044,7 @@ void main() {
       ),
       'Grounded',
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 24);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
   });
 
   test('v16 chat and privacy relationships survive the final migration', () async {
@@ -1138,7 +1138,7 @@ void main() {
       ),
       0,
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 24);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
   });
 
   test('private content survives the v8 -> v20 upgrade', () async {
@@ -1348,6 +1348,6 @@ void main() {
       ),
       'front-1',
     );
-    expect(await value('PRAGMA user_version', 'user_version'), 24);
+    expect(await value('PRAGMA user_version', 'user_version'), 25);
   });
 }
