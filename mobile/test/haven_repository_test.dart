@@ -1476,6 +1476,110 @@ void main() {
     },
   );
 
+  test(
+    'rolls back failed revisioned edits for notes journals and messages',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final crypto = _FailingHavenCrypto();
+      final repository = LocalHavenRepository(database, crypto: crypto);
+      await repository.ensureLocalSystem();
+
+      await repository.saveNote(
+        const NoteDraft(title: 'Note', body: 'original note body'),
+      );
+      final note = (await repository.watchNotes().first).single;
+      final journalTime = DateTime.now().toUtc();
+      await repository.saveJournal(
+        JournalEntry(
+          id: 'rollback-journal',
+          systemId: localSystemId,
+          title: 'Journal',
+          body: 'original journal body',
+          visibility: 'system',
+          createdAt: journalTime,
+          updatedAt: journalTime,
+        ),
+      );
+      await repository.saveMessage(
+        const MessageDraft(body: 'original message body'),
+      );
+      final message = (await repository.watchMessages().first).single;
+
+      Future<void> assertRollback({
+        required String targetType,
+        required String targetId,
+        required String table,
+        required Future<void> Function() edit,
+        required Future<String> Function() currentBody,
+        required String originalBody,
+      }) async {
+        crypto.failAadFragment = 'content_revisions';
+        await expectLater(edit(), throwsStateError);
+        expect(await currentBody(), originalBody);
+        expect(
+          await repository.watchRevisions(targetType, targetId).first,
+          isEmpty,
+        );
+
+        crypto.failAadFragment = '$table\u0000$targetId\u0000body';
+        await expectLater(edit(), throwsStateError);
+        expect(await currentBody(), originalBody);
+        expect(
+          await repository.watchRevisions(targetType, targetId).first,
+          isEmpty,
+        );
+        crypto.failAadFragment = null;
+      }
+
+      await assertRollback(
+        targetType: 'note',
+        targetId: note.id,
+        table: 'notes',
+        edit: () => repository.updateNote(
+          note.id,
+          const NoteDraft(title: 'Note', body: 'changed note body'),
+        ),
+        currentBody: () async =>
+            (await repository.watchNotes().first).single.body,
+        originalBody: 'original note body',
+      );
+      await assertRollback(
+        targetType: 'journal',
+        targetId: 'rollback-journal',
+        table: 'journal_entries',
+        edit: () => repository.saveJournal(
+          JournalEntry(
+            id: 'rollback-journal',
+            systemId: localSystemId,
+            title: 'Journal',
+            body: 'changed journal body',
+            visibility: 'system',
+            createdAt: journalTime,
+            updatedAt: journalTime.add(const Duration(seconds: 1)),
+          ),
+        ),
+        currentBody: () async => (await repository.watchJournals().first)
+            .singleWhere((entry) => entry.id == 'rollback-journal')
+            .body,
+        originalBody: 'original journal body',
+      );
+      await assertRollback(
+        targetType: 'message',
+        targetId: message.id,
+        table: 'messages',
+        edit: () => repository.updateMessage(
+          message.id,
+          const MessageDraft(body: 'changed message body'),
+        ),
+        currentBody: () async => (await repository.watchMessages().first)
+            .singleWhere((entry) => entry.id == message.id)
+            .body,
+        originalBody: 'original message body',
+      );
+    },
+  );
+
   test('stores edits assigns and deletes privacy buckets', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -3162,5 +3266,20 @@ class _CountingHavenCrypto extends HavenCrypto {
   Future<String?> decrypt(String? ciphertext, {String aad = ''}) {
     decryptCalls++;
     return super.decrypt(ciphertext, aad: aad);
+  }
+}
+
+class _FailingHavenCrypto extends HavenCrypto {
+  _FailingHavenCrypto()
+    : super(SecretKey(List<int>.filled(32, 0x42, growable: false)));
+
+  String? failAadFragment;
+
+  @override
+  Future<String?> encrypt(String? plaintext, {String aad = ''}) {
+    if (failAadFragment != null && aad.contains(failAadFragment!)) {
+      throw StateError('Injected local text encryption failure.');
+    }
+    return super.encrypt(plaintext, aad: aad);
   }
 }
