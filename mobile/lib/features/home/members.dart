@@ -18,18 +18,8 @@ class MembersPage extends StatefulWidget {
 
 class _MembersPageState extends State<MembersPage> {
   final _searchController = TextEditingController();
-  late final Stream<List<MemberSummary>> _membersStream;
   String _query = '';
   String _filter = 'all';
-
-  @override
-  void initState() {
-    super.initState();
-    _membersStream = widget.repository.watchMembers(
-      includeArchived: true,
-      listOnly: true,
-    );
-  }
 
   @override
   void dispose() {
@@ -44,9 +34,15 @@ class _MembersPageState extends State<MembersPage> {
       'all': l10n.allFilter,
       'fronting': l10n.frontingFilter,
       'archived': l10n.archivedFilter,
+      'deleted': l10n.deletedFilter,
     };
     return StreamBuilder<List<MemberSummary>>(
-      stream: _membersStream,
+      stream: _filter == 'deleted'
+          ? widget.repository.watchDeletedMembers(listOnly: true)
+          : widget.repository.watchMembers(
+              includeArchived: true,
+              listOnly: true,
+            ),
       initialData: const [],
       builder: (context, membersSnapshot) {
         final members = _filteredMembers(
@@ -57,7 +53,13 @@ class _MembersPageState extends State<MembersPage> {
             visualTheme == HavenVisualTheme.simplyPlural ||
             visualTheme == HavenVisualTheme.ampersand;
         if (profileLayout) {
-          return _buildProfileLayout(context, l10n, filters, members);
+          return _buildProfileLayout(
+            context,
+            l10n,
+            filters,
+            members,
+            deleted: _filter == 'deleted',
+          );
         }
 
         return SpPage(
@@ -100,10 +102,7 @@ class _MembersPageState extends State<MembersPage> {
                     )
                   else
                     for (final member in members) ...[
-                      MemberListTile(
-                        member: member,
-                        repository: widget.repository,
-                      ),
+                      _memberTile(member, deleted: _filter == 'deleted'),
                       if (member != members.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
@@ -127,8 +126,9 @@ class _MembersPageState extends State<MembersPage> {
     BuildContext context,
     AppLocalizations l10n,
     Map<String, String> filters,
-    List<MemberSummary> members,
-  ) {
+    List<MemberSummary> members, {
+    required bool deleted,
+  }) {
     final visualTheme = _visualThemeOf(context);
     final padding = visualTheme == HavenVisualTheme.simplyPlural
         ? const EdgeInsets.fromLTRB(8, 10, 8, 20)
@@ -200,10 +200,7 @@ class _MembersPageState extends State<MembersPage> {
                     horizontal: 10,
                     vertical: 6,
                   ),
-                  child: MemberListTile(
-                    member: members[index],
-                    repository: widget.repository,
-                  ),
+                  child: _memberTile(members[index], deleted: deleted),
                 ),
               ),
             ),
@@ -220,6 +217,16 @@ class _MembersPageState extends State<MembersPage> {
         ),
       ],
     );
+  }
+
+  Widget _memberTile(MemberSummary member, {required bool deleted}) {
+    if (deleted) {
+      return DeletedMemberListTile(
+        member: member,
+        repository: widget.repository,
+      );
+    }
+    return MemberListTile(member: member, repository: widget.repository);
   }
 
   List<MemberSummary> _filteredMembers(List<MemberSummary> members) {
@@ -241,6 +248,62 @@ class _MembersPageState extends State<MembersPage> {
             })
           member,
     ];
+  }
+}
+
+class DeletedMemberListTile extends StatelessWidget {
+  const DeletedMemberListTile({
+    super.key,
+    required this.member,
+    required this.repository,
+  });
+
+  final MemberSummary member;
+  final HavenRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: MemberAvatar(
+          member: member,
+          color: _colorFromHex(member.colorHex, fallback: scheme.primary),
+          label: _memberAvatarLabel(member),
+        ),
+        title: Text(
+          member.displayName,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          l10n.deletedStatus,
+          style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
+        trailing: PopupMenuButton<String>(
+          tooltip: l10n.memberActionsTooltip,
+          onSelected: (value) async {
+            if (value == 'restore') {
+              await repository.restoreDeletedMember(member.id);
+            } else if (value == 'purge') {
+              if (!context.mounted) return;
+              confirmDelete(
+                context,
+                title: l10n.purgeMemberTitle,
+                body: l10n.purgeMemberBody(member.displayName),
+                onDelete: () => repository.purgeMember(member.id),
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'restore', child: Text(l10n.restoreButton)),
+            PopupMenuItem(value: 'purge', child: Text(l10n.purgeMemberButton)),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -340,7 +403,7 @@ class MemberListTile extends StatelessWidget {
                     title: l10n.deleteMemberTitle,
                     body:
                         '${l10n.deleteMemberBody(member.displayName)}\n\n'
-                        '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.activeFrontSessions)}',
+                        '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.customFieldValues, impact.activeFrontSessions, impact.frontHistoryLinks, impact.notes, impact.messages, impact.journals, impact.reminderTriggers)}',
                     onDelete: () => repository.deleteMember(member.id),
                   );
                 }

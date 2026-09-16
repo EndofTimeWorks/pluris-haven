@@ -1300,7 +1300,13 @@ END;
       expect(impact.tagLinks, 1);
       expect(impact.namedFrontLinks, 1);
       expect(impact.privacyBucketLinks, 1);
+      expect(impact.customFieldValues, 1);
       expect(impact.activeFrontSessions, 1);
+      expect(impact.frontHistoryLinks, 1);
+      expect(impact.notes, 1);
+      expect(impact.messages, 1);
+      expect(impact.journals, 1);
+      expect(impact.reminderTriggers, 1);
 
       await repository.deleteMember(member.id);
 
@@ -2151,6 +2157,14 @@ END;
       );
 
       final message = (await repository.watchMessages().first).single;
+      await repository.saveMessage(
+        MessageDraft(
+          body: 'I will make a cup.',
+          boardKind: 'channel',
+          channelId: channel.id,
+          parentMessageId: message.id,
+        ),
+      );
       expect(message.boardKind, 'channel');
       expect(message.channelId, channel.id);
       expect(channel.name, 'kitchen');
@@ -2163,9 +2177,19 @@ END;
               .single;
       expect(historicalChannel.id, channel.id);
       expect(historicalChannel.categoryId, category.id);
-      final retained = (await repository.watchMessages().first).single;
+      final retained = (await repository.watchMessages().first).singleWhere(
+        (row) => row.id == message.id,
+      );
       expect(retained.boardKind, 'channel');
       expect(retained.channelId, channel.id);
+      final retainedMessages = await repository.watchMessages().first;
+      expect(retainedMessages, hasLength(2));
+      expect(
+        retainedMessages
+            .singleWhere((row) => row.parentMessageId != null)
+            .parentMessageId,
+        message.id,
+      );
 
       await repository.deleteChatCategory(category.id);
       expect(await repository.watchChatCategories().first, isEmpty);
@@ -2180,6 +2204,31 @@ END;
               .single;
       expect(categoryTombstone.historicalCategoryId, category.id);
       expect(categoryTombstone.historicalCategoryName, 'Daily life');
+
+      final archive = await repository.buildLocalArchiveJson();
+      final restoredDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(restoredDatabase.close);
+      final restored = testRepository(restoredDatabase);
+      await restored.ensureLocalSystem();
+      await restored.importLocalArchiveJson(archive);
+      final restoredChannel =
+          (await restored.watchChatChannels(includeArchived: true).first)
+              .single;
+      expect(restoredChannel.id, channel.id);
+      expect(restoredChannel.categoryId, isNull);
+      expect(restoredChannel.historicalCategoryId, category.id);
+      expect(restoredChannel.historicalCategoryName, 'Daily life');
+      final restoredMessages = await restored.watchMessages().first;
+      expect(
+        restoredMessages.map((row) => row.channelId),
+        everyElement(channel.id),
+      );
+      expect(
+        restoredMessages
+            .singleWhere((row) => row.parentMessageId != null)
+            .parentMessageId,
+        message.id,
+      );
     },
   );
 
@@ -2364,6 +2413,61 @@ END;
       expect((await repository.watchPolls().first).single.closed, isTrue);
     },
   );
+
+  test('re-imports voted polls without assuming one vote per poll', () async {
+    Future<String> votedArchive(PollKind kind, int selectedOptions) async {
+      final sourceDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(sourceDatabase.close);
+      final source = testRepository(sourceDatabase);
+      await source.ensureLocalSystem();
+      await source.savePoll(
+        PollDraft(
+          question: 'Dinner?',
+          kind: kind,
+          options: const ['Soup', 'Rice'],
+        ),
+      );
+      final poll = (await source.watchPolls().first).single;
+      for (final option in poll.options.take(selectedOptions)) {
+        await source.togglePollOption(poll.id, option.id);
+      }
+      return source.buildLocalArchiveJson();
+    }
+
+    final singleChoiceArchive = await votedArchive(PollKind.singleChoice, 1);
+    final singleChoiceTarget = AppDatabase(NativeDatabase.memory());
+    addTearDown(singleChoiceTarget.close);
+    final singleChoiceRepository = testRepository(singleChoiceTarget);
+    await singleChoiceRepository.ensureLocalSystem();
+    await singleChoiceRepository.importLocalArchiveJson(singleChoiceArchive);
+    await singleChoiceRepository.importLocalArchiveJson(
+      singleChoiceArchive,
+      strategy: ImportConflictStrategy.update,
+    );
+    expect(
+      (await singleChoiceRepository.watchPolls().first).single.selectedCount,
+      1,
+    );
+
+    final multipleChoiceArchive = await votedArchive(
+      PollKind.multipleChoice,
+      2,
+    );
+    final multipleChoiceTarget = AppDatabase(NativeDatabase.memory());
+    addTearDown(multipleChoiceTarget.close);
+    final multipleChoiceRepository = testRepository(multipleChoiceTarget);
+    await multipleChoiceRepository.ensureLocalSystem();
+    await multipleChoiceRepository.importLocalArchiveJson(
+      multipleChoiceArchive,
+    );
+    await multipleChoiceRepository.importLocalArchiveJson(
+      multipleChoiceArchive,
+      strategy: ImportConflictStrategy.update,
+    );
+    final multipleChoicePoll =
+        (await multipleChoiceRepository.watchPolls().first).single;
+    expect(multipleChoicePoll.selectedCount, 2);
+  });
 
   test(
     'enforces a currently-fronting requirement for restricted polls',

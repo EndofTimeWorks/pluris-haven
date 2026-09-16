@@ -959,7 +959,7 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Removal summary — group links: 0'),
+      find.textContaining('Deletion summary — group links: 0'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
@@ -967,6 +967,20 @@ void main() {
 
     expect(find.text('Iris edited'), findsNothing);
     expect(find.text('No members saved locally'), findsOneWidget);
+
+    await tester.tap(find.text('Deleted'));
+    await tester.pumpAndSettle();
+    expect(find.text('Iris edited'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Member actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restore'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iris edited'), findsNothing);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    expect(find.text('Iris edited'), findsOneWidget);
   });
 
   testWidgets('opens member profile details and actions', (tester) async {
@@ -3682,6 +3696,7 @@ class FakeHavenRepository implements HavenRepository {
   final String? _localArchiveJson;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
+  List<MemberSummary> _deletedMembers = const [];
   List<GroupSummary> _groups = const [];
   List<PrivacyBucketSummary> _privacyBuckets = const [];
   List<NoteSummary> _notes = const [];
@@ -3761,8 +3776,14 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<MemberSummary>> watchDeletedMembers({bool listOnly = false}) =>
-      Stream.value(const []);
+  Stream<List<MemberSummary>> watchDeletedMembers({
+    bool listOnly = false,
+  }) async* {
+    yield List.unmodifiable(_deletedMembers);
+    await for (final _ in _membersController.stream) {
+      yield List.unmodifiable(_deletedMembers);
+    }
+  }
 
   @override
   Stream<List<MemberSummary>> watchCurrentFrontMembers() {
@@ -4238,6 +4259,11 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> deleteMember(String memberId) async {
+    _deletedMembers = [
+      ..._deletedMembers,
+      for (final member in _members)
+        if (member.id == memberId) member,
+    ];
     _members = [
       for (final member in _members)
         if (member.id != memberId) member,
@@ -4248,10 +4274,28 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> restoreDeletedMember(String memberId) async {}
+  Future<void> restoreDeletedMember(String memberId) async {
+    _members = [
+      ..._members,
+      for (final member in _deletedMembers)
+        if (member.id == memberId) member,
+    ];
+    _deletedMembers = [
+      for (final member in _deletedMembers)
+        if (member.id != memberId) member,
+    ];
+    _emitMembers();
+    _emitSnapshot(memberCount: _visibleMembers.length);
+  }
 
   @override
-  Future<void> purgeMember(String memberId) async {}
+  Future<void> purgeMember(String memberId) async {
+    _deletedMembers = [
+      for (final member in _deletedMembers)
+        if (member.id != memberId) member,
+    ];
+    _emitMembers();
+  }
 
   @override
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId) async =>
@@ -4260,7 +4304,13 @@ class FakeHavenRepository implements HavenRepository {
         tagLinks: 0,
         namedFrontLinks: 0,
         privacyBucketLinks: 0,
+        customFieldValues: 0,
         activeFrontSessions: 0,
+        frontHistoryLinks: 0,
+        notes: 0,
+        messages: 0,
+        journals: 0,
+        reminderTriggers: 0,
       );
 
   @override
@@ -4562,7 +4612,15 @@ class FakeHavenRepository implements HavenRepository {
     toType: requestedType,
     losslessValueIds: const [],
     unresolvedValueIds: const [],
+    values: const [],
   );
+
+  @override
+  Future<void> applyCustomFieldTypeChange(
+    String fieldId,
+    CustomFieldDraft draft, {
+    Map<String, Object?> resolutions = const {},
+  }) => updateCustomField(fieldId, draft);
 
   @override
   Future<void> deleteCustomField(String fieldId) async {

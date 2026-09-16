@@ -3131,8 +3131,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteMemberTitle => 'Delete member?';
 
   @override
+  String get deletedFilter => 'Deleted';
+
+  @override
+  String get deletedStatus => 'Deleted';
+
+  @override
+  String get purgeMemberTitle => 'Permanently delete member?';
+
+  @override
+  String purgeMemberBody(String name) {
+    return 'Permanently delete $name\'s private profile content? Historical attribution remains as a minimal tombstone.';
+  }
+
+  @override
+  String get purgeMemberButton => 'Permanently delete';
+
+  @override
   String deleteMemberBody(String name) {
-    return '$name will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Current group links, tags, saved-front membership, privacy-bucket membership, and active fronting are removed.';
+    return '$name will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.';
   }
 
   @override
@@ -3141,9 +3158,15 @@ class AppLocalizationsEn extends AppLocalizations {
     int tagLinks,
     int namedFrontLinks,
     int privacyBucketLinks,
+    int customFieldValues,
     int activeFrontSessions,
+    int frontHistoryLinks,
+    int notes,
+    int messages,
+    int journals,
+    int reminderTriggers,
   ) {
-    return 'Removal summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket links: $privacyBucketLinks; active front sessions ending: $activeFrontSessions.';
+    return 'Deletion summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket links: $privacyBucketLinks; custom-field values removed on permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
   }
 
   @override

@@ -5477,22 +5477,58 @@ abstract class AppLocalizations {
   /// **'Delete member?'**
   String get deleteMemberTitle;
 
+  /// No description provided for @deletedFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get deletedFilter;
+
+  /// No description provided for @deletedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get deletedStatus;
+
+  /// No description provided for @purgeMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete member?'**
+  String get purgeMemberTitle;
+
+  /// No description provided for @purgeMemberBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete {name}\'s private profile content? Historical attribution remains as a minimal tombstone.'**
+  String purgeMemberBody(String name);
+
+  /// No description provided for @purgeMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete'**
+  String get purgeMemberButton;
+
   /// No description provided for @deleteMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'{name} will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Current group links, tags, saved-front membership, privacy-bucket membership, and active fronting are removed.'**
+  /// **'{name} will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.'**
   String deleteMemberBody(String name);
 
   /// No description provided for @deleteMemberImpact.
   ///
   /// In en, this message translates to:
-  /// **'Removal summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket links: {privacyBucketLinks}; active front sessions ending: {activeFrontSessions}.'**
+  /// **'Deletion summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket links: {privacyBucketLinks}; custom-field values removed on permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
   String deleteMemberImpact(
     int groupLinks,
     int tagLinks,
     int namedFrontLinks,
     int privacyBucketLinks,
+    int customFieldValues,
     int activeFrontSessions,
+    int frontHistoryLinks,
+    int notes,
+    int messages,
+    int journals,
+    int reminderTriggers,
   );
 
   /// No description provided for @setFrontButton.

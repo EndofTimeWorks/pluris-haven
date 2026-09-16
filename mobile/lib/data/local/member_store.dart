@@ -82,14 +82,26 @@ class MemberDeletionImpact {
     required this.tagLinks,
     required this.namedFrontLinks,
     required this.privacyBucketLinks,
+    required this.customFieldValues,
     required this.activeFrontSessions,
+    required this.frontHistoryLinks,
+    required this.notes,
+    required this.messages,
+    required this.journals,
+    required this.reminderTriggers,
   });
 
   final int groupLinks;
   final int tagLinks;
   final int namedFrontLinks;
   final int privacyBucketLinks;
+  final int customFieldValues;
   final int activeFrontSessions;
+  final int frontHistoryLinks;
+  final int notes;
+  final int messages;
+  final int journals;
+  final int reminderTriggers;
 }
 
 class LocalMemberStore {
@@ -509,6 +521,41 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
     final privacyBucketLinks = await (database.select(
       database.privacyBucketMembers,
     )..where((link) => link.memberId.equals(memberId))).get();
+    final customFieldValues = await (database.select(
+      database.customFieldValues,
+    )..where((value) => value.memberId.equals(memberId))).get();
+    final frontHistoryLinks = await (database.select(
+      database.frontSessionMembers,
+    )..where((link) => link.memberId.equals(memberId))).get();
+    final notes =
+        await (database.select(database.notes)..where(
+              (note) =>
+                  note.systemId.equals(localSystemId) &
+                  note.memberId.equals(memberId),
+            ))
+            .get();
+    final messages =
+        await (database.select(database.messages)..where(
+              (message) =>
+                  message.systemId.equals(localSystemId) &
+                  (message.memberId.equals(memberId) |
+                      message.boardMemberId.equals(memberId)),
+            ))
+            .get();
+    final journals =
+        await (database.select(database.journalEntries)..where(
+              (journal) =>
+                  journal.systemId.equals(localSystemId) &
+                  journal.memberId.equals(memberId),
+            ))
+            .get();
+    final reminderTriggers =
+        await (database.select(database.reminders)..where(
+              (reminder) =>
+                  reminder.systemId.equals(localSystemId) &
+                  reminder.triggerMemberId.equals(memberId),
+            ))
+            .get();
     final activeFrontSessions = await database
         .customSelect(
           '''
@@ -526,7 +573,13 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
       tagLinks: tagLinks.length,
       namedFrontLinks: namedFrontLinks.length,
       privacyBucketLinks: privacyBucketLinks.length,
+      customFieldValues: customFieldValues.length,
       activeFrontSessions: activeFrontSessions.read<int>('count'),
+      frontHistoryLinks: frontHistoryLinks.length,
+      notes: notes.length,
+      messages: messages.length,
+      journals: journals.length,
+      reminderTriggers: reminderTriggers.length,
     );
   }
 
