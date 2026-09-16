@@ -1,6 +1,7 @@
 # Engineering readiness
 
-Internal pre-alpha readiness record, reconciled 2026-09-02.
+Internal pre-alpha readiness record, reconciled against the local candidate on
+2026-09-16.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -17,6 +18,11 @@ distribution work is ready.
 - Notification permission logic separates explicit prompting from nonprompting
   delivery checks. Reminder/front delivery does not claim notification success
   when permission blocks delivery.
+- Phase-1 local data changes are covered by direct migration and lifecycle
+  tests: backup upload reconciliation, transactional revision edits/restores,
+  front-audit preservation, chat tombstones, poll re-import, deletion/purge and
+  custom-field provenance. This is local verification only; it is not hosted
+  CI, real-device, store, or multi-device/sync evidence.
 - The complete Flutter test suite and `flutter analyze` passed after the final
   notification/recovery cleanup.
 - The full server suite passed with one-time-token password recovery, verifying

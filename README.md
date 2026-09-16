@@ -61,14 +61,18 @@ is still needed before making a broader claim.
 
 ## Mobile
 
+For Android Studio, install the Android SDK first and set `ANDROID_SDK_ROOT`
+(or `ANDROID_HOME`) to it. The bootstrap script will create ignored
+`android/local.properties` only when one does not already exist.
+
 ```sh
 mise trust
 mise install
 cd mobile
 ./tool/bootstrap_android_studio.sh
-flutter analyze
-flutter test
-flutter run
+mise exec -- flutter analyze
+mise exec -- flutter test
+mise exec -- flutter run
 ```
 
 Android Studio should open `mobile/` as the Flutter project.

@@ -3,10 +3,10 @@
 The mobile app owns the main copy of a person's data. Local features do not
 depend on an account, network connection, or Pluris Haven server.
 
-The current Drift database uses schema version 20. Its tables cover:
+The current Drift database uses schema version 26. Its tables cover:
 
 - the system profile, members, groups, tags, and privacy buckets;
-- custom fields and named fronts;
+- custom fields, custom-field type-migration provenance, and named fronts;
 - front sessions, their members, and front audit events;
 - notes, journals, revisions, messages, channels, and categories;
 - polls, options, votes, and vote events;
@@ -16,6 +16,14 @@ The current Drift database uses schema version 20. Its tables cover:
 The table definitions and migrations in
 `mobile/lib/data/local/app_database.dart` are authoritative. This document is a
 summary, not a second schema definition.
+
+Member deletion is a recoverable tombstone flow. A later explicit purge clears
+profile payload and member-owned links while retaining only the identifier
+needed by historical references; a stale update cannot repopulate a purged
+tombstone. Custom-field migration provenance is removed with the member-owned
+value it records, so it is not retained or exported after purge. Local tests
+cover this invariant; device, sync, and multi-replica deletion evidence remains
+future work.
 
 ## Encryption boundary
 

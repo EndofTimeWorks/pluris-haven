@@ -30,10 +30,12 @@ from implementation; it is not an alpha feature checklist.
 - **PARTIAL:** Basic polls and reminders exist. Advanced plural-specific polls,
   delayed-after-front and member-scoped queued/digest reminders are wanted, not
   automatic alpha blockers.
-- **SCAFFOLDED:** System Safety/break-glass, revision pinning, front audit, chat
-  categories/channels and generic revisions have storage foundations but are not
-  complete product behaviour. Chats are wanted; categories/channels are
-  preserved for that direction.
+- **PARTIAL / VERIFIED (local):** Front audit, revision restore, local chat
+  categories/channels, and recoverable member deletion have coherent local
+  persistence and regression coverage. System Safety/break-glass, revision
+  pinning, configurable retention, device/sync deletion semantics, and richer
+  chat product behaviour remain incomplete. Chats are wanted;
+  categories/channels are preserved for that direction.
 - **DECIDED:** Notes and journals use Markdown and revision history. Note history
   supersedes the older no-note-history decision. Message edit/history behaviour
   is also wanted.

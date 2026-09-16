@@ -60,6 +60,5 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="${known_hosts}" \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "site_path='${DEPLOY_PATH:-/home/end/pluris-haven}'; \
-             cd \"\${site_path}\" && \
+            "cd \"${DEPLOY_PATH:?WEBSITE_DEPLOY_PATH is required}\" && \
              ./deploy.sh"

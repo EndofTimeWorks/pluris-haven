@@ -25,7 +25,7 @@ Configure these repository Actions secrets before enabling it:
 - `WEBSITE_DEPLOY_USER`
 - `WEBSITE_DEPLOY_KEY`
 - `WEBSITE_DEPLOY_KNOWN_HOSTS`
-- `WEBSITE_DEPLOY_PATH` (optional; defaults to `/home/end/pluris-haven`)
+- `WEBSITE_DEPLOY_PATH` (required; absolute path to the checkout on the deploy host)
 
 The SSH key should be restricted to the deployment account and the known-hosts
 value should be generated from the intended host out of band. The host must
@@ -35,14 +35,14 @@ web-server configuration.
 The host deployment entrypoint is:
 
 ```sh
-cd /home/end/pluris-haven
+cd "$WEBSITE_DEPLOY_PATH"
 ./deploy.sh
 ```
 
 Point nginx, Caddy, or another static file server at:
 
 ```text
-/home/end/pluris-haven/website/build
+$WEBSITE_DEPLOY_PATH/website/build
 ```
 
 The build uses `@sveltejs/adapter-static` with precompressed `.gz` and `.br`
