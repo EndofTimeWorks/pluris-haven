@@ -1292,6 +1292,104 @@ void main() {
   });
 
   test(
+    'binds journal and message revisions to their original targets',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+
+      final now = DateTime.now().toUtc();
+      await repository.saveJournal(
+        JournalEntry(
+          id: 'journal-revision-a',
+          systemId: localSystemId,
+          title: 'A',
+          body: 'first journal body',
+          visibility: 'system',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await repository.saveJournal(
+        JournalEntry(
+          id: 'journal-revision-b',
+          systemId: localSystemId,
+          title: 'B',
+          body: 'second journal body',
+          visibility: 'system',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await repository.saveJournal(
+        JournalEntry(
+          id: 'journal-revision-a',
+          systemId: localSystemId,
+          title: 'A updated',
+          body: 'updated journal body',
+          visibility: 'system',
+          createdAt: now,
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      );
+      final journalRevision =
+          (await repository
+                  .watchRevisions('journal', 'journal-revision-a')
+                  .first)
+              .single;
+
+      await repository.saveMessage(const MessageDraft(body: 'message A'));
+      await repository.saveMessage(const MessageDraft(body: 'message B'));
+      final messages = await repository.watchMessages().first;
+      final messageA = messages.singleWhere(
+        (message) => message.body == 'message A',
+      );
+      final messageB = messages.singleWhere(
+        (message) => message.body == 'message B',
+      );
+      await repository.updateMessage(
+        messageA.id,
+        const MessageDraft(body: 'updated A'),
+      );
+      final messageRevision =
+          (await repository.watchRevisions('message', messageA.id).first)
+              .single;
+
+      await expectLater(
+        repository.restoreRevision(
+          journalRevision.id,
+          'journal',
+          'journal-revision-b',
+        ),
+        throwsArgumentError,
+      );
+      await expectLater(
+        repository.restoreRevision(messageRevision.id, 'message', messageB.id),
+        throwsArgumentError,
+      );
+      await expectLater(
+        repository.restoreRevision(journalRevision.id, 'message', messageA.id),
+        throwsArgumentError,
+      );
+
+      final journals = await repository.watchJournals().first;
+      expect(
+        journals
+            .singleWhere((journal) => journal.id == 'journal-revision-b')
+            .body,
+        'second journal body',
+      );
+      expect(
+        (await repository.watchMessages().first)
+            .singleWhere((message) => message.id == messageB.id)
+            .body,
+        'message B',
+      );
+    },
+  );
+
+  test(
     'keeps note revisions for edits and restores without losing the draft',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
