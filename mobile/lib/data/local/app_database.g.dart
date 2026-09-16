@@ -7047,6 +7047,443 @@ class CustomFieldValuesCompanion extends UpdateCompanion<CustomFieldValue> {
   }
 }
 
+class $CustomFieldValueMigrationProvenanceTable
+    extends CustomFieldValueMigrationProvenance
+    with
+        TableInfo<
+          $CustomFieldValueMigrationProvenanceTable,
+          CustomFieldValueMigrationProvenanceData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomFieldValueMigrationProvenanceTable(
+    this.attachedDatabase, [
+    this._alias,
+  ]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldIdMeta = const VerificationMeta(
+    'fieldId',
+  );
+  @override
+  late final GeneratedColumn<String> fieldId = GeneratedColumn<String>(
+    'field_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES custom_field_definitions (id)',
+    ),
+  );
+  static const VerificationMeta _valueIdMeta = const VerificationMeta(
+    'valueId',
+  );
+  @override
+  late final GeneratedColumn<String> valueId = GeneratedColumn<String>(
+    'value_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceValueMeta = const VerificationMeta(
+    'sourceValue',
+  );
+  @override
+  late final GeneratedColumn<String> sourceValue = GeneratedColumn<String>(
+    'source_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _migratedAtMeta = const VerificationMeta(
+    'migratedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> migratedAt = GeneratedColumn<DateTime>(
+    'migrated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fieldId,
+    valueId,
+    sourceType,
+    sourceValue,
+    migratedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'custom_field_value_migration_provenance';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CustomFieldValueMigrationProvenanceData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('field_id')) {
+      context.handle(
+        _fieldIdMeta,
+        fieldId.isAcceptableOrUnknown(data['field_id']!, _fieldIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldIdMeta);
+    }
+    if (data.containsKey('value_id')) {
+      context.handle(
+        _valueIdMeta,
+        valueId.isAcceptableOrUnknown(data['value_id']!, _valueIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueIdMeta);
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('source_value')) {
+      context.handle(
+        _sourceValueMeta,
+        sourceValue.isAcceptableOrUnknown(
+          data['source_value']!,
+          _sourceValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceValueMeta);
+    }
+    if (data.containsKey('migrated_at')) {
+      context.handle(
+        _migratedAtMeta,
+        migratedAt.isAcceptableOrUnknown(data['migrated_at']!, _migratedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_migratedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CustomFieldValueMigrationProvenanceData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomFieldValueMigrationProvenanceData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fieldId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field_id'],
+      )!,
+      valueId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value_id'],
+      )!,
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      sourceValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_value'],
+      )!,
+      migratedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}migrated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CustomFieldValueMigrationProvenanceTable createAlias(String alias) {
+    return $CustomFieldValueMigrationProvenanceTable(attachedDatabase, alias);
+  }
+}
+
+class CustomFieldValueMigrationProvenanceData extends DataClass
+    implements Insertable<CustomFieldValueMigrationProvenanceData> {
+  final String id;
+  final String fieldId;
+  final String valueId;
+  final String sourceType;
+  final String sourceValue;
+  final DateTime migratedAt;
+  const CustomFieldValueMigrationProvenanceData({
+    required this.id,
+    required this.fieldId,
+    required this.valueId,
+    required this.sourceType,
+    required this.sourceValue,
+    required this.migratedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['field_id'] = Variable<String>(fieldId);
+    map['value_id'] = Variable<String>(valueId);
+    map['source_type'] = Variable<String>(sourceType);
+    map['source_value'] = Variable<String>(sourceValue);
+    map['migrated_at'] = Variable<DateTime>(migratedAt);
+    return map;
+  }
+
+  CustomFieldValueMigrationProvenanceCompanion toCompanion(bool nullToAbsent) {
+    return CustomFieldValueMigrationProvenanceCompanion(
+      id: Value(id),
+      fieldId: Value(fieldId),
+      valueId: Value(valueId),
+      sourceType: Value(sourceType),
+      sourceValue: Value(sourceValue),
+      migratedAt: Value(migratedAt),
+    );
+  }
+
+  factory CustomFieldValueMigrationProvenanceData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomFieldValueMigrationProvenanceData(
+      id: serializer.fromJson<String>(json['id']),
+      fieldId: serializer.fromJson<String>(json['fieldId']),
+      valueId: serializer.fromJson<String>(json['valueId']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      sourceValue: serializer.fromJson<String>(json['sourceValue']),
+      migratedAt: serializer.fromJson<DateTime>(json['migratedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'fieldId': serializer.toJson<String>(fieldId),
+      'valueId': serializer.toJson<String>(valueId),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'sourceValue': serializer.toJson<String>(sourceValue),
+      'migratedAt': serializer.toJson<DateTime>(migratedAt),
+    };
+  }
+
+  CustomFieldValueMigrationProvenanceData copyWith({
+    String? id,
+    String? fieldId,
+    String? valueId,
+    String? sourceType,
+    String? sourceValue,
+    DateTime? migratedAt,
+  }) => CustomFieldValueMigrationProvenanceData(
+    id: id ?? this.id,
+    fieldId: fieldId ?? this.fieldId,
+    valueId: valueId ?? this.valueId,
+    sourceType: sourceType ?? this.sourceType,
+    sourceValue: sourceValue ?? this.sourceValue,
+    migratedAt: migratedAt ?? this.migratedAt,
+  );
+  CustomFieldValueMigrationProvenanceData copyWithCompanion(
+    CustomFieldValueMigrationProvenanceCompanion data,
+  ) {
+    return CustomFieldValueMigrationProvenanceData(
+      id: data.id.present ? data.id.value : this.id,
+      fieldId: data.fieldId.present ? data.fieldId.value : this.fieldId,
+      valueId: data.valueId.present ? data.valueId.value : this.valueId,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceValue: data.sourceValue.present
+          ? data.sourceValue.value
+          : this.sourceValue,
+      migratedAt: data.migratedAt.present
+          ? data.migratedAt.value
+          : this.migratedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomFieldValueMigrationProvenanceData(')
+          ..write('id: $id, ')
+          ..write('fieldId: $fieldId, ')
+          ..write('valueId: $valueId, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceValue: $sourceValue, ')
+          ..write('migratedAt: $migratedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, fieldId, valueId, sourceType, sourceValue, migratedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomFieldValueMigrationProvenanceData &&
+          other.id == this.id &&
+          other.fieldId == this.fieldId &&
+          other.valueId == this.valueId &&
+          other.sourceType == this.sourceType &&
+          other.sourceValue == this.sourceValue &&
+          other.migratedAt == this.migratedAt);
+}
+
+class CustomFieldValueMigrationProvenanceCompanion
+    extends UpdateCompanion<CustomFieldValueMigrationProvenanceData> {
+  final Value<String> id;
+  final Value<String> fieldId;
+  final Value<String> valueId;
+  final Value<String> sourceType;
+  final Value<String> sourceValue;
+  final Value<DateTime> migratedAt;
+  final Value<int> rowid;
+  const CustomFieldValueMigrationProvenanceCompanion({
+    this.id = const Value.absent(),
+    this.fieldId = const Value.absent(),
+    this.valueId = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceValue = const Value.absent(),
+    this.migratedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CustomFieldValueMigrationProvenanceCompanion.insert({
+    required String id,
+    required String fieldId,
+    required String valueId,
+    required String sourceType,
+    required String sourceValue,
+    required DateTime migratedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       fieldId = Value(fieldId),
+       valueId = Value(valueId),
+       sourceType = Value(sourceType),
+       sourceValue = Value(sourceValue),
+       migratedAt = Value(migratedAt);
+  static Insertable<CustomFieldValueMigrationProvenanceData> custom({
+    Expression<String>? id,
+    Expression<String>? fieldId,
+    Expression<String>? valueId,
+    Expression<String>? sourceType,
+    Expression<String>? sourceValue,
+    Expression<DateTime>? migratedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fieldId != null) 'field_id': fieldId,
+      if (valueId != null) 'value_id': valueId,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceValue != null) 'source_value': sourceValue,
+      if (migratedAt != null) 'migrated_at': migratedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CustomFieldValueMigrationProvenanceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fieldId,
+    Value<String>? valueId,
+    Value<String>? sourceType,
+    Value<String>? sourceValue,
+    Value<DateTime>? migratedAt,
+    Value<int>? rowid,
+  }) {
+    return CustomFieldValueMigrationProvenanceCompanion(
+      id: id ?? this.id,
+      fieldId: fieldId ?? this.fieldId,
+      valueId: valueId ?? this.valueId,
+      sourceType: sourceType ?? this.sourceType,
+      sourceValue: sourceValue ?? this.sourceValue,
+      migratedAt: migratedAt ?? this.migratedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (fieldId.present) {
+      map['field_id'] = Variable<String>(fieldId.value);
+    }
+    if (valueId.present) {
+      map['value_id'] = Variable<String>(valueId.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceValue.present) {
+      map['source_value'] = Variable<String>(sourceValue.value);
+    }
+    if (migratedAt.present) {
+      map['migrated_at'] = Variable<DateTime>(migratedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomFieldValueMigrationProvenanceCompanion(')
+          ..write('id: $id, ')
+          ..write('fieldId: $fieldId, ')
+          ..write('valueId: $valueId, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceValue: $sourceValue, ')
+          ..write('migratedAt: $migratedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -15989,6 +16426,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CustomFieldDefinitionsTable(this);
   late final $CustomFieldValuesTable customFieldValues =
       $CustomFieldValuesTable(this);
+  late final $CustomFieldValueMigrationProvenanceTable
+  customFieldValueMigrationProvenance =
+      $CustomFieldValueMigrationProvenanceTable(this);
   late final $PollsTable polls = $PollsTable(this);
   late final $PollOptionsTable pollOptions = $PollOptionsTable(this);
   late final $PollVotesTable pollVotes = $PollVotesTable(this);
@@ -16054,6 +16494,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     reminders,
     customFieldDefinitions,
     customFieldValues,
+    customFieldValueMigrationProvenance,
     polls,
     pollOptions,
     pollVotes,
@@ -17647,7 +18088,7 @@ class $$PluralSystemsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PluralSystemsTable, PluralSystem>(table),
                   $$PluralSystemsTableReferences(db, table, e),
                 ),
               )
@@ -18564,7 +19005,7 @@ class $$SystemGroupsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$SystemGroupsTable, SystemGroup>(table),
                   $$SystemGroupsTableReferences(db, table, e),
                 ),
               )
@@ -19753,7 +20194,7 @@ class $$MembersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$MembersTable, Member>(table),
                   $$MembersTableReferences(db, table, e),
                 ),
               )
@@ -20261,7 +20702,7 @@ class $$GroupMembersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$GroupMembersTable, GroupMember>(table),
                   $$GroupMembersTableReferences(db, table, e),
                 ),
               )
@@ -20627,8 +21068,10 @@ class $$NotesTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$NotesTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$NotesTable, Note>(table),
+                  $$NotesTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({systemId = false}) {
@@ -21058,7 +21501,7 @@ class $$ChatCategoriesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ChatCategoriesTable, ChatCategory>(table),
                   $$ChatCategoriesTableReferences(db, table, e),
                 ),
               )
@@ -21708,7 +22151,7 @@ class $$ChatChannelsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ChatChannelsTable, ChatChannel>(table),
                   $$ChatChannelsTableReferences(db, table, e),
                 ),
               )
@@ -22298,7 +22741,7 @@ class $$MessagesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$MessagesTable, Message>(table),
                   $$MessagesTableReferences(db, table, e),
                 ),
               )
@@ -22876,7 +23319,7 @@ class $$RemindersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$RemindersTable, Reminder>(table),
                   $$RemindersTableReferences(db, table, e),
                 ),
               )
@@ -23019,6 +23462,33 @@ final class $$CustomFieldDefinitionsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CustomFieldValueMigrationProvenanceTable,
+    List<CustomFieldValueMigrationProvenanceData>
+  >
+  _customFieldValueMigrationProvenanceRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.customFieldValueMigrationProvenance,
+    aliasName:
+        'custom_field_definitions__id__custom_field_value_migration_provenance__field_id',
+  );
+
+  $$CustomFieldValueMigrationProvenanceTableProcessedTableManager
+  get customFieldValueMigrationProvenanceRefs {
+    final manager = $$CustomFieldValueMigrationProvenanceTableTableManager(
+      $_db,
+      $_db.customFieldValueMigrationProvenance,
+    ).filter((f) => f.fieldId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _customFieldValueMigrationProvenanceRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CustomFieldDefinitionsTableFilterComposer
@@ -23115,6 +23585,35 @@ class $$CustomFieldDefinitionsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> customFieldValueMigrationProvenanceRefs(
+    Expression<bool> Function(
+      $$CustomFieldValueMigrationProvenanceTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$CustomFieldValueMigrationProvenanceTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.customFieldValueMigrationProvenance,
+          getReferencedColumn: (t) => t.fieldId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CustomFieldValueMigrationProvenanceTableFilterComposer(
+                $db: $db,
+                $table: $db.customFieldValueMigrationProvenance,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -23275,6 +23774,35 @@ class $$CustomFieldDefinitionsTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> customFieldValueMigrationProvenanceRefs<T extends Object>(
+    Expression<T> Function(
+      $$CustomFieldValueMigrationProvenanceTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$CustomFieldValueMigrationProvenanceTableAnnotationComposer
+    composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.customFieldValueMigrationProvenance,
+      getReferencedColumn: (t) => t.fieldId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CustomFieldValueMigrationProvenanceTableAnnotationComposer(
+            $db: $db,
+            $table: $db.customFieldValueMigrationProvenance,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CustomFieldDefinitionsTableTableManager
@@ -23290,7 +23818,11 @@ class $$CustomFieldDefinitionsTableTableManager
           $$CustomFieldDefinitionsTableUpdateCompanionBuilder,
           (CustomFieldDefinition, $$CustomFieldDefinitionsTableReferences),
           CustomFieldDefinition,
-          PrefetchHooks Function({bool systemId, bool customFieldValuesRefs})
+          PrefetchHooks Function({
+            bool systemId,
+            bool customFieldValuesRefs,
+            bool customFieldValueMigrationProvenanceRefs,
+          })
         > {
   $$CustomFieldDefinitionsTableTableManager(
     _$AppDatabase db,
@@ -23365,17 +23897,26 @@ class $$CustomFieldDefinitionsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $CustomFieldDefinitionsTable,
+                    CustomFieldDefinition
+                  >(table),
                   $$CustomFieldDefinitionsTableReferences(db, table, e),
                 ),
               )
               .toList(),
           prefetchHooksCallback:
-              ({systemId = false, customFieldValuesRefs = false}) {
+              ({
+                systemId = false,
+                customFieldValuesRefs = false,
+                customFieldValueMigrationProvenanceRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (customFieldValuesRefs) db.customFieldValues,
+                    if (customFieldValueMigrationProvenanceRefs)
+                      db.customFieldValueMigrationProvenance,
                   ],
                   addJoins:
                       <
@@ -23435,6 +23976,30 @@ class $$CustomFieldDefinitionsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (customFieldValueMigrationProvenanceRefs)
+                        await $_getPrefetchedData<
+                          CustomFieldDefinition,
+                          $CustomFieldDefinitionsTable,
+                          CustomFieldValueMigrationProvenanceData
+                        >(
+                          currentTable: table,
+                          referencedTable:
+                              $$CustomFieldDefinitionsTableReferences
+                                  ._customFieldValueMigrationProvenanceRefsTable(
+                                    db,
+                                  ),
+                          managerFromTypedResult: (p0) =>
+                              $$CustomFieldDefinitionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).customFieldValueMigrationProvenanceRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.fieldId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -23455,7 +24020,11 @@ typedef $$CustomFieldDefinitionsTableProcessedTableManager =
       $$CustomFieldDefinitionsTableUpdateCompanionBuilder,
       (CustomFieldDefinition, $$CustomFieldDefinitionsTableReferences),
       CustomFieldDefinition,
-      PrefetchHooks Function({bool systemId, bool customFieldValuesRefs})
+      PrefetchHooks Function({
+        bool systemId,
+        bool customFieldValuesRefs,
+        bool customFieldValueMigrationProvenanceRefs,
+      })
     >;
 typedef $$CustomFieldValuesTableCreateCompanionBuilder =
     CustomFieldValuesCompanion Function({
@@ -23821,7 +24390,7 @@ class $$CustomFieldValuesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CustomFieldValuesTable, CustomFieldValue>(table),
                   $$CustomFieldValuesTableReferences(db, table, e),
                 ),
               )
@@ -23901,6 +24470,389 @@ typedef $$CustomFieldValuesTableProcessedTableManager =
       (CustomFieldValue, $$CustomFieldValuesTableReferences),
       CustomFieldValue,
       PrefetchHooks Function({bool fieldId, bool memberId})
+    >;
+typedef $$CustomFieldValueMigrationProvenanceTableCreateCompanionBuilder =
+    CustomFieldValueMigrationProvenanceCompanion Function({
+      required String id,
+      required String fieldId,
+      required String valueId,
+      required String sourceType,
+      required String sourceValue,
+      required DateTime migratedAt,
+      Value<int> rowid,
+    });
+typedef $$CustomFieldValueMigrationProvenanceTableUpdateCompanionBuilder =
+    CustomFieldValueMigrationProvenanceCompanion Function({
+      Value<String> id,
+      Value<String> fieldId,
+      Value<String> valueId,
+      Value<String> sourceType,
+      Value<String> sourceValue,
+      Value<DateTime> migratedAt,
+      Value<int> rowid,
+    });
+
+final class $$CustomFieldValueMigrationProvenanceTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CustomFieldValueMigrationProvenanceTable,
+          CustomFieldValueMigrationProvenanceData
+        > {
+  $$CustomFieldValueMigrationProvenanceTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CustomFieldDefinitionsTable _fieldIdTable(
+    _$AppDatabase db,
+  ) => db.customFieldDefinitions.createAlias(
+    'custom_field_value_migration_provenance__field_id__custom_field_definitions__id',
+  );
+
+  $$CustomFieldDefinitionsTableProcessedTableManager get fieldId {
+    final $_column = $_itemColumn<String>('field_id')!;
+
+    final manager = $$CustomFieldDefinitionsTableTableManager(
+      $_db,
+      $_db.customFieldDefinitions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_fieldIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CustomFieldValueMigrationProvenanceTableFilterComposer
+    extends Composer<_$AppDatabase, $CustomFieldValueMigrationProvenanceTable> {
+  $$CustomFieldValueMigrationProvenanceTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get valueId => $composableBuilder(
+    column: $table.valueId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceValue => $composableBuilder(
+    column: $table.sourceValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get migratedAt => $composableBuilder(
+    column: $table.migratedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CustomFieldDefinitionsTableFilterComposer get fieldId {
+    final $$CustomFieldDefinitionsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.fieldId,
+          referencedTable: $db.customFieldDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CustomFieldDefinitionsTableFilterComposer(
+                $db: $db,
+                $table: $db.customFieldDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CustomFieldValueMigrationProvenanceTableOrderingComposer
+    extends Composer<_$AppDatabase, $CustomFieldValueMigrationProvenanceTable> {
+  $$CustomFieldValueMigrationProvenanceTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get valueId => $composableBuilder(
+    column: $table.valueId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceValue => $composableBuilder(
+    column: $table.sourceValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get migratedAt => $composableBuilder(
+    column: $table.migratedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CustomFieldDefinitionsTableOrderingComposer get fieldId {
+    final $$CustomFieldDefinitionsTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.fieldId,
+          referencedTable: $db.customFieldDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CustomFieldDefinitionsTableOrderingComposer(
+                $db: $db,
+                $table: $db.customFieldDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CustomFieldValueMigrationProvenanceTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CustomFieldValueMigrationProvenanceTable> {
+  $$CustomFieldValueMigrationProvenanceTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get valueId =>
+      $composableBuilder(column: $table.valueId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceValue => $composableBuilder(
+    column: $table.sourceValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get migratedAt => $composableBuilder(
+    column: $table.migratedAt,
+    builder: (column) => column,
+  );
+
+  $$CustomFieldDefinitionsTableAnnotationComposer get fieldId {
+    final $$CustomFieldDefinitionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.fieldId,
+          referencedTable: $db.customFieldDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CustomFieldDefinitionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.customFieldDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CustomFieldValueMigrationProvenanceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CustomFieldValueMigrationProvenanceTable,
+          CustomFieldValueMigrationProvenanceData,
+          $$CustomFieldValueMigrationProvenanceTableFilterComposer,
+          $$CustomFieldValueMigrationProvenanceTableOrderingComposer,
+          $$CustomFieldValueMigrationProvenanceTableAnnotationComposer,
+          $$CustomFieldValueMigrationProvenanceTableCreateCompanionBuilder,
+          $$CustomFieldValueMigrationProvenanceTableUpdateCompanionBuilder,
+          (
+            CustomFieldValueMigrationProvenanceData,
+            $$CustomFieldValueMigrationProvenanceTableReferences,
+          ),
+          CustomFieldValueMigrationProvenanceData,
+          PrefetchHooks Function({bool fieldId})
+        > {
+  $$CustomFieldValueMigrationProvenanceTableTableManager(
+    _$AppDatabase db,
+    $CustomFieldValueMigrationProvenanceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CustomFieldValueMigrationProvenanceTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CustomFieldValueMigrationProvenanceTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CustomFieldValueMigrationProvenanceTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fieldId = const Value.absent(),
+                Value<String> valueId = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String> sourceValue = const Value.absent(),
+                Value<DateTime> migratedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CustomFieldValueMigrationProvenanceCompanion(
+                id: id,
+                fieldId: fieldId,
+                valueId: valueId,
+                sourceType: sourceType,
+                sourceValue: sourceValue,
+                migratedAt: migratedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fieldId,
+                required String valueId,
+                required String sourceType,
+                required String sourceValue,
+                required DateTime migratedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CustomFieldValueMigrationProvenanceCompanion.insert(
+                id: id,
+                fieldId: fieldId,
+                valueId: valueId,
+                sourceType: sourceType,
+                sourceValue: sourceValue,
+                migratedAt: migratedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CustomFieldValueMigrationProvenanceTable,
+                    CustomFieldValueMigrationProvenanceData
+                  >(table),
+                  $$CustomFieldValueMigrationProvenanceTableReferences(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({fieldId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (fieldId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.fieldId,
+                                referencedTable:
+                                    $$CustomFieldValueMigrationProvenanceTableReferences
+                                        ._fieldIdTable(db),
+                                referencedColumn:
+                                    $$CustomFieldValueMigrationProvenanceTableReferences
+                                        ._fieldIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CustomFieldValueMigrationProvenanceTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CustomFieldValueMigrationProvenanceTable,
+      CustomFieldValueMigrationProvenanceData,
+      $$CustomFieldValueMigrationProvenanceTableFilterComposer,
+      $$CustomFieldValueMigrationProvenanceTableOrderingComposer,
+      $$CustomFieldValueMigrationProvenanceTableAnnotationComposer,
+      $$CustomFieldValueMigrationProvenanceTableCreateCompanionBuilder,
+      $$CustomFieldValueMigrationProvenanceTableUpdateCompanionBuilder,
+      (
+        CustomFieldValueMigrationProvenanceData,
+        $$CustomFieldValueMigrationProvenanceTableReferences,
+      ),
+      CustomFieldValueMigrationProvenanceData,
+      PrefetchHooks Function({bool fieldId})
     >;
 typedef $$PollsTableCreateCompanionBuilder =
     PollsCompanion Function({
@@ -24482,8 +25434,10 @@ class $$PollsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$PollsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$PollsTable, Poll>(table),
+                  $$PollsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -24994,7 +25948,7 @@ class $$PollOptionsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PollOptionsTable, PollOption>(table),
                   $$PollOptionsTableReferences(db, table, e),
                 ),
               )
@@ -25403,7 +26357,7 @@ class $$PollVotesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PollVotesTable, PollVote>(table),
                   $$PollVotesTableReferences(db, table, e),
                 ),
               )
@@ -25946,7 +26900,7 @@ class $$FrontSessionsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$FrontSessionsTable, FrontSession>(table),
                   $$FrontSessionsTableReferences(db, table, e),
                 ),
               )
@@ -26354,7 +27308,9 @@ class $$FrontSessionMembersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$FrontSessionMembersTable, FrontSessionMember>(
+                    table,
+                  ),
                   $$FrontSessionMembersTableReferences(db, table, e),
                 ),
               )
@@ -26784,7 +27740,7 @@ class $$ImportRecordsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ImportRecordsTable, ImportRecord>(table),
                   $$ImportRecordsTableReferences(db, table, e),
                 ),
               )
@@ -27253,7 +28209,7 @@ class $$ImportPayloadsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ImportPayloadsTable, ImportPayload>(table),
                   $$ImportPayloadsTableReferences(db, table, e),
                 ),
               )
@@ -27729,7 +28685,7 @@ class $$BackgroundJobsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$BackgroundJobsTable, BackgroundJob>(table),
                   $$BackgroundJobsTableReferences(db, table, e),
                 ),
               )
@@ -28100,7 +29056,9 @@ class $$NotificationEventsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NotificationEventsTable, NotificationEvent>(
+                    table,
+                  ),
                   $$NotificationEventsTableReferences(db, table, e),
                 ),
               )
@@ -28306,7 +29264,16 @@ class $$AppPreferencesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AppPreferencesTable, AppPreference>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AppPreferencesTable,
+                    AppPreference
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -28667,8 +29634,10 @@ class $$TagsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TagsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TagsTable, Tag>(table),
+                  $$TagsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({systemId = false, memberTagsRefs = false}) {
@@ -29011,7 +29980,7 @@ class $$MemberTagsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$MemberTagsTable, MemberTag>(table),
                   $$MemberTagsTableReferences(db, table, e),
                 ),
               )
@@ -29480,7 +30449,7 @@ class $$JournalEntriesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$JournalEntriesTable, JournalEntry>(table),
                   $$JournalEntriesTableReferences(db, table, e),
                 ),
               )
@@ -29781,7 +30750,16 @@ class $$ContentRevisionsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ContentRevisionsTable, ContentRevision>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ContentRevisionsTable,
+                    ContentRevision
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -30090,7 +31068,7 @@ class $$FrontAuditEventsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$FrontAuditEventsTable, FrontAuditEvent>(table),
                   $$FrontAuditEventsTableReferences(db, table, e),
                 ),
               )
@@ -30488,7 +31466,7 @@ class $$PollVoteEventsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PollVoteEventsTable, PollVoteEvent>(table),
                   $$PollVoteEventsTableReferences(db, table, e),
                 ),
               )
@@ -30932,7 +31910,7 @@ class $$PendingActionsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PendingActionsTable, PendingAction>(table),
                   $$PendingActionsTableReferences(db, table, e),
                 ),
               )
@@ -31403,7 +32381,7 @@ class $$NamedFrontsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NamedFrontsTable, NamedFront>(table),
                   $$NamedFrontsTableReferences(db, table, e),
                 ),
               )
@@ -31778,7 +32756,7 @@ class $$NamedFrontMembersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NamedFrontMembersTable, NamedFrontMember>(table),
                   $$NamedFrontMembersTableReferences(db, table, e),
                 ),
               )
@@ -32254,7 +33232,7 @@ class $$PrivacyBucketsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PrivacyBucketsTable, PrivacyBucket>(table),
                   $$PrivacyBucketsTableReferences(db, table, e),
                 ),
               )
@@ -32632,7 +33610,9 @@ class $$PrivacyBucketMembersTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$PrivacyBucketMembersTable, PrivacyBucketMember>(
+                    table,
+                  ),
                   $$PrivacyBucketMembersTableReferences(db, table, e),
                 ),
               )
@@ -32742,6 +33722,12 @@ class $AppDatabaseManager {
       );
   $$CustomFieldValuesTableTableManager get customFieldValues =>
       $$CustomFieldValuesTableTableManager(_db, _db.customFieldValues);
+  $$CustomFieldValueMigrationProvenanceTableTableManager
+  get customFieldValueMigrationProvenance =>
+      $$CustomFieldValueMigrationProvenanceTableTableManager(
+        _db,
+        _db.customFieldValueMigrationProvenance,
+      );
   $$PollsTableTableManager get polls =>
       $$PollsTableTableManager(_db, _db.polls);
   $$PollOptionsTableTableManager get pollOptions =>

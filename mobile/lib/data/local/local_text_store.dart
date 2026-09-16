@@ -28,6 +28,7 @@ const _protectedLocalTextColumns = <_ProtectedTextColumn>[
   (table: 'custom_field_definitions', column: 'name'),
   (table: 'custom_field_definitions', column: 'privacy'),
   (table: 'custom_field_values', column: 'value'),
+  (table: 'custom_field_value_migration_provenance', column: 'source_value'),
   (table: 'polls', column: 'question'),
   (table: 'polls', column: 'description'),
   (table: 'poll_options', column: 'body'),

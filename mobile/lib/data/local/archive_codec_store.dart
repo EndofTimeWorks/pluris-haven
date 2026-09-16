@@ -383,6 +383,25 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'updated_at': value.updatedAt.toUtc().toIso8601String(),
   };
 
+  Future<Map<String, Object?>> _customFieldValueMigrationProvenanceToJson(
+    CustomFieldValueMigrationProvenanceData provenance,
+  ) async => {
+    'id': provenance.id,
+    'field_id': provenance.fieldId,
+    'value_id': provenance.valueId,
+    'source_type': provenance.sourceType,
+    'source_value': decodeCustomFieldValue(
+      (await _decryptLocalText(
+            provenance.sourceValue,
+            'custom_field_value_migration_provenance',
+            provenance.id,
+            'source_value',
+          )) ??
+          '',
+    ),
+    'migrated_at': provenance.migratedAt.toUtc().toIso8601String(),
+  };
+
   Future<Map<String, Object?>> _pollToJson(Poll poll) async => {
     'id': poll.id,
     'question':

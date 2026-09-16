@@ -56,6 +56,7 @@ export 'custom_field_store.dart'
         CustomFieldDraft,
         CustomFieldSummary,
         CustomFieldTypeMigrationPreview,
+        CustomFieldTypeMigrationValuePreview,
         CustomFieldValueSummary,
         customFieldTypes,
         displayCustomFieldValue,
@@ -561,6 +562,13 @@ class LocalHavenRepository implements HavenRepository {
     String fieldId,
     String requestedType,
   ) => _customFields.previewTypeChange(fieldId, requestedType);
+
+  @override
+  Future<void> applyCustomFieldTypeChange(
+    String fieldId,
+    CustomFieldDraft draft, {
+    Map<String, Object?> resolutions = const {},
+  }) => _customFields.applyTypeChange(fieldId, draft, resolutions: resolutions);
 
   @override
   Future<void> deleteCustomField(String fieldId) =>

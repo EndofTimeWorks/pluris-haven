@@ -40,7 +40,11 @@ if [ -s "$mobile_dart_files" ]; then
     path="$1"
     git diff --quiet -- "$path" || exit 0
 
-    input="$(mktemp "${TMPDIR:-/tmp}/pluris-haven-staged.XXXXXX.dart")"
+    # Keep the staged snapshot in the source directory. Dart discovers the
+    # project formatting options by walking from the file path, so /tmp
+    # would format the same source differently from CI and the working tree.
+    source_dir="$(dirname "$path")"
+    input="$(mktemp "$source_dir/.pluris-haven-staged.XXXXXX.dart")"
     trap "rm -f \"$input\"" EXIT HUP INT TERM
 
     git show ":$path" >"$input"

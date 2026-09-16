@@ -65,6 +65,7 @@ class CustomFieldTypeMigrationPreview {
     required this.toType,
     required this.losslessValueIds,
     required this.unresolvedValueIds,
+    required this.values,
   });
 
   final String fieldId;
@@ -72,8 +73,27 @@ class CustomFieldTypeMigrationPreview {
   final String toType;
   final List<String> losslessValueIds;
   final List<String> unresolvedValueIds;
+  final List<CustomFieldTypeMigrationValuePreview> values;
 
   bool get canApply => unresolvedValueIds.isEmpty;
+}
+
+/// One existing value inspected during a custom-field type migration.
+/// [sourceValue] is deliberately returned so a resolution UI can present the
+/// actual value it is asking the user to resolve instead of guessing from its
+/// display representation.
+class CustomFieldTypeMigrationValuePreview {
+  const CustomFieldTypeMigrationValuePreview({
+    required this.valueId,
+    required this.sourceValue,
+    required this.requiresResolution,
+    this.losslessValue,
+  });
+
+  final String valueId;
+  final Object? sourceValue;
+  final bool requiresResolution;
+  final Object? losslessValue;
 }
 
 class LocalCustomFieldStore {
@@ -265,7 +285,6 @@ WHERE ${filters.join(' AND ')}
             ))
             .getSingleOrNull();
     if (existing == null) return;
-    var configuration = draft.configuration;
     if (existing.fieldType != fieldType) {
       final preview = await previewTypeChange(fieldId, fieldType);
       if (!preview.canApply) {
@@ -273,27 +292,7 @@ WHERE ${filters.join(' AND ')}
           'Custom field type change has values requiring explicit resolution.',
         );
       }
-      final previousConfiguration = decodeCustomFieldConfiguration(
-        await decryptText(
-          existing.configuration,
-          'custom_field_definitions',
-          fieldId,
-          'configuration',
-        ),
-      );
-      final history = previousConfiguration['_pluris_type_migrations'];
-      configuration = {
-        ...draft.configuration,
-        '_pluris_type_migrations': [
-          if (history is List) ...history,
-          {
-            'from_type': existing.fieldType,
-            'to_type': fieldType,
-            'value_ids': preview.losslessValueIds,
-            'at': DateTime.now().toUtc().toIso8601String(),
-          },
-        ],
-      };
+      return applyTypeChange(fieldId, draft);
     }
     await (database.update(database.customFieldDefinitions)..where(
           (field) =>
@@ -320,7 +319,7 @@ WHERE ${filters.join(' AND ')}
             ),
             configuration: Value(
               await encryptNullableText(
-                encodeCustomFieldConfiguration(configuration),
+                encodeCustomFieldConfiguration(draft.configuration),
                 'custom_field_definitions',
                 fieldId,
                 'configuration',
@@ -329,6 +328,141 @@ WHERE ${filters.join(' AND ')}
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+  }
+
+  /// Applies a preflighted type migration as one transaction. Every existing
+  /// source value gets an encrypted provenance record before its replacement
+  /// representation is committed. Values needing a judgement must be supplied
+  /// explicitly by ID; callers cannot accidentally accept a partial migration.
+  Future<void> applyTypeChange(
+    String fieldId,
+    CustomFieldDraft draft, {
+    Map<String, Object?> resolutions = const {},
+  }) async {
+    if (draft.name.trim().isEmpty) return;
+    final field =
+        await (database.select(database.customFieldDefinitions)..where(
+              (row) =>
+                  row.id.equals(fieldId) & row.systemId.equals(localSystemId),
+            ))
+            .getSingleOrNull();
+    if (field == null) return;
+    final targetType = normalizeCustomFieldType(draft.fieldType);
+    if (field.fieldType == targetType) {
+      return update(fieldId, draft);
+    }
+
+    final preview = await previewTypeChange(fieldId, targetType);
+    final unresolved = preview.unresolvedValueIds.toSet();
+    if (!resolutions.keys.toSet().containsAll(unresolved) ||
+        !unresolved.containsAll(resolutions.keys)) {
+      throw StateError(
+        'Every unresolved custom-field value needs an explicit resolution.',
+      );
+    }
+    for (final value in preview.values) {
+      if (value.requiresResolution &&
+          !_isValidCustomFieldValue(targetType, resolutions[value.valueId])) {
+        throw StateError('Custom field resolution does not match $targetType.');
+      }
+    }
+
+    final previousConfiguration = decodeCustomFieldConfiguration(
+      await decryptText(
+        field.configuration,
+        'custom_field_definitions',
+        fieldId,
+        'configuration',
+      ),
+    );
+    final now = DateTime.now().toUtc();
+    await database.transaction(() async {
+      for (final value in preview.values) {
+        final resolved = value.requiresResolution
+            ? resolutions[value.valueId]
+            : value.losslessValue;
+        final provenanceId = newLocalId('custom-field-migration');
+        await database
+            .into(database.customFieldValueMigrationProvenance)
+            .insert(
+              CustomFieldValueMigrationProvenanceCompanion.insert(
+                id: provenanceId,
+                fieldId: fieldId,
+                valueId: value.valueId,
+                sourceType: field.fieldType,
+                sourceValue: await encryptText(
+                  encodeCustomFieldValue(value.sourceValue),
+                  'custom_field_value_migration_provenance',
+                  provenanceId,
+                  'source_value',
+                ),
+                migratedAt: now,
+              ),
+            );
+        await (database.update(
+          database.customFieldValues,
+        )..where((row) => row.id.equals(value.valueId))).write(
+          CustomFieldValuesCompanion(
+            value: Value(
+              await encryptText(
+                encodeCustomFieldValue(resolved),
+                'custom_field_values',
+                value.valueId,
+                'value',
+              ),
+            ),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+      final history = previousConfiguration['_pluris_type_migrations'];
+      final configuration = {
+        ...draft.configuration,
+        '_pluris_type_migrations': [
+          if (history is List) ...history,
+          {
+            'from_type': field.fieldType,
+            'to_type': targetType,
+            'value_ids': preview.values.map((value) => value.valueId).toList(),
+            'at': now.toIso8601String(),
+          },
+        ],
+      };
+      await (database.update(database.customFieldDefinitions)..where(
+            (row) =>
+                row.id.equals(fieldId) & row.systemId.equals(localSystemId),
+          ))
+          .write(
+            CustomFieldDefinitionsCompanion(
+              name: Value(
+                await encryptText(
+                  draft.name.trim(),
+                  'custom_field_definitions',
+                  fieldId,
+                  'name',
+                ),
+              ),
+              fieldType: Value(targetType),
+              privacy: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.privacy),
+                  'custom_field_definitions',
+                  fieldId,
+                  'privacy',
+                ),
+              ),
+              configuration: Value(
+                await encryptNullableText(
+                  encodeCustomFieldConfiguration(configuration),
+                  'custom_field_definitions',
+                  fieldId,
+                  'configuration',
+                ),
+              ),
+              updatedAt: Value(now),
+            ),
+          );
+    });
   }
 
   Future<CustomFieldTypeMigrationPreview> previewTypeChange(
@@ -348,6 +482,7 @@ WHERE ${filters.join(' AND ')}
     )..where((row) => row.fieldId.equals(fieldId))).get();
     final lossless = <String>[];
     final unresolved = <String>[];
+    final previews = <CustomFieldTypeMigrationValuePreview>[];
     for (final row in values) {
       final value = decodeCustomFieldValue(
         (await decryptText(
@@ -358,10 +493,30 @@ WHERE ${filters.join(' AND ')}
             )) ??
             '',
       );
-      if (_isLosslessTypeChange(field.fieldType, targetType, value)) {
+      final converted = _losslessTypeConversion(
+        field.fieldType,
+        targetType,
+        value,
+      );
+      if (converted != null) {
         lossless.add(row.id);
+        previews.add(
+          CustomFieldTypeMigrationValuePreview(
+            valueId: row.id,
+            sourceValue: value,
+            requiresResolution: false,
+            losslessValue: converted,
+          ),
+        );
       } else {
         unresolved.add(row.id);
+        previews.add(
+          CustomFieldTypeMigrationValuePreview(
+            valueId: row.id,
+            sourceValue: value,
+            requiresResolution: true,
+          ),
+        );
       }
     }
     return CustomFieldTypeMigrationPreview(
@@ -370,11 +525,15 @@ WHERE ${filters.join(' AND ')}
       toType: targetType,
       losslessValueIds: List.unmodifiable(lossless),
       unresolvedValueIds: List.unmodifiable(unresolved),
+      values: List.unmodifiable(previews),
     );
   }
 
   Future<void> delete(String fieldId) async {
     await database.transaction(() async {
+      await (database.delete(
+        database.customFieldValueMigrationProvenance,
+      )..where((provenance) => provenance.fieldId.equals(fieldId))).go();
       await (database.delete(
         database.customFieldValues,
       )..where((value) => value.fieldId.equals(fieldId))).go();
@@ -467,12 +626,49 @@ WHERE ${filters.join(' AND ')}
   }
 }
 
-bool _isLosslessTypeChange(String fromType, String toType, Object? value) {
-  if (fromType == toType) return true;
+Object? _losslessTypeConversion(String fromType, String toType, Object? value) {
+  if (fromType == toType) return value;
   const textLike = {'text', 'long_text', 'markdown'};
-  return textLike.contains(fromType) &&
+  if (textLike.contains(fromType) &&
       textLike.contains(toType) &&
-      value is String;
+      value is String) {
+    return value;
+  }
+  return null;
+}
+
+bool _isValidCustomFieldValue(String type, Object? value) {
+  switch (type) {
+    case 'text':
+    case 'long_text':
+    case 'markdown':
+    case 'select':
+      return value is String;
+    case 'number':
+      return value is num;
+    case 'boolean':
+      return value is bool;
+    case 'date':
+      return value is String &&
+          RegExp(r'^\\d{4}-\\d{2}-\\d{2}$').hasMatch(value) &&
+          DateTime.tryParse(value) != null;
+    case 'datetime':
+      return value is String && DateTime.tryParse(value) != null;
+    case 'url':
+      return value is String && (Uri.tryParse(value)?.hasScheme ?? false);
+    case 'color':
+      return value is String && RegExp(r'^#[0-9a-fA-F]{6,8}$').hasMatch(value);
+    case 'multiselect':
+      return value is List && value.every((entry) => entry is String);
+    case 'json':
+      try {
+        jsonEncode(value);
+        return true;
+      } on JsonUnsupportedObjectError {
+        return false;
+      }
+  }
+  return false;
 }
 
 const customFieldTypes = <String>{

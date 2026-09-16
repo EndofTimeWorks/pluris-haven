@@ -161,6 +161,8 @@ void main() {
       );
       expect(textLike.canApply, isTrue);
       expect(textLike.losslessValueIds, hasLength(1));
+      expect(textLike.values.single.sourceValue, 'exact source text');
+      expect(textLike.values.single.requiresResolution, isFalse);
       await repository.updateCustomField(
         field.id,
         const CustomFieldDraft(name: 'Biography', fieldType: 'markdown'),
@@ -174,6 +176,18 @@ void main() {
       expect(
         (await repository.watchCustomFieldValues().first).single.value,
         'exact source text',
+      );
+      final migratedArchive =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      expect(
+        migratedArchive['custom_field_value_migration_provenance'],
+        contains(
+          allOf(
+            containsPair('source_type', 'text'),
+            containsPair('source_value', 'exact source text'),
+          ),
+        ),
       );
 
       final number = await repository.previewCustomFieldTypeChange(
@@ -196,6 +210,184 @@ void main() {
       expect(
         (await repository.watchCustomFieldValues().first).single.value,
         'exact source text',
+      );
+    },
+  );
+
+  test(
+    'applies explicit custom-field resolutions atomically and preserves raw values',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
+      final members = await repository.watchMembers().first;
+      await repository.saveCustomField(
+        const CustomFieldDraft(name: 'Rating', fieldType: 'text'),
+      );
+      final field = (await repository.watchCustomFields().first).single;
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: members[0].id,
+        value: '42',
+      );
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: members[1].id,
+        value: 'not numeric',
+      );
+
+      final preview = await repository.previewCustomFieldTypeChange(
+        field.id,
+        'number',
+      );
+      expect(preview.canApply, isFalse);
+      expect(preview.values, hasLength(2));
+      expect(preview.values.every((value) => value.requiresResolution), isTrue);
+
+      await expectLater(
+        repository.applyCustomFieldTypeChange(
+          field.id,
+          const CustomFieldDraft(name: 'Rating', fieldType: 'number'),
+          resolutions: {
+            preview.values[0].valueId: 42,
+            preview.values[1].valueId: 'not a number',
+          },
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        (await repository.watchCustomFields().first).single.fieldType,
+        'text',
+      );
+      expect(
+        await database
+            .select(database.customFieldValueMigrationProvenance)
+            .get(),
+        isEmpty,
+      );
+      expect(
+        (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
+          (value) => value.value,
+        ),
+        containsAll(['42', 'not numeric']),
+      );
+
+      await repository.applyCustomFieldTypeChange(
+        field.id,
+        const CustomFieldDraft(name: 'Rating', fieldType: 'number'),
+        resolutions: {
+          preview.values[0].valueId: 42,
+          preview.values[1].valueId: 7,
+        },
+      );
+      expect(
+        (await repository.watchCustomFields().first).single.fieldType,
+        'number',
+      );
+      expect(
+        (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
+          (value) => value.value,
+        ),
+        containsAll([42, 7]),
+      );
+      final archive =
+          jsonDecode(await repository.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      expect(
+        archive['custom_field_value_migration_provenance'],
+        containsAll([
+          allOf(
+            containsPair('source_type', 'text'),
+            containsPair('source_value', '42'),
+          ),
+          allOf(
+            containsPair('source_type', 'text'),
+            containsPair('source_value', 'not numeric'),
+          ),
+        ]),
+      );
+
+      final restoredDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(restoredDatabase.close);
+      final restored = testRepository(restoredDatabase);
+      await restored.ensureLocalSystem();
+      await restored.importLocalArchiveJson(jsonEncode(archive));
+      final restoredArchive =
+          jsonDecode(await restored.buildLocalArchiveJson())
+              as Map<String, dynamic>;
+      expect(
+        restoredArchive['custom_field_value_migration_provenance'],
+        archive['custom_field_value_migration_provenance'],
+      );
+      final restoredField = (await restored.watchCustomFields().first).single;
+      await restored.deleteCustomField(restoredField.id);
+      expect(
+        await restoredDatabase
+            .select(restoredDatabase.customFieldValueMigrationProvenance)
+            .get(),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'rolls back a custom-field type migration after a provenance write fails',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveCustomField(
+        const CustomFieldDraft(name: 'Biography', fieldType: 'text'),
+      );
+      final field = (await repository.watchCustomFields().first).single;
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: null,
+        value: 'first source value',
+      );
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.setCustomFieldValue(
+        fieldId: field.id,
+        memberId: member.id,
+        value: 'second source value',
+      );
+      await database.customStatement('''
+      CREATE TRIGGER reject_second_custom_field_provenance
+      BEFORE INSERT ON custom_field_value_migration_provenance
+      WHEN (SELECT COUNT(*) FROM custom_field_value_migration_provenance) > 0
+      BEGIN
+        SELECT RAISE(ABORT, 'test provenance failure');
+      END
+    ''');
+
+      await expectLater(
+        repository.updateCustomField(
+          field.id,
+          const CustomFieldDraft(name: 'Biography', fieldType: 'markdown'),
+        ),
+        throwsA(anything),
+      );
+
+      expect(
+        (await repository.watchCustomFields().first).single.fieldType,
+        'text',
+      );
+      expect(
+        (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
+          (value) => value.value,
+        ),
+        containsAll(['first source value', 'second source value']),
+      );
+      expect(
+        await database
+            .select(database.customFieldValueMigrationProvenance)
+            .get(),
+        isEmpty,
       );
     },
   );
@@ -2419,6 +2611,8 @@ END;
       'reminders': 'reminders',
       'custom_field_definitions': 'custom_fields',
       'custom_field_values': 'custom_field_values',
+      'custom_field_value_migration_provenance':
+          'custom_field_value_migration_provenance',
       'polls': 'polls',
       'poll_options': 'poll_options',
       'poll_votes': 'poll_votes',

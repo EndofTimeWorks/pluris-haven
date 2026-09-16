@@ -198,6 +198,21 @@ class CustomFieldValues extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Encrypted source values retained when a custom-field type migration changes
+/// their representation. These rows deliberately outlive later value edits so
+/// a user can inspect what was migrated until they explicitly delete the field.
+class CustomFieldValueMigrationProvenance extends Table {
+  TextColumn get id => text()();
+  TextColumn get fieldId => text().references(CustomFieldDefinitions, #id)();
+  TextColumn get valueId => text()();
+  TextColumn get sourceType => text()();
+  TextColumn get sourceValue => text()();
+  DateTimeColumn get migratedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class Polls extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
@@ -484,6 +499,7 @@ class PrivacyBucketMembers extends Table {
     Reminders,
     CustomFieldDefinitions,
     CustomFieldValues,
+    CustomFieldValueMigrationProvenance,
     Polls,
     PollOptions,
     PollVotes,
@@ -511,7 +527,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   // `migrator.createTable(x)` always creates `x` using its CURRENT (v20)
   // Dart column definition - there is no per-historical-version table shape
@@ -791,6 +807,9 @@ class AppDatabase extends _$AppDatabase {
             chatChannels,
             chatChannels.historicalCategoryName,
           );
+        }
+        if (from < 26) {
+          await migrator.createTable(customFieldValueMigrationProvenance);
         }
       });
     },

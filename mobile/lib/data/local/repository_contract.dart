@@ -299,6 +299,12 @@ abstract interface class HavenRepository {
     String requestedType,
   );
 
+  Future<void> applyCustomFieldTypeChange(
+    String fieldId,
+    CustomFieldDraft draft, {
+    Map<String, Object?> resolutions,
+  });
+
   Future<void> deleteCustomField(String fieldId);
 
   Future<void> setCustomFieldValue({

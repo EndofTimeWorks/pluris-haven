@@ -236,6 +236,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final customFieldValues = await database
         .select(database.customFieldValues)
         .get();
+    final customFieldMigrationProvenance = await database
+        .select(database.customFieldValueMigrationProvenance)
+        .get();
     final polls = await (database.select(
       database.polls,
     )..where((poll) => poll.systemId.equals(localSystemId))).get();
@@ -352,6 +355,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         for (final value in customFieldValues)
           if (customFieldIds.contains(value.fieldId))
             await _customFieldValueToJson(value),
+      ],
+      'custom_field_value_migration_provenance': [
+        for (final provenance in customFieldMigrationProvenance)
+          if (customFieldIds.contains(provenance.fieldId))
+            await _customFieldValueMigrationProvenanceToJson(provenance),
       ],
       'polls': [for (final poll in polls) await _pollToJson(poll)],
       'poll_options': [
@@ -559,6 +567,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final customFieldValues = await database
         .select(database.customFieldValues)
         .get();
+    final customFieldMigrationProvenance = await database
+        .select(database.customFieldValueMigrationProvenance)
+        .get();
     final polls = await database.select(database.polls).get();
     final pollOptions = await database.select(database.pollOptions).get();
     final pollVotes = await database.select(database.pollVotes).get();
@@ -605,6 +616,8 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       'content_revisions': contentRevisions.length,
       'custom_fields': customFields.length,
       'custom_field_values': customFieldValues.length,
+      'custom_field_value_migration_provenance':
+          customFieldMigrationProvenance.length,
       'polls': polls.length,
       'poll_options': pollOptions.length,
       'poll_votes': pollVotes.length,
@@ -835,6 +848,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final contentRevisions = _jsonObjectList(decoded['content_revisions']);
     final customFields = _jsonObjectList(decoded['custom_fields']);
     final customFieldValues = _jsonObjectList(decoded['custom_field_values']);
+    final customFieldMigrationProvenance = _jsonObjectList(
+      decoded['custom_field_value_migration_provenance'],
+    );
     final polls = _jsonObjectList(decoded['polls']);
     final pollOptions = _jsonObjectList(decoded['poll_options']);
     final pollVotes = _jsonObjectList(decoded['poll_votes']);
@@ -866,6 +882,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       contentRevisions: contentRevisions,
       customFields: customFields,
       customFieldValues: customFieldValues,
+      customFieldMigrationProvenance: customFieldMigrationProvenance,
       polls: polls,
       pollOptions: pollOptions,
       pollVotes: pollVotes,
@@ -885,6 +902,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       'contentRevisions=${contentRevisions.length} frontAuditEvents=${frontAuditEvents.length} '
       'pollVoteEvents=${pollVoteEvents.length} '
       'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
+      'customFieldMigrationProvenance=${customFieldMigrationProvenance.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
       'frontMembers=${frontMembers.length} groupMembers=${groupMembers.length} '
       'cleanup=$cleanupCount',
@@ -997,6 +1015,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       for (final value in customFieldValues) {
         await _importCustomFieldValue(value, strategy, now);
       }
+      for (final provenance in customFieldMigrationProvenance) {
+        await _importCustomFieldValueMigrationProvenance(
+          provenance,
+          strategy,
+          now,
+        );
+      }
       for (final poll in polls) {
         await _importPoll(poll, strategy, now);
       }
@@ -1078,6 +1103,8 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
                     'content_revisions': contentRevisions.length,
                     'custom_fields': customFields.length,
                     'custom_field_values': customFieldValues.length,
+                    'custom_field_value_migration_provenance':
+                        customFieldMigrationProvenance.length,
                     'polls': polls.length,
                     'poll_options': pollOptions.length,
                     'poll_votes': pollVotes.length,
@@ -1123,6 +1150,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required List<Map<String, Object?>> contentRevisions,
     required List<Map<String, Object?>> customFields,
     required List<Map<String, Object?>> customFieldValues,
+    required List<Map<String, Object?>> customFieldMigrationProvenance,
     required List<Map<String, Object?>> polls,
     required List<Map<String, Object?>> pollOptions,
     required List<Map<String, Object?>> pollVotes,
@@ -1296,6 +1324,15 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           fieldId != null &&
           customFieldIds.contains(fieldId) &&
           (memberId == null || memberIds.contains(memberId));
+      if (!keep) {
+        cleanupCount++;
+      }
+      return !keep;
+    });
+
+    customFieldMigrationProvenance.removeWhere((provenance) {
+      final fieldId = _stringValue(provenance['field_id']);
+      final keep = fieldId != null && customFieldIds.contains(fieldId);
       if (!keep) {
         cleanupCount++;
       }
@@ -2196,6 +2233,32 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           : (_dateValue(value['updated_at']) ?? now),
     );
     return _insertArchiveRow(database.customFieldValues, companion, strategy);
+  }
+
+  Future<void> _importCustomFieldValueMigrationProvenance(
+    Map<String, Object?> provenance,
+    ImportConflictStrategy strategy,
+    DateTime now,
+  ) async {
+    final id = _requiredString(provenance, 'id');
+    final companion = CustomFieldValueMigrationProvenanceCompanion.insert(
+      id: id,
+      fieldId: _requiredString(provenance, 'field_id'),
+      valueId: _requiredString(provenance, 'value_id'),
+      sourceType: _requiredString(provenance, 'source_type'),
+      sourceValue: await _encryptLocalText(
+        encodeCustomFieldValue(provenance['source_value']),
+        'custom_field_value_migration_provenance',
+        id,
+        'source_value',
+      ),
+      migratedAt: _dateValue(provenance['migrated_at']) ?? now,
+    );
+    return _insertArchiveRow(
+      database.customFieldValueMigrationProvenance,
+      companion,
+      strategy,
+    );
   }
 
   Future<void> _importPoll(

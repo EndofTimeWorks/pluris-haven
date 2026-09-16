@@ -611,9 +611,37 @@ void main() {
     expect(await _indexNames(database), containsAll(_performanceIndexNames));
   });
 
+  test(
+    'migrates a version-25 database without custom-field provenance',
+    () async {
+      final dbPath = '${tempDir.path}/legacy_v25.sqlite';
+      final seed = AppDatabase(NativeDatabase(File(dbPath)));
+      await seed.customSelect('SELECT 1').getSingle();
+      await seed.close();
+
+      final raw = sqlite3.sqlite3.open(dbPath);
+      try {
+        raw.execute('DROP TABLE custom_field_value_migration_provenance');
+        raw.userVersion = 25;
+      } finally {
+        raw.close();
+      }
+
+      final database = AppDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(database.close);
+      await database
+          .customSelect(
+            'SELECT id, field_id, value_id, source_type, source_value '
+            'FROM custom_field_value_migration_provenance LIMIT 0',
+          )
+          .get();
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+    },
+  );
+
   test('refuses a newer schema without changing its version', () async {
     final dbPath = '${tempDir.path}/newer_schema.sqlite';
-    _seedLegacyDatabase(path: dbPath, version: 26, statements: const []);
+    _seedLegacyDatabase(path: dbPath, version: 27, statements: const []);
 
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
@@ -624,7 +652,7 @@ void main() {
 
     final raw = sqlite3.sqlite3.open(dbPath);
     try {
-      expect(raw.userVersion, 26);
+      expect(raw.userVersion, 27);
     } finally {
       raw.close();
     }
@@ -683,7 +711,7 @@ void main() {
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
 
-    // Merely opening the database runs onUpgrade(1, 22); this must not throw.
+    // Merely opening the database runs the real upgrade; this must not throw.
     await database.customSelect('SELECT 1').getSingle();
 
     // v8: displayNameHash / frameShape / lexoRank on members.
@@ -775,11 +803,11 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 25);
+    expect(version.data['user_version'], 26);
   });
 
   test('migrates a version-8 database (right after the largest migration '
-      'step) up to the current schema (v20)', () async {
+      'step) up to the current schema', () async {
     final dbPath = '${tempDir.path}/legacy_v8.sqlite';
     _seedLegacyDatabase(path: dbPath, version: 8, statements: _v8Statements());
 
@@ -848,7 +876,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 25);
+    expect(version.data['user_version'], 26);
   });
 
   test('a real row written before migration survives the v1 -> v20 upgrade '
@@ -957,7 +985,7 @@ void main() {
     expect(reminder.data['body'], 'legacy reminder');
     expect(reminder.data['trigger_type'], 'repeated');
     expect(reminder.data['schedule_kind'], isNull);
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
   });
 
   test('v12 member, front, and group relationships survive to v20', () async {
@@ -1044,7 +1072,7 @@ void main() {
       ),
       'Grounded',
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
   });
 
   test('v16 chat and privacy relationships survive the final migration', () async {
@@ -1138,7 +1166,7 @@ void main() {
       ),
       0,
     );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 25);
+    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
   });
 
   test('private content survives the v8 -> v20 upgrade', () async {
@@ -1348,6 +1376,6 @@ void main() {
       ),
       'front-1',
     );
-    expect(await value('PRAGMA user_version', 'user_version'), 25);
+    expect(await value('PRAGMA user_version', 'user_version'), 26);
   });
 }
