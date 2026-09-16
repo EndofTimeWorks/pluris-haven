@@ -41,7 +41,8 @@ class SmtpEmailSender:
         message["Subject"] = "Reset your Pluris Haven password"
         message.set_content(
             "In Pluris Haven, choose ‘Forgot password?’ and then ‘I have a reset token’. "
-            f"Enter this reset token within {settings.password_reset_token_minutes} minutes:\n\n{token}\n"
+            f"Enter this reset token within {settings.password_reset_token_minutes} minutes:\n\n"
+            f"{token}\n"
         )
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as smtp:
             smtp.starttls(context=ssl.create_default_context())

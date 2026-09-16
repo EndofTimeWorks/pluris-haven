@@ -8,6 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from pluris_server.dependencies import AppSettings, CurrentAuth, Db
+from pluris_server.mail import EmailSender
 from pluris_server.models import (
     DeviceSession,
     PasswordResetToken,
@@ -55,7 +56,7 @@ ACCOUNT_DELETION_GRACE = timedelta(days=30)
 _logger = logging.getLogger("pluris.auth")
 
 
-async def _deliver_password_reset(email_sender: object, recipient: str, token: str) -> None:
+async def _deliver_password_reset(email_sender: EmailSender, recipient: str, token: str) -> None:
     try:
         await email_sender.send_password_reset(recipient, token)
     except Exception:
