@@ -1140,6 +1140,29 @@ void main() {
 
       await restored.restoreDeletedMember(member.id);
       expect(await restored.watchMembers().first, hasLength(1));
+      await restored.deleteMember(member.id);
+      await restored.purgeMember(member.id);
+      expect(await restored.watchDeletedMembers().first, isEmpty);
+      final purgedMember = await (restoredDatabase.select(
+        restoredDatabase.members,
+      )..where((row) => row.id.equals(member.id))).getSingle();
+      expect(purgedMember.purgedAt, isNotNull);
+      expect(purgedMember.description, isNull);
+      expect(purgedMember.avatarUrl, isNull);
+      expect(
+        await restoredDatabase.select(restoredDatabase.customFieldValues).get(),
+        isEmpty,
+      );
+      expect(
+        await restoredDatabase.select(restoredDatabase.memberTags).get(),
+        isEmpty,
+      );
+      expect(
+        await restoredDatabase.select(restoredDatabase.groupMembers).get(),
+        isEmpty,
+      );
+      final retainedHistory = await restored.watchFrontHistory().first;
+      expect(retainedHistory.single.memberIds, [member.id]);
     },
   );
 
