@@ -1617,6 +1617,88 @@ void main() {
     expect(await repository.watchPrivacyBuckets().first, isEmpty);
   });
 
+  test(
+    'rolls back tag and named-front deletion when the parent delete fails',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+      final member = (await repository.watchMembers().first).single;
+      final now = DateTime.now().toUtc();
+
+      await repository.saveTag(
+        Tag(
+          id: 'rollback-tag',
+          systemId: localSystemId,
+          name: 'Grounded',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await repository.setMemberTags(member.id, const ['rollback-tag']);
+      await database.customStatement('''
+CREATE TRIGGER reject_rollback_tag_delete
+BEFORE DELETE ON tags
+WHEN OLD.id = 'rollback-tag'
+BEGIN
+  SELECT RAISE(ABORT, 'injected tag delete failure');
+END;
+''');
+      await expectLater(
+        repository.deleteTag('rollback-tag'),
+        throwsA(anything),
+      );
+      expect(
+        await repository.watchTagsForMember(member.id).first,
+        hasLength(1),
+      );
+      await database.customStatement('DROP TRIGGER reject_rollback_tag_delete');
+      await repository.deleteTag('rollback-tag');
+      expect(await repository.watchTagsForMember(member.id).first, isEmpty);
+
+      await repository.saveNamedFront(
+        NamedFront(
+          id: 'rollback-named-front',
+          systemId: localSystemId,
+          name: 'Grounded',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        [member.id],
+      );
+      await database.customStatement('''
+CREATE TRIGGER reject_rollback_named_front_delete
+BEFORE DELETE ON named_fronts
+WHEN OLD.id = 'rollback-named-front'
+BEGIN
+  SELECT RAISE(ABORT, 'injected named front delete failure');
+END;
+''');
+      await expectLater(
+        repository.deleteNamedFront('rollback-named-front'),
+        throwsA(anything),
+      );
+      expect(
+        await (database.select(database.namedFrontMembers)
+              ..where((row) => row.namedFrontId.equals('rollback-named-front')))
+            .get(),
+        hasLength(1),
+      );
+      await database.customStatement(
+        'DROP TRIGGER reject_rollback_named_front_delete',
+      );
+      await repository.deleteNamedFront('rollback-named-front');
+      expect(
+        await (database.select(database.namedFrontMembers)
+              ..where((row) => row.namedFrontId.equals('rollback-named-front')))
+            .get(),
+        isEmpty,
+      );
+    },
+  );
+
   test('stores groups in the local database', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
