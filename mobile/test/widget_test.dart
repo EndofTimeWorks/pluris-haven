@@ -38,6 +38,31 @@ const _testHomeSnapshot = HomeSnapshot(
 );
 
 void main() {
+  testWidgets('keeps an extended grapheme in the system avatar label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SpDrawer(
+          snapshot: const HomeSnapshot(
+            systemName: '👩‍💻 River',
+            memberCount: 0,
+            groupCount: 0,
+            noteCount: 0,
+            frontHistoryCount: 0,
+            currentFrontLabel: null,
+          ),
+          selected: SpSection.dashboard,
+          onSelect: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('👩‍💻'), findsOneWidget);
+  });
+
   testWidgets('shows recovery guidance when local migration cannot finish', (
     tester,
   ) async {

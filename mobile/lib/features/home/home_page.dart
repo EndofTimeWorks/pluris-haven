@@ -399,7 +399,7 @@ class _HomePageState extends State<HomePage> {
               fallback: Theme.of(context).colorScheme.primary,
             ),
             avatarUrl: snapshot?.systemAvatarUrl,
-            label: systemName.isEmpty ? 'PH' : systemName.substring(0, 1),
+            label: systemName.isEmpty ? 'PH' : systemName.characters.first,
             semanticLabel: l10n.systemAvatarSemanticLabel(
               systemName.isEmpty ? l10n.localSystemFallback : systemName,
             ),

@@ -744,7 +744,7 @@ class AccountSettingsPage extends StatelessWidget {
                 ),
                 label: (home?.systemName ?? '').trim().isEmpty
                     ? 'PH'
-                    : home!.systemName.trim().substring(0, 1),
+                    : home!.systemName.trim().characters.first,
                 avatarUrl: home?.systemAvatarUrl,
                 semanticLabel: l10n.systemAvatarFor(
                   home?.systemName ?? l10n.localSystemFallback,
@@ -928,7 +928,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
                 color: previewColor,
                 label: _nameController.text.trim().isEmpty
                     ? 'PH'
-                    : _nameController.text.trim().substring(0, 1),
+                    : _nameController.text.trim().characters.first,
                 avatarUrl: _avatarUrl,
                 semanticLabel: l10n.systemAvatarFor(
                   _nameController.text.trim().isEmpty

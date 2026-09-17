@@ -81,7 +81,7 @@ class SpDrawer extends StatelessWidget {
                     avatarUrl: home?.systemAvatarUrl,
                     label: (home?.systemName ?? '').trim().isEmpty
                         ? 'PH'
-                        : home!.systemName.trim().substring(0, 1),
+                        : home!.systemName.trim().characters.first,
                     semanticLabel: l10n.systemAvatarSemanticLabel(systemName),
                   ),
                   const SizedBox(width: 14),
