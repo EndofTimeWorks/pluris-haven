@@ -1,3 +1,4 @@
 [tools]
 actionlint = "1.7.12"
 flutter = "3.47.4"
+node = "24.14.1"

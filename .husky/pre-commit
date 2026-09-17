@@ -19,6 +19,11 @@ if [ -s "$staged_files" ]; then
     path="$1"
     git diff --quiet -- "$path" || exit 0
 
+    if pnpm exec prettier --config "$prettier_config" --file-info "$path" |
+      grep -q "ignored.*true"; then
+      exit 0
+    fi
+
     filename="${path##*/}"
     case "$filename" in
       *.*) extension="${filename##*.}" ;;
