@@ -102,6 +102,29 @@ void main() {
     });
   });
 
+  test('rejects a rebinding host header on the loopback listener', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    final repository = testRepository(database);
+    final controller = LocalApiController(repository);
+    addTearDown(() async {
+      await controller.close();
+      await database.close();
+    });
+    await repository.ensureLocalSystem();
+    final status = await controller.enable();
+
+    final response = await _get(
+      status.origin!,
+      '/v1/health',
+      null,
+      host: 'integration.example',
+    );
+    expect(response.statusCode, HttpStatus.badRequest);
+    expect(jsonDecode(response.body), {
+      'error': {'code': 'invalid_host'},
+    });
+  });
+
   test(
     'keeps the configured endpoint stable across listener restarts',
     () async {
@@ -182,10 +205,18 @@ void main() {
   });
 }
 
-Future<_Response> _get(Uri origin, String path, String? token) async {
+Future<_Response> _get(
+  Uri origin,
+  String path,
+  String? token, {
+  String? host,
+}) async {
   final client = HttpClient();
   try {
     final request = await client.getUrl(origin.replace(path: path));
+    if (host != null) {
+      request.headers.set(HttpHeaders.hostHeader, host);
+    }
     if (token != null) {
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
     }

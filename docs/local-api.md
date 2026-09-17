@@ -3,7 +3,9 @@
 The local API is an optional native-device integration surface. It is disabled
 by default and binds only to `127.0.0.1` while Pluris Haven is unlocked and
 running. It does not listen on LAN or WAN interfaces, and it sends no CORS
-headers for browser access.
+headers for browser access. Requests must use the displayed `127.0.0.1` host;
+other Host headers are rejected to prevent DNS rebinding through the loopback
+listener.
 
 Enable it from **Tokens** in the mobile app. The first enable selects an
 available loopback port and keeps that endpoint for later unlocks and ordinary

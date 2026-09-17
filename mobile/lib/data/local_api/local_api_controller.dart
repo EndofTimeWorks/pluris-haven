@@ -375,6 +375,9 @@ class _LocalApiService implements LocalApiListener {
 
   Future<void> _handle(HttpRequest request) async {
     try {
+      if (!_hasLoopbackHost(request)) {
+        return await _error(request, 400, 'invalid_host');
+      }
       if (request.method != 'GET') {
         return await _error(request, 405, 'method_not_allowed');
       }
@@ -434,6 +437,11 @@ class _LocalApiService implements LocalApiListener {
 
   bool _hasScope(LocalApiClient client, LocalApiScope scope) =>
       client.scopes.contains(scope);
+
+  bool _hasLoopbackHost(HttpRequest request) {
+    final host = request.headers.value(HttpHeaders.hostHeader)?.toLowerCase();
+    return host == '127.0.0.1:$port';
+  }
 
   String _bearerToken(HttpRequest request) {
     final value = request.headers.value(HttpHeaders.authorizationHeader);
