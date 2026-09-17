@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
@@ -12,37 +13,69 @@ from pluris_server.models import BackupChunk, BackupDeletion, BackupSnapshot
 async def reconcile_legacy_backup_chunks(
     db: AsyncSession,
     object_store: FilesystemBackupObjectStore,
+    *,
+    batch_size: int = 100,
 ) -> int:
     """Only mark legacy chunks durable after validating stored bytes.
 
     Missing and corrupt blobs deliberately remain pending for a normal retry;
     a database row alone must never make them downloadable or complete.
     """
-    chunks = (await db.scalars(select(BackupChunk).where(BackupChunk.stored_at.is_(None)))).all()
-    reconciled = 0
-    for chunk in chunks:
-        snapshot = await db.scalar(
-            select(BackupSnapshot).where(BackupSnapshot.id == chunk.snapshot_id)
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    rows = (
+        await db.execute(
+            select(BackupChunk, BackupSnapshot)
+            .join(BackupSnapshot, BackupSnapshot.id == BackupChunk.snapshot_id)
+            .where(BackupChunk.stored_at.is_(None))
+            .order_by(
+                BackupChunk.reconciliation_checked_at.asc().nullsfirst(),
+                BackupChunk.id.asc(),
+            )
+            .limit(batch_size)
         )
-        if snapshot is None:
-            continue
+    ).all()
+    reconciled = 0
+    checked_at = datetime.now(UTC)
+    for chunk, snapshot in rows:
+        chunk.reconciliation_checked_at = checked_at
         if chunk.index < 0 or chunk.index >= snapshot.chunk_count:
             continue
         try:
-            content = object_store.read_chunk(
-                owner_id=snapshot.user_id,
-                snapshot_id=snapshot.snapshot_id,
-                index=chunk.index,
+            valid = await asyncio.to_thread(
+                _validate_stored_chunk,
+                object_store,
+                snapshot.user_id,
+                snapshot.snapshot_id,
+                chunk.index,
+                chunk.size,
+                chunk.sha256,
             )
         except FileNotFoundError:
             continue
-        if len(content) != chunk.size or hashlib.sha256(content).hexdigest() != chunk.sha256:
+        if not valid:
             continue
-        chunk.stored_at = datetime.now(UTC)
+        chunk.stored_at = checked_at
         reconciled += 1
-    if reconciled:
+    if rows:
         await db.commit()
     return reconciled
+
+
+def _validate_stored_chunk(
+    object_store: FilesystemBackupObjectStore,
+    owner_id: str,
+    snapshot_id: str,
+    index: int,
+    expected_size: int,
+    expected_sha256: str,
+) -> bool:
+    content = object_store.read_chunk(
+        owner_id=owner_id,
+        snapshot_id=snapshot_id,
+        index=index,
+    )
+    return len(content) == expected_size and hashlib.sha256(content).hexdigest() == expected_sha256
 
 
 def queue_backup_deletions(db: AsyncSession, *, owner_id: str, snapshot_ids: Iterable[str]) -> None:

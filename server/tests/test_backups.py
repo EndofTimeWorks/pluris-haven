@@ -362,6 +362,63 @@ def test_legacy_chunk_reconciliation_requires_valid_bytes_and_is_idempotent(
     assert progress.json()[0]["uploaded_chunks"] == 1
 
 
+def test_legacy_chunk_reconciliation_rotates_pending_batches(client: TestClient) -> None:
+    user = register(client, "legacy-batches@example.com", "Legacy batches")
+    headers = auth(user["access_token"])
+    snapshot_id = "legacy-batches"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "b" * 64,
+                "chunk_count": 3,
+                "total_bytes": 12,
+            },
+        ).status_code
+        == 201
+    )
+
+    async def reconcile_batches() -> None:
+        async with client.app.state.session_factory() as session:
+            snapshot = await session.scalar(
+                select(BackupSnapshot).where(BackupSnapshot.snapshot_id == snapshot_id)
+            )
+            assert snapshot is not None
+            payloads = [b"lost", b"good", b"also"]
+            for index, payload in enumerate(payloads):
+                session.add(
+                    BackupChunk(
+                        id=f"00000000-0000-0000-0000-00000000000{index}",
+                        snapshot_id=snapshot.id,
+                        index=index,
+                        sha256=hashlib.sha256(payload).hexdigest(),
+                        size=len(payload),
+                    )
+                )
+            await session.commit()
+            store = client.app.state.backup_object_store
+            for index, payload in enumerate(payloads[1:], start=1):
+                store.put_chunk(
+                    owner_id=snapshot.user_id,
+                    snapshot_id=snapshot_id,
+                    index=index,
+                    ciphertext=payload,
+                    sha256=hashlib.sha256(payload).hexdigest(),
+                )
+
+            assert await reconcile_legacy_backup_chunks(session, store, batch_size=1) == 0
+            assert await reconcile_legacy_backup_chunks(session, store, batch_size=1) == 1
+            assert await reconcile_legacy_backup_chunks(session, store, batch_size=1) == 1
+            pending = (
+                await session.scalars(select(BackupChunk).where(BackupChunk.stored_at.is_(None)))
+            ).all()
+            assert [chunk.index for chunk in pending] == [0]
+
+    asyncio.run(reconcile_batches())
+
+
 def test_backup_retry_repairs_corrupt_stored_blob(client: TestClient) -> None:
     user = register(client, "repair-backup@example.com", "Repair backup")
     headers = auth(user["access_token"])

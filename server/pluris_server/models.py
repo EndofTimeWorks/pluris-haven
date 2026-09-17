@@ -215,6 +215,9 @@ class BackupChunk(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     size: Mapped[int]
     stored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reconciliation_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class BackupDeletion(Base):
