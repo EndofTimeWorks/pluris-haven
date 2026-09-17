@@ -7,6 +7,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
+import 'data/local/local_migrations.dart';
 import 'data/local/supported_language.dart';
 import 'data/local_api/local_api_controller.dart';
 import 'data/notifications/notification_service.dart';
@@ -42,6 +43,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
   var _missingMasterKey = false;
+  Object? _startupError;
 
   @override
   void initState() {
@@ -61,11 +63,18 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return;
     }
     final repository = LocalHavenRepository(database, crypto: crypto);
-    await repository.ensureLocalSystem();
-    await repository.migrateLegacyLocalTextToAad();
-    await repository.migrateUnauthenticatedEmptyCiphertexts();
-    await repository.migrateMemberNamesToEncryption();
-    await repository.migrateBlindIndexesToUnicodeNormalization();
+    try {
+      await runLocalMigrations(repository);
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Local migration failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await database.close();
+      if (mounted) setState(() => _startupError = error);
+      return;
+    }
     final serverAccount = ServerAccountController();
     final localApi = LocalApiController(repository);
     appDebugLog('Local repository ready');
@@ -104,6 +113,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   @override
   Widget build(BuildContext context) {
     if (_missingMasterKey) return const MissingMasterKeyApp();
+    if (_startupError != null) return const LocalMigrationFailureApp();
     final repository = _repository;
     if (repository != null) {
       return PlurisHavenApp(
@@ -168,6 +178,37 @@ class MissingMasterKeyApp extends StatelessWidget {
                   'This device no longer has the key that decrypts your local data. '
                   'Pluris Haven will not replace it. Restore an encrypted backup on '
                   'a device that still has the original key.',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class LocalMigrationFailureApp extends StatelessWidget {
+  const LocalMigrationFailureApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Local data needs recovery',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Pluris Haven could not finish a local data migration. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.',
                 ),
               ],
             ),

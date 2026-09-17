@@ -38,6 +38,18 @@ const _testHomeSnapshot = HomeSnapshot(
 );
 
 void main() {
+  testWidgets('shows recovery guidance when local migration cannot finish', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const LocalMigrationFailureApp());
+
+    expect(find.text('Local data needs recovery'), findsOneWidget);
+    expect(
+      find.textContaining('Your data has not been replaced.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('colour picker returns an arbitrary selected colour', (
     tester,
   ) async {

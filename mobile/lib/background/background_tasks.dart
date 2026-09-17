@@ -6,7 +6,9 @@ import 'package:flutter/widgets.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/haven_repository.dart';
+import '../data/local/local_migrations.dart';
 import '../data/security/master_key_store.dart';
+import '../debug/debug_log.dart';
 
 const importArchiveTaskName = 'pluris_haven.import_archive';
 const iosImportArchiveTaskIdentifier =
@@ -44,14 +46,10 @@ Future<bool> _runBackgroundTask(
   Map<String, Object?> inputData,
 ) async {
   final database = AppDatabase();
-  final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
-  final repository = LocalHavenRepository(database, crypto: crypto);
   try {
-    await repository.ensureLocalSystem();
-    await repository.migrateLegacyLocalTextToAad();
-    await repository.migrateUnauthenticatedEmptyCiphertexts();
-    await repository.migrateMemberNamesToEncryption();
-    await repository.migrateBlindIndexesToUnicodeNormalization();
+    final crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+    final repository = LocalHavenRepository(database, crypto: crypto);
+    await runLocalMigrations(repository);
     switch (task) {
       case importArchiveTaskName:
         final jobId = inputData['job_id'] as String?;
@@ -64,6 +62,13 @@ Future<bool> _runBackgroundTask(
       default:
         return false;
     }
+  } on Object catch (error, stackTrace) {
+    appDebugLog(
+      'Background migration failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return false;
   } finally {
     await database.close();
   }
