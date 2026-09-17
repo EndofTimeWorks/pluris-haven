@@ -16,6 +16,20 @@ updates:
           - patch
 
   - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      tooling-deps:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
     directory: /website
     schedule:
       interval: weekly
@@ -43,7 +57,7 @@ updates:
           - minor
           - patch
 
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /server
     schedule:
       interval: weekly
