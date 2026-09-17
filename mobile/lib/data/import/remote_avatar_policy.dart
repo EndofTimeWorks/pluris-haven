@@ -56,6 +56,21 @@ bool _isPublicAddress(InternetAddress address) {
     return !_isBlockedIpv4(bytes.sublist(12));
   }
 
+  final isNat64 =
+      bytes[0] == 0x00 &&
+      bytes[1] == 0x64 &&
+      bytes[2] == 0xff &&
+      bytes[3] == 0x9b &&
+      bytes.sublist(4, 12).every((byte) => byte == 0);
+  if (isNat64) {
+    return !_isBlockedIpv4(bytes.sublist(12));
+  }
+
+  final is6to4 = bytes[0] == 0x20 && bytes[1] == 0x02;
+  if (is6to4) {
+    return !_isBlockedIpv4(bytes.sublist(2, 6));
+  }
+
   final first = bytes[0];
   final isUnspecified = bytes.every((byte) => byte == 0);
   final isUniqueLocal = first >= 0xfc && first <= 0xfd;

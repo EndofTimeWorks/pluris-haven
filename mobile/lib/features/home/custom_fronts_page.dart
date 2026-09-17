@@ -776,15 +776,6 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
         },
       );
     }
-    if (ref.startsWith('http://') || ref.startsWith('https://')) {
-      return SpAvatar(
-        size: 42,
-        color: color,
-        label: label,
-        image: NetworkImage(ref),
-        semanticLabel: avatarSemanticLabel,
-      );
-    }
     return SpAvatar(
       size: 42,
       color: color,

@@ -642,15 +642,6 @@ class _NamedFrontAvatar extends StatelessWidget {
         },
       );
     }
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return SpAvatar(
-        size: 34,
-        color: color,
-        label: avatarLabel,
-        image: NetworkImage(avatarUrl),
-        semanticLabel: l10n.avatarForLabel(label),
-      );
-    }
     return SpAvatar(
       size: 34,
       color: color,

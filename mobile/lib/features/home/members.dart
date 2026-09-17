@@ -1686,15 +1686,6 @@ class MemberAvatar extends StatelessWidget {
         },
       );
     }
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return SpAvatar(
-        size: size,
-        color: color,
-        label: label,
-        image: NetworkImage(avatarUrl),
-        semanticLabel: avatarSemanticLabel,
-      );
-    }
     return SpAvatar(
       size: size,
       color: color,

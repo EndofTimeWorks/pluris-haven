@@ -1768,6 +1768,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     String? localAvatarUrl,
   ) async {
     final id = _requiredString(member, 'id');
+    if (await _isLocallyPurgedMember(id)) return;
     final displayName = _requiredString(member, 'display_name');
     final encryptedName = await _encryptMember(id, 'display_name', displayName);
     if (encryptedName == null) {
@@ -1880,6 +1881,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     DateTime now,
   ) async {
     final id = _requiredString(message, 'id');
+    if (await _isLocallyPurgedMessage(id)) return;
     final body = _requiredString(message, 'body');
     final companion = MessagesCompanion.insert(
       id: id,
@@ -2664,5 +2666,23 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     return database
         .into(table)
         .insert(companion, mode: InsertMode.insertOrIgnore);
+  }
+
+  Future<bool> _isLocallyPurgedMember(String id) async {
+    final member =
+        await (database.select(database.members)
+              ..where((member) => member.id.equals(id))
+              ..limit(1))
+            .getSingleOrNull();
+    return member?.purgedAt != null;
+  }
+
+  Future<bool> _isLocallyPurgedMessage(String id) async {
+    final message =
+        await (database.select(database.messages)
+              ..where((message) => message.id.equals(id))
+              ..limit(1))
+            .getSingleOrNull();
+    return message?.purgedAt != null;
   }
 }

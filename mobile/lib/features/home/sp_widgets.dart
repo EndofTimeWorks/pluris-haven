@@ -671,15 +671,6 @@ class StoredAvatar extends StatelessWidget {
         ),
       );
     }
-    if (source.startsWith('http://') || source.startsWith('https://')) {
-      return SpAvatar(
-        size: size,
-        color: color,
-        label: label,
-        image: NetworkImage(source),
-        semanticLabel: semanticLabel,
-      );
-    }
     return SpAvatar(
       size: size,
       color: color,

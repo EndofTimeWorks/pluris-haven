@@ -73,4 +73,14 @@ void main() {
 
     expect(addresses, isNull);
   });
+
+  test('rejects private IPv4 addresses embedded in IPv6', () async {
+    for (final address in ['64:ff9b::7f00:1', '2002:7f00:1::']) {
+      final addresses = await allowedRemoteAvatarAddresses(
+        Uri.parse('https://avatars.example/avatar.png'),
+        lookup: (_) async => [InternetAddress(address)],
+      );
+      expect(addresses, isNull, reason: address);
+    }
+  });
 }

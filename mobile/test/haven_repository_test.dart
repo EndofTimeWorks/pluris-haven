@@ -18,6 +18,67 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test(
+    'keeps locally purged members terminal during archive updates',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(
+        const MemberDraft(
+          displayName: 'Private member',
+          description: 'private',
+        ),
+      );
+      final member = (await repository.watchMembers().first).single;
+      final archive = await repository.buildLocalArchiveJson();
+
+      await repository.deleteMember(member.id);
+      await repository.purgeMember(member.id);
+      await repository.importLocalArchiveJson(
+        archive,
+        strategy: ImportConflictStrategy.update,
+        fileName: 'older-backup.json',
+      );
+
+      final tombstone = await (database.select(
+        database.members,
+      )..where((row) => row.id.equals(member.id))).getSingle();
+      expect(tombstone.purgedAt, isNotNull);
+      expect(tombstone.description, isNull);
+      expect(await repository.watchMembers().first, isEmpty);
+    },
+  );
+
+  test(
+    'keeps locally purged messages terminal during archive updates',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMessage(const MessageDraft(body: 'Private message'));
+      final message = (await repository.watchMessages().first).single;
+      final archive = await repository.buildLocalArchiveJson();
+
+      await repository.deleteMessage(message.id);
+      await repository.purgeMessage(message.id);
+      await repository.importLocalArchiveJson(
+        archive,
+        strategy: ImportConflictStrategy.update,
+        fileName: 'older-backup.json',
+      );
+
+      final tombstone = await (database.select(
+        database.messages,
+      )..where((row) => row.id.equals(message.id))).getSingle();
+      expect(tombstone.purgedAt, isNotNull);
+      expect(await repository.watchMessages().first, isEmpty);
+      expect(await repository.watchDeletedMessages().first, isEmpty);
+    },
+  );
+
   test('preserves extensible custom fields and typed values', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
     final source = testRepository(sourceDatabase);
