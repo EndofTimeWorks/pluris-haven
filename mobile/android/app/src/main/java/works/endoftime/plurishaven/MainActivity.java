@@ -281,7 +281,7 @@ public final class MainActivity extends FlutterFragmentActivity {
                                 .build();
                 WorkManager.getInstance(getApplicationContext()).enqueueUniqueWork(
                         "import-" + jobId,
-                        ExistingWorkPolicy.REPLACE,
+                        ExistingWorkPolicy.KEEP,
                         request
                 );
                 result.success(null);
