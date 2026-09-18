@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '$lib/release';
+  import { obtainiumRedirectUrl } from '$lib/obtainium-config';
 
   const status = [
     ['Release', mobileRelease.version],
@@ -125,6 +126,7 @@
       <a class="button primary" href={mobileRelease.universalApk.url}>
         Download APK <span>{mobileRelease.universalApk.size}</span>
       </a>
+      <a class="button" href={obtainiumRedirectUrl}>Get it on Obtainium</a>
       <a class="button" href={mobileRelease.releaseUrl}>Release notes and files</a>
     </div>
   </section>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '$lib/release';
+  import { obtainiumRedirectUrl, repositoryUrl } from '$lib/obtainium-config';
 </script>
 
 <svelte:head>
@@ -22,25 +23,24 @@
     <h2>Android</h2>
     <ul>
       <li>Package id: <code>works.endoftime.plurishaven</code></li>
-      <li>Dev APK asset: <code>pluris-haven-dev.apk</code></li>
-      <li>Dev tags: <code>mobile-v0.2.0-pre-alpha.N.dev.N+BUILD</code></li>
-      <li>Versioned tags: <code>mobile-v0.2.0-pre-alpha.N+BUILD</code></li>
+      <li>Canonical APK: <code>pluris-haven-&lt;version&gt;.apk</code></li>
+      <li>Debug tags: <code>debug-v*</code></li>
+      <li>Versioned tags: <code>mobile-v&lt;version&gt;</code></li>
       <li>Current release: <code>{mobileRelease.version}</code></li>
     </ul>
     <div class="actions">
       <a class="button primary" href={mobileRelease.universalApk.url}> Download signed APK </a>
       <a class="button" href={mobileRelease.releaseUrl}>Release files</a>
-      <a class="button" href="https://obtainium.imranr.dev">Obtainium</a>
+      <a class="button" href={obtainiumRedirectUrl}>Get it on Obtainium</a>
     </div>
   </section>
 
   <section>
     <h2>Obtainium</h2>
     <ol>
-      <li>Add <code>https://github.com/EndofTimeWorks/pluris-haven</code>.</li>
-      <li>Enable prereleases for dev builds.</li>
-      <li>Filter APK assets to files ending in <code>-universal.apk</code>.</li>
-      <li>Sort releases by date.</li>
+      <li>Use <strong>Get it on Obtainium</strong> to open the checked GitHub Releases source.</li>
+      <li>Confirm the canonical Play-signed APK filter.</li>
+      <li>Future versioned pre-alpha releases are tracked by Android version code.</li>
     </ol>
     <p>
       If Android says the downloaded package does not match the installed app, the old install is
@@ -50,6 +50,7 @@
       Build codes must stay above <code>2000</code>. Android will reject a lower code even when the
       visible SemVer string looks newer.
     </p>
+    <p>Manual fallback: add <code>{repositoryUrl}</code> as a GitHub source in Obtainium.</p>
   </section>
 
   <section>

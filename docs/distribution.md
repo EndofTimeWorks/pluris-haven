@@ -45,9 +45,12 @@ The release workflow verifies its package id, version, universal shape, APK
 signature, and the `PLURIS_PLAY_APP_SIGNING_CERT_SHA256` certificate pin before
 GitHub Release publication.
 
-For Obtainium, use the repository at
-`https://github.com/EndofTimeWorks/pluris-haven`. Enable prereleases while
-using dev builds and filter to `pluris-haven-dev.apk` for that channel.
+Use the website's **Get it on Obtainium** link to open the generated Pluris
+GitHub Releases configuration. It selects only the canonical Play-signed
+`pluris-haven-<version>.apk`, includes official pre-alpha GitHub prereleases,
+and tracks Android version code. As a manual fallback, add
+`https://github.com/EndofTimeWorks/pluris-haven` as a GitHub source in
+Obtainium.
 
 Android will not update an app if the package id/signing identity changes. Old
 experimental builds used other ids and may require a one-time uninstall before

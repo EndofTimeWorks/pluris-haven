@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '$lib/release';
+  import { obtainiumRedirectUrl, repositoryUrl } from '$lib/obtainium-config';
 </script>
 
 <svelte:head>
@@ -29,12 +30,11 @@
       <a class="button primary" href={mobileRelease.universalApk.url}>
         Download universal APK ({mobileRelease.universalApk.size})
       </a>
-      <a class="button" href={mobileRelease.arm64Apk.url}>
-        Smaller 64-bit APK ({mobileRelease.arm64Apk.size})
-      </a>
+      <a class="button" href={obtainiumRedirectUrl}>Get it on Obtainium</a>
     </div>
     <p class="muted">
-      Choose universal if you are unsure. Most current phones can use the smaller 64-bit build.
+      This is the same Play-app-signing-key-signed universal APK used for direct download and
+      Obtainium updates.
     </p>
   </section>
 
@@ -71,17 +71,21 @@
     <h2>Automatic updates with Obtainium</h2>
     <ol>
       <li>Install Obtainium from its official source.</li>
-      <li>Add <code>https://github.com/EndofTimeWorks/pluris-haven</code>.</li>
-      <li>Enable prereleases.</li>
-      <li>Filter APK assets to the universal APK, ending in <code>-universal.apk</code>.</li>
+      <li>Use the <strong>Get it on Obtainium</strong> button above.</li>
+      <li>Review the Pluris Haven GitHub Releases configuration, then confirm it.</li>
+      <li>Obtainium follows only the canonical Play-signed APK asset.</li>
     </ol>
     <p>
       Obtainium is a separate project. Review what it will install before enabling automatic
       updates.
     </p>
     <div class="actions">
+      <a class="button primary" href={obtainiumRedirectUrl}>Add to Obtainium</a>
       <a class="button" href="https://obtainium.imranr.dev">Obtainium website</a>
     </div>
+    <p class="muted">
+      Manual fallback: add <code>{repositoryUrl}</code> as a GitHub source in Obtainium.
+    </p>
   </section>
 
   <section>

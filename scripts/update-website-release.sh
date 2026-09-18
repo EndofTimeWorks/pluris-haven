@@ -27,17 +27,15 @@ asset_size() {
     awk '{ printf "%.0f MB", $1 / 1024 / 1024 }'
 }
 
-universal_name="pluris-haven-${version}-universal.apk"
-arm64_name="pluris-haven-${version}-arm64-v8a.apk"
+universal_name="pluris-haven-${version}.apk"
 ipa_name="pluris-haven-${version}-unsigned.ipa"
 checksums_url="$(asset_url SHA256SUMS.txt)"
 build_metadata_url="$(asset_url BUILD.txt)"
 
 universal_url="$(asset_url "${universal_name}")"
-arm64_url="$(asset_url "${arm64_name}")"
 ipa_url="$(asset_url "${ipa_name}")"
 
-for value in "${checksums_url}" "${build_metadata_url}" "${universal_url}" "${arm64_url}" "${ipa_url}"; do
+for value in "${checksums_url}" "${build_metadata_url}" "${universal_url}" "${ipa_url}"; do
   test -n "${value}" || { echo "Missing release asset metadata." >&2; exit 1; }
 done
 
@@ -52,11 +50,6 @@ export const mobileRelease = {
     name: '${universal_name}',
     size: '$(asset_size "${universal_name}")',
     url: '${universal_url}',
-  },
-  arm64Apk: {
-    name: '${arm64_name}',
-    size: '$(asset_size "${arm64_name}")',
-    url: '${arm64_url}',
   },
   checksumsUrl:
     '${checksums_url}',
