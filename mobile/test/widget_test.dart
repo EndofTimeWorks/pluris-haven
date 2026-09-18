@@ -6,6 +6,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:drift/native.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
@@ -16,6 +17,8 @@ import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
 import 'package:pluris_haven/platform/app_lock.dart';
+
+import 'test_repository.dart';
 
 Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 50; attempt++) {
@@ -2703,17 +2706,10 @@ void main() {
   );
 
   testWidgets('creates and votes on a local poll', (tester) async {
-    final repository = FakeHavenRepository(
-      const HomeSnapshot(
-        systemName: 'Local system',
-        memberCount: 0,
-        groupCount: 0,
-        noteCount: 0,
-        frontHistoryCount: 0,
-        currentFrontLabel: null,
-      ),
-    );
-    addTearDown(repository.close);
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -2751,12 +2747,13 @@ void main() {
     await tester.tap(find.text('Soup'));
     await tester.pumpAndSettle();
 
-    expect(repository._polls.single.selectedCount, 1);
-    expect(repository._polls.single.options.first.selected, isTrue);
+    final votedPoll = (await repository.watchPolls().first).single;
+    expect(votedPoll.selectedCount, 1);
+    expect(votedPoll.options.first.selected, isTrue);
 
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
-    expect(repository._polls.single.closed, isTrue);
+    expect((await repository.watchPolls().first).single.closed, isTrue);
     expect(find.text('Closed'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Delete poll'));
@@ -2766,6 +2763,9 @@ void main() {
 
     expect(find.text('Dinner?'), findsNothing);
     expect(find.text('No polls yet'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 
   testWidgets('updates customization from the app options page', (
