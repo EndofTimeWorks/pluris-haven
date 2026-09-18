@@ -527,6 +527,7 @@ jobs:
           chmod 600 "${work_dir}/passphrase"
 
           mkdir -p release/mobile
+          find release/mobile -maxdepth 1 -type f -name '*.apk' -delete
           apk="pluris-haven-${{ needs.metadata.outputs.version }}+${{ needs.metadata.outputs.build }}.apk"
           mv "release/play/${apk}" "release/mobile/${apk}"
           {
