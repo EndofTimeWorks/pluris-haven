@@ -30,3 +30,8 @@ test('orders prereleases according to SemVer precedence', () => {
   const result = check('1.0.0-alpha.10+43', ['mobile-v1.0.0-alpha.9+42']);
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('rejects a pathological prerelease without backtracking', () => {
+  const result = check(`0.0.0-0.${'--.'.repeat(10000)}+44`, ['mobile-v0.0.0+43']);
+  assert.equal(result.status, 1);
+});

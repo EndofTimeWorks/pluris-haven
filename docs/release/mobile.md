@@ -1,7 +1,7 @@
 # Mobile releases
 
 There are two automation paths: automatic debug prereleases from successful
-non-`main` branch CI, and deliberate versioned releases from a
+internal branch CI (including `main`), and deliberate versioned releases from a
 maintainer-created GPG-signed tag on `main`.
 
 Pluris Haven is currently **PRE-ALPHA**. Alpha is next; beta is later. Do not
@@ -9,8 +9,8 @@ change maturity merely because a store/testing path exists.
 
 ## Debug prerelease
 
-Every successful push to an internal non-`main` branch is eligible for an
-automatic GitHub debug prerelease after `CI` completes. The trusted publisher
+Every successful push to an internal branch, including `main`, is eligible for
+an automatic GitHub debug prerelease after `CI` completes. The trusted publisher
 workflow runs from the default branch; this is deliberate privilege separation.
 The first governance PR does not receive this publication until that workflow
 has been merged to `main` once.

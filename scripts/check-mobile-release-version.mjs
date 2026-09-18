@@ -2,16 +2,30 @@
 
 import { execFileSync } from 'node:child_process';
 
-const tagPattern = /^mobile-v(.+)\+([1-9][0-9]*)$/;
-const semverPattern =
-  /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$/;
+const numericIdentifier = /^(0|[1-9][0-9]*)$/;
+const prereleaseIdentifier = /^[0-9A-Za-z-]+$/;
 
 function parseVersion(value) {
-  const match = semverPattern.exec(value);
-  if (!match) throw new Error(`Invalid semantic version: ${value}`);
+  const separator = value.indexOf('-');
+  const coreValue = separator === -1 ? value : value.slice(0, separator);
+  const prereleaseValue = separator === -1 ? '' : value.slice(separator + 1);
+  const coreParts = coreValue.split('.');
+  if (
+    coreParts.length !== 3 ||
+    !coreParts.every((part) => numericIdentifier.test(part)) ||
+    (separator !== -1 &&
+      (!prereleaseValue ||
+        !prereleaseValue.split('.').every((part) => {
+          return (
+            prereleaseIdentifier.test(part) && (!/^\d+$/.test(part) || numericIdentifier.test(part))
+          );
+        })))
+  ) {
+    throw new Error(`Invalid semantic version: ${value}`);
+  }
   return {
-    core: match.slice(1, 4).map(Number),
-    prerelease: match[4]?.split('.') ?? [],
+    core: coreParts.map(Number),
+    prerelease: prereleaseValue ? prereleaseValue.split('.') : [],
   };
 }
 
@@ -46,21 +60,33 @@ if (!candidate) {
   console.error('Usage: check-mobile-release-version.mjs <version+build> [exclude-tag]');
   process.exit(2);
 }
-const candidateMatch = /^(.+)\+([1-9][0-9]*)$/.exec(candidate);
-if (!candidateMatch) {
+const buildSeparator = candidate.indexOf('+');
+if (buildSeparator <= 0 || candidate.indexOf('+', buildSeparator + 1) !== -1) {
   console.error(`Invalid mobile release version: ${candidate}`);
   process.exit(1);
 }
-const candidateVersion = parseVersion(candidateMatch[1]);
-const candidateBuild = Number(candidateMatch[2]);
+const candidateVersionValue = candidate.slice(0, buildSeparator);
+const candidateBuildValue = candidate.slice(buildSeparator + 1);
+if (!numericIdentifier.test(candidateBuildValue)) {
+  console.error(`Invalid mobile release version: ${candidate}`);
+  process.exit(1);
+}
+const candidateVersion = parseVersion(candidateVersionValue);
+const candidateBuild = Number(candidateBuildValue);
 const tags =
   process.env.PLURIS_MOBILE_RELEASE_TAGS?.split('\n') ??
   execFileSync('git', ['tag', '--list', 'mobile-v*+*'], { encoding: 'utf8' }).split('\n');
 const previous = tags
   .filter((tag) => tag && tag !== excludedTag)
   .map((tag) => {
-    const match = tagPattern.exec(tag);
-    return match ? { tag, version: parseVersion(match[1]), build: Number(match[2]) } : null;
+    if (!tag.startsWith('mobile-v')) return null;
+    const versionWithBuild = tag.slice('mobile-v'.length);
+    const separator = versionWithBuild.indexOf('+');
+    if (separator <= 0 || versionWithBuild.indexOf('+', separator + 1) !== -1) return null;
+    const build = versionWithBuild.slice(separator + 1);
+    return numericIdentifier.test(build)
+      ? { tag, version: parseVersion(versionWithBuild.slice(0, separator)), build: Number(build) }
+      : null;
   })
   .filter(Boolean);
 
@@ -77,7 +103,7 @@ const highestVersion = previous.reduce(
 );
 if (highestVersion && compareSemver(candidateVersion, highestVersion.version) <= 0) {
   console.error(
-    `Version ${candidateMatch[1]} must be greater than tagged mobile version ${highestVersion.tag.slice('mobile-v'.length).split('+')[0]}.`,
+    `Version ${candidateVersionValue} must be greater than tagged mobile version ${highestVersion.tag.slice('mobile-v'.length).split('+')[0]}.`,
   );
   process.exit(1);
 }
