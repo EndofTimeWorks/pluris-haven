@@ -46,6 +46,17 @@ iOS/TestFlight distribution are not ready yet. OpenPlural compatibility is
 currently limited to the verified v0.1 file/archive shape; real-export evidence
 is still needed before making a broader claim.
 
+## Install
+
+- **Google Play** — testing-track builds when they are available to you.
+- **Direct APK** — [official GitHub Releases](https://github.com/EndofTimeWorks/pluris-haven/releases).
+- **Obtainium** — [Add Pluris Haven to Obtainium](https://pluris.endoftime.dev/obtainium).
+
+Google Play and GitHub/Obtainium use the same Play-app-signing-key-signed APK
+lineage. Obtainium follows the official GitHub Release APK, which also has a
+Pluris Apps OpenPGP detached signature. Pre-alpha releases are GitHub
+prereleases; the supplied Obtainium configuration intentionally includes them.
+
 ## Docs
 
 - `docs/project-state.md` - current product decisions and implementation state

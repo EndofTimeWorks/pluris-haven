@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -47,4 +48,19 @@ test('encodes the full Obtainium configuration for direct and HTTPS links', () =
   assert.equal(redirect.origin, 'https://apps.obtainium.imranr.dev');
   assert.equal(redirect.pathname, '/redirect');
   assert.equal(redirect.searchParams.get('r'), obtainiumDeepLink);
+});
+
+test('keeps the README-facing first-party route connected to the canonical configuration', () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const route = readFileSync(
+    new URL('../website/src/routes/obtainium/+page.svelte', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    readme,
+    /\[Add Pluris Haven to Obtainium\]\(https:\/\/pluris\.endoftime\.dev\/obtainium\)/,
+  );
+  assert.match(route, /import \{ obtainiumRedirectUrl \} from '\$lib\/obtainium-config'/);
+  assert.match(route, /window\.location\.replace\(obtainiumRedirectUrl\)/);
+  assert.match(route, /href=\{obtainiumRedirectUrl\}/);
 });
