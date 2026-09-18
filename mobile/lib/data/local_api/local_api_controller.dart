@@ -121,6 +121,14 @@ class LocalApiController {
     await _writePreference(_enabledKey, 'false');
   });
 
+  /// Retires the persisted enable choice while Local API controls are hidden.
+  Future<void> disableLegacyEnablement() => _enqueue(() async {
+    final service = _service;
+    _service = null;
+    await service?.stop();
+    await _writePreference(_enabledKey, 'false');
+  });
+
   /// Restores an explicitly enabled service after the repository is available.
   /// Binding failure is contained: the persisted preference is retained, but
   /// the API does not claim to be listening.
@@ -149,11 +157,9 @@ class LocalApiController {
 
   /// Reconciles listener access with the App Lock lifecycle.
   Future<void> setAccessAllowed(bool allowed) async {
-    if (allowed) {
-      await startIfEnabled();
-    } else {
-      await close();
-    }
+    if (!allowed) await close();
+    // TODO(project-state): require Experimental controls before restoring a
+    // persisted Local API enable choice after unlock.
   }
 
   Future<int> _start() async {
@@ -382,11 +388,11 @@ class _LocalApiService implements LocalApiListener {
         return await _error(request, 405, 'method_not_allowed');
       }
       final path = request.uri.path;
+      final client = await _authenticate(_bearerToken(request));
+      if (client == null) return await _error(request, 401, 'invalid_client');
       if (path == '/v1/health') {
         return await _json(request, 200, {'version': 'v1', 'status': 'ok'});
       }
-      final client = await _authenticate(_bearerToken(request));
-      if (client == null) return await _error(request, 401, 'invalid_client');
       if (path == '/v1/system') {
         if (!_hasScope(client, LocalApiScope.systemRead)) {
           return await _scopeError(request);

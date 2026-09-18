@@ -72,7 +72,7 @@ void main() {
     expect(revoked.statusCode, HttpStatus.unauthorized);
   });
 
-  test('keeps health unauthenticated and rejects unsupported routes', () async {
+  test('requires a client token for health and unsupported routes', () async {
     final database = AppDatabase(NativeDatabase.memory());
     final repository = testRepository(database);
     final controller = LocalApiController(repository);
@@ -83,7 +83,14 @@ void main() {
     await repository.ensureLocalSystem();
     final status = await controller.enable();
 
-    final health = await _get(status.origin!, '/v1/health', null);
+    final missingHealth = await _get(status.origin!, '/v1/health', null);
+    expect(missingHealth.statusCode, HttpStatus.unauthorized);
+
+    final credential = await controller.createClient(
+      label: 'Health check',
+      scopes: const {LocalApiScope.systemRead},
+    );
+    final health = await _get(status.origin!, '/v1/health', credential.token);
     expect(health.statusCode, HttpStatus.ok);
     expect(jsonDecode(health.body), {'version': 'v1', 'status': 'ok'});
 
@@ -153,6 +160,45 @@ void main() {
     },
   );
 
+  test(
+    'retires a legacy enabled preference without starting a listener',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final repository = testRepository(database);
+      final listeners = <_DelayedListener>[];
+      final controller = LocalApiController(
+        repository,
+        listenerFactory: (_, _) {
+          final listener = _DelayedListener(delayStart: false, port: 41123);
+          listeners.add(listener);
+          return listener;
+        },
+      );
+      addTearDown(() async {
+        await controller.close();
+        await database.close();
+      });
+      await repository.ensureLocalSystem();
+      await database
+          .into(database.appPreferences)
+          .insert(
+            AppPreferencesCompanion.insert(
+              key: 'local_api.enabled',
+              value: 'true',
+              updatedAt: DateTime.now().toUtc(),
+            ),
+          );
+
+      await controller.disableLegacyEnablement();
+      await controller.setAccessAllowed(true);
+
+      final status = await controller.status();
+      expect(status.enabled, isFalse);
+      expect(status.isListening, isFalse);
+      expect(listeners, isEmpty);
+    },
+  );
+
   test('serializes lifecycle changes around an in-flight start', () async {
     final database = AppDatabase(NativeDatabase.memory());
     final repository = testRepository(database);
@@ -199,7 +245,7 @@ void main() {
     expect(listeners.last.stopCalls, 1);
 
     await controller.setAccessAllowed(true);
-    expect((await controller.status()).isListening, isTrue);
+    expect((await controller.status()).isListening, isFalse);
     await controller.setAccessAllowed(false);
     expect((await controller.status()).isListening, isFalse);
   });

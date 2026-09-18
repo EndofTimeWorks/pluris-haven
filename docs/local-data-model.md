@@ -74,8 +74,8 @@ official server.
 
 ## Optional local API
 
-The native local API is separate from the optional hosted server. It is disabled
-by default, runs only while the encrypted archive is available and App Lock is
-unlocked, and exposes stable repository summaries rather than raw SQLite data.
-Its client grants are encrypted local preferences; raw client tokens are never
-stored. See [`local-api.md`](local-api.md) for the v1 contract and scope model.
+The native local API implementation is separate from the optional hosted server.
+It is currently hidden pending Experimental feature controls; startup retires
+legacy enable choices rather than starting a listener. Its client grants are
+encrypted local preferences; raw client tokens are never stored. See
+[`local-api.md`](local-api.md) for the v1 contract and scope model.
