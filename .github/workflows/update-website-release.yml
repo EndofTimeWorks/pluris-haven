@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout main
@@ -25,9 +26,37 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve release tag
+      - name: Validate release tag is a main release
         id: release
-        run: echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          trusted_release_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
+          GNUPGHOME="$(mktemp -d)"
+          export GNUPGHOME
+          trap 'rm -rf "${GNUPGHOME}"' EXIT
+          gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
+          imported_fingerprint="$(
+            gpg --batch --with-colons --fingerprint "${trusted_release_fingerprint}" |
+              awk -F: '$1 == "fpr" { print $10; exit }'
+          )"
+          if [[ "${imported_fingerprint}" != "${trusted_release_fingerprint}" ]]; then
+            echo 'Trusted release signing key fingerprint does not match.' >&2
+            exit 1
+          fi
+          if [[ ! "${RELEASE_TAG}" =~ ^mobile-v ]] || ! git cat-file -e "${RELEASE_TAG}^{tag}" 2>/dev/null || ! git verify-tag "${RELEASE_TAG}"; then
+            echo 'Website metadata requires an existing valid signed mobile release tag.' >&2
+            exit 1
+          fi
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          if ! git merge-base --is-ancestor "${release_commit}" origin/main; then
+            echo 'Official mobile releases must target a commit contained in main.' >&2
+            exit 1
+          fi
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Generate website release metadata
         env:
@@ -35,19 +64,24 @@ jobs:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: scripts/update-website-release.sh
 
-      - name: Commit website release metadata
+      - name: Commit website release metadata on a pull request branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add website/src/lib/release.ts
-          git diff --cached --quiet && exit 0
+          git diff --cached --quiet && { echo 'No website metadata change required.'; exit 0; }
+          version="${RELEASE_TAG#mobile-v}"
+          branch="chore/website-release-${version//[^a-zA-Z0-9]/-}"
+          branch="${branch,,}"
           git commit -m "chore(website): update mobile release metadata"
-          git push origin HEAD:main
-
-  deploy:
-    name: Deploy repaired website metadata
-    needs: update
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy-website.yml
-    secrets: inherit
+          git push origin "HEAD:refs/heads/${branch}"
+          gh pr create \
+            --base main \
+            --head "${branch}" \
+            --title "chore(website): update mobile release metadata" \
+            --body "Repair proposal for verified release ${RELEASE_TAG}. This change must pass normal CI and main Rulesets before merge."

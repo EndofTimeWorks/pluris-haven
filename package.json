@@ -8,6 +8,7 @@
     "format:check": "git ls-files -z | xargs -0 prettier --check --ignore-unknown",
     "check:l10n": "node scripts/check-localisations.mjs",
     "check:ui-l10n": "node scripts/check-ui-localisations.mjs",
+    "ci:local": "scripts/ci-local.sh",
     "lint:website": "pnpm --dir website check",
     "lint:server:format": "server/.venv/bin/ruff format --check server/pluris_server server/tests",
     "lint:server": "server/.venv/bin/ruff check server/pluris_server server/tests",
@@ -15,6 +16,7 @@
     "lint:mobile": "cd mobile && dart format --set-exit-if-changed lib test && flutter analyze",
     "test:server": "server/.venv/bin/pytest -q server/tests",
     "test:mobile": "cd mobile && flutter test",
+    "test:debug-release-version": "node --test scripts/debug-release-version.test.mjs",
     "lint": "pnpm format:check && pnpm check:l10n && pnpm check:ui-l10n && pnpm lint:website && pnpm lint:server:format && pnpm lint:server && pnpm lint:shell",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },

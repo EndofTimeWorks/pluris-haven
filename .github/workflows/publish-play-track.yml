@@ -64,6 +64,12 @@ jobs:
             echo 'Play publication requires an existing valid signed annotated tag.' >&2
             exit 1
           fi
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          if ! git merge-base --is-ancestor "${release_commit}" origin/main; then
+            echo 'Official mobile releases must target a commit contained in main.' >&2
+            exit 1
+          fi
           if [[ ! "${PLAY_TRACK}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
             echo 'Play track must be an exact non-empty Console track identifier.' >&2
             exit 1

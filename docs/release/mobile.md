@@ -1,35 +1,37 @@
 # Mobile releases
 
-There are two automation paths: development prereleases from `main`, and
-versioned releases from a maintainer-created GPG-signed tag.
+There are two automation paths: automatic debug prereleases from successful
+non-`main` branch CI, and deliberate versioned releases from a
+maintainer-created GPG-signed tag on `main`.
 
 Pluris Haven is currently **PRE-ALPHA**. Alpha is next; beta is later. Do not
 change maturity merely because a store/testing path exists.
 
-## Dev prerelease
+## Debug prerelease
 
-Use a dev build for routine testing between versioned releases.
+Every successful push to an internal non-`main` branch is eligible for an
+automatic GitHub debug prerelease after `CI` completes. The trusted publisher
+workflow runs from the default branch; this is deliberate privilege separation.
+The first governance PR does not receive this publication until that workflow
+has been merged to `main` once.
 
-1. Set a newer `.dev.N` version/build in `mobile/pubspec.yaml`, for example after
-   the current `0.3.0-pre-alpha.4+3004` baseline:
+Debug publication reads, but does not modify, `mobile/pubspec.yaml`. For source
+version `0.3.0-pre-alpha.4+3004`, CI run 127 creates:
 
-   ```yaml
-   version: 0.3.0-pre-alpha.4.dev.1+3005
-   ```
+```text
+debug-v0.3.0-pre-alpha.4.debug.127+3004
+```
 
-2. Commit and push `main`.
-3. Wait for the `CI` workflow.
-4. When the version/build is newer than published mobile tags, the dev
-   prerelease contains:
-   - `pluris-haven-dev.apk`
-   - `pluris-haven-dev-unsigned.ipa`
-   - `BUILD.txt`
-   - `SHA256SUMS.txt`
+Each debug prerelease contains an Android debug APK, an unsigned iOS IPA where
+the macOS CI build succeeds, `BUILD.txt`, and `SHA256SUMS.txt`. It states its
+source branch, exact commit, source version, CI run number/ID, and build time.
+These are test artifacts: they are never Play/App Store uploads, never official
+releases, and the unsigned IPA is not installable or TestFlight evidence.
 
-The dev APK is release-mode and uses the configured Android upload key. The IPA
-is unsigned and can be re-signed with AltStore, SideStore, Sideloadly, or a
-Developer-managed device. A non-dev version or non-monotonic build number is not
-automatically published as a dev prerelease.
+Debug tags begin `debug-v*`; `mobile-v*` remains reserved for official mobile
+releases. A rerun checks that an existing debug tag peels to the same tested
+commit and then leaves it unchanged. It refuses to move a tag targeting another
+commit.
 
 ## Versioned prerelease
 
@@ -63,8 +65,8 @@ approval.
    ```
 
 4. Review and GPG-sign the release-preparation commit.
-5. Push `main` and require successful GitHub-hosted CI for the exact commit.
-   Local test parity alone is not enough.
+5. Open and merge a PR to protected `main`, with successful GitHub-hosted CI for
+   the exact up-to-date merge candidate. Local test parity alone is not enough.
 6. Create the checked GPG-signed release tag:
 
    ```sh
@@ -81,7 +83,9 @@ belong in GitHub Secrets.
 
 ## Version rules
 
-- `.dev.N` means an automatic release-mode development prerelease.
+- Debug publication adds `.debug.<CI-run-number>` to the source prerelease (or
+  `-debug.<CI-run-number>` when the source has no prerelease); it does not alter
+  the source version.
 - Versioned tags may use the intended prerelease channels `pre-alpha`, `alpha`,
   and later `beta`.
 - A versioned release must not use `.dev.N`.
@@ -99,25 +103,25 @@ need a one-time uninstall before the current package can be installed.
 `Mobile Release`:
 
 1. verifies the pushed tag and its GPG signature;
-2. validates tag/version/build consistency and rejects `.dev.N`;
-3. builds Android release APKs and the release AAB;
-4. builds an unsigned iOS IPA on `macos-26-intel` with Xcode 26.4.1;
-5. writes build metadata and SHA-256 checksums;
-6. creates/updates the canonical GitHub prerelease;
-7. after GitHub publication, independently:
-   - uploads the AAB to Play internal testing; and
-   - updates/validates/deploys website release metadata.
+2. fetches `origin/main` and rejects a tag whose target commit is not contained
+   in `main`;
+3. validates tag/version/build consistency and rejects `.dev.N`;
+4. builds Android release APKs and the release AAB;
+5. builds an unsigned iOS IPA on `macos-26-intel` with Xcode 26.4.1;
+6. writes build metadata and SHA-256 checksums;
+7. creates/updates the canonical GitHub prerelease;
+8. proposes website metadata through a normal PR when a change is needed.
 
-A Play failure does not invalidate an existing GitHub Release or block website
-metadata. A website-metadata failure does not recreate release artifacts. These
-independent targets need explicit retry/repair behavior rather than pretending
-to be transactionally atomic.
+A Play failure does not invalidate an existing GitHub Release. Website metadata
+is not pushed directly to `main` or deployed by release automation: its PR must
+pass the normal CI and Rulesets. These independent targets need explicit
+retry/repair behavior rather than pretending to be transactionally atomic.
 
 Current Play automation covers **internal testing**. Closed testing is decided
 for the alpha distribution path. Use the manually dispatched `Publish existing
 mobile release to Google Play track` workflow after the canonical GitHub
 Release exists, supplying the exact configured Console track identifier. The
-workflow verifies the signed tag and release AAB checksum, does not
+workflow verifies the signed tag, that its target is in `main`, and the release AAB checksum, does not
 recreate GitHub artifacts, and exits successfully when that version is already
 on the requested track. Console configuration and real external verification
 remain required.

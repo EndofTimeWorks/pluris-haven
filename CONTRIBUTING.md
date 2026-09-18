@@ -24,23 +24,44 @@ requires a narrower term, explain why and keep that assumption local.
 From the repository root:
 
 ```sh
-pnpm install
-pnpm format:check
-pnpm lint:website
-pnpm lint:server:format
-pnpm lint:server
+pnpm ci:local
 ```
 
-For mobile changes, also run the pinned Flutter checks from `mobile/`:
+This is the normal local CI entry point. It reports the macOS/iOS and
+GitHub-hosted-only checks as `NOT RUN`; it does not replace hosted CI.
 
-```sh
-dart format --set-exit-if-changed lib test
-flutter analyze
-flutter test
+## Branches and pull requests
+
+Create normal work on a typed, lowercase kebab-case branch. Allowed prefixes
+are `feat/`, `fix/`, `security/`, `perf/`, `refactor/`, `test/`, `docs/`,
+`chore/`, `build/`, `ci/`, `release/`, `hotfix/`, `style/`, and `revert/`.
+For example:
+
+```text
+feat/groups-custom-fields
+fix/archive-purge-resurrection
+ci/enforce-repository-governance
 ```
 
-The Android and iOS release workflows provide the platform-specific build
-gates. Do not claim iOS evidence from Linux; it requires macOS and Xcode.
+`dependabot/**` is allowed for GitHub-managed dependency branches. Check a name
+locally with `scripts/check-branch-name.sh <branch>`.
+
+GitHub currently rejects repository branch-name metadata Rulesets for this
+repository (`branch_name_pattern` returns HTTP 422), so GitHub cannot block an
+invalid branch at creation time here. The same canonical script runs in the
+required `Branch policy` CI job and is enforced by the required `CI gate` before
+anything can merge to `main`.
+
+The permanent path is:
+
+```text
+typed branch → pnpm ci:local → push → hosted CI → debug prerelease → PR
+→ CI gate → merge to protected main
+```
+
+Open a PR for every `main` change. `main` requires the stable `CI gate` check,
+verified signed commits, and resolved conversations. Do not push ordinary work
+directly to it.
 
 ## Commits
 

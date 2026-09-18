@@ -3,8 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - '**'
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -15,6 +17,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  branch-policy:
+    name: Branch policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate source branch name
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          branch="${HEAD_BRANCH:-${REF_NAME}}"
+          scripts/check-branch-name.sh "${branch}"
+
   quality:
     name: Repository quality gates
     runs-on: ubuntu-latest
@@ -105,145 +125,12 @@ jobs:
 
       - run: flutter build apk --debug
 
-      - name: Configure Android release signing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ../scripts/configure-android-signing.sh
-
-      - name: Build signed dev release APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        run: >
-          flutter build apk --release
-          --dart-define=SENTRY_ENABLED=true
-          --dart-define=SENTRY_DSN="$SENTRY_DSN"
-          --dart-define=SENTRY_ENVIRONMENT=development
-
-      - name: Upload signed dev release APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Upload Android debug APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: pluris-haven-dev-release-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          name: pluris-haven-android-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
-
-      - name: Remove Android signing material
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: rm -f android/key.properties android/app/pluris-haven-upload.jks
-
-  mobile-dev-release:
-    name: Publish mobile dev prerelease
-    needs:
-      - mobile
-      - ios
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      actions: read
-      contents: write
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Resolve dev version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          version_line="$(awk '/^version:/ {print $2}' mobile/pubspec.yaml)"
-          version="${version_line%%+*}"
-          build="${version_line##*+}"
-          tag="mobile-v${version_line}"
-
-          if [[ -z "${version_line}" || "${version_line}" == "${version}" ]]; then
-            echo "mobile/pubspec.yaml must contain a version with +build metadata." >&2
-            exit 1
-          fi
-          if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
-            echo "Invalid Android build number: ${build}" >&2
-            exit 1
-          fi
-          if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(pre-alpha|alpha|beta)(\.[0-9]+)?\.dev\.[0-9]+$ ]]; then
-            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
-            echo "Version ${version_line} is not a dev prerelease." >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
-
-          max_tagged_build="$(git tag --list 'mobile-v*+*' | sed -n 's/.*+\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
-          max_tagged_build="${max_tagged_build:-0}"
-          if (( build <= max_tagged_build )) || git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
-            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
-            echo "Dev prerelease ${version_line} is not newer than the published mobile tags." >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
-
-          {
-            echo "version=${version}"
-            echo "build=${build}"
-            echo "tag=${tag}"
-            echo "should_publish=true"
-          } >> "${GITHUB_OUTPUT}"
-
-      - name: Download signed dev release APK
-        if: steps.version.outputs.should_publish == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: pluris-haven-dev-release-apk
-          path: release/mobile-dev/raw
-
-      - name: Download unsigned dev IPA
-        if: steps.version.outputs.should_publish == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: pluris-haven-ios-unsigned-ipa
-          path: release/mobile-dev/raw
-
-      - name: Collect dev release
-        if: steps.version.outputs.should_publish == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p release/mobile-dev
-          cp release/mobile-dev/raw/app-release.apk release/mobile-dev/pluris-haven-dev.apk
-          cp release/mobile-dev/raw/pluris-haven-dev-unsigned.ipa \
-            release/mobile-dev/pluris-haven-dev-unsigned.ipa
-          {
-            echo "version=${{ steps.version.outputs.version }}"
-            echo "build=${{ steps.version.outputs.build }}"
-            echo "tag=${{ steps.version.outputs.tag }}"
-            echo "commit=${GITHUB_SHA}"
-            echo "run=${GITHUB_RUN_NUMBER}"
-            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } > release/mobile-dev/BUILD.txt
-          (cd release/mobile-dev && sha256sum ./*.apk ./*.ipa BUILD.txt > SHA256SUMS.txt)
-
-      - name: Publish dev prerelease
-        if: steps.version.outputs.should_publish == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ steps.version.outputs.tag }}" \
-            release/mobile-dev/pluris-haven-dev.apk \
-            release/mobile-dev/pluris-haven-dev-unsigned.ipa \
-            release/mobile-dev/BUILD.txt \
-            release/mobile-dev/SHA256SUMS.txt \
-            --target "${GITHUB_SHA}" \
-            --title "Pluris Haven Mobile dev ${{ steps.version.outputs.version }}+${{ steps.version.outputs.build }}" \
-            --notes "Release-mode Android APK and unsigned iOS IPA from ${GITHUB_SHA}." \
-            --generate-notes \
-            --prerelease \
-            --latest=false
 
   ios:
     name: iOS (unsigned build)
@@ -470,3 +357,37 @@ jobs:
       - uses: github/codeql-action/analyze@fb84f6228fd846d3c392887f22b18ce2d9139495 # v4
         with:
           category: '/language:${{ matrix.language }}'
+
+  ci-gate:
+    name: CI gate
+    if: ${{ always() }}
+    needs:
+      - branch-policy
+      - quality
+      - mobile
+      - ios
+      - website
+      - server
+      - codeql
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Require every validation job to succeed
+        shell: bash
+        env:
+          BRANCH_POLICY: ${{ needs.branch-policy.result }}
+          QUALITY: ${{ needs.quality.result }}
+          MOBILE: ${{ needs.mobile.result }}
+          IOS: ${{ needs.ios.result }}
+          WEBSITE: ${{ needs.website.result }}
+          SERVER: ${{ needs.server.result }}
+          CODEQL: ${{ needs.codeql.result }}
+        run: |
+          set -euo pipefail
+          for check in BRANCH_POLICY QUALITY MOBILE IOS WEBSITE SERVER CODEQL; do
+            if [[ "${!check}" != 'success' ]]; then
+              echo "${check} did not succeed: ${!check}" >&2
+              exit 1
+            fi
+          done

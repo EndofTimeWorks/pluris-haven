@@ -1,0 +1,147 @@
+name: Publish debug prerelease
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish branch debug artifacts
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve deterministic debug tag
+        id: release
+        shell: bash
+        env:
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          version="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
+          tag="$(node scripts/debug-release-version.mjs "${version}" "${RUN_NUMBER}")"
+          {
+            echo "version=${version}"
+            echo "tag=${tag}"
+            echo "run_id=${RUN_ID}"
+            echo "head_sha=${HEAD_SHA}"
+            echo "head_branch=${HEAD_BRANCH}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Refuse a tag that targets another commit
+        id: existing
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          HEAD_SHA: ${{ steps.release.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          existing="$(
+            git ls-remote --tags origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}" |
+              awk '/\^\{\}$/ { peeled = $1; next } { direct = $1 } END { print peeled != "" ? peeled : direct }'
+          )"
+          if [[ -n "${existing}" && "${existing}" != "${HEAD_SHA}" ]]; then
+            echo "Debug tag ${TAG} targets ${existing}, not expected ${HEAD_SHA}; refusing to move it." >&2
+            exit 1
+          fi
+          if [[ -n "${existing}" ]]; then
+            echo 'exists=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'exists=false' >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Stop cleanly when this run already published its immutable tag
+        if: steps.existing.outputs.exists == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release view "${TAG}" >/dev/null
+          echo "Debug prerelease ${TAG} already targets this commit; no tag or release was changed."
+
+      - name: Download tested Android debug APK
+        if: steps.existing.outputs.exists == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: gh run download "${RUN_ID}" --name pluris-haven-android-debug-apk --dir release/raw
+
+      - name: Download tested unsigned iOS artifact
+        if: steps.existing.outputs.exists == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: gh run download "${RUN_ID}" --name pluris-haven-ios-unsigned-ipa --dir release/raw
+
+      - name: Collect checksummed debug release
+        if: steps.existing.outputs.exists == 'false'
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+          HEAD_SHA: ${{ steps.release.outputs.head_sha }}
+          HEAD_BRANCH: ${{ steps.release.outputs.head_branch }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p release/debug
+          cp release/raw/app-debug.apk release/debug/pluris-haven-debug.apk
+          cp release/raw/pluris-haven-dev-unsigned.ipa release/debug/pluris-haven-ios-unsigned.ipa
+          {
+            echo "source_version=${VERSION}"
+            echo "tag=${TAG}"
+            echo "branch=${HEAD_BRANCH}"
+            echo "commit=${HEAD_SHA}"
+            echo "ci_run_number=${RUN_NUMBER}"
+            echo "ci_run_id=${RUN_ID}"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo 'These are debug/test artifacts, not official releases.'
+            echo 'The iOS IPA is unsigned and is not installable or TestFlight evidence.'
+          } > release/debug/BUILD.txt
+          (cd release/debug && sha256sum ./*.apk ./*.ipa BUILD.txt > SHA256SUMS.txt)
+
+      - name: Create immutable debug prerelease
+        if: steps.existing.outputs.exists == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          HEAD_SHA: ${{ steps.release.outputs.head_sha }}
+          HEAD_BRANCH: ${{ steps.release.outputs.head_branch }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh release create "${TAG}" release/debug/* \
+            --target "${HEAD_SHA}" \
+            --title "Pluris Haven debug ${VERSION} (CI ${RUN_NUMBER})" \
+            --notes "Debug/test artifacts only. Source branch: ${HEAD_BRANCH}. Commit: ${HEAD_SHA}. CI run: ${RUN_NUMBER} (${RUN_ID}). The iOS artifact is unsigned." \
+            --prerelease \
+            --latest=false
