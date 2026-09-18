@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -205,6 +206,12 @@ class BackupChunk(Base):
     __tablename__ = "backup_chunks"
     __table_args__ = (
         UniqueConstraint("snapshot_id", "index", name="uq_backup_chunks_snapshot_index"),
+        Index(
+            "ix_backup_chunks_pending_reconciliation",
+            "reconciliation_checked_at",
+            "id",
+            postgresql_where=text("stored_at IS NULL"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

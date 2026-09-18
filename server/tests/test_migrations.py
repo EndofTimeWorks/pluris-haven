@@ -109,3 +109,14 @@ def test_backup_upload_start_migration_repairs_all_legacy_upload_states(
         command.upgrade(_alembic_config(), "head")
     finally:
         get_settings.cache_clear()
+
+
+def test_migration_head_matches_server_metadata(tmp_path, monkeypatch) -> None:
+    database_path = tmp_path / "migration-head.db"
+    monkeypatch.setenv("PLURIS_DATABASE_URL", f"sqlite+aiosqlite:///{database_path}")
+    get_settings.cache_clear()
+    try:
+        command.upgrade(_alembic_config(), "head")
+        command.check(_alembic_config())
+    finally:
+        get_settings.cache_clear()
