@@ -17,6 +17,7 @@ import 'data/server/server_account_controller.dart';
 import 'debug/debug_log.dart';
 import 'features/app_lock_gate.dart';
 import 'features/home/home_page.dart';
+import 'l10n/app_localizations.dart';
 import 'l10n/app_localizations_fallback.dart';
 import 'observability/crash_reporting.dart';
 import 'platform/native_file_dialog.dart';
@@ -27,18 +28,71 @@ Future<void> main() async {
   await runWithCrashReporting(() {
     WidgetsFlutterBinding.ensureInitialized();
     appDebugLog('App startup');
-    runApp(const _BootstrapApp());
+    runApp(const BootstrapApp());
   });
 }
 
-class _BootstrapApp extends StatefulWidget {
-  const _BootstrapApp();
+typedef LocalMigrationRunner =
+    Future<void> Function(LocalHavenRepository repository);
+typedef StartupServices =
+    Future<void> Function(
+      LocalHavenRepository repository,
+      ServerAccountController serverAccount,
+    );
 
-  @override
-  State<_BootstrapApp> createState() => _BootstrapAppState();
+class BootstrapDependencies {
+  const BootstrapDependencies({
+    this.openDatabase = AppDatabase.new,
+    this.loadCrypto = _loadStartupCrypto,
+    this.createRepository = _createStartupRepository,
+    this.createLocalApi = _createStartupLocalApi,
+    this.runMigrations = runLocalMigrations,
+    this.startServices = _startStartupServices,
+  });
+
+  final AppDatabase Function() openDatabase;
+  final Future<HavenCrypto> Function() loadCrypto;
+  final LocalHavenRepository Function(AppDatabase database, HavenCrypto crypto)
+  createRepository;
+  final LocalApiController Function(LocalHavenRepository repository)
+  createLocalApi;
+  final LocalMigrationRunner runMigrations;
+  final StartupServices startServices;
 }
 
-class _BootstrapAppState extends State<_BootstrapApp> {
+Future<HavenCrypto> _loadStartupCrypto() =>
+    HavenMasterKeyStore().loadOrCreateCrypto();
+
+LocalHavenRepository _createStartupRepository(
+  AppDatabase database,
+  HavenCrypto crypto,
+) => LocalHavenRepository(database, crypto: crypto);
+
+LocalApiController _createStartupLocalApi(LocalHavenRepository repository) =>
+    LocalApiController(repository);
+
+Future<void> _startStartupServices(
+  LocalHavenRepository repository,
+  ServerAccountController serverAccount,
+) async {
+  unawaited(_completeStartup());
+  unawaited(repository.repairRemoteAvatars());
+  unawaited(serverAccount.initialize());
+}
+
+class BootstrapApp extends StatefulWidget {
+  const BootstrapApp({
+    super.key,
+    this.dependencies = const BootstrapDependencies(),
+  });
+
+  final BootstrapDependencies dependencies;
+
+  @override
+  State<BootstrapApp> createState() => _BootstrapAppState();
+}
+
+class _BootstrapAppState extends State<BootstrapApp> {
   LocalHavenRepository? _repository;
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
@@ -54,17 +108,18 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<void> _openLocalArchive() async {
-    final database = AppDatabase();
+    final database = widget.dependencies.openDatabase();
     late final HavenCrypto crypto;
     try {
-      crypto = await HavenMasterKeyStore().loadOrCreateCrypto();
+      crypto = await widget.dependencies.loadCrypto();
     } on MissingMasterKeyException {
+      await database.close();
       if (mounted) setState(() => _missingMasterKey = true);
       return;
     }
-    final repository = LocalHavenRepository(database, crypto: crypto);
+    final repository = widget.dependencies.createRepository(database, crypto);
     try {
-      await runLocalMigrations(repository);
+      await widget.dependencies.runMigrations(repository);
     } on Object catch (error, stackTrace) {
       appDebugLog(
         'Local migration failed',
@@ -76,7 +131,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return;
     }
     final serverAccount = ServerAccountController();
-    final localApi = LocalApiController(repository);
+    final localApi = widget.dependencies.createLocalApi(repository);
+    await localApi.disableLegacyEnablement();
     appDebugLog('Local repository ready');
 
     if (!mounted) return;
@@ -85,9 +141,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       _serverAccount = serverAccount;
       _localApi = localApi;
     });
-    unawaited(_completeStartup());
-    unawaited(repository.repairRemoteAvatars());
-    unawaited(serverAccount.initialize());
+    unawaited(widget.dependencies.startServices(repository, serverAccount));
   }
 
   Future<void> _updateLocalApiAccess(bool unlocked) async {
@@ -160,6 +214,7 @@ class MissingMasterKeyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO(local-data-model): validate device-transfer recovery on real devices.
     return const MaterialApp(
       home: Scaffold(
         body: SafeArea(
@@ -193,27 +248,40 @@ class LocalMigrationFailureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Local data needs recovery',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return MaterialApp(
+      supportedLocales: supportedLanguageLocales,
+      localizationsDelegates: const [
+        FallbackAppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      home: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.localMigrationFailureTitle,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(l10n.localMigrationFailureBody),
+                  ],
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'Pluris Haven could not finish a local data migration. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.',
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

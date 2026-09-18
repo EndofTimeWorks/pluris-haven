@@ -12,6 +12,7 @@ import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/data/local_api/local_api_controller.dart';
 import 'package:pluris_haven/features/app_lock_gate.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/l10n/app_localizations.dart';
@@ -39,6 +40,31 @@ const _testHomeSnapshot = HomeSnapshot(
   frontHistoryCount: 0,
   currentFrontLabel: null,
 );
+
+class _TrackingDatabase extends AppDatabase {
+  _TrackingDatabase() : super(NativeDatabase.memory());
+
+  var closed = false;
+
+  @override
+  Future<void> close() async {
+    closed = true;
+    await super.close();
+  }
+}
+
+class _BootstrapListener implements LocalApiListener {
+  _BootstrapListener(this.port);
+
+  @override
+  final int port;
+
+  @override
+  Future<void> start(int requestedPort) async {}
+
+  @override
+  Future<void> stop() async {}
+}
 
 void main() {
   testWidgets('keeps an extended grapheme in the system avatar label', (
@@ -76,6 +102,90 @@ void main() {
       find.textContaining('Your data has not been replaced.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('shows migration failure after bootstrap closes its database', (
+    tester,
+  ) async {
+    final database = _TrackingDatabase();
+    var migrationsRun = false;
+    var repositoryCreated = false;
+
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () async => testCrypto(),
+          createRepository: (database, crypto) {
+            repositoryCreated = true;
+            return LocalHavenRepository(database, crypto: crypto);
+          },
+          runMigrations: (_) async {
+            migrationsRun = true;
+            throw StateError('migration failed');
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(migrationsRun, isTrue);
+    expect(repositoryCreated, isTrue);
+    expect(database.closed, isTrue);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
+    expect(find.byType(PlurisHavenApp), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('retires a saved Local API enable choice during bootstrap', (
+    tester,
+  ) async {
+    final database = _TrackingDatabase();
+    final listeners = <_BootstrapListener>[];
+
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () async => testCrypto(),
+          createRepository: (database, crypto) =>
+              LocalHavenRepository(database, crypto: crypto),
+          startServices: (_, _) async {},
+          createLocalApi: (repository) => LocalApiController(
+            repository,
+            listenerFactory: (_, _) {
+              final listener = _BootstrapListener(41123);
+              listeners.add(listener);
+              return listener;
+            },
+          ),
+          runMigrations: (repository) async {
+            await repository.database
+                .into(repository.database.appPreferences)
+                .insert(
+                  AppPreferencesCompanion.insert(
+                    key: 'local_api.enabled',
+                    value: 'true',
+                    updatedAt: DateTime.now().toUtc(),
+                  ),
+                );
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+
+    final preference = await (database.select(
+      database.appPreferences,
+    )..where((row) => row.key.equals('local_api.enabled'))).getSingle();
+    expect(preference.value, 'false');
+    expect(listeners, isEmpty);
+
+    await database.close();
   });
 
   testWidgets('colour picker returns an arbitrary selected colour', (
