@@ -21,19 +21,25 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out the exact successful CI commit
+      - name: Check out protected release-validation tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Fetch the tested commit as data
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: git fetch --no-tags origin "${RELEASE_SHA}"
 
       - name: Validate a release marker when this exact tip has one
         id: marker
         shell: bash
         run: |
           set -euo pipefail
-          subject="$(git show -s --format=%s HEAD)"
+          subject="$(git show -s --format=%s "${{ github.event.workflow_run.head_sha }}")"
           if version="$(node scripts/release-marker.mjs "${subject}" 2>/dev/null)"; then
             echo "release=true" >> "${GITHUB_OUTPUT}"
             echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -51,7 +57,7 @@ jobs:
           set -euo pipefail
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           node scripts/release-candidate.mjs \
-            "$(git show -s --format=%s HEAD)" \
+            "$(git show -s --format=%s "${RELEASE_SHA}")" \
             "${RELEASE_SHA}" \
             "$(git rev-parse origin/main)"
 
@@ -62,12 +68,12 @@ jobs:
           RELEASE_VERSION: ${{ steps.marker.outputs.version }}
         run: |
           set -euo pipefail
-          source_version="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
+          source_version="$(git show "${{ github.event.workflow_run.head_sha }}:mobile/pubspec.yaml" | awk '/^version:/ {print $2; exit}')"
           test "${source_version%%+*}" = "${RELEASE_VERSION}" || {
             echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
             exit 1
           }
-          grep -Fq "${source_version}" CHANGELOG.md || {
+          git show "${{ github.event.workflow_run.head_sha }}:CHANGELOG.md" | grep -Fq "${source_version}" || {
             echo "CHANGELOG.md does not mention ${source_version}." >&2
             exit 1
           }
@@ -95,7 +101,7 @@ jobs:
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          version_with_build="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
+          version_with_build="$(git show "${RELEASE_SHA}:mobile/pubspec.yaml" | awk '/^version:/ {print $2; exit}')"
           tag="mobile-v${version_with_build}"
           existing="$(git ls-remote --tags origin "refs/tags/${tag}" "refs/tags/${tag}^{}" | awk '/\^\{\}$/ { peeled = $1; next } { direct = $1 } END { print peeled != "" ? peeled : direct }')"
           if [[ -n "${existing}" && "${existing}" != "${RELEASE_SHA}" ]]; then
