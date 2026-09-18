@@ -31,24 +31,38 @@ jobs:
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          trusted_release_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
-          GNUPGHOME="$(mktemp -d)"
+          trusted_manual_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
+          trusted_ci_signing_fingerprint='BF89ABFBD583200EB70E43FA46525A21A09A8888'
+          GNUPGHOME="${RUNNER_TEMP}/pluris-haven-official-release/tag-verification"
+          rm -rf "${GNUPGHOME}"
+          mkdir -p "${GNUPGHOME}"
+          chmod 700 "${GNUPGHOME}"
           export GNUPGHOME
           trap 'rm -rf "${GNUPGHOME}"' EXIT
           gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
           imported_fingerprint="$(
-            gpg --batch --with-colons --fingerprint "${trusted_release_fingerprint}" |
+            gpg --batch --with-colons --fingerprint "${trusted_manual_fingerprint}" |
               awk -F: '$1 == "fpr" { print $10; exit }'
           )"
-          if [[ "${imported_fingerprint}" != "${trusted_release_fingerprint}" ]]; then
+          if [[ "${imported_fingerprint}" != "${trusted_manual_fingerprint}" ]]; then
             echo 'Trusted release signing key fingerprint does not match.' >&2
             exit 1
           fi
-          if [[ ! "${RELEASE_TAG}" =~ ^mobile-v ]] || ! git cat-file -e "${RELEASE_TAG}^{tag}" 2>/dev/null || ! git verify-tag "${RELEASE_TAG}"; then
-            echo 'Website metadata requires an existing valid signed mobile release tag.' >&2
+          if [[ ! "${RELEASE_TAG}" =~ ^mobile-v ]] || ! git cat-file -e "${RELEASE_TAG}^{tag}" 2>/dev/null; then
+            echo 'Website metadata requires an existing annotated mobile release tag.' >&2
             exit 1
+          fi
+          if ! git verify-tag "${RELEASE_TAG}"; then
+            tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq '.object.sha')"
+            verification="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq '.verification')"
+            if [[ "$(jq -r '.verified' <<<"${verification}")" != true ]] || \
+              ! jq -r '.signature // empty' <<<"${verification}" | gpg --list-packets 2>/dev/null | grep -Fq "issuer fpr v4 ${trusted_ci_signing_fingerprint}"; then
+              echo 'Website metadata requires a valid trusted signed mobile release tag.' >&2
+              exit 1
+            fi
           fi
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"

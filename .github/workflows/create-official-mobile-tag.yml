@@ -1,0 +1,198 @@
+name: Create official mobile tag
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: official-mobile-tag-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  eligibility:
+    name: Validate exact main release tip
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      eligible: ${{ steps.marker.outputs.eligible }}
+      release_sha: ${{ github.event.workflow_run.head_sha }}
+      version_with_build: ${{ steps.metadata.outputs.version_with_build }}
+      tag: ${{ steps.metadata.outputs.tag }}
+
+    steps:
+      - name: Check out protected release-validation tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Read the exact tested commit as metadata
+        id: marker
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          subject="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')"
+          if version="$(node scripts/release-marker.mjs "${subject}" 2>/dev/null)"; then
+            echo 'eligible=true' >> "${GITHUB_OUTPUT}"
+            echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          else
+            echo 'eligible=false' >> "${GITHUB_OUTPUT}"
+            echo 'Current main tip is not a release marker; no official tag is required.'
+          fi
+
+      - name: Validate release metadata without release credentials
+        if: steps.marker.outputs.eligible == 'true'
+        id: metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_VERSION: ${{ steps.marker.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          node scripts/release-candidate.mjs \
+            "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')" \
+            "${RELEASE_SHA}" "${main_sha}"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.verification.verified')" = true || {
+            echo 'Release marker commit must have a verified signature.' >&2
+            exit 1
+          }
+
+          source_version="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | awk '/^version:/ {print $2; exit}')"
+          test "${source_version%%+*}" = "${RELEASE_VERSION}" || {
+            echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
+            exit 1
+          }
+          gh api "repos/${GITHUB_REPOSITORY}/contents/CHANGELOG.md?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | grep -Fq "${source_version}" || {
+            echo "CHANGELOG.md does not mention ${source_version}." >&2
+            exit 1
+          }
+          git fetch --force --tags origin
+          node scripts/check-mobile-release-version.mjs "${source_version}"
+
+          echo "version_with_build=${source_version}" >> "${GITHUB_OUTPUT}"
+          echo "tag=mobile-v${source_version}" >> "${GITHUB_OUTPUT}"
+
+  sign:
+    name: Sign immutable official mobile tag
+    needs: eligibility
+    if: needs.eligibility.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: official-release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Create or verify the official tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ needs.eligibility.outputs.release_sha }}
+          RELEASE_TAG: ${{ needs.eligibility.outputs.tag }}
+          RELEASE_PRIMARY_FINGERPRINT: ${{ vars.PLURIS_RELEASE_GPG_PRIMARY_FINGERPRINT }}
+          RELEASE_SIGNING_FINGERPRINT: ${{ vars.PLURIS_RELEASE_GPG_SIGNING_FINGERPRINT }}
+          RELEASE_KEY: ${{ secrets.PLURIS_RELEASE_GPG_PRIVATE_KEY }}
+          RELEASE_PASSPHRASE: ${{ secrets.PLURIS_RELEASE_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+
+          : "${RELEASE_KEY:?PLURIS_RELEASE_GPG_PRIVATE_KEY is not configured.}"
+          : "${RELEASE_PASSPHRASE:?PLURIS_RELEASE_GPG_PASSPHRASE is not configured.}"
+          : "${RELEASE_PRIMARY_FINGERPRINT:?Release primary fingerprint is not configured.}"
+          : "${RELEASE_SIGNING_FINGERPRINT:?Release signing fingerprint is not configured.}"
+
+          work_dir="${RUNNER_TEMP}/pluris-haven-official-release/tag-signing"
+          rm -rf "${work_dir}"
+          mkdir -p "${work_dir}/gnupg"
+          chmod 700 "${work_dir}/gnupg"
+          export GNUPGHOME="${work_dir}/gnupg"
+          trap 'rm -rf "${work_dir}"' EXIT
+
+          printf '%s' "${RELEASE_KEY}" | gpg --batch --import
+          gpg --batch --with-colons --list-secret-keys > "${work_dir}/secret-keys.colons"
+          node scripts/official-release-policy.mjs validate-secret-key \
+            "${work_dir}/secret-keys.colons" \
+            "${RELEASE_PRIMARY_FINGERPRINT}" \
+            "${RELEASE_SIGNING_FINGERPRINT}"
+          printf '%s' "${RELEASE_PASSPHRASE}" > "${work_dir}/passphrase"
+          chmod 600 "${work_dir}/passphrase"
+          cat > "${work_dir}/gpg-sign" <<'EOF'
+          #!/usr/bin/env bash
+          exec gpg --batch --pinentry-mode loopback --passphrase-file "${GPG_PASSPHRASE_FILE}" "$@"
+          EOF
+          chmod 700 "${work_dir}/gpg-sign"
+          export GPG_PASSPHRASE_FILE="${work_dir}/passphrase"
+
+          current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "${current_main}" != "${RELEASE_SHA}" ]]; then
+            echo 'ABORT — release marker is no longer the current main tip.' >&2
+            exit 1
+          fi
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "${RELEASE_SHA}" || {
+            echo 'ABORT — release marker is no longer the current main tip.' >&2
+            exit 1
+          }
+
+          existing_sha="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | awk '/\^\{\}$/ { peeled = $1; next } { direct = $1 } END { print peeled != "" ? peeled : direct }')"
+          if [[ -n "${existing_sha}" ]]; then
+            if [[ "${existing_sha}" != "${RELEASE_SHA}" ]]; then
+              echo "Official tag ${RELEASE_TAG} already targets ${existing_sha}, not ${RELEASE_SHA}." >&2
+              exit 1
+            fi
+            git fetch --no-tags origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+            verification="$(git verify-tag --raw "${RELEASE_TAG}" 2>&1 || true)"
+            grep -Fq "[GNUPG:] VALIDSIG ${RELEASE_SIGNING_FINGERPRINT}" <<<"${verification}" || {
+              echo 'Existing official tag has an invalid or unexpected signing identity.' >&2
+              exit 1
+            }
+            grep -Fq "${RELEASE_PRIMARY_FINGERPRINT}" <<<"${verification}" || {
+              echo 'Existing official tag does not belong to the expected signing identity.' >&2
+              exit 1
+            }
+            echo "Official tag ${RELEASE_TAG} already exists at the validated release SHA."
+            exit 0
+          fi
+
+          git -c gpg.program="${work_dir}/gpg-sign" tag --sign --local-user "${RELEASE_SIGNING_FINGERPRINT}!" \
+            "${RELEASE_TAG}" "${RELEASE_SHA}" -m "Pluris Haven Mobile ${RELEASE_TAG#mobile-v}"
+          verification="$(git verify-tag --raw "${RELEASE_TAG}" 2>&1 || true)"
+          grep -Fq "[GNUPG:] VALIDSIG ${RELEASE_SIGNING_FINGERPRINT}" <<<"${verification}" || {
+            echo 'The new official tag did not verify with the expected CI signing subkey.' >&2
+            exit 1
+          }
+          grep -Fq "${RELEASE_PRIMARY_FINGERPRINT}" <<<"${verification}" || {
+            echo 'The new official tag did not verify against the expected primary identity.' >&2
+            exit 1
+          }
+
+          current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "${current_main}" != "${RELEASE_SHA}" ]]; then
+            echo 'ABORT — release marker is no longer the current main tip.' >&2
+            exit 1
+          fi
+          git push origin "refs/tags/${RELEASE_TAG}"

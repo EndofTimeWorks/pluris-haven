@@ -89,10 +89,10 @@ the exact marker `release: <semantic-version>`; this repository currently uses
 the `pre-alpha` spelling.
 
 After the marker lands, successful hosted CI validates only that exact `main`
-tip. It aborts if `main` moves before the signed official tag is made. The
-maintainer then runs `scripts/tag-mobile-release.sh`; the GPG private key stays
-local rather than in GitHub Actions. A later fix needs a new version and marker:
-official tags are never moved.
+tip. The protected official-release environment then creates the immutable
+signed tag only if `main` has not moved. `scripts/tag-mobile-release.sh` remains
+the YubiKey-backed manual recovery path. A later fix needs a new version and
+marker: official tags are never moved.
 
 ## Translations
 

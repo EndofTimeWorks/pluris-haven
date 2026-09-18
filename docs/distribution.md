@@ -11,9 +11,10 @@ The mobile version at the current pre-alpha baseline is
 
 - Successful internal branch CI, including ordinary `main` CI, publishes a
   clearly labelled `debug-v...` GitHub prerelease with debug/test artifacts.
-- Versioned releases use a maintainer-created GPG-signed `mobile-v...` tag only
-  after an exact `release: <semantic-version>` marker at the current `main` tip
-  has passed hosted CI.
+- Versioned releases use an immutable GPG-signed `mobile-v...` tag only after
+  an exact `release: <semantic-version>` marker at the current `main` tip has
+  passed hosted CI. The protected release job creates the normal CI-signed tag;
+  the maintainer's YubiKey path remains a recovery option.
 - The project is still **PRE-ALPHA**. **ALPHA** is next; beta is later.
 - Do not use `0.3.0-alpha.1` after `0.3.0-pre-alpha.4`: SemVer would order
   `alpha` before `pre-alpha` at the same core version. The proposed next named
@@ -34,10 +35,15 @@ A versioned mobile release builds:
 - split APKs for supported Android ABIs;
 - an Android App Bundle (`.aab`);
 - an unsigned release-mode iOS IPA;
-- `BUILD.txt` and `SHA256SUMS.txt`.
+- `BUILD.txt`, `SHA256SUMS.txt`, and detached OpenPGP signatures.
 
 The canonical GitHub Release is created only after the required Android and iOS
-artifact jobs succeed.
+artifact jobs succeed and the AAB has reached the configured Play testing track.
+Its direct universal APK is obtained through Play App Signing; this is distinct
+from the project's Android upload-key signature and from the OpenPGP signatures.
+The release workflow verifies its package id, version, universal shape, APK
+signature, and the `PLURIS_PLAY_APP_SIGNING_CERT_SHA256` certificate pin before
+GitHub Release publication.
 
 For Obtainium, use the repository at
 `https://github.com/EndofTimeWorks/pluris-haven`. Enable prereleases while
@@ -49,11 +55,10 @@ the current `works.endoftime.plurishaven` package can be installed.
 
 ## Google Play
 
-The versioned release workflow contains an Android Publisher path that uploads
-the already-published release AAB to Play **internal testing**. Play and website
-metadata fan out independently after the canonical GitHub Release, so a Play
-failure does not make an existing GitHub release disappear or leave website
-metadata blocked behind Play.
+The versioned release workflow uploads the AAB only to Play **internal testing**
+and rejects `production`. It retrieves Play's generated universal APK before
+creating the canonical GitHub Release. Play App Signing, the Android upload key,
+and detached OpenPGP artefact signatures are separate systems.
 
 Current Play state:
 
