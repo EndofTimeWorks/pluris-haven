@@ -155,6 +155,8 @@ import UniformTypeIdentifiers
       return
     }
 
+    // TODO: invalidate callback handles that no longer match an upgraded app.
+
     let engine = FlutterEngine(
       name: "PlurisHaven.BackgroundImport",
       project: nil,
@@ -193,6 +195,7 @@ import UniformTypeIdentifiers
       )
     }
     task.expirationHandler = { [weak self] in
+      // FIXME: reschedule failed or expired imports after retry policy is defined.
       self?.finishBackgroundTask(task, success: false)
     }
   }

@@ -56,6 +56,7 @@ public final class PlurisBackgroundWorker extends Worker {
         if (task == null) return Result.failure();
         String jobId = getInputData().getString(JOB_ID_KEY);
         CountDownLatch completion = new CountDownLatch(1);
+        // FIXME: classify permanent Dart failures before retrying them.
         AtomicReference<Result> outcome = new AtomicReference<>(Result.retry());
         Handler mainHandler = new Handler(Looper.getMainLooper());
         FlutterLoader loader = FlutterInjector.instance().flutterLoader();
@@ -85,6 +86,7 @@ public final class PlurisBackgroundWorker extends Worker {
             Thread.currentThread().interrupt();
             completed = false;
         }
+        // TODO: bound retries and serialize engine teardown with a replacement attempt.
         mainHandler.post(this::destroyEngine);
         return completed ? outcome.get() : Result.retry();
     }
