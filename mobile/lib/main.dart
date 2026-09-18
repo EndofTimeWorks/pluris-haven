@@ -248,6 +248,7 @@ class LocalMigrationFailureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO(local-data-model): offer a non-destructive archive recovery path.
     return MaterialApp(
       supportedLocales: supportedLanguageLocales,
       localizationsDelegates: const [
