@@ -24,11 +24,5 @@
     "husky": "^9.1.7",
     "prettier": "^3.9.7",
     "prettier-plugin-svelte": "^4.1.1"
-  },
-  "pnpm": {
-    "overrides": {
-      "fast-uri": "3.1.6",
-      "js-yaml": "4.3.2"
-    }
   }
 }
