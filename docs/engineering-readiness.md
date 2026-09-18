@@ -24,7 +24,10 @@ distribution work is ready.
   custom-field provenance. This is local verification only; it is not hosted
   CI, real-device, store, or multi-device/sync evidence.
 - The complete Flutter test suite and `flutter analyze` passed after the final
-  notification/recovery cleanup.
+  notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
+  9.1.0, and Kotlin 2.3.20. It retains Flutter's documented temporary legacy
+  Kotlin and DSL settings: `sentry_flutter` 9.30.0 still applies KGP, and
+  Flutter 3.47.4 fails with the new DSL enabled.
 - The full server suite passed with one-time-token password recovery, verifying
   STARTTLS, response-path-independent background email delivery, encrypted
   backups, and queued backup-deletion cleanup covered.
@@ -114,6 +117,9 @@ mapper test exists.
 - Perform an actual Play internal upload before marking that external path
   verified, then configure/verify the intended closed-testing path.
 - Smoke-test Android upgrade/migration using actual distributed artifacts.
+- Replace the temporary Android Kotlin/DSL compatibility settings once
+  `sentry_flutter` supports built-in Kotlin and the selected Flutter release
+  builds with the new AGP DSL.
 - Sign/install iOS builds and verify notification permission, App Lock,
   screen-capture privacy and upgrade behavior on simulator/physical hardware.
 - Perform TalkBack, VoiceOver, keyboard, switch access, large-text, contrast and

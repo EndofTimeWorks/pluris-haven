@@ -19,11 +19,11 @@ summary, not a second schema definition.
 
 Member deletion is a recoverable tombstone flow. A later explicit purge clears
 profile payload and member-owned links while retaining only the identifier
-needed by historical references; a stale update cannot repopulate a purged
-tombstone. Custom-field migration provenance is removed with the member-owned
-value it records, so it is not retained or exported after purge. Local tests
-cover this invariant; device, sync, and multi-replica deletion evidence remains
-future work.
+needed by historical references; a stale archive update cannot repopulate a
+purged member or message tombstone. Custom-field migration provenance is
+removed with the member-owned value it records, so it is not retained or
+exported after purge. Local tests cover this invariant; device, sync, and
+multi-replica deletion evidence remains future work.
 
 ## Encryption boundary
 
