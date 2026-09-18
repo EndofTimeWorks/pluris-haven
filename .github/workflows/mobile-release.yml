@@ -431,10 +431,10 @@ jobs:
           android_tools="${ANDROID_HOME:?Android SDK is not available}/build-tools"
           aapt="$(find "${android_tools}" -type f -name aapt -print | LC_ALL=C sort -V | tail -n 1)"
           apksigner="$(find "${android_tools}" -type f -name apksigner -print | LC_ALL=C sort -V | tail -n 1)"
-          test -n "${aapt}" && test -n "${apksigner}" || {
+          if [[ -z "${aapt}" || -z "${apksigner}" ]]; then
             echo 'Android SDK build tools are required to verify the Play-generated APK.' >&2
             exit 1
-          }
+          fi
           apk="release/play/pluris-haven-${PLAY_VERSION}+${PLAY_BUILD}.apk"
           "${aapt}" dump badging "${apk}" > "${RUNNER_TEMP}/play-apk.badging"
           "${apksigner}" verify --verbose --print-certs "${apk}" > "${RUNNER_TEMP}/play-apk.signer"

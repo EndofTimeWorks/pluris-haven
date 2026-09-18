@@ -11,6 +11,6 @@
 </svelte:head>
 
 <main id="main-content" tabindex="-1">
-  <p>Opening Pluris Haven in Obtainium…</p>
+  <h1>Opening Pluris Haven in Obtainium</h1>
   <p><a href={obtainiumRedirectUrl}>Continue to Obtainium</a></p>
 </main>
