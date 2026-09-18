@@ -1,5 +1,4 @@
 import 'package:local_auth/local_auth.dart';
-import 'package:local_auth_platform_interface/types/auth_exception.dart';
 
 enum AppLockAvailability { available, unsupported, error }
 
@@ -33,10 +32,7 @@ class AppLock {
     try {
       final authenticated = await _auth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          biometricOnly: false,
-          stickyAuth: true,
-        ),
+        persistAcrossBackgrounding: true,
       );
       return authenticated
           ? AppLockAuthenticationResult.authenticated
