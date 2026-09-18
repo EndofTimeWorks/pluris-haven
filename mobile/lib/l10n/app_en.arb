@@ -40,7 +40,7 @@
   "appLockCredentialsRestoreBody": "Device authentication is unavailable. Restore your device PIN, passcode, or biometrics to unlock Pluris Haven.",
   "appLockUnlockButton": "Unlock",
   "localMigrationFailureTitle": "Local data needs recovery",
-  "localMigrationFailureBody": "Pluris Haven could not finish a local data migration. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.",
+  "localMigrationFailureBody": "Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.",
   "plurisHavenAppName": "Pluris Haven",
   "privateReminderNotificationTitle": "Pluris Haven reminder",
   "privateNotificationBody": "Open Pluris Haven to view.",

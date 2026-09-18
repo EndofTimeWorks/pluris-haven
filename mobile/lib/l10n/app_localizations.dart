@@ -322,7 +322,7 @@ abstract class AppLocalizations {
   /// No description provided for @localMigrationFailureBody.
   ///
   /// In en, this message translates to:
-  /// **'Pluris Haven could not finish a local data migration. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.'**
+  /// **'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.'**
   String get localMigrationFailureBody;
 
   /// No description provided for @plurisHavenAppName.

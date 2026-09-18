@@ -92,7 +92,7 @@ void main() {
     expect(find.text('👩‍💻'), findsOneWidget);
   });
 
-  testWidgets('shows recovery guidance when local migration cannot finish', (
+  testWidgets('shows recovery guidance when local data initialization fails', (
     tester,
   ) async {
     await tester.pumpWidget(const LocalMigrationFailureApp());
@@ -186,6 +186,52 @@ void main() {
     expect(listeners, isEmpty);
 
     await database.close();
+  });
+
+  testWidgets('shows recovery after retiring a legacy Local API choice fails', (
+    tester,
+  ) async {
+    final database = _TrackingDatabase();
+    final listeners = <_BootstrapListener>[];
+    var migrationsRun = false;
+    var retirementAttempted = false;
+
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () async => testCrypto(),
+          createRepository: (database, crypto) =>
+              LocalHavenRepository(database, crypto: crypto),
+          createLocalApi: (repository) => LocalApiController(
+            repository,
+            listenerFactory: (_, _) {
+              final listener = _BootstrapListener(41124);
+              listeners.add(listener);
+              return listener;
+            },
+          ),
+          runMigrations: (_) async {
+            migrationsRun = true;
+          },
+          retireLegacyLocalApi: (_) async {
+            retirementAttempted = true;
+            throw StateError('legacy Local API retirement failed');
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(migrationsRun, isTrue);
+    expect(retirementAttempted, isTrue);
+    expect(database.closed, isTrue);
+    expect(listeners, isEmpty);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
+    expect(find.byType(PlurisHavenApp), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
   testWidgets('colour picker returns an arbitrary selected colour', (

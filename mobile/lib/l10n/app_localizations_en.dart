@@ -128,7 +128,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localMigrationFailureBody =>
-      'Pluris Haven could not finish a local data migration. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.';
+      'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.';
 
   @override
   String get plurisHavenAppName => 'Pluris Haven';

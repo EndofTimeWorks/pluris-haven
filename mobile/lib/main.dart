@@ -34,6 +34,7 @@ Future<void> main() async {
 
 typedef LocalMigrationRunner =
     Future<void> Function(LocalHavenRepository repository);
+typedef LocalApiRetirement = Future<void> Function(LocalApiController localApi);
 typedef StartupServices =
     Future<void> Function(
       LocalHavenRepository repository,
@@ -47,6 +48,7 @@ class BootstrapDependencies {
     this.createRepository = _createStartupRepository,
     this.createLocalApi = _createStartupLocalApi,
     this.runMigrations = runLocalMigrations,
+    this.retireLegacyLocalApi = _retireLegacyLocalApi,
     this.startServices = _startStartupServices,
   });
 
@@ -57,6 +59,7 @@ class BootstrapDependencies {
   final LocalApiController Function(LocalHavenRepository repository)
   createLocalApi;
   final LocalMigrationRunner runMigrations;
+  final LocalApiRetirement retireLegacyLocalApi;
   final StartupServices startServices;
 }
 
@@ -70,6 +73,9 @@ LocalHavenRepository _createStartupRepository(
 
 LocalApiController _createStartupLocalApi(LocalHavenRepository repository) =>
     LocalApiController(repository);
+
+Future<void> _retireLegacyLocalApi(LocalApiController localApi) =>
+    localApi.disableLegacyEnablement();
 
 Future<void> _startStartupServices(
   LocalHavenRepository repository,
@@ -117,12 +123,24 @@ class _BootstrapAppState extends State<BootstrapApp> {
       if (mounted) setState(() => _missingMasterKey = true);
       return;
     }
-    final repository = widget.dependencies.createRepository(database, crypto);
     try {
+      final repository = widget.dependencies.createRepository(database, crypto);
       await widget.dependencies.runMigrations(repository);
+      final localApi = widget.dependencies.createLocalApi(repository);
+      await widget.dependencies.retireLegacyLocalApi(localApi);
+      final serverAccount = ServerAccountController();
+      appDebugLog('Local repository ready');
+
+      if (!mounted) return;
+      setState(() {
+        _repository = repository;
+        _serverAccount = serverAccount;
+        _localApi = localApi;
+      });
+      unawaited(widget.dependencies.startServices(repository, serverAccount));
     } on Object catch (error, stackTrace) {
       appDebugLog(
-        'Local migration failed',
+        'Local data initialization failed',
         error: error,
         stackTrace: stackTrace,
       );
@@ -130,18 +148,6 @@ class _BootstrapAppState extends State<BootstrapApp> {
       if (mounted) setState(() => _startupError = error);
       return;
     }
-    final serverAccount = ServerAccountController();
-    final localApi = widget.dependencies.createLocalApi(repository);
-    await localApi.disableLegacyEnablement();
-    appDebugLog('Local repository ready');
-
-    if (!mounted) return;
-    setState(() {
-      _repository = repository;
-      _serverAccount = serverAccount;
-      _localApi = localApi;
-    });
-    unawaited(widget.dependencies.startServices(repository, serverAccount));
   }
 
   Future<void> _updateLocalApiAccess(bool unlocked) async {

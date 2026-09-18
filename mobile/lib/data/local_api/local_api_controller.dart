@@ -158,8 +158,8 @@ class LocalApiController {
   /// Reconciles listener access with the App Lock lifecycle.
   Future<void> setAccessAllowed(bool allowed) async {
     if (!allowed) await close();
-    // TODO(project-state): require Experimental controls before restoring a
-    // persisted Local API enable choice after unlock.
+    // TODO(D-241): re-expose the Local API only through Experimental controls
+    // once its safety and lifecycle requirements are ready.
   }
 
   Future<int> _start() async {
