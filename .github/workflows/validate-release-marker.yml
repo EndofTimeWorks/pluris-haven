@@ -1,0 +1,109 @@
+name: Validate release marker
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Validate exact main release tip
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the exact successful CI commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate a release marker when this exact tip has one
+        id: marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          subject="$(git show -s --format=%s HEAD)"
+          if version="$(node scripts/release-marker.mjs "${subject}" 2>/dev/null)"; then
+            echo "release=true" >> "${GITHUB_OUTPUT}"
+            echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "release=false" >> "${GITHUB_OUTPUT}"
+            echo 'Current main tip is not a release marker; no official release is eligible.'
+          fi
+
+      - name: Verify the signed release candidate is still the main tip
+        if: steps.marker.outputs.release == 'true'
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          node scripts/release-candidate.mjs \
+            "$(git show -s --format=%s HEAD)" \
+            "${RELEASE_SHA}" \
+            "$(git rev-parse origin/main)"
+
+      - name: Verify marker, version, changelog, and monotonicity
+        if: steps.marker.outputs.release == 'true'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.marker.outputs.version }}
+        run: |
+          set -euo pipefail
+          source_version="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
+          test "${source_version%%+*}" = "${RELEASE_VERSION}" || {
+            echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
+            exit 1
+          }
+          grep -Fq "${source_version}" CHANGELOG.md || {
+            echo "CHANGELOG.md does not mention ${source_version}." >&2
+            exit 1
+          }
+          node scripts/check-mobile-release-version.mjs "${source_version}"
+
+      - name: Verify the release commit is GitHub-verified
+        if: steps.marker.outputs.release == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          verified="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.verification.verified')"
+          test "${verified}" = true || {
+            echo 'Release marker commit must have a verified signature.' >&2
+            exit 1
+          }
+
+      - name: Refuse an existing official tag at another commit
+        if: steps.marker.outputs.release == 'true'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.marker.outputs.version }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          version_with_build="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
+          tag="mobile-v${version_with_build}"
+          existing="$(git ls-remote --tags origin "refs/tags/${tag}" "refs/tags/${tag}^{}" | awk '/\^\{\}$/ { peeled = $1; next } { direct = $1 } END { print peeled != "" ? peeled : direct }')"
+          if [[ -n "${existing}" && "${existing}" != "${RELEASE_SHA}" ]]; then
+            echo "Official tag ${tag} targets ${existing}, not ${RELEASE_SHA}." >&2
+            exit 1
+          fi
+          if [[ -n "${existing}" ]]; then
+            echo "Official tag ${tag} already exists at this exact commit; no action is required."
+          else
+            echo "Release candidate is eligible for the existing local signed-tag step: scripts/tag-mobile-release.sh"
+          fi

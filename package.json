@@ -17,6 +17,7 @@
     "test:server": "server/.venv/bin/pytest -q server/tests",
     "test:mobile": "cd mobile && flutter test",
     "test:debug-release-version": "node --test scripts/debug-release-version.test.mjs",
+    "test:release": "node --test scripts/release-marker.test.mjs scripts/release-candidate.test.mjs scripts/generate-release-notes.test.mjs scripts/check-mobile-release-version.test.mjs",
     "lint": "pnpm format:check && pnpm check:l10n && pnpm check:ui-l10n && pnpm lint:website && pnpm lint:server:format && pnpm lint:server && pnpm lint:shell",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },

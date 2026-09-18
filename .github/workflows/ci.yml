@@ -93,6 +93,30 @@ jobs:
           --to="${{ github.event.pull_request.head.sha }}"
           --verbose
 
+  release-note-preview:
+    name: Release note preview
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Generate informational release-note preview
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/generate-release-notes.mjs --from "${BASE_SHA}" --to "${HEAD_SHA}" > RELEASE_NOTES_PREVIEW.md
+
+      - name: Upload release-note preview
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-notes-pr-${{ github.event.pull_request.number }}
+          path: RELEASE_NOTES_PREVIEW.md
+          if-no-files-found: error
+
   mobile:
     name: Mobile (analyze + test + build)
     runs-on: ubuntu-latest

@@ -50,6 +50,12 @@ if [[ ! "${build}" =~ ^[1-9][0-9]*$ ]]; then
   exit 1
 fi
 node scripts/check-mobile-release-version.mjs "${version_with_build}"
+expected_subject="release: ${version}"
+actual_subject="$(git show -s --format=%s HEAD)"
+if [[ "${actual_subject}" != "${expected_subject}" ]] || ! node scripts/release-marker.mjs "${actual_subject}" >/dev/null; then
+  echo "HEAD must be the exact release marker '${expected_subject}'." >&2
+  exit 1
+fi
 if ! grep -Fq "${version_with_build}" CHANGELOG.md; then
   echo "CHANGELOG.md does not mention ${version_with_build}." >&2
   exit 1

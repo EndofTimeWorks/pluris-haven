@@ -9,22 +9,24 @@ used for managed Android testing.
 The mobile version at the current pre-alpha baseline is
 `0.3.0-pre-alpha.4+3004`.
 
-- Development versions use a `.dev.N` prerelease suffix and are published from
-  successful `main` CI only when their build number is newer than existing
-  mobile tags.
-- Versioned releases use a maintainer-created GPG-signed `mobile-v...` tag.
+- Successful internal branch CI, including ordinary `main` CI, publishes a
+  clearly labelled `debug-v...` GitHub prerelease with debug/test artifacts.
+- Versioned releases use a maintainer-created GPG-signed `mobile-v...` tag only
+  after an exact `release: <semantic-version>` marker at the current `main` tip
+  has passed hosted CI.
 - The project is still **PRE-ALPHA**. **ALPHA** is next; beta is later.
 - Do not use `0.3.0-alpha.1` after `0.3.0-pre-alpha.4`: SemVer would order
-  `alpha` before `pre-alpha` at the same core version. A future alpha must use a
-  monotonic core/build version; `0.3.1-alpha.1+3005` is the current candidate,
-  not a released version.
+  `alpha` before `pre-alpha` at the same core version. The proposed next named
+  pre-alpha is `0.3.0-pre-alpha.5+3005`; it is not a released version.
 
 ## Android / GitHub Releases
 
 Package id: `works.endoftime.plurishaven`.
 
-Dev prereleases contain a release-mode Android APK signed with the configured
-upload key, an unsigned iOS IPA, `BUILD.txt`, and `SHA256SUMS.txt`.
+Debug prereleases contain an Android debug APK, an unsigned iOS IPA where the
+macOS build succeeds, `BUILD.txt`, deterministic release notes, and
+`SHA256SUMS.txt`. They are not signed-store artifacts, Play uploads, App Store
+uploads, or TestFlight evidence.
 
 A versioned mobile release builds:
 

@@ -40,15 +40,21 @@ jobs:
           set -euo pipefail
           version="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
           tag="$(node scripts/debug-release-version.mjs "${version}" "${RUN_NUMBER}")"
+          skip=false
+          if [[ "${HEAD_BRANCH}" == main ]] && node scripts/release-marker.mjs "$(git show -s --format=%s HEAD)" >/dev/null 2>&1; then
+            skip=true
+          fi
           {
             echo "version=${version}"
             echo "tag=${tag}"
             echo "run_id=${RUN_ID}"
             echo "head_sha=${HEAD_SHA}"
             echo "head_branch=${HEAD_BRANCH}"
+            echo "skip=${skip}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Refuse a tag that targets another commit
+        if: steps.release.outputs.skip != 'true'
         id: existing
         shell: bash
         env:
@@ -71,7 +77,7 @@ jobs:
           fi
 
       - name: Stop cleanly when this run already published its immutable tag
-        if: steps.existing.outputs.exists == 'true'
+        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -82,7 +88,7 @@ jobs:
           echo "Debug prerelease ${TAG} already targets this commit; no tag or release was changed."
 
       - name: Download tested Android debug APK
-        if: steps.existing.outputs.exists == 'false'
+        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -90,7 +96,7 @@ jobs:
         run: gh run download "${RUN_ID}" --name pluris-haven-android-debug-apk --dir release/raw
 
       - name: Download tested unsigned iOS artifact
-        if: steps.existing.outputs.exists == 'false'
+        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -98,7 +104,7 @@ jobs:
         run: gh run download "${RUN_ID}" --name pluris-haven-ios-unsigned-ipa --dir release/raw
 
       - name: Collect checksummed debug release
-        if: steps.existing.outputs.exists == 'false'
+        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
         shell: bash
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -112,6 +118,13 @@ jobs:
           mkdir -p release/debug
           cp release/raw/app-debug.apk release/debug/pluris-haven-debug.apk
           cp release/raw/pluris-haven-dev-unsigned.ipa release/debug/pluris-haven-ios-unsigned.ipa
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [[ "${HEAD_BRANCH}" == main ]]; then
+            baseline="$(git describe --tags --match 'mobile-v*' --abbrev=0 "${HEAD_SHA}")"
+          else
+            baseline="$(git merge-base "${HEAD_SHA}" origin/main)"
+          fi
+          node scripts/generate-release-notes.mjs --from "${baseline}" --to "${HEAD_SHA}" > release/debug/generated-notes.md
           {
             echo "source_version=${VERSION}"
             echo "tag=${TAG}"
@@ -119,14 +132,32 @@ jobs:
             echo "commit=${HEAD_SHA}"
             echo "ci_run_number=${RUN_NUMBER}"
             echo "ci_run_id=${RUN_ID}"
+            echo "ci_run_url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+            echo "commit_range=${baseline}..${HEAD_SHA}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo 'These are debug/test artifacts, not official releases.'
             echo 'The iOS IPA is unsigned and is not installable or TestFlight evidence.'
           } > release/debug/BUILD.txt
-          (cd release/debug && sha256sum ./*.apk ./*.ipa BUILD.txt > SHA256SUMS.txt)
+          {
+            echo '# DEBUG / TEST BUILD — NOT AN OFFICIAL PLURIS HAVEN RELEASE'
+            echo
+            echo "Source branch: ${HEAD_BRANCH}"
+            echo "Commit: ${HEAD_SHA}"
+            echo "Source version: ${VERSION}"
+            echo "CI run: ${RUN_NUMBER} (${RUN_ID})"
+            echo "Commit range: ${baseline}..${HEAD_SHA}"
+            echo
+            cat release/debug/generated-notes.md
+          } > release/debug/RELEASE_NOTES.md
+          (cd release/debug && sha256sum ./*.apk ./*.ipa BUILD.txt RELEASE_NOTES.md > SHA256SUMS.txt)
+          rm release/debug/generated-notes.md
+
+      - name: Explain official-release dispatch
+        if: steps.release.outputs.skip == 'true'
+        run: echo 'The successful main tip is a release marker; debug publication is intentionally skipped.'
 
       - name: Create immutable debug prerelease
-        if: steps.existing.outputs.exists == 'false'
+        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -141,6 +172,6 @@ jobs:
           gh release create "${TAG}" release/debug/* \
             --target "${HEAD_SHA}" \
             --title "Pluris Haven debug ${VERSION} (CI ${RUN_NUMBER})" \
-            --notes "Debug/test artifacts only. Source branch: ${HEAD_BRANCH}. Commit: ${HEAD_SHA}. CI run: ${RUN_NUMBER} (${RUN_ID}). The iOS artifact is unsigned." \
+            --notes-file release/debug/RELEASE_NOTES.md \
             --prerelease \
             --latest=false

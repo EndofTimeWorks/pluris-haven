@@ -1,8 +1,9 @@
 # Mobile releases
 
 There are two automation paths: automatic debug prereleases from successful
-internal branch CI (including `main`), and deliberate versioned releases from a
-maintainer-created GPG-signed tag on `main`.
+internal branch CI (including ordinary `main` commits), and deliberate versioned
+releases from a maintainer-created GPG-signed tag at a validated release-marker
+tip on `main`.
 
 Pluris Haven is currently **PRE-ALPHA**. Alpha is next; beta is later. Do not
 change maturity merely because a store/testing path exists.
@@ -28,6 +29,13 @@ source branch, exact commit, source version, CI run number/ID, and build time.
 These are test artifacts: they are never Play/App Store uploads, never official
 releases, and the unsigned IPA is not installable or TestFlight evidence.
 
+An exact `main` commit subject of `release: <semantic-version>` is reserved for
+an official release candidate. It intentionally does not make a second public
+debug release for that SHA. The trusted post-CI validator checks the exact CI
+SHA, source version, changelog, monotonicity, GitHub signature status, and that
+the SHA is still the current `origin/main` tip. If `main` moved, it stops with
+`ABORT — release marker is no longer the current main tip.`
+
 Debug tags begin `debug-v*`; `mobile-v*` remains reserved for official mobile
 releases. A rerun checks that an existing debug tag peels to the same tested
 commit and then leaves it unchanged. It refuses to move a tag targeting another
@@ -35,7 +43,9 @@ commit.
 
 ## Versioned prerelease
 
-Use this for an explicitly approved named pre-alpha/alpha milestone.
+Use this for an explicitly approved named pre-alpha/alpha milestone. Prepare it
+on `release/<version>` from protected `main`; do not prepare or tag it from an
+ordinary feature branch.
 
 The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not move to
 `0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
@@ -64,19 +74,39 @@ approval.
    git diff --check
    ```
 
-4. Review and GPG-sign the release-preparation commit.
-5. Open and merge a PR to protected `main`, with successful GitHub-hosted CI for
+4. Generate reviewed deterministic notes from the previous official tag with
+
+   ```sh
+   node scripts/generate-release-notes.mjs --from mobile-v<previous> --to HEAD
+   ```
+
+   Put the resulting entry in `CHANGELOG.md` before the PR lands.
+
+5. Make the final release-preparation commit exactly:
+
+   ```text
+   release: <semantic-version>
+   ```
+
+   The project currently spells its prerelease channel `pre-alpha`, for example
+   `release: 0.3.0-pre-alpha.5`.
+
+6. Review and GPG-sign the release-marker commit, then open and merge a PR to
+   protected `main`, with successful GitHub-hosted CI for
    the exact up-to-date merge candidate. Local test parity alone is not enough.
-6. Create the checked GPG-signed release tag:
+7. The trusted validator checks only the exact successful `main` tip. If a new
+   commit lands first, refresh the release branch, regenerate the changelog, and
+   make a new final marker; do not tag the older marker.
+8. Create the checked GPG-signed release tag:
 
    ```sh
    scripts/tag-mobile-release.sh
    ```
 
-7. Review the exact tag push command printed by the script, then push the tag
+9. Review the exact tag push command printed by the script, then push the tag
    only when release publication is authorized.
-8. Watch `Mobile Release` through completion and inspect failed job logs rather
-   than treating static workflow validation as a release test.
+10. Watch `Mobile Release` through completion and inspect failed job logs rather
+    than treating static workflow validation as a release test.
 
 The manual tag remains intentional: the maintainer GPG private key does not
 belong in GitHub Secrets.

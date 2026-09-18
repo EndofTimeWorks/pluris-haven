@@ -69,6 +69,7 @@ Use a Conventional Commit subject, for example:
 
 ```text
 fix(import): reject oversized archive entries
+release: 0.3.0-pre-alpha.5
 ```
 
 Husky runs Prettier before a commit and commitlint against the commit message.
@@ -78,6 +79,20 @@ handoff material out of commits.
 Keep commit timestamps, authorship, and history truthful. Do not rewrite old
 commits to make new work look older. If code comes from a generator or another
 tool, read it, test it, and make sure the commit explains the behavior it adds.
+
+## Preparing a named mobile release
+
+Create `release/<version>` from current protected `main`. Make the version and
+build-number change, generate the release notes from the previous `mobile-v*`
+tag, and add the reviewed changelog entry in that PR. Its final commit must be
+the exact marker `release: <semantic-version>`; this repository currently uses
+the `pre-alpha` spelling.
+
+After the marker lands, successful hosted CI validates only that exact `main`
+tip. It aborts if `main` moves before the signed official tag is made. The
+maintainer then runs `scripts/tag-mobile-release.sh`; the GPG private key stays
+local rather than in GitHub Actions. A later fix needs a new version and marker:
+official tags are never moved.
 
 ## Translations
 

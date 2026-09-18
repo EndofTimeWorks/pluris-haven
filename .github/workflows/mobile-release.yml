@@ -87,7 +87,11 @@ jobs:
             echo 'Official mobile releases must target a commit contained in main.' >&2
             exit 1
           fi
-          expected_subject="chore(release): mobile ${version_with_build}"
+          if [[ "$(git rev-parse origin/main)" != "${release_commit}" ]]; then
+            echo 'ABORT — release marker is no longer the current main tip.' >&2
+            exit 1
+          fi
+          expected_subject="release: ${version}"
           actual_subject="$(git show -s --format=%s "${release_commit}")"
           if [[ "${actual_subject}" != "${expected_subject}" ]]; then
             echo "Mobile release tag must point directly at '${expected_subject}'." >&2
@@ -96,6 +100,10 @@ jobs:
 
           node scripts/check-mobile-release-version.mjs \
             "${version_with_build}" "${GITHUB_REF_NAME}"
+          if ! grep -Fq "${version_with_build}" CHANGELOG.md; then
+            echo "CHANGELOG.md does not mention ${version_with_build}." >&2
+            exit 1
+          fi
 
           prerelease=false
           if [[ "${version}" == 0.* || "${version}" == *-* ]]; then
