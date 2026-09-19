@@ -37,3 +37,30 @@ def test_untrusted_proxy_cannot_choose_client_address() -> None:
         response = client.get("/", headers={"X-Forwarded-For": "203.0.113.8"})
 
     assert response.json() == {"host": "10.0.0.2"}
+
+
+def test_application_rate_limits_forwarded_clients_independently(client: TestClient) -> None:
+    client.app.state.auth_rate_limiter.max_attempts = 1
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        first = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "198.51.100.4"},
+            json={
+                "email": "first@example.com",
+                "password": "correct horse battery staple",
+                "device_name": "Test device",
+            },
+        )
+        second = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "203.0.113.8"},
+            json={
+                "email": "second@example.com",
+                "password": "correct horse battery staple",
+                "device_name": "Test device",
+            },
+        )
+
+    assert first.status_code == 401
+    assert second.status_code == 401
