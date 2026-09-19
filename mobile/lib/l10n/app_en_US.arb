@@ -10,10 +10,18 @@
   "currentColorLabel": "Current color",
   "copyHexColorTooltip": "Copy hex color",
   "useCustomColorLabel": "Use custom color",
-  "noDashboardShortcutsBody": "Open Customize to add shortcuts back.",
   "saveCancelled": "Save canceled.",
   "groupsEmptyBody": "Groups keep members organized without needing sync.",
   "colorHexFieldLabel": "Color hex",
   "tagColourFieldLabel": "Tag color",
-  "colourFieldLabel": "Color"
+  "colourFieldLabel": "Color",
+  "importCancelledStatus": "Import canceled.",
+  "colorType": "Color",
+  "appearanceSubtitle": "colors, shape and text size",
+  "backgroundColorLabel": "Background color",
+  "surfaceColorLabel": "Surface color",
+  "cardColorLabel": "Card color",
+  "textColorLabel": "Text color",
+  "mutedTextColorLabel": "Muted text color",
+  "outlineColorLabel": "Outline color"
 }

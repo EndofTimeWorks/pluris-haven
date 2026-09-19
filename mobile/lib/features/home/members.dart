@@ -43,11 +43,21 @@ class _MembersPageState extends State<MembersPage> {
               includeArchived: true,
               listOnly: true,
             ),
-      initialData: const [],
       builder: (context, membersSnapshot) {
-        final members = _filteredMembers(
-          membersSnapshot.data ?? const <MemberSummary>[],
-        );
+        if (membersSnapshot.hasError && !membersSnapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: membersSnapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!membersSnapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final members = _filteredMembers(membersSnapshot.data!);
         final visualTheme = _visualThemeOf(context);
         final profileLayout =
             visualTheme == HavenVisualTheme.simplyPlural ||

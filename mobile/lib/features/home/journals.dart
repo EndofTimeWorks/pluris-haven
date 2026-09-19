@@ -25,11 +25,21 @@ class _JournalsPageState extends State<JournalsPage> {
     final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<JournalEntry>>(
       stream: widget.repository.watchJournals(),
-      initialData: const [],
       builder: (context, snapshot) {
-        final entries = _filteredEntries(
-          snapshot.data ?? const <JournalEntry>[],
-        );
+        if (snapshot.hasError && !snapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: snapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!snapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final entries = _filteredEntries(snapshot.data!);
 
         return SpPage(
           children: [
@@ -157,7 +167,7 @@ class JournalEntryTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              _shortDateTime(entry.createdAt),
+              _shortDateTime(context, entry.createdAt),
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
             ),
           ],
@@ -443,7 +453,7 @@ class _ContentRevisionSheet extends StatelessWidget {
                           ? revision.title!
                           : l10n.untitledEntry,
                     ),
-                    subtitle: Text(_shortDateTime(revision.createdAt)),
+                    subtitle: Text(_shortDateTime(context, revision.createdAt)),
                     trailing: IconButton(
                       tooltip: revision.pinnedAt == null
                           ? l10n.pinRevisionTooltip

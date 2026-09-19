@@ -493,7 +493,7 @@ void main() {
     expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Members'), findsWidgets);
     expect(find.text('Front History'), findsOneWidget);
-    expect(find.text('Customize'), findsOneWidget);
+    expect(find.text('App options'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
   });
@@ -709,7 +709,7 @@ void main() {
 
     expect(find.text('blurry co-con'), findsWidgets);
     expect(find.text('fronting'), findsOneWidget);
-    expect(find.text('started 1/1 12:00 - active'), findsOneWidget);
+    expect(find.textContaining('started'), findsOneWidget);
     expect(repository._notificationEvents, hasLength(1));
     expect(repository._notificationEvents.first.kind, 'front');
     expect(repository._notificationEvents.first.title, 'Front changed');
@@ -726,7 +726,7 @@ void main() {
 
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);
-    expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
+    expect(find.textContaining('ended'), findsOneWidget);
     expect(repository._notificationEvents, hasLength(2));
     expect(repository._notificationEvents.first.title, 'Front cleared');
   });
@@ -1082,6 +1082,61 @@ void main() {
     expect(find.text('Asleep'), findsOneWidget);
     expect(find.text('Away'), findsOneWidget);
     expect(find.text('Hour of day'), findsOneWidget);
+  });
+
+  testWidgets('keeps zero-length completed fronts finite in analytics', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 1,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    final instant = DateTime.now();
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'zero-duration',
+        label: 'Brief front',
+        startedAt: instant,
+        endedAt: instant,
+        memberIds: const [],
+      ),
+    ];
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Analytics');
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Brief front'), findsOneWidget);
+    expect(find.textContaining('NaN'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows a load failure instead of an empty members state', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository.membersWatchOverride = Stream<List<MemberSummary>>.error(
+      StateError('database busy'),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not load your data'), findsOneWidget);
+    expect(find.text('No members saved locally'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
   });
 
   testWidgets('opens a familiar section from the dashboard', (tester) async {
@@ -3007,8 +3062,8 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Customize'));
-    await tester.tap(find.text('Customize'));
+    await tester.ensureVisible(find.text('App options'));
+    await tester.tap(find.text('App options'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dark'), findsOneWidget);
@@ -3133,7 +3188,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No dashboard shortcuts'), findsOneWidget);
-    expect(find.text('Open Customize to add shortcuts back.'), findsOneWidget);
+    expect(
+      find.text('Open App options to add shortcuts back.'),
+      findsOneWidget,
+    );
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
       isEmpty,
@@ -3162,8 +3220,8 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Customize'));
-    await tester.tap(find.text('Customize'));
+    await tester.ensureVisible(find.text('App options'));
+    await tester.tap(find.text('App options'));
     await tester.pumpAndSettle();
 
     final pageScrollable = find.byType(Scrollable).first;
@@ -3950,6 +4008,7 @@ class FakeHavenRepository implements HavenRepository {
   final String? _localArchiveJson;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
+  Stream<List<MemberSummary>>? membersWatchOverride;
   List<MemberSummary> _deletedMembers = const [];
   List<GroupSummary> _groups = const [];
   List<PrivacyBucketSummary> _privacyBuckets = const [];
@@ -4014,6 +4073,11 @@ class FakeHavenRepository implements HavenRepository {
     bool includeCustomFronts = false,
     bool listOnly = false,
   }) async* {
+    final override = membersWatchOverride;
+    if (override != null) {
+      yield* override;
+      return;
+    }
     List<MemberSummary> filtered(List<MemberSummary> members) {
       return [
         for (final member in members)

@@ -32,21 +32,41 @@ class _NotesPageState extends State<NotesPage> {
     final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<NoteSummary>>(
       stream: widget.repository.watchNotes(),
-      initialData: const [],
       builder: (context, noteSnapshot) {
+        if (noteSnapshot.hasError && !noteSnapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: noteSnapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!noteSnapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
         return StreamBuilder<List<MemberSummary>>(
           stream: widget.repository.watchMembers(includeArchived: true),
-          initialData: const [],
           builder: (context, memberSnapshot) {
+            if (memberSnapshot.hasError && !memberSnapshot.hasData) {
+              return SpPage(
+                children: [
+                  SpDataLoadState(
+                    error: memberSnapshot.error,
+                    onRetry: () => setState(() {}),
+                  ),
+                ],
+              );
+            }
+            if (!memberSnapshot.hasData) {
+              return const SpPage(children: [SpDataLoadState()]);
+            }
             final memberNamesById = {
-              for (final member
-                  in memberSnapshot.data ?? const <MemberSummary>[])
+              for (final member in memberSnapshot.data!)
                 member.id: member.displayName,
             };
-            final notes = _filteredNotes(
-              noteSnapshot.data ?? const <NoteSummary>[],
-              memberNamesById,
-            );
+            final notes = _filteredNotes(noteSnapshot.data!, memberNamesById);
 
             return SpPage(
               children: [

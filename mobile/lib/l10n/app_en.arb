@@ -41,6 +41,9 @@
   "appLockUnlockButton": "Unlock",
   "localMigrationFailureTitle": "Local data needs recovery",
   "localMigrationFailureBody": "Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.",
+  "dataLoadFailedTitle": "Could not load your data",
+  "dataLoadFailedBody": "Your saved data has not been removed. Try again, or restart the app if the problem continues.",
+  "retryButton": "Try again",
   "plurisHavenAppName": "Pluris Haven",
   "privateReminderNotificationTitle": "Pluris Haven reminder",
   "privateNotificationBody": "Open Pluris Haven to view.",
@@ -142,7 +145,7 @@
   "deleteButtonLabel": "Delete",
   "dashboardMainSectionTitle": "Main",
   "noDashboardShortcutsTitle": "No dashboard shortcuts",
-  "noDashboardShortcutsBody": "Open Customise to add shortcuts back.",
+  "noDashboardShortcutsBody": "Open App options to add shortcuts back.",
   "dashboardShortcutSemanticLabel": "{title} dashboard shortcut",
   "@dashboardShortcutSemanticLabel": {
     "placeholders": {
@@ -188,7 +191,7 @@
   "dashboardShortcutHowtosSubtitle": "offline guides",
   "dashboardShortcutAccountSettingsTitle": "Account Settings",
   "dashboardShortcutAccountSettingsSubtitle": "local profile",
-  "frontHistoryCountSubtitle": "{count} entries",
+  "frontHistoryCountSubtitle": "{count, plural, =1{1 entry} other{{count} entries}}",
   "@frontHistoryCountSubtitle": {
     "placeholders": {
       "count": {
@@ -196,7 +199,7 @@
       }
     }
   },
-  "groupCountSubtitle": "{count} groups",
+  "groupCountSubtitle": "{count, plural, =1{1 group} other{{count} groups}}",
   "@groupCountSubtitle": {
     "placeholders": {
       "count": {
@@ -204,7 +207,7 @@
       }
     }
   },
-  "noteCountSubtitle": "{count} notes",
+  "noteCountSubtitle": "{count, plural, =1{1 note} other{{count} notes}}",
   "@noteCountSubtitle": {
     "placeholders": {
       "count": {

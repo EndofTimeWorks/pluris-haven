@@ -88,7 +88,6 @@ enum SpSection {
   usefulLinks,
   reminders,
   privacyBuckets,
-  tokens,
   userReport,
   notificationHistory,
   howtos,
@@ -114,7 +113,6 @@ enum SpSection {
     SpSection.usefulLinks => l10n.navigationUsefulLinks,
     SpSection.reminders => l10n.navigationReminders,
     SpSection.privacyBuckets => l10n.navigationPrivacyBuckets,
-    SpSection.tokens => l10n.navigationTokens,
     SpSection.userReport => l10n.navigationUserReport,
     SpSection.notificationHistory => l10n.navigationNotificationHistory,
     SpSection.howtos => l10n.navigationHowTos,
@@ -429,11 +427,6 @@ class _HomePageState extends State<HomePage> {
         return LocalPrivacyPage(
           repository: widget.repository,
           onSelect: _selectSection,
-        );
-      case SpSection.tokens:
-        return LocalTokensPage(
-          onSelect: _selectSection,
-          controller: widget.localApi,
         );
       case SpSection.userReport:
         return UserReportPage(snapshot: home, onSelect: _selectSection);

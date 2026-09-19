@@ -267,7 +267,7 @@ final dashboardShortcuts = [
   ),
   DashboardShortcutDefinition(
     id: 'customize',
-    title: (l10n) => l10n.customizeTitle,
+    title: (l10n) => l10n.navigationAppOptions,
     subtitle: (l10n) => l10n.dashboardShortcutCustomizeSubtitle,
     section: SpSection.appOptions,
     icon: Icons.tune_rounded,

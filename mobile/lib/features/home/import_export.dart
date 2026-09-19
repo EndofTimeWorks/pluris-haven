@@ -2372,7 +2372,7 @@ class ImportJobRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final title = job.fileName ?? job.type;
     final subtitle = job.error == null
-        ? '${job.status} - ${_shortDateTime(job.updatedAt)}'
+        ? '${job.status} - ${_shortDateTime(context, job.updatedAt)}'
         : '${_oneLineJobError(job.error!)} - ${l10n.tapForDetails}';
 
     return Semantics(
@@ -2446,11 +2446,11 @@ class ImportJobRow extends StatelessWidget {
                   ),
                 _JobDetailLine(
                   label: l10n.createdFieldLabel,
-                  value: _shortDateTime(job.createdAt),
+                  value: _shortDateTime(context, job.createdAt),
                 ),
                 _JobDetailLine(
                   label: l10n.updatedFieldLabel,
-                  value: _shortDateTime(job.updatedAt),
+                  value: _shortDateTime(context, job.updatedAt),
                 ),
                 if (job.error != null && job.error!.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),

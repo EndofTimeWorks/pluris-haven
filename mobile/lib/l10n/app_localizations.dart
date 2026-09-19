@@ -325,6 +325,24 @@ abstract class AppLocalizations {
   /// **'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.'**
   String get localMigrationFailureBody;
 
+  /// No description provided for @dataLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your data'**
+  String get dataLoadFailedTitle;
+
+  /// No description provided for @dataLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved data has not been removed. Try again, or restart the app if the problem continues.'**
+  String get dataLoadFailedBody;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retryButton;
+
   /// No description provided for @plurisHavenAppName.
   ///
   /// In en, this message translates to:
@@ -766,7 +784,7 @@ abstract class AppLocalizations {
   /// No description provided for @noDashboardShortcutsBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Customise to add shortcuts back.'**
+  /// **'Open App options to add shortcuts back.'**
   String get noDashboardShortcutsBody;
 
   /// No description provided for @dashboardShortcutSemanticLabel.
@@ -1000,19 +1018,19 @@ abstract class AppLocalizations {
   /// No description provided for @frontHistoryCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} entries'**
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
   String frontHistoryCountSubtitle(int count);
 
   /// No description provided for @groupCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} groups'**
+  /// **'{count, plural, =1{1 group} other{{count} groups}}'**
   String groupCountSubtitle(int count);
 
   /// No description provided for @noteCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} notes'**
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
   String noteCountSubtitle(int count);
 
   /// No description provided for @serverAccountsUnavailable.

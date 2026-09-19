@@ -131,6 +131,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.';
 
   @override
+  String get dataLoadFailedTitle => 'Could not load your data';
+
+  @override
+  String get dataLoadFailedBody =>
+      'Your saved data has not been removed. Try again, or restart the app if the problem continues.';
+
+  @override
+  String get retryButton => 'Try again';
+
+  @override
   String get plurisHavenAppName => 'Pluris Haven';
 
   @override
@@ -369,7 +379,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDashboardShortcutsBody =>
-      'Open Customise to add shortcuts back.';
+      'Open App options to add shortcuts back.';
 
   @override
   String dashboardShortcutSemanticLabel(String title) {
@@ -490,17 +500,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String frontHistoryCountSubtitle(int count) {
-    return '$count entries';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '1 entry',
+    );
+    return '$_temp0';
   }
 
   @override
   String groupCountSubtitle(int count) {
-    return '$count groups';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count groups',
+      one: '1 group',
+    );
+    return '$_temp0';
   }
 
   @override
   String noteCountSubtitle(int count) {
-    return '$count notes';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4622,8 +4650,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get useCustomColorLabel => 'Use custom color';
 
   @override
-  String get noDashboardShortcutsBody =>
-      'Open Customize to add shortcuts back.';
+  String get importCancelledStatus => 'Import canceled.';
 
   @override
   String get saveCancelled => 'Save canceled.';
@@ -4639,8 +4666,32 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get tagColourFieldLabel => 'Tag color';
 
   @override
+  String get colorType => 'Color';
+
+  @override
   String get colourFieldLabel => 'Color';
 
   @override
   String get customizeDashboardTitle => 'Customize dashboard';
+
+  @override
+  String get appearanceSubtitle => 'colors, shape and text size';
+
+  @override
+  String get backgroundColorLabel => 'Background color';
+
+  @override
+  String get surfaceColorLabel => 'Surface color';
+
+  @override
+  String get cardColorLabel => 'Card color';
+
+  @override
+  String get textColorLabel => 'Text color';
+
+  @override
+  String get mutedTextColorLabel => 'Muted text color';
+
+  @override
+  String get outlineColorLabel => 'Outline color';
 }

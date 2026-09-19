@@ -21,7 +21,7 @@ class AppOptionsPage extends StatelessWidget {
     return SpPage(
       children: [
         SpSettingsGroup(
-          title: l10n.customizeTitle,
+          title: l10n.navigationAppOptions,
           rows: [
             SpSettingsRow(
               l10n.themeRowTitle,

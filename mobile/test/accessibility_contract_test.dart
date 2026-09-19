@@ -339,9 +339,7 @@ void main() {
 
     final l10n = AppLocalizations.of(tester.element(find.byType(SpDrawer)));
     final drawerList = find.byType(Scrollable);
-    for (final section in SpSection.values.where(
-      (section) => section != SpSection.tokens,
-    )) {
+    for (final section in SpSection.values) {
       final label = section.label(l10n);
       final text = find.text(label);
       await tester.scrollUntilVisible(text, 180, scrollable: drawerList);
