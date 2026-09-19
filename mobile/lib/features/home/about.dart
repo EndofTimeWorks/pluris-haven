@@ -142,6 +142,8 @@ Future<void> confirmDelete(
   required String title,
   required String body,
   required Future<void> Function() onDelete,
+  String? confirmLabel,
+  String Function(Object error)? failureMessage,
 }) async {
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
@@ -158,7 +160,7 @@ Future<void> confirmDelete(
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.deleteButtonLabel),
+          child: Text(confirmLabel ?? l10n.deleteButtonLabel),
         ),
       ],
     ),
@@ -169,7 +171,11 @@ Future<void> confirmDelete(
       await onDelete();
     } on Object catch (error) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.deleteFailed(error.toString()))),
+        SnackBar(
+          content: Text(
+            failureMessage?.call(error) ?? l10n.deleteFailed(error.toString()),
+          ),
+        ),
       );
     }
   }

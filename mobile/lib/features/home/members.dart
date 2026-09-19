@@ -415,6 +415,9 @@ class MemberListTile extends StatelessWidget {
                         '${l10n.deleteMemberBody(member.displayName)}\n\n'
                         '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.customFieldValues, impact.activeFrontSessions, impact.frontHistoryLinks, impact.notes, impact.messages, impact.journals, impact.reminderTriggers)}',
                     onDelete: () => repository.deleteMember(member.id),
+                    confirmLabel: l10n.removeMemberButton,
+                    failureMessage: (error) =>
+                        l10n.removeMemberFailed(error.toString()),
                   );
                 }
               },
@@ -439,7 +442,10 @@ class MemberListTile extends StatelessWidget {
                     value: 'archive',
                     child: Text(l10n.archiveButton),
                   ),
-                PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(l10n.removeMemberButton),
+                ),
               ],
             ),
           ],

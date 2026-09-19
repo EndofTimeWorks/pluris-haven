@@ -5528,19 +5528,31 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete member?'**
+  /// **'Remove member?'**
   String get deleteMemberTitle;
+
+  /// No description provided for @removeMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove member'**
+  String get removeMemberButton;
+
+  /// No description provided for @removeMemberFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove member: {error}'**
+  String removeMemberFailed(String error);
 
   /// No description provided for @deletedFilter.
   ///
   /// In en, this message translates to:
-  /// **'Deleted'**
+  /// **'Removed'**
   String get deletedFilter;
 
   /// No description provided for @deletedStatus.
   ///
   /// In en, this message translates to:
-  /// **'Deleted'**
+  /// **'Removed'**
   String get deletedStatus;
 
   /// No description provided for @purgeMemberTitle.
@@ -5570,7 +5582,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberImpact.
   ///
   /// In en, this message translates to:
-  /// **'Deletion summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket links: {privacyBucketLinks}; custom-field values removed on permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
+  /// **'Removal summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
   String deleteMemberImpact(
     int groupLinks,
     int tagLinks,
@@ -5588,7 +5600,7 @@ abstract class AppLocalizations {
   /// No description provided for @setFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set front'**
+  /// **'Make current front'**
   String get setFrontButton;
 
   /// No description provided for @addToFrontButton.
@@ -6722,7 +6734,7 @@ abstract class AppLocalizations {
   /// No description provided for @howToTrackFrontStep2.
   ///
   /// In en, this message translates to:
-  /// **'Use Set front to pick members or a saved custom front.'**
+  /// **'Use Make current front to pick members or a saved custom front.'**
   String get howToTrackFrontStep2;
 
   /// No description provided for @howToTrackFrontStep3.
@@ -7004,7 +7016,7 @@ abstract class AppLocalizations {
   /// No description provided for @noAnalyticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Set fronts or import Simply Plural front history to fill this in.'**
+  /// **'Make a front current or import Simply Plural front history to fill this in.'**
   String get noAnalyticsBody;
 
   /// No description provided for @totalFrontTimeLabel.
@@ -7184,13 +7196,13 @@ abstract class AppLocalizations {
   /// No description provided for @setSelectedButton.
   ///
   /// In en, this message translates to:
-  /// **'Set selected'**
+  /// **'Make selected member current front'**
   String get setSelectedButton;
 
   /// No description provided for @setCofrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set co-front'**
+  /// **'Make selected members current front'**
   String get setCofrontButton;
 
   /// No description provided for @saveSelectedNamedFrontButton.
@@ -7250,7 +7262,7 @@ abstract class AppLocalizations {
   /// No description provided for @setButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Set'**
+  /// **'Make current front'**
   String get setButtonLabel;
 
   /// No description provided for @frontChangedTitle.

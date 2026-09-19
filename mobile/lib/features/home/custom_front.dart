@@ -329,6 +329,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               children: [
                 Expanded(
                   child: FilledButton(
+                    key: const ValueKey('make-custom-front-current-button'),
                     onPressed: () => _setFront(_controller.text),
                     child: Text(l10n.setButtonLabel),
                   ),

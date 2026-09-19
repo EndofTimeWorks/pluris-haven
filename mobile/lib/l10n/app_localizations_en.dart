@@ -3175,13 +3175,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberActionsTooltip => 'Member actions';
 
   @override
-  String get deleteMemberTitle => 'Delete member?';
+  String get deleteMemberTitle => 'Remove member?';
 
   @override
-  String get deletedFilter => 'Deleted';
+  String get removeMemberButton => 'Remove member';
 
   @override
-  String get deletedStatus => 'Deleted';
+  String removeMemberFailed(String error) {
+    return 'Could not remove member: $error';
+  }
+
+  @override
+  String get deletedFilter => 'Removed';
+
+  @override
+  String get deletedStatus => 'Removed';
 
   @override
   String get purgeMemberTitle => 'Permanently delete member?';
@@ -3213,11 +3221,11 @@ class AppLocalizationsEn extends AppLocalizations {
     int journals,
     int reminderTriggers,
   ) {
-    return 'Deletion summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket links: $privacyBucketLinks; custom-field values removed on permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
+    return 'Removal summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
   }
 
   @override
-  String get setFrontButton => 'Set front';
+  String get setFrontButton => 'Make current front';
 
   @override
   String get addToFrontButton => 'Add member to current front';
@@ -3860,7 +3868,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howToTrackFrontStep2 =>
-      'Use Set front to pick members or a saved custom front.';
+      'Use Make current front to pick members or a saved custom front.';
 
   @override
   String get howToTrackFrontStep3 =>
@@ -4020,7 +4028,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noAnalyticsBody =>
-      'Set fronts or import Simply Plural front history to fill this in.';
+      'Make a front current or import Simply Plural front history to fill this in.';
 
   @override
   String get totalFrontTimeLabel => 'Total front time';
@@ -4142,10 +4150,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearSelectionButton => 'Clear selection';
 
   @override
-  String get setSelectedButton => 'Set selected';
+  String get setSelectedButton => 'Make selected member current front';
 
   @override
-  String get setCofrontButton => 'Set co-front';
+  String get setCofrontButton => 'Make selected members current front';
 
   @override
   String get saveSelectedNamedFrontButton => 'Save selected as named front';
@@ -4176,7 +4184,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelFieldLabel => 'Label';
 
   @override
-  String get setButtonLabel => 'Set';
+  String get setButtonLabel => 'Make current front';
 
   @override
   String get frontChangedTitle => 'Front changed';

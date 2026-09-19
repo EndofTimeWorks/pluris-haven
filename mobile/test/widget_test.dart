@@ -697,14 +697,16 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front').first);
     await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-label-field')),
       'blurry co-con',
     );
-    await tester.tap(find.text('Set'));
+    await tester.tap(
+      find.byKey(const ValueKey('make-custom-front-current-button')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('blurry co-con'), findsWidgets);
@@ -718,7 +720,7 @@ void main() {
       'blurry co-con is fronting.',
     );
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Clear'));
@@ -857,7 +859,7 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -945,7 +947,7 @@ void main() {
     expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
     expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Delete saved front').first);
     await tester.pumpAndSettle();
@@ -1195,7 +1197,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'Iris');
@@ -1268,19 +1270,19 @@ void main() {
 
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Deletion summary — group links: 0'),
+      find.textContaining('Removal summary — group links: 0'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove member'));
     await tester.pumpAndSettle();
 
     expect(find.text('Iris edited'), findsNothing);
     expect(find.text('No members saved locally'), findsOneWidget);
 
-    await tester.tap(find.text('Deleted'));
+    await tester.tap(find.text('Removed'));
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
 
@@ -1341,8 +1343,10 @@ void main() {
     expect(find.text('#62D6B8'), findsOneWidget);
     expect(find.text('Caretakers, Subsystem A'), findsOneWidget);
 
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Set front'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Set front'));
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Make current front'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Make current front'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
