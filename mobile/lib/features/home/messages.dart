@@ -508,6 +508,7 @@ class _MessageSheetState extends State<MessageSheet> {
             const SizedBox(height: 14),
             if (_isEditing)
               OutlinedButton.icon(
+                key: const ValueKey('message-revision-history-button'),
                 onPressed: _showHistory,
                 icon: const Icon(Icons.history_rounded),
                 label: Text(l10n.revisionHistoryButton),

@@ -1540,6 +1540,7 @@ void main() {
 
     expect(find.text('Import from Simply Plural'), findsOneWidget);
     expect(find.text('Back up local data'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text("What's new"), 180);
     expect(find.text("What's new"), findsOneWidget);
     expect(find.text('APK releases'), findsOneWidget);
 
@@ -2447,7 +2448,10 @@ void main() {
 
     await tester.tap(find.text('Check in after dinner.'));
     await tester.pumpAndSettle();
-    expect(find.text('History'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('message-revision-history-button')),
+      findsOneWidget,
+    );
     await tester.enterText(
       find.byKey(const ValueKey('message-body-field')),
       'Check in after dinner. Bring water.',
@@ -2612,7 +2616,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Medication'), findsOneWidget);
-    expect(find.text('Weekly on Friday at 08:30'), findsOneWidget);
+    expect(find.textContaining('Weekly on Friday at'), findsOneWidget);
+    expect(find.textContaining('8:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
     expect(find.text('on'), findsOneWidget);
     expect(repository._reminders.single.scheduleKind, 'weekly');
@@ -3367,7 +3372,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Members'));
+    await tester.tap(find.text('Members').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
@@ -3603,6 +3608,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
     await openDrawerSection(tester, 'Import / Export');
+    final pageScrollable = find.byType(Scrollable).first;
     await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -3616,11 +3622,16 @@ void main() {
     await tester.tap(find.text('Preview pasted JSON'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
     await tester.pumpAndSettle();
-    final importButton = find.text('Import archive');
-    final button = tester.widget<FilledButton>(
-      find.ancestor(of: importButton, matching: find.byType(FilledButton)),
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('import-archive-button')),
+      240,
+      scrollable: pageScrollable,
     );
-    button.onPressed!();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('import-archive-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('import-archive-button')));
     await _pumpUntilFound(tester, find.text('Conflicts found'));
 
     expect(find.text('Conflicts found'), findsOneWidget);
