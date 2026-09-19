@@ -400,8 +400,8 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
           Slider(
             value: _scale,
             min: .8,
-            max: 1.6,
-            divisions: 8,
+            max: 2,
+            divisions: 12,
             label: _scale.toStringAsFixed(1),
             onChanged: (value) => setState(() => _scale = value),
           ),

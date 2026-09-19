@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
+import 'package:pluris_haven/data/local/supported_language.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
 import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'package:pluris_haven/main.dart';
@@ -72,6 +73,27 @@ void main() {
     final mediaQueries = tester.widgetList<MediaQuery>(find.byType(MediaQuery));
     final appMediaQuery = mediaQueries.last;
     expect(appMediaQuery.data.textScaler.scale(16), closeTo(20, 0.01));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('persisted maximum appearance text scale remains usable', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.setAppearanceOverrides(
+      const HavenAppearanceOverrides(textScale: 2),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    final mediaQueries = tester.widgetList<MediaQuery>(find.byType(MediaQuery));
+    expect(mediaQueries.last.data.textScaler.scale(16), closeTo(32, 0.01));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
@@ -176,6 +198,35 @@ void main() {
     );
 
     expect(scheme.primary, expected.primary);
+  });
+
+  test('system bars use the active surface and readable icons', () {
+    const lightSurface = Color(0xFFF7F4FC);
+    const darkSurface = Color(0xFF232532);
+
+    final light = PlurisHavenApp.systemUiOverlayStyle(
+      const ColorScheme.light(surface: lightSurface),
+    );
+    final dark = PlurisHavenApp.systemUiOverlayStyle(
+      const ColorScheme.dark(surface: darkSurface),
+    );
+
+    expect(light.statusBarColor, lightSurface);
+    expect(light.systemNavigationBarColor, lightSurface);
+    expect(light.statusBarIconBrightness, Brightness.dark);
+    expect(dark.statusBarColor, darkSurface);
+    expect(dark.systemNavigationBarColor, darkSurface);
+    expect(dark.systemNavigationBarIconBrightness, Brightness.light);
+  });
+
+  test('English is the deterministic Flutter fallback for system locales', () {
+    expect(supportedLanguageLocales.first, const Locale('en'));
+    expect(supportedLanguageLocales[1], const Locale('en', 'US'));
+    expect(
+      supportedLanguageForCode(systemLanguageCode).code,
+      systemLanguageCode,
+    );
+    expect(supportedLanguageForCode('en').code, 'en');
   });
 
   testWidgets('shared icon bubbles use the active accent colour', (

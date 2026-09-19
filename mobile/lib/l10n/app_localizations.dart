@@ -5435,6 +5435,30 @@ abstract class AppLocalizations {
   /// **'About'**
   String get navigationAbout;
 
+  /// No description provided for @primaryNavigationHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get primaryNavigationHome;
+
+  /// No description provided for @primaryNavigationMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get primaryNavigationMembers;
+
+  /// No description provided for @primaryNavigationHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get primaryNavigationHistory;
+
+  /// No description provided for @primaryNavigationInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get primaryNavigationInsights;
+
   /// No description provided for @frontingFilter.
   ///
   /// In en, this message translates to:
@@ -5552,13 +5576,13 @@ abstract class AppLocalizations {
   /// No description provided for @addToFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Add to front'**
+  /// **'Add member to current front'**
   String get addToFrontButton;
 
   /// No description provided for @setAsFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set as front'**
+  /// **'Make current front'**
   String get setAsFrontButton;
 
   /// No description provided for @frontActionPickerTooltip.
@@ -7894,6 +7918,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save appearance'**
   String get saveAppearanceButton;
+
+  /// No description provided for @deleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove this item: {error}'**
+  String deleteFailed(String error);
 
   /// No description provided for @systemCounts.
   ///

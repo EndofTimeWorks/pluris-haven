@@ -211,6 +211,7 @@ class BackupChunk(Base):
             "reconciliation_checked_at",
             "id",
             postgresql_where=text("stored_at IS NULL"),
+            postgresql_ops={"reconciliation_checked_at": "ASC NULLS FIRST"},
         ),
     )
 

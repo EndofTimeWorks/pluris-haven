@@ -51,7 +51,7 @@ async def reconcile_legacy_backup_chunks(
                 chunk.size,
                 chunk.sha256,
             )
-        except FileNotFoundError:
+        except OSError:
             continue
         if not valid:
             continue

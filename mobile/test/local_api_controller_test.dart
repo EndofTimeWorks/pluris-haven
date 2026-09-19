@@ -161,6 +161,50 @@ void main() {
   );
 
   test(
+    'replaces a stale saved local API port with a new ephemeral port',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final repository = testRepository(database);
+      final requestedPorts = <int>[];
+      final listeners = <_DelayedListener>[];
+      final controller = LocalApiController(
+        repository,
+        listenerFactory: (_, _) {
+          final listener = _DelayedListener(
+            delayStart: false,
+            port: listeners.isEmpty ? 41123 : 42234,
+            failWhenStarted: listeners.isEmpty,
+            onStart: requestedPorts.add,
+          );
+          listeners.add(listener);
+          return listener;
+        },
+      );
+      addTearDown(() async {
+        await controller.close();
+        await database.close();
+      });
+      await repository.ensureLocalSystem();
+      await database
+          .into(database.appPreferences)
+          .insert(
+            AppPreferencesCompanion.insert(
+              key: 'local_api.port',
+              value: '41123',
+              updatedAt: DateTime.now().toUtc(),
+            ),
+          );
+
+      final status = await controller.enable();
+
+      expect(status.origin, Uri.parse('http://127.0.0.1:42234'));
+      expect(requestedPorts, [41123, 0]);
+      expect(listeners.first.stopCalls, 1);
+      expect((await controller.status()).port, 42234);
+    },
+  );
+
+  test(
     'retires a legacy enabled preference without starting a listener',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
@@ -281,9 +325,16 @@ class _Response {
 }
 
 class _DelayedListener implements LocalApiListener {
-  _DelayedListener({required this.delayStart, required this.port});
+  _DelayedListener({
+    required this.delayStart,
+    required this.port,
+    this.failWhenStarted = false,
+    this.onStart,
+  });
 
   final bool delayStart;
+  final bool failWhenStarted;
+  final void Function(int)? onStart;
   @override
   final int port;
   final started = Completer<void>();
@@ -292,8 +343,12 @@ class _DelayedListener implements LocalApiListener {
 
   @override
   Future<void> start(int requestedPort) async {
+    onStart?.call(requestedPort);
     expect(requestedPort, anyOf(0, port));
     started.complete();
+    if (failWhenStarted) {
+      throw const SocketException('port already in use');
+    }
     if (delayStart) await _startRelease.future;
   }
 

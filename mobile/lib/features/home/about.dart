@@ -144,6 +144,7 @@ Future<void> confirmDelete(
   required Future<void> Function() onDelete,
 }) async {
   final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -164,6 +165,12 @@ Future<void> confirmDelete(
   );
 
   if (confirmed == true) {
-    await onDelete();
+    try {
+      await onDelete();
+    } on Object catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.deleteFailed(error.toString()))),
+      );
+    }
   }
 }

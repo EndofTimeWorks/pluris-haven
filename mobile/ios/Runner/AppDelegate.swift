@@ -25,7 +25,7 @@ import UniformTypeIdentifiers
       at: FileManager.default.temporaryDirectory
         .appendingPathComponent("pluris-haven-avatar-shares", isDirectory: true)
     )
-    excludeAvatarsFromBackup()
+    excludePrivateDataFromBackup()
     BGTaskScheduler.shared.register(
       forTaskWithIdentifier: backgroundTaskIdentifier,
       using: nil
@@ -81,19 +81,22 @@ import UniformTypeIdentifiers
     }
   }
 
-  // Android already excludes app data from backup entirely (allowBackup
-  // false). Avatars are the one place iOS otherwise defaults to including
-  // in iCloud/iTunes backups, so exclude that directory specifically;
-  // marking it excluded also covers every file written into it afterward.
-  private func excludeAvatarsFromBackup() {
-    guard
-      let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-    else { return }
-    var avatars = documents.appendingPathComponent("avatars", isDirectory: true)
-    try? FileManager.default.createDirectory(at: avatars, withIntermediateDirectories: true)
+  // Local archives are encrypted but should not enter iCloud/iTunes backups.
+  // Mark their containing directories so files created by Flutter afterwards,
+  // including the SQLite archive, inherit the exclusion.
+  private func excludePrivateDataFromBackup() {
+    let manager = FileManager.default
+    let directories = [
+      manager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+      manager.urls(for: .documentDirectory, in: .userDomainMask).first?
+        .appendingPathComponent("avatars", isDirectory: true),
+    ].compactMap { $0 }
     var values = URLResourceValues()
     values.isExcludedFromBackup = true
-    try? avatars.setResourceValues(values)
+    for var directory in directories {
+      try? manager.createDirectory(at: directory, withIntermediateDirectories: true)
+      try? directory.setResourceValues(values)
+    }
   }
 
   private func handleTimezoneCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

@@ -104,6 +104,40 @@ void main() {
     );
   });
 
+  testWidgets('reports a failed confirmed deletion instead of dropping it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () => confirmDelete(
+                context,
+                title: 'Remove item',
+                body: 'This should fail.',
+                onDelete: () async => throw StateError('storage unavailable'),
+              ),
+              child: const Text('Remove item'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Remove item'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not remove this item: Bad state: storage unavailable'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows migration failure after bootstrap closes its database', (
     tester,
   ) async {
@@ -136,6 +170,28 @@ void main() {
     expect(database.closed, isTrue);
     expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(PlurisHavenApp), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('shows recovery guidance when startup crypto is corrupt', (
+    tester,
+  ) async {
+    final database = _TrackingDatabase();
+
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () async => throw const FormatException('bad key'),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(database.closed, isTrue);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -435,9 +491,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Members'), findsWidgets);
     expect(find.text('Front History'), findsOneWidget);
     expect(find.text('Customize'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
   });
 
@@ -477,7 +534,9 @@ void main() {
     expect(authenticationCalls, 0);
   });
 
-  testWidgets('uses Simply Plural fronting navigation', (tester) async {
+  testWidgets('uses the shared automatic navigation without a fake menu tab', (
+    tester,
+  ) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
         systemName: 'Local system',
@@ -494,17 +553,19 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.analytics_outlined), findsNothing);
+    expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.menu_rounded),
+      ),
+      findsNothing,
+    );
 
-    await tester.tap(find.byIcon(Icons.category_outlined));
+    await tester.tap(find.byIcon(Icons.analytics_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Custom Fronts'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('add-custom-front-page-button')),
-      findsOneWidget,
-    );
+    expect(find.text('Analytics'), findsOneWidget);
   });
 
   testWidgets('uses the selected navigation layout', (tester) async {
@@ -965,7 +1026,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final setAsFront = find.ancestor(
-      of: find.text('Set as front'),
+      of: find.text('Make current front'),
       matching: find.byType(CheckedPopupMenuItem<HavenFrontAction>),
     );
     await tester.ensureVisible(setAsFront);

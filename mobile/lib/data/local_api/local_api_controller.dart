@@ -166,10 +166,17 @@ class LocalApiController {
     final existing = _service;
     if (existing != null) return existing.port;
     final configuredPort = await _readPort();
-    final service = _listenerFactory(_repository, _authenticateClient);
-    await service.start(configuredPort ?? 0);
+    var service = _listenerFactory(_repository, _authenticateClient);
+    try {
+      await service.start(configuredPort ?? 0);
+    } on SocketException {
+      if (configuredPort == null) rethrow;
+      await service.stop();
+      service = _listenerFactory(_repository, _authenticateClient);
+      await service.start(0);
+    }
     _service = service;
-    if (configuredPort == null) {
+    if (configuredPort == null || service.port != configuredPort) {
       await _writePreference(_portKey, service.port.toString());
     }
     return service.port;

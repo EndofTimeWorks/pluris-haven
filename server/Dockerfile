@@ -21,4 +21,4 @@ RUN pip install --no-deps .
 
 USER pluris
 EXPOSE 8000
-CMD ["uvicorn", "pluris_server.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn pluris_server.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=\"${PLURIS_FORWARDED_ALLOW_IPS:-127.0.0.1,::1}\""]

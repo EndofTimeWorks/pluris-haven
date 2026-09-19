@@ -3110,6 +3110,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationAbout => 'About';
 
   @override
+  String get primaryNavigationHome => 'Home';
+
+  @override
+  String get primaryNavigationMembers => 'Members';
+
+  @override
+  String get primaryNavigationHistory => 'History';
+
+  @override
+  String get primaryNavigationInsights => 'Insights';
+
+  @override
   String get frontingFilter => 'Fronting';
 
   @override
@@ -3180,10 +3192,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setFrontButton => 'Set front';
 
   @override
-  String get addToFrontButton => 'Add to front';
+  String get addToFrontButton => 'Add member to current front';
 
   @override
-  String get setAsFrontButton => 'Set as front';
+  String get setAsFrontButton => 'Make current front';
 
   @override
   String get frontActionPickerTooltip => 'Choose front action';
@@ -4554,6 +4566,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveAppearanceButton => 'Save appearance';
+
+  @override
+  String deleteFailed(String error) {
+    return 'Could not remove this item: $error';
+  }
 
   @override
   String systemCounts(int members, int groups) {
