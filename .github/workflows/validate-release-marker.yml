@@ -36,7 +36,7 @@ jobs:
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          subject="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')"
+          subject="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\n")[0]')"
           if version="$(node scripts/release-marker.mjs "${subject}" 2>/dev/null)"; then
             echo "release=true" >> "${GITHUB_OUTPUT}"
             echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/release-candidate.mjs \
-            "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')" \
+            "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\n")[0]')" \
             "${RELEASE_SHA}" \
             "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
 

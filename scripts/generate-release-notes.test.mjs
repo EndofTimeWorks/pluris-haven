@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { renderReleaseNotes } from './generate-release-notes.mjs';
+import { generateReleaseNotes, renderReleaseNotes } from './generate-release-notes.mjs';
 
 test('renders deterministic user-facing release note categories', () => {
   const notes = renderReleaseNotes([
@@ -27,4 +27,17 @@ test('reports an intentionally empty user-facing range', () => {
     renderReleaseNotes([{ subject: 'ci: refresh workflow runner', body: '' }]),
     'No user-facing changes in this range.\n',
   );
+});
+
+test('reads every conventional commit from real git-log record separators', () => {
+  const notes = generateReleaseNotes({
+    from: 'previous',
+    to: 'current',
+    runGitCommand: () =>
+      'fix(mobile): keep settings after unlock\x1f\x1e\nfeat(import): restore OpenPlural archives\x1f\x1e\n',
+  });
+  assert.match(notes, /### Data & recovery/);
+  assert.match(notes, /- restore OpenPlural archives/);
+  assert.match(notes, /### Fixed/);
+  assert.match(notes, /- keep settings after unlock/);
 });

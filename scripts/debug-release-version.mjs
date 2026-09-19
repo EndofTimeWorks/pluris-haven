@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { fileURLToPath } from 'node:url';
+
 const versionPattern =
   /^(?<core>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?<prerelease>-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\+(?<build>[1-9][0-9]*)$/;
 
@@ -15,7 +17,7 @@ export function debugTag(versionWithBuild, runNumber) {
   return `debug-v${core}-${debugPrerelease}.${runNumber}+${build}`;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   try {
     console.log(debugTag(process.argv[2], process.argv[3]));
   } catch (error) {

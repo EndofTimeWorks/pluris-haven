@@ -11,9 +11,12 @@ import {
 
 const primary = '2C930C47DEED62EC7DAFDFE245FFF54B2D9F031C';
 const signing = 'BF89ABFBD583200EB70E43FA46525A21A09A8888';
-const validListing = `sec#:-:255:22:primary::::::::scESC:::#:::23::0:
+// Captured from GnuPG 2.4 --with-colons after importing an exported signing
+// subkey without its primary secret-key material. The stub marker is field 15,
+// not part of the record type.
+const validListing = `sec:-:255:22:primary:::::::cSC:::#::ed25519:::0:
 fpr:::::::::${primary}:
-ssb:-:255:22:signing::::::::s::::::23:
+ssb:-:255:22:signing:::::::s::::::ed25519:::0:
 fpr:::::::::${signing}:`;
 
 test('accepts only the unavailable expected primary and explicit signing subkey', () => {
@@ -39,14 +42,14 @@ test('rejects incorrect, usable, missing, and unexpected secret key material', (
     }),
   );
   assert.throws(() =>
-    validateSecretKeyListing(validListing.replace('sec#', 'sec'), {
+    validateSecretKeyListing(validListing.replace(':::#::', ':::::'), {
       primaryFingerprint: primary,
       signingFingerprint: signing,
     }),
   );
   assert.throws(() =>
     validateSecretKeyListing(
-      `${validListing}\nssb:-:255:22:other::::::::s::::::23:\nfpr:::::::::OTHER:`,
+      `${validListing}\nssb:-:255:22:other:::::::s::::::ed25519:::0:\nfpr:::::::::OTHER:`,
       { primaryFingerprint: primary, signingFingerprint: signing },
     ),
   );
