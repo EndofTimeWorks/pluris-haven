@@ -19,6 +19,6 @@ pg_dump \
   --file="$temporary" \
   "$PLURIS_BACKUP_DATABASE_URL"
 mv "$temporary" "$destination"
+find "$backup_dir" -maxdepth 1 -type f -name '.pluris-*.dump.tmp' -mtime "+$retention_days" -delete
 find "$backup_dir" -type f -name 'pluris-*.dump' -mtime "+$retention_days" -delete
 printf '%s\n' "$destination"
-
