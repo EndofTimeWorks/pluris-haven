@@ -42,12 +42,12 @@ dependencies:
   cryptography: ^2.9.0
   libcompress: ^1.2.1
   cupertino_icons: ^1.0.8
-  drift: ^2.34.3
+  drift: ^2.35.1
   intl: ^0.20.2
   path: ^1.9.1
   path_provider: ^2.1.5
-  sqlite3: ^3.5.2
-  url_launcher: ^6.3.2
+  sqlite3: ^3.7.0
+  url_launcher: ^6.3.3
   flutter_local_notifications: ^22.3.0
   timezone: ^0.11.1
   unorm_dart: ^0.3.2
@@ -55,8 +55,8 @@ dependencies:
   http: ^1.6.0
   local_auth: ^3.0.0
   flutter_markdown_plus: ^1.0.12
-  package_info_plus: ^10.2.1
-  sentry_flutter: ^9.28.0
+  package_info_plus: ^10.2.2
+  sentry_flutter: ^10.0.0-rc.2
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +68,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  drift_dev: ^2.34.5
+  drift_dev: ^2.35.1
   build_runner: ^2.15.0
 
 # For information on the generic Dart part of this file, see the
