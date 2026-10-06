@@ -41,7 +41,7 @@ dependencies:
   archive: ^4.2.0
   cryptography: ^2.9.0
   libcompress: ^1.2.1
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   drift: ^2.34.3
   intl: ^0.20.2
   path: ^1.9.1
