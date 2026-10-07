@@ -60,7 +60,7 @@ test('keeps the README-facing first-party route connected to the canonical confi
     readme,
     /\[Add Pluris Haven to Obtainium\]\(https:\/\/pluris\.endoftime\.dev\/obtainium\)/,
   );
-  assert.match(route, /import \{ obtainiumRedirectUrl \} from '\$lib\/obtainium-config'/);
+  assert.match(route, /import \{ obtainiumRedirectUrl \} from '#lib\/obtainium-config\.js'/);
   assert.match(route, /window\.location\.replace\(obtainiumRedirectUrl\)/);
   assert.match(route, /href=\{obtainiumRedirectUrl\}/);
 });
