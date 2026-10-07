@@ -2466,6 +2466,12 @@ abstract class AppLocalizations {
   /// **'OpenPlural'**
   String get importSourceOpenPlural;
 
+  /// No description provided for @importSourcePluralPort.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort'**
+  String get importSourcePluralPort;
+
   /// No description provided for @importSourcePrism.
   ///
   /// In en, this message translates to:
@@ -2537,6 +2543,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalized names'**
   String get importDedupeOpenPlural;
+
+  /// No description provided for @importDedupePluralPort.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort IDs, source IDs, normalized names'**
+  String get importDedupePluralPort;
 
   /// No description provided for @importDedupePrism.
   ///
@@ -2652,6 +2664,12 @@ abstract class AppLocalizations {
   /// **'filename looks like an OpenPlural export'**
   String get importReasonOpenPluralFileName;
 
+  /// No description provided for @importReasonPluralPortFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a PluralPort export'**
+  String get importReasonPluralPortFileName;
+
   /// No description provided for @importReasonChooseAfterUpload.
   ///
   /// In en, this message translates to:
@@ -2699,6 +2717,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'file contains OpenPlural v0.1 markers'**
   String get importReasonOpenPluralMarkers;
+
+  /// No description provided for @importReasonPluralPortMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains PluralPort Draft v0.1 markers'**
+  String get importReasonPluralPortMarkers;
 
   /// No description provided for @importReasonAmbiguousMemberGroupJson.
   ///
@@ -3204,6 +3228,24 @@ abstract class AppLocalizations {
   /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.'**
   String get importStepReviewOpenPluralDetail;
 
+  /// No description provided for @importStepReadPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a PluralPort Draft v0.1 JSON file.'**
+  String get importStepReadPluralPortDetail;
+
+  /// No description provided for @importStepMapPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage supported systems, members, groups, notes, assets, and fronting records; preserve underspecified records for later support.'**
+  String get importStepMapPluralPortDetail;
+
+  /// No description provided for @importStepReviewPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.'**
+  String get importStepReviewPluralPortDetail;
+
   /// No description provided for @importStepChoosePrismTitle.
   ///
   /// In en, this message translates to:
@@ -3336,6 +3378,18 @@ abstract class AppLocalizations {
   /// **'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.'**
   String get importPrivacyOpenPluralExtensions;
 
+  /// No description provided for @importPrivacyPluralPortIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort file-local and source identifiers are retained for re-import dedupe.'**
+  String get importPrivacyPluralPortIdentifiers;
+
+  /// No description provided for @importPrivacyPluralPortExtensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported PluralPort extensions and source references can be retained as encrypted raw source payloads.'**
+  String get importPrivacyPluralPortExtensions;
+
   /// No description provided for @importPrivacyPrismPassphraseMemoryOnly.
   ///
   /// In en, this message translates to:
@@ -3431,6 +3485,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unsupported archive version: {version}.'**
   String importDiagnosticUnsupportedArchiveVersion(String version);
+
+  /// No description provided for @importDiagnosticInvalidPortableFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not validate this import format: {error}'**
+  String importDiagnosticInvalidPortableFormat(String error);
 
   /// No description provided for @importDiagnosticFoundMembersAndFronts.
   ///
@@ -4195,6 +4255,12 @@ abstract class AppLocalizations {
   /// **'Save JSON file'**
   String get saveJsonFileButton;
 
+  /// No description provided for @savePluralPortFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PluralPort file'**
+  String get savePluralPortFileButton;
+
   /// No description provided for @copyJsonButton.
   ///
   /// In en, this message translates to:
@@ -4261,11 +4327,29 @@ abstract class AppLocalizations {
   /// **'Save Pluris Haven archive'**
   String get saveArchiveDialogTitle;
 
+  /// No description provided for @savePluralPortDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PluralPort file'**
+  String get savePluralPortDialogTitle;
+
   /// No description provided for @archiveSaved.
   ///
   /// In en, this message translates to:
   /// **'Archive saved'**
   String get archiveSaved;
+
+  /// No description provided for @pluralPortFileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort file saved'**
+  String get pluralPortFileSaved;
+
+  /// No description provided for @couldNotSavePluralPortFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save PluralPort file: {error}'**
+  String couldNotSavePluralPortFile(String error);
 
   /// No description provided for @couldNotSaveArchive.
   ///

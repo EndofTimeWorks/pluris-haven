@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'import_diagnostic.dart';
 import 'import_file_decoder.dart';
 import 'import_sources.dart';
+import 'pluralport_codec.dart';
 
 part 'openplural_mapper.dart';
 
@@ -57,8 +58,26 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   // to the generic loose archive shape before using the shared normalizer.
   // Unknown extension data stays in `raw_payloads` through that normalizer.
   var effectiveDecoded = decoded;
-  if (source == ImportSource.openPlural) {
-    effectiveDecoded = _openPluralEnvelopeToLooseArchive(decoded);
+  var effectiveAvatarAssets = avatarAssets;
+  if (source == ImportSource.openPlural || source == ImportSource.pluralPort) {
+    if (source == ImportSource.pluralPort) {
+      validatePluralPortEnvelope(decoded);
+      effectiveAvatarAssets = [
+        ...avatarAssets,
+        ..._pluralPortHavenAvatarAssets(decoded),
+      ];
+    }
+    effectiveDecoded = _openPluralEnvelopeToLooseArchive(
+      decoded,
+      versionKey: source == ImportSource.pluralPort
+          ? 'pluralport_version'
+          : 'openplural_version',
+      preservedExtensionKey: source == ImportSource.pluralPort
+          ? 'pluralport_extensions'
+          : 'openplural_extensions',
+      preserveAllExtensions: source == ImportSource.pluralPort,
+      mapCustomFields: source != ImportSource.pluralPort,
+    );
   }
 
   // Ampersand nests its whole export under a `database` envelope alongside
@@ -75,7 +94,7 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   final normalizer = _ExternalArchiveNormalizer(
     source: source,
     decoded: effectiveDecoded,
-    avatarAssets: avatarAssets,
+    avatarAssets: effectiveAvatarAssets,
     importedAt: importedAt ?? DateTime.now().toUtc(),
   )..normalize();
 

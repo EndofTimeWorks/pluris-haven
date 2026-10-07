@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/avatar/avatar_file_policy.dart';
@@ -18,6 +19,7 @@ import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/import/member_dedupe.dart';
 import '../../data/import/pluralkit_live_client.dart';
+import '../../data/import/pluralport_codec.dart';
 import '../../data/backup/repository_backup.dart';
 import '../../data/local/app_database.dart'
     show

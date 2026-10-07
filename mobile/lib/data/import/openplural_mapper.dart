@@ -1,12 +1,16 @@
 part of 'import_archive_mapper.dart';
 
 Map<String, Object?> _openPluralEnvelopeToLooseArchive(
-  Map<String, Object?> envelope,
-) {
-  final version = envelope['openplural_version'];
+  Map<String, Object?> envelope, {
+  String versionKey = 'openplural_version',
+  String preservedExtensionKey = 'openplural_extensions',
+  bool preserveAllExtensions = false,
+  bool mapCustomFields = true,
+}) {
+  final version = envelope[versionKey];
   if (version != '0.1') {
     throw FormatException(
-      'Unsupported OpenPlural version: ${version ?? 'missing'}.',
+      'Unsupported portable format version: ${version ?? 'missing'}.',
     );
   }
 
@@ -17,12 +21,22 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
     final uri = asset == null
         ? null
         : _firstString(asset, const ['uri', 'url']);
-    if (id != null && uri != null) assets[id] = uri;
+    final havenExtension = asset == null
+        ? null
+        : _mapValue(_mapValue(asset['extensions'])?[pluralPortHavenAppId]);
+    if (id != null && uri != null) {
+      assets[id] = uri;
+    } else if (id != null && havenExtension?['bytes_base64'] is String) {
+      assets[id] = 'local-avatar:$id';
+    }
   }
 
   final systems = _firstList(envelope, const ['systems']);
   final system = systems.isEmpty ? null : _mapValue(systems.first);
   final extension = _openPluralSheafExtension(envelope);
+  final preservedExtensions = preserveAllExtensions
+      ? _mapValue(envelope['extensions']) ?? const <String, Object?>{}
+      : extension;
   return {
     'system': system == null
         ? null
@@ -40,25 +54,96 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
           _openPluralMember(member, assets),
     ],
     'groups': _openPluralGroups(envelope),
-    'custom_fields': [
-      for (final value in _firstList(envelope, const ['custom_fields']))
-        if (_mapValue(value) case final field?)
-          {
-            'id': _firstString(field, const ['id']),
-            'name': _firstString(field, const ['name']),
-            'field_type': _firstString(field, const ['field_type']),
-            'privacy': _openPluralPrivacyVisibility(field['privacy']),
-            'position': _intValue(field['sort_order'] ?? field['order']),
-          },
-    ],
-    'custom_field_values': _openPluralCustomFieldValues(envelope),
+    'custom_fields': mapCustomFields
+        ? [
+            for (final value in _firstList(envelope, const ['custom_fields']))
+              if (_mapValue(value) case final field?)
+                {
+                  'id': _firstString(field, const ['id']),
+                  'name': _firstString(field, const ['name']),
+                  'field_type': _firstString(field, const ['field_type']),
+                  'privacy': _openPluralPrivacyVisibility(field['privacy']),
+                  'position': _intValue(field['sort_order'] ?? field['order']),
+                },
+          ]
+        : const <Object?>[],
+    'custom_field_values': mapCustomFields
+        ? _openPluralCustomFieldValues(envelope)
+        : const <Object?>[],
     'notes': _openPluralNotes(envelope),
     'messages': _openPluralMessages(envelope),
     'reminders': extension['reminders'] ?? const [],
     'polls': extension['polls'] ?? const [],
     'fronts': _openPluralFronts(envelope),
-    'openplural_extensions': extension,
+    preservedExtensionKey: preserveAllExtensions
+        ? {
+            'envelope_extensions': preservedExtensions,
+            'records': _portableRecords(envelope),
+            'source_warnings': envelope['warnings'] ?? const [],
+          }
+        : extension,
   };
+}
+
+List<Map<String, Object?>> _portableRecords(Map<String, Object?> envelope) => [
+  for (final collection in const [
+    'systems',
+    'members',
+    'groups',
+    'group_memberships',
+    'taxonomy_terms',
+    'taxonomy_assignments',
+    'custom_fields',
+    'custom_field_values',
+    'front_periods',
+    'front_events',
+    'front_comments',
+    'notes',
+    'assets',
+    'conversations',
+    'chat_messages',
+    'attachments',
+    'reactions',
+    'board_posts',
+  ])
+    for (final value in _firstList(envelope, [collection]))
+      if (_mapValue(value) case final record?)
+        {
+          'collection': collection,
+          'id': _firstString(record, const ['id']),
+          'record': record,
+        },
+];
+
+List<ImportAvatarAsset> _pluralPortHavenAvatarAssets(
+  Map<String, Object?> envelope,
+) {
+  const maximumAvatarBytes = 10 * 1024 * 1024;
+  final assets = <ImportAvatarAsset>[];
+  for (final value in _firstList(envelope, const ['assets'])) {
+    final asset = _mapValue(value);
+    final id = asset == null ? null : _firstString(asset, const ['id']);
+    final extension = asset == null
+        ? null
+        : _mapValue(_mapValue(asset['extensions'])?[pluralPortHavenAppId]);
+    final encoded = extension?['bytes_base64'];
+    if (id == null || encoded is! String) continue;
+    try {
+      final bytes = base64Decode(encoded);
+      if (bytes.isEmpty || bytes.length > maximumAvatarBytes) continue;
+      assets.add(
+        ImportAvatarAsset(
+          id: id,
+          name: _firstString(asset!, const ['name']) ?? id,
+          bytes: bytes,
+          mimeType: _firstString(asset, const ['mime_type']),
+        ),
+      );
+    } on FormatException {
+      // The original asset record remains in the encrypted raw payload.
+    }
+  }
+  return assets;
 }
 
 Map<String, Object?> _openPluralMember(

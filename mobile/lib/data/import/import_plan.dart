@@ -37,6 +37,9 @@ enum ImportPlanStep {
   readOpenPlural,
   mapOpenPlural,
   reviewOpenPlural,
+  readPluralPort,
+  mapPluralPort,
+  reviewPluralPort,
   choosePrism,
   decryptPrism,
   reviewPrism,
@@ -81,6 +84,8 @@ enum ImportPrivacyNote {
   pluralSpaceUnknownFields,
   openPluralIdentifiers,
   openPluralExtensions,
+  pluralPortIdentifiers,
+  pluralPortExtensions,
   prismPassphraseMemoryOnly,
   prismIdentifiers,
   ampersandIdentifiers,
@@ -95,6 +100,7 @@ enum ImportDetectionReason {
   tupperboxFileName,
   pluralSpaceFileName,
   openPluralFileName,
+  pluralPortFileName,
   chooseAfterUpload,
   encryptedPlurisArchive,
   localPlurisArchive,
@@ -103,6 +109,7 @@ enum ImportDetectionReason {
   simplyPluralFields,
   pluralSpaceMarkers,
   openPluralMarkers,
+  pluralPortMarkers,
   ambiguousMemberGroupJson,
   unrecognised,
 }
@@ -166,6 +173,14 @@ ImportFileGuess guessImportSourceFromFile({
     );
   }
 
+  if (_hasAny(name, ['pluralport', 'plural-port'])) {
+    return const ImportFileGuess(
+      source: ImportSource.pluralPort,
+      confidence: 0.9,
+      reason: ImportDetectionReason.pluralPortFileName,
+    );
+  }
+
   if (_hasAny(name, ['pluris-haven', 'pluris_haven', 'plurishaven'])) {
     return const ImportFileGuess(
       source: ImportSource.plurisHavenArchive,
@@ -224,6 +239,14 @@ ImportFileGuess guessImportSourceFromFile({
       source: null,
       confidence: 0,
       reason: ImportDetectionReason.chooseAfterUpload,
+    );
+  }
+
+  if (_hasAny(text, ['"pluralport_version"'])) {
+    return const ImportFileGuess(
+      source: ImportSource.pluralPort,
+      confidence: 0.98,
+      reason: ImportDetectionReason.pluralPortMarkers,
     );
   }
 
@@ -466,6 +489,27 @@ ImportSourcePlan importPlanFor(ImportSource source) {
         ImportPlanStep.readOpenPlural,
         ImportPlanStep.mapOpenPlural,
         ImportPlanStep.reviewOpenPlural,
+      ],
+    ),
+    ImportSource.pluralPort => const ImportSourcePlan(
+      source: ImportSource.pluralPort,
+      status: ImportPlanStatus.ready,
+      defaultConflictStrategy: ImportConflictStrategy.prompt,
+      previewCounts: [
+        ImportPlanCount.members,
+        ImportPlanCount.groups,
+        ImportPlanCount.notes,
+        ImportPlanCount.frontHistory,
+        ImportPlanCount.avatars,
+      ],
+      privacyNotes: [
+        ImportPrivacyNote.pluralPortIdentifiers,
+        ImportPrivacyNote.pluralPortExtensions,
+      ],
+      steps: [
+        ImportPlanStep.readPluralPort,
+        ImportPlanStep.mapPluralPort,
+        ImportPlanStep.reviewPluralPort,
       ],
     ),
     ImportSource.prism => const ImportSourcePlan(

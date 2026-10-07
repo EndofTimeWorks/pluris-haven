@@ -86,6 +86,13 @@ enum ImportSource {
       'normalized names',
     ],
   ),
+  pluralPort(
+    label: 'PluralPort',
+    subtitle: 'PluralPort Draft v0.1 JSON file',
+    inputKinds: [ImportInputKind.file],
+    status: ImporterStatus.ready,
+    dedupeKeys: ['PluralPort IDs', 'source IDs', 'normalized names'],
+  ),
   prism(
     label: 'Prism',
     subtitle: 'Encrypted .prism export',
@@ -123,6 +130,7 @@ enum ImportSource {
     ImportSource.tupperbox => 'tupperbox_file',
     ImportSource.pluralSpace => 'pluralspace_file',
     ImportSource.openPlural => 'openplural_file',
+    ImportSource.pluralPort => 'pluralport_file',
     ImportSource.prism => 'prism_file',
     ImportSource.ampersand => 'ampersand_file',
   };

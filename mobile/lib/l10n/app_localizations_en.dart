@@ -1361,6 +1361,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importSourceOpenPlural => 'OpenPlural';
 
   @override
+  String get importSourcePluralPort => 'PluralPort';
+
+  @override
   String get importSourcePrism => 'Prism';
 
   @override
@@ -1400,6 +1403,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importDedupeOpenPlural =>
       'OpenPlural IDs, source IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupePluralPort =>
+      'PluralPort IDs, source IDs, normalized names';
 
   @override
   String get importDedupePrism => 'Prism IDs, normalized names';
@@ -1467,6 +1474,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'filename looks like an OpenPlural export';
 
   @override
+  String get importReasonPluralPortFileName =>
+      'filename looks like a PluralPort export';
+
+  @override
   String get importReasonChooseAfterUpload => 'pick a service after upload';
 
   @override
@@ -1496,6 +1507,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importReasonOpenPluralMarkers =>
       'file contains OpenPlural v0.1 markers';
+
+  @override
+  String get importReasonPluralPortMarkers =>
+      'file contains PluralPort Draft v0.1 markers';
 
   @override
   String get importReasonAmbiguousMemberGroupJson =>
@@ -1788,6 +1803,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.';
 
   @override
+  String get importStepReadPluralPortDetail =>
+      'Accept a PluralPort Draft v0.1 JSON file.';
+
+  @override
+  String get importStepMapPluralPortDetail =>
+      'Stage supported systems, members, groups, notes, assets, and fronting records; preserve underspecified records for later support.';
+
+  @override
+  String get importStepReviewPluralPortDetail =>
+      'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.';
+
+  @override
   String get importStepChoosePrismTitle => 'Choose .prism file';
 
   @override
@@ -1873,6 +1900,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.';
 
   @override
+  String get importPrivacyPluralPortIdentifiers =>
+      'PluralPort file-local and source identifiers are retained for re-import dedupe.';
+
+  @override
+  String get importPrivacyPluralPortExtensions =>
+      'Unsupported PluralPort extensions and source references can be retained as encrypted raw source payloads.';
+
+  @override
   String get importPrivacyPrismPassphraseMemoryOnly =>
       'The passphrase is only used to decrypt the import in memory.';
 
@@ -1929,6 +1964,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String importDiagnosticUnsupportedArchiveVersion(String version) {
     return 'Unsupported archive version: $version.';
+  }
+
+  @override
+  String importDiagnosticInvalidPortableFormat(String error) {
+    return 'Could not validate this import format: $error';
   }
 
   @override
@@ -2416,6 +2456,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveJsonFileButton => 'Save JSON file';
 
   @override
+  String get savePluralPortFileButton => 'Save PluralPort file';
+
+  @override
   String get copyJsonButton => 'Copy JSON';
 
   @override
@@ -2454,7 +2497,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveArchiveDialogTitle => 'Save Pluris Haven archive';
 
   @override
+  String get savePluralPortDialogTitle => 'Save PluralPort file';
+
+  @override
   String get archiveSaved => 'Archive saved';
+
+  @override
+  String get pluralPortFileSaved => 'PluralPort file saved';
+
+  @override
+  String couldNotSavePluralPortFile(String error) {
+    return 'Could not save PluralPort file: $error';
+  }
 
   @override
   String couldNotSaveArchive(String error) {
