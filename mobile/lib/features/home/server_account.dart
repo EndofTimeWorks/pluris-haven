@@ -652,9 +652,8 @@ class _ServerAuthenticationSheetState
                     obscureText: true,
                     autofillHints: const [AutofillHints.newPassword],
                     decoration: InputDecoration(
-                      labelText: AppLocalizations.of(
-                        context,
-                      ).confirmNewPasswordLabel,
+                      labelText: AppLocalizations.of(context)
+                          .confirmNewPasswordLabel,
                     ),
                     validator: (value) => value != password.text
                         ? AppLocalizations.of(context).passwordsDoNotMatchError
@@ -893,9 +892,8 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
-        _restoreMessage = AppLocalizations.of(
-          context,
-        ).encryptedBackupRestoreFailed(error.toString());
+        _restoreMessage = AppLocalizations.of(context)
+            .encryptedBackupRestoreFailed(error.toString());
       });
     } finally {
       if (mounted) {

@@ -1161,15 +1161,15 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required List<Map<String, Object?>> namedFronts,
     required List<Map<String, Object?>> namedFrontMembers,
   }) {
-    final groupIds = {
-      for (final group in groups) _stringValue(group['id']),
-    }.whereType<String>().toSet();
-    final memberIds = {
-      for (final member in members) _stringValue(member['id']),
-    }.whereType<String>().toSet();
-    final noteIds = {
-      for (final note in notes) _stringValue(note['id']),
-    }.whereType<String>().toSet();
+    final groupIds = {for (final group in groups) _stringValue(group['id'])}
+        .whereType<String>()
+        .toSet();
+    final memberIds = {for (final member in members) _stringValue(member['id'])}
+        .whereType<String>()
+        .toSet();
+    final noteIds = {for (final note in notes) _stringValue(note['id'])}
+        .whereType<String>()
+        .toSet();
     final chatCategoryIds = {
       for (final category in chatCategories) _stringValue(category['id']),
     }.whereType<String>().toSet();
@@ -1179,24 +1179,24 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final messageIds = {
       for (final message in messages) _stringValue(message['id']),
     }.whereType<String>().toSet();
-    final tagIds = {
-      for (final tag in tags) _stringValue(tag['id']),
-    }.whereType<String>().toSet();
+    final tagIds = {for (final tag in tags) _stringValue(tag['id'])}
+        .whereType<String>()
+        .toSet();
     final journalIds = {
       for (final journal in journals) _stringValue(journal['id']),
     }.whereType<String>().toSet();
     final customFieldIds = {
       for (final field in customFields) _stringValue(field['id']),
     }.whereType<String>().toSet();
-    final pollIds = {
-      for (final poll in polls) _stringValue(poll['id']),
-    }.whereType<String>().toSet();
+    final pollIds = {for (final poll in polls) _stringValue(poll['id'])}
+        .whereType<String>()
+        .toSet();
     final pollOptionIds = {
       for (final option in pollOptions) _stringValue(option['id']),
     }.whereType<String>().toSet();
-    final frontIds = {
-      for (final front in fronts) _stringValue(front['id']),
-    }.whereType<String>().toSet();
+    final frontIds = {for (final front in fronts) _stringValue(front['id'])}
+        .whereType<String>()
+        .toSet();
     final namedFrontIds = {
       for (final front in namedFronts) _stringValue(front['id']),
     }.whereType<String>().toSet();
@@ -1690,9 +1690,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final detectedMimeType = sniffAvatarMimeType(bytes) ?? mimeType;
     final extension = _avatarExtension(sourceName, detectedMimeType);
     final safeId = _safeFilePart(id);
-    final digest = base64UrlEncode(
-      (await Sha256().hash(bytes)).bytes,
-    ).replaceAll('=', '').substring(0, 24);
+    final digest = base64UrlEncode((await Sha256().hash(bytes)).bytes)
+        .replaceAll('=', '')
+        .substring(0, 24);
     final fileName = '$safeId-$digest$extension';
     await _avatarStore.write(fileName, bytes);
     return 'local-avatar:$fileName';

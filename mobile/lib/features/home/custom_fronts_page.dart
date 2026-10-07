@@ -764,9 +764,8 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatarSemanticLabel = AppLocalizations.of(
-      context,
-    ).memberAvatarSemanticLabel(label);
+    final avatarSemanticLabel = AppLocalizations.of(context)
+        .memberAvatarSemanticLabel(label);
     final ref = avatarUrl?.trim();
     if (ref == null || ref.isEmpty) {
       return SpAvatar(

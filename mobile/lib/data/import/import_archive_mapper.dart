@@ -2550,9 +2550,8 @@ class _ExternalArchiveNormalizer {
             'id': _stableId('raw', entry.key),
             'source': source.jobSource,
             'collection': entry.key,
-            'payload_json': const JsonEncoder.withIndent(
-              '  ',
-            ).convert(entry.value),
+            'payload_json': const JsonEncoder.withIndent('  ')
+                .convert(entry.value),
             'imported_at': importedAt.toIso8601String(),
           },
     ];

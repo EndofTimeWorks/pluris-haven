@@ -3556,9 +3556,9 @@ void main() {
     await _pumpUntilFound(tester, find.text('Restore rehearsal passed'));
 
     expect(find.text('Restore rehearsal passed'), findsOneWidget);
-    final rehearsedArchive =
-        jsonDecode(repository.lastRehearsedArchiveJson!)
-            as Map<String, dynamic>;
+    final rehearsedArchive = jsonDecode(
+      repository.lastRehearsedArchiveJson!,
+    ) as Map<String, dynamic>;
     expect(rehearsedArchive['raw_payloads'], isEmpty);
     expect(
       find.textContaining('Nothing was written to your app data'),

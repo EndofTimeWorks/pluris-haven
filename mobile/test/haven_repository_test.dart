@@ -238,9 +238,9 @@ void main() {
         (await repository.watchCustomFieldValues().first).single.value,
         'exact source text',
       );
-      final migratedArchive =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final migratedArchive = jsonDecode(
+        await repository.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       expect(
         migratedArchive['custom_field_value_migration_provenance'],
         contains(
@@ -275,124 +275,119 @@ void main() {
     },
   );
 
-  test(
-    'applies explicit custom-field resolutions atomically and preserves raw values',
-    () async {
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
-      final repository = testRepository(database);
-      await repository.ensureLocalSystem();
-      await repository.saveMember(const MemberDraft(displayName: 'River'));
-      await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
-      final members = await repository.watchMembers().first;
-      await repository.saveCustomField(
-        const CustomFieldDraft(name: 'Rating', fieldType: 'text'),
-      );
-      final field = (await repository.watchCustomFields().first).single;
-      await repository.setCustomFieldValue(
-        fieldId: field.id,
-        memberId: members[0].id,
-        value: '42',
-      );
-      await repository.setCustomFieldValue(
-        fieldId: field.id,
-        memberId: members[1].id,
-        value: 'not numeric',
-      );
+  test('applies explicit custom-field resolutions atomically and preserves raw values', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Juniper'));
+    final members = await repository.watchMembers().first;
+    await repository.saveCustomField(
+      const CustomFieldDraft(name: 'Rating', fieldType: 'text'),
+    );
+    final field = (await repository.watchCustomFields().first).single;
+    await repository.setCustomFieldValue(
+      fieldId: field.id,
+      memberId: members[0].id,
+      value: '42',
+    );
+    await repository.setCustomFieldValue(
+      fieldId: field.id,
+      memberId: members[1].id,
+      value: 'not numeric',
+    );
 
-      final preview = await repository.previewCustomFieldTypeChange(
-        field.id,
-        'number',
-      );
-      expect(preview.canApply, isFalse);
-      expect(preview.values, hasLength(2));
-      expect(preview.values.every((value) => value.requiresResolution), isTrue);
+    final preview = await repository.previewCustomFieldTypeChange(
+      field.id,
+      'number',
+    );
+    expect(preview.canApply, isFalse);
+    expect(preview.values, hasLength(2));
+    expect(preview.values.every((value) => value.requiresResolution), isTrue);
 
-      await expectLater(
-        repository.applyCustomFieldTypeChange(
-          field.id,
-          const CustomFieldDraft(name: 'Rating', fieldType: 'number'),
-          resolutions: {
-            preview.values[0].valueId: 42,
-            preview.values[1].valueId: 'not a number',
-          },
-        ),
-        throwsA(isA<StateError>()),
-      );
-      expect(
-        (await repository.watchCustomFields().first).single.fieldType,
-        'text',
-      );
-      expect(
-        await database
-            .select(database.customFieldValueMigrationProvenance)
-            .get(),
-        isEmpty,
-      );
-      expect(
-        (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
-          (value) => value.value,
-        ),
-        containsAll(['42', 'not numeric']),
-      );
-
-      await repository.applyCustomFieldTypeChange(
+    await expectLater(
+      repository.applyCustomFieldTypeChange(
         field.id,
         const CustomFieldDraft(name: 'Rating', fieldType: 'number'),
         resolutions: {
           preview.values[0].valueId: 42,
-          preview.values[1].valueId: 7,
+          preview.values[1].valueId: 'not a number',
         },
-      );
-      expect(
-        (await repository.watchCustomFields().first).single.fieldType,
-        'number',
-      );
-      expect(
-        (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
-          (value) => value.value,
-        ),
-        containsAll([42, 7]),
-      );
-      final archive =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
-      expect(
-        archive['custom_field_value_migration_provenance'],
-        containsAll([
-          allOf(
-            containsPair('source_type', 'text'),
-            containsPair('source_value', '42'),
-          ),
-          allOf(
-            containsPair('source_type', 'text'),
-            containsPair('source_value', 'not numeric'),
-          ),
-        ]),
-      );
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(
+      (await repository.watchCustomFields().first).single.fieldType,
+      'text',
+    );
+    expect(
+      await database.select(database.customFieldValueMigrationProvenance).get(),
+      isEmpty,
+    );
+    expect(
+      (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
+        (value) => value.value,
+      ),
+      containsAll(['42', 'not numeric']),
+    );
 
-      final restoredDatabase = AppDatabase(NativeDatabase.memory());
-      addTearDown(restoredDatabase.close);
-      final restored = testRepository(restoredDatabase);
-      await restored.ensureLocalSystem();
-      await restored.importLocalArchiveJson(jsonEncode(archive));
-      final restoredArchive =
-          jsonDecode(await restored.buildLocalArchiveJson())
-              as Map<String, dynamic>;
-      expect(
-        restoredArchive['custom_field_value_migration_provenance'],
-        archive['custom_field_value_migration_provenance'],
-      );
-      final restoredField = (await restored.watchCustomFields().first).single;
-      await restored.deleteCustomField(restoredField.id);
-      expect(
-        await restoredDatabase
-            .select(restoredDatabase.customFieldValueMigrationProvenance)
-            .get(),
-        isEmpty,
-      );
-    },
-  );
+    await repository.applyCustomFieldTypeChange(
+      field.id,
+      const CustomFieldDraft(name: 'Rating', fieldType: 'number'),
+      resolutions: {
+        preview.values[0].valueId: 42,
+        preview.values[1].valueId: 7,
+      },
+    );
+    expect(
+      (await repository.watchCustomFields().first).single.fieldType,
+      'number',
+    );
+    expect(
+      (await repository.watchCustomFieldValues(fieldId: field.id).first).map(
+        (value) => value.value,
+      ),
+      containsAll([42, 7]),
+    );
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
+    expect(
+      archive['custom_field_value_migration_provenance'],
+      containsAll([
+        allOf(
+          containsPair('source_type', 'text'),
+          containsPair('source_value', '42'),
+        ),
+        allOf(
+          containsPair('source_type', 'text'),
+          containsPair('source_value', 'not numeric'),
+        ),
+      ]),
+    );
+
+    final restoredDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(restoredDatabase.close);
+    final restored = testRepository(restoredDatabase);
+    await restored.ensureLocalSystem();
+    await restored.importLocalArchiveJson(jsonEncode(archive));
+    final restoredArchive = jsonDecode(
+      await restored.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
+    expect(
+      restoredArchive['custom_field_value_migration_provenance'],
+      archive['custom_field_value_migration_provenance'],
+    );
+    final restoredField = (await restored.watchCustomFields().first).single;
+    await restored.deleteCustomField(restoredField.id);
+    expect(
+      await restoredDatabase
+          .select(restoredDatabase.customFieldValueMigrationProvenance)
+          .get(),
+      isEmpty,
+    );
+  });
 
   test(
     'rolls back a custom-field type migration after a provenance write fails',
@@ -1413,9 +1408,9 @@ END;
         hasLength(1),
       );
 
-      final archive =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final archive = jsonDecode(
+        await repository.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       final archivedMember =
           (archive['members'] as List).single as Map<String, dynamic>;
       expect(archivedMember['deleted_at'], isNotNull);
@@ -1525,9 +1520,9 @@ END;
             .get(),
         isEmpty,
       );
-      final archive =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final archive = jsonDecode(
+        await repository.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       expect(archive['custom_field_value_migration_provenance'], isEmpty);
       final tombstone = await (database.select(
         database.members,
@@ -1959,9 +1954,9 @@ END;
     expect(buckets.single.name, 'Close friends');
     expect(buckets.single.memberIds, isEmpty);
 
-    final archive =
-        jsonDecode(await repository.buildLocalArchiveJson())
-            as Map<String, Object?>;
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, Object?>;
     expect(archive['privacy_buckets'], isA<List<Object?>>());
 
     await repository.deletePrivacyBucket(buckets.single.id);
@@ -2491,9 +2486,9 @@ END;
       var poll = (await repository.watchPolls().first).single;
       await repository.togglePollOption(poll.id, poll.options.first.id);
 
-      final archive =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final archive = jsonDecode(
+        await repository.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       final archivedPoll =
           (archive['polls'] as List).single as Map<String, dynamic>;
       archivedPoll['question'] = 'Changed question';
@@ -2788,9 +2783,9 @@ END;
           ),
         );
 
-    final archive =
-        jsonDecode(await repository.buildLocalArchiveJson())
-            as Map<String, dynamic>;
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
 
     expect(archive['format'], 'pluris_haven.local_archive');
     expect(archive['version'], 1);
@@ -2865,9 +2860,9 @@ END;
       ...intentionallyLocalOnlyTables,
     }, actualTableNames);
 
-    final archive =
-        jsonDecode(await repository.buildLocalArchiveJson())
-            as Map<String, dynamic>;
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
     expect(archive.keys, containsAll(archivedTables.values));
   });
 
@@ -2905,9 +2900,9 @@ END;
           ),
         );
 
-    final archive =
-        jsonDecode(await source.buildLocalArchiveJson())
-            as Map<String, dynamic>;
+    final archive = jsonDecode(
+      await source.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
     final preferences = (archive['preferences'] as List)
         .cast<Map<String, dynamic>>();
     expect(preferences, hasLength(1));
@@ -2932,9 +2927,9 @@ END;
             ),
           );
 
-      final archive =
-          jsonDecode(await source.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final archive = jsonDecode(
+        await source.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       (archive['preferences'] as List).addAll([
         {
           'key': 'app_lock_enabled',
@@ -3165,9 +3160,9 @@ END;
       await target.watchFrontAuditEvents(importedFronts.single.id).first,
       hasLength(1),
     );
-    final targetArchive =
-        jsonDecode(await target.buildLocalArchiveJson())
-            as Map<String, dynamic>;
+    final targetArchive = jsonDecode(
+      await target.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
     expect(targetArchive['group_members'], hasLength(1));
     expect(targetArchive['member_tags'], hasLength(1));
     expect(targetArchive['journals'], hasLength(1));
@@ -3393,9 +3388,8 @@ END;
         addTearDown(database.close);
         final repository = testRepository(database);
         await repository.ensureLocalSystem();
-        final text = await File(
-          'test/fixtures/imports/${fixture.fileName}',
-        ).readAsString();
+        final text = await File('test/fixtures/imports/${fixture.fileName}')
+            .readAsString();
         final preview = previewImportText(
           fileName: fixture.fileName,
           text: text,
@@ -3512,9 +3506,9 @@ END;
       await repository.applyNamedFront(namedFronts.single.id);
       final home = await repository.watchHomeSnapshot().first;
       expect(home.currentFrontLabel, 'Asleep');
-      final exported =
-          jsonDecode(await repository.buildLocalArchiveJson())
-              as Map<String, dynamic>;
+      final exported = jsonDecode(
+        await repository.buildLocalArchiveJson(),
+      ) as Map<String, dynamic>;
       final exportedFronts = (exported['fronts'] as List)
           .cast<Map<String, dynamic>>();
       expect(
@@ -3690,9 +3684,9 @@ END;
 
     final member = (await repository.watchMembers().first).single;
     expect(member.avatarUrl, endsWith('.jpg'));
-    final exported =
-        jsonDecode(await repository.buildLocalArchiveJson())
-            as Map<String, dynamic>;
+    final exported = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
     final assets = (exported['avatar_assets'] as List)
         .cast<Map<String, dynamic>>();
     expect(assets.single['mime_type'], 'image/jpeg');

@@ -159,9 +159,9 @@ void main() {
       ),
       '.prism file extension',
     );
-    final firstStep = importPlanFor(
-      ImportSource.plurisHavenArchive,
-    ).steps.first;
+    final firstStep = importPlanFor(ImportSource.plurisHavenArchive)
+        .steps
+        .first;
     expect(
       localizeImportPlanStep(_englishL10n, firstStep).title,
       'Read archive',
@@ -2157,8 +2157,7 @@ void main() {
 
     final preview = previewImportText(
       fileName: 'openplural.json',
-      text:
-          '''{"openplural_version":"0.1","members":[{"id":"m1","name":"Iris"}]}''',
+      text: '''{"openplural_version":"0.1","members":[{"id":"m1","name":"Iris"}]}''',
     );
     expect(preview.source, ImportSource.openPlural);
     expect(preview.canApply, isTrue);

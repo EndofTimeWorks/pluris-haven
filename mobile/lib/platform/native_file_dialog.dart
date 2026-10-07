@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/services.dart';
 
 enum NativeFileType { custom, image }
@@ -91,14 +92,16 @@ class NativeFileDialog {
   }) async {
     final List<Object?>? response;
     try {
-      response = await _channel
-          .invokeListMethod<Object?>('pickFiles', <String, Object?>{
-            'type': type.name,
-            'allowedExtensions': allowedExtensions,
-            'allowMultiple': allowMultiple,
-            'dialogTitle': dialogTitle,
-            'maximumBytes': maximumBytes,
-          });
+      response = await _channel.invokeListMethod<Object?>(
+        'pickFiles',
+        <String, Object?>{
+          'type': type.name,
+          'allowedExtensions': allowedExtensions,
+          'allowMultiple': allowMultiple,
+          'dialogTitle': dialogTitle,
+          'maximumBytes': maximumBytes,
+        },
+      );
     } on PlatformException catch (error) {
       if (error.code == 'pick_too_large') {
         throw const NativePickedFileTooLargeException();

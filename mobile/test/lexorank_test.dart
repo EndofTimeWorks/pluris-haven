@@ -33,43 +33,40 @@ void main() {
       }
     });
 
-    test(
-      'stress: 200 random inserts maintain strict sort order with rebalance',
-      () {
-        // Start with one item.
-        var ranks = <String>[Lexorank.between(null, null)];
-        final rng = _DeterministicRng(42);
-        var rebalanced = 0;
-        for (var i = 0; i < 200; i++) {
-          final insertAt = rng.nextInt(ranks.length + 1);
-          final prev = insertAt == 0 ? null : ranks[insertAt - 1];
-          final next = insertAt == ranks.length ? null : ranks[insertAt];
-          try {
-            final newRank = Lexorank.between(prev, next);
-            if (prev != null) expect(newRank.compareTo(prev), greaterThan(0));
-            if (next != null) expect(newRank.compareTo(next), lessThan(0));
-            ranks.insert(insertAt, newRank);
-          } on StateError {
-            // Gap exhausted - rebalance the whole list and retry the insert.
-            final fresh = Lexorank.rebalanceRanks(ranks.length + 1);
-            expect(fresh.length, equals(ranks.length + 1));
-            ranks = fresh;
-            rebalanced++;
-          }
+    test('stress: 200 random inserts maintain strict sort order with rebalance', () {
+      // Start with one item.
+      var ranks = <String>[Lexorank.between(null, null)];
+      final rng = _DeterministicRng(42);
+      var rebalanced = 0;
+      for (var i = 0; i < 200; i++) {
+        final insertAt = rng.nextInt(ranks.length + 1);
+        final prev = insertAt == 0 ? null : ranks[insertAt - 1];
+        final next = insertAt == ranks.length ? null : ranks[insertAt];
+        try {
+          final newRank = Lexorank.between(prev, next);
+          if (prev != null) expect(newRank.compareTo(prev), greaterThan(0));
+          if (next != null) expect(newRank.compareTo(next), lessThan(0));
+          ranks.insert(insertAt, newRank);
+        } on StateError {
+          // Gap exhausted - rebalance the whole list and retry the insert.
+          final fresh = Lexorank.rebalanceRanks(ranks.length + 1);
+          expect(fresh.length, equals(ranks.length + 1));
+          ranks = fresh;
+          rebalanced++;
         }
-        expect(ranks.length, equals(201));
-        expect(rebalanced, greaterThanOrEqualTo(0));
-        // Verify the full list is strictly increasing.
-        for (var i = 1; i < ranks.length; i++) {
-          expect(
-            ranks[i].compareTo(ranks[i - 1]),
-            greaterThan(0),
-            reason:
-                'rank $i (${ranks[i]}) should sort after rank ${i - 1} (${ranks[i - 1]})',
-          );
-        }
-      },
-    );
+      }
+      expect(ranks.length, equals(201));
+      expect(rebalanced, greaterThanOrEqualTo(0));
+      // Verify the full list is strictly increasing.
+      for (var i = 1; i < ranks.length; i++) {
+        expect(
+          ranks[i].compareTo(ranks[i - 1]),
+          greaterThan(0),
+          reason:
+              'rank $i (${ranks[i]}) should sort after rank ${i - 1} (${ranks[i - 1]})',
+        );
+      }
+    });
 
     test(
       'inserting between adjacent ranks grows the string but stays sorted',
@@ -127,22 +124,19 @@ void main() {
       );
     });
 
-    test(
-      'rebalanceRanks produces a strictly-increasing list of the requested size',
-      () {
-        for (final count in [1, 2, 5, 20, 100]) {
-          final ranks = Lexorank.rebalanceRanks(count);
-          expect(ranks.length, equals(count));
-          for (var i = 1; i < ranks.length; i++) {
-            expect(
-              ranks[i].compareTo(ranks[i - 1]),
-              greaterThan(0),
-              reason: 'count=$count, rank $i should sort after rank ${i - 1}',
-            );
-          }
+    test('rebalanceRanks produces a strictly-increasing list of the requested size', () {
+      for (final count in [1, 2, 5, 20, 100]) {
+        final ranks = Lexorank.rebalanceRanks(count);
+        expect(ranks.length, equals(count));
+        for (var i = 1; i < ranks.length; i++) {
+          expect(
+            ranks[i].compareTo(ranks[i - 1]),
+            greaterThan(0),
+            reason: 'count=$count, rank $i should sort after rank ${i - 1}',
+          );
         }
-      },
-    );
+      }
+    });
   });
 }
 

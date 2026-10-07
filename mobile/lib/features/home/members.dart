@@ -799,9 +799,8 @@ class MemberProfileSheet extends StatelessWidget {
     final bytes = await _avatarBytes();
     if (!context.mounted) return;
     if (bytes == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
       return;
     }
     final saved = await NativeFileDialog.saveBytes(
@@ -823,9 +822,8 @@ class MemberProfileSheet extends StatelessWidget {
     final bytes = await _avatarBytes();
     if (!context.mounted) return;
     if (bytes == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
       return;
     }
     await NativeFileDialog.shareBytes(
@@ -1237,9 +1235,9 @@ class MemberCustomFieldsSection extends StatelessWidget {
                             value: value,
                             emptyLabel: l10n.notSetLabel,
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               fontSize: 13,
                             ),
                           ),

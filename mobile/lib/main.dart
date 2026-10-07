@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:material_ui/material_ui.dart' as material_ui show ColorScheme;
 
 import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
@@ -33,14 +34,14 @@ Future<void> main() async {
   });
 }
 
-typedef LocalMigrationRunner =
-    Future<void> Function(LocalHavenRepository repository);
+typedef LocalMigrationRunner = Future<void> Function(
+  LocalHavenRepository repository,
+);
 typedef LocalApiRetirement = Future<void> Function(LocalApiController localApi);
-typedef StartupServices =
-    Future<void> Function(
-      LocalHavenRepository repository,
-      ServerAccountController serverAccount,
-    );
+typedef StartupServices = Future<void> Function(
+  LocalHavenRepository repository,
+  ServerAccountController serverAccount,
+);
 
 class BootstrapDependencies {
   const BootstrapDependencies({
@@ -340,11 +341,64 @@ class PlurisHavenApp extends StatelessWidget {
           builder: (lightDynamic, darkDynamic) => _buildApp(
             customization,
             customizationLoaded: customizationLoaded,
-            lightDynamic: lightDynamic,
-            darkDynamic: darkDynamic,
+            lightDynamic: _flutterColorScheme(lightDynamic),
+            darkDynamic: _flutterColorScheme(darkDynamic),
           ),
         );
       },
+    );
+  }
+
+  ColorScheme? _flutterColorScheme(material_ui.ColorScheme? source) {
+    if (source == null) return null;
+    return ColorScheme(
+      brightness: source.brightness,
+      primary: source.primary,
+      onPrimary: source.onPrimary,
+      primaryContainer: source.primaryContainer,
+      onPrimaryContainer: source.onPrimaryContainer,
+      primaryFixed: source.primaryFixed,
+      primaryFixedDim: source.primaryFixedDim,
+      onPrimaryFixed: source.onPrimaryFixed,
+      onPrimaryFixedVariant: source.onPrimaryFixedVariant,
+      secondary: source.secondary,
+      onSecondary: source.onSecondary,
+      secondaryContainer: source.secondaryContainer,
+      onSecondaryContainer: source.onSecondaryContainer,
+      secondaryFixed: source.secondaryFixed,
+      secondaryFixedDim: source.secondaryFixedDim,
+      onSecondaryFixed: source.onSecondaryFixed,
+      onSecondaryFixedVariant: source.onSecondaryFixedVariant,
+      tertiary: source.tertiary,
+      onTertiary: source.onTertiary,
+      tertiaryContainer: source.tertiaryContainer,
+      onTertiaryContainer: source.onTertiaryContainer,
+      tertiaryFixed: source.tertiaryFixed,
+      tertiaryFixedDim: source.tertiaryFixedDim,
+      onTertiaryFixed: source.onTertiaryFixed,
+      onTertiaryFixedVariant: source.onTertiaryFixedVariant,
+      error: source.error,
+      onError: source.onError,
+      errorContainer: source.errorContainer,
+      onErrorContainer: source.onErrorContainer,
+      surface: source.surface,
+      onSurface: source.onSurface,
+      surfaceDim: source.surfaceDim,
+      surfaceBright: source.surfaceBright,
+      surfaceContainerLowest: source.surfaceContainerLowest,
+      surfaceContainerLow: source.surfaceContainerLow,
+      surfaceContainer: source.surfaceContainer,
+      surfaceContainerHigh: source.surfaceContainerHigh,
+      surfaceContainerHighest: source.surfaceContainerHighest,
+      onSurfaceVariant: source.onSurfaceVariant,
+      outline: source.outline,
+      outlineVariant: source.outlineVariant,
+      shadow: source.shadow,
+      scrim: source.scrim,
+      inverseSurface: source.inverseSurface,
+      onInverseSurface: source.onInverseSurface,
+      inversePrimary: source.inversePrimary,
+      surfaceTint: source.surfaceTint,
     );
   }
 

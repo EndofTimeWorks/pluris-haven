@@ -167,9 +167,8 @@ Future<Uint8List> decryptNativeArchiveFrame({
     secretKey: SecretKey(dek),
     aad: headerBytes,
   );
-  final plaintext = ZstdCodec(
-    maxDecompressedSize: header['plain_bytes'] as int,
-  ).decompress(Uint8List.fromList(compressed));
+  final plaintext = ZstdCodec(maxDecompressedSize: header['plain_bytes'] as int)
+      .decompress(Uint8List.fromList(compressed));
   if (plaintext.length != header['plain_bytes']) {
     throw const FormatException('Native archive frame size mismatch.');
   }

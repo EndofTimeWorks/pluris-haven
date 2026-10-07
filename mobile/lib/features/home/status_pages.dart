@@ -542,9 +542,8 @@ class _LocalApiClientDialogState extends State<_LocalApiClientDialog> {
       if (mounted) Navigator.pop(context, credential);
     } on FormatException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

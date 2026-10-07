@@ -52,11 +52,10 @@ abstract interface class LocalApiListener {
   Future<void> stop();
 }
 
-typedef LocalApiListenerFactory =
-    LocalApiListener Function(
-      HavenRepository repository,
-      Future<LocalApiClient?> Function(String token) authenticate,
-    );
+typedef LocalApiListenerFactory = LocalApiListener Function(
+  HavenRepository repository,
+  Future<LocalApiClient?> Function(String token) authenticate,
+);
 
 class LocalApiStatus {
   const LocalApiStatus({

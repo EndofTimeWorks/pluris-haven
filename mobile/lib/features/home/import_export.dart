@@ -2429,9 +2429,8 @@ class ImportJobRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         job.fileName ?? job.type,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w900),
                       ),
                     ),
                     StatusPill(text: job.status),
