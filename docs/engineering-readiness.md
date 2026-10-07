@@ -1,7 +1,7 @@
 # Engineering readiness
 
 Internal pre-alpha readiness record, reconciled against the local candidate on
-2026-09-16.
+2026-10-07.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -26,8 +26,8 @@ distribution work is ready.
 - The complete Flutter test suite and `flutter analyze` passed after the final
   notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
   9.1.0, and Kotlin 2.3.20. It retains Flutter's documented temporary legacy
-  Kotlin and DSL settings: `sentry_flutter` 9.30.0 still applies KGP, and
-  Flutter 3.47.4 fails with the new DSL enabled.
+  Kotlin and DSL settings because stable `sentry_flutter` 9.30.1 still applies
+  KGP. The verified Flutter baseline is 3.47.6.
 - The full server suite passed with one-time-token password recovery, verifying
   STARTTLS, response-path-independent background email delivery, encrypted
   backups, and queued backup-deletion cleanup covered.
