@@ -59,7 +59,8 @@ distribution work is ready.
 The following are completion targets, not proof that the current build is
 broken:
 
-- Restore OpenPlural import through the current import architecture.
+- Obtain and test representative real OpenPlural exports before making a
+  broader compatibility claim.
 - Finish exposed local chat/message/category/channel product paths.
 - Finish note/journal/message revision/history/restore behaviour that is already
   decided.
