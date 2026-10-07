@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { mobileRelease } from '$lib/release';
+  import { mobileRelease } from '#lib/release.js';
 </script>
 
 <svelte:head>
