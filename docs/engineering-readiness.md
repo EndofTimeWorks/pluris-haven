@@ -111,9 +111,10 @@ registration ready.
   source-ID dedupe, ZIP asset and raw-extension fixture coverage. Obtain and
   test a real export before making a broad compatibility claim.
 - **PluralPort:** Draft v0.1 JSON file detection, validation, import mapping,
-  source-record retention, export and loss warnings have local tests and a
-  reachable UI path. Independent real-export compatibility evidence remains
-  missing.
+  mandatory encrypted source-record retention, documented-field export and loss
+  warnings have local tests and a reachable UI path. Underspecified record types
+  remain opaque rather than receiving invented wire fields. Independent
+  real-export compatibility evidence remains missing.
 
 Do not claim real-export compatibility merely because a source shape, parser or
 mapper test exists.

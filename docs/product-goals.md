@@ -20,10 +20,11 @@ Do not advertise a source as fully compatible merely because a parser or mapper
 exists.
 
 PluralPort Draft v0.1 JSON file import and export use the existing Haven review
-and local-file flows. Unknown source records and extensions can be retained as
-encrypted raw payloads; Haven-only exported data is named-spaced and accompanied
-by a warning. This portable file support is distinct from OpenPlural v0.1 and
-does not implement live sync, federation, or a hosted PluralPort service.
+and local-file flows. Unknown, unsupported, and underspecified source records
+and extensions are retained as encrypted raw payloads. Haven-only or
+underspecified exported data is namespaced and accompanied by a warning. This
+portable file support is distinct from OpenPlural v0.1 and does not implement
+live sync, federation, or a hosted PluralPort service.
 
 Password-protected archives are the portable recovery path. Encrypted server
 snapshots use device-held key material, upload in checked chunks, and can be

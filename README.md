@@ -28,8 +28,8 @@ for local use.
 - tested Simply Plural and PluralKit file/live import paths, plus OpenPlural
   v0.1 file/archive fixture coverage
 - PluralPort Draft v0.1 JSON file import and export, with unsupported source
-  records preserved for optional retention and Haven-only export data carried
-  in a namespaced extension with warnings
+  records retained encrypted and Haven-only or underspecified export data
+  carried in a namespaced extension with warnings
 - Tupperbox, PluralSpace, and Ampersand file-normalisation paths with checked-in
   mapper coverage
 - local export, password-protected portable recovery, and encrypted server

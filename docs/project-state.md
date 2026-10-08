@@ -53,10 +53,13 @@ from implementation; it is not an alpha feature checklist.
 - **IMPLEMENTED / VERIFIED (local):** PluralPort support is limited to Draft
   v0.1 JSON file import and export based on the format documentation in the
   separate PluralPort site repository. Import uses Haven's existing
-  preview/review/publish path and offers encrypted retention of original
-  records and extensions. Export reports Haven-only data and preserves it under
-  `extensions.pluris_haven`. Independent real-export compatibility evidence is
-  still missing. This is not live sync, federation, or a PluralPort service.
+  preview/review/publish path and requires encrypted retention of original
+  records and extensions. Only concretely documented System, Member and
+  fronting fields are projected; record types without a Draft v0.1 field shape
+  stay opaque. Export reports Haven-only or underspecified data and preserves it
+  under `extensions.pluris_haven`. Independent real-export compatibility
+  evidence is still missing. This is not live sync, federation, or a PluralPort
+  service.
 - **DEFERRED:** Authenticated PluralSpace API import.
 - **DECIDED:** No friendship directory. Deliberate handles, rotating codes,
   links and QR discovery are preferred.
