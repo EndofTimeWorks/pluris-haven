@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shutil
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -147,7 +148,9 @@ class FilesystemBackupObjectStore:
             if candidate is None or not candidate.exists():
                 continue
             for path in candidate.iterdir():
-                if path.is_file():
+                if path.is_dir() and not path.is_symlink():
+                    shutil.rmtree(path)
+                else:
                     path.unlink()
             candidate.rmdir()
         owner_dir = self.root / owner_id

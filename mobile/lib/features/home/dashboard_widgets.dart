@@ -298,9 +298,9 @@ class CurrentFrontEntry extends StatelessWidget {
                                   member: member,
                                   color: _colorFromHex(
                                     member.colorHex,
-                                    fallback: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
+                                    fallback: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                   ),
                                   label: _initialFor(member.displayName),
                                   size: 28,

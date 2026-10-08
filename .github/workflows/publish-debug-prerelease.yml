@@ -13,7 +13,9 @@ jobs:
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.actor.login != 'dependabot[bot]' &&
+      !startsWith(github.event.workflow_run.head_branch, 'dependabot/')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -36,21 +38,29 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          WORKFLOW_ACTOR: ${{ github.event.workflow_run.actor.login }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
         run: |
           set -euo pipefail
           version="$(awk '/^version:/ {print $2; exit}' mobile/pubspec.yaml)"
           tag="$(node scripts/debug-release-version.mjs "${version}" "${RUN_NUMBER}")"
-          skip=false
-          if [[ "${HEAD_BRANCH}" == main ]] && node scripts/release-marker.mjs "$(git show -s --format=%s HEAD)" >/dev/null 2>&1; then
-            skip=true
-          fi
+          subject="$(git show -s --format=%s HEAD)"
           {
             echo "version=${version}"
             echo "tag=${tag}"
             echo "run_id=${RUN_ID}"
             echo "head_sha=${HEAD_SHA}"
             echo "head_branch=${HEAD_BRANCH}"
-            echo "skip=${skip}"
+            node scripts/debug-release-version.mjs --eligibility \
+              "${WORKFLOW_EVENT}" \
+              "${WORKFLOW_CONCLUSION}" \
+              "${GITHUB_REPOSITORY}" \
+              "${HEAD_REPOSITORY}" \
+              "${WORKFLOW_ACTOR}" \
+              "${HEAD_BRANCH}" \
+              "${subject}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Refuse a tag that targets another commit
@@ -154,7 +164,9 @@ jobs:
 
       - name: Explain official-release dispatch
         if: steps.release.outputs.skip == 'true'
-        run: echo 'The successful main tip is a release marker; debug publication is intentionally skipped.'
+        env:
+          SKIP_REASON: ${{ steps.release.outputs.reason }}
+        run: echo "Debug publication is intentionally skipped (${SKIP_REASON})."
 
       - name: Create immutable debug prerelease
         if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'

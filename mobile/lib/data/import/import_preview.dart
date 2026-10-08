@@ -141,6 +141,12 @@ ImportPreview previewImportText({
       decoded: decoded,
       avatarAssets: avatarAssets,
     ),
+    ImportSource.pluralPort => _previewLooseSource(
+      source: source,
+      fileName: fileName,
+      decoded: decoded,
+      avatarAssets: avatarAssets,
+    ),
     ImportSource.ampersand => _previewLooseSource(
       source: source,
       fileName: fileName,
@@ -326,6 +332,23 @@ ImportPreview _previewNormalizedSource({
           severity: ImportPreviewSeverity.error,
           stage: ImportPreviewStage.normalize,
           diagnostic: error.diagnostic,
+        ),
+      ],
+    );
+  } on FormatException catch (error) {
+    return ImportPreview(
+      source: source,
+      fileName: fileName,
+      counts: const {},
+      canApply: false,
+      events: [
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.error,
+          stage: ImportPreviewStage.validate,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.invalidPortableFormat,
+            {'error': error.message},
+          ),
         ),
       ],
     );

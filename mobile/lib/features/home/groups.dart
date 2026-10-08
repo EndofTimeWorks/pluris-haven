@@ -31,9 +31,21 @@ class _GroupsPageState extends State<GroupsPage> {
     final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<GroupSummary>>(
       stream: widget.repository.watchGroups(),
-      initialData: const [],
       builder: (context, groupSnapshot) {
-        final groups = (groupSnapshot.data ?? const <GroupSummary>[])
+        if (groupSnapshot.hasError && !groupSnapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: groupSnapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!groupSnapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final groups = groupSnapshot.data!
             .where(
               (group) => _matchesQuery(_query, [
                 group.name,

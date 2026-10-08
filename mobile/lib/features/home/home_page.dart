@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/avatar/avatar_file_policy.dart';
@@ -18,6 +19,7 @@ import '../../data/import/import_preview.dart';
 import '../../data/import/import_sources.dart';
 import '../../data/import/member_dedupe.dart';
 import '../../data/import/pluralkit_live_client.dart';
+import '../../data/import/pluralport_codec.dart';
 import '../../data/backup/repository_backup.dart';
 import '../../data/local/app_database.dart'
     show
@@ -88,7 +90,6 @@ enum SpSection {
   usefulLinks,
   reminders,
   privacyBuckets,
-  tokens,
   userReport,
   notificationHistory,
   howtos,
@@ -114,7 +115,6 @@ enum SpSection {
     SpSection.usefulLinks => l10n.navigationUsefulLinks,
     SpSection.reminders => l10n.navigationReminders,
     SpSection.privacyBuckets => l10n.navigationPrivacyBuckets,
-    SpSection.tokens => l10n.navigationTokens,
     SpSection.userReport => l10n.navigationUserReport,
     SpSection.notificationHistory => l10n.navigationNotificationHistory,
     SpSection.howtos => l10n.navigationHowTos,
@@ -181,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                 drawer: SpDrawer(
                   snapshot: home,
                   selected: _section,
-                  onSelect: _selectSection,
+                  onSelect: _selectPrimarySection,
                 ),
                 appBar: _buildAppBar(context, customization, home, l10n),
                 body: SafeArea(
@@ -207,67 +207,8 @@ class _HomePageState extends State<HomePage> {
         l10n,
         customization.bottomNavigationShortcutIds,
       ),
-      HavenNavigationLayout.automatic => switch (customization.visualTheme) {
-        HavenVisualTheme.simplyPlural => _simplyPluralNavigation(l10n),
-        HavenVisualTheme.ampersand => _ampersandNavigation(l10n),
-        _ => null,
-      },
+      HavenNavigationLayout.automatic => _ampersandNavigation(l10n),
     };
-  }
-
-  Widget _simplyPluralNavigation(AppLocalizations l10n) {
-    return Builder(
-      builder: (context) => NavigationBar(
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        selectedIndex: switch (_section) {
-          SpSection.members => 1,
-          SpSection.frontHistory => 2,
-          SpSection.customFronts => 3,
-          SpSection.dashboard => 0,
-          _ => 4,
-        },
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              _selectSection(SpSection.dashboard);
-            case 1:
-              _selectSection(SpSection.members);
-            case 2:
-              _selectSection(SpSection.frontHistory);
-            case 3:
-              _selectSection(SpSection.customFronts);
-            case 4:
-              Scaffold.of(context).openDrawer();
-          }
-        },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home_rounded),
-            label: l10n.navigationDashboard,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.people_outline_rounded),
-            selectedIcon: const Icon(Icons.people_rounded),
-            label: l10n.navigationMembers,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.accessibility_new_outlined),
-            selectedIcon: const Icon(Icons.accessibility_new_rounded),
-            label: l10n.navigationFrontHistory,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.category_outlined),
-            selectedIcon: const Icon(Icons.category_rounded),
-            label: l10n.navigationCustomFronts,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.menu_rounded),
-            label: MaterialLocalizations.of(context).openAppDrawerTooltip,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _customBottomNavigation(
@@ -293,11 +234,11 @@ class _HomePageState extends State<HomePage> {
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) {
           if (index == 0) {
-            _selectSection(SpSection.dashboard);
+            _selectPrimarySection(SpSection.dashboard);
           } else if (index == menuIndex) {
             Scaffold.of(context).openDrawer();
           } else {
-            _selectSection(shortcuts[index - 1].section);
+            _selectPrimarySection(shortcuts[index - 1].section);
           }
         },
         destinations: [
@@ -329,7 +270,7 @@ class _HomePageState extends State<HomePage> {
         SpSection.analytics => 3,
         _ => 0,
       },
-      onDestinationSelected: (index) => _selectSection(switch (index) {
+      onDestinationSelected: (index) => _selectPrimarySection(switch (index) {
         1 => SpSection.members,
         2 => SpSection.frontHistory,
         3 => SpSection.analytics,
@@ -339,22 +280,22 @@ class _HomePageState extends State<HomePage> {
         NavigationDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard_rounded),
-          label: l10n.navigationDashboard,
+          label: l10n.primaryNavigationHome,
         ),
         NavigationDestination(
           icon: Icon(Icons.group_outlined),
           selectedIcon: Icon(Icons.group_rounded),
-          label: l10n.navigationMembers,
+          label: l10n.primaryNavigationMembers,
         ),
         NavigationDestination(
           icon: Icon(Icons.history_outlined),
           selectedIcon: Icon(Icons.history_rounded),
-          label: l10n.navigationFrontHistory,
+          label: l10n.primaryNavigationHistory,
         ),
         NavigationDestination(
           icon: Icon(Icons.analytics_outlined),
           selectedIcon: Icon(Icons.analytics_rounded),
-          label: l10n.navigationAnalytics,
+          label: l10n.primaryNavigationInsights,
         ),
       ],
     );
@@ -418,6 +359,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _selectPrimarySection(SpSection section) {
+    if (section == _section) return;
+    setState(() {
+      _sectionHistory.clear();
+      _section = section;
+    });
+  }
+
   void _popSection() {
     setState(() => _section = _sectionHistory.removeLast());
   }
@@ -474,18 +423,12 @@ class _HomePageState extends State<HomePage> {
       case SpSection.reminders:
         return RemindersPage(
           repository: widget.repository,
-          onNotificationSettings: () =>
-              _selectSection(SpSection.notificationHistory),
+          onNotificationSettings: () => _selectSection(SpSection.appOptions),
         );
       case SpSection.privacyBuckets:
         return LocalPrivacyPage(
           repository: widget.repository,
           onSelect: _selectSection,
-        );
-      case SpSection.tokens:
-        return LocalTokensPage(
-          onSelect: _selectSection,
-          controller: widget.localApi,
         );
       case SpSection.userReport:
         return UserReportPage(snapshot: home, onSelect: _selectSection);

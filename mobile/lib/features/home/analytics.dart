@@ -17,12 +17,24 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget build(BuildContext context) {
     return StreamBuilder<List<FrontHistoryEntry>>(
       stream: widget.repository.watchFrontHistory(),
-      initialData: const [],
       builder: (context, snapshot) {
+        if (snapshot.hasError && !snapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: snapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!snapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
         final l10n = AppLocalizations.of(context);
         final scheme = Theme.of(context).colorScheme;
         final visualTheme = _visualThemeOf(context);
-        final entries = snapshot.data ?? const <FrontHistoryEntry>[];
+        final entries = snapshot.data!;
         final stats = _buildAnalytics(entries, _window, l10n.unknownLabel);
 
         return SpPage(
@@ -317,7 +329,9 @@ class _TopFrontsCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final top = stats.topLabels.take(8).toList(growable: false);
-    final maxSeconds = top.isEmpty ? 1 : top.first.totalSeconds;
+    final maxSeconds = top.isEmpty
+        ? 1
+        : top.first.totalSeconds.clamp(1, 1 << 62);
 
     return SpCard(
       child: Column(
@@ -348,7 +362,7 @@ class _TopFrontsCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Text(
                         '${_formatAnalyticsDuration(l10n, item.totalSeconds)} · '
-                        '${(item.totalSeconds * 100 / stats.totalSeconds).toStringAsFixed(1)}%',
+                        '${(_analyticsRatio(item.totalSeconds, stats.totalSeconds) * 100).toStringAsFixed(1)}%',
                         style: TextStyle(
                           color: scheme.onSurfaceVariant,
                           fontSize: 13,
@@ -359,7 +373,7 @@ class _TopFrontsCard extends StatelessWidget {
                   const SizedBox(height: 7),
                   LinearProgressIndicator(
                     minHeight: 7,
-                    value: item.totalSeconds / maxSeconds,
+                    value: _analyticsRatio(item.totalSeconds, maxSeconds),
                     color: scheme.primary,
                     backgroundColor: scheme.outlineVariant,
                     borderRadius: BorderRadius.circular(99),
@@ -543,7 +557,7 @@ _FrontAnalytics _buildAnalytics(
       continue;
     }
     final seconds = interval.end.difference(interval.start).inSeconds;
-    if (seconds <= 0) {
+    if (seconds < 0) {
       continue;
     }
 
@@ -609,11 +623,13 @@ _FrontAnalytics _buildAnalytics(
   if (since != null && start.isBefore(since)) {
     start = since;
   }
-  if (!end.isAfter(start)) {
+  if (end.isBefore(start)) {
     return null;
   }
   return (start: start, end: end);
 }
+
+double _analyticsRatio(int value, int total) => total <= 0 ? 0 : value / total;
 
 void _addHourBuckets(List<int> buckets, DateTime start, DateTime end) {
   var cursor = start;

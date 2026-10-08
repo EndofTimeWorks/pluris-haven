@@ -1,28 +1,41 @@
 part of 'import_archive_mapper.dart';
 
 Map<String, Object?> _openPluralEnvelopeToLooseArchive(
-  Map<String, Object?> envelope,
-) {
-  final version = envelope['openplural_version'];
+  Map<String, Object?> envelope, {
+  String versionKey = 'openplural_version',
+  String preservedExtensionKey = 'openplural_extensions',
+  bool preserveAllExtensions = false,
+  bool mapCustomFields = true,
+  bool mapUnderspecifiedRecords = true,
+  bool strictDocumentedFields = false,
+}) {
+  final version = envelope[versionKey];
   if (version != '0.1') {
     throw FormatException(
-      'Unsupported OpenPlural version: ${version ?? 'missing'}.',
+      'Unsupported portable format version: ${version ?? 'missing'}.',
     );
   }
 
   final assets = <String, String>{};
-  for (final value in _firstList(envelope, const ['assets'])) {
-    final asset = _mapValue(value);
-    final id = asset == null ? null : _firstString(asset, const ['id']);
-    final uri = asset == null
-        ? null
-        : _firstString(asset, const ['uri', 'url']);
-    if (id != null && uri != null) assets[id] = uri;
+  if (mapUnderspecifiedRecords) {
+    for (final value in _firstList(envelope, const ['assets'])) {
+      final asset = _mapValue(value);
+      final id = asset == null ? null : _firstString(asset, const ['id']);
+      final uri = asset == null
+          ? null
+          : _firstString(asset, const ['uri', 'url']);
+      if (id != null && uri != null) {
+        assets[id] = uri;
+      }
+    }
   }
 
   final systems = _firstList(envelope, const ['systems']);
   final system = systems.isEmpty ? null : _mapValue(systems.first);
   final extension = _openPluralSheafExtension(envelope);
+  final preservedExtensions = preserveAllExtensions
+      ? _mapValue(envelope['extensions']) ?? const <String, Object?>{}
+      : extension;
   return {
     'system': system == null
         ? null
@@ -31,40 +44,96 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
             'name': _firstString(system, const ['name']),
             'description': _firstString(system, const ['description']),
             'color': _firstString(system, const ['color']),
-            'avatarUrl':
-                assets[_firstString(system, const ['avatar_asset_id'])],
+            if (!strictDocumentedFields)
+              'avatarUrl':
+                  assets[_firstString(system, const ['avatar_asset_id'])],
           },
     'members': [
       for (final value in _firstList(envelope, const ['members']))
         if (_mapValue(value) case final member?)
-          _openPluralMember(member, assets),
+          _openPluralMember(
+            member,
+            assets,
+            strictDocumentedFields: strictDocumentedFields,
+          ),
     ],
-    'groups': _openPluralGroups(envelope),
-    'custom_fields': [
-      for (final value in _firstList(envelope, const ['custom_fields']))
-        if (_mapValue(value) case final field?)
-          {
-            'id': _firstString(field, const ['id']),
-            'name': _firstString(field, const ['name']),
-            'field_type': _firstString(field, const ['field_type']),
-            'privacy': _openPluralPrivacyVisibility(field['privacy']),
-            'position': _intValue(field['sort_order'] ?? field['order']),
-          },
-    ],
-    'custom_field_values': _openPluralCustomFieldValues(envelope),
-    'notes': _openPluralNotes(envelope),
-    'messages': _openPluralMessages(envelope),
-    'reminders': extension['reminders'] ?? const [],
-    'polls': extension['polls'] ?? const [],
+    'groups': mapUnderspecifiedRecords
+        ? _openPluralGroups(envelope)
+        : const <Object?>[],
+    'custom_fields': mapCustomFields
+        ? [
+            for (final value in _firstList(envelope, const ['custom_fields']))
+              if (_mapValue(value) case final field?)
+                {
+                  'id': _firstString(field, const ['id']),
+                  'name': _firstString(field, const ['name']),
+                  'field_type': _firstString(field, const ['field_type']),
+                  'privacy': _openPluralPrivacyVisibility(field['privacy']),
+                  'position': _intValue(field['sort_order'] ?? field['order']),
+                },
+          ]
+        : const <Object?>[],
+    'custom_field_values': mapCustomFields
+        ? _openPluralCustomFieldValues(envelope)
+        : const <Object?>[],
+    'notes': mapUnderspecifiedRecords
+        ? _openPluralNotes(envelope)
+        : const <Object?>[],
+    'messages': mapUnderspecifiedRecords
+        ? _openPluralMessages(envelope)
+        : const <Object?>[],
+    'reminders': mapUnderspecifiedRecords
+        ? extension['reminders'] ?? const []
+        : const <Object?>[],
+    'polls': mapUnderspecifiedRecords
+        ? extension['polls'] ?? const []
+        : const <Object?>[],
     'fronts': _openPluralFronts(envelope),
-    'openplural_extensions': extension,
+    preservedExtensionKey: preserveAllExtensions
+        ? {
+            'envelope_extensions': preservedExtensions,
+            'records': _portableRecords(envelope),
+            'source_warnings': envelope['warnings'] ?? const [],
+          }
+        : extension,
   };
 }
 
+List<Map<String, Object?>> _portableRecords(Map<String, Object?> envelope) => [
+  for (final collection in const [
+    'systems',
+    'members',
+    'groups',
+    'group_memberships',
+    'taxonomy_terms',
+    'taxonomy_assignments',
+    'custom_fields',
+    'custom_field_values',
+    'front_periods',
+    'front_events',
+    'front_comments',
+    'notes',
+    'assets',
+    'conversations',
+    'chat_messages',
+    'attachments',
+    'reactions',
+    'board_posts',
+  ])
+    for (final value in _firstList(envelope, [collection]))
+      if (_mapValue(value) case final record?)
+        {
+          'collection': collection,
+          'id': _firstString(record, const ['id']),
+          'record': record,
+        },
+];
+
 Map<String, Object?> _openPluralMember(
   Map<String, Object?> member,
-  Map<String, String> assets,
-) {
+  Map<String, String> assets, {
+  bool strictDocumentedFields = false,
+}) {
   final extension = _openPluralSheafExtension(member);
   final avatarAssetId = _firstString(member, const ['avatar_asset_id']);
   final birthday = member['birthday'];
@@ -77,17 +146,22 @@ Map<String, Object?> _openPluralMember(
     'description': _firstString(member, const ['description']),
     'pronouns': _firstString(member, const ['pronouns']),
     'color': _firstString(member, const ['color']),
-    'avatarUrl': avatarAssetId == null ? null : assets[avatarAssetId],
+    if (!strictDocumentedFields)
+      'avatarUrl': avatarAssetId == null ? null : assets[avatarAssetId],
     'pluralKitId': _openPluralSourceRef(member['source_refs'], 'pluralkit'),
-    'privacy': _openPluralPrivacyVisibility(member['privacy']),
+    if (!strictDocumentedFields)
+      'privacy': _openPluralPrivacyVisibility(member['privacy']),
     'archived': member['archived'] == true,
-    'is_custom_front': member['is_custom_front'] == true,
-    'createdAt': _firstString(member, const ['created_at']),
+    if (!strictDocumentedFields)
+      'is_custom_front': member['is_custom_front'] == true,
+    if (!strictDocumentedFields)
+      'createdAt': _firstString(member, const ['created_at']),
     'info': {
-      if (birthday is Map<String, Object?>)
+      if (!strictDocumentedFields && birthday is Map<String, Object?>)
         'birthday': _firstString(birthday, const ['value']),
       if (birthday is String) 'birthday': birthday,
-      if (extension['note'] is String) 'note': extension['note'],
+      if (!strictDocumentedFields && extension['note'] is String)
+        'note': extension['note'],
     },
   };
 }

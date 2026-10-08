@@ -76,8 +76,13 @@ const supportedLanguages = [
 
 List<Locale> get supportedLanguageLocales {
   return [
+    const Locale('en'),
+    const Locale('en', 'US'),
     for (final language in supportedLanguages)
-      if (language.code != systemLanguageCode) language.locale,
+      if (language.code != systemLanguageCode &&
+          language.code != 'en' &&
+          language.code != 'en-US')
+        language.locale,
   ];
 }
 

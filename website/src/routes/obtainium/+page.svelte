@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  import { obtainiumRedirectUrl } from '$lib/obtainium-config';
+  import { obtainiumRedirectUrl } from '#lib/obtainium-config.js';
 
   onMount(() => window.location.replace(obtainiumRedirectUrl));
 </script>

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -131,6 +132,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.';
 
   @override
+  String get dataLoadFailedTitle => 'Could not load your data';
+
+  @override
+  String get dataLoadFailedBody =>
+      'Your saved data has not been removed. Try again, or restart the app if the problem continues.';
+
+  @override
+  String get retryButton => 'Try again';
+
+  @override
   String get plurisHavenAppName => 'Pluris Haven';
 
   @override
@@ -198,7 +209,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncRowTitle => 'Sync';
 
   @override
-  String get syncRowValue => 'off by default';
+  String get syncRowValue => 'device sync not implemented';
 
   @override
   String get currentColorLabel => 'Current colour';
@@ -278,20 +289,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetDashboardValue => 'restore default shortcut order';
 
   @override
-  String get syncOffTitle => 'Sync is off';
+  String get syncOffTitle => 'Device sync is not available';
 
   @override
   String get localStatusPill => 'local';
 
   @override
   String get syncOffDescription =>
-      'Pluris Haven keeps data on this device unless sync is turned on.';
+      'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
 
   @override
   String get encryptedSyncLabel => 'Encrypted sync';
 
   @override
-  String get encryptedSyncValue => 'not configured';
+  String get encryptedSyncValue => 'not implemented';
 
   @override
   String get friendsLabel => 'Friends';
@@ -369,7 +380,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDashboardShortcutsBody =>
-      'Open Customise to add shortcuts back.';
+      'Open App options to add shortcuts back.';
 
   @override
   String dashboardShortcutSemanticLabel(String title) {
@@ -407,7 +418,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardShortcutImportExportSubtitle => 'local archive';
 
   @override
-  String get dashboardShortcutSyncSubtitle => 'off by default';
+  String get dashboardShortcutSyncSubtitle => 'device sync not implemented';
 
   @override
   String get dashboardShortcutCustomizeSubtitle => 'layout and theme';
@@ -490,17 +501,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String frontHistoryCountSubtitle(int count) {
-    return '$count entries';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '1 entry',
+    );
+    return '$_temp0';
   }
 
   @override
   String groupCountSubtitle(int count) {
-    return '$count groups';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count groups',
+      one: '1 group',
+    );
+    return '$_temp0';
   }
 
   @override
   String noteCountSubtitle(int count) {
-    return '$count notes';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1285,6 +1314,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.';
 
   @override
+  String get retainPluralPortPayloadsDescription =>
+      'Required for PluralPort: unsupported and underspecified records stay encrypted so they are not silently discarded.';
+
+  @override
   String get inputLabel => 'Input';
 
   @override
@@ -1332,6 +1365,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importSourceOpenPlural => 'OpenPlural';
 
   @override
+  String get importSourcePluralPort => 'PluralPort';
+
+  @override
   String get importSourcePrism => 'Prism';
 
   @override
@@ -1371,6 +1407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importDedupeOpenPlural =>
       'OpenPlural IDs, source IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupePluralPort =>
+      'PluralPort IDs, source IDs, normalized names';
 
   @override
   String get importDedupePrism => 'Prism IDs, normalized names';
@@ -1438,6 +1478,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'filename looks like an OpenPlural export';
 
   @override
+  String get importReasonPluralPortFileName =>
+      'filename looks like a PluralPort export';
+
+  @override
   String get importReasonChooseAfterUpload => 'pick a service after upload';
 
   @override
@@ -1467,6 +1511,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importReasonOpenPluralMarkers =>
       'file contains OpenPlural v0.1 markers';
+
+  @override
+  String get importReasonPluralPortMarkers =>
+      'file contains PluralPort Draft v0.1 markers';
 
   @override
   String get importReasonAmbiguousMemberGroupJson =>
@@ -1759,6 +1807,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.';
 
   @override
+  String get importStepReadPluralPortDetail =>
+      'Accept a PluralPort Draft v0.1 JSON file.';
+
+  @override
+  String get importStepMapPluralPortDetail =>
+      'Stage documented systems, members, and fronting records; preserve underspecified record types for later support.';
+
+  @override
+  String get importStepReviewPluralPortDetail =>
+      'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.';
+
+  @override
   String get importStepChoosePrismTitle => 'Choose .prism file';
 
   @override
@@ -1844,6 +1904,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.';
 
   @override
+  String get importPrivacyPluralPortIdentifiers =>
+      'PluralPort file-local and source identifiers are retained for re-import dedupe.';
+
+  @override
+  String get importPrivacyPluralPortExtensions =>
+      'Unsupported and underspecified PluralPort records, extensions, and source references are retained as encrypted raw source payloads.';
+
+  @override
   String get importPrivacyPrismPassphraseMemoryOnly =>
       'The passphrase is only used to decrypt the import in memory.';
 
@@ -1900,6 +1968,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String importDiagnosticUnsupportedArchiveVersion(String version) {
     return 'Unsupported archive version: $version.';
+  }
+
+  @override
+  String importDiagnosticInvalidPortableFormat(String error) {
+    return 'Could not validate this import format: $error';
   }
 
   @override
@@ -2387,6 +2460,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveJsonFileButton => 'Save JSON file';
 
   @override
+  String get savePluralPortFileButton => 'Save PluralPort file';
+
+  @override
   String get copyJsonButton => 'Copy JSON';
 
   @override
@@ -2425,7 +2501,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveArchiveDialogTitle => 'Save Pluris Haven archive';
 
   @override
+  String get savePluralPortDialogTitle => 'Save PluralPort file';
+
+  @override
   String get archiveSaved => 'Archive saved';
+
+  @override
+  String get pluralPortFileSaved => 'PluralPort file saved';
+
+  @override
+  String couldNotSavePluralPortFile(String error) {
+    return 'Could not save PluralPort file: $error';
+  }
 
   @override
   String couldNotSaveArchive(String error) {
@@ -3110,6 +3197,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationAbout => 'About';
 
   @override
+  String get primaryNavigationHome => 'Home';
+
+  @override
+  String get primaryNavigationMembers => 'Members';
+
+  @override
+  String get primaryNavigationHistory => 'History';
+
+  @override
+  String get primaryNavigationInsights => 'Insights';
+
+  @override
   String get frontingFilter => 'Fronting';
 
   @override
@@ -3135,13 +3234,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberActionsTooltip => 'Member actions';
 
   @override
-  String get deleteMemberTitle => 'Delete member?';
+  String get deleteMemberTitle => 'Remove member?';
 
   @override
-  String get deletedFilter => 'Deleted';
+  String get removeMemberButton => 'Remove member';
 
   @override
-  String get deletedStatus => 'Deleted';
+  String removeMemberFailed(String error) {
+    return 'Could not remove member: $error';
+  }
+
+  @override
+  String get deletedFilter => 'Removed';
+
+  @override
+  String get deletedStatus => 'Removed';
 
   @override
   String get purgeMemberTitle => 'Permanently delete member?';
@@ -3173,17 +3280,17 @@ class AppLocalizationsEn extends AppLocalizations {
     int journals,
     int reminderTriggers,
   ) {
-    return 'Deletion summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket links: $privacyBucketLinks; custom-field values removed on permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
+    return 'Removal summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
   }
 
   @override
-  String get setFrontButton => 'Set front';
+  String get setFrontButton => 'Make current front';
 
   @override
-  String get addToFrontButton => 'Add to front';
+  String get addToFrontButton => 'Add member to current front';
 
   @override
-  String get setAsFrontButton => 'Set as front';
+  String get setAsFrontButton => 'Make current front';
 
   @override
   String get frontActionPickerTooltip => 'Choose front action';
@@ -3820,7 +3927,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howToTrackFrontStep2 =>
-      'Use Set front to pick members or a saved custom front.';
+      'Use Make current front to pick members or a saved custom front.';
 
   @override
   String get howToTrackFrontStep3 =>
@@ -3980,7 +4087,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noAnalyticsBody =>
-      'Set fronts or import Simply Plural front history to fill this in.';
+      'Make a front current or import Simply Plural front history to fill this in.';
 
   @override
   String get totalFrontTimeLabel => 'Total front time';
@@ -4102,10 +4209,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearSelectionButton => 'Clear selection';
 
   @override
-  String get setSelectedButton => 'Set selected';
+  String get setSelectedButton => 'Make selected member current front';
 
   @override
-  String get setCofrontButton => 'Set co-front';
+  String get setCofrontButton => 'Make selected members current front';
 
   @override
   String get saveSelectedNamedFrontButton => 'Save selected as named front';
@@ -4136,7 +4243,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelFieldLabel => 'Label';
 
   @override
-  String get setButtonLabel => 'Set';
+  String get setButtonLabel => 'Make current front';
 
   @override
   String get frontChangedTitle => 'Front changed';
@@ -4422,7 +4529,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localReportStorage => 'storage: device';
 
   @override
-  String get localReportSync => 'sync: off by default';
+  String get localReportSync => 'device sync: not implemented';
 
   @override
   String get reportCopiedMessage => 'Report copied';
@@ -4448,7 +4555,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appOptionsSubtitle => 'theme, language, dashboard';
 
   @override
-  String get offByDefaultSubtitle => 'off by default';
+  String get offByDefaultSubtitle => 'device sync not implemented';
 
   @override
   String get deviceDatabaseSubtitle => 'device database';
@@ -4556,6 +4663,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveAppearanceButton => 'Save appearance';
 
   @override
+  String deleteFailed(String error) {
+    return 'Could not remove this item: $error';
+  }
+
+  @override
   String systemCounts(int members, int groups) {
     String _temp0 = intl.Intl.pluralLogic(
       members,
@@ -4605,8 +4717,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get useCustomColorLabel => 'Use custom color';
 
   @override
-  String get noDashboardShortcutsBody =>
-      'Open Customize to add shortcuts back.';
+  String get importCancelledStatus => 'Import canceled.';
 
   @override
   String get saveCancelled => 'Save canceled.';
@@ -4622,8 +4733,32 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get tagColourFieldLabel => 'Tag color';
 
   @override
+  String get colorType => 'Color';
+
+  @override
   String get colourFieldLabel => 'Color';
 
   @override
   String get customizeDashboardTitle => 'Customize dashboard';
+
+  @override
+  String get appearanceSubtitle => 'colors, shape and text size';
+
+  @override
+  String get backgroundColorLabel => 'Background color';
+
+  @override
+  String get surfaceColorLabel => 'Surface color';
+
+  @override
+  String get cardColorLabel => 'Card color';
+
+  @override
+  String get textColorLabel => 'Text color';
+
+  @override
+  String get mutedTextColorLabel => 'Muted text color';
+
+  @override
+  String get outlineColorLabel => 'Outline color';
 }

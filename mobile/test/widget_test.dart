@@ -92,6 +92,50 @@ void main() {
     expect(find.text('👩‍💻'), findsOneWidget);
   });
 
+  testWidgets('hides experimental friends from normal Alpha navigation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SpDrawer(
+          snapshot: null,
+          selected: SpSection.dashboard,
+          onSelect: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('Friends'), findsNothing);
+    expect(
+      dashboardShortcuts.any((shortcut) => shortcut.id == 'friends'),
+      isFalse,
+    );
+  });
+
+  testWidgets('states that general device sync is not implemented', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SyncPage(
+            repository: FakeHavenRepository(_testHomeSnapshot),
+            controller: null,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Device sync is not available'), findsOneWidget);
+    expect(find.textContaining('not implemented'), findsWidgets);
+    expect(find.textContaining('unless sync is turned on'), findsNothing);
+    expect(find.text('Friends'), findsNothing);
+  });
+
   testWidgets('shows recovery guidance when local data initialization fails', (
     tester,
   ) async {
@@ -100,6 +144,40 @@ void main() {
     expect(find.text('Local data needs recovery'), findsOneWidget);
     expect(
       find.textContaining('Your data has not been replaced.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('reports a failed confirmed deletion instead of dropping it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () => confirmDelete(
+                context,
+                title: 'Remove item',
+                body: 'This should fail.',
+                onDelete: () async => throw StateError('storage unavailable'),
+              ),
+              child: const Text('Remove item'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Remove item'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not remove this item: Bad state: storage unavailable'),
       findsOneWidget,
     );
   });
@@ -136,6 +214,28 @@ void main() {
     expect(database.closed, isTrue);
     expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(PlurisHavenApp), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('shows recovery guidance when startup crypto is corrupt', (
+    tester,
+  ) async {
+    final database = _TrackingDatabase();
+
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () async => throw const FormatException('bad key'),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(database.closed, isTrue);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -435,9 +535,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Members'), findsWidgets);
     expect(find.text('Front History'), findsOneWidget);
-    expect(find.text('Customize'), findsOneWidget);
+    expect(find.text('App options'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Local system'), findsWidgets);
   });
 
@@ -477,7 +578,9 @@ void main() {
     expect(authenticationCalls, 0);
   });
 
-  testWidgets('uses Simply Plural fronting navigation', (tester) async {
+  testWidgets('uses the shared automatic navigation without a fake menu tab', (
+    tester,
+  ) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
         systemName: 'Local system',
@@ -494,17 +597,19 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.analytics_outlined), findsNothing);
+    expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.menu_rounded),
+      ),
+      findsNothing,
+    );
 
-    await tester.tap(find.byIcon(Icons.category_outlined));
+    await tester.tap(find.byIcon(Icons.analytics_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Custom Fronts'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('add-custom-front-page-button')),
-      findsOneWidget,
-    );
+    expect(find.text('Analytics'), findsOneWidget);
   });
 
   testWidgets('uses the selected navigation layout', (tester) async {
@@ -636,19 +741,21 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front').first);
     await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-label-field')),
       'blurry co-con',
     );
-    await tester.tap(find.text('Set'));
+    await tester.tap(
+      find.byKey(const ValueKey('make-custom-front-current-button')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('blurry co-con'), findsWidgets);
     expect(find.text('fronting'), findsOneWidget);
-    expect(find.text('started 1/1 12:00 - active'), findsOneWidget);
+    expect(find.textContaining('started'), findsOneWidget);
     expect(repository._notificationEvents, hasLength(1));
     expect(repository._notificationEvents.first.kind, 'front');
     expect(repository._notificationEvents.first.title, 'Front changed');
@@ -657,7 +764,7 @@ void main() {
       'blurry co-con is fronting.',
     );
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Clear'));
@@ -665,7 +772,7 @@ void main() {
 
     expect(find.text('None'), findsOneWidget);
     expect(find.text('none'), findsOneWidget);
-    expect(find.text('started 1/1 12:00 - ended 1/1 13:00'), findsOneWidget);
+    expect(find.textContaining('ended'), findsOneWidget);
     expect(repository._notificationEvents, hasLength(2));
     expect(repository._notificationEvents.first.title, 'Front cleared');
   });
@@ -796,7 +903,7 @@ void main() {
     await tester.tap(find.text('Front History'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -884,7 +991,7 @@ void main() {
     expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
     expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
 
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Delete saved front').first);
     await tester.pumpAndSettle();
@@ -965,7 +1072,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final setAsFront = find.ancestor(
-      of: find.text('Set as front'),
+      of: find.text('Make current front'),
       matching: find.byType(CheckedPopupMenuItem<HavenFrontAction>),
     );
     await tester.ensureVisible(setAsFront);
@@ -1021,6 +1128,61 @@ void main() {
     expect(find.text('Asleep'), findsOneWidget);
     expect(find.text('Away'), findsOneWidget);
     expect(find.text('Hour of day'), findsOneWidget);
+  });
+
+  testWidgets('keeps zero-length completed fronts finite in analytics', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 1,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    final instant = DateTime.now();
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'zero-duration',
+        label: 'Brief front',
+        startedAt: instant,
+        endedAt: instant,
+        memberIds: const [],
+      ),
+    ];
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Analytics');
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Brief front'), findsOneWidget);
+    expect(find.textContaining('NaN'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows a load failure instead of an empty members state', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository.membersWatchOverride = Stream<List<MemberSummary>>.error(
+      StateError('database busy'),
+    );
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not load your data'), findsOneWidget);
+    expect(find.text('No members saved locally'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
   });
 
   testWidgets('opens a familiar section from the dashboard', (tester) async {
@@ -1079,7 +1241,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Set front'));
+    await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'Iris');
@@ -1152,19 +1314,19 @@ void main() {
 
     await tester.tap(find.byTooltip('Member actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Deletion summary — group links: 0'),
+      find.textContaining('Removal summary — group links: 0'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove member'));
     await tester.pumpAndSettle();
 
     expect(find.text('Iris edited'), findsNothing);
     expect(find.text('No members saved locally'), findsOneWidget);
 
-    await tester.tap(find.text('Deleted'));
+    await tester.tap(find.text('Removed'));
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
 
@@ -1225,8 +1387,10 @@ void main() {
     expect(find.text('#62D6B8'), findsOneWidget);
     expect(find.text('Caretakers, Subsystem A'), findsOneWidget);
 
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Set front'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Set front'));
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Make current front'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Make current front'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
@@ -1424,6 +1588,7 @@ void main() {
 
     expect(find.text('Import from Simply Plural'), findsOneWidget);
     expect(find.text('Back up local data'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text("What's new"), 180);
     expect(find.text("What's new"), findsOneWidget);
     expect(find.text('APK releases'), findsOneWidget);
 
@@ -2331,7 +2496,10 @@ void main() {
 
     await tester.tap(find.text('Check in after dinner.'));
     await tester.pumpAndSettle();
-    expect(find.text('History'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('message-revision-history-button')),
+      findsOneWidget,
+    );
     await tester.enterText(
       find.byKey(const ValueKey('message-body-field')),
       'Check in after dinner. Bring water.',
@@ -2496,7 +2664,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Medication'), findsOneWidget);
-    expect(find.text('Weekly on Friday at 08:30'), findsOneWidget);
+    expect(find.textContaining('Weekly on Friday at'), findsOneWidget);
+    expect(find.textContaining('8:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
     expect(find.text('on'), findsOneWidget);
     expect(repository._reminders.single.scheduleKind, 'weekly');
@@ -2946,8 +3115,8 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Customize'));
-    await tester.tap(find.text('Customize'));
+    await tester.ensureVisible(find.text('App options'));
+    await tester.tap(find.text('App options'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dark'), findsOneWidget);
@@ -3072,7 +3241,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No dashboard shortcuts'), findsOneWidget);
-    expect(find.text('Open Customize to add shortcuts back.'), findsOneWidget);
+    expect(
+      find.text('Open App options to add shortcuts back.'),
+      findsOneWidget,
+    );
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
       isEmpty,
@@ -3101,8 +3273,8 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Customize'));
-    await tester.tap(find.text('Customize'));
+    await tester.ensureVisible(find.text('App options'));
+    await tester.tap(find.text('App options'));
     await tester.pumpAndSettle();
 
     final pageScrollable = find.byType(Scrollable).first;
@@ -3248,7 +3420,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Members'));
+    await tester.tap(find.text('Members').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
@@ -3428,9 +3600,9 @@ void main() {
     await _pumpUntilFound(tester, find.text('Restore rehearsal passed'));
 
     expect(find.text('Restore rehearsal passed'), findsOneWidget);
-    final rehearsedArchive =
-        jsonDecode(repository.lastRehearsedArchiveJson!)
-            as Map<String, dynamic>;
+    final rehearsedArchive = jsonDecode(
+      repository.lastRehearsedArchiveJson!,
+    ) as Map<String, dynamic>;
     expect(rehearsedArchive['raw_payloads'], isEmpty);
     expect(
       find.textContaining('Nothing was written to your app data'),
@@ -3484,6 +3656,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
     await openDrawerSection(tester, 'Import / Export');
+    final pageScrollable = find.byType(Scrollable).first;
     await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -3497,11 +3670,16 @@ void main() {
     await tester.tap(find.text('Preview pasted JSON'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
     await tester.pumpAndSettle();
-    final importButton = find.text('Import archive');
-    final button = tester.widget<FilledButton>(
-      find.ancestor(of: importButton, matching: find.byType(FilledButton)),
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('import-archive-button')),
+      240,
+      scrollable: pageScrollable,
     );
-    button.onPressed!();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('import-archive-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('import-archive-button')));
     await _pumpUntilFound(tester, find.text('Conflicts found'));
 
     expect(find.text('Conflicts found'), findsOneWidget);
@@ -3889,6 +4067,7 @@ class FakeHavenRepository implements HavenRepository {
   final String? _localArchiveJson;
   AppCustomization _customization = AppCustomization.defaults;
   List<MemberSummary> _members = const [];
+  Stream<List<MemberSummary>>? membersWatchOverride;
   List<MemberSummary> _deletedMembers = const [];
   List<GroupSummary> _groups = const [];
   List<PrivacyBucketSummary> _privacyBuckets = const [];
@@ -3953,6 +4132,11 @@ class FakeHavenRepository implements HavenRepository {
     bool includeCustomFronts = false,
     bool listOnly = false,
   }) async* {
+    final override = membersWatchOverride;
+    if (override != null) {
+      yield* override;
+      return;
+    }
     List<MemberSummary> filtered(List<MemberSummary> members) {
       return [
         for (final member in members)

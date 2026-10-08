@@ -245,7 +245,7 @@ Future<void> showPollVoteHistory(
                               : l10n.pollVoteCleared,
                         ),
                       ),
-                      subtitle: Text(_shortDateTime(event.createdAt)),
+                      subtitle: Text(_shortDateTime(context, event.createdAt)),
                     ),
               ],
             );

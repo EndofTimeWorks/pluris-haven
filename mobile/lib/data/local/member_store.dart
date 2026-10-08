@@ -4,10 +4,16 @@ import '../ordering/lexorank.dart';
 import 'app_database.dart';
 import 'local_id.dart';
 
-typedef EncryptMemberText =
-    Future<String?> Function(String memberId, String field, String? plaintext);
-typedef DecryptMemberText =
-    Future<String?> Function(String memberId, String field, String? ciphertext);
+typedef EncryptMemberText = Future<String?> Function(
+  String memberId,
+  String field,
+  String? plaintext,
+);
+typedef DecryptMemberText = Future<String?> Function(
+  String memberId,
+  String field,
+  String? ciphertext,
+);
 typedef BlindIndexText = Future<String?> Function(String plaintext);
 
 class MemberSummary {

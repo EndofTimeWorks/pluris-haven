@@ -73,7 +73,7 @@ class NotificationEventTile extends StatelessWidget {
                 Text(event.body, style: const TextStyle(height: 1.35)),
                 const SizedBox(height: 4),
                 Text(
-                  '${event.kind} - ${_shortDateTime(event.createdAt)}',
+                  '${event.kind} - ${_shortDateTime(context, event.createdAt)}',
                   style: TextStyle(
                     color: scheme.onSurfaceVariant,
                     fontSize: 12,

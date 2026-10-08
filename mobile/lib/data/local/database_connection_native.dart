@@ -16,6 +16,14 @@ QueryExecutor openDatabaseConnection() {
     final databaseFile = File(
       p.join(supportDirectory.path, 'pluris_haven.sqlite'),
     );
-    return NativeDatabase.createInBackground(databaseFile);
+    return NativeDatabase.createInBackground(
+      databaseFile,
+      setup: _configureDatabase,
+    );
   });
+}
+
+void _configureDatabase(Database database) {
+  database.execute('PRAGMA journal_mode = WAL');
+  database.execute('PRAGMA busy_timeout = 5000');
 }

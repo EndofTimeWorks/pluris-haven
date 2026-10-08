@@ -27,9 +27,9 @@ void main() {
         createdAt: DateTime.utc(2026, 7, 24),
         chunkSize: 1024,
       );
-      final restored =
-          jsonDecode(await snapshot.restoreArchiveJson(testCrypto()))
-              as Map<String, dynamic>;
+      final restored = jsonDecode(
+        await snapshot.restoreArchiveJson(testCrypto()),
+      ) as Map<String, dynamic>;
 
       expect(restored['format'], 'pluris_haven.local_archive');
       expect((restored['members'] as List), hasLength(1));

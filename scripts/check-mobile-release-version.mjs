@@ -73,22 +73,41 @@ if (!numericIdentifier.test(candidateBuildValue)) {
 }
 const candidateVersion = parseVersion(candidateVersionValue);
 const candidateBuild = Number(candidateBuildValue);
+const tagsFromEnvironment = process.env.PLURIS_MOBILE_RELEASE_TAGS;
+if (tagsFromEnvironment !== undefined && tagsFromEnvironment.trim() === '') {
+  console.error('PLURIS_MOBILE_RELEASE_TAGS must not be empty when supplied.');
+  process.exit(1);
+}
 const tags =
-  process.env.PLURIS_MOBILE_RELEASE_TAGS?.split('\n') ??
+  tagsFromEnvironment?.split('\n') ??
   execFileSync('git', ['tag', '--list', 'mobile-v*+*'], { encoding: 'utf8' }).split('\n');
-const previous = tags
-  .filter((tag) => tag && tag !== excludedTag)
-  .map((tag) => {
-    if (!tag.startsWith('mobile-v')) return null;
-    const versionWithBuild = tag.slice('mobile-v'.length);
-    const separator = versionWithBuild.indexOf('+');
-    if (separator <= 0 || versionWithBuild.indexOf('+', separator + 1) !== -1) return null;
-    const build = versionWithBuild.slice(separator + 1);
-    return numericIdentifier.test(build)
-      ? { tag, version: parseVersion(versionWithBuild.slice(0, separator)), build: Number(build) }
-      : null;
-  })
-  .filter(Boolean);
+let previous;
+try {
+  previous = tags
+    .filter((tag) => tag && tag !== excludedTag)
+    .map((tag) => {
+      if (!tag.startsWith('mobile-v')) {
+        throw new Error(`Invalid existing mobile release tag: ${tag}`);
+      }
+      const versionWithBuild = tag.slice('mobile-v'.length);
+      const separator = versionWithBuild.indexOf('+');
+      if (separator <= 0 || versionWithBuild.indexOf('+', separator + 1) !== -1) {
+        throw new Error(`Invalid existing mobile release tag: ${tag}`);
+      }
+      const build = versionWithBuild.slice(separator + 1);
+      if (!numericIdentifier.test(build)) {
+        throw new Error(`Invalid existing mobile release tag: ${tag}`);
+      }
+      return {
+        tag,
+        version: parseVersion(versionWithBuild.slice(0, separator)),
+        build: Number(build),
+      };
+    });
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 
 const highestBuild = previous.reduce((maximum, tag) => Math.max(maximum, tag.build), 0);
 if (candidateBuild <= highestBuild) {

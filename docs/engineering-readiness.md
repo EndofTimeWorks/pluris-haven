@@ -1,7 +1,7 @@
 # Engineering readiness
 
 Internal pre-alpha readiness record, reconciled against the local candidate on
-2026-09-16.
+2026-10-07.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -26,8 +26,8 @@ distribution work is ready.
 - The complete Flutter test suite and `flutter analyze` passed after the final
   notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
   9.1.0, and Kotlin 2.3.20. It retains Flutter's documented temporary legacy
-  Kotlin and DSL settings: `sentry_flutter` 9.30.0 still applies KGP, and
-  Flutter 3.47.4 fails with the new DSL enabled.
+  Kotlin and DSL settings because stable `sentry_flutter` 9.30.1 still applies
+  KGP. The verified Flutter baseline is 3.47.6.
 - The full server suite passed with one-time-token password recovery, verifying
   STARTTLS, response-path-independent background email delivery, encrypted
   backups, and queued backup-deletion cleanup covered.
@@ -59,7 +59,8 @@ distribution work is ready.
 The following are completion targets, not proof that the current build is
 broken:
 
-- Restore OpenPlural import through the current import architecture.
+- Obtain and test representative real OpenPlural exports before making a
+  broader compatibility claim.
 - Finish exposed local chat/message/category/channel product paths.
 - Finish note/journal/message revision/history/restore behaviour that is already
   decided.
@@ -74,8 +75,10 @@ broken:
 - Implement/configure Play closed testing and run real GitHub/Play workflow
   verification.
 - Keep documentation/store claims aligned with what has actually been verified.
+- Obtain independent PluralPort Draft v0.1 files and verify import/export
+  behaviour beyond the checked-in format fixtures.
 
-Full federation, desktop/private-web clients, watch clients, plugins and other
+Hosted federation, desktop/private-web clients, watch clients, plugins and other
 explicitly deferred platform work are not alpha prerequisites.
 
 ## Server/hosted-service conditions
@@ -107,6 +110,11 @@ registration ready.
 - **OpenPlural:** current v0.1 file/archive path has mapper, preview/review,
   source-ID dedupe, ZIP asset and raw-extension fixture coverage. Obtain and
   test a real export before making a broad compatibility claim.
+- **PluralPort:** Draft v0.1 JSON file detection, validation, import mapping,
+  mandatory encrypted source-record retention, documented-field export and loss
+  warnings have local tests and a reachable UI path. Underspecified record types
+  remain opaque rather than receiving invented wire fields. Independent
+  real-export compatibility evidence remains missing.
 
 Do not claim real-export compatibility merely because a source shape, parser or
 mapper test exists.

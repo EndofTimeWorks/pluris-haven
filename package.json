@@ -14,7 +14,7 @@
     "lint:server": "server/.venv/bin/ruff check server/pluris_server server/tests",
     "lint:shell": "shellcheck scripts/*.sh server/deploy/*.sh",
     "lint:mobile": "cd mobile && dart format --set-exit-if-changed lib test && flutter analyze",
-    "test:server": "server/.venv/bin/pytest -q server/tests",
+    "test:server": "cd server && .venv/bin/pytest -q tests",
     "test:mobile": "cd mobile && flutter test",
     "test:debug-release-version": "node --test scripts/debug-release-version.test.mjs",
     "test:release": "node --test scripts/release-marker.test.mjs scripts/release-candidate.test.mjs scripts/generate-release-notes.test.mjs scripts/check-mobile-release-version.test.mjs scripts/official-release-policy.test.mjs scripts/play-generated-apk.test.mjs scripts/obtainium-config.test.mjs",
@@ -22,10 +22,10 @@
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.2",
-    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "husky": "^9.1.7",
-    "prettier": "^3.9.7",
+    "prettier": "^3.9.9",
     "prettier-plugin-svelte": "^4.1.1"
   }
 }

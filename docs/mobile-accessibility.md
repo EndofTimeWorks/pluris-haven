@@ -18,8 +18,10 @@ users, and people who need reduced motion or simpler screens.
 - Tap targets should stay at least 48 by 48 logical pixels.
 - Back navigation must close sheets before leaving the page.
 - Import and sync progress must be visible as text, not just spinners.
-- Motion should be minimal and must honour the reduced-motion setting and the
-  platform animation preference.
+- Motion in Pluris Haven's own UI must honour the reduced-motion setting and
+  the platform animation preference. Animated avatar files are decoded by the
+  platform image pipeline and are not currently frozen; do not describe that
+  setting as stopping GIF or animated WebP avatars.
 
 ## Covered so far
 
@@ -29,7 +31,7 @@ users, and people who need reduced motion or simpler screens.
 - Delete actions for members, notes, and reminders use confirmation dialogs.
 - Support links are real buttons that open in the browser.
 - Reduced motion is persisted and also respects the platform's animation
-  preference.
+  preference for Pluris Haven's own UI.
 - High contrast is a persisted app preference with a dedicated theme path.
 - The widget suite exercises semantic labels for fronting and common icon-only
   controls.
@@ -48,6 +50,8 @@ remaining device work is:
 - Keyboard, switch-access, and large-text testing, including focus order.
 - High-contrast checks for text, borders, status indicators, charts, and avatars.
 - Device-level reduced-motion verification.
+- Animated GIF and WebP avatar behaviour under reduced motion. Freezing those
+  files needs image-pipeline support and remains outside this bounded pass.
 - Device-level verification of named avatar and banner semantics; persisted
   user-provided alternative-text fields are not yet implemented.
 - Reminder schedules need TalkBack and VoiceOver testing, including permission

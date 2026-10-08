@@ -926,67 +926,81 @@ void main() {
     expect(rankColumn.data['dflt_value'], isNull);
   });
 
-  test('v3 message and reminder rows survive their v8 shape expansion', () async {
-    final dbPath = '${tempDir.path}/legacy_v3_data.sqlite';
-    _seedLegacyDatabase(path: dbPath, version: 3, statements: _v3Statements());
-
-    final raw = sqlite3.sqlite3.open(dbPath);
-    const timestamp = 1723300000;
-    try {
-      raw.execute(
-        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?)',
-        ['sys-1', 'Legacy System', timestamp, timestamp],
+  test(
+    'v3 message and reminder rows survive their v8 shape expansion',
+    () async {
+      final dbPath = '${tempDir.path}/legacy_v3_data.sqlite';
+      _seedLegacyDatabase(
+        path: dbPath,
+        version: 3,
+        statements: _v3Statements(),
       );
-      raw.execute(
-        'INSERT INTO members (id, system_id, display_name, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?)',
-        ['mem-1', 'sys-1', 'River', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO messages (id, system_id, member_id, body, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ['message-1', 'sys-1', 'mem-1', 'legacy message', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO reminders (id, system_id, title, body, schedule_text, '
-        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-          'reminder-1',
-          'sys-1',
-          'Check in',
-          'legacy reminder',
-          'Daily',
-          timestamp,
-          timestamp,
-        ],
-      );
-    } finally {
-      raw.close();
-    }
 
-    final database = AppDatabase(NativeDatabase(File(dbPath)));
-    addTearDown(database.close);
+      final raw = sqlite3.sqlite3.open(dbPath);
+      const timestamp = 1723300000;
+      try {
+        raw.execute(
+          'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?)',
+          ['sys-1', 'Legacy System', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO members (id, system_id, display_name, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?)',
+          ['mem-1', 'sys-1', 'River', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO messages (id, system_id, member_id, body, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            'message-1',
+            'sys-1',
+            'mem-1',
+            'legacy message',
+            timestamp,
+            timestamp,
+          ],
+        );
+        raw.execute(
+          'INSERT INTO reminders (id, system_id, title, body, schedule_text, '
+          'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'reminder-1',
+            'sys-1',
+            'Check in',
+            'legacy reminder',
+            'Daily',
+            timestamp,
+            timestamp,
+          ],
+        );
+      } finally {
+        raw.close();
+      }
 
-    final message = await database
-        .customSelect(
-          "SELECT body, board_kind, channel_id FROM messages WHERE id = 'message-1'",
-        )
-        .getSingle();
-    final reminder = await database
-        .customSelect(
-          "SELECT body, trigger_type, schedule_kind FROM reminders WHERE id = 'reminder-1'",
-        )
-        .getSingle();
+      final database = AppDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(database.close);
 
-    expect(message.data['body'], 'legacy message');
-    expect(message.data['board_kind'], 'system');
-    expect(message.data['channel_id'], isNull);
-    expect(reminder.data['body'], 'legacy reminder');
-    expect(reminder.data['trigger_type'], 'repeated');
-    expect(reminder.data['schedule_kind'], isNull);
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
-  });
+      final message = await database
+          .customSelect(
+            "SELECT body, board_kind, channel_id FROM messages WHERE id = 'message-1'",
+          )
+          .getSingle();
+      final reminder = await database
+          .customSelect(
+            "SELECT body, trigger_type, schedule_kind FROM reminders WHERE id = 'reminder-1'",
+          )
+          .getSingle();
+
+      expect(message.data['body'], 'legacy message');
+      expect(message.data['board_kind'], 'system');
+      expect(message.data['channel_id'], isNull);
+      expect(reminder.data['body'], 'legacy reminder');
+      expect(reminder.data['trigger_type'], 'repeated');
+      expect(reminder.data['schedule_kind'], isNull);
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+    },
+  );
 
   test(
     'v12 member, front, and group relationships survive the current upgrade',
@@ -1078,99 +1092,109 @@ void main() {
     },
   );
 
-  test('v16 chat and privacy relationships survive the final migration', () async {
-    final dbPath = '${tempDir.path}/legacy_v16_data.sqlite';
-    _seedLegacyDatabase(
-      path: dbPath,
-      version: 16,
-      statements: _v16Statements(),
-    );
+  test(
+    'v16 chat and privacy relationships survive the final migration',
+    () async {
+      final dbPath = '${tempDir.path}/legacy_v16_data.sqlite';
+      _seedLegacyDatabase(
+        path: dbPath,
+        version: 16,
+        statements: _v16Statements(),
+      );
 
-    final raw = sqlite3.sqlite3.open(dbPath);
-    const timestamp = 1723300000;
-    try {
-      raw.execute(
-        'INSERT INTO plural_systems (id, name, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?)',
-        ['sys-1', 'Legacy System', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO members (id, system_id, display_name, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?)',
-        ['mem-1', 'sys-1', 'River', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO privacy_buckets (id, system_id, name, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?)',
-        ['bucket-1', 'sys-1', 'Trusted', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO privacy_bucket_members (bucket_id, member_id) VALUES (?, ?)',
-        ['bucket-1', 'mem-1'],
-      );
-      raw.execute(
-        'INSERT INTO chat_categories (id, system_id, name, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?)',
-        ['category-1', 'sys-1', 'Internal', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO chat_channels (id, system_id, category_id, name, '
-        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ['channel-1', 'sys-1', 'category-1', 'Check-ins', timestamp, timestamp],
-      );
-      raw.execute(
-        'INSERT INTO messages (id, system_id, body, channel_id, created_at, '
-        'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-        [
-          'message-1',
-          'sys-1',
-          'legacy channel message',
-          'channel-1',
-          timestamp,
-          timestamp,
-        ],
-      );
-    } finally {
-      raw.close();
-    }
+      final raw = sqlite3.sqlite3.open(dbPath);
+      const timestamp = 1723300000;
+      try {
+        raw.execute(
+          'INSERT INTO plural_systems (id, name, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?)',
+          ['sys-1', 'Legacy System', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO members (id, system_id, display_name, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?)',
+          ['mem-1', 'sys-1', 'River', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO privacy_buckets (id, system_id, name, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?)',
+          ['bucket-1', 'sys-1', 'Trusted', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO privacy_bucket_members (bucket_id, member_id) VALUES (?, ?)',
+          ['bucket-1', 'mem-1'],
+        );
+        raw.execute(
+          'INSERT INTO chat_categories (id, system_id, name, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?)',
+          ['category-1', 'sys-1', 'Internal', timestamp, timestamp],
+        );
+        raw.execute(
+          'INSERT INTO chat_channels (id, system_id, category_id, name, '
+          'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            'channel-1',
+            'sys-1',
+            'category-1',
+            'Check-ins',
+            timestamp,
+            timestamp,
+          ],
+        );
+        raw.execute(
+          'INSERT INTO messages (id, system_id, body, channel_id, created_at, '
+          'updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            'message-1',
+            'sys-1',
+            'legacy channel message',
+            'channel-1',
+            timestamp,
+            timestamp,
+          ],
+        );
+      } finally {
+        raw.close();
+      }
 
-    final database = AppDatabase(NativeDatabase(File(dbPath)));
-    addTearDown(database.close);
+      final database = AppDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(database.close);
 
-    expect(
-      await _value(
-        database,
-        "SELECT channel_id FROM messages WHERE id = 'message-1'",
-        'channel_id',
-      ),
-      'channel-1',
-    );
-    expect(
-      await _value(
-        database,
-        "SELECT category_id FROM chat_channels WHERE id = 'channel-1'",
-        'category_id',
-      ),
-      'category-1',
-    );
-    expect(
-      await _value(
-        database,
-        "SELECT COUNT(*) AS count FROM privacy_bucket_members WHERE bucket_id = 'bucket-1' AND member_id = 'mem-1'",
-        'count',
-      ),
-      1,
-    );
-    expect(
-      await _value(
-        database,
-        "SELECT profile_encryption_version FROM members WHERE id = 'mem-1'",
-        'profile_encryption_version',
-      ),
-      0,
-    );
-    expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
-  });
+      expect(
+        await _value(
+          database,
+          "SELECT channel_id FROM messages WHERE id = 'message-1'",
+          'channel_id',
+        ),
+        'channel-1',
+      );
+      expect(
+        await _value(
+          database,
+          "SELECT category_id FROM chat_channels WHERE id = 'channel-1'",
+          'category_id',
+        ),
+        'category-1',
+      );
+      expect(
+        await _value(
+          database,
+          "SELECT COUNT(*) AS count FROM privacy_bucket_members WHERE bucket_id = 'bucket-1' AND member_id = 'mem-1'",
+          'count',
+        ),
+        1,
+      );
+      expect(
+        await _value(
+          database,
+          "SELECT profile_encryption_version FROM members WHERE id = 'mem-1'",
+          'profile_encryption_version',
+        ),
+        0,
+      );
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+    },
+  );
 
   test('private content survives the v8 upgrade', () async {
     final dbPath = '${tempDir.path}/legacy_v8_private_data.sqlite';

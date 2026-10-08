@@ -20,9 +20,8 @@ void main() {
       };
     });
 
-    final archive = await PluralKitLiveClient(
-      client: client,
-    ).fetchArchiveJson(' pk;secret ');
+    final archive = await PluralKitLiveClient(client: client)
+        .fetchArchiveJson(' pk;secret ');
     final decoded = jsonDecode(archive) as Map<String, Object?>;
 
     expect(
