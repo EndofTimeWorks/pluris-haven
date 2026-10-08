@@ -6,7 +6,7 @@
     "name": "EndofTimeWorks",
     "description": "Maintainer of Pluris Haven.",
     "webpageUrl": {
-      "url": "https://pluris.endoftime.dev"
+      "url": "https://plurishaven.app"
     }
   },
   "projects": [
@@ -15,11 +15,11 @@
       "name": "Pluris Haven",
       "description": "Offline-first plural system app.",
       "webpageUrl": {
-        "url": "https://pluris.endoftime.dev"
+        "url": "https://plurishaven.app"
       },
       "repositoryUrl": {
         "url": "https://github.com/EndofTimeWorks/pluris-haven",
-        "wellKnown": "https://pluris.endoftime.dev/.well-known/funding-manifest-urls"
+        "wellKnown": "https://plurishaven.app/.well-known/funding-manifest-urls"
       },
       "licenses": ["Pluris Haven Source-Available Noncommercial License v0.1"],
       "tags": ["plural-systems", "offline-first", "front-tracking", "import-export"]

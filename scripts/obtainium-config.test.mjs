@@ -58,7 +58,7 @@ test('keeps the README-facing first-party route connected to the canonical confi
   );
   assert.match(
     readme,
-    /\[Add Pluris Haven to Obtainium\]\(https:\/\/pluris\.endoftime\.dev\/obtainium\)/,
+    /\[Add Pluris Haven to Obtainium\]\(https:\/\/plurishaven\.app\/obtainium\)/,
   );
   assert.match(route, /import \{ obtainiumRedirectUrl \} from '#lib\/obtainium-config\.js'/);
   assert.match(route, /window\.location\.replace\(obtainiumRedirectUrl\)/);

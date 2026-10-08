@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	<url>
-		<loc>https://pluris.endoftime.dev/</loc>
+		<loc>https://plurishaven.app/</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/download</loc>
+		<loc>https://plurishaven.app/download</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/docs</loc>
+		<loc>https://plurishaven.app/docs</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/changelog</loc>
+		<loc>https://plurishaven.app/changelog</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/distribution</loc>
+		<loc>https://plurishaven.app/distribution</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/support</loc>
+		<loc>https://plurishaven.app/support</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/privacy</loc>
+		<loc>https://plurishaven.app/privacy</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/account-deletion</loc>
+		<loc>https://plurishaven.app/account-deletion</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/terms</loc>
+		<loc>https://plurishaven.app/terms</loc>
 	</url>
 	<url>
-		<loc>https://pluris.endoftime.dev/app</loc>
+		<loc>https://plurishaven.app/app</loc>
 	</url>
 </urlset>

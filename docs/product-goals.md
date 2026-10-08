@@ -19,6 +19,12 @@ Ampersand have current file-normalisation paths with checked-in mapper coverage.
 Do not advertise a source as fully compatible merely because a parser or mapper
 exists.
 
+PluralPort Draft v0.1 JSON file import and export use the existing Haven review
+and local-file flows. Unknown source records and extensions can be retained as
+encrypted raw payloads; Haven-only exported data is named-spaced and accompanied
+by a warning. This portable file support is distinct from OpenPlural v0.1 and
+does not implement live sync, federation, or a hosted PluralPort service.
+
 Password-protected archives are the portable recovery path. Encrypted server
 snapshots use device-held key material, upload in checked chunks, and can be
 downloaded/restored by a client that still has the required key. Server
@@ -39,6 +45,8 @@ are actually implemented.
 - Sync must be transport-independent; a central server is optional
   infrastructure rather than the owner of the data model.
 - Import and export are maintained features, not one-off migration tools.
+- PluralPort interchange follows the documented portable JSON format rather
+  than exposing Haven's database, outbox, or sync architecture.
 - Self-hosted servers use the same public protocol as the official server where
   that protocol is implemented.
 - Accessibility is part of release work.
@@ -83,6 +91,8 @@ Reducing that exposure would need a separate full-database encryption design.
 - Prepare Play closed alpha testing in addition to the existing internal-test
   release path, and verify the real CI/release workflows.
 - Complete remaining real-device accessibility and Apple signing/runtime tests.
+- Obtain independent PluralPort Draft v0.1 export/import evidence before making
+  broad compatibility claims.
 - Keep registration disabled until verified email and other production gates are
   genuinely ready.
 
@@ -92,7 +102,7 @@ mark the feature complete.
 
 ## Later / deferred
 
-- Full portable-identity and federation protocol implementation.
+- Hosted portable-identity and federation protocol implementation.
 - Desktop and private browser clients.
 - Watch clients and plugin ecosystems.
 - Authenticated PluralSpace API import.

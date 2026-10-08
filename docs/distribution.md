@@ -121,5 +121,5 @@ privacy controls, or accessibility features.
 
 Structured funding metadata is served from:
 
-- `https://pluris.endoftime.dev/funding.json`
-- `https://pluris.endoftime.dev/.well-known/funding-manifest-urls`
+- `https://plurishaven.app/funding.json`
+- `https://plurishaven.app/.well-known/funding-manifest-urls`

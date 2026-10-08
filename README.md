@@ -27,6 +27,9 @@ for local use.
 - mobile navigation, dashboard, themes, terminology, and accessibility settings
 - tested Simply Plural and PluralKit file/live import paths, plus OpenPlural
   v0.1 file/archive fixture coverage
+- PluralPort Draft v0.1 JSON file import and export, with unsupported source
+  records preserved for optional retention and Haven-only export data carried
+  in a namespaced extension with warnings
 - Tupperbox, PluralSpace, and Ampersand file-normalisation paths with checked-in
   mapper coverage
 - local export, password-protected portable recovery, and encrypted server
@@ -40,8 +43,9 @@ for local use.
 - an optional native loopback local API with explicit per-client read scopes and
   revocation; see `docs/local-api.md`
 
-Complete chat/revision product surfaces, Play closed alpha testing, public
-registration, federation, browser access to private data, and signed
+Independent real-export PluralPort compatibility evidence, chat/revision product
+surfaces, Play closed alpha testing, public registration, hosted federation,
+browser access to private data, and signed
 iOS/TestFlight distribution are not ready yet. OpenPlural compatibility is
 currently limited to the verified v0.1 file/archive shape; real-export evidence
 is still needed before making a broader claim.
@@ -50,7 +54,7 @@ is still needed before making a broader claim.
 
 - **Google Play** — testing-track builds when they are available to you.
 - **Direct APK** — [official GitHub Releases](https://github.com/EndofTimeWorks/pluris-haven/releases).
-- **Obtainium** — [Add Pluris Haven to Obtainium](https://pluris.endoftime.dev/obtainium).
+- **Obtainium** — [Add Pluris Haven to Obtainium](https://plurishaven.app/obtainium).
 
 Google Play and GitHub/Obtainium use the same Play-app-signing-key-signed APK
 lineage. Obtainium follows the official GitHub Release APK, which also has a

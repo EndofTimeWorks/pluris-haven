@@ -181,7 +181,7 @@
   </section>
 
   <footer>
-    <span>pluris.endoftime.dev</span>
+    <span>plurishaven.app</span>
     <div>
       <a href="https://github.com/EndofTimeWorks/pluris-haven">Source</a>
       <a href="https://github.com/EndofTimeWorks/pluris-haven/issues">Issues</a>

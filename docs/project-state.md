@@ -50,15 +50,22 @@ from implementation; it is not an alpha feature checklist.
   coverage exists; do not claim compatibility beyond the supported v0.1 shape
   without real-export evidence. OpenPlural export/standard governance remains
   separate.
+- **IMPLEMENTED / VERIFIED (local):** PluralPort support is limited to Draft
+  v0.1 JSON file import and export based on the format documentation in the
+  separate PluralPort site repository. Import uses Haven's existing
+  preview/review/publish path and offers encrypted retention of original
+  records and extensions. Export reports Haven-only data and preserves it under
+  `extensions.pluris_haven`. Independent real-export compatibility evidence is
+  still missing. This is not live sync, federation, or a PluralPort service.
 - **DEFERRED:** Authenticated PluralSpace API import.
 - **DECIDED:** No friendship directory. Deliberate handles, rotating codes,
   links and QR discovery are preferred.
 - **DECIDED:** Trusted recovery contacts are wanted for preconfigured recovery
   capability, never ordinary private-data access. Exact threshold/share
   cryptography remains unresolved and must not be invented casually.
-- **DECIDED:** Portable user-held identity and federation are long-term product
-  direction; implementation is **DEFERRED**. Multiple top-level systems remain
-  unresolved.
+- **DECIDED:** Hosted federation and portable user-held identity are long-term
+  product direction and are **not required for Alpha**. They are separate from
+  PluralPort file interchange.
 
 ## Security, access and policy
 
@@ -68,6 +75,11 @@ from implementation; it is not an alpha feature checklist.
 - **IMPLEMENTED:** Hosted password recovery uses a one-time emailed token entered
   in the existing mobile flow. Browser reset/deep-link infrastructure is not the
   current recovery UX.
+- **NOT IMPLEMENTED / NOT VERIFIED:** Web-to-app deep links. The website has an
+  Android `assetlinks.json`, but Android has no verified-link intent filter or
+  `android:autoVerify`, iOS has no Associated Domains entitlement/AASA file,
+  and the app has no corresponding route handler. Domain ownership and the
+  association file alone do not establish working App Links or Universal Links.
 - **DECIDED:** Hosted accounts are 13+. Rooted/jailbroken devices warn, not
   block. Low-cognitive-load mode remains wanted. CLI/TUI is **SUPERSEDED** and
   dropped.
@@ -80,12 +92,12 @@ from implementation; it is not an alpha feature checklist.
 
 ## Current completion priorities
 
-The next completion work includes local chats/messages, note/journal/message
-revision product flows, advanced reminders and polls, System Safety/front-audit
-gaps, customization/accessibility gaps, Play closed testing, release automation
+The next completion work includes local chats/messages,
+note/journal/message revision product flows, advanced
+reminders and polls, System Safety/front-audit gaps,
+customization/accessibility gaps, Play closed testing, release automation
 hardening and alpha readiness.
 
-Full federation/portable-identity protocol work, desktop/private-web/watch
+Hosted federation/portable-identity protocol work, desktop/private-web/watch
 clients, plugins, authenticated PluralSpace API import and other explicitly
-deferred platform work are not part of the current completion sweep unless
-needed to fix correctness in already-exposed functionality.
+deferred platform work are not Alpha prerequisites.

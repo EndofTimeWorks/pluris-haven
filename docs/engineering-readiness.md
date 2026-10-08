@@ -75,8 +75,10 @@ broken:
 - Implement/configure Play closed testing and run real GitHub/Play workflow
   verification.
 - Keep documentation/store claims aligned with what has actually been verified.
+- Obtain independent PluralPort Draft v0.1 files and verify import/export
+  behaviour beyond the checked-in format fixtures.
 
-Full federation, desktop/private-web clients, watch clients, plugins and other
+Hosted federation, desktop/private-web clients, watch clients, plugins and other
 explicitly deferred platform work are not alpha prerequisites.
 
 ## Server/hosted-service conditions
@@ -108,6 +110,10 @@ registration ready.
 - **OpenPlural:** current v0.1 file/archive path has mapper, preview/review,
   source-ID dedupe, ZIP asset and raw-extension fixture coverage. Obtain and
   test a real export before making a broad compatibility claim.
+- **PluralPort:** Draft v0.1 JSON file detection, validation, import mapping,
+  source-record retention, export and loss warnings have local tests and a
+  reachable UI path. Independent real-export compatibility evidence remains
+  missing.
 
 Do not claim real-export compatibility merely because a source shape, parser or
 mapper test exists.
