@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.3.0-pre-alpha.5 - 2026-10-08
+
+Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
+
+### Reliability and data safety
+
+- Startup, encrypted local storage, migrations, destructive record lifecycles,
+  import staging, and server backup cleanup now fail more safely and preserve
+  more recoverable state when work is interrupted.
+- Imports have tighter size and structure bounds, preserve source provenance,
+  and retain unsupported data where the source format permits instead of
+  silently treating it as supported.
+- PluralPort Draft v0.1 portable file import and export are available for the
+  record fields the Draft currently defines. Records and fields whose wire
+  shape is not yet specified are retained in the Pluris Haven extension with a
+  compatibility warning; this is not full Draft coverage or live sync.
+- The first encrypted native `.pluris` archive-frame primitive is covered for
+  tampering and resource bounds. Complete backup creation, restore, wrapper
+  lifecycle, and user-facing recovery are still unfinished.
+
+### Product and accessibility
+
+- Pluris Haven has new branded app icons and broader appearance, typography,
+  spacing, navigation, and colour controls.
+- Friends and other incomplete advanced surfaces are hidden from ordinary
+  navigation. Sync settings now state that general device sync is unavailable
+  instead of presenting the no-op background task as working functionality.
+- `plurishaven.app` is now the canonical product website in repository-owned
+  links and metadata.
+- Assorted accessibility, migration, import, archive, and interface stability
+  fixes improve the pre-alpha experience.
+
+### Tooling and release safety
+
+- Flutter, Android, server, website, Node, and CI dependencies now use the
+  refreshed supported toolchain baseline.
+- Release validation, artifact provenance, Play-signed APK handling, and
+  publication ordering are stricter. Dependabot branches cannot publish debug
+  releases.
+
 ## 0.3.0-pre-alpha.4 - 2026-08-25
 
 Security release: `0.3.0-pre-alpha.4+3004`.

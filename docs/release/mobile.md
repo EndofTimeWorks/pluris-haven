@@ -49,7 +49,7 @@ ordinary feature branch.
 The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not move to
 `0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
 version. The current candidate for a future monotonic first alpha is
-`0.3.1-alpha.1+3005`, but it must not be set/tagged/released without explicit
+`0.3.1-alpha.1+3006`, but it must not be set/tagged/released without explicit
 approval.
 
 1. Set the approved release version in `mobile/pubspec.yaml`. Versioned releases

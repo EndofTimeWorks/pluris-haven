@@ -6,8 +6,8 @@ used for managed Android testing.
 
 ## Current release channels
 
-The mobile version at the current pre-alpha baseline is
-`0.3.0-pre-alpha.4+3004`.
+The mobile source version prepared for the next pre-alpha candidate is
+`0.3.0-pre-alpha.5+3005`.
 
 - Successful internal branch CI, including ordinary `main` CI, publishes a
   clearly labelled `debug-v...` GitHub prerelease with debug/test artifacts.
@@ -16,9 +16,9 @@ The mobile version at the current pre-alpha baseline is
   passed hosted CI. The protected release job creates the normal CI-signed tag;
   the maintainer's YubiKey path remains a recovery option.
 - The project is still **PRE-ALPHA**. **ALPHA** is next; beta is later.
-- Do not use `0.3.0-alpha.1` after `0.3.0-pre-alpha.4`: SemVer would order
-  `alpha` before `pre-alpha` at the same core version. The proposed next named
-  pre-alpha is `0.3.0-pre-alpha.5+3005`; it is not a released version.
+- Do not use `0.3.0-alpha.1` after `0.3.0-pre-alpha.5`: SemVer would order
+  `alpha` before `pre-alpha` at the same core version. This prepared candidate
+  is not a tagged or published release until the release gates complete.
 
 ## Android / GitHub Releases
 
