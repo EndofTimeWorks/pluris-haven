@@ -63,8 +63,15 @@ void main() {
     test('rejects invalid framing before password work', () async {
       final wrongMagic = Uint8List.fromList(container)..[0] ^= 1;
       final unsupportedVersion = Uint8List.fromList(container)..[4] = 2;
+      final oversized = Uint8List(nativeArchiveMaximumFrameContainerBytes + 1)
+        ..setRange(0, nativeArchiveMagic.length, nativeArchiveMagic);
 
-      for (final invalid in [Uint8List(8), wrongMagic, unsupportedVersion]) {
+      for (final invalid in [
+        Uint8List(8),
+        wrongMagic,
+        unsupportedVersion,
+        oversized,
+      ]) {
         await expectLater(
           decryptNativeArchiveFrame(
             container: invalid,

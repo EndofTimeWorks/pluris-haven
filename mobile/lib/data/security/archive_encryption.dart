@@ -8,6 +8,8 @@ import 'package:libcompress/libcompress.dart';
 const nativeArchiveMagic = <int>[0x50, 0x4c, 0x55, 0x52]; // PLUR
 const nativeArchiveVersion = 1;
 const nativeArchiveMaximumFramePlainBytes = 256 * 1024;
+const nativeArchiveMaximumFrameContainerBytes =
+    nativeArchiveMaximumFramePlainBytes + 32 * 1024;
 
 const encryptedArchiveFormat = 'pluris_haven.encrypted_archive';
 const encryptedArchiveVersion = 3;
@@ -105,7 +107,8 @@ Future<Uint8List> decryptNativeArchiveFrame({
   required Uint8List container,
   required String passphrase,
 }) async {
-  if (container.length < 9) {
+  if (container.length < 9 ||
+      container.length > nativeArchiveMaximumFrameContainerBytes) {
     throw const FormatException('Not a native Pluris archive.');
   }
   for (var index = 0; index < nativeArchiveMagic.length; index++) {
