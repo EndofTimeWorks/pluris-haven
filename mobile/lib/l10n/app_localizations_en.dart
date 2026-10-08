@@ -209,7 +209,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncRowTitle => 'Sync';
 
   @override
-  String get syncRowValue => 'off by default';
+  String get syncRowValue => 'device sync not implemented';
 
   @override
   String get currentColorLabel => 'Current colour';
@@ -289,20 +289,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetDashboardValue => 'restore default shortcut order';
 
   @override
-  String get syncOffTitle => 'Sync is off';
+  String get syncOffTitle => 'Device sync is not available';
 
   @override
   String get localStatusPill => 'local';
 
   @override
   String get syncOffDescription =>
-      'Pluris Haven keeps data on this device unless sync is turned on.';
+      'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
 
   @override
   String get encryptedSyncLabel => 'Encrypted sync';
 
   @override
-  String get encryptedSyncValue => 'not configured';
+  String get encryptedSyncValue => 'not implemented';
 
   @override
   String get friendsLabel => 'Friends';
@@ -418,7 +418,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardShortcutImportExportSubtitle => 'local archive';
 
   @override
-  String get dashboardShortcutSyncSubtitle => 'off by default';
+  String get dashboardShortcutSyncSubtitle => 'device sync not implemented';
 
   @override
   String get dashboardShortcutCustomizeSubtitle => 'layout and theme';
@@ -1314,6 +1314,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.';
 
   @override
+  String get retainPluralPortPayloadsDescription =>
+      'Required for PluralPort: unsupported and underspecified records stay encrypted so they are not silently discarded.';
+
+  @override
   String get inputLabel => 'Input';
 
   @override
@@ -1808,7 +1812,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepMapPluralPortDetail =>
-      'Stage supported systems, members, groups, notes, assets, and fronting records; preserve underspecified records for later support.';
+      'Stage documented systems, members, and fronting records; preserve underspecified record types for later support.';
 
   @override
   String get importStepReviewPluralPortDetail =>
@@ -1905,7 +1909,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importPrivacyPluralPortExtensions =>
-      'Unsupported PluralPort extensions and source references can be retained as encrypted raw source payloads.';
+      'Unsupported and underspecified PluralPort records, extensions, and source references are retained as encrypted raw source payloads.';
 
   @override
   String get importPrivacyPrismPassphraseMemoryOnly =>
@@ -4525,7 +4529,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localReportStorage => 'storage: device';
 
   @override
-  String get localReportSync => 'sync: off by default';
+  String get localReportSync => 'device sync: not implemented';
 
   @override
   String get reportCopiedMessage => 'Report copied';
@@ -4551,7 +4555,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appOptionsSubtitle => 'theme, language, dashboard';
 
   @override
-  String get offByDefaultSubtitle => 'off by default';
+  String get offByDefaultSubtitle => 'device sync not implemented';
 
   @override
   String get deviceDatabaseSubtitle => 'device database';

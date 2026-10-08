@@ -61,6 +61,52 @@ void main() {
     expect(preview.source, ImportSource.pluralPort);
     expect(preview.canApply, isFalse);
     expect(preview.events.single.stage, ImportPreviewStage.validate);
+    expect(
+      () => decodePluralPortEnvelope('''
+{
+  "pluralport_version": "0.1",
+  "exported_at": "2026-10-07T00:00:00",
+  "producer": {"app": "Example", "app_version": "1", "app_id": "example"},
+  "capabilities": {"modules": []}
+}
+'''),
+      throwsFormatException,
+    );
+    expect(
+      () => decodePluralPortEnvelope('''
+{
+  "pluralport_version": "0.1",
+  "exported_at": "2026-10-07T00:00:00-00:00",
+  "producer": {"app": "Example", "app_version": "1", "app_id": "example"},
+  "capabilities": {"modules": []}
+}
+'''),
+      throwsFormatException,
+    );
+    expect(
+      () => decodePluralPortEnvelope('''
+{
+  "pluralport_version": "0.1",
+  "exported_at": "2026-10-07T00:00:00Z",
+  "producer": {"app": "Example", "app_version": "1", "app_id": "example"},
+  "capabilities": {"modules": ["members"]},
+  "members": ["not-an-object"]
+}
+'''),
+      throwsFormatException,
+    );
+    expect(
+      () => decodePluralPortEnvelope('''
+{
+  "pluralport_version": "0.1",
+  "exported_at": "2026-10-07T00:00:00Z",
+  "producer": {"app": "Example", "app_version": "1", "app_id": "example"},
+  "capabilities": {"modules": ["fronting"]},
+  "front_periods": [{"id":"f1","started_at":"2026-10-07T00:00:00"}]
+}
+'''),
+      throwsFormatException,
+    );
   });
 
   test('imports documented records and preserves original records', () {
@@ -90,11 +136,11 @@ void main() {
     );
 
     expect(normalized.counts['members'], 1);
-    expect(normalized.counts['groups'], 1);
-    expect(normalized.counts['group_members'], 1);
+    expect(normalized.counts['groups'], 0);
+    expect(normalized.counts['group_members'], 0);
     expect(normalized.counts['fronts'], 1);
-    expect(normalized.counts['notes'], 1);
-    expect(normalized.counts['avatar_assets'], 1);
+    expect(normalized.counts['notes'], 0);
+    expect(normalized.counts['avatar_assets'], 0);
     expect(normalized.counts['custom_fields'], 0);
     expect(normalized.counts['raw_payloads'], 1);
     expect(normalized.archiveJson, contains('pluralport_extensions'));
@@ -104,7 +150,27 @@ void main() {
     final payloadJson = (payload as Map<String, Object?>)['payload_json'];
     expect(payloadJson, contains('"unknown": true'));
     expect(payloadJson, contains('"future_shape": true'));
-    expect(normalized.archiveJson, contains('local-avatar:a1'));
+    expect(payloadJson, contains('"group_memberships"'));
+    expect(payloadJson, contains('"bytes_base64": "AQID"'));
+
+    final reexported = decodePluralPortEnvelope(
+      encodePluralPortFromLocalArchive(
+        normalized.archiveJson,
+        appVersion: '0.3.0-pre-alpha.4',
+        exportedAt: DateTime.utc(2026, 10, 7),
+      ),
+    );
+    final reexportedMember =
+        (reexported['members'] as List).single as Map<String, Object?>;
+    expect(
+      (reexportedMember['source_refs'] as List).whereType<Map>().any(
+        (sourceRef) =>
+            sourceRef['app'] == 'com.example.app' &&
+            sourceRef['collection'] == 'members' &&
+            sourceRef['id'] == 'source-m1',
+      ),
+      isTrue,
+    );
   });
 
   test('exports the documented envelope and reports archive-only data', () {
@@ -112,9 +178,21 @@ void main() {
       jsonEncode({
         'format': 'pluris_haven.local_archive',
         'version': 1,
-        'system': {'id': 's1', 'name': 'River House'},
+        'system': {
+          'id': 's1',
+          'name': 'River House',
+          'avatar_url': 'local-avatar:a1',
+          'created_at': '2026-10-07T00:00:00Z',
+        },
         'members': [
-          {'id': 'm1', 'display_name': 'Iris', 'pronouns': 'they/them'},
+          {
+            'id': 'm1',
+            'display_name': 'Iris',
+            'pronouns': 'they/them',
+            'avatar_url': 'local-avatar:a1',
+            'pluralkit_id': 'abcde',
+            'privacy': 'private',
+          },
         ],
         'groups': [
           {'id': 'g1', 'name': 'Main'},
@@ -128,8 +206,12 @@ void main() {
         'front_members': [
           {'session_id': 'f1', 'member_id': 'm1'},
         ],
-        'notes': const <Object?>[],
-        'avatar_assets': const <Object?>[],
+        'notes': [
+          {'id': 'n1', 'title': 'Grounding', 'body': 'Drink water'},
+        ],
+        'avatar_assets': [
+          {'id': 'a1', 'mime_type': 'image/png', 'bytes_base64': 'AQID'},
+        ],
         'tags': [
           {'id': 't1', 'name': 'Caretaker'},
         ],
@@ -152,8 +234,8 @@ void main() {
     final envelope = decodePluralPortEnvelope(exported);
 
     expect(envelope['pluralport_version'], '0.1');
+    expect(envelope['exported_at'], '2026-10-07T00:00:00.000Z');
     expect((envelope['members'] as List), hasLength(1));
-    expect((envelope['group_memberships'] as List), hasLength(1));
     expect((envelope['front_periods'] as List), hasLength(1));
     expect((envelope['warnings'] as List), hasLength(1));
     expect(exported, contains('preserve me'));
@@ -161,6 +243,45 @@ void main() {
     expect(exported, contains('Host'));
     expect(envelope, isNot(contains('taxonomy_terms')));
     expect(envelope, isNot(contains('custom_fields')));
+    expect(envelope, isNot(contains('groups')));
+    expect(envelope, isNot(contains('group_memberships')));
+    expect(envelope, isNot(contains('notes')));
+    expect(envelope, isNot(contains('assets')));
+    final system = (envelope['systems'] as List).single as Map<String, Object?>;
+    expect(system, isNot(contains('avatar_asset_id')));
+    final member = (envelope['members'] as List).single as Map<String, Object?>;
+    final sourceRefs = member['source_refs'] as List;
+    expect(
+      sourceRefs.whereType<Map>().any(
+        (sourceRef) =>
+            sourceRef['app'] == 'pluralkit' &&
+            sourceRef['collection'] == 'members' &&
+            sourceRef['id'] == 'abcde',
+      ),
+      isTrue,
+    );
+    expect(member, isNot(contains('avatar_asset_id')));
+    expect(exported, contains('Grounding'));
+    expect(exported, contains('bytes_base64'));
     expect(exported, contains('extensions'));
+  });
+
+  test('normalizes caller-supplied export time to UTC', () {
+    final envelope = decodePluralPortEnvelope(
+      encodePluralPortFromLocalArchive(
+        jsonEncode({
+          'format': 'pluris_haven.local_archive',
+          'version': 1,
+          'system': {'id': 's1', 'name': 'River House'},
+          'members': const <Object?>[],
+          'fronts': const <Object?>[],
+          'front_members': const <Object?>[],
+        }),
+        appVersion: '0.3.0-pre-alpha.4',
+        exportedAt: DateTime.parse('2026-10-07T01:30:00+01:00'),
+      ),
+    );
+
+    expect(envelope['exported_at'], '2026-10-07T00:30:00.000Z');
   });
 }

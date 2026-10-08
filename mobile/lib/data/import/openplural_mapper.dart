@@ -6,6 +6,8 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
   String preservedExtensionKey = 'openplural_extensions',
   bool preserveAllExtensions = false,
   bool mapCustomFields = true,
+  bool mapUnderspecifiedRecords = true,
+  bool strictDocumentedFields = false,
 }) {
   final version = envelope[versionKey];
   if (version != '0.1') {
@@ -15,19 +17,16 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
   }
 
   final assets = <String, String>{};
-  for (final value in _firstList(envelope, const ['assets'])) {
-    final asset = _mapValue(value);
-    final id = asset == null ? null : _firstString(asset, const ['id']);
-    final uri = asset == null
-        ? null
-        : _firstString(asset, const ['uri', 'url']);
-    final havenExtension = asset == null
-        ? null
-        : _mapValue(_mapValue(asset['extensions'])?[pluralPortHavenAppId]);
-    if (id != null && uri != null) {
-      assets[id] = uri;
-    } else if (id != null && havenExtension?['bytes_base64'] is String) {
-      assets[id] = 'local-avatar:$id';
+  if (mapUnderspecifiedRecords) {
+    for (final value in _firstList(envelope, const ['assets'])) {
+      final asset = _mapValue(value);
+      final id = asset == null ? null : _firstString(asset, const ['id']);
+      final uri = asset == null
+          ? null
+          : _firstString(asset, const ['uri', 'url']);
+      if (id != null && uri != null) {
+        assets[id] = uri;
+      }
     }
   }
 
@@ -45,15 +44,22 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
             'name': _firstString(system, const ['name']),
             'description': _firstString(system, const ['description']),
             'color': _firstString(system, const ['color']),
-            'avatarUrl':
-                assets[_firstString(system, const ['avatar_asset_id'])],
+            if (!strictDocumentedFields)
+              'avatarUrl':
+                  assets[_firstString(system, const ['avatar_asset_id'])],
           },
     'members': [
       for (final value in _firstList(envelope, const ['members']))
         if (_mapValue(value) case final member?)
-          _openPluralMember(member, assets),
+          _openPluralMember(
+            member,
+            assets,
+            strictDocumentedFields: strictDocumentedFields,
+          ),
     ],
-    'groups': _openPluralGroups(envelope),
+    'groups': mapUnderspecifiedRecords
+        ? _openPluralGroups(envelope)
+        : const <Object?>[],
     'custom_fields': mapCustomFields
         ? [
             for (final value in _firstList(envelope, const ['custom_fields']))
@@ -70,10 +76,18 @@ Map<String, Object?> _openPluralEnvelopeToLooseArchive(
     'custom_field_values': mapCustomFields
         ? _openPluralCustomFieldValues(envelope)
         : const <Object?>[],
-    'notes': _openPluralNotes(envelope),
-    'messages': _openPluralMessages(envelope),
-    'reminders': extension['reminders'] ?? const [],
-    'polls': extension['polls'] ?? const [],
+    'notes': mapUnderspecifiedRecords
+        ? _openPluralNotes(envelope)
+        : const <Object?>[],
+    'messages': mapUnderspecifiedRecords
+        ? _openPluralMessages(envelope)
+        : const <Object?>[],
+    'reminders': mapUnderspecifiedRecords
+        ? extension['reminders'] ?? const []
+        : const <Object?>[],
+    'polls': mapUnderspecifiedRecords
+        ? extension['polls'] ?? const []
+        : const <Object?>[],
     'fronts': _openPluralFronts(envelope),
     preservedExtensionKey: preserveAllExtensions
         ? {
@@ -115,41 +129,11 @@ List<Map<String, Object?>> _portableRecords(Map<String, Object?> envelope) => [
         },
 ];
 
-List<ImportAvatarAsset> _pluralPortHavenAvatarAssets(
-  Map<String, Object?> envelope,
-) {
-  const maximumAvatarBytes = 10 * 1024 * 1024;
-  final assets = <ImportAvatarAsset>[];
-  for (final value in _firstList(envelope, const ['assets'])) {
-    final asset = _mapValue(value);
-    final id = asset == null ? null : _firstString(asset, const ['id']);
-    final extension = asset == null
-        ? null
-        : _mapValue(_mapValue(asset['extensions'])?[pluralPortHavenAppId]);
-    final encoded = extension?['bytes_base64'];
-    if (id == null || encoded is! String) continue;
-    try {
-      final bytes = base64Decode(encoded);
-      if (bytes.isEmpty || bytes.length > maximumAvatarBytes) continue;
-      assets.add(
-        ImportAvatarAsset(
-          id: id,
-          name: _firstString(asset!, const ['name']) ?? id,
-          bytes: bytes,
-          mimeType: _firstString(asset, const ['mime_type']),
-        ),
-      );
-    } on FormatException {
-      // The original asset record remains in the encrypted raw payload.
-    }
-  }
-  return assets;
-}
-
 Map<String, Object?> _openPluralMember(
   Map<String, Object?> member,
-  Map<String, String> assets,
-) {
+  Map<String, String> assets, {
+  bool strictDocumentedFields = false,
+}) {
   final extension = _openPluralSheafExtension(member);
   final avatarAssetId = _firstString(member, const ['avatar_asset_id']);
   final birthday = member['birthday'];
@@ -162,17 +146,22 @@ Map<String, Object?> _openPluralMember(
     'description': _firstString(member, const ['description']),
     'pronouns': _firstString(member, const ['pronouns']),
     'color': _firstString(member, const ['color']),
-    'avatarUrl': avatarAssetId == null ? null : assets[avatarAssetId],
+    if (!strictDocumentedFields)
+      'avatarUrl': avatarAssetId == null ? null : assets[avatarAssetId],
     'pluralKitId': _openPluralSourceRef(member['source_refs'], 'pluralkit'),
-    'privacy': _openPluralPrivacyVisibility(member['privacy']),
+    if (!strictDocumentedFields)
+      'privacy': _openPluralPrivacyVisibility(member['privacy']),
     'archived': member['archived'] == true,
-    'is_custom_front': member['is_custom_front'] == true,
-    'createdAt': _firstString(member, const ['created_at']),
+    if (!strictDocumentedFields)
+      'is_custom_front': member['is_custom_front'] == true,
+    if (!strictDocumentedFields)
+      'createdAt': _firstString(member, const ['created_at']),
     'info': {
-      if (birthday is Map<String, Object?>)
+      if (!strictDocumentedFields && birthday is Map<String, Object?>)
         'birthday': _firstString(birthday, const ['value']),
       if (birthday is String) 'birthday': birthday,
-      if (extension['note'] is String) 'note': extension['note'],
+      if (!strictDocumentedFields && extension['note'] is String)
+        'note': extension['note'],
     },
   };
 }

@@ -96,7 +96,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
           avatarAssetCount: _fileAvatarAssets.length,
           retainRawPayloads: _retainRawPayloads,
           onRetainRawPayloadsChanged: (value) {
-            setState(() => _retainRawPayloads = value);
+            setState(() {
+              _retainRawPayloads = _source.requiresRawPayloadRetention
+                  ? true
+                  : value;
+            });
           },
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
@@ -451,7 +455,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       } else if (guess.source != null) {
         _source = guess.source!;
       }
-      if (_source == ImportSource.pluralPort) {
+      if (_source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
       _isPickingImport = false;
@@ -502,7 +506,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
     final generation = ++_previewGeneration;
     setState(() {
       _source = source;
-      if (source == ImportSource.pluralPort) {
+      if (source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
       _preview = null;
@@ -1886,9 +1890,15 @@ class ImportSetupCard extends StatelessWidget {
               child: SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 value: retainRawPayloads,
-                onChanged: onRetainRawPayloadsChanged,
+                onChanged: source.requiresRawPayloadRetention
+                    ? null
+                    : onRetainRawPayloadsChanged,
                 title: Text(l10n.retainRawImportPayloadsTitle),
-                subtitle: Text(l10n.retainRawImportPayloadsDescription),
+                subtitle: Text(
+                  source.requiresRawPayloadRetention
+                      ? l10n.retainPluralPortPayloadsDescription
+                      : l10n.retainRawImportPayloadsDescription,
+                ),
               ),
             ),
           ],

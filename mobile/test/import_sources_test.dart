@@ -74,6 +74,8 @@ void main() {
     expect(ImportSource.pluralSpace.status, ImporterStatus.ready);
     expect(ImportSource.openPlural.status, ImporterStatus.ready);
     expect(ImportSource.openPlural.jobSource, 'openplural_file');
+    expect(ImportSource.pluralPort.status, ImporterStatus.ready);
+    expect(ImportSource.pluralPort.requiresRawPayloadRetention, isTrue);
     expect(ImportSource.prism.status, ImporterStatus.planned);
   });
 

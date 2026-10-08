@@ -92,6 +92,50 @@ void main() {
     expect(find.text('👩‍💻'), findsOneWidget);
   });
 
+  testWidgets('hides experimental friends from normal Alpha navigation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SpDrawer(
+          snapshot: null,
+          selected: SpSection.dashboard,
+          onSelect: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('Friends'), findsNothing);
+    expect(
+      dashboardShortcuts.any((shortcut) => shortcut.id == 'friends'),
+      isFalse,
+    );
+  });
+
+  testWidgets('states that general device sync is not implemented', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SyncPage(
+            repository: FakeHavenRepository(_testHomeSnapshot),
+            controller: null,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Device sync is not available'), findsOneWidget);
+    expect(find.textContaining('not implemented'), findsWidgets);
+    expect(find.textContaining('unless sync is turned on'), findsNothing);
+    expect(find.text('Friends'), findsNothing);
+  });
+
   testWidgets('shows recovery guidance when local data initialization fails', (
     tester,
   ) async {

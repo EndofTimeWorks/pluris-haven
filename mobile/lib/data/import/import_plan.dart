@@ -495,13 +495,7 @@ ImportSourcePlan importPlanFor(ImportSource source) {
       source: ImportSource.pluralPort,
       status: ImportPlanStatus.ready,
       defaultConflictStrategy: ImportConflictStrategy.prompt,
-      previewCounts: [
-        ImportPlanCount.members,
-        ImportPlanCount.groups,
-        ImportPlanCount.notes,
-        ImportPlanCount.frontHistory,
-        ImportPlanCount.avatars,
-      ],
+      previewCounts: [ImportPlanCount.members, ImportPlanCount.frontHistory],
       privacyNotes: [
         ImportPrivacyNote.pluralPortIdentifiers,
         ImportPrivacyNote.pluralPortExtensions,

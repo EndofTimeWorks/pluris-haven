@@ -58,14 +58,10 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
   // to the generic loose archive shape before using the shared normalizer.
   // Unknown extension data stays in `raw_payloads` through that normalizer.
   var effectiveDecoded = decoded;
-  var effectiveAvatarAssets = avatarAssets;
+  final effectiveAvatarAssets = avatarAssets;
   if (source == ImportSource.openPlural || source == ImportSource.pluralPort) {
     if (source == ImportSource.pluralPort) {
       validatePluralPortEnvelope(decoded);
-      effectiveAvatarAssets = [
-        ...avatarAssets,
-        ..._pluralPortHavenAvatarAssets(decoded),
-      ];
     }
     effectiveDecoded = _openPluralEnvelopeToLooseArchive(
       decoded,
@@ -77,6 +73,8 @@ NormalizedImportArchive normalizeImportTextToLocalArchive({
           : 'openplural_extensions',
       preserveAllExtensions: source == ImportSource.pluralPort,
       mapCustomFields: source != ImportSource.pluralPort,
+      mapUnderspecifiedRecords: source != ImportSource.pluralPort,
+      strictDocumentedFields: source == ImportSource.pluralPort,
     );
   }
 

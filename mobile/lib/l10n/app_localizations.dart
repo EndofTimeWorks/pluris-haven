@@ -472,7 +472,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncRowValue.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get syncRowValue;
 
   /// No description provided for @currentColorLabel.
@@ -616,7 +616,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync is off'**
+  /// **'Device sync is not available'**
   String get syncOffTitle;
 
   /// No description provided for @localStatusPill.
@@ -628,7 +628,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffDescription.
   ///
   /// In en, this message translates to:
-  /// **'Pluris Haven keeps data on this device unless sync is turned on.'**
+  /// **'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.'**
   String get syncOffDescription;
 
   /// No description provided for @encryptedSyncLabel.
@@ -640,7 +640,7 @@ abstract class AppLocalizations {
   /// No description provided for @encryptedSyncValue.
   ///
   /// In en, this message translates to:
-  /// **'not configured'**
+  /// **'not implemented'**
   String get encryptedSyncValue;
 
   /// No description provided for @friendsLabel.
@@ -856,7 +856,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardShortcutSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get dashboardShortcutSyncSubtitle;
 
   /// No description provided for @dashboardShortcutCustomizeSubtitle.
@@ -2376,6 +2376,12 @@ abstract class AppLocalizations {
   /// **'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.'**
   String get retainRawImportPayloadsDescription;
 
+  /// No description provided for @retainPluralPortPayloadsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Required for PluralPort: unsupported and underspecified records stay encrypted so they are not silently discarded.'**
+  String get retainPluralPortPayloadsDescription;
+
   /// No description provided for @inputLabel.
   ///
   /// In en, this message translates to:
@@ -3237,7 +3243,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepMapPluralPortDetail.
   ///
   /// In en, this message translates to:
-  /// **'Stage supported systems, members, groups, notes, assets, and fronting records; preserve underspecified records for later support.'**
+  /// **'Stage documented systems, members, and fronting records; preserve underspecified record types for later support.'**
   String get importStepMapPluralPortDetail;
 
   /// No description provided for @importStepReviewPluralPortDetail.
@@ -3387,7 +3393,7 @@ abstract class AppLocalizations {
   /// No description provided for @importPrivacyPluralPortExtensions.
   ///
   /// In en, this message translates to:
-  /// **'Unsupported PluralPort extensions and source references can be retained as encrypted raw source payloads.'**
+  /// **'Unsupported and underspecified PluralPort records, extensions, and source references are retained as encrypted raw source payloads.'**
   String get importPrivacyPluralPortExtensions;
 
   /// No description provided for @importPrivacyPrismPassphraseMemoryOnly.
@@ -7784,7 +7790,7 @@ abstract class AppLocalizations {
   /// No description provided for @localReportSync.
   ///
   /// In en, this message translates to:
-  /// **'sync: off by default'**
+  /// **'device sync: not implemented'**
   String get localReportSync;
 
   /// No description provided for @reportCopiedMessage.
@@ -7832,7 +7838,7 @@ abstract class AppLocalizations {
   /// No description provided for @offByDefaultSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get offByDefaultSubtitle;
 
   /// No description provided for @deviceDatabaseSubtitle.

@@ -122,6 +122,8 @@ enum ImportSource {
   final ImporterStatus status;
   final List<String> dedupeKeys;
 
+  bool get requiresRawPayloadRetention => this == ImportSource.pluralPort;
+
   String get jobSource => switch (this) {
     ImportSource.plurisHavenArchive => 'plurishaven_archive',
     ImportSource.simplyPlural => 'simplyplural_file',

@@ -294,13 +294,6 @@ final dashboardShortcuts = [
     icon: Icons.table_rows_rounded,
   ),
   DashboardShortcutDefinition(
-    id: 'friends',
-    title: (l10n) => l10n.friendsLabel,
-    subtitle: (l10n) => l10n.dashboardShortcutFriendsSubtitle,
-    section: SpSection.friends,
-    icon: Icons.people_rounded,
-  ),
-  DashboardShortcutDefinition(
     id: 'chat',
     title: (l10n) => l10n.dashboardShortcutChatTitle,
     subtitle: (l10n) => l10n.dashboardShortcutChatSubtitle,
