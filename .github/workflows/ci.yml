@@ -79,6 +79,9 @@ jobs:
       - name: Reject hardcoded mobile UI strings
         run: pnpm check:ui-l10n
 
+      - name: Check app icon resource contracts
+        run: pnpm test:icons
+
       - name: Lint pull request commit messages
         if: github.event_name == 'pull_request'
         run: >-
