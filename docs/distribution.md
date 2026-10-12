@@ -99,7 +99,7 @@ is compile evidence, not an App Store release.
 
 Before an alpha store rollout is called ready, keep a tracked checklist for:
 
-- Play internal and configured closed-track behavior;
+- Play internal and configured closed-track behaviour;
 - application signing and Play App Signing assumptions;
 - monotonically increasing version codes;
 - upgrade/migration smoke tests from supported earlier builds;

@@ -78,7 +78,7 @@ handoff material out of commits.
 
 Keep commit timestamps, authorship, and history truthful. Do not rewrite old
 commits to make new work look older. If code comes from a generator or another
-tool, read it, test it, and make sure the commit explains the behavior it adds.
+tool, read it, test it, and make sure the commit explains the behaviour it adds.
 
 ## Preparing a named mobile release
 

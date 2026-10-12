@@ -27,6 +27,8 @@ Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
 - Friends and other incomplete advanced surfaces are hidden from ordinary
   navigation. Sync settings now state that general device sync is unavailable
   instead of presenting the no-op background task as working functionality.
+- British English copy and intentional US English variants are now consistent
+  across import, backup, Friends, Sync, and error messages.
 - `plurishaven.app` is now the canonical product website in repository-owned
   links and metadata.
 - Assorted accessibility, migration, import, archive, and interface stability

@@ -1384,39 +1384,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importDedupePlurisHaven =>
-      'local IDs, PluralKit IDs, normalized names';
+      'local IDs, PluralKit IDs, normalised names';
 
   @override
   String get importDedupeSimplyPlural =>
-      'Simply Plural IDs, PluralKit IDs, normalized names';
+      'Simply Plural IDs, PluralKit IDs, normalised names';
 
   @override
   String get importDedupePluralKitFile =>
-      'PluralKit UUIDs, PluralKit short IDs, normalized names';
+      'PluralKit UUIDs, PluralKit short IDs, normalised names';
 
   @override
   String get importDedupePluralKitLive =>
       'PluralKit UUIDs, PluralKit short IDs';
 
   @override
-  String get importDedupeTupperbox => 'Tupperbox IDs, normalized names';
+  String get importDedupeTupperbox => 'Tupperbox IDs, normalised names';
 
   @override
-  String get importDedupePluralSpace => 'PluralSpace IDs, normalized names';
+  String get importDedupePluralSpace => 'PluralSpace IDs, normalised names';
 
   @override
   String get importDedupeOpenPlural =>
-      'OpenPlural IDs, source IDs, PluralKit IDs, normalized names';
+      'OpenPlural IDs, source IDs, PluralKit IDs, normalised names';
 
   @override
   String get importDedupePluralPort =>
-      'PluralPort IDs, source IDs, normalized names';
+      'PluralPort IDs, source IDs, normalised names';
 
   @override
-  String get importDedupePrism => 'Prism IDs, normalized names';
+  String get importDedupePrism => 'Prism IDs, normalised names';
 
   @override
-  String get importDedupeAmpersand => 'Ampersand UUIDs, normalized names';
+  String get importDedupeAmpersand => 'Ampersand UUIDs, normalised names';
 
   @override
   String get importConflictPrompt => 'Ask for each match';
@@ -1521,7 +1521,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'member/group JSON found, choose the source to confirm';
 
   @override
-  String get importReasonUnrecognised => 'could not recognize this file yet';
+  String get importReasonUnrecognised => 'could not recognise this file yet';
 
   @override
   String get importCountMembers => 'members';
@@ -1688,7 +1688,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Accept a Simply Plural JSON export or backup archive.';
 
   @override
-  String get importStepNormalizeFieldsTitle => 'Normalize fields';
+  String get importStepNormalizeFieldsTitle => 'Normalise fields';
 
   @override
   String get importStepNormalizeSimplyPluralDetail =>
@@ -1699,7 +1699,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepPrepareSimplyPluralAvatarsDetail =>
-      'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.';
+      'Use attached avatar ZIP bytes first, then keep or localise remote avatar URLs during import.';
 
   @override
   String get importStepReviewMatchesTitle => 'Review matches';
@@ -1735,7 +1735,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewPluralKitFileDetail =>
-      'Dedupe by PK UUID, short ID, then normalized name.';
+      'Dedupe by PK UUID, short ID, then normalised name.';
 
   @override
   String get importStepValidateTokenTitle => 'Validate token';
@@ -1777,7 +1777,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewTupperboxDetail =>
-      'Dedupe by Tupperbox ID, then normalized name.';
+      'Dedupe by Tupperbox ID, then normalised name.';
 
   @override
   String get importStepReadPluralSpaceDetail =>
@@ -1792,7 +1792,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewPluralSpaceDetail =>
-      'Dedupe by source ID, then normalized name.';
+      'Dedupe by source ID, then normalised name.';
 
   @override
   String get importStepReadOpenPluralDetail =>
@@ -1804,7 +1804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewOpenPluralDetail =>
-      'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.';
+      'Dedupe by OpenPlural source ID, then PluralKit ID and normalised name.';
 
   @override
   String get importStepReadPluralPortDetail =>
@@ -1816,7 +1816,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewPluralPortDetail =>
-      'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.';
+      'Dedupe by PluralPort source ID and normalised name, with unsupported data reported before writing.';
 
   @override
   String get importStepChoosePrismTitle => 'Choose .prism file';
@@ -1833,7 +1833,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewPrismDetail =>
-      'Dedupe by Prism ID, then normalized name.';
+      'Dedupe by Prism ID, then normalised name.';
 
   @override
   String get importStepReadAmpersandDetail =>
@@ -1845,7 +1845,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importStepReviewAmpersandDetail =>
-      'Dedupe by Ampersand UUID, then normalized name.';
+      'Dedupe by Ampersand UUID, then normalised name.';
 
   @override
   String get importPrivacyPreviewBeforeWrite =>
@@ -1857,7 +1857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importPrivacySimplyPluralDedupe =>
-      'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.';
+      'Re-imports match by Simply Plural ID, PluralKit ID, then normalised name.';
 
   @override
   String get importPrivacySimplyPluralAvatars =>
@@ -1940,7 +1940,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importStagePreview => 'preview';
 
   @override
-  String get importStageNormalize => 'normalize';
+  String get importStageNormalize => 'normalise';
 
   @override
   String get importStagePreserve => 'preserve';
@@ -1982,11 +1982,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importDiagnosticRecognizedRecords =>
-      'Recognized records can be imported into the local archive.';
+      'Recognised records can be imported into the local archive.';
 
   @override
   String get importDiagnosticNoImportableRecords =>
-      'No importable records were recognized.';
+      'No importable records were recognised.';
 
   @override
   String importDiagnosticPreservedRawPayloads(int count, String collections) {
@@ -4717,7 +4717,96 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get useCustomColorLabel => 'Use custom color';
 
   @override
+  String get syncOffDescription =>
+      'General device synchronization is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
+
+  @override
   String get importCancelledStatus => 'Import canceled.';
+
+  @override
+  String get importDedupePlurisHaven =>
+      'local IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupeSimplyPlural =>
+      'Simply Plural IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupePluralKitFile =>
+      'PluralKit UUIDs, PluralKit short IDs, normalized names';
+
+  @override
+  String get importDedupeTupperbox => 'Tupperbox IDs, normalized names';
+
+  @override
+  String get importDedupePluralSpace => 'PluralSpace IDs, normalized names';
+
+  @override
+  String get importDedupeOpenPlural =>
+      'OpenPlural IDs, source IDs, PluralKit IDs, normalized names';
+
+  @override
+  String get importDedupePluralPort =>
+      'PluralPort IDs, source IDs, normalized names';
+
+  @override
+  String get importDedupePrism => 'Prism IDs, normalized names';
+
+  @override
+  String get importDedupeAmpersand => 'Ampersand UUIDs, normalized names';
+
+  @override
+  String get importReasonUnrecognised => 'could not recognize this file yet';
+
+  @override
+  String get importStepNormalizeFieldsTitle => 'Normalize fields';
+
+  @override
+  String get importStepPrepareSimplyPluralAvatarsDetail =>
+      'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.';
+
+  @override
+  String get importStepReviewPluralKitFileDetail =>
+      'Dedupe by PK UUID, short ID, then normalized name.';
+
+  @override
+  String get importStepReviewTupperboxDetail =>
+      'Dedupe by Tupperbox ID, then normalized name.';
+
+  @override
+  String get importStepReviewPluralSpaceDetail =>
+      'Dedupe by source ID, then normalized name.';
+
+  @override
+  String get importStepReviewOpenPluralDetail =>
+      'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.';
+
+  @override
+  String get importStepReviewPluralPortDetail =>
+      'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.';
+
+  @override
+  String get importStepReviewPrismDetail =>
+      'Dedupe by Prism ID, then normalized name.';
+
+  @override
+  String get importStepReviewAmpersandDetail =>
+      'Dedupe by Ampersand UUID, then normalized name.';
+
+  @override
+  String get importPrivacySimplyPluralDedupe =>
+      'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.';
+
+  @override
+  String get importStageNormalize => 'normalize';
+
+  @override
+  String get importDiagnosticRecognizedRecords =>
+      'Recognized records can be imported into the local archive.';
+
+  @override
+  String get importDiagnosticNoImportableRecords =>
+      'No importable records were recognized.';
 
   @override
   String get saveCancelled => 'Save canceled.';

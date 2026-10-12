@@ -21,6 +21,30 @@ const expectedUsOverrides = new Set([
   'outlineColorLabel',
   'pickCustomColorButton',
   'saveCancelled',
+  'syncOffDescription',
+  'importDedupePlurisHaven',
+  'importDedupeSimplyPlural',
+  'importDedupePluralKitFile',
+  'importDedupeTupperbox',
+  'importDedupePluralSpace',
+  'importDedupeOpenPlural',
+  'importDedupePluralPort',
+  'importDedupePrism',
+  'importDedupeAmpersand',
+  'importReasonUnrecognised',
+  'importStepNormalizeFieldsTitle',
+  'importStepPrepareSimplyPluralAvatarsDetail',
+  'importStepReviewPluralKitFileDetail',
+  'importStepReviewTupperboxDetail',
+  'importStepReviewPluralSpaceDetail',
+  'importStepReviewOpenPluralDetail',
+  'importStepReviewPluralPortDetail',
+  'importStepReviewPrismDetail',
+  'importStepReviewAmpersandDetail',
+  'importPrivacySimplyPluralDedupe',
+  'importStageNormalize',
+  'importDiagnosticRecognizedRecords',
+  'importDiagnosticNoImportableRecords',
   'selectColorDialogTitle',
   'surfaceColorLabel',
   'tagColourFieldLabel',
@@ -30,7 +54,8 @@ const expectedUsOverrides = new Set([
   'mutedTextColorLabel',
 ]);
 
-const britishSpellings = /\b(?:colour|colours|cancelled|customise|customised|customisation)\b/i;
+const britishSpellings =
+  /\b(?:colour|colours|cancelled|customise|customised|customisation|localise|localised|localisation|normalise|normalised|normalisation|organise|organised|organisation|recognise|recognised|synchronisation)\b/i;
 
 const [base, us] = await Promise.all(
   [basePath, usPath].map(async (path) =>

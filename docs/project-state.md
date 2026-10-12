@@ -98,7 +98,7 @@ from implementation; it is not an alpha feature checklist.
 The next completion work includes local chats/messages,
 note/journal/message revision product flows, advanced
 reminders and polls, System Safety/front-audit gaps,
-customization/accessibility gaps, Play closed testing, release automation
+customisation/accessibility gaps, Play closed testing, release automation
 hardening and alpha readiness.
 
 Hosted federation/portable-identity protocol work, desktop/private-web/watch

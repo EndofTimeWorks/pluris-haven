@@ -139,7 +139,7 @@ need a one-time uninstall before the current package can be installed.
 A Play failure prevents the official GitHub Release from being created. Website
 metadata is not pushed directly to `main` or deployed by release automation: its PR must
 pass the normal CI and Rulesets. These independent targets need explicit
-retry/repair behavior rather than pretending to be transactionally atomic.
+retry/repair behaviour rather than pretending to be transactionally atomic.
 
 Current official Play automation covers **internal testing** only and fails
 closed for `production`. The manually dispatched repair workflow also rejects
@@ -179,7 +179,7 @@ label.
   verification.
 
 Real-device/simulator work still includes notification permission timing,
-App Lock/passcode behavior, screen-capture privacy, accessibility and upgrade
+App Lock/passcode behaviour, screen-capture privacy, accessibility and upgrade
 smoke tests.
 
 ## Local import acceptance

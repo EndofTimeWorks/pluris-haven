@@ -70,7 +70,7 @@ broken:
   safety design.
 - Finish the already-decided advanced reminder, poll, front-audit and System
   Safety gaps that are exposed in the alpha UI.
-- Reconcile customization, terminology, low-cognitive-load and accessibility
+- Reconcile customisation, terminology, low-cognitive-load and accessibility
   gaps.
 - Implement/configure Play closed testing and run real GitHub/Play workflow
   verification.
@@ -130,7 +130,7 @@ mapper test exists.
   `sentry_flutter` supports built-in Kotlin and the selected Flutter release
   builds with the new AGP DSL.
 - Sign/install iOS builds and verify notification permission, App Lock,
-  screen-capture privacy and upgrade behavior on simulator/physical hardware.
+  screen-capture privacy and upgrade behaviour on simulator/physical hardware.
 - Perform TalkBack, VoiceOver, keyboard, switch access, large-text, contrast and
   reduced-motion passes on devices.
 - Profile large imports and decrypt-heavy screens on representative Android/iOS

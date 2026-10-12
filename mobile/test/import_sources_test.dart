@@ -462,7 +462,7 @@ void main() {
     expect(preview.counts['raw_payloads'], 1);
     expect(
       _previewMessages(preview),
-      contains('No importable records were recognized.'),
+      contains('No importable records were recognised.'),
     );
     expect(
       _previewMessages(preview),

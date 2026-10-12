@@ -88,7 +88,7 @@ Reducing that exposure would need a separate full-database encryption design.
   integration surface; it must not expose ambient decrypted-vault access.
 - Finish the already-decided advanced reminder, poll, front-audit and System
   Safety paths.
-- Finish low-cognitive-load, terminology, customization and accessibility gaps.
+- Finish low-cognitive-load, terminology, customisation and accessibility gaps.
 - Prepare Play closed alpha testing in addition to the existing internal-test
   release path, and verify the real CI/release workflows.
 - Complete remaining real-device accessibility and Apple signing/runtime tests.

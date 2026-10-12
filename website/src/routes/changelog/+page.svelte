@@ -50,6 +50,10 @@
         sync is unavailable.
       </li>
       <li>
+        British English copy and intentional US English variants are consistent across import,
+        backup, Friends, Sync, and error messages.
+      </li>
+      <li>
         The first encrypted native <code>.pluris</code> archive-frame primitive is in place, but a complete
         backup and restore workflow is not yet available.
       </li>
@@ -82,11 +86,11 @@
         the Prism encrypted path remains planned.
       </li>
       <li>
-        Avatar ZIPs are supported for Simply Plural imports; remote avatar links are localized only
+        Avatar ZIPs are supported for Simply Plural imports; remote avatar links are localised only
         after public-address and redirect safety checks.
       </li>
       <li>
-        Dashboard, accessibility, language, and theme customization are available, with named avatar
+        Dashboard, accessibility, language, and theme customisation are available, with named avatar
         semantics and persisted high-contrast/reduced-motion settings.
       </li>
       <li>
@@ -105,7 +109,7 @@
         Copying the local archive JSON marks it sensitive on Android 13+, so the system clipboard
         preview does not show the plaintext content.
       </li>
-      <li>Avatar photos are excluded from iOS backups, matching Android's existing behavior.</li>
+      <li>Avatar photos are excluded from iOS backups, matching Android's existing behaviour.</li>
     </ul>
   </section>
 

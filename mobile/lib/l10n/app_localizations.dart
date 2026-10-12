@@ -2511,19 +2511,19 @@ abstract class AppLocalizations {
   /// No description provided for @importDedupePlurisHaven.
   ///
   /// In en, this message translates to:
-  /// **'local IDs, PluralKit IDs, normalized names'**
+  /// **'local IDs, PluralKit IDs, normalised names'**
   String get importDedupePlurisHaven;
 
   /// No description provided for @importDedupeSimplyPlural.
   ///
   /// In en, this message translates to:
-  /// **'Simply Plural IDs, PluralKit IDs, normalized names'**
+  /// **'Simply Plural IDs, PluralKit IDs, normalised names'**
   String get importDedupeSimplyPlural;
 
   /// No description provided for @importDedupePluralKitFile.
   ///
   /// In en, this message translates to:
-  /// **'PluralKit UUIDs, PluralKit short IDs, normalized names'**
+  /// **'PluralKit UUIDs, PluralKit short IDs, normalised names'**
   String get importDedupePluralKitFile;
 
   /// No description provided for @importDedupePluralKitLive.
@@ -2535,37 +2535,37 @@ abstract class AppLocalizations {
   /// No description provided for @importDedupeTupperbox.
   ///
   /// In en, this message translates to:
-  /// **'Tupperbox IDs, normalized names'**
+  /// **'Tupperbox IDs, normalised names'**
   String get importDedupeTupperbox;
 
   /// No description provided for @importDedupePluralSpace.
   ///
   /// In en, this message translates to:
-  /// **'PluralSpace IDs, normalized names'**
+  /// **'PluralSpace IDs, normalised names'**
   String get importDedupePluralSpace;
 
   /// No description provided for @importDedupeOpenPlural.
   ///
   /// In en, this message translates to:
-  /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalized names'**
+  /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalised names'**
   String get importDedupeOpenPlural;
 
   /// No description provided for @importDedupePluralPort.
   ///
   /// In en, this message translates to:
-  /// **'PluralPort IDs, source IDs, normalized names'**
+  /// **'PluralPort IDs, source IDs, normalised names'**
   String get importDedupePluralPort;
 
   /// No description provided for @importDedupePrism.
   ///
   /// In en, this message translates to:
-  /// **'Prism IDs, normalized names'**
+  /// **'Prism IDs, normalised names'**
   String get importDedupePrism;
 
   /// No description provided for @importDedupeAmpersand.
   ///
   /// In en, this message translates to:
-  /// **'Ampersand UUIDs, normalized names'**
+  /// **'Ampersand UUIDs, normalised names'**
   String get importDedupeAmpersand;
 
   /// No description provided for @importConflictPrompt.
@@ -2739,7 +2739,7 @@ abstract class AppLocalizations {
   /// No description provided for @importReasonUnrecognised.
   ///
   /// In en, this message translates to:
-  /// **'could not recognize this file yet'**
+  /// **'could not recognise this file yet'**
   String get importReasonUnrecognised;
 
   /// No description provided for @importCountMembers.
@@ -3039,7 +3039,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepNormalizeFieldsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Normalize fields'**
+  /// **'Normalise fields'**
   String get importStepNormalizeFieldsTitle;
 
   /// No description provided for @importStepNormalizeSimplyPluralDetail.
@@ -3057,7 +3057,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepPrepareSimplyPluralAvatarsDetail.
   ///
   /// In en, this message translates to:
-  /// **'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.'**
+  /// **'Use attached avatar ZIP bytes first, then keep or localise remote avatar URLs during import.'**
   String get importStepPrepareSimplyPluralAvatarsDetail;
 
   /// No description provided for @importStepReviewMatchesTitle.
@@ -3117,7 +3117,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPluralKitFileDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by PK UUID, short ID, then normalized name.'**
+  /// **'Dedupe by PK UUID, short ID, then normalised name.'**
   String get importStepReviewPluralKitFileDetail;
 
   /// No description provided for @importStepValidateTokenTitle.
@@ -3189,7 +3189,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewTupperboxDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Tupperbox ID, then normalized name.'**
+  /// **'Dedupe by Tupperbox ID, then normalised name.'**
   String get importStepReviewTupperboxDetail;
 
   /// No description provided for @importStepReadPluralSpaceDetail.
@@ -3213,7 +3213,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPluralSpaceDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by source ID, then normalized name.'**
+  /// **'Dedupe by source ID, then normalised name.'**
   String get importStepReviewPluralSpaceDetail;
 
   /// No description provided for @importStepReadOpenPluralDetail.
@@ -3231,7 +3231,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewOpenPluralDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.'**
+  /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalised name.'**
   String get importStepReviewOpenPluralDetail;
 
   /// No description provided for @importStepReadPluralPortDetail.
@@ -3249,7 +3249,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPluralPortDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by PluralPort source ID and normalized name, with unsupported data reported before writing.'**
+  /// **'Dedupe by PluralPort source ID and normalised name, with unsupported data reported before writing.'**
   String get importStepReviewPluralPortDetail;
 
   /// No description provided for @importStepChoosePrismTitle.
@@ -3279,7 +3279,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPrismDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Prism ID, then normalized name.'**
+  /// **'Dedupe by Prism ID, then normalised name.'**
   String get importStepReviewPrismDetail;
 
   /// No description provided for @importStepReadAmpersandDetail.
@@ -3297,7 +3297,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewAmpersandDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Ampersand UUID, then normalized name.'**
+  /// **'Dedupe by Ampersand UUID, then normalised name.'**
   String get importStepReviewAmpersandDetail;
 
   /// No description provided for @importPrivacyPreviewBeforeWrite.
@@ -3315,7 +3315,7 @@ abstract class AppLocalizations {
   /// No description provided for @importPrivacySimplyPluralDedupe.
   ///
   /// In en, this message translates to:
-  /// **'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.'**
+  /// **'Re-imports match by Simply Plural ID, PluralKit ID, then normalised name.'**
   String get importPrivacySimplyPluralDedupe;
 
   /// No description provided for @importPrivacySimplyPluralAvatars.
@@ -3447,7 +3447,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStageNormalize.
   ///
   /// In en, this message translates to:
-  /// **'normalize'**
+  /// **'normalise'**
   String get importStageNormalize;
 
   /// No description provided for @importStagePreserve.
@@ -3507,13 +3507,13 @@ abstract class AppLocalizations {
   /// No description provided for @importDiagnosticRecognizedRecords.
   ///
   /// In en, this message translates to:
-  /// **'Recognized records can be imported into the local archive.'**
+  /// **'Recognised records can be imported into the local archive.'**
   String get importDiagnosticRecognizedRecords;
 
   /// No description provided for @importDiagnosticNoImportableRecords.
   ///
   /// In en, this message translates to:
-  /// **'No importable records were recognized.'**
+  /// **'No importable records were recognised.'**
   String get importDiagnosticNoImportableRecords;
 
   /// No description provided for @importDiagnosticPreservedRawPayloads.
