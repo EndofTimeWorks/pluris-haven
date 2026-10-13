@@ -9,7 +9,7 @@ WORKDIR /app
 RUN install -d -o pluris -g pluris /app/data /app/data/backups
 
 COPY pyproject.toml uv.lock README.md alembic.ini ./
-RUN pip install uv==0.11.28 \
+RUN pip install uv==0.13.0 \
     && uv export --frozen --no-dev --no-hashes --no-emit-project --output-file /tmp/requirements.txt \
     && uv pip install --system --requirement /tmp/requirements.txt \
     && pip uninstall --yes uv \
