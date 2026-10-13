@@ -148,6 +148,9 @@ jobs:
           chmod 700 "${work_dir}/gpg-sign"
           export GPG_PASSPHRASE_FILE="${work_dir}/passphrase"
 
+          git config user.name 'Pluris Haven Release Bot'
+          git config user.email 'git-bot@endoftime.works'
+
           current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
           if [[ "${current_main}" != "${RELEASE_SHA}" ]]; then
             echo 'ABORT — release marker is no longer the current main tip.' >&2
