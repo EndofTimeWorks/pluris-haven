@@ -28,23 +28,34 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      id-token: write
     env:
       DEPLOY_HOST: ${{ secrets.WEBSITE_DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.WEBSITE_DEPLOY_USER }}
       DEPLOY_KEY: ${{ secrets.WEBSITE_DEPLOY_KEY }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.WEBSITE_DEPLOY_KNOWN_HOSTS }}
       DEPLOY_PATH: ${{ secrets.WEBSITE_DEPLOY_PATH }}
+      TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      TS_AUDIENCE: ${{ secrets.TS_AUDIENCE }}
 
     steps:
       - name: Check deployment configuration
         run: |
           set -euo pipefail
-          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_KEY DEPLOY_KNOWN_HOSTS DEPLOY_PATH; do
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_KEY DEPLOY_KNOWN_HOSTS DEPLOY_PATH TS_OAUTH_CLIENT_ID TS_AUDIENCE; do
             if [[ -z "${!name}" ]]; then
               echo "Missing required website deployment secret: ${name}" >&2
               exit 1
             fi
           done
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:pluris-deploy
+          ping: ${{ secrets.WEBSITE_DEPLOY_HOST }}
 
       - name: Run website deployment over SSH
         run: |
