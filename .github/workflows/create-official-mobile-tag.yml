@@ -79,7 +79,8 @@ jobs:
             echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
             exit 1
           }
-          gh api "repos/${GITHUB_REPOSITORY}/contents/CHANGELOG.md?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | grep -Fq "${source_version}" || {
+          changelog="$(gh api "repos/${GITHUB_REPOSITORY}/contents/CHANGELOG.md?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode)"
+          grep -Fq "${source_version}" <<<"${changelog}" || {
             echo "CHANGELOG.md does not mention ${source_version}." >&2
             exit 1
           }

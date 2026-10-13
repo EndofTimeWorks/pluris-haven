@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -18,6 +19,11 @@ const validListing = `sec:-:255:22:primary:::::::cSC:::#::ed25519:::0:
 fpr:::::::::${primary}:
 ssb:-:255:22:signing:::::::s::::::ed25519:::0:
 fpr:::::::::${signing}:`;
+
+const releaseWorkflows = [
+  '../.github/workflows/create-official-mobile-tag.yml',
+  '../.github/workflows/validate-release-marker.yml',
+];
 
 test('accepts only the unavailable expected primary and explicit signing subkey', () => {
   assert.doesNotThrow(() =>
@@ -81,4 +87,13 @@ test('requires signed downloadable artefacts and a non-production Play track', (
   assert.doesNotThrow(() => assertTestingTrack('internal'));
   assert.doesNotThrow(() => assertTestingTrack('pre-alpha'));
   assert.throws(() => assertTestingTrack('production'));
+});
+
+test('release workflows decode changelogs before quiet matching', () => {
+  for (const workflow of releaseWorkflows) {
+    const source = readFileSync(new URL(workflow, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /base64 --decode \| grep -Fq/);
+    assert.match(source, /changelog="\$\(gh api[\s\S]*?base64 --decode\)"/);
+    assert.match(source, /grep -Fq "\$\{source_version\}" <<<"\$\{changelog\}"/);
+  }
 });
