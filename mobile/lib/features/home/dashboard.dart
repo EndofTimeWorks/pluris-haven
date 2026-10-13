@@ -267,7 +267,7 @@ final dashboardShortcuts = [
   ),
   DashboardShortcutDefinition(
     id: 'customize',
-    title: (l10n) => l10n.customizeTitle,
+    title: (l10n) => l10n.navigationAppOptions,
     subtitle: (l10n) => l10n.dashboardShortcutCustomizeSubtitle,
     section: SpSection.appOptions,
     icon: Icons.tune_rounded,
@@ -292,13 +292,6 @@ final dashboardShortcuts = [
     subtitle: (l10n) => l10n.dashboardShortcutCustomFieldsSubtitle,
     section: SpSection.customFields,
     icon: Icons.table_rows_rounded,
-  ),
-  DashboardShortcutDefinition(
-    id: 'friends',
-    title: (l10n) => l10n.friendsLabel,
-    subtitle: (l10n) => l10n.dashboardShortcutFriendsSubtitle,
-    section: SpSection.friends,
-    icon: Icons.people_rounded,
   ),
   DashboardShortcutDefinition(
     id: 'chat',

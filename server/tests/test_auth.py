@@ -123,6 +123,12 @@ def test_change_password_revokes_other_sessions(
     fast_passwords: None,
 ) -> None:
     first = register(client, "password@example.com", "Password User")
+    reset_requested = client.post(
+        "/v1/auth/password/reset-request",
+        json={"email": "password@example.com"},
+    )
+    assert reset_requested.status_code == 202
+    reset_token = client.app.state.email_sender.sent[-1].token
     second_login = client.post(
         "/v1/auth/login",
         json={
@@ -143,6 +149,13 @@ def test_change_password_revokes_other_sessions(
         },
     )
     assert changed.status_code == 200
+    assert (
+        client.post(
+            "/v1/auth/password/reset",
+            json={"token": reset_token, "new_password": "attacker password phrase"},
+        ).status_code
+        == 400
+    )
     assert client.get("/v1/auth/me", headers=auth(first["access_token"])).status_code == 200
     assert client.get("/v1/auth/me", headers=auth(second["access_token"])).status_code == 401
     assert (

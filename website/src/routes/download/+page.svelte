@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { mobileRelease } from '$lib/release';
-  import { obtainiumRedirectUrl, repositoryUrl } from '$lib/obtainium-config';
+  import { mobileRelease } from '#lib/release.js';
+  import { obtainiumRedirectUrl, repositoryUrl } from '#lib/obtainium-config.js';
 </script>
 
 <svelte:head>

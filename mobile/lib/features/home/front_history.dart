@@ -66,9 +66,27 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     };
     return StreamBuilder<List<FrontHistoryEntry>>(
       stream: _historyStream,
-      initialData: const [],
       builder: (context, historySnapshot) {
-        final entries = historySnapshot.data ?? const <FrontHistoryEntry>[];
+        if (historySnapshot.hasError && !historySnapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: historySnapshot.error,
+                onRetry: () {
+                  setState(() {
+                    _historyStream = widget.repository.watchRecentFrontHistory(
+                      limit: _historyLimit,
+                    );
+                  });
+                },
+              ),
+            ],
+          );
+        }
+        if (!historySnapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final entries = historySnapshot.data!;
         final visualTheme = _visualThemeOf(context);
         final isAmpersand = visualTheme == HavenVisualTheme.ampersand;
         final filteredEntries = entries
@@ -270,7 +288,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     return _matchesQuery(_query, [
       entry.label,
       entry.statusNote,
-      _frontTimingLabel(entry, AppLocalizations.of(context)),
+      _frontTimingLabel(context, entry, AppLocalizations.of(context)),
     ]);
   }
 
@@ -331,7 +349,7 @@ class FrontHistoryTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _frontTimingLabel(entry, l10n),
+              _frontTimingLabel(context, entry, l10n),
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             if ((entry.statusNote ?? '').trim().isNotEmpty) ...[
@@ -427,7 +445,7 @@ class _FrontHistoryDetailSheetState extends State<FrontHistoryDetailSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _frontTimingLabel(widget.entry, l10n),
+                        _frontTimingLabel(context, widget.entry, l10n),
                         style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                     ],
@@ -541,7 +559,7 @@ void showFrontAuditSheet(
                 for (final event in events)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(_shortDateTime(event.createdAt)),
+                    title: Text(_shortDateTime(context, event.createdAt)),
                     subtitle: Text(
                       '${event.beforeSnapshot ?? '{}'}\n→ ${event.afterSnapshot ?? '{}'}',
                       maxLines: 6,
@@ -645,14 +663,14 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.startedFieldLabel),
-              subtitle: Text(_shortDateTime(_startedAt)),
+              subtitle: Text(_shortDateTime(context, _startedAt)),
               trailing: const Icon(Icons.event_outlined),
               onTap: () => _pickDateTime(start: true),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.endedFieldLabel),
-              subtitle: Text(_shortDateTime(_endedAt)),
+              subtitle: Text(_shortDateTime(context, _endedAt)),
               trailing: const Icon(Icons.event_available_outlined),
               onTap: () => _pickDateTime(start: false),
             ),
@@ -816,18 +834,25 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 }
 
-String _frontTimingLabel(FrontHistoryEntry entry, AppLocalizations l10n) {
-  final started = _shortDateTime(entry.startedAt);
+String _frontTimingLabel(
+  BuildContext context,
+  FrontHistoryEntry entry,
+  AppLocalizations l10n,
+) {
+  final started = _shortDateTime(context, entry.startedAt);
   if (entry.endedAt == null) {
     return l10n.activeFrontTiming(started);
   }
 
-  return l10n.endedFrontTiming(started, _shortDateTime(entry.endedAt!));
+  return l10n.endedFrontTiming(
+    started,
+    _shortDateTime(context, entry.endedAt!),
+  );
 }
 
-String _shortDateTime(DateTime value) {
+String _shortDateTime(BuildContext context, DateTime value) {
   final local = value.toLocal();
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '${local.month}/${local.day} $hour:$minute';
+  final material = MaterialLocalizations.of(context);
+  return '${material.formatShortDate(local)} '
+      '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}';
 }

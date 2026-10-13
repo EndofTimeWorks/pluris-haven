@@ -5,14 +5,21 @@ import { parseReleaseMarker } from './release-marker.mjs';
 export function releaseEligibility({ subject, releaseSha, mainSha }) {
   const version = parseReleaseMarker(subject);
   if (!version) return { eligible: false, reason: 'not-a-release-marker' };
+  if (!isCommitSha(releaseSha) || !isCommitSha(mainSha)) {
+    return { eligible: false, reason: 'missing-or-invalid-commit-sha' };
+  }
   if (releaseSha !== mainSha) return { eligible: false, reason: 'stale-main-tip' };
   return { eligible: true, version };
+}
+
+function isCommitSha(value) {
+  return typeof value === 'string' && /^[0-9a-f]{40}$/i.test(value);
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   const [subject, releaseSha, mainSha] = process.argv.slice(2);
   const result = releaseEligibility({ subject, releaseSha, mainSha });
-  if (result.reason === 'stale-main-tip') {
+  if (result.reason === 'stale-main-tip' || result.reason === 'missing-or-invalid-commit-sha') {
     console.error('ABORT — release marker is no longer the current main tip.');
     process.exit(1);
   }

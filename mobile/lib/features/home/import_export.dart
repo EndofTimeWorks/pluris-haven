@@ -96,7 +96,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
           avatarAssetCount: _fileAvatarAssets.length,
           retainRawPayloads: _retainRawPayloads,
           onRetainRawPayloadsChanged: (value) {
-            setState(() => _retainRawPayloads = value);
+            setState(() {
+              _retainRawPayloads = _source.requiresRawPayloadRetention
+                  ? true
+                  : value;
+            });
           },
         ),
         if (_importStatus != null || _isPickingImport || _isApplyingImport) ...[
@@ -451,6 +455,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
       } else if (guess.source != null) {
         _source = guess.source!;
       }
+      if (_source.requiresRawPayloadRetention) {
+        _retainRawPayloads = true;
+      }
       _isPickingImport = false;
       _importStatus = isEncrypted
           ? l10n.encryptedArchiveLoaded
@@ -499,6 +506,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
     final generation = ++_previewGeneration;
     setState(() {
       _source = source;
+      if (source.requiresRawPayloadRetention) {
+        _retainRawPayloads = true;
+      }
       _preview = null;
       _restoreRehearsal = null;
       _importStatus = l10n.preparingImportPreviewStatus;
@@ -1430,6 +1440,13 @@ class LocalArchiveSheet extends StatelessWidget {
                     label: Text(l10n.saveJsonFileButton),
                   ),
                   const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const ValueKey('save-pluralport-file-button'),
+                    onPressed: () => _savePluralPortJson(context, archive!),
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: Text(l10n.savePluralPortFileButton),
+                  ),
+                  const SizedBox(height: 8),
                   FilledButton.icon(
                     key: const ValueKey('copy-local-archive-button'),
                     onPressed: canCopyArchive
@@ -1552,12 +1569,68 @@ class LocalArchiveSheet extends StatelessWidget {
     }
   }
 
+  Future<void> _savePluralPortJson(BuildContext context, String archive) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.savePlainArchiveWarningTitle),
+        content: Text(l10n.savePlainArchiveWarningBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.savePlainArchiveConfirmButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final pluralPortJson = encodePluralPortFromLocalArchive(
+        archive,
+        appVersion: packageInfo.version,
+      );
+      final saved = await NativeFileDialog.saveBytes(
+        dialogTitle: l10n.savePluralPortDialogTitle,
+        fileName: _pluralPortFileName(),
+        bytes: Uint8List.fromList(utf8.encode(pluralPortJson)),
+        mimeType: 'application/json',
+      );
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(saved ? l10n.pluralPortFileSaved : l10n.saveCancelled),
+        ),
+      );
+    } on Object catch (error) {
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.couldNotSavePluralPortFile('$error'))),
+      );
+    }
+  }
+
   String _archiveFileName() {
     final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(
       RegExp(r'[^0-9A-Za-z]'),
       '-',
     );
     return 'pluris-haven-local-archive-$stamp.json';
+  }
+
+  String _pluralPortFileName() {
+    final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+      RegExp(r'[^0-9A-Za-z]'),
+      '-',
+    );
+    return 'pluris-haven-pluralport-$stamp.json';
   }
 }
 
@@ -1817,9 +1890,15 @@ class ImportSetupCard extends StatelessWidget {
               child: SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 value: retainRawPayloads,
-                onChanged: onRetainRawPayloadsChanged,
+                onChanged: source.requiresRawPayloadRetention
+                    ? null
+                    : onRetainRawPayloadsChanged,
                 title: Text(l10n.retainRawImportPayloadsTitle),
-                subtitle: Text(l10n.retainRawImportPayloadsDescription),
+                subtitle: Text(
+                  source.requiresRawPayloadRetention
+                      ? l10n.retainPluralPortPayloadsDescription
+                      : l10n.retainRawImportPayloadsDescription,
+                ),
               ),
             ),
           ],
@@ -2372,7 +2451,7 @@ class ImportJobRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final title = job.fileName ?? job.type;
     final subtitle = job.error == null
-        ? '${job.status} - ${_shortDateTime(job.updatedAt)}'
+        ? '${job.status} - ${_shortDateTime(context, job.updatedAt)}'
         : '${_oneLineJobError(job.error!)} - ${l10n.tapForDetails}';
 
     return Semantics(
@@ -2429,9 +2508,8 @@ class ImportJobRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         job.fileName ?? job.type,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w900),
                       ),
                     ),
                     StatusPill(text: job.status),
@@ -2446,11 +2524,11 @@ class ImportJobRow extends StatelessWidget {
                   ),
                 _JobDetailLine(
                   label: l10n.createdFieldLabel,
-                  value: _shortDateTime(job.createdAt),
+                  value: _shortDateTime(context, job.createdAt),
                 ),
                 _JobDetailLine(
                   label: l10n.updatedFieldLabel,
-                  value: _shortDateTime(job.updatedAt),
+                  value: _shortDateTime(context, job.updatedAt),
                 ),
                 if (job.error != null && job.error!.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),

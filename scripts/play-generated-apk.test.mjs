@@ -15,8 +15,8 @@ const expected = {
     '6B:EE:34:24:F3:EC:AF:0D:5A:20:F1:F6:7F:65:9A:3F:BE:E9:21:24:B1:8D:DA:86:C9:32:AC:E8:23:B6:BA:C4',
 };
 const badging =
-  "package: name='works.endoftime.plurishaven' versionCode='3005' versionName='0.3.0-pre-alpha.5'";
-const signer = `Verified using v1 scheme (APK Signature Scheme v1): true
+  "package: name='works.endoftime.plurishaven' versionCode='3005' versionName='0.3.0-pre-alpha.5' platformBuildVersionName='15'";
+const signer = `Verified using v1 scheme (JAR signing): true
 Verified using v2 scheme (APK Signature Scheme v2): true
 Signer #1 certificate SHA-256 digest: ${expected.certificateSha256}`;
 
@@ -38,15 +38,27 @@ test('selects exactly one Play-generated universal APK', () => {
 
 test('retries a pending generated APK response only within its bounded attempt count', async () => {
   let calls = 0;
-  const response = await waitForUniversalApk(async () => {
-    calls += 1;
-    return calls === 3
-      ? { generatedApks: [{ generatedUniversalApk: { downloadId: 'ready' } }] }
-      : { generatedApks: [] };
-  }, 3);
+  const waits = [];
+  const response = await waitForUniversalApk(
+    async () => {
+      calls += 1;
+      return calls === 3
+        ? { generatedApks: [{ generatedUniversalApk: { downloadId: 'ready' } }] }
+        : { generatedApks: [] };
+    },
+    3,
+    async (milliseconds) => waits.push(milliseconds),
+  );
   assert.equal(response, 'ready');
   assert.equal(calls, 3);
-  await assert.rejects(() => waitForUniversalApk(async () => ({ generatedApks: [] }), 2));
+  assert.deepEqual(waits, [1000, 2000]);
+  await assert.rejects(() =>
+    waitForUniversalApk(
+      async () => ({ generatedApks: [] }),
+      2,
+      async () => {},
+    ),
+  );
 });
 
 test('rejects an APK with unexpected identity, certificate, or split metadata', () => {
@@ -67,7 +79,7 @@ test('rejects an APK with unexpected identity, certificate, or split metadata', 
   );
   assert.throws(() =>
     verifyGeneratedApk({
-      badging: `${badging}\nsplit='x86_64'`,
+      badging: `${badging} split='config.x86_64'`,
       signerOutput: signer,
       ...expected,
     }),

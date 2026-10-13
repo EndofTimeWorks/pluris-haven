@@ -43,11 +43,21 @@ class _MembersPageState extends State<MembersPage> {
               includeArchived: true,
               listOnly: true,
             ),
-      initialData: const [],
       builder: (context, membersSnapshot) {
-        final members = _filteredMembers(
-          membersSnapshot.data ?? const <MemberSummary>[],
-        );
+        if (membersSnapshot.hasError && !membersSnapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: membersSnapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!membersSnapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final members = _filteredMembers(membersSnapshot.data!);
         final visualTheme = _visualThemeOf(context);
         final profileLayout =
             visualTheme == HavenVisualTheme.simplyPlural ||
@@ -405,6 +415,9 @@ class MemberListTile extends StatelessWidget {
                         '${l10n.deleteMemberBody(member.displayName)}\n\n'
                         '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.customFieldValues, impact.activeFrontSessions, impact.frontHistoryLinks, impact.notes, impact.messages, impact.journals, impact.reminderTriggers)}',
                     onDelete: () => repository.deleteMember(member.id),
+                    confirmLabel: l10n.removeMemberButton,
+                    failureMessage: (error) =>
+                        l10n.removeMemberFailed(error.toString()),
                   );
                 }
               },
@@ -429,7 +442,10 @@ class MemberListTile extends StatelessWidget {
                     value: 'archive',
                     child: Text(l10n.archiveButton),
                   ),
-                PopupMenuItem(value: 'delete', child: Text(l10n.deleteButton)),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(l10n.removeMemberButton),
+                ),
               ],
             ),
           ],
@@ -783,9 +799,8 @@ class MemberProfileSheet extends StatelessWidget {
     final bytes = await _avatarBytes();
     if (!context.mounted) return;
     if (bytes == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
       return;
     }
     final saved = await NativeFileDialog.saveBytes(
@@ -807,9 +822,8 @@ class MemberProfileSheet extends StatelessWidget {
     final bytes = await _avatarBytes();
     if (!context.mounted) return;
     if (bytes == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.avatarExportUnavailable)));
       return;
     }
     await NativeFileDialog.shareBytes(
@@ -1221,9 +1235,9 @@ class MemberCustomFieldsSection extends StatelessWidget {
                             value: value,
                             emptyLabel: l10n.notSetLabel,
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               fontSize: 13,
                             ),
                           ),

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { mobileRelease } from '$lib/release';
+  import { mobileRelease } from '#lib/release.js';
 </script>
 
 <svelte:head>
@@ -25,9 +25,53 @@
   </section>
 
   <section>
-    <h2>0.2.0 pre-alpha</h2>
+    <h2>0.3.0-pre-alpha.5</h2>
+    <p>Release candidate notes for build <code>0.3.0-pre-alpha.5+3005</code>.</p>
     <ul>
-      <li>Current release: <code>{mobileRelease.version}</code>.</li>
+      <li>
+        Startup, encrypted storage, migrations, imports, and destructive record lifecycles have
+        stronger failure handling and recovery safeguards.
+      </li>
+      <li>
+        PluralPort Draft v0.1 portable file import and export cover the fields currently defined by
+        the Draft. Underspecified records stay in a Pluris Haven extension with a compatibility
+        warning; this is not complete format coverage or live sync.
+      </li>
+      <li>
+        Imports preserve more unsupported data and original source provenance instead of silently
+        presenting a lossy conversion as complete.
+      </li>
+      <li>
+        Pluris Haven has new app icons and expanded colour, typography, spacing, and navigation
+        controls.
+      </li>
+      <li>
+        Friends remains hidden while incomplete, and Sync settings now state that general device
+        sync is unavailable.
+      </li>
+      <li>
+        British English copy and intentional US English variants are consistent across import,
+        backup, Friends, Sync, and error messages.
+      </li>
+      <li>
+        The first encrypted native <code>.pluris</code> archive-frame primitive is in place, but a complete
+        backup and restore workflow is not yet available.
+      </li>
+      <li>
+        Dependencies and build tools are updated, and the release pipeline now prevents Dependabot
+        branches from publishing debug releases.
+      </li>
+      <li>
+        Repository-owned product links now use <code>plurishaven.app</code>, alongside assorted
+        stability, accessibility, migration, and product-truth fixes.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Published download</h2>
+    <ul>
+      <li>Current published website download: <code>{mobileRelease.version}</code>.</li>
       <li>
         Local Android app with encrypted storage, encrypted backup snapshots, and a restore
         rehearsal before archive imports.
@@ -42,11 +86,11 @@
         the Prism encrypted path remains planned.
       </li>
       <li>
-        Avatar ZIPs are supported for Simply Plural imports; remote avatar links are localized only
+        Avatar ZIPs are supported for Simply Plural imports; remote avatar links are localised only
         after public-address and redirect safety checks.
       </li>
       <li>
-        Dashboard, accessibility, language, and theme customization are available, with named avatar
+        Dashboard, accessibility, language, and theme customisation are available, with named avatar
         semantics and persisted high-contrast/reduced-motion settings.
       </li>
       <li>
@@ -65,7 +109,7 @@
         Copying the local archive JSON marks it sensitive on Android 13+, so the system clipboard
         preview does not show the plaintext content.
       </li>
-      <li>Avatar photos are excluded from iOS backups, matching Android's existing behavior.</li>
+      <li>Avatar photos are excluded from iOS backups, matching Android's existing behaviour.</li>
     </ul>
   </section>
 

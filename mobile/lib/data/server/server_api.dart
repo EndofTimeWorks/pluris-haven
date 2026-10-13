@@ -660,6 +660,16 @@ String _errorMessage(http.Response response) {
     if (body is Map<String, dynamic> && body['detail'] is String) {
       return body['detail'] as String;
     }
+    if (body is Map<String, dynamic> && body['detail'] is List) {
+      final messages = (body['detail'] as List)
+          .whereType<Map>()
+          .map((detail) => detail['msg'])
+          .whereType<String>()
+          .where((message) => message.trim().isNotEmpty)
+          .take(3)
+          .toList();
+      if (messages.isNotEmpty) return messages.join(' ');
+    }
   } on FormatException {
     // Fall through to a bounded generic error.
   }

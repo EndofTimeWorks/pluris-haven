@@ -199,7 +199,7 @@ class MessageTile extends StatelessWidget {
               ? l10n.memberBoardMessageMetadata(
                   boardMemberName ?? l10n.unknownMemberLabel,
                   senderLabel,
-                  _shortDateTime(message.createdAt),
+                  _shortDateTime(context, message.createdAt),
                   message.parentMessageId == null
                       ? ''
                       : l10n.messageReplyMarker,
@@ -208,14 +208,14 @@ class MessageTile extends StatelessWidget {
               ? l10n.channelBoardMessageMetadata(
                   channelName ?? l10n.channelBoardLabel,
                   senderLabel,
-                  _shortDateTime(message.createdAt),
+                  _shortDateTime(context, message.createdAt),
                   message.parentMessageId == null
                       ? ''
                       : l10n.messageReplyMarker,
                 )
               : l10n.messageMetadata(
                   senderLabel,
-                  _shortDateTime(message.createdAt),
+                  _shortDateTime(context, message.createdAt),
                   message.parentMessageId == null
                       ? ''
                       : l10n.messageReplyMarker,
@@ -508,6 +508,7 @@ class _MessageSheetState extends State<MessageSheet> {
             const SizedBox(height: 14),
             if (_isEditing)
               OutlinedButton.icon(
+                key: const ValueKey('message-revision-history-button'),
                 onPressed: _showHistory,
                 icon: const Icon(Icons.history_rounded),
                 label: Text(l10n.revisionHistoryButton),

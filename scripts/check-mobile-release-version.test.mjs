@@ -35,3 +35,16 @@ test('rejects a pathological prerelease without backtracking', () => {
   const result = check(`0.0.0-0.${'--.'.repeat(10000)}+44`, ['mobile-v0.0.0+43']);
   assert.equal(result.status, 1);
 });
+
+test('fails closed when existing tag input is malformed or empty', () => {
+  const malformed = check('1.2.0+43', ['mobile-v1.1.9+not-a-build']);
+  assert.equal(malformed.status, 1);
+  assert.match(malformed.stderr, /Invalid existing mobile release tag/);
+
+  const empty = spawnSync(process.execPath, [script.pathname, '1.2.0+43'], {
+    encoding: 'utf8',
+    env: { ...process.env, PLURIS_MOBILE_RELEASE_TAGS: '' },
+  });
+  assert.equal(empty.status, 1);
+  assert.match(empty.stderr, /must not be empty/);
+});

@@ -269,6 +269,42 @@ void main() {
     }
   });
 
+  test('API errors preserve FastAPI validation details', () async {
+    final api = ServerApi(
+      baseUri: Uri.parse('https://haven.example'),
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'detail': [
+              {
+                'type': 'string_too_long',
+                'loc': ['body', 'display_name'],
+                'msg': 'String should have at most 80 characters',
+              },
+            ],
+          }),
+          422,
+        ),
+      ),
+    );
+
+    await expectLater(
+      api.register(
+        email: 'test@example.com',
+        password: 'correct horse battery staple',
+        displayName: 'x' * 81,
+        deviceName: 'Phone',
+      ),
+      throwsA(
+        isA<ServerApiException>().having(
+          (error) => error.message,
+          'message',
+          'String should have at most 80 characters',
+        ),
+      ),
+    );
+  });
+
   test('server responses are rejected before unbounded buffering', () async {
     final client = _StreamingClient(
       http.StreamedResponse(

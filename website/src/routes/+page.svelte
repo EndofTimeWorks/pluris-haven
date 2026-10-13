@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { mobileRelease } from '$lib/release';
-  import { obtainiumRedirectUrl } from '$lib/obtainium-config';
+  import { mobileRelease } from '#lib/release.js';
+  import { obtainiumRedirectUrl } from '#lib/obtainium-config.js';
 
   const status = [
     ['Release', mobileRelease.version],
@@ -181,7 +181,7 @@
   </section>
 
   <footer>
-    <span>pluris.endoftime.dev</span>
+    <span>plurishaven.app</span>
     <div>
       <a href="https://github.com/EndofTimeWorks/pluris-haven">Source</a>
       <a href="https://github.com/EndofTimeWorks/pluris-haven/issues">Issues</a>

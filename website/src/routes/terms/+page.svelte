@@ -31,7 +31,7 @@
     <ul>
       <li>Publish final privacy and terms pages.</li>
       <li>Document age, consent, deletion, and export rules.</li>
-      <li>Document sync encryption and server retention behavior.</li>
+      <li>Document sync encryption and server retention behaviour.</li>
       <li>Make public sharing opt-in and clear at the point of use.</li>
     </ul>
   </section>

@@ -213,9 +213,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Material(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                           clipBehavior: Clip.antiAlias,
                           child: ListTile(
@@ -329,6 +329,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               children: [
                 Expanded(
                   child: FilledButton(
+                    key: const ValueKey('make-custom-front-current-button'),
                     onPressed: () => _setFront(_controller.text),
                     child: Text(l10n.setButtonLabel),
                   ),

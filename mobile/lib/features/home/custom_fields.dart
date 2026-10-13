@@ -373,9 +373,8 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
     }
     _choicesController.text = customFieldChoices(field).join('\n');
     if (field.configuration.isNotEmpty) {
-      _configurationController.text = const JsonEncoder.withIndent(
-        '  ',
-      ).convert(field.configuration);
+      _configurationController.text = const JsonEncoder.withIndent('  ')
+          .convert(field.configuration);
     }
   }
 

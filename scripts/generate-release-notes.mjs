@@ -61,16 +61,16 @@ export function renderReleaseNotes(commits) {
     : `${rendered.join('\n').trimEnd()}\n`;
 }
 
-export function generateReleaseNotes({ from, to }) {
+export function generateReleaseNotes({ from, to, runGitCommand = runGit }) {
   const range = from ? `${from}..${to}` : to;
-  const output = runGit(['log', '--reverse', '--format=%s%x1f%b%x1e', range]);
+  const output = runGitCommand(['log', '--reverse', '--format=%s%x1f%b%x1e', range]);
   if (!output) return renderReleaseNotes([]);
 
   const commits = output
     .split('\x1e')
     .filter(Boolean)
     .map((record) => {
-      const [subject, body = ''] = record.split('\x1f');
+      const [subject, body = ''] = record.trimStart().split('\x1f');
       return { subject, body };
     });
   return renderReleaseNotes(commits);

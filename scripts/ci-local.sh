@@ -28,6 +28,7 @@ run_group 'GitHub Actions workflow syntax' mise exec actionlint -- actionlint
 run_group 'Pinned deployment images' scripts/check-pinned-deployment-images.sh
 run_group 'Localisation catalogues' pnpm check:l10n
 run_group 'Mobile UI localisation policy' pnpm check:ui-l10n
+run_group 'App icon resource contracts' pnpm test:icons
 run_group 'Shell scripts' shellcheck scripts/*.sh server/deploy/*.sh
 run_group 'Website check, audit, build, and generated-page contracts' bash -c 'pnpm --dir website audit --prod=false && pnpm --dir website check && pnpm --dir website build && pnpm --dir website check:a11y && pnpm --dir website check:headers'
 run_group 'Mobile analysis, tests, and debug APK' bash -c 'cd mobile && dart format --set-exit-if-changed lib test && flutter analyze && flutter test && cd .. && scripts/build-mobile.sh android-debug'

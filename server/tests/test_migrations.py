@@ -2,13 +2,31 @@ from pathlib import Path
 
 from alembic.config import Config
 from sqlalchemy import create_engine, text
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import CreateIndex
 
 from alembic import command
 from pluris_server.config import get_settings
+from pluris_server.models import BackupChunk
 
 
 def _alembic_config() -> Config:
     return Config(str(Path(__file__).parents[1] / "alembic.ini"))
+
+
+def test_pending_reconciliation_index_metadata_preserves_nulls_first() -> None:
+    index = next(
+        index
+        for index in BackupChunk.__table__.indexes
+        if index.name == "ix_backup_chunks_pending_reconciliation"
+    )
+
+    first_expression = str(index.expressions[0].compile(dialect=postgresql.dialect()))
+    ddl = str(CreateIndex(index).compile(dialect=postgresql.dialect()))
+
+    assert first_expression == "backup_chunks.reconciliation_checked_at ASC NULLS FIRST"
+    assert "(reconciliation_checked_at ASC NULLS FIRST, id)" in ddl
+    assert "WHERE stored_at IS NULL" in ddl
 
 
 def test_backup_upload_start_migration_repairs_all_legacy_upload_states(

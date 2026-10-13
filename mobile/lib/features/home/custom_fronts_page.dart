@@ -11,7 +11,7 @@ class CustomFrontsPage extends StatefulWidget {
 
 class _CustomFrontsPageState extends State<CustomFrontsPage> {
   final _searchController = TextEditingController();
-  late final Stream<List<NamedFront>> _frontsStream;
+  late Stream<List<NamedFront>> _frontsStream;
   String _query = '';
 
   @override
@@ -31,12 +31,26 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
     final l10n = AppLocalizations.of(context);
     return StreamBuilder<List<NamedFront>>(
       stream: _frontsStream,
-      initialData: const [],
       builder: (context, snapshot) {
+        if (snapshot.hasError && !snapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: snapshot.error,
+                onRetry: () => setState(
+                  () => _frontsStream = widget.repository.watchNamedFronts(),
+                ),
+              ),
+            ],
+          );
+        }
+        if (!snapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
         final scheme = Theme.of(context).colorScheme;
         final isSimplyPlural =
             _visualThemeOf(context) == HavenVisualTheme.simplyPlural;
-        final fronts = snapshot.data ?? const <NamedFront>[];
+        final fronts = snapshot.data!;
         final customFronts = fronts
             .where(_isCustomFront)
             .where(_matchesFrontQuery)
@@ -750,9 +764,8 @@ class _CustomFrontAvatarPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatarSemanticLabel = AppLocalizations.of(
-      context,
-    ).memberAvatarSemanticLabel(label);
+    final avatarSemanticLabel = AppLocalizations.of(context)
+        .memberAvatarSemanticLabel(label);
     final ref = avatarUrl?.trim();
     if (ref == null || ref.isEmpty) {
       return SpAvatar(

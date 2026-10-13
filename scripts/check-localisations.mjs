@@ -7,20 +7,55 @@ const expectedUsOverrides = new Set([
   'accentColorLabel',
   'applyColorButton',
   'colorHexFieldLabel',
+  'colorType',
+  'appearanceSubtitle',
+  'backgroundColorLabel',
+  'cardColorLabel',
   'colourFieldLabel',
   'copyHexColorTooltip',
   'currentColorLabel',
   'customizeTitle',
   'customizeDashboardTitle',
   'groupsEmptyBody',
-  'noDashboardShortcutsBody',
   'openColorPickerTooltip',
+  'outlineColorLabel',
   'pickCustomColorButton',
   'saveCancelled',
+  'syncOffDescription',
+  'importDedupePlurisHaven',
+  'importDedupeSimplyPlural',
+  'importDedupePluralKitFile',
+  'importDedupeTupperbox',
+  'importDedupePluralSpace',
+  'importDedupeOpenPlural',
+  'importDedupePluralPort',
+  'importDedupePrism',
+  'importDedupeAmpersand',
+  'importReasonUnrecognised',
+  'importStepNormalizeFieldsTitle',
+  'importStepPrepareSimplyPluralAvatarsDetail',
+  'importStepReviewPluralKitFileDetail',
+  'importStepReviewTupperboxDetail',
+  'importStepReviewPluralSpaceDetail',
+  'importStepReviewOpenPluralDetail',
+  'importStepReviewPluralPortDetail',
+  'importStepReviewPrismDetail',
+  'importStepReviewAmpersandDetail',
+  'importPrivacySimplyPluralDedupe',
+  'importStageNormalize',
+  'importDiagnosticRecognizedRecords',
+  'importDiagnosticNoImportableRecords',
   'selectColorDialogTitle',
+  'surfaceColorLabel',
   'tagColourFieldLabel',
+  'textColorLabel',
   'useCustomColorLabel',
+  'importCancelledStatus',
+  'mutedTextColorLabel',
 ]);
+
+const britishSpellings =
+  /\b(?:colour|colours|cancelled|customise|customised|customisation|localise|localised|localisation|normalise|normalised|normalisation|organise|organised|organisation|recognise|recognised|synchronisation)\b/i;
 
 const [base, us] = await Promise.all(
   [basePath, usPath].map(async (path) =>
@@ -52,6 +87,13 @@ for (const key of usKeys) {
 for (const key of expectedUsOverrides) {
   if (!(key in us)) {
     errors.push(`${usPath} is missing reviewed override ${key}.`);
+  }
+}
+
+for (const [key, value] of Object.entries(base)) {
+  if (key.startsWith('@') || typeof value !== 'string') continue;
+  if (britishSpellings.test(value) && !expectedUsOverrides.has(key)) {
+    errors.push(`${basePath} uses a British spelling in ${key}; add its reviewed en_US override.`);
   }
 }
 

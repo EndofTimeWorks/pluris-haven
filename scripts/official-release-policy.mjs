@@ -11,23 +11,30 @@ function keyRecords(listing) {
     .map((line) => line.split(':'));
 
   return records.flatMap((record, index) => {
-    if (!['sec', 'sec#', 'ssb', 'ssb#'].includes(record[0])) return [];
+    if (!['sec', 'ssb'].includes(record[0])) return [];
     const fingerprint = records.slice(index + 1).find((next) => next[0] === 'fpr')?.[9];
-    return [{ type: record[0], fingerprint, capabilities: record[12] ?? '' }];
+    return [
+      {
+        type: record[0],
+        fingerprint,
+        capabilities: record[11] ?? '',
+        isStub: record[14] === '#',
+      },
+    ];
   });
 }
 
 export function validateSecretKeyListing(listing, { primaryFingerprint, signingFingerprint }) {
   const records = keyRecords(listing);
-  const primary = records.find((record) => record.type === 'sec#');
-  const usablePrimary = records.find((record) => record.type === 'sec');
+  const primary = records.find((record) => record.type === 'sec' && record.isStub);
+  const usablePrimary = records.find((record) => record.type === 'sec' && !record.isStub);
   const signing = records.find(
     (record) => record.type === 'ssb' && record.fingerprint === signingFingerprint,
   );
   const unexpected = records.filter(
     (record) =>
       !(
-        (record.type === 'sec#' && record.fingerprint === primaryFingerprint) ||
+        (record.type === 'sec' && record.isStub && record.fingerprint === primaryFingerprint) ||
         (record.type === 'ssb' && record.fingerprint === signingFingerprint)
       ),
   );

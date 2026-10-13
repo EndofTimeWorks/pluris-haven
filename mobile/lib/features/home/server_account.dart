@@ -261,6 +261,7 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
               key: const ValueKey('delete-account-password-field'),
               controller: passwordController,
               obscureText: true,
+              autofillHints: const [AutofillHints.password],
               decoration: InputDecoration(labelText: l10n.currentPasswordLabel),
             ),
           ],
@@ -351,62 +352,69 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
           20,
           MediaQuery.viewInsetsOf(context).bottom + 24,
         ),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.changePasswordTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('current-server-password-field'),
-                  controller: _currentPassword,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.currentPasswordLabel,
+        child: AutofillGroup(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.changePasswordTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  validator: (value) => value?.isNotEmpty == true
-                      ? null
-                      : l10n.requiredFieldError,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  key: const ValueKey('new-server-password-field'),
-                  controller: _newPassword,
-                  obscureText: true,
-                  decoration: InputDecoration(labelText: l10n.newPasswordLabel),
-                  validator: (value) => (value?.length ?? 0) >= 12
-                      ? null
-                      : l10n.passwordLengthError,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  key: const ValueKey('confirm-server-password-field'),
-                  controller: _confirmPassword,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.confirmNewPasswordLabel,
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    key: const ValueKey('current-server-password-field'),
+                    controller: _currentPassword,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.password],
+                    decoration: InputDecoration(
+                      labelText: l10n.currentPasswordLabel,
+                    ),
+                    validator: (value) => value?.isNotEmpty == true
+                        ? null
+                        : l10n.requiredFieldError,
                   ),
-                  validator: (value) => value == _newPassword.text
-                      ? null
-                      : l10n.passwordsDoNotMatchError,
-                ),
-                if (widget.controller.error != null) ...[
                   const SizedBox(height: 10),
-                  _ServerMessage(widget.controller.error!, error: true),
+                  TextFormField(
+                    key: const ValueKey('new-server-password-field'),
+                    controller: _newPassword,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: InputDecoration(
+                      labelText: l10n.newPasswordLabel,
+                    ),
+                    validator: (value) => (value?.length ?? 0) >= 12
+                        ? null
+                        : l10n.passwordLengthError,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    key: const ValueKey('confirm-server-password-field'),
+                    controller: _confirmPassword,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: InputDecoration(
+                      labelText: l10n.confirmNewPasswordLabel,
+                    ),
+                    validator: (value) => value == _newPassword.text
+                        ? null
+                        : l10n.passwordsDoNotMatchError,
+                  ),
+                  if (widget.controller.error != null) ...[
+                    const SizedBox(height: 10),
+                    _ServerMessage(widget.controller.error!, error: true),
+                  ],
+                  const SizedBox(height: 14),
+                  FilledButton(
+                    key: const ValueKey('submit-change-server-password-button'),
+                    onPressed: widget.controller.busy ? null : _submit,
+                    child: Text(l10n.changePasswordButton),
+                  ),
                 ],
-                const SizedBox(height: 14),
-                FilledButton(
-                  key: const ValueKey('submit-change-server-password-button'),
-                  onPressed: widget.controller.busy ? null : _submit,
-                  child: Text(l10n.changePasswordButton),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -471,91 +479,99 @@ class _ServerAuthenticationSheetState
           20,
           MediaQuery.viewInsetsOf(context).bottom + 24,
         ),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.register
-                      ? l10n.createServerAccountTitle
-                      : l10n.signInButton,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                if (widget.register) ...[
+        child: AutofillGroup(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    widget.register
+                        ? l10n.createServerAccountTitle
+                        : l10n.signInButton,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  if (widget.register) ...[
+                    TextFormField(
+                      key: const ValueKey('server-display-name-field'),
+                      controller: _displayName,
+                      decoration: InputDecoration(
+                        labelText: l10n.displayNameLabel,
+                      ),
+                      validator: (value) => _required(value, l10n),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   TextFormField(
-                    key: const ValueKey('server-display-name-field'),
-                    controller: _displayName,
+                    key: const ValueKey('server-email-field'),
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    autofillHints: const [AutofillHints.username],
+                    decoration: InputDecoration(labelText: l10n.emailLabel),
+                    validator: (value) => value?.contains('@') == true
+                        ? null
+                        : l10n.invalidEmailError,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    key: const ValueKey('server-password-field'),
+                    controller: _password,
+                    obscureText: true,
+                    autofillHints: widget.register
+                        ? const [AutofillHints.newPassword]
+                        : const [AutofillHints.password],
+                    decoration: InputDecoration(labelText: l10n.passwordLabel),
+                    validator: (value) =>
+                        widget.register && (value?.length ?? 0) < 12
+                        ? l10n.passwordLengthError
+                        : _required(value, l10n),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    key: const ValueKey('server-device-name-field'),
+                    controller: _deviceName,
                     decoration: InputDecoration(
-                      labelText: l10n.displayNameLabel,
+                      labelText: l10n.deviceNameLabel,
                     ),
                     validator: (value) => _required(value, l10n),
                   ),
-                  const SizedBox(height: 10),
-                ],
-                TextFormField(
-                  key: const ValueKey('server-email-field'),
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: InputDecoration(labelText: l10n.emailLabel),
-                  validator: (value) => value?.contains('@') == true
-                      ? null
-                      : l10n.invalidEmailError,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  key: const ValueKey('server-password-field'),
-                  controller: _password,
-                  obscureText: true,
-                  decoration: InputDecoration(labelText: l10n.passwordLabel),
-                  validator: (value) =>
-                      widget.register && (value?.length ?? 0) < 12
-                      ? l10n.passwordLengthError
-                      : _required(value, l10n),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  key: const ValueKey('server-device-name-field'),
-                  controller: _deviceName,
-                  decoration: InputDecoration(labelText: l10n.deviceNameLabel),
-                  validator: (value) => _required(value, l10n),
-                ),
-                if (widget.controller.error != null) ...[
-                  const SizedBox(height: 10),
-                  _ServerMessage(widget.controller.error!, error: true),
-                ],
-                const SizedBox(height: 14),
-                FilledButton(
-                  key: const ValueKey('submit-server-auth-button'),
-                  onPressed: widget.controller.busy ? null : _submit,
-                  child: Text(
-                    widget.register
-                        ? l10n.createAccountButton
-                        : l10n.signInButton,
+                  if (widget.controller.error != null) ...[
+                    const SizedBox(height: 10),
+                    _ServerMessage(widget.controller.error!, error: true),
+                  ],
+                  const SizedBox(height: 14),
+                  FilledButton(
+                    key: const ValueKey('submit-server-auth-button'),
+                    onPressed: widget.controller.busy ? null : _submit,
+                    child: Text(
+                      widget.register
+                          ? l10n.createAccountButton
+                          : l10n.signInButton,
+                    ),
                   ),
-                ),
-                if (!widget.register) ...[
-                  const SizedBox(height: 4),
-                  TextButton(
-                    key: const ValueKey('forgot-server-password-button'),
-                    onPressed: widget.controller.busy
-                        ? null
-                        : _requestPasswordReset,
-                    child: Text(l10n.forgotPasswordButton),
-                  ),
-                  TextButton(
-                    key: const ValueKey('use-server-password-token-button'),
-                    onPressed: widget.controller.busy
-                        ? null
-                        : _showPasswordReset,
-                    child: Text(l10n.useResetTokenButton),
-                  ),
+                  if (!widget.register) ...[
+                    const SizedBox(height: 4),
+                    TextButton(
+                      key: const ValueKey('forgot-server-password-button'),
+                      onPressed: widget.controller.busy
+                          ? null
+                          : _requestPasswordReset,
+                      child: Text(l10n.forgotPasswordButton),
+                    ),
+                    TextButton(
+                      key: const ValueKey('use-server-password-token-button'),
+                      onPressed: widget.controller.busy
+                          ? null
+                          : _showPasswordReset,
+                      child: Text(l10n.useResetTokenButton),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -605,43 +621,46 @@ class _ServerAuthenticationSheetState
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context).resetPasswordTitle),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: token,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).resetTokenLabel,
+        content: AutofillGroup(
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: token,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).resetTokenLabel,
+                    ),
+                    validator: (value) =>
+                        _required(value, AppLocalizations.of(context)),
                   ),
-                  validator: (value) =>
-                      _required(value, AppLocalizations.of(context)),
-                ),
-                TextFormField(
-                  controller: password,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context).newPasswordLabel,
+                  TextFormField(
+                    controller: password,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).newPasswordLabel,
+                    ),
+                    validator: (value) => (value?.length ?? 0) < 12
+                        ? AppLocalizations.of(context).passwordLengthError
+                        : null,
                   ),
-                  validator: (value) => (value?.length ?? 0) < 12
-                      ? AppLocalizations.of(context).passwordLengthError
-                      : null,
-                ),
-                TextFormField(
-                  controller: confirmation,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(
-                      context,
-                    ).confirmNewPasswordLabel,
+                  TextFormField(
+                    controller: confirmation,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)
+                          .confirmNewPasswordLabel,
+                    ),
+                    validator: (value) => value != password.text
+                        ? AppLocalizations.of(context).passwordsDoNotMatchError
+                        : null,
                   ),
-                  validator: (value) => value != password.text
-                      ? AppLocalizations.of(context).passwordsDoNotMatchError
-                      : null,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -873,9 +892,8 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
-        _restoreMessage = AppLocalizations.of(
-          context,
-        ).encryptedBackupRestoreFailed(error.toString());
+        _restoreMessage = AppLocalizations.of(context)
+            .encryptedBackupRestoreFailed(error.toString());
       });
     } finally {
       if (mounted) {

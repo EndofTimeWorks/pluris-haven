@@ -49,7 +49,7 @@ ordinary feature branch.
 The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not move to
 `0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
 version. The current candidate for a future monotonic first alpha is
-`0.3.1-alpha.1+3005`, but it must not be set/tagged/released without explicit
+`0.3.1-alpha.1+3006`, but it must not be set/tagged/released without explicit
 approval.
 
 1. Set the approved release version in `mobile/pubspec.yaml`. Versioned releases
@@ -139,7 +139,7 @@ need a one-time uninstall before the current package can be installed.
 A Play failure prevents the official GitHub Release from being created. Website
 metadata is not pushed directly to `main` or deployed by release automation: its PR must
 pass the normal CI and Rulesets. These independent targets need explicit
-retry/repair behavior rather than pretending to be transactionally atomic.
+retry/repair behaviour rather than pretending to be transactionally atomic.
 
 Current official Play automation covers **internal testing** only and fails
 closed for `production`. The manually dispatched repair workflow also rejects
@@ -179,7 +179,7 @@ label.
   verification.
 
 Real-device/simulator work still includes notification permission timing,
-App Lock/passcode behavior, screen-capture privacy, accessibility and upgrade
+App Lock/passcode behaviour, screen-capture privacy, accessibility and upgrade
 smoke tests.
 
 ## Local import acceptance

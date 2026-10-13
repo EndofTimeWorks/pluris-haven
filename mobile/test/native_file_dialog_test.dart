@@ -41,9 +41,8 @@ void main() {
         await unrelatedDirectory.delete(recursive: true);
       }
     });
-    await File(
-      '${staleDirectory.path}/archive.json',
-    ).writeAsString('{"private":true}', flush: true);
+    await File('${staleDirectory.path}/archive.json')
+        .writeAsString('{"private":true}', flush: true);
 
     final removed =
         await NativeFileDialog.clearStaleExportTemporaryDirectories();

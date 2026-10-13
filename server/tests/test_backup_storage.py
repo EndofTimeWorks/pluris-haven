@@ -77,6 +77,28 @@ def test_snapshot_deletion_is_explicit(tmp_path) -> None:
     assert not (tmp_path / owner_id / "snapshot-1").exists()
 
 
+def test_snapshot_deletion_removes_nested_and_symlink_entries_without_following_them(
+    tmp_path,
+) -> None:
+    store = FilesystemBackupObjectStore(tmp_path)
+    owner_id = "owner-1"
+    snapshot_id = "snapshot-1"
+    snapshot_dir = tmp_path / owner_id / snapshot_id
+    nested = snapshot_dir / "interrupted-upload"
+    nested.mkdir(parents=True)
+    (nested / "partial.chunk").write_bytes(b"partial")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    protected = outside / "must-not-delete"
+    protected.write_bytes(b"keep")
+    (snapshot_dir / "outside-link").symlink_to(outside, target_is_directory=True)
+
+    store.delete_snapshot(owner_id=owner_id, snapshot_id=snapshot_id)
+
+    assert not snapshot_dir.exists()
+    assert protected.read_bytes() == b"keep"
+
+
 def test_owner_and_snapshot_are_separate_safe_path_segments(tmp_path) -> None:
     store = FilesystemBackupObjectStore(tmp_path)
     owner_id = "00000000-0000-0000-0000-000000000001"

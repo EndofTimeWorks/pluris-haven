@@ -19034,19 +19034,15 @@ class $$SystemGroupsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$SystemGroupsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$SystemGroupsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$SystemGroupsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$SystemGroupsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -19096,58 +19092,56 @@ typedef $$SystemGroupsTableProcessedTableManager =
       SystemGroup,
       PrefetchHooks Function({bool systemId, bool groupMembersRefs})
     >;
-typedef $$MembersTableCreateCompanionBuilder =
-    MembersCompanion Function({
-      required String id,
-      required String systemId,
-      required String displayName,
-      Value<String?> displayNameHash,
-      Value<int> profileEncryptionVersion,
-      Value<String?> pronouns,
-      Value<String?> colorHex,
-      Value<String?> birthday,
-      Value<String?> emoji,
-      Value<String?> privacy,
-      Value<String?> folderId,
-      Value<String?> description,
-      Value<String?> avatarUrl,
-      Value<String?> pluralKitId,
-      Value<String> frameShape,
-      required String lexoRank,
-      Value<bool> isCustomFront,
-      Value<bool> archived,
-      Value<DateTime?> deletedAt,
-      Value<DateTime?> purgedAt,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$MembersTableUpdateCompanionBuilder =
-    MembersCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String> displayName,
-      Value<String?> displayNameHash,
-      Value<int> profileEncryptionVersion,
-      Value<String?> pronouns,
-      Value<String?> colorHex,
-      Value<String?> birthday,
-      Value<String?> emoji,
-      Value<String?> privacy,
-      Value<String?> folderId,
-      Value<String?> description,
-      Value<String?> avatarUrl,
-      Value<String?> pluralKitId,
-      Value<String> frameShape,
-      Value<String> lexoRank,
-      Value<bool> isCustomFront,
-      Value<bool> archived,
-      Value<DateTime?> deletedAt,
-      Value<DateTime?> purgedAt,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$MembersTableCreateCompanionBuilder = MembersCompanion Function({
+  required String id,
+  required String systemId,
+  required String displayName,
+  Value<String?> displayNameHash,
+  Value<int> profileEncryptionVersion,
+  Value<String?> pronouns,
+  Value<String?> colorHex,
+  Value<String?> birthday,
+  Value<String?> emoji,
+  Value<String?> privacy,
+  Value<String?> folderId,
+  Value<String?> description,
+  Value<String?> avatarUrl,
+  Value<String?> pluralKitId,
+  Value<String> frameShape,
+  required String lexoRank,
+  Value<bool> isCustomFront,
+  Value<bool> archived,
+  Value<DateTime?> deletedAt,
+  Value<DateTime?> purgedAt,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$MembersTableUpdateCompanionBuilder = MembersCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String> displayName,
+  Value<String?> displayNameHash,
+  Value<int> profileEncryptionVersion,
+  Value<String?> pronouns,
+  Value<String?> colorHex,
+  Value<String?> birthday,
+  Value<String?> emoji,
+  Value<String?> privacy,
+  Value<String?> folderId,
+  Value<String?> description,
+  Value<String?> avatarUrl,
+  Value<String?> pluralKitId,
+  Value<String> frameShape,
+  Value<String> lexoRank,
+  Value<bool> isCustomFront,
+  Value<bool> archived,
+  Value<DateTime?> deletedAt,
+  Value<DateTime?> purgedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$MembersTableReferences
     extends BaseReferences<_$AppDatabase, $MembersTable, Member> {
@@ -20238,17 +20232,15 @@ class $$MembersTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable: $$MembersTableReferences
-                                        ._systemIdTable(db),
-                                    referencedColumn: $$MembersTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$MembersTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$MembersTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -20728,30 +20720,26 @@ class $$GroupMembersTableTableManager
                     >
                   >(state) {
                     if (groupId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.groupId,
-                                referencedTable: $$GroupMembersTableReferences
-                                    ._groupIdTable(db),
-                                referencedColumn: $$GroupMembersTableReferences
-                                    ._groupIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.groupId,
+                        referencedTable: $$GroupMembersTableReferences
+                            ._groupIdTable(db),
+                        referencedColumn: $$GroupMembersTableReferences
+                            ._groupIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable: $$GroupMembersTableReferences
-                                    ._memberIdTable(db),
-                                referencedColumn: $$GroupMembersTableReferences
-                                    ._memberIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$GroupMembersTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$GroupMembersTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -20779,28 +20767,26 @@ typedef $$GroupMembersTableProcessedTableManager =
       GroupMember,
       PrefetchHooks Function({bool groupId, bool memberId})
     >;
-typedef $$NotesTableCreateCompanionBuilder =
-    NotesCompanion Function({
-      required String id,
-      required String systemId,
-      Value<String?> memberId,
-      required String title,
-      required String body,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$NotesTableUpdateCompanionBuilder =
-    NotesCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String?> memberId,
-      Value<String> title,
-      Value<String> body,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
+  required String id,
+  required String systemId,
+  Value<String?> memberId,
+  required String title,
+  required String body,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String?> memberId,
+  Value<String> title,
+  Value<String> body,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$NotesTableReferences
     extends BaseReferences<_$AppDatabase, $NotesTable, Note> {
@@ -21095,17 +21081,16 @@ class $$NotesTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$NotesTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn: $$NotesTableReferences
-                                    ._systemIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$NotesTableReferences._systemIdTable(
+                          db,
+                        ),
+                        referencedColumn: $$NotesTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -21530,19 +21515,15 @@ class $$ChatCategoriesTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$ChatCategoriesTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$ChatCategoriesTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$ChatCategoriesTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$ChatCategoriesTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -22178,34 +22159,26 @@ class $$ChatChannelsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$ChatChannelsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$ChatChannelsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$ChatChannelsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$ChatChannelsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
                         if (categoryId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.categoryId,
-                                    referencedTable:
-                                        $$ChatChannelsTableReferences
-                                            ._categoryIdTable(db),
-                                    referencedColumn:
-                                        $$ChatChannelsTableReferences
-                                            ._categoryIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoryId,
+                            referencedTable: $$ChatChannelsTableReferences
+                                ._categoryIdTable(db),
+                            referencedColumn: $$ChatChannelsTableReferences
+                                ._categoryIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -22259,40 +22232,38 @@ typedef $$ChatChannelsTableProcessedTableManager =
         bool messagesRefs,
       })
     >;
-typedef $$MessagesTableCreateCompanionBuilder =
-    MessagesCompanion Function({
-      required String id,
-      required String systemId,
-      Value<String?> memberId,
-      required String body,
-      Value<String> boardKind,
-      Value<String?> boardMemberId,
-      Value<String?> parentMessageId,
-      Value<String?> channelId,
-      Value<DateTime?> deletedAt,
-      Value<bool> archived,
-      Value<DateTime?> purgedAt,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$MessagesTableUpdateCompanionBuilder =
-    MessagesCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String?> memberId,
-      Value<String> body,
-      Value<String> boardKind,
-      Value<String?> boardMemberId,
-      Value<String?> parentMessageId,
-      Value<String?> channelId,
-      Value<DateTime?> deletedAt,
-      Value<bool> archived,
-      Value<DateTime?> purgedAt,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
+  required String id,
+  required String systemId,
+  Value<String?> memberId,
+  required String body,
+  Value<String> boardKind,
+  Value<String?> boardMemberId,
+  Value<String?> parentMessageId,
+  Value<String?> channelId,
+  Value<DateTime?> deletedAt,
+  Value<bool> archived,
+  Value<DateTime?> purgedAt,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String?> memberId,
+  Value<String> body,
+  Value<String> boardKind,
+  Value<String?> boardMemberId,
+  Value<String?> parentMessageId,
+  Value<String?> channelId,
+  Value<DateTime?> deletedAt,
+  Value<bool> archived,
+  Value<DateTime?> purgedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$MessagesTableReferences
     extends BaseReferences<_$AppDatabase, $MessagesTable, Message> {
@@ -22767,30 +22738,26 @@ class $$MessagesTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$MessagesTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn: $$MessagesTableReferences
-                                    ._systemIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$MessagesTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$MessagesTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (channelId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.channelId,
-                                referencedTable: $$MessagesTableReferences
-                                    ._channelIdTable(db),
-                                referencedColumn: $$MessagesTableReferences
-                                    ._channelIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.channelId,
+                        referencedTable: $$MessagesTableReferences
+                            ._channelIdTable(db),
+                        referencedColumn: $$MessagesTableReferences
+                            ._channelIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -22818,48 +22785,46 @@ typedef $$MessagesTableProcessedTableManager =
       Message,
       PrefetchHooks Function({bool systemId, bool channelId})
     >;
-typedef $$RemindersTableCreateCompanionBuilder =
-    RemindersCompanion Function({
-      required String id,
-      required String systemId,
-      required String title,
-      Value<String?> body,
-      required String scheduleText,
-      Value<String> triggerType,
-      Value<String?> triggerMemberId,
-      Value<String?> triggerEvent,
-      Value<int?> delaySeconds,
-      Value<String?> scheduleKind,
-      Value<String?> scheduleTime,
-      Value<int?> scheduleDowMask,
-      Value<int?> scheduleDom,
-      Value<bool> enabled,
-      Value<DateTime?> lastFiredAt,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$RemindersTableUpdateCompanionBuilder =
-    RemindersCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String> title,
-      Value<String?> body,
-      Value<String> scheduleText,
-      Value<String> triggerType,
-      Value<String?> triggerMemberId,
-      Value<String?> triggerEvent,
-      Value<int?> delaySeconds,
-      Value<String?> scheduleKind,
-      Value<String?> scheduleTime,
-      Value<int?> scheduleDowMask,
-      Value<int?> scheduleDom,
-      Value<bool> enabled,
-      Value<DateTime?> lastFiredAt,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$RemindersTableCreateCompanionBuilder = RemindersCompanion Function({
+  required String id,
+  required String systemId,
+  required String title,
+  Value<String?> body,
+  required String scheduleText,
+  Value<String> triggerType,
+  Value<String?> triggerMemberId,
+  Value<String?> triggerEvent,
+  Value<int?> delaySeconds,
+  Value<String?> scheduleKind,
+  Value<String?> scheduleTime,
+  Value<int?> scheduleDowMask,
+  Value<int?> scheduleDom,
+  Value<bool> enabled,
+  Value<DateTime?> lastFiredAt,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$RemindersTableUpdateCompanionBuilder = RemindersCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String> title,
+  Value<String?> body,
+  Value<String> scheduleText,
+  Value<String> triggerType,
+  Value<String?> triggerMemberId,
+  Value<String?> triggerEvent,
+  Value<int?> delaySeconds,
+  Value<String?> scheduleKind,
+  Value<String?> scheduleTime,
+  Value<int?> scheduleDowMask,
+  Value<int?> scheduleDom,
+  Value<bool> enabled,
+  Value<DateTime?> lastFiredAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$RemindersTableReferences
     extends BaseReferences<_$AppDatabase, $RemindersTable, Reminder> {
@@ -23345,17 +23310,15 @@ class $$RemindersTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$RemindersTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn: $$RemindersTableReferences
-                                    ._systemIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$RemindersTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$RemindersTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -23467,13 +23430,11 @@ final class $$CustomFieldDefinitionsTableReferences
     $CustomFieldValueMigrationProvenanceTable,
     List<CustomFieldValueMigrationProvenanceData>
   >
-  _customFieldValueMigrationProvenanceRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.customFieldValueMigrationProvenance,
-    aliasName:
-        'custom_field_definitions__id__custom_field_value_migration_provenance__field_id',
-  );
+  _customFieldValueMigrationProvenanceRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.customFieldValueMigrationProvenance,
+        aliasName: 'custom_field_definitions__id__custom_field_value_migration_provenance__field_id',
+      );
 
   $$CustomFieldValueMigrationProvenanceTableProcessedTableManager
   get customFieldValueMigrationProvenanceRefs {
@@ -23935,19 +23896,17 @@ class $$CustomFieldDefinitionsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$CustomFieldDefinitionsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$CustomFieldDefinitionsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable:
+                                $$CustomFieldDefinitionsTableReferences
+                                    ._systemIdTable(db),
+                            referencedColumn:
+                                $$CustomFieldDefinitionsTableReferences
+                                    ._systemIdTable(db)
+                                    .id,
+                          ) as T;
                         }
 
                         return state;
@@ -24416,34 +24375,26 @@ class $$CustomFieldValuesTableTableManager
                     >
                   >(state) {
                     if (fieldId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.fieldId,
-                                referencedTable:
-                                    $$CustomFieldValuesTableReferences
-                                        ._fieldIdTable(db),
-                                referencedColumn:
-                                    $$CustomFieldValuesTableReferences
-                                        ._fieldIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.fieldId,
+                        referencedTable: $$CustomFieldValuesTableReferences
+                            ._fieldIdTable(db),
+                        referencedColumn: $$CustomFieldValuesTableReferences
+                            ._fieldIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable:
-                                    $$CustomFieldValuesTableReferences
-                                        ._memberIdTable(db),
-                                referencedColumn:
-                                    $$CustomFieldValuesTableReferences
-                                        ._memberIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$CustomFieldValuesTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$CustomFieldValuesTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -24505,11 +24456,10 @@ final class $$CustomFieldValueMigrationProvenanceTableReferences
     super.$_typedResult,
   );
 
-  static $CustomFieldDefinitionsTable _fieldIdTable(
-    _$AppDatabase db,
-  ) => db.customFieldDefinitions.createAlias(
-    'custom_field_value_migration_provenance__field_id__custom_field_definitions__id',
-  );
+  static $CustomFieldDefinitionsTable _fieldIdTable(_$AppDatabase db) =>
+      db.customFieldDefinitions.createAlias(
+        'custom_field_value_migration_provenance__field_id__custom_field_definitions__id',
+      );
 
   $$CustomFieldDefinitionsTableProcessedTableManager get fieldId {
     final $_column = $_itemColumn<String>('field_id')!;
@@ -24811,19 +24761,17 @@ class $$CustomFieldValueMigrationProvenanceTableTableManager
                     >
                   >(state) {
                     if (fieldId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.fieldId,
-                                referencedTable:
-                                    $$CustomFieldValueMigrationProvenanceTableReferences
-                                        ._fieldIdTable(db),
-                                referencedColumn:
-                                    $$CustomFieldValueMigrationProvenanceTableReferences
-                                        ._fieldIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.fieldId,
+                        referencedTable:
+                            $$CustomFieldValueMigrationProvenanceTableReferences
+                                ._fieldIdTable(db),
+                        referencedColumn:
+                            $$CustomFieldValueMigrationProvenanceTableReferences
+                                ._fieldIdTable(db)
+                                .id,
+                      ) as T;
                     }
 
                     return state;
@@ -24854,36 +24802,34 @@ typedef $$CustomFieldValueMigrationProvenanceTableProcessedTableManager =
       CustomFieldValueMigrationProvenanceData,
       PrefetchHooks Function({bool fieldId})
     >;
-typedef $$PollsTableCreateCompanionBuilder =
-    PollsCompanion Function({
-      required String id,
-      required String systemId,
-      required String question,
-      Value<String?> description,
-      Value<String> kind,
-      Value<bool> restrictVotingToFronters,
-      Value<DateTime?> closesAt,
-      Value<int?> retentionDays,
-      Value<bool> closed,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$PollsTableUpdateCompanionBuilder =
-    PollsCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String> question,
-      Value<String?> description,
-      Value<String> kind,
-      Value<bool> restrictVotingToFronters,
-      Value<DateTime?> closesAt,
-      Value<int?> retentionDays,
-      Value<bool> closed,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$PollsTableCreateCompanionBuilder = PollsCompanion Function({
+  required String id,
+  required String systemId,
+  required String question,
+  Value<String?> description,
+  Value<String> kind,
+  Value<bool> restrictVotingToFronters,
+  Value<DateTime?> closesAt,
+  Value<int?> retentionDays,
+  Value<bool> closed,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$PollsTableUpdateCompanionBuilder = PollsCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String> question,
+  Value<String?> description,
+  Value<String> kind,
+  Value<bool> restrictVotingToFronters,
+  Value<DateTime?> closesAt,
+  Value<int?> retentionDays,
+  Value<bool> closed,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$PollsTableReferences
     extends BaseReferences<_$AppDatabase, $PollsTable, Poll> {
@@ -25471,17 +25417,15 @@ class $$PollsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable: $$PollsTableReferences
-                                        ._systemIdTable(db),
-                                    referencedColumn: $$PollsTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$PollsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$PollsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -25982,19 +25926,15 @@ class $$PollOptionsTableTableManager
                         >
                       >(state) {
                         if (pollId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.pollId,
-                                    referencedTable:
-                                        $$PollOptionsTableReferences
-                                            ._pollIdTable(db),
-                                    referencedColumn:
-                                        $$PollOptionsTableReferences
-                                            ._pollIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pollId,
+                            referencedTable: $$PollOptionsTableReferences
+                                ._pollIdTable(db),
+                            referencedColumn: $$PollOptionsTableReferences
+                                ._pollIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -26069,20 +26009,18 @@ typedef $$PollOptionsTableProcessedTableManager =
         bool pollVoteEventsRefs,
       })
     >;
-typedef $$PollVotesTableCreateCompanionBuilder =
-    PollVotesCompanion Function({
-      required String pollId,
-      required String optionId,
-      required DateTime createdAt,
-      Value<int> rowid,
-    });
-typedef $$PollVotesTableUpdateCompanionBuilder =
-    PollVotesCompanion Function({
-      Value<String> pollId,
-      Value<String> optionId,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
+typedef $$PollVotesTableCreateCompanionBuilder = PollVotesCompanion Function({
+  required String pollId,
+  required String optionId,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$PollVotesTableUpdateCompanionBuilder = PollVotesCompanion Function({
+  Value<String> pollId,
+  Value<String> optionId,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
 
 final class $$PollVotesTableReferences
     extends BaseReferences<_$AppDatabase, $PollVotesTable, PollVote> {
@@ -26383,30 +26321,26 @@ class $$PollVotesTableTableManager
                     >
                   >(state) {
                     if (pollId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.pollId,
-                                referencedTable: $$PollVotesTableReferences
-                                    ._pollIdTable(db),
-                                referencedColumn: $$PollVotesTableReferences
-                                    ._pollIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.pollId,
+                        referencedTable: $$PollVotesTableReferences
+                            ._pollIdTable(db),
+                        referencedColumn: $$PollVotesTableReferences
+                            ._pollIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (optionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.optionId,
-                                referencedTable: $$PollVotesTableReferences
-                                    ._optionIdTable(db),
-                                referencedColumn: $$PollVotesTableReferences
-                                    ._optionIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.optionId,
+                        referencedTable: $$PollVotesTableReferences
+                            ._optionIdTable(db),
+                        referencedColumn: $$PollVotesTableReferences
+                            ._optionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -26934,19 +26868,15 @@ class $$FrontSessionsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$FrontSessionsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$FrontSessionsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$FrontSessionsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$FrontSessionsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -27336,34 +27266,26 @@ class $$FrontSessionMembersTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable:
-                                    $$FrontSessionMembersTableReferences
-                                        ._sessionIdTable(db),
-                                referencedColumn:
-                                    $$FrontSessionMembersTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$FrontSessionMembersTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$FrontSessionMembersTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable:
-                                    $$FrontSessionMembersTableReferences
-                                        ._memberIdTable(db),
-                                referencedColumn:
-                                    $$FrontSessionMembersTableReferences
-                                        ._memberIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$FrontSessionMembersTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$FrontSessionMembersTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -27769,19 +27691,15 @@ class $$ImportRecordsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$ImportRecordsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$ImportRecordsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$ImportRecordsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$ImportRecordsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -28235,32 +28153,26 @@ class $$ImportPayloadsTableTableManager
                     >
                   >(state) {
                     if (importRecordId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.importRecordId,
-                                referencedTable: $$ImportPayloadsTableReferences
-                                    ._importRecordIdTable(db),
-                                referencedColumn:
-                                    $$ImportPayloadsTableReferences
-                                        ._importRecordIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.importRecordId,
+                        referencedTable: $$ImportPayloadsTableReferences
+                            ._importRecordIdTable(db),
+                        referencedColumn: $$ImportPayloadsTableReferences
+                            ._importRecordIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$ImportPayloadsTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn:
-                                    $$ImportPayloadsTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$ImportPayloadsTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$ImportPayloadsTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -28711,18 +28623,15 @@ class $$BackgroundJobsTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$BackgroundJobsTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn:
-                                    $$BackgroundJobsTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$BackgroundJobsTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$BackgroundJobsTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -29084,19 +28993,15 @@ class $$NotificationEventsTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable:
-                                    $$NotificationEventsTableReferences
-                                        ._systemIdTable(db),
-                                referencedColumn:
-                                    $$NotificationEventsTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$NotificationEventsTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$NotificationEventsTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -29297,26 +29202,24 @@ typedef $$AppPreferencesTableProcessedTableManager =
       AppPreference,
       PrefetchHooks Function()
     >;
-typedef $$TagsTableCreateCompanionBuilder =
-    TagsCompanion Function({
-      required String id,
-      required String systemId,
-      required String name,
-      Value<String?> colorHex,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$TagsTableUpdateCompanionBuilder =
-    TagsCompanion Function({
-      Value<String> id,
-      Value<String> systemId,
-      Value<String> name,
-      Value<String?> colorHex,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$TagsTableCreateCompanionBuilder = TagsCompanion Function({
+  required String id,
+  required String systemId,
+  required String name,
+  Value<String?> colorHex,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$TagsTableUpdateCompanionBuilder = TagsCompanion Function({
+  Value<String> id,
+  Value<String> systemId,
+  Value<String> name,
+  Value<String?> colorHex,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$TagsTableReferences
     extends BaseReferences<_$AppDatabase, $TagsTable, Tag> {
@@ -29661,17 +29564,16 @@ class $$TagsTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$TagsTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn: $$TagsTableReferences
-                                    ._systemIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$TagsTableReferences._systemIdTable(
+                          db,
+                        ),
+                        referencedColumn: $$TagsTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -29711,18 +29613,16 @@ typedef $$TagsTableProcessedTableManager =
       Tag,
       PrefetchHooks Function({bool systemId, bool memberTagsRefs})
     >;
-typedef $$MemberTagsTableCreateCompanionBuilder =
-    MemberTagsCompanion Function({
-      required String tagId,
-      required String memberId,
-      Value<int> rowid,
-    });
-typedef $$MemberTagsTableUpdateCompanionBuilder =
-    MemberTagsCompanion Function({
-      Value<String> tagId,
-      Value<String> memberId,
-      Value<int> rowid,
-    });
+typedef $$MemberTagsTableCreateCompanionBuilder = MemberTagsCompanion Function({
+  required String tagId,
+  required String memberId,
+  Value<int> rowid,
+});
+typedef $$MemberTagsTableUpdateCompanionBuilder = MemberTagsCompanion Function({
+  Value<String> tagId,
+  Value<String> memberId,
+  Value<int> rowid,
+});
 
 final class $$MemberTagsTableReferences
     extends BaseReferences<_$AppDatabase, $MemberTagsTable, MemberTag> {
@@ -30006,30 +29906,26 @@ class $$MemberTagsTableTableManager
                     >
                   >(state) {
                     if (tagId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.tagId,
-                                referencedTable: $$MemberTagsTableReferences
-                                    ._tagIdTable(db),
-                                referencedColumn: $$MemberTagsTableReferences
-                                    ._tagIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.tagId,
+                        referencedTable: $$MemberTagsTableReferences
+                            ._tagIdTable(db),
+                        referencedColumn: $$MemberTagsTableReferences
+                            ._tagIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable: $$MemberTagsTableReferences
-                                    ._memberIdTable(db),
-                                referencedColumn: $$MemberTagsTableReferences
-                                    ._memberIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$MemberTagsTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$MemberTagsTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -30475,32 +30371,26 @@ class $$JournalEntriesTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$JournalEntriesTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn:
-                                    $$JournalEntriesTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$JournalEntriesTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$JournalEntriesTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable: $$JournalEntriesTableReferences
-                                    ._memberIdTable(db),
-                                referencedColumn:
-                                    $$JournalEntriesTableReferences
-                                        ._memberIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$JournalEntriesTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$JournalEntriesTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -31094,19 +30984,15 @@ class $$FrontAuditEventsTableTableManager
                     >
                   >(state) {
                     if (frontId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.frontId,
-                                referencedTable:
-                                    $$FrontAuditEventsTableReferences
-                                        ._frontIdTable(db),
-                                referencedColumn:
-                                    $$FrontAuditEventsTableReferences
-                                        ._frontIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.frontId,
+                        referencedTable: $$FrontAuditEventsTableReferences
+                            ._frontIdTable(db),
+                        referencedColumn: $$FrontAuditEventsTableReferences
+                            ._frontIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -31492,32 +31378,26 @@ class $$PollVoteEventsTableTableManager
                     >
                   >(state) {
                     if (pollId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.pollId,
-                                referencedTable: $$PollVoteEventsTableReferences
-                                    ._pollIdTable(db),
-                                referencedColumn:
-                                    $$PollVoteEventsTableReferences
-                                        ._pollIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.pollId,
+                        referencedTable: $$PollVoteEventsTableReferences
+                            ._pollIdTable(db),
+                        referencedColumn: $$PollVoteEventsTableReferences
+                            ._pollIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (optionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.optionId,
-                                referencedTable: $$PollVoteEventsTableReferences
-                                    ._optionIdTable(db),
-                                referencedColumn:
-                                    $$PollVoteEventsTableReferences
-                                        ._optionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.optionId,
+                        referencedTable: $$PollVoteEventsTableReferences
+                            ._optionIdTable(db),
+                        referencedColumn: $$PollVoteEventsTableReferences
+                            ._optionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -31936,18 +31816,15 @@ class $$PendingActionsTableTableManager
                     >
                   >(state) {
                     if (systemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.systemId,
-                                referencedTable: $$PendingActionsTableReferences
-                                    ._systemIdTable(db),
-                                referencedColumn:
-                                    $$PendingActionsTableReferences
-                                        ._systemIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.systemId,
+                        referencedTable: $$PendingActionsTableReferences
+                            ._systemIdTable(db),
+                        referencedColumn: $$PendingActionsTableReferences
+                            ._systemIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -32410,19 +32287,15 @@ class $$NamedFrontsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$NamedFrontsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$NamedFrontsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$NamedFrontsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$NamedFrontsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -32782,34 +32655,26 @@ class $$NamedFrontMembersTableTableManager
                     >
                   >(state) {
                     if (namedFrontId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.namedFrontId,
-                                referencedTable:
-                                    $$NamedFrontMembersTableReferences
-                                        ._namedFrontIdTable(db),
-                                referencedColumn:
-                                    $$NamedFrontMembersTableReferences
-                                        ._namedFrontIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.namedFrontId,
+                        referencedTable: $$NamedFrontMembersTableReferences
+                            ._namedFrontIdTable(db),
+                        referencedColumn: $$NamedFrontMembersTableReferences
+                            ._namedFrontIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable:
-                                    $$NamedFrontMembersTableReferences
-                                        ._memberIdTable(db),
-                                referencedColumn:
-                                    $$NamedFrontMembersTableReferences
-                                        ._memberIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$NamedFrontMembersTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$NamedFrontMembersTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -33261,19 +33126,15 @@ class $$PrivacyBucketsTableTableManager
                         >
                       >(state) {
                         if (systemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.systemId,
-                                    referencedTable:
-                                        $$PrivacyBucketsTableReferences
-                                            ._systemIdTable(db),
-                                    referencedColumn:
-                                        $$PrivacyBucketsTableReferences
-                                            ._systemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$PrivacyBucketsTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$PrivacyBucketsTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -33638,34 +33499,26 @@ class $$PrivacyBucketMembersTableTableManager
                     >
                   >(state) {
                     if (bucketId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.bucketId,
-                                referencedTable:
-                                    $$PrivacyBucketMembersTableReferences
-                                        ._bucketIdTable(db),
-                                referencedColumn:
-                                    $$PrivacyBucketMembersTableReferences
-                                        ._bucketIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.bucketId,
+                        referencedTable: $$PrivacyBucketMembersTableReferences
+                            ._bucketIdTable(db),
+                        referencedColumn: $$PrivacyBucketMembersTableReferences
+                            ._bucketIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (memberId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.memberId,
-                                referencedTable:
-                                    $$PrivacyBucketMembersTableReferences
-                                        ._memberIdTable(db),
-                                referencedColumn:
-                                    $$PrivacyBucketMembersTableReferences
-                                        ._memberIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.memberId,
+                        referencedTable: $$PrivacyBucketMembersTableReferences
+                            ._memberIdTable(db),
+                        referencedColumn: $$PrivacyBucketMembersTableReferences
+                            ._memberIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;

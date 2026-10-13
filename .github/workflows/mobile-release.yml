@@ -146,9 +146,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          flutter-version: '3.47.4'
+          flutter-version: '3.47.6'
           channel: stable
           cache: true
 
@@ -184,7 +184,7 @@ jobs:
           )
 
       - name: Upload unsigned IPA
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pluris-haven-ios-unsigned
           path: mobile/build/ios/pluris-haven-*-unsigned.ipa
@@ -208,15 +208,15 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          flutter-version: '3.47.4'
+          flutter-version: '3.47.6'
           channel: stable
           cache: true
 
@@ -291,7 +291,7 @@ jobs:
           done
 
       - name: Upload Android artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pluris-haven-android-release
           path: release/android/*
@@ -445,7 +445,7 @@ jobs:
             "${PLAY_APP_SIGNING_CERT_SHA256}"
 
       - name: Upload Play-generated universal APK
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pluris-haven-play-generated-apk
           path: release/play/*.apk
@@ -558,7 +558,7 @@ jobs:
           node scripts/official-release-policy.mjs validate-release-artifacts release/mobile
 
       - name: Upload release artefacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pluris-haven-mobile-release
           path: release/mobile/*

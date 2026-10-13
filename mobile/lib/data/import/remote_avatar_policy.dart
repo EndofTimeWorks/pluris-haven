@@ -5,8 +5,9 @@ import 'dart:io';
 ///
 /// Imported archives are untrusted input. The caller must also disable
 /// redirect following so a public URL cannot redirect into a private network.
-typedef RemoteAvatarLookup =
-    Future<List<InternetAddress>> Function(String host);
+typedef RemoteAvatarLookup = Future<List<InternetAddress>> Function(
+  String host,
+);
 
 Future<List<InternetAddress>?> allowedRemoteAvatarAddresses(
   Uri uri, {

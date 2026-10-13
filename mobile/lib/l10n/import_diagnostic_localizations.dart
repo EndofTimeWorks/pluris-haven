@@ -38,6 +38,10 @@ String localizeImportDiagnostic(
       l10n.importDiagnosticUnsupportedArchiveVersion(
         diagnostic.argument<String>('version'),
       ),
+    ImportDiagnosticCode.invalidPortableFormat =>
+      l10n.importDiagnosticInvalidPortableFormat(
+        diagnostic.argument<String>('error'),
+      ),
     ImportDiagnosticCode.foundMembersAndFronts =>
       l10n.importDiagnosticFoundMembersAndFronts(
         diagnostic.argument<int>('members'),

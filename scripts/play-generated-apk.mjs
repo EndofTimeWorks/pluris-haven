@@ -12,13 +12,18 @@ export function selectUniversalApk(response) {
   return candidates[0];
 }
 
-export async function waitForUniversalApk(fetchResponse, attempts = 10) {
+export async function waitForUniversalApk(
+  fetchResponse,
+  attempts = 10,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+) {
   let lastError;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return selectUniversalApk(await fetchResponse());
     } catch (error) {
       lastError = error;
+      if (attempt + 1 < attempts) await wait((attempt + 1) * 1000);
     }
   }
   throw new Error(`Play did not provide a generated universal APK after ${attempts} attempts.`, {
@@ -44,9 +49,13 @@ export function verifyGeneratedApk({
     throw new Error('Downloaded Play APK has an unexpected version code.');
   if (packageMatch[3] !== versionName)
     throw new Error('Downloaded Play APK has an unexpected version name.');
-  if (/^split='/m.test(badging))
+  if (/^package:.*\bsplit='/m.test(badging))
     throw new Error('Downloaded Play APK is a device-specific split, not a universal APK.');
-  if (!/Verified using v[1-4] scheme \(APK Signature Scheme v[1-4]\): true/m.test(signerOutput)) {
+  if (
+    !/Verified using v[1-4] scheme \((?:JAR signing|APK Signature Scheme v[1-4])\): true/m.test(
+      signerOutput,
+    )
+  ) {
     throw new Error('Downloaded Play APK did not pass APK signature verification.');
   }
   const actual = /Signer #1 certificate SHA-256 digest:\s*([A-Fa-f0-9:]+)/.exec(signerOutput)?.[1];

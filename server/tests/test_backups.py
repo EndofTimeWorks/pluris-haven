@@ -419,6 +419,64 @@ def test_legacy_chunk_reconciliation_rotates_pending_batches(client: TestClient)
     asyncio.run(reconcile_batches())
 
 
+def test_legacy_chunk_reconciliation_keeps_unreadable_blob_pending(client: TestClient) -> None:
+    user = register(client, "unreadable-chunk@example.com", "Unreadable chunk")
+    headers = auth(user["access_token"])
+    snapshot_id = "unreadable-chunk"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": snapshot_id,
+                "manifest_sha256": "b" * 64,
+                "chunk_count": 1,
+                "total_bytes": 4,
+            },
+        ).status_code
+        == 201
+    )
+
+    async def reconcile_directory() -> None:
+        async with client.app.state.session_factory() as session:
+            snapshot = await session.scalar(
+                select(BackupSnapshot).where(BackupSnapshot.snapshot_id == snapshot_id)
+            )
+            assert snapshot is not None
+            session.add(
+                BackupChunk(
+                    snapshot_id=snapshot.id,
+                    index=0,
+                    sha256=hashlib.sha256(b"blob").hexdigest(),
+                    size=4,
+                )
+            )
+            await session.commit()
+            chunk_path = (
+                client.app.state.backup_object_store.root
+                / snapshot.user_id
+                / snapshot_id
+                / "000000000000.chunk"
+            )
+            chunk_path.mkdir(parents=True)
+
+            assert (
+                await reconcile_legacy_backup_chunks(
+                    session,
+                    client.app.state.backup_object_store,
+                )
+                == 0
+            )
+            chunk = await session.scalar(
+                select(BackupChunk).where(BackupChunk.snapshot_id == snapshot.id)
+            )
+            assert chunk is not None
+            assert chunk.stored_at is None
+            assert chunk.reconciliation_checked_at is not None
+
+    asyncio.run(reconcile_directory())
+
+
 def test_backup_retry_repairs_corrupt_stored_blob(client: TestClient) -> None:
     user = register(client, "repair-backup@example.com", "Repair backup")
     headers = auth(user["access_token"])

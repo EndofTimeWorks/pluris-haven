@@ -149,7 +149,7 @@ class NotificationService {
     final id = reminderNotificationId(reminderId);
     final now = tz.TZDateTime.now(tz.local);
     final scheduledDate = switch (repeat) {
-      DateTimeComponents.dayOfWeekAndTime => _nextWeeklyDate(
+      DateTimeComponents.dayOfWeekAndTime => nextWeeklyDateForTesting(
         now,
         time,
         weekday ?? now.weekday,
@@ -159,7 +159,7 @@ class NotificationService {
         time,
         monthDay ?? now.day,
       ),
-      _ => _nextDailyDate(now, time),
+      _ => nextDailyDateForTesting(now, time),
     };
 
     final androidDetails = AndroidNotificationDetails(
@@ -309,7 +309,11 @@ class NotificationService {
     await _plugin?.cancelAll();
   }
 
-  tz.TZDateTime _nextDailyDate(tz.TZDateTime now, TimeOfDay time) {
+  @visibleForTesting
+  static tz.TZDateTime nextDailyDateForTesting(
+    tz.TZDateTime now,
+    TimeOfDay time,
+  ) {
     var scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
@@ -319,12 +323,20 @@ class NotificationService {
       time.minute,
     );
     if (!scheduledDate.isAfter(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+      scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + 1,
+        time.hour,
+        time.minute,
+      );
     }
     return scheduledDate;
   }
 
-  tz.TZDateTime _nextWeeklyDate(
+  @visibleForTesting
+  static tz.TZDateTime nextWeeklyDateForTesting(
     tz.TZDateTime now,
     TimeOfDay time,
     int weekday,
@@ -338,12 +350,19 @@ class NotificationService {
       tz.local,
       now.year,
       now.month,
-      now.day,
+      now.day + daysUntil,
       time.hour,
       time.minute,
-    ).add(Duration(days: daysUntil));
+    );
     if (!candidate.isAfter(now)) {
-      candidate = candidate.add(const Duration(days: DateTime.daysPerWeek));
+      candidate = tz.TZDateTime(
+        tz.local,
+        candidate.year,
+        candidate.month,
+        candidate.day + DateTime.daysPerWeek,
+        time.hour,
+        time.minute,
+      );
     }
     return candidate;
   }

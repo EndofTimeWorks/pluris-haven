@@ -51,7 +51,7 @@ async def reconcile_legacy_backup_chunks(
                 chunk.size,
                 chunk.sha256,
             )
-        except FileNotFoundError:
+        except OSError:
             continue
         if not valid:
             continue
@@ -136,6 +136,7 @@ async def sweep_incomplete_backup_snapshots(
             )
         )
     ).all()
+    owner_ids = {snapshot.user_id for snapshot in snapshots}
     for snapshot in snapshots:
         queue_backup_deletions(
             db,
@@ -144,6 +145,6 @@ async def sweep_incomplete_backup_snapshots(
         )
         await db.delete(snapshot)
     await db.commit()
-    for snapshot in snapshots:
-        await sweep_backup_deletions(db, object_store, owner_id=snapshot.user_id)
+    for owner_id in owner_ids:
+        await sweep_backup_deletions(db, object_store, owner_id=owner_id)
     return len(snapshots)

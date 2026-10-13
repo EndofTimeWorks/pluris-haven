@@ -13,7 +13,7 @@ NotificationCopy _notificationCopy(AppLocalizations l10n) {
   );
 }
 
-class RemindersPage extends StatelessWidget {
+class RemindersPage extends StatefulWidget {
   RemindersPage({
     super.key,
     required this.repository,
@@ -27,17 +27,34 @@ class RemindersPage extends StatelessWidget {
   final NotificationService notificationService;
 
   @override
+  State<RemindersPage> createState() => _RemindersPageState();
+}
+
+class _RemindersPageState extends State<RemindersPage> {
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<ReminderSummary>>(
-      stream: repository.watchReminders(),
-      initialData: const [],
+      stream: widget.repository.watchReminders(),
       builder: (context, snapshot) {
-        final reminders = snapshot.data ?? const <ReminderSummary>[];
+        if (snapshot.hasError && !snapshot.hasData) {
+          return SpPage(
+            children: [
+              SpDataLoadState(
+                error: snapshot.error,
+                onRetry: () => setState(() {}),
+              ),
+            ],
+          );
+        }
+        if (!snapshot.hasData) {
+          return const SpPage(children: [SpDataLoadState()]);
+        }
+        final reminders = snapshot.data!;
         final l10n = AppLocalizations.of(context);
 
         return SpPage(
           children: [
-            if (notificationService.setupFailed) ...[
+            if (widget.notificationService.setupFailed) ...[
               SpCard(
                 child: SpEmptyState(
                   title: l10n.notificationsUnavailableTitle,
@@ -62,7 +79,10 @@ class RemindersPage extends StatelessWidget {
                     )
                   else
                     for (final reminder in reminders) ...[
-                      ReminderTile(reminder: reminder, repository: repository),
+                      ReminderTile(
+                        reminder: reminder,
+                        repository: widget.repository,
+                      ),
                       if (reminder != reminders.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
@@ -71,10 +91,10 @@ class RemindersPage extends StatelessWidget {
                     secondary: l10n.notificationSettingsButton,
                     onPrimary: () => showAddReminderSheet(
                       context,
-                      repository,
-                      notificationService: notificationService,
+                      widget.repository,
+                      notificationService: widget.notificationService,
                     ),
-                    onSecondary: onNotificationSettings,
+                    onSecondary: widget.onNotificationSettings,
                   ),
                 ],
               ),
@@ -442,12 +462,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     }
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
         ? null
-        : _normalizedTimeText;
+        : _normalisedTimeValue;
     final reminderId = await widget.repository.saveReminder(
       ReminderDraft(
         title: title,
         body: body,
-        scheduleText: _scheduleText(l10n),
+        scheduleText: _scheduleText(context, l10n),
         scheduleKind: _scheduleKind.storageValue,
         scheduleTime: scheduleTime,
         scheduleDowMask: _scheduleKind == ReminderScheduleKind.weekly
@@ -515,8 +535,8 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  String _scheduleText(AppLocalizations l10n) {
-    final time = _normalizedTimeText;
+  String _scheduleText(BuildContext context, AppLocalizations l10n) {
+    final time = _normalisedTimeText(context);
     final detail = _triggerMemberName?.trim() ?? '';
     return switch (_scheduleKind) {
       ReminderScheduleKind.daily =>
@@ -541,10 +561,20 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     };
   }
 
-  String get _normalizedTimeText {
+  String _normalisedTimeText(BuildContext context) {
     final time = _parseTime(_timeController.text.trim());
     if (time == null) return '';
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    return MaterialLocalizations.of(context).formatTimeOfDay(
+      time,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
+  }
+
+  String get _normalisedTimeValue {
+    final time = _parseTime(_timeController.text.trim());
+    if (time == null) return '';
+    return '${time.hour.toString().padLeft(2, '0')}:'
+        '${time.minute.toString().padLeft(2, '0')}';
   }
 
   int get _afterFrontDelaySeconds {

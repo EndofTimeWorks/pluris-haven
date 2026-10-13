@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:material_ui/material_ui.dart' as material_ui show ColorScheme;
 
 import 'background/background_tasks.dart';
 import 'data/local/app_database.dart';
@@ -32,14 +34,14 @@ Future<void> main() async {
   });
 }
 
-typedef LocalMigrationRunner =
-    Future<void> Function(LocalHavenRepository repository);
+typedef LocalMigrationRunner = Future<void> Function(
+  LocalHavenRepository repository,
+);
 typedef LocalApiRetirement = Future<void> Function(LocalApiController localApi);
-typedef StartupServices =
-    Future<void> Function(
-      LocalHavenRepository repository,
-      ServerAccountController serverAccount,
-    );
+typedef StartupServices = Future<void> Function(
+  LocalHavenRepository repository,
+  ServerAccountController serverAccount,
+);
 
 class BootstrapDependencies {
   const BootstrapDependencies({
@@ -121,6 +123,15 @@ class _BootstrapAppState extends State<BootstrapApp> {
     } on MissingMasterKeyException {
       await database.close();
       if (mounted) setState(() => _missingMasterKey = true);
+      return;
+    } on Object catch (error, stackTrace) {
+      appDebugLog(
+        'Local archive encryption initialization failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await database.close();
+      if (mounted) setState(() => _startupError = error);
       return;
     }
     try {
@@ -330,11 +341,64 @@ class PlurisHavenApp extends StatelessWidget {
           builder: (lightDynamic, darkDynamic) => _buildApp(
             customization,
             customizationLoaded: customizationLoaded,
-            lightDynamic: lightDynamic,
-            darkDynamic: darkDynamic,
+            lightDynamic: _flutterColorScheme(lightDynamic),
+            darkDynamic: _flutterColorScheme(darkDynamic),
           ),
         );
       },
+    );
+  }
+
+  ColorScheme? _flutterColorScheme(material_ui.ColorScheme? source) {
+    if (source == null) return null;
+    return ColorScheme(
+      brightness: source.brightness,
+      primary: source.primary,
+      onPrimary: source.onPrimary,
+      primaryContainer: source.primaryContainer,
+      onPrimaryContainer: source.onPrimaryContainer,
+      primaryFixed: source.primaryFixed,
+      primaryFixedDim: source.primaryFixedDim,
+      onPrimaryFixed: source.onPrimaryFixed,
+      onPrimaryFixedVariant: source.onPrimaryFixedVariant,
+      secondary: source.secondary,
+      onSecondary: source.onSecondary,
+      secondaryContainer: source.secondaryContainer,
+      onSecondaryContainer: source.onSecondaryContainer,
+      secondaryFixed: source.secondaryFixed,
+      secondaryFixedDim: source.secondaryFixedDim,
+      onSecondaryFixed: source.onSecondaryFixed,
+      onSecondaryFixedVariant: source.onSecondaryFixedVariant,
+      tertiary: source.tertiary,
+      onTertiary: source.onTertiary,
+      tertiaryContainer: source.tertiaryContainer,
+      onTertiaryContainer: source.onTertiaryContainer,
+      tertiaryFixed: source.tertiaryFixed,
+      tertiaryFixedDim: source.tertiaryFixedDim,
+      onTertiaryFixed: source.onTertiaryFixed,
+      onTertiaryFixedVariant: source.onTertiaryFixedVariant,
+      error: source.error,
+      onError: source.onError,
+      errorContainer: source.errorContainer,
+      onErrorContainer: source.onErrorContainer,
+      surface: source.surface,
+      onSurface: source.onSurface,
+      surfaceDim: source.surfaceDim,
+      surfaceBright: source.surfaceBright,
+      surfaceContainerLowest: source.surfaceContainerLowest,
+      surfaceContainerLow: source.surfaceContainerLow,
+      surfaceContainer: source.surfaceContainer,
+      surfaceContainerHigh: source.surfaceContainerHigh,
+      surfaceContainerHighest: source.surfaceContainerHighest,
+      onSurfaceVariant: source.onSurfaceVariant,
+      outline: source.outline,
+      outlineVariant: source.outlineVariant,
+      shadow: source.shadow,
+      scrim: source.scrim,
+      inverseSurface: source.inverseSurface,
+      onInverseSurface: source.onInverseSurface,
+      inversePrimary: source.inversePrimary,
+      surfaceTint: source.surfaceTint,
     );
   }
 
@@ -372,26 +436,30 @@ class PlurisHavenApp extends StatelessWidget {
             ? mediaQuery.textScaler.clamp(minScaleFactor: 1.12)
             : mediaQuery.textScaler;
         final appearanceTextScale = customization.appearance.textScale ?? 1;
-        return AppLockGate(
-          enabled: customization.appLockEnabled,
-          ready: customizationLoaded,
-          availability: appLockAvailability,
-          authenticate: appLockAuthenticate,
-          onUnlockedChanged: onLocalApiAccessChanged,
-          child: MediaQuery(
-            data: mediaQuery.copyWith(
-              accessibleNavigation:
-                  customization.reducedMotion ||
-                  mediaQuery.accessibleNavigation,
-              disableAnimations:
-                  customization.reducedMotion || mediaQuery.disableAnimations,
-              textScaler: appearanceTextScale == 1
-                  ? baseTextScaler
-                  : TextScaler.linear(
-                      baseTextScaler.scale(1) * appearanceTextScale,
-                    ),
+        final theme = Theme.of(context);
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: systemUiOverlayStyle(theme.colorScheme),
+          child: AppLockGate(
+            enabled: customization.appLockEnabled,
+            ready: customizationLoaded,
+            availability: appLockAvailability,
+            authenticate: appLockAuthenticate,
+            onUnlockedChanged: onLocalApiAccessChanged,
+            child: MediaQuery(
+              data: mediaQuery.copyWith(
+                accessibleNavigation:
+                    customization.reducedMotion ||
+                    mediaQuery.accessibleNavigation,
+                disableAnimations:
+                    customization.reducedMotion || mediaQuery.disableAnimations,
+                textScaler: appearanceTextScale == 1
+                    ? baseTextScaler
+                    : TextScaler.linear(
+                        baseTextScaler.scale(1) * appearanceTextScale,
+                      ),
+              ),
+              child: child ?? const SizedBox.shrink(),
             ),
-            child: child ?? const SizedBox.shrink(),
           ),
         );
       },
@@ -432,12 +500,16 @@ class PlurisHavenApp extends StatelessWidget {
       vertical: (customization.compactLists ? -1 : 0) + (1 - spacingScale) * 4,
       horizontal: (1 - spacingScale) * 4,
     );
-    if (customization.visualTheme == HavenVisualTheme.materialYou &&
-        dynamicScheme != null) {
+    if (customization.visualTheme == HavenVisualTheme.materialYou) {
       final scheme = materialYouColorScheme(
         customization: customization,
         brightness: brightness,
-        dynamicScheme: dynamicScheme,
+        dynamicScheme:
+            dynamicScheme ??
+            ColorScheme.fromSeed(
+              seedColor: Color(customization.effectiveAccentArgb),
+              brightness: brightness,
+            ),
       );
       final baseTheme = ThemeData.from(colorScheme: scheme, useMaterial3: true);
       return baseTheme.copyWith(
@@ -459,6 +531,7 @@ class PlurisHavenApp extends StatelessWidget {
         appBarTheme: AppBarTheme(
           backgroundColor: scheme.surface,
           foregroundColor: scheme.onSurface,
+          systemOverlayStyle: systemUiOverlayStyle(scheme),
         ),
         dividerTheme: DividerThemeData(
           color: scheme.outline,
@@ -583,6 +656,9 @@ class PlurisHavenApp extends StatelessWidget {
       useMaterial3: true,
     );
     return baseTheme.copyWith(
+      appBarTheme: baseTheme.appBarTheme.copyWith(
+        systemOverlayStyle: systemUiOverlayStyle(baseTheme.colorScheme),
+      ),
       textTheme: baseTheme.textTheme.apply(
         fontFamily: customization.fontFamily.fontFamily,
       ),
@@ -627,6 +703,24 @@ class PlurisHavenApp extends StatelessWidget {
           appearance.mutedTextColor ?? baseScheme.onSurfaceVariant,
       outline: appearance.outlineColor ?? baseScheme.outline,
       outlineVariant: appearance.outlineColor ?? baseScheme.outlineVariant,
+    );
+  }
+
+  @visibleForTesting
+  static SystemUiOverlayStyle systemUiOverlayStyle(ColorScheme scheme) {
+    final barBrightness = ThemeData.estimateBrightnessForColor(scheme.surface);
+    final iconBrightness = barBrightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+    return SystemUiOverlayStyle(
+      statusBarColor: scheme.surface,
+      statusBarIconBrightness: iconBrightness,
+      statusBarBrightness: barBrightness,
+      systemNavigationBarColor: scheme.surface,
+      systemNavigationBarIconBrightness: iconBrightness,
+      systemNavigationBarDividerColor: scheme.surface,
+      systemStatusBarContrastEnforced: false,
+      systemNavigationBarContrastEnforced: false,
     );
   }
 }

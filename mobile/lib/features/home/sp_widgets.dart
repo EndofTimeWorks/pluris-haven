@@ -273,6 +273,43 @@ class SpEmptyState extends StatelessWidget {
   }
 }
 
+class SpDataLoadState extends StatelessWidget {
+  const SpDataLoadState({super.key, this.error, this.onRetry});
+
+  final Object? error;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (error == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SpEmptyState(
+          title: l10n.dataLoadFailedTitle,
+          body: l10n.dataLoadFailedBody,
+        ),
+        if (onRetry != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(l10n.retryButton),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class SpActionRow extends StatelessWidget {
   const SpActionRow({
     super.key,

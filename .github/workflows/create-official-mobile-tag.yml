@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          subject="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')"
+          subject="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\n")[0]')"
           if version="$(node scripts/release-marker.mjs "${subject}" 2>/dev/null)"; then
             echo 'eligible=true' >> "${GITHUB_OUTPUT}"
             echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -67,7 +67,7 @@ jobs:
 
           main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
           node scripts/release-candidate.mjs \
-            "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\\n")[0]')" \
+            "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.message | split("\n")[0]')" \
             "${RELEASE_SHA}" "${main_sha}"
           test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}" --jq '.commit.verification.verified')" = true || {
             echo 'Release marker commit must have a verified signature.' >&2

@@ -4,6 +4,7 @@ enum ImportDiagnosticCode {
   prismNeedsDecryption,
   notPlurisArchive,
   unsupportedArchiveVersion,
+  invalidPortableFormat,
   foundMembersAndFronts,
   recognizedRecords,
   noImportableRecords,

@@ -38,7 +38,6 @@ class SyncPage extends StatelessWidget {
           title: l10n.syncRowTitle,
           rows: [
             SpSettingsRow(l10n.encryptedSyncLabel, l10n.encryptedSyncValue),
-            SpSettingsRow(l10n.friendsLabel, l10n.friendsValue),
             SpSettingsRow(l10n.backupsLabel, l10n.backupsValue),
           ],
         ),

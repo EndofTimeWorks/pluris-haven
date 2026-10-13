@@ -293,6 +293,14 @@ async def change_password(
         .values(revoked_at=changed_at)
     )
     await db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.user_id == auth.user.id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .values(used_at=changed_at)
+    )
+    await db.execute(
         update(RefreshToken)
         .where(
             RefreshToken.session_id.in_(other_session_ids),

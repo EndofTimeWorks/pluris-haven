@@ -325,6 +325,24 @@ abstract class AppLocalizations {
   /// **'Pluris Haven could not finish preparing local data. Your data has not been replaced. Keep this device available and restore or export from a device that can still open the archive.'**
   String get localMigrationFailureBody;
 
+  /// No description provided for @dataLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your data'**
+  String get dataLoadFailedTitle;
+
+  /// No description provided for @dataLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved data has not been removed. Try again, or restart the app if the problem continues.'**
+  String get dataLoadFailedBody;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retryButton;
+
   /// No description provided for @plurisHavenAppName.
   ///
   /// In en, this message translates to:
@@ -454,7 +472,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncRowValue.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get syncRowValue;
 
   /// No description provided for @currentColorLabel.
@@ -598,7 +616,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync is off'**
+  /// **'Device sync is not available'**
   String get syncOffTitle;
 
   /// No description provided for @localStatusPill.
@@ -610,7 +628,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffDescription.
   ///
   /// In en, this message translates to:
-  /// **'Pluris Haven keeps data on this device unless sync is turned on.'**
+  /// **'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.'**
   String get syncOffDescription;
 
   /// No description provided for @encryptedSyncLabel.
@@ -622,7 +640,7 @@ abstract class AppLocalizations {
   /// No description provided for @encryptedSyncValue.
   ///
   /// In en, this message translates to:
-  /// **'not configured'**
+  /// **'not implemented'**
   String get encryptedSyncValue;
 
   /// No description provided for @friendsLabel.
@@ -766,7 +784,7 @@ abstract class AppLocalizations {
   /// No description provided for @noDashboardShortcutsBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Customise to add shortcuts back.'**
+  /// **'Open App options to add shortcuts back.'**
   String get noDashboardShortcutsBody;
 
   /// No description provided for @dashboardShortcutSemanticLabel.
@@ -838,7 +856,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardShortcutSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get dashboardShortcutSyncSubtitle;
 
   /// No description provided for @dashboardShortcutCustomizeSubtitle.
@@ -1000,19 +1018,19 @@ abstract class AppLocalizations {
   /// No description provided for @frontHistoryCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} entries'**
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
   String frontHistoryCountSubtitle(int count);
 
   /// No description provided for @groupCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} groups'**
+  /// **'{count, plural, =1{1 group} other{{count} groups}}'**
   String groupCountSubtitle(int count);
 
   /// No description provided for @noteCountSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} notes'**
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
   String noteCountSubtitle(int count);
 
   /// No description provided for @serverAccountsUnavailable.
@@ -2358,6 +2376,12 @@ abstract class AppLocalizations {
   /// **'Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.'**
   String get retainRawImportPayloadsDescription;
 
+  /// No description provided for @retainPluralPortPayloadsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Required for PluralPort: unsupported and underspecified records stay encrypted so they are not silently discarded.'**
+  String get retainPluralPortPayloadsDescription;
+
   /// No description provided for @inputLabel.
   ///
   /// In en, this message translates to:
@@ -2448,6 +2472,12 @@ abstract class AppLocalizations {
   /// **'OpenPlural'**
   String get importSourceOpenPlural;
 
+  /// No description provided for @importSourcePluralPort.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort'**
+  String get importSourcePluralPort;
+
   /// No description provided for @importSourcePrism.
   ///
   /// In en, this message translates to:
@@ -2481,19 +2511,19 @@ abstract class AppLocalizations {
   /// No description provided for @importDedupePlurisHaven.
   ///
   /// In en, this message translates to:
-  /// **'local IDs, PluralKit IDs, normalized names'**
+  /// **'local IDs, PluralKit IDs, normalised names'**
   String get importDedupePlurisHaven;
 
   /// No description provided for @importDedupeSimplyPlural.
   ///
   /// In en, this message translates to:
-  /// **'Simply Plural IDs, PluralKit IDs, normalized names'**
+  /// **'Simply Plural IDs, PluralKit IDs, normalised names'**
   String get importDedupeSimplyPlural;
 
   /// No description provided for @importDedupePluralKitFile.
   ///
   /// In en, this message translates to:
-  /// **'PluralKit UUIDs, PluralKit short IDs, normalized names'**
+  /// **'PluralKit UUIDs, PluralKit short IDs, normalised names'**
   String get importDedupePluralKitFile;
 
   /// No description provided for @importDedupePluralKitLive.
@@ -2505,31 +2535,37 @@ abstract class AppLocalizations {
   /// No description provided for @importDedupeTupperbox.
   ///
   /// In en, this message translates to:
-  /// **'Tupperbox IDs, normalized names'**
+  /// **'Tupperbox IDs, normalised names'**
   String get importDedupeTupperbox;
 
   /// No description provided for @importDedupePluralSpace.
   ///
   /// In en, this message translates to:
-  /// **'PluralSpace IDs, normalized names'**
+  /// **'PluralSpace IDs, normalised names'**
   String get importDedupePluralSpace;
 
   /// No description provided for @importDedupeOpenPlural.
   ///
   /// In en, this message translates to:
-  /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalized names'**
+  /// **'OpenPlural IDs, source IDs, PluralKit IDs, normalised names'**
   String get importDedupeOpenPlural;
+
+  /// No description provided for @importDedupePluralPort.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort IDs, source IDs, normalised names'**
+  String get importDedupePluralPort;
 
   /// No description provided for @importDedupePrism.
   ///
   /// In en, this message translates to:
-  /// **'Prism IDs, normalized names'**
+  /// **'Prism IDs, normalised names'**
   String get importDedupePrism;
 
   /// No description provided for @importDedupeAmpersand.
   ///
   /// In en, this message translates to:
-  /// **'Ampersand UUIDs, normalized names'**
+  /// **'Ampersand UUIDs, normalised names'**
   String get importDedupeAmpersand;
 
   /// No description provided for @importConflictPrompt.
@@ -2634,6 +2670,12 @@ abstract class AppLocalizations {
   /// **'filename looks like an OpenPlural export'**
   String get importReasonOpenPluralFileName;
 
+  /// No description provided for @importReasonPluralPortFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'filename looks like a PluralPort export'**
+  String get importReasonPluralPortFileName;
+
   /// No description provided for @importReasonChooseAfterUpload.
   ///
   /// In en, this message translates to:
@@ -2682,6 +2724,12 @@ abstract class AppLocalizations {
   /// **'file contains OpenPlural v0.1 markers'**
   String get importReasonOpenPluralMarkers;
 
+  /// No description provided for @importReasonPluralPortMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains PluralPort Draft v0.1 markers'**
+  String get importReasonPluralPortMarkers;
+
   /// No description provided for @importReasonAmbiguousMemberGroupJson.
   ///
   /// In en, this message translates to:
@@ -2691,7 +2739,7 @@ abstract class AppLocalizations {
   /// No description provided for @importReasonUnrecognised.
   ///
   /// In en, this message translates to:
-  /// **'could not recognize this file yet'**
+  /// **'could not recognise this file yet'**
   String get importReasonUnrecognised;
 
   /// No description provided for @importCountMembers.
@@ -2991,7 +3039,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepNormalizeFieldsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Normalize fields'**
+  /// **'Normalise fields'**
   String get importStepNormalizeFieldsTitle;
 
   /// No description provided for @importStepNormalizeSimplyPluralDetail.
@@ -3009,7 +3057,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepPrepareSimplyPluralAvatarsDetail.
   ///
   /// In en, this message translates to:
-  /// **'Use attached avatar ZIP bytes first, then keep or localize remote avatar URLs during import.'**
+  /// **'Use attached avatar ZIP bytes first, then keep or localise remote avatar URLs during import.'**
   String get importStepPrepareSimplyPluralAvatarsDetail;
 
   /// No description provided for @importStepReviewMatchesTitle.
@@ -3069,7 +3117,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPluralKitFileDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by PK UUID, short ID, then normalized name.'**
+  /// **'Dedupe by PK UUID, short ID, then normalised name.'**
   String get importStepReviewPluralKitFileDetail;
 
   /// No description provided for @importStepValidateTokenTitle.
@@ -3141,7 +3189,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewTupperboxDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Tupperbox ID, then normalized name.'**
+  /// **'Dedupe by Tupperbox ID, then normalised name.'**
   String get importStepReviewTupperboxDetail;
 
   /// No description provided for @importStepReadPluralSpaceDetail.
@@ -3165,7 +3213,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPluralSpaceDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by source ID, then normalized name.'**
+  /// **'Dedupe by source ID, then normalised name.'**
   String get importStepReviewPluralSpaceDetail;
 
   /// No description provided for @importStepReadOpenPluralDetail.
@@ -3183,8 +3231,26 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewOpenPluralDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalized name.'**
+  /// **'Dedupe by OpenPlural source ID, then PluralKit ID and normalised name.'**
   String get importStepReviewOpenPluralDetail;
+
+  /// No description provided for @importStepReadPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept a PluralPort Draft v0.1 JSON file.'**
+  String get importStepReadPluralPortDetail;
+
+  /// No description provided for @importStepMapPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage documented systems, members, and fronting records; preserve underspecified record types for later support.'**
+  String get importStepMapPluralPortDetail;
+
+  /// No description provided for @importStepReviewPluralPortDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedupe by PluralPort source ID and normalised name, with unsupported data reported before writing.'**
+  String get importStepReviewPluralPortDetail;
 
   /// No description provided for @importStepChoosePrismTitle.
   ///
@@ -3213,7 +3279,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewPrismDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Prism ID, then normalized name.'**
+  /// **'Dedupe by Prism ID, then normalised name.'**
   String get importStepReviewPrismDetail;
 
   /// No description provided for @importStepReadAmpersandDetail.
@@ -3231,7 +3297,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStepReviewAmpersandDetail.
   ///
   /// In en, this message translates to:
-  /// **'Dedupe by Ampersand UUID, then normalized name.'**
+  /// **'Dedupe by Ampersand UUID, then normalised name.'**
   String get importStepReviewAmpersandDetail;
 
   /// No description provided for @importPrivacyPreviewBeforeWrite.
@@ -3249,7 +3315,7 @@ abstract class AppLocalizations {
   /// No description provided for @importPrivacySimplyPluralDedupe.
   ///
   /// In en, this message translates to:
-  /// **'Re-imports match by Simply Plural ID, PluralKit ID, then normalized name.'**
+  /// **'Re-imports match by Simply Plural ID, PluralKit ID, then normalised name.'**
   String get importPrivacySimplyPluralDedupe;
 
   /// No description provided for @importPrivacySimplyPluralAvatars.
@@ -3318,6 +3384,18 @@ abstract class AppLocalizations {
   /// **'Unsupported OpenPlural extension data is retained as encrypted raw source payloads.'**
   String get importPrivacyOpenPluralExtensions;
 
+  /// No description provided for @importPrivacyPluralPortIdentifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort file-local and source identifiers are retained for re-import dedupe.'**
+  String get importPrivacyPluralPortIdentifiers;
+
+  /// No description provided for @importPrivacyPluralPortExtensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported and underspecified PluralPort records, extensions, and source references are retained as encrypted raw source payloads.'**
+  String get importPrivacyPluralPortExtensions;
+
   /// No description provided for @importPrivacyPrismPassphraseMemoryOnly.
   ///
   /// In en, this message translates to:
@@ -3369,7 +3447,7 @@ abstract class AppLocalizations {
   /// No description provided for @importStageNormalize.
   ///
   /// In en, this message translates to:
-  /// **'normalize'**
+  /// **'normalise'**
   String get importStageNormalize;
 
   /// No description provided for @importStagePreserve.
@@ -3414,6 +3492,12 @@ abstract class AppLocalizations {
   /// **'Unsupported archive version: {version}.'**
   String importDiagnosticUnsupportedArchiveVersion(String version);
 
+  /// No description provided for @importDiagnosticInvalidPortableFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not validate this import format: {error}'**
+  String importDiagnosticInvalidPortableFormat(String error);
+
   /// No description provided for @importDiagnosticFoundMembersAndFronts.
   ///
   /// In en, this message translates to:
@@ -3423,13 +3507,13 @@ abstract class AppLocalizations {
   /// No description provided for @importDiagnosticRecognizedRecords.
   ///
   /// In en, this message translates to:
-  /// **'Recognized records can be imported into the local archive.'**
+  /// **'Recognised records can be imported into the local archive.'**
   String get importDiagnosticRecognizedRecords;
 
   /// No description provided for @importDiagnosticNoImportableRecords.
   ///
   /// In en, this message translates to:
-  /// **'No importable records were recognized.'**
+  /// **'No importable records were recognised.'**
   String get importDiagnosticNoImportableRecords;
 
   /// No description provided for @importDiagnosticPreservedRawPayloads.
@@ -4177,6 +4261,12 @@ abstract class AppLocalizations {
   /// **'Save JSON file'**
   String get saveJsonFileButton;
 
+  /// No description provided for @savePluralPortFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PluralPort file'**
+  String get savePluralPortFileButton;
+
   /// No description provided for @copyJsonButton.
   ///
   /// In en, this message translates to:
@@ -4243,11 +4333,29 @@ abstract class AppLocalizations {
   /// **'Save Pluris Haven archive'**
   String get saveArchiveDialogTitle;
 
+  /// No description provided for @savePluralPortDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PluralPort file'**
+  String get savePluralPortDialogTitle;
+
   /// No description provided for @archiveSaved.
   ///
   /// In en, this message translates to:
   /// **'Archive saved'**
   String get archiveSaved;
+
+  /// No description provided for @pluralPortFileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'PluralPort file saved'**
+  String get pluralPortFileSaved;
+
+  /// No description provided for @couldNotSavePluralPortFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save PluralPort file: {error}'**
+  String couldNotSavePluralPortFile(String error);
 
   /// No description provided for @couldNotSaveArchive.
   ///
@@ -5435,6 +5543,30 @@ abstract class AppLocalizations {
   /// **'About'**
   String get navigationAbout;
 
+  /// No description provided for @primaryNavigationHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get primaryNavigationHome;
+
+  /// No description provided for @primaryNavigationMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get primaryNavigationMembers;
+
+  /// No description provided for @primaryNavigationHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get primaryNavigationHistory;
+
+  /// No description provided for @primaryNavigationInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get primaryNavigationInsights;
+
   /// No description provided for @frontingFilter.
   ///
   /// In en, this message translates to:
@@ -5486,19 +5618,31 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete member?'**
+  /// **'Remove member?'**
   String get deleteMemberTitle;
+
+  /// No description provided for @removeMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove member'**
+  String get removeMemberButton;
+
+  /// No description provided for @removeMemberFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove member: {error}'**
+  String removeMemberFailed(String error);
 
   /// No description provided for @deletedFilter.
   ///
   /// In en, this message translates to:
-  /// **'Deleted'**
+  /// **'Removed'**
   String get deletedFilter;
 
   /// No description provided for @deletedStatus.
   ///
   /// In en, this message translates to:
-  /// **'Deleted'**
+  /// **'Removed'**
   String get deletedStatus;
 
   /// No description provided for @purgeMemberTitle.
@@ -5528,7 +5672,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberImpact.
   ///
   /// In en, this message translates to:
-  /// **'Deletion summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket links: {privacyBucketLinks}; custom-field values removed on permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
+  /// **'Removal summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
   String deleteMemberImpact(
     int groupLinks,
     int tagLinks,
@@ -5546,19 +5690,19 @@ abstract class AppLocalizations {
   /// No description provided for @setFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set front'**
+  /// **'Make current front'**
   String get setFrontButton;
 
   /// No description provided for @addToFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Add to front'**
+  /// **'Add member to current front'**
   String get addToFrontButton;
 
   /// No description provided for @setAsFrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set as front'**
+  /// **'Make current front'**
   String get setAsFrontButton;
 
   /// No description provided for @frontActionPickerTooltip.
@@ -6680,7 +6824,7 @@ abstract class AppLocalizations {
   /// No description provided for @howToTrackFrontStep2.
   ///
   /// In en, this message translates to:
-  /// **'Use Set front to pick members or a saved custom front.'**
+  /// **'Use Make current front to pick members or a saved custom front.'**
   String get howToTrackFrontStep2;
 
   /// No description provided for @howToTrackFrontStep3.
@@ -6962,7 +7106,7 @@ abstract class AppLocalizations {
   /// No description provided for @noAnalyticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Set fronts or import Simply Plural front history to fill this in.'**
+  /// **'Make a front current or import Simply Plural front history to fill this in.'**
   String get noAnalyticsBody;
 
   /// No description provided for @totalFrontTimeLabel.
@@ -7142,13 +7286,13 @@ abstract class AppLocalizations {
   /// No description provided for @setSelectedButton.
   ///
   /// In en, this message translates to:
-  /// **'Set selected'**
+  /// **'Make selected member current front'**
   String get setSelectedButton;
 
   /// No description provided for @setCofrontButton.
   ///
   /// In en, this message translates to:
-  /// **'Set co-front'**
+  /// **'Make selected members current front'**
   String get setCofrontButton;
 
   /// No description provided for @saveSelectedNamedFrontButton.
@@ -7208,7 +7352,7 @@ abstract class AppLocalizations {
   /// No description provided for @setButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Set'**
+  /// **'Make current front'**
   String get setButtonLabel;
 
   /// No description provided for @frontChangedTitle.
@@ -7646,7 +7790,7 @@ abstract class AppLocalizations {
   /// No description provided for @localReportSync.
   ///
   /// In en, this message translates to:
-  /// **'sync: off by default'**
+  /// **'device sync: not implemented'**
   String get localReportSync;
 
   /// No description provided for @reportCopiedMessage.
@@ -7694,7 +7838,7 @@ abstract class AppLocalizations {
   /// No description provided for @offByDefaultSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'off by default'**
+  /// **'device sync not implemented'**
   String get offByDefaultSubtitle;
 
   /// No description provided for @deviceDatabaseSubtitle.
@@ -7894,6 +8038,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save appearance'**
   String get saveAppearanceButton;
+
+  /// No description provided for @deleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove this item: {error}'**
+  String deleteFailed(String error);
 
   /// No description provided for @systemCounts.
   ///

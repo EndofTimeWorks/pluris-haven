@@ -28,6 +28,17 @@ class MissingMasterKeyException implements Exception {
       'The device encryption key is missing. Restore a backup to recover your data.';
 }
 
+class SecureStorageUpgradeException implements Exception {
+  const SecureStorageUpgradeException(this.status);
+
+  final SecureStorageUpgradeStatus status;
+
+  @override
+  String toString() =>
+      'Secure storage upgrade could not preserve the device encryption key: '
+      '${status.reason.name}.';
+}
+
 class PlatformMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
   static const _fileName = '.pluris-haven-master-key-v1';
 
@@ -60,15 +71,31 @@ class PlatformSecureValueStore implements SecureValueStore {
     ),
   );
 
-  @override
-  Future<String?> read(String key) => _storage.read(key: key);
+  Future<void> _ensureUpgradeSafe() async {
+    final status = await _storage.checkUpgradeStatus(aOptions: androidOptions);
+    if (status.hasDataLoss ||
+        status.state == SecureStorageUpgradeState.unknown) {
+      throw SecureStorageUpgradeException(status);
+    }
+  }
 
   @override
-  Future<void> write(String key, String value) =>
-      _storage.write(key: key, value: value);
+  Future<String?> read(String key) async {
+    await _ensureUpgradeSafe();
+    return _storage.read(key: key);
+  }
 
   @override
-  Future<void> delete(String key) => _storage.delete(key: key);
+  Future<void> write(String key, String value) async {
+    await _ensureUpgradeSafe();
+    await _storage.write(key: key, value: value);
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    await _ensureUpgradeSafe();
+    await _storage.delete(key: key);
+  }
 }
 
 class HavenMasterKeyStore {

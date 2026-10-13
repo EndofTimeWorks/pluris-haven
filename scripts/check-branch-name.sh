@@ -13,7 +13,7 @@ if [[ "${branch}" == 'main' || "${branch}" == dependabot/** ]]; then
   exit 0
 fi
 
-if [[ ! "${branch}" =~ ${pattern} || "${branch}" =~ /[a-z0-9]$ ]]; then
+if [[ ! "${branch}" =~ ${pattern} ]]; then
   echo "Invalid branch name: ${branch}" >&2
   echo 'Use <type>/<lowercase-kebab-description>, for example: fix/archive-purge-resurrection.' >&2
   echo 'Allowed types: feat fix security perf refactor test docs chore build ci release hotfix style revert.' >&2

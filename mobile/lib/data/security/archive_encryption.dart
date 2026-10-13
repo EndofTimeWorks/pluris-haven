@@ -1,7 +1,15 @@
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:libcompress/libcompress.dart';
+
+const nativeArchiveMagic = <int>[0x50, 0x4c, 0x55, 0x52]; // PLUR
+const nativeArchiveVersion = 1;
+const nativeArchiveMaximumFramePlainBytes = 256 * 1024;
+const nativeArchiveMaximumFrameContainerBytes =
+    nativeArchiveMaximumFramePlainBytes + 32 * 1024;
 
 const encryptedArchiveFormat = 'pluris_haven.encrypted_archive';
 const encryptedArchiveVersion = 3;
@@ -30,6 +38,145 @@ const _commonArchivePassphraseFragments = {
 };
 
 final _archiveCipher = Xchacha20.poly1305Aead();
+
+/// Internal v1 native container. It is intentionally not wired to the export
+/// UI until streaming file finalisation and multi-slot management exist.
+Future<Uint8List> encryptNativeArchiveFrame({
+  required Uint8List plaintext,
+  required ArchiveRecoveryCode recoveryCode,
+}) async {
+  if (plaintext.isEmpty ||
+      plaintext.length > nativeArchiveMaximumFramePlainBytes) {
+    throw ArgumentError.value(
+      plaintext,
+      'plaintext',
+      'must be a bounded non-empty frame',
+    );
+  }
+  final salt = _archiveCipher.newNonce();
+  final kek = await _argon2ArchiveKey(
+    passphrase: recoveryCode.value,
+    salt: salt,
+    memoryKib: defaultArchiveKdfMemoryKib,
+    iterations: defaultArchiveKdfIterations,
+    parallelism: defaultArchiveKdfParallelism,
+  );
+  final dekBytes = await SecretKeyData.random(length: 32).extractBytes();
+  final wrapNonce = _archiveCipher.newNonce();
+  final wrappedDek = await _archiveCipher.encrypt(
+    dekBytes,
+    secretKey: kek,
+    nonce: wrapNonce,
+    aad: utf8.encode('pluris.native.slot.v1'),
+  );
+  final compressed = ZstdCodec(
+    enableChecksum: true,
+    strict: true,
+    maxDecompressedSize: nativeArchiveMaximumFramePlainBytes,
+  ).compress(plaintext);
+  final header = <String, Object?>{
+    'version': nativeArchiveVersion,
+    'compression': 'zstd',
+    'plain_bytes': plaintext.length,
+    'slot': {
+      'type': 'password',
+      'kdf': encryptedArchiveKdf,
+      'salt': base64Url.encode(salt),
+      'wrapped_dek': base64Url.encode(wrappedDek.concatenation()),
+    },
+  };
+  final headerBytes = utf8.encode(jsonEncode(header));
+  final frame = await _archiveCipher.encrypt(
+    compressed,
+    secretKey: SecretKey(dekBytes),
+    aad: headerBytes,
+  );
+  final out = BytesBuilder(copy: false)
+    ..add(nativeArchiveMagic)
+    ..addByte(nativeArchiveVersion)
+    ..addByte((headerBytes.length >> 24) & 0xff)
+    ..addByte((headerBytes.length >> 16) & 0xff)
+    ..addByte((headerBytes.length >> 8) & 0xff)
+    ..addByte(headerBytes.length & 0xff)
+    ..add(headerBytes)
+    ..add(frame.concatenation());
+  return out.toBytes();
+}
+
+Future<Uint8List> decryptNativeArchiveFrame({
+  required Uint8List container,
+  required String passphrase,
+}) async {
+  if (container.length < 9 ||
+      container.length > nativeArchiveMaximumFrameContainerBytes) {
+    throw const FormatException('Not a native Pluris archive.');
+  }
+  for (var index = 0; index < nativeArchiveMagic.length; index++) {
+    if (container[index] != nativeArchiveMagic[index]) {
+      throw const FormatException('Not a native Pluris archive.');
+    }
+  }
+  if (container[4] != nativeArchiveVersion) {
+    throw const FormatException('Unsupported native archive version.');
+  }
+  final length =
+      (container[5] << 24) |
+      (container[6] << 16) |
+      (container[7] << 8) |
+      container[8];
+  if (length < 2 || length > 16 * 1024 || container.length <= 9 + length) {
+    throw const FormatException('Invalid native archive header.');
+  }
+  final headerBytes = container.sublist(9, 9 + length);
+  final header = jsonDecode(utf8.decode(headerBytes));
+  if (header is! Map<String, dynamic> ||
+      header['version'] != nativeArchiveVersion ||
+      header['compression'] != 'zstd' ||
+      header['plain_bytes'] is! int ||
+      header['plain_bytes'] <= 0 ||
+      header['plain_bytes'] > nativeArchiveMaximumFramePlainBytes) {
+    throw const FormatException('Unsupported native archive header.');
+  }
+  final slot = header['slot'];
+  if (slot is! Map<String, dynamic> ||
+      slot['type'] != 'password' ||
+      slot['kdf'] != encryptedArchiveKdf ||
+      slot['salt'] is! String ||
+      slot['wrapped_dek'] is! String) {
+    throw const FormatException('No supported portable unlock slot.');
+  }
+  final kek = await _argon2ArchiveKey(
+    passphrase: passphrase,
+    salt: base64Url.decode(slot['salt'] as String),
+    memoryKib: defaultArchiveKdfMemoryKib,
+    iterations: defaultArchiveKdfIterations,
+    parallelism: defaultArchiveKdfParallelism,
+  );
+  final dek = await _archiveCipher.decrypt(
+    SecretBox.fromConcatenation(
+      base64Url.decode(slot['wrapped_dek'] as String),
+      nonceLength: _archiveCipher.nonceLength,
+      macLength: _archiveCipher.macAlgorithm.macLength,
+    ),
+    secretKey: kek,
+    aad: utf8.encode('pluris.native.slot.v1'),
+  );
+  final compressed = await _archiveCipher.decrypt(
+    SecretBox.fromConcatenation(
+      container.sublist(9 + length),
+      nonceLength: _archiveCipher.nonceLength,
+      macLength: _archiveCipher.macAlgorithm.macLength,
+    ),
+    secretKey: SecretKey(dek),
+    aad: headerBytes,
+  );
+  final plaintext = ZstdCodec(maxDecompressedSize: header['plain_bytes'] as int)
+      .decompress(Uint8List.fromList(compressed));
+  if (plaintext.length != header['plain_bytes']) {
+    throw const FormatException('Native archive frame size mismatch.');
+  }
+  return plaintext;
+}
 
 final class ArchiveRecoveryCode {
   const ArchiveRecoveryCode._(this.value);

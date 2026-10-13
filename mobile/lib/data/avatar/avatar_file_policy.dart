@@ -54,9 +54,9 @@ String? sniffAvatarMimeType(Uint8List bytes) {
     return 'image/webp';
   }
   if (bytes.isNotEmpty) {
-    final prefix = String.fromCharCodes(
-      bytes.take(512),
-    ).trimLeft().toLowerCase();
+    final prefix = String.fromCharCodes(bytes.take(512))
+        .trimLeft()
+        .toLowerCase();
     if (prefix.startsWith('<svg') ||
         (prefix.startsWith('<?xml') && prefix.contains('<svg'))) {
       return 'image/svg+xml';

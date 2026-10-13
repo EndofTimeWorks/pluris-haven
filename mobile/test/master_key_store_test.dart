@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 
 void main() {
@@ -19,6 +20,23 @@ void main() {
       containsPair('storageCipherAlgorithm', 'AES_GCM_NoPadding'),
     );
   });
+
+  test(
+    'describes secure-storage upgrade failures without exposing details',
+    () {
+      const error = SecureStorageUpgradeException(
+        SecureStorageUpgradeStatus(
+          state: SecureStorageUpgradeState.legacyDataUnreadable,
+          reason: SecureStorageUpgradeReason.removedCipher,
+          entryCount: 1,
+          details: 'sensitive platform detail',
+        ),
+      );
+
+      expect(error.toString(), contains('removedCipher'));
+      expect(error.toString(), isNot(contains('sensitive platform detail')));
+    },
+  );
 
   test('creates and reuses the same secure master key', () async {
     final storage = MemorySecureValueStore();

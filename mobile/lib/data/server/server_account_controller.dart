@@ -235,9 +235,8 @@ class ServerAccountController extends ChangeNotifier {
           );
         } on ServerApiException catch (caught) {
           if (caught.statusCode != 409) rethrow;
-          final existing = (await api.backupSnapshots(
-            token,
-          )).where((row) => row.snapshotId == snapshot.snapshotId);
+          final existing = (await api.backupSnapshots(token))
+              .where((row) => row.snapshotId == snapshot.snapshotId);
           if (existing.isEmpty ||
               existing.first.manifestSha256 != manifestSha ||
               existing.first.chunkCount != snapshot.chunks.length ||
