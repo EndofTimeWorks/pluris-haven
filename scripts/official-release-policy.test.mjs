@@ -97,3 +97,13 @@ test('release workflows decode changelogs before quiet matching', () => {
     assert.match(source, /grep -Fq "\$\{source_version\}" <<<"\$\{changelog\}"/);
   }
 });
+
+test('official tag workflow configures an annotated-tag identity', () => {
+  const source = readFileSync(
+    new URL('../.github/workflows/create-official-mobile-tag.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /git config user\.name 'End'/);
+  assert.match(source, /git config user\.email 'git@endoftime\.works'/);
+  assert.ok(source.indexOf('git config user.name') < source.indexOf('tag --sign'));
+});
