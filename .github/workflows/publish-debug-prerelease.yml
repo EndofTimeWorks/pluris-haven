@@ -16,7 +16,7 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.actor.login != 'dependabot[bot]' &&
       !startsWith(github.event.workflow_run.head_branch, 'dependabot/')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       actions: read

@@ -15,7 +15,7 @@ concurrency:
 jobs:
   metadata:
     name: Resolve release metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -192,7 +192,7 @@ jobs:
 
   android:
     name: Build Android release artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     needs: metadata
     permissions:
@@ -306,7 +306,7 @@ jobs:
     needs:
       - metadata
       - android
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       actions: read
@@ -458,7 +458,7 @@ jobs:
       - ios
       - android
       - play-internal
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 25
     environment: official-release
     permissions:
@@ -599,7 +599,7 @@ jobs:
     needs:
       - metadata
       - publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: write
@@ -614,7 +614,7 @@ jobs:
 
       - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
         with:
-          version: 10.33.0
+          version: 12.11.2
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
