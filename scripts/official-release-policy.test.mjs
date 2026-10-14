@@ -107,3 +107,12 @@ test('official tag workflow configures an annotated-tag identity', () => {
   assert.match(source, /git config user\.email 'git-bot@endoftime\.works'/);
   assert.ok(source.indexOf('git config user.name') < source.indexOf('tag --sign'));
 });
+
+test('official tag signing job retains credentials for the tag push', () => {
+  const source = readFileSync(
+    new URL('../.github/workflows/create-official-mobile-tag.yml', import.meta.url),
+    'utf8',
+  );
+  const signJob = source.slice(source.indexOf('\n  sign:'));
+  assert.match(signJob, /persist-credentials: true/);
+});
