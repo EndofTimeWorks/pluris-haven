@@ -106,7 +106,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Create or verify the official tag
         shell: bash
