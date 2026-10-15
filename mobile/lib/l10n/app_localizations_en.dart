@@ -3280,7 +3280,7 @@ class AppLocalizationsEn extends AppLocalizations {
     int journals,
     int reminderTriggers,
   ) {
-    return 'Removal summary — group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained — front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
+    return 'Removal summary -- group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained -- front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
   }
 
   @override

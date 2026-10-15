@@ -17,48 +17,35 @@ body {
 }
 
 a {
-  color: inherit;
+  color: #d5ccff;
+  text-underline-offset: 0.18em;
 }
 
 main {
-  width: 100%;
+  width: min(100% - 36px, 980px);
   min-height: 100vh;
-  padding: 0;
+  margin-inline: auto;
 }
 
 .back {
-  display: inline-flex;
-  margin: 24px clamp(18px, 4vw, 72px) 0;
+  display: inline-block;
+  margin-top: 22px;
   color: #c9c4d4;
-  text-decoration: none;
-}
-
-.back:hover {
-  text-decoration: underline;
-}
-
-.back:focus-visible {
-  text-decoration: underline;
 }
 
 section {
-  padding: clamp(26px, 5vw, 58px) clamp(18px, 4vw, 72px);
-  border-bottom: 1px solid #303442;
+  max-width: 760px;
+  padding-block: 42px;
 }
 
-section > p,
-section > ol,
-section > ul {
-  max-width: 82ch;
+section + section {
+  border-top: 1px solid #343846;
 }
 
 .eyebrow {
   margin: 0 0 10px;
-  color: #f0ca63;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  color: #aaa4b5;
+  font-size: 0.9rem;
 }
 
 h1,
@@ -68,11 +55,11 @@ p {
 }
 
 h1 {
-  max-width: 920px;
+  max-width: 22ch;
   margin-bottom: 18px;
-  font-size: clamp(2.35rem, 7vw, 5rem);
-  line-height: 0.98;
-  letter-spacing: 0;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 h2 {
@@ -83,12 +70,16 @@ h2 {
 p,
 li {
   color: #c9c4d4;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 ol,
 ul {
-  padding-left: 22px;
+  padding-left: 1.25rem;
+}
+
+li + li {
+  margin-top: 8px;
 }
 
 .actions {
@@ -100,55 +91,45 @@ ul {
 
 .button {
   display: inline-flex;
-  min-height: 46px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #464a5c;
-  border-radius: 10px;
-  padding: 0 18px;
-  background: #242832;
+  border: 1px solid #565b6d;
+  border-radius: 6px;
+  padding: 0 16px;
   color: #f4f0ff;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
 }
 
 .button.primary {
-  border-color: #6750f0;
+  border-color: #7863ff;
   background: #6750f0;
 }
 
-.button:hover {
-  border-color: #8e7bff;
-  background: #2d3240;
-}
-
-.button.primary:hover {
-  background: #7863ff;
+.button:hover,
+.button:focus-visible {
+  border-color: #a99aff;
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: 14px;
+  max-width: 760px;
+  border-top: 1px solid #343846;
 }
 
 .card {
   display: grid;
-  gap: 8px;
-  border: 1px solid #34394a;
-  border-radius: 8px;
-  padding: 18px;
-  background: #202430;
+  gap: 4px;
+  border-bottom: 1px solid #343846;
+  padding-block: 16px;
   color: #f4f0ff;
   text-decoration: none;
 }
 
-.card:hover {
-  border-color: #6750f0;
-}
-
-.card:focus-visible {
-  border-color: #8e7bff;
+.card:hover strong,
+.card:focus-visible strong {
+  text-decoration: underline;
 }
 
 .card span,
@@ -158,8 +139,6 @@ ul {
 }
 
 .data-list {
-  display: grid;
-  gap: 8px;
   max-width: 720px;
   margin: 20px 0 0;
   padding: 0;
@@ -167,18 +146,15 @@ ul {
 }
 
 .data-list li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  justify-content: space-between;
-  border: 1px solid #34394a;
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: #202430;
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) 1fr;
+  gap: 14px;
+  border-bottom: 1px solid #343846;
+  padding-block: 11px;
 }
 
 .data-list span {
-  color: #c9c4d4;
+  color: #aaa4b5;
 }
 
 .data-list strong {
@@ -187,9 +163,8 @@ ul {
 }
 
 code {
-  border: 1px solid #3a3f50;
-  border-radius: 6px;
-  padding: 1px 6px;
+  border-radius: 4px;
+  padding: 1px 5px;
   background: #222631;
   color: #f4f0ff;
   word-break: break-word;
@@ -198,26 +173,26 @@ code {
 pre {
   overflow-x: auto;
   border: 1px solid #3a3f50;
-  border-radius: 14px;
+  border-radius: 6px;
   max-width: 980px;
   padding: 16px;
   background: #10131a;
 }
 
 pre code {
-  border: 0;
   padding: 0;
   background: transparent;
   word-break: normal;
 }
 
 @media (max-width: 560px) {
-  .back {
-    margin-top: 18px;
-  }
-
   .button {
     width: 100%;
+  }
+
+  .data-list li {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 }
 
@@ -225,7 +200,6 @@ pre code {
   .button,
   .card,
   .data-list li,
-  code,
   pre {
     border: 1px solid ButtonText;
   }

@@ -7,7 +7,7 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Docs</p>
-    <h1>Use it locally first.</h1>
+    <h1>Using Pluris Haven</h1>
     <p>
       Pluris Haven is being built around local data. Import your archive, check the import log, then
       export a backup before testing anything risky.

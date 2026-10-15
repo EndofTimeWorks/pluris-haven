@@ -22,10 +22,11 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Web UI</p>
-    <h1>Browser app is not open yet.</h1>
+    <h1>Web app</h1>
     <p>
-      Pluris Haven is Android-first right now. The browser client should use the same local-first
-      data model, not a fake account screen or a separate half-compatible import path.
+      A browser version is not available yet. Pluris Haven is Android-first right now. A future
+      browser client should use the same local-first data model and import formats as the mobile
+      app.
     </p>
   </section>
 
@@ -41,9 +42,8 @@
   <section>
     <h2>Expected shape</h2>
     <p>
-      The first useful web build should install as a PWA, import and export without an account, keep
-      data local by default, and connect to optional sync only after the offline archive format is
-      solid.
+      The first web build should install as a PWA, import and export without an account, and keep
+      data local by default. Optional sync comes later, after the offline archive format is ready.
     </p>
   </section>
 

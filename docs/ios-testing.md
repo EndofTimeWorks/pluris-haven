@@ -14,7 +14,7 @@ device.
 4. Import the IPA into your signing tool and install it.
 
 Install over an existing compatible Pluris Haven test build where possible so
-upgrade and local-data migration behavior is exercised instead of testing only
+upgrade and local-data migration behaviour is exercised instead of testing only
 a fresh install.
 
 ## What to check

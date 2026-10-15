@@ -4,17 +4,17 @@
 
 <svelte:head>
   <title>Pluris Haven Changelog</title>
-  <meta name="description" content="Current Pluris Haven pre-alpha changes and release notes." />
+  <meta name="description" content="Current Pluris Haven alpha candidate release notes." />
 </svelte:head>
 
 <main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Changelog</p>
-    <h1>Pre-alpha notes.</h1>
+    <h1>Release notes</h1>
     <p>
-      This is the human-readable status page for the current mobile line. GitHub releases remain the
-      source for APK files and exact tags.
+      These notes cover the current mobile release line. GitHub Releases is the source for APK files
+      and exact tags.
     </p>
     <div class="actions">
       <a class="button primary" href={mobileRelease.releaseUrl}> Current release </a>
@@ -25,12 +25,12 @@
   </section>
 
   <section>
-    <h2>0.3.0-pre-alpha.5</h2>
-    <p>Release candidate notes for build <code>0.3.0-pre-alpha.5+3005</code>.</p>
+    <h2>0.3.1-alpha.1</h2>
+    <p>Release candidate notes for build <code>0.3.1-alpha.1+3006</code>.</p>
     <ul>
       <li>
-        Startup, encrypted storage, migrations, imports, and destructive record lifecycles have
-        stronger failure handling and recovery safeguards.
+        Startup, encrypted storage, migrations, imports, and record deletion now stop more safely
+        when work is interrupted.
       </li>
       <li>
         PluralPort Draft v0.1 portable file import and export cover the fields currently defined by
@@ -58,12 +58,12 @@
         backup and restore workflow is not yet available.
       </li>
       <li>
-        Dependencies and build tools are updated, and the release pipeline now prevents Dependabot
-        branches from publishing debug releases.
+        Dependencies and build tools are updated. Dependabot branches can no longer publish debug
+        releases.
       </li>
       <li>
-        Repository-owned product links now use <code>plurishaven.app</code>, alongside assorted
-        stability, accessibility, migration, and product-truth fixes.
+        Repository-owned product links now use <code>plurishaven.app</code>. Smaller fixes cover
+        stability, accessibility, migrations, imports, and archives.
       </li>
     </ul>
   </section>

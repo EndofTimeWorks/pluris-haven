@@ -5672,7 +5672,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberImpact.
   ///
   /// In en, this message translates to:
-  /// **'Removal summary — group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained — front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
+  /// **'Removal summary -- group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained -- front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
   String deleteMemberImpact(
     int groupLinks,
     int tagLinks,

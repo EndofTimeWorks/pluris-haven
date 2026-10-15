@@ -7,7 +7,7 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Support</p>
-    <h1>Report what breaks. Support only if you want.</h1>
+    <h1>Support</h1>
     <p>
       Pre-alpha feedback is most useful when it includes the version, device, source file type, and
       what screen failed. Funding links are optional and should never block core data access.

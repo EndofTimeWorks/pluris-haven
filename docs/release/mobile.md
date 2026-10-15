@@ -39,11 +39,11 @@ APK signed by a disposable runner key; uninstall that old debug package once.
 Do not reuse the official Android upload key for debug prereleases.
 
 An exact `main` commit subject of `release: <semantic-version>` is reserved for
-an official release candidate. It intentionally does not make a second public
+an official release candidate. It does not make a second public
 debug release for that SHA. The trusted post-CI validator checks the exact CI
 SHA, source version, changelog, monotonicity, GitHub signature status, and that
 the SHA is still the current `origin/main` tip. If `main` moved, it stops with
-`ABORT — release marker is no longer the current main tip.`
+`ABORT -- release marker is no longer the current main tip.`
 
 Debug tags begin `debug-v*`; `mobile-v*` remains reserved for official mobile
 releases. A rerun checks that an existing debug tag peels to the same tested
@@ -56,11 +56,10 @@ Use this for an explicitly approved named pre-alpha/alpha milestone. Prepare it
 on `release/<version>` from protected `main`; do not prepare or tag it from an
 ordinary feature branch.
 
-The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not move to
+The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not use
 `0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
-version. The current candidate for a future monotonic first alpha is
-`0.3.1-alpha.1+3006`, but it must not be set/tagged/released without explicit
-approval.
+version. The approved first alpha candidate is `0.3.1-alpha.1+3006`. It remains
+unreleased until every release gate completes.
 
 1. Set the approved release version in `mobile/pubspec.yaml`. Versioned releases
    must not contain `.dev.N`, and the build after `+` must increase.
@@ -97,8 +96,11 @@ approval.
    release: <semantic-version>
    ```
 
-   The project currently spells its prerelease channel `pre-alpha`, for example
-   `release: 0.3.0-pre-alpha.5`.
+   For the prepared candidate, use:
+
+   ```text
+   release: 0.3.1-alpha.1
+   ```
 
 6. Review and GPG-sign the release-marker commit, then open and merge a PR to
    protected `main`, with successful GitHub-hosted CI for
@@ -147,9 +149,9 @@ need a one-time uninstall before the current package can be installed.
 9. proposes website metadata through a normal PR when a change is needed.
 
 A Play failure prevents the official GitHub Release from being created. Website
-metadata is not pushed directly to `main` or deployed by release automation: its PR must
-pass the normal CI and Rulesets. These independent targets need explicit
-retry/repair behaviour rather than pretending to be transactionally atomic.
+metadata is not pushed directly to `main` or deployed by release automation:
+its PR must pass the normal CI and Rulesets. These targets are independent, so
+each needs an explicit retry and repair path.
 
 Current official Play automation covers **internal testing** only and fails
 closed for `production`. The manually dispatched repair workflow also rejects

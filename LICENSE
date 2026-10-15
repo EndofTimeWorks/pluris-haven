@@ -1,6 +1,6 @@
 Pluris Haven Source-Available Noncommercial Licence v0.2
 
-Copyright (c) 2026 EndofTimeWorks
+Copyright (c) 2026 EndofTimeWorks LLC, doing business as EndofTimeWorks
 
 This licence applies to Pluris Haven and all source code, documentation,
 assets, build files, and other materials in this repository unless a file
@@ -51,9 +51,9 @@ generate surplus, does not pay anyone for their time, and publishes an
 itemised accounting of costs on request.
 
 Commercial use requires a separate written commercial licence from
-EndofTimeWorks. Commercial licences may include revenue-sharing or other
-payment terms. No commercial rights are granted until both sides agree in
-writing.
+EndofTimeWorks LLC, doing business as EndofTimeWorks. Commercial licences may
+include revenue-sharing or other payment terms. No commercial rights are
+granted until both sides agree in writing.
 
 3. Attribution
 
@@ -70,7 +70,7 @@ metadata, or source notice.
 
 This licence does not grant trademark rights. Do not use the names "Pluris
 Haven" or "EndofTimeWorks" in a way that suggests endorsement, official status,
-or ownership of your modified version unless EndofTimeWorks gives written
+or ownership of your modified version unless the licensor gives written
 permission.
 
 5. Contributions
@@ -83,7 +83,7 @@ that you have the right to licence it this way.
 
 Third-party dependencies, SDKs, fonts, icons, and tools keep their own
 licences. This licence only covers the parts of this repository that
-EndofTimeWorks owns or has the right to licence.
+the licensor owns or has the right to licence.
 
 7. No warranty
 
@@ -94,16 +94,17 @@ NONINFRINGEMENT. USE IT AT YOUR OWN RISK.
 
 8. Limitation of liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, ENDOFTIMEWORKS AND CONTRIBUTORS WILL
-NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE
-SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, ENDOFTIMEWORKS LLC, DOING BUSINESS AS
+ENDOFTIMEWORKS, AND CONTRIBUTORS WILL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE, WHETHER IN CONTRACT,
+TORT, OR OTHERWISE.
 
 9. Patent licence
 
-EndofTimeWorks grants you a patent licence for the software, covering any
-patent claims EndofTimeWorks can licence, or becomes able to licence, that you
-would otherwise infringe by using the software for a permitted purpose under
-this licence.
+EndofTimeWorks LLC, doing business as EndofTimeWorks, grants you a patent
+licence for the software, covering any patent claims it can licence, or becomes
+able to licence, that you would otherwise infringe by using the software for a
+permitted purpose under this licence.
 
 10. Patent defence
 
@@ -121,17 +122,17 @@ rights.
 
 12. Violations and termination
 
-If EndofTimeWorks notifies you in writing that you have violated this licence,
-your licences continue only if you come into full compliance and take
-practical steps to correct past violations within 32 days of that notice.
-Otherwise, all your licences under this document end immediately. A second
-notice for the same or a related violation ends your licences immediately,
-without a further cure period.
+If EndofTimeWorks LLC, doing business as EndofTimeWorks, notifies you in
+writing that you have violated this licence, your licences continue only if
+you come into full compliance and take practical steps to correct past
+violations within 32 days of that notice. Otherwise, all your licences under
+this document end immediately. A second notice for the same or a related
+violation ends your licences immediately, without a further cure period.
 
 13. Definitions
 
-The "licensor" is EndofTimeWorks. The "software" is the software EndofTimeWorks
-makes available under this licence.
+The "licensor" is EndofTimeWorks LLC, doing business as EndofTimeWorks. The
+"software" is the software the licensor makes available under this licence.
 
 "You" refers to the individual or entity agreeing to this licence.
 
@@ -147,7 +148,7 @@ this document.
 14. No other rights
 
 This licence does not let you sub-license or transfer your rights under it to
-anyone else, and does not stop EndofTimeWorks from licensing the software to
+anyone else, and does not stop the licensor from licensing the software to
 others on different terms. This licence does not imply any rights beyond what
 it states.
 

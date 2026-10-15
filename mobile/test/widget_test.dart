@@ -1317,7 +1317,7 @@ void main() {
     await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Removal summary — group links: 0'),
+      find.textContaining('Removal summary -- group links: 0'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Remove member'));
