@@ -12,7 +12,7 @@ const expected = {
   versionCode: '3005',
   versionName: '0.3.0-pre-alpha.5',
   certificateSha256:
-    '6B:EE:34:24:F3:EC:AF:0D:5A:20:F1:F6:7F:65:9A:3F:BE:E9:21:24:B1:8D:DA:86:C9:32:AC:E8:23:B6:BA:C4',
+    '3F:60:9E:59:A3:9C:F0:0B:66:99:A7:93:6B:7F:01:85:F5:56:63:2B:BF:88:F0:03:9E:B6:2B:A6:4F:AF:03:0D',
 };
 const badging =
   "package: name='works.endoftime.plurishaven' versionCode='3005' versionName='0.3.0-pre-alpha.5' platformBuildVersionName='15'";
@@ -20,9 +20,14 @@ const signer = `Verified using v1 scheme (JAR signing): true
 Verified using v2 scheme (APK Signature Scheme v2): true
 Signer #1 certificate SHA-256 digest: ${expected.certificateSha256}`;
 
+const generatedUniversalApk = {
+  certificateSha256Hash: expected.certificateSha256,
+  generatedUniversalApk: { downloadId: 'universal' },
+};
+
 test('selects exactly one Play-generated universal APK', () => {
   assert.equal(
-    selectUniversalApk({ generatedApks: [{ generatedUniversalApk: { downloadId: 'universal' } }] }),
+    selectUniversalApk({ generatedApks: [generatedUniversalApk] }, expected.certificateSha256),
     'universal',
   );
   assert.throws(() => selectUniversalApk({ generatedApks: [] }));
@@ -33,6 +38,12 @@ test('selects exactly one Play-generated universal APK', () => {
         { generatedUniversalApk: { downloadId: 'two' } },
       ],
     }),
+  );
+  assert.throws(() =>
+    selectUniversalApk(
+      { generatedApks: [generatedUniversalApk] },
+      `00${expected.certificateSha256}`,
+    ),
   );
 });
 
@@ -85,6 +96,13 @@ test('rejects an APK with unexpected identity, certificate, or split metadata', 
     }),
   );
   assert.throws(() =>
-    verifyGeneratedApk({ badging, signerOutput: signer.replace('6B:EE', '00:EE'), ...expected }),
+    verifyGeneratedApk({ badging, signerOutput: signer.replace('3F:60', '00:60'), ...expected }),
+  );
+});
+
+test('accepts the Play signer label emitted by current Android build tools', () => {
+  const currentSigner = signer.replace('Signer #1', 'V3.0 Signer');
+  assert.doesNotThrow(() =>
+    verifyGeneratedApk({ badging, signerOutput: currentSigner, ...expected }),
   );
 });

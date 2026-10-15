@@ -2,14 +2,27 @@
 
 import { readFileSync } from 'node:fs';
 
-export function selectUniversalApk(response) {
+const normaliseCertificateHash = (value) => value.replaceAll(':', '').toUpperCase();
+
+export function selectUniversalApk(response, certificateSha256) {
   const candidates = (response.generatedApks ?? [])
-    .map((generatedApk) => generatedApk.generatedUniversalApk?.downloadId)
-    .filter(Boolean);
+    .filter((generatedApk) => generatedApk.generatedUniversalApk?.downloadId)
+    .map((generatedApk) => ({
+      certificateSha256: generatedApk.certificateSha256Hash,
+      downloadId: generatedApk.generatedUniversalApk.downloadId,
+    }));
   if (candidates.length !== 1) {
     throw new Error('Play must return exactly one generated universal APK for this version code.');
   }
-  return candidates[0];
+  if (
+    certificateSha256 &&
+    (!candidates[0].certificateSha256 ||
+      normaliseCertificateHash(candidates[0].certificateSha256) !==
+        normaliseCertificateHash(certificateSha256))
+  ) {
+    throw new Error('Play metadata has an unexpected app-signing certificate.');
+  }
+  return candidates[0].downloadId;
 }
 
 export async function waitForUniversalApk(
@@ -58,9 +71,12 @@ export function verifyGeneratedApk({
   ) {
     throw new Error('Downloaded Play APK did not pass APK signature verification.');
   }
-  const actual = /Signer #1 certificate SHA-256 digest:\s*([A-Fa-f0-9:]+)/.exec(signerOutput)?.[1];
-  const normalise = (value) => value.replaceAll(':', '').toUpperCase();
-  if (!actual || normalise(actual) !== normalise(certificateSha256)) {
+  const signerCertificates = [
+    ...signerOutput.matchAll(
+      /^(?:Signer #\d+|V3\.0 Signer):? certificate SHA-256 digest:\s*([A-Fa-f0-9:]+)/gm,
+    ),
+  ].map((match) => normaliseCertificateHash(match[1]));
+  if (!signerCertificates.includes(normaliseCertificateHash(certificateSha256))) {
     throw new Error('Downloaded Play APK has an unexpected app-signing certificate.');
   }
 }
@@ -68,7 +84,9 @@ export function verifyGeneratedApk({
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   const [command, ...args] = process.argv.slice(2);
   if (command === 'select') {
-    process.stdout.write(`${selectUniversalApk(JSON.parse(readFileSync(args[0], 'utf8')))}\n`);
+    process.stdout.write(
+      `${selectUniversalApk(JSON.parse(readFileSync(args[0], 'utf8')), args[1])}\n`,
+    );
   } else if (command === 'verify') {
     const [badgingPath, signerPath, packageName, versionCode, versionName, certificateSha256] =
       args;

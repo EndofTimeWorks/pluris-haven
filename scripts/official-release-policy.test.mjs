@@ -137,6 +137,8 @@ test('credential-bearing mobile release jobs require the official environment', 
   assert.match(android, /secrets\.ANDROID_KEYSTORE_BASE64/);
   assert.match(playInternal, /\n    environment: official-release\n/);
   assert.match(playInternal, /secrets\.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON/);
+  assert.match(playInternal, /play-generated-apk\.mjs select[\s\S]*?PLAY_APP_SIGNING_CERT_SHA256/);
+  assert.match(playInternal, /:download\?alt=media/);
 
   const repair = readFileSync(
     new URL('../.github/workflows/publish-play-track.yml', import.meta.url),

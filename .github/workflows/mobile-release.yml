@@ -412,23 +412,29 @@ jobs:
 
           generated=''
           download_id=''
+          selection_error="${RUNNER_TEMP}/generated-apks-selection.error"
           for _ in {1..10}; do
             generated="$(curl --fail-with-body --silent --show-error \
               --header "${authorization}" \
               "${publisher_base}/applications/${package_name}/generatedApks/${version_code}")" || true
             printf '%s' "${generated}" > "${RUNNER_TEMP}/generated-apks.json"
-            download_id="$(node scripts/play-generated-apk.mjs select "${RUNNER_TEMP}/generated-apks.json" 2>/dev/null || true)"
-            [[ -n "${download_id}" ]] && break
+            if download_id="$(node scripts/play-generated-apk.mjs select \
+              "${RUNNER_TEMP}/generated-apks.json" \
+              "${PLAY_APP_SIGNING_CERT_SHA256}" \
+              2>"${selection_error}")"; then
+              break
+            fi
             sleep 15
           done
           test -n "${download_id:-}" || {
+            cat "${selection_error}" >&2
             echo 'Play did not provide a generated universal APK for the committed testing build.' >&2
             exit 1
           }
           mkdir -p release/play
           curl --fail-with-body --silent --show-error --location \
             --header "${authorization}" \
-            "${publisher_base}/applications/${package_name}/generatedApks/${version_code}/downloads/${download_id}:download" \
+            "${publisher_base}/applications/${package_name}/generatedApks/${version_code}/downloads/${download_id}:download?alt=media" \
             --output "release/play/pluris-haven-${PLAY_VERSION}+${PLAY_BUILD}.apk"
           android_tools="${ANDROID_HOME:?Android SDK is not available}/build-tools"
           aapt="$(find "${android_tools}" -type f -name aapt -print | LC_ALL=C sort -V | tail -n 1)"
