@@ -25,6 +25,15 @@ const releaseWorkflows = [
   '../.github/workflows/validate-release-marker.yml',
 ];
 
+function workflowJob(source, name, nextName) {
+  const start = source.indexOf(`\n  ${name}:`);
+  assert.notEqual(start, -1, `Missing workflow job: ${name}`);
+  const end =
+    nextName === undefined ? source.length : source.indexOf(`\n  ${nextName}:`, start + 1);
+  assert.notEqual(end, -1, `Missing workflow job after ${name}: ${nextName}`);
+  return source.slice(start, end);
+}
+
 test('accepts only the unavailable expected primary and explicit signing subkey', () => {
   assert.doesNotThrow(() =>
     validateSecretKeyListing(validListing, {
@@ -115,4 +124,49 @@ test('official tag signing job retains credentials for the tag push', () => {
   );
   const signJob = source.slice(source.indexOf('\n  sign:'));
   assert.match(signJob, /persist-credentials: true/);
+});
+
+test('credential-bearing mobile release jobs require the official environment', () => {
+  const release = readFileSync(
+    new URL('../.github/workflows/mobile-release.yml', import.meta.url),
+    'utf8',
+  );
+  const android = workflowJob(release, 'android', 'play-internal');
+  const playInternal = workflowJob(release, 'play-internal', 'publish');
+  assert.match(android, /\n    environment: official-release\n/);
+  assert.match(android, /secrets\.ANDROID_KEYSTORE_BASE64/);
+  assert.match(playInternal, /\n    environment: official-release\n/);
+  assert.match(playInternal, /secrets\.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON/);
+
+  const repair = readFileSync(
+    new URL('../.github/workflows/publish-play-track.yml', import.meta.url),
+    'utf8',
+  );
+  const repairPublish = workflowJob(repair, 'publish');
+  assert.match(repairPublish, /\n    environment: official-release\n/);
+  assert.match(repairPublish, /secrets\.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON/);
+});
+
+test('stable debug signing is restricted to the exact current main tip', () => {
+  const source = readFileSync(
+    new URL('../.github/workflows/publish-debug-prerelease.yml', import.meta.url),
+    'utf8',
+  );
+  const signer = workflowJob(source, 'sign-main-android', 'publish');
+  const publisher = workflowJob(source, 'publish');
+
+  assert.match(signer, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(signer, /\n    environment: debug-prerelease\n/);
+  assert.match(signer, /if \[\[ "\$\{HEAD_SHA\}" != "\$\{main_sha\}" \]\]/);
+  assert.match(signer, /works\.endoftime\.plurishaven\.debug/);
+  assert.match(signer, /secrets\.DEBUG_KEYSTORE_BASE64/);
+  assert.match(signer, /PLURIS_DEBUG_SIGNING_CERT_SHA256/);
+  assert.match(signer, /certificate SHA-256 digest/);
+  assert.doesNotMatch(publisher, /secrets\.DEBUG_KEY/);
+  assert.match(
+    publisher,
+    /head_branch != 'main' \|\| needs\.sign-main-android\.result == 'success'/,
+  );
+  assert.match(publisher, /stable main debug-prerelease certificate/);
+  assert.match(publisher, /disposable branch debug certificate/);
 });

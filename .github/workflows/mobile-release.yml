@@ -195,6 +195,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     needs: metadata
+    environment: official-release
     permissions:
       contents: read
     defaults:
@@ -308,6 +309,7 @@ jobs:
       - android
     runs-on: ubuntu-26.04
     timeout-minutes: 20
+    environment: official-release
     permissions:
       actions: read
       contents: read
