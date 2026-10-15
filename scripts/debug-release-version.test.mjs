@@ -64,7 +64,7 @@ test('keeps main debug publication except for official release markers', () => {
     debugReleaseEligibility({
       ...ordinaryPush,
       headBranch: 'main',
-      subject: 'release: 0.3.0-pre-alpha.5',
+      subject: 'release: 0.3.1-alpha.1',
     }),
     { eligible: false, reason: 'official-release-marker' },
   );

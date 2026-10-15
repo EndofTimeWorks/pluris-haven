@@ -9,13 +9,13 @@ import {
 
 const expected = {
   packageName: 'works.endoftime.plurishaven',
-  versionCode: '3005',
-  versionName: '0.3.0-pre-alpha.5',
+  versionCode: '3006',
+  versionName: '0.3.1-alpha.1',
   certificateSha256:
     '3F:60:9E:59:A3:9C:F0:0B:66:99:A7:93:6B:7F:01:85:F5:56:63:2B:BF:88:F0:03:9E:B6:2B:A6:4F:AF:03:0D',
 };
 const badging =
-  "package: name='works.endoftime.plurishaven' versionCode='3005' versionName='0.3.0-pre-alpha.5' platformBuildVersionName='15'";
+  "package: name='works.endoftime.plurishaven' versionCode='3006' versionName='0.3.1-alpha.1' platformBuildVersionName='16'";
 const signer = `Verified using v1 scheme (JAR signing): true
 Verified using v2 scheme (APK Signature Scheme v2): true
 Signer #1 certificate SHA-256 digest: ${expected.certificateSha256}`;
@@ -76,7 +76,7 @@ test('rejects an APK with unexpected identity, certificate, or split metadata', 
   assert.doesNotThrow(() => verifyGeneratedApk({ badging, signerOutput: signer, ...expected }));
   assert.throws(() =>
     verifyGeneratedApk({
-      badging: badging.replace('3005', '3004'),
+      badging: badging.replace('3006', '3005'),
       signerOutput: signer,
       ...expected,
     }),

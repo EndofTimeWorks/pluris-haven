@@ -21,17 +21,17 @@ test('produces an Obtainium GitHub Releases configuration for the canonical APK 
   assert.equal(settings.fallbackToOlderReleases, true);
   assert.equal(settings.useVersionCodeAsOSVersion, true);
   assert.equal(
-    new RegExp(settings.versionExtractionRegEx).exec('mobile-v0.3.0-pre-alpha.5+3005')?.[1],
-    '3005',
+    new RegExp(settings.versionExtractionRegEx).exec('mobile-v0.3.1-alpha.1+3006')?.[1],
+    '3006',
   );
 
   const apk = new RegExp(canonicalApkPattern);
-  assert.match('pluris-haven-0.3.0-pre-alpha.5+3005.apk', apk);
+  assert.match('pluris-haven-0.3.1-alpha.1+3006.apk', apk);
   for (const excluded of [
-    'pluris-haven-0.3.0-pre-alpha.5+3005-universal.apk',
-    'pluris-haven-0.3.0-pre-alpha.5+3005.apk.asc',
-    'pluris-haven-0.3.0-pre-alpha.5+3005.aab',
-    'debug-v0.3.0-pre-alpha.5.debug.9+3005.apk',
+    'pluris-haven-0.3.1-alpha.1+3006-universal.apk',
+    'pluris-haven-0.3.1-alpha.1+3006.apk.asc',
+    'pluris-haven-0.3.1-alpha.1+3006.aab',
+    'debug-v0.3.1-alpha.1.debug.9+3006.apk',
     'SHA256SUMS.txt',
   ]) {
     assert.doesNotMatch(excluded, apk);

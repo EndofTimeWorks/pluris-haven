@@ -4,14 +4,14 @@
 
 <svelte:head>
   <title>Pluris Haven Changelog</title>
-  <meta name="description" content="Current Pluris Haven pre-alpha changes and release notes." />
+  <meta name="description" content="Current Pluris Haven alpha candidate release notes." />
 </svelte:head>
 
 <main id="main-content" tabindex="-1">
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Changelog</p>
-    <h1>Pre-alpha notes.</h1>
+    <h1>Alpha candidate notes.</h1>
     <p>
       This is the human-readable status page for the current mobile line. GitHub releases remain the
       source for APK files and exact tags.
@@ -25,8 +25,8 @@
   </section>
 
   <section>
-    <h2>0.3.0-pre-alpha.5</h2>
-    <p>Release candidate notes for build <code>0.3.0-pre-alpha.5+3005</code>.</p>
+    <h2>0.3.1-alpha.1</h2>
+    <p>Release candidate notes for build <code>0.3.1-alpha.1+3006</code>.</p>
     <ul>
       <li>
         Startup, encrypted storage, migrations, imports, and destructive record lifecycles have

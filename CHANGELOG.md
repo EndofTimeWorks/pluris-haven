@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.3.0-pre-alpha.5 - 2026-10-08
+## 0.3.1-alpha.1 - 2026-10-14
 
-Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
+First-alpha release candidate focused on reliability and product truth:
+`0.3.1-alpha.1+3006`.
 
 ### Reliability and data safety
 
