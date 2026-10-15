@@ -1,14 +1,13 @@
 # Changelog
 
-## 0.3.0-pre-alpha.5 - 2026-10-08
+## 0.3.1-alpha.1 - 2026-10-14
 
-Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
+First alpha candidate: `0.3.1-alpha.1+3006`.
 
 ### Reliability and data safety
 
-- Startup, encrypted local storage, migrations, destructive record lifecycles,
-  import staging, and server backup cleanup now fail more safely and preserve
-  more recoverable state when work is interrupted.
+- Startup, encrypted storage, migrations, record deletion, import staging, and
+  server backup cleanup now stop more safely when work is interrupted.
 - Imports have tighter size and structure bounds, preserve source provenance,
   and retain unsupported data where the source format permits instead of
   silently treating it as supported.
@@ -22,8 +21,8 @@ Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
 
 ### Product and accessibility
 
-- Pluris Haven has new branded app icons and broader appearance, typography,
-  spacing, navigation, and colour controls.
+- Pluris Haven has new branded app icons and more controls for appearance,
+  typography, spacing, navigation, and colour.
 - Friends and other incomplete advanced surfaces are hidden from ordinary
   navigation. Sync settings now state that general device sync is unavailable
   instead of presenting the no-op background task as working functionality.
@@ -31,16 +30,15 @@ Reliability and product-truth pre-alpha: `0.3.0-pre-alpha.5+3005`.
   across import, backup, Friends, Sync, and error messages.
 - `plurishaven.app` is now the canonical product website in repository-owned
   links and metadata.
-- Assorted accessibility, migration, import, archive, and interface stability
-  fixes improve the pre-alpha experience.
+- Smaller fixes cover accessibility, migrations, imports, archives, and
+  interface stability.
 
 ### Tooling and release safety
 
-- Flutter, Android, server, website, Node, and CI dependencies now use the
-  refreshed supported toolchain baseline.
-- Release validation, artifact provenance, Play-signed APK handling, and
-  publication ordering are stricter. Dependabot branches cannot publish debug
-  releases.
+- Flutter, Android, server, website, Node, and CI dependencies have been
+  updated.
+- Release checks now verify artefact provenance, Play-signed APKs, and
+  publication order. Dependabot branches cannot publish debug releases.
 
 ## 0.3.0-pre-alpha.4 - 2026-08-25
 

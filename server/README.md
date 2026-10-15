@@ -84,7 +84,9 @@ sudo systemctl enable --now pluris-haven-server
 sudo systemctl enable --now pluris-haven-backup.timer
 ```
 
-Edit `/etc/pluris-haven/server.env` before starting the service. Generate independent secrets with `openssl rand -hex 32`; the JWT secret, friend-code pepper, and database password must all differ.
+Edit `/etc/pluris-haven/server.env` before starting the service. Generate
+independent secrets with `openssl rand -hex 32`; the JWT secret, friend-code
+pepper, and database password must all differ.
 The server unit creates `/var/lib/pluris-haven` for backup-object storage and
 keeps it writable while the rest of the system remains read-only to the
 service.
@@ -115,7 +117,8 @@ The rehearsal creates a temporary database, restores the dump, verifies the appl
 
 ## Public launch gate
 
-Keep `PLURIS_REGISTRATION_ENABLED=false` and `PLURIS_FRIENDS_ENABLED=false` until all of these are complete:
+Keep `PLURIS_REGISTRATION_ENABLED=false` and
+`PLURIS_FRIENDS_ENABLED=false` until all of these are complete:
 
 - HTTPS and strict reverse-proxy request limits
 - load and abuse testing of registration, login, refresh, and friend-code limits
@@ -140,7 +143,8 @@ If a reverse proxy is used, keep the trusted proxy boundary explicit and narrow;
 never use `--forwarded-allow-ips=*` on an endpoint that can receive direct
 traffic.
 
-Run `uv run alembic upgrade head` during every deployment. The systemd unit does this before startup and refuses to start if migration fails.
+Run `uv run alembic upgrade head` during every deployment. The systemd unit
+does this before startup and refuses to start if migration fails.
 
 ## Optional containers
 

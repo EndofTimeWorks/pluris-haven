@@ -7,10 +7,11 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Privacy</p>
-    <h1>Local by default. Clear before online.</h1>
+    <h1>Privacy</h1>
     <p>
-      The app should not need an account for personal local use. Online features should explain what
-      data leaves the device before they run.
+      Pluris Haven is operated by EndofTimeWorks LLC, doing business as EndofTimeWorks. The app does
+      not need an account for personal local use. Online features should explain what data leaves
+      the device before they run.
     </p>
   </section>
 

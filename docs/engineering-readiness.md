@@ -1,7 +1,7 @@
 # Engineering readiness
 
-Internal pre-alpha readiness record, reconciled against the local candidate on
-2026-10-07.
+Internal pre-alpha readiness record, last checked against the local candidate
+on 2026-10-07.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -56,8 +56,7 @@ distribution work is ready.
 
 ## Product work before alpha is called ready
 
-The following are completion targets, not proof that the current build is
-broken:
+The following work remains before the project can be called alpha-ready:
 
 - Obtain and test representative real OpenPlural exports before making a
   broader compatibility claim.
@@ -141,8 +140,7 @@ mapper test exists.
 - Keep private exports, avatars, tokens, passwords and recovery archives out of
   Git.
 - Checked-in fixtures must say where they came from and what they test.
-- Add a fixture when it reproduces a real compatibility problem, not merely to
-  increase fixture count.
+- Add fixtures for real compatibility problems, not to increase the count.
 
 ## Release rules
 

@@ -12,7 +12,7 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Distribution</p>
-    <h1>GitHub first. Store later.</h1>
+    <h1>Install and update channels</h1>
     <p>
       Pre-alpha builds ship through GitHub Releases so testing is not tied to a store account. Local
       use should stay available even if a hosted service or app store is not ready somewhere.

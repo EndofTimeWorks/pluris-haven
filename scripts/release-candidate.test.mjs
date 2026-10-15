@@ -6,15 +6,15 @@ import { releaseEligibility } from './release-candidate.mjs';
 test('makes only an exact current release-marker tip eligible', () => {
   assert.deepEqual(
     releaseEligibility({
-      subject: 'release: 0.3.0-pre-alpha.5',
+      subject: 'release: 0.3.1-alpha.1',
       releaseSha: 'a'.repeat(40),
       mainSha: 'a'.repeat(40),
     }),
-    { eligible: true, version: '0.3.0-pre-alpha.5' },
+    { eligible: true, version: '0.3.1-alpha.1' },
   );
   assert.deepEqual(
     releaseEligibility({
-      subject: 'release: 0.3.0-pre-alpha.5',
+      subject: 'release: 0.3.1-alpha.1',
       releaseSha: 'b'.repeat(40),
       mainSha: 'c'.repeat(40),
     }),
@@ -41,7 +41,7 @@ test('fails closed when GitHub metadata is absent or malformed', () => {
   ]) {
     assert.deepEqual(
       releaseEligibility({
-        subject: 'release: 0.3.0-pre-alpha.5',
+        subject: 'release: 0.3.1-alpha.1',
         releaseSha,
         mainSha,
       }),

@@ -7,11 +7,11 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Terms draft</p>
-    <h1>Plain rules before hosted sync.</h1>
+    <h1>Terms (draft)</h1>
     <p>
-      This is a working draft for the project site. It is not a final hosted-service agreement.
-      Local-only app use should stay simple: your data is yours, and you should be able to export or
-      delete it.
+      Pluris Haven is operated by EndofTimeWorks LLC, doing business as EndofTimeWorks. This is a
+      working draft for the project site, not a final hosted-service agreement. Local-only app use
+      should stay simple: your data is yours, and you should be able to export or delete it.
     </p>
   </section>
 

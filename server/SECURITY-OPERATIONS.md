@@ -8,9 +8,9 @@ also ready.
 ## Signals
 
 The server writes small JSON security signals to the `pluris.security` logger.
-Each signal contains only `event`, `operation`, and `reason`. It deliberately
-does not contain an email address, user ID, IP address, device name, token,
-request body, or arbitrary exception text.
+Each signal contains only `event`, `operation`, and `reason`. It does not
+contain an email address, user ID, IP address, device name, token, request body,
+or arbitrary exception text.
 
 Current events are:
 
@@ -23,8 +23,8 @@ Current events are:
 - `security.readiness.failed`: the readiness probe could not query PostgreSQL.
 
 These operator signals are separate from the user-visible security history.
-Missing bearer tokens are intentionally not logged because an unauthenticated
-probe could otherwise amplify logs without reaching a rate-limited endpoint.
+Missing bearer tokens are not logged because an unauthenticated probe could
+otherwise amplify logs without reaching a rate-limited endpoint.
 
 On the systemd deployment, inspect and count recent signals with:
 

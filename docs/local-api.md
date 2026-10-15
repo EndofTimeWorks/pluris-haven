@@ -23,7 +23,7 @@ shape:
 { "error": { "code": "scope_required" } }
 ```
 
-The current namespace is deliberately small:
+The current namespace is small:
 
 | Method | Path          | Required scope | Contents                        |
 | ------ | ------------- | -------------- | ------------------------------- |
@@ -37,7 +37,7 @@ Missing, invalid, or revoked credentials return `401 invalid_client`; a valid
 client without the needed scope returns `403 scope_required`. Unknown paths and
 unsupported methods return `404 not_found` and `405 method_not_allowed`.
 
-There are intentionally no write endpoints, no raw database access, no notes,
+There are no write endpoints, no raw database access, no notes,
 journals, messages, backup material, account/session access, or remote API
 binding in v1. Future sensitive writes must use explicit scopes and existing
 domain and safety enforcement rather than bypassing the repository.

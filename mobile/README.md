@@ -1,6 +1,6 @@
-# Pluris Haven Mobile
+# Pluris Haven mobile app
 
-Flutter app.
+The Pluris Haven client is built with Flutter for Android and iOS.
 
 ## Run
 
@@ -25,3 +25,9 @@ mise exec -- flutter run
 ```
 
 Open this directory in Android Studio.
+
+Android Studio's default `app` run configuration launches a debug build. Debug
+builds use the separate `works.endoftime.plurishaven.debug` package and appear
+as **Pluris Haven (Debug)**, so they can be installed beside a release build.
+Use `mise exec -- flutter run --release` when release-mode behaviour is needed;
+this does not reproduce the signed publication workflow.
