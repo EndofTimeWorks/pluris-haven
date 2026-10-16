@@ -74,4 +74,5 @@ jobs:
             -o UserKnownHostsFile="${known_hosts}" \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "cd \"${DEPLOY_PATH:?WEBSITE_DEPLOY_PATH is required}\" && \
-             ./deploy.sh"
+             git pull --ff-only origin main && \
+             scripts/deploy-website.sh"

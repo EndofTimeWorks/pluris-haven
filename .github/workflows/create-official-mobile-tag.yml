@@ -74,7 +74,8 @@ jobs:
             exit 1
           }
 
-          source_version="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | awk '/^version:/ {print $2; exit}')"
+          source_file="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode)"
+          source_version="$(awk '/^version:/ {print $2; exit}' <<<"${source_file}")"
           test "${source_version%%+*}" = "${RELEASE_VERSION}" || {
             echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
             exit 1
