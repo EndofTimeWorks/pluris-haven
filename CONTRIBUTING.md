@@ -69,7 +69,7 @@ Use a Conventional Commit subject, for example:
 
 ```text
 fix(import): reject oversized archive entries
-release: 0.3.0-pre-alpha.5
+release: 0.3.1-alpha.1
 ```
 
 Husky runs Prettier before a commit and commitlint against the commit message.

@@ -1,12 +1,9 @@
 # Pluris Haven
 
-Pluris Haven is an offline-first app for systems, other collectives,
-individuals, and anyone else who finds its tools useful. It is made by systems
-and does not assume which words or experiences fit someone.
-
-Made by systems. Designed to welcome everyone without assuming how many are
-present, which words they use for themselves, or what their experience looks
-like.
+Pluris Haven is an offline-first app made by systems for systems, other
+collectives, individuals, and anyone else who finds its tools useful. It does
+not assume how many are present, what words they use, or what their experience
+looks like.
 
 The app works locally without an account. Accounts, encrypted server backups,
 friends, and other network features are optional. The long-term sync model is
@@ -52,14 +49,14 @@ is still needed before making a broader claim.
 
 ## Install
 
-- **Google Play** — testing-track builds when they are available to you.
-- **Direct APK** — [official GitHub Releases](https://github.com/EndofTimeWorks/pluris-haven/releases).
-- **Obtainium** — [Add Pluris Haven to Obtainium](https://plurishaven.app/obtainium).
+- **Google Play** -- testing-track builds when they are available to you.
+- **Direct APK** -- [official GitHub Releases](https://github.com/EndofTimeWorks/pluris-haven/releases).
+- **Obtainium** -- [Add Pluris Haven to Obtainium](https://plurishaven.app/obtainium).
 
 Google Play and GitHub/Obtainium use the same Play-app-signing-key-signed APK
 lineage. Obtainium follows the official GitHub Release APK, which also has a
 Pluris Apps OpenPGP detached signature. Pre-alpha releases are GitHub
-prereleases; the supplied Obtainium configuration intentionally includes them.
+prereleases; the supplied Obtainium configuration includes them.
 
 ## Docs
 
@@ -131,4 +128,5 @@ care, medical advice, crisis support, or a replacement for professional help.
 
 Pluris Haven is source-available for noncommercial use. Commercial use,
 including selling builds or hosted access, requires a separate written licence
-from EndofTimeWorks. See [LICENSE](LICENSE).
+from EndofTimeWorks LLC, doing business as EndofTimeWorks. See
+[LICENSE](LICENSE).

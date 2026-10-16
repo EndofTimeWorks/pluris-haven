@@ -78,12 +78,12 @@ Reducing that exposure would need a separate full-database encryption design.
 - Preserve an imported tool's terms and data without applying those terms to
   everyone else.
 
-## Current completion direction
+## Before alpha
 
 - Finish local chats/messages/categories/channels already represented in the
   data model and product decisions.
-- Finish Markdown revision/history/restore flows for notes and journals, plus
-  message history where designed.
+- Finish the note, journal, and message revision and restore flows already in
+  the design.
 - Build the scoped, revocable, permission-based local API as a near-term
   integration surface; it must not expose ambient decrypted-vault access.
 - Finish the already-decided advanced reminder, poll, front-audit and System
@@ -94,8 +94,8 @@ Reducing that exposure would need a separate full-database encryption design.
 - Complete remaining real-device accessibility and Apple signing/runtime tests.
 - Obtain independent PluralPort Draft v0.1 export/import evidence before making
   broad compatibility claims.
-- Keep registration disabled until verified email and other production gates are
-  genuinely ready.
+- Keep registration disabled until verified email and the other production
+  gates are ready.
 
 Trusted recovery contacts are wanted, but their exact cryptographic share and
 threshold scheme remains unresolved. Do not invent that cryptography simply to

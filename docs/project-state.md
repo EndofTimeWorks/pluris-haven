@@ -1,7 +1,7 @@
 # Project state
 
-This is the compact current decision record. States distinguish product intent
-from implementation; it is not an alpha feature checklist.
+This is the current decision record. States distinguish product intent from
+implementation; this is not an alpha feature checklist.
 
 ## Maturity and release
 
@@ -95,11 +95,10 @@ from implementation; it is not an alpha feature checklist.
 
 ## Current completion priorities
 
-The next completion work includes local chats/messages,
-note/journal/message revision product flows, advanced
-reminders and polls, System Safety/front-audit gaps,
-customisation/accessibility gaps, Play closed testing, release automation
-hardening and alpha readiness.
+The remaining work includes local chats and messages, revision flows for notes,
+journals and messages, advanced reminders and polls, System Safety and front
+auditing, customisation and accessibility, Play closed testing, release
+automation and the remaining alpha gates.
 
 Hosted federation/portable-identity protocol work, desktop/private-web/watch
 clients, plugins, authenticated PluralSpace API import and other explicitly

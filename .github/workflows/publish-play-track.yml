@@ -23,6 +23,7 @@ jobs:
     name: Upload existing AAB to requested Play track
     runs-on: ubuntu-26.04
     timeout-minutes: 20
+    environment: official-release
     permissions:
       contents: read
 

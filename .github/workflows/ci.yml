@@ -116,6 +116,9 @@ jobs:
 
   mobile:
     name: Mobile (analyze + test + build)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     defaults:
@@ -155,6 +158,9 @@ jobs:
 
   ios:
     name: iOS (unsigned build)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: macos-26-intel
     timeout-minutes: 60
     defaults:
@@ -205,6 +211,9 @@ jobs:
 
   website:
     name: Website (check + build)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     defaults:
@@ -240,6 +249,9 @@ jobs:
 
   server:
     name: Server (lint + test + migration)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     services:
@@ -316,6 +328,9 @@ jobs:
 
   codeql:
     name: CodeQL (${{ matrix.language }})
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -381,7 +396,10 @@ jobs:
 
   ci-gate:
     name: CI gate
-    if: ${{ always() }}
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository)
     needs:
       - branch-policy
       - quality

@@ -8,14 +8,130 @@ on:
 permissions: {}
 
 jobs:
-  publish:
-    name: Publish branch debug artifacts
+  sign-main-android:
+    name: Sign current main debug APK
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.actor.login != 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    environment: debug-prerelease
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Check out the tested main commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Require the exact current main tip
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "${HEAD_SHA}" != "${main_sha}" ]]; then
+            echo 'Stable debug signing requires the tested commit to remain the current main tip.' >&2
+            exit 1
+          fi
+
+      - name: Download the tested Android debug APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: gh run download "${RUN_ID}" --name pluris-haven-android-debug-apk --dir release/raw
+
+      - name: Sign and verify the current main debug APK
+        shell: bash
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          DEBUG_KEYSTORE_PASSWORD: ${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+          DEBUG_KEY_ALIAS: ${{ secrets.DEBUG_KEY_ALIAS }}
+          DEBUG_KEY_PASSWORD: ${{ secrets.DEBUG_KEY_PASSWORD }}
+          EXPECTED_CERT_SHA256: ${{ vars.PLURIS_DEBUG_SIGNING_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          : "${DEBUG_KEYSTORE_BASE64:?DEBUG_KEYSTORE_BASE64 is not configured.}"
+          : "${DEBUG_KEYSTORE_PASSWORD:?DEBUG_KEYSTORE_PASSWORD is not configured.}"
+          : "${DEBUG_KEY_ALIAS:?DEBUG_KEY_ALIAS is not configured.}"
+          : "${DEBUG_KEY_PASSWORD:?DEBUG_KEY_PASSWORD is not configured.}"
+          : "${EXPECTED_CERT_SHA256:?PLURIS_DEBUG_SIGNING_CERT_SHA256 is not configured.}"
+
+          android_tools="${ANDROID_HOME:?Android SDK is not available}/build-tools"
+          aapt="$(find "${android_tools}" -type f -name aapt -print | LC_ALL=C sort -V | tail -n 1)"
+          apksigner="$(find "${android_tools}" -type f -name apksigner -print | LC_ALL=C sort -V | tail -n 1)"
+          if [[ -z "${aapt}" || -z "${apksigner}" ]]; then
+            echo 'Android SDK build tools are required to sign the debug APK.' >&2
+            exit 1
+          fi
+
+          input='release/raw/app-debug.apk'
+          output='release/signed/pluris-haven-debug.apk'
+          keystore="${RUNNER_TEMP}/pluris-haven-debug-prerelease.p12"
+          test -f "${input}" || { echo 'The tested debug APK is missing.' >&2; exit 1; }
+          package_name="$("${aapt}" dump badging "${input}" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          if [[ "${package_name}" != 'works.endoftime.plurishaven.debug' ]]; then
+            echo "Unexpected debug package ID: ${package_name:-missing}." >&2
+            exit 1
+          fi
+
+          mkdir -p release/signed
+          printf '%s' "${DEBUG_KEYSTORE_BASE64}" | base64 --decode > "${keystore}"
+          chmod 600 "${keystore}"
+          "${apksigner}" sign \
+            --ks "${keystore}" \
+            --ks-type PKCS12 \
+            --ks-key-alias "${DEBUG_KEY_ALIAS}" \
+            --ks-pass env:DEBUG_KEYSTORE_PASSWORD \
+            --key-pass env:DEBUG_KEY_PASSWORD \
+            --out "${output}" \
+            "${input}"
+          signer_output="$("${apksigner}" verify --verbose --print-certs "${output}")"
+          actual_cert="$(
+            sed -n 's/^.*certificate SHA-256 digest: //p' <<<"${signer_output}" |
+              tr '[:lower:]' '[:upper:]' |
+              LC_ALL=C sort -u
+          )"
+          if [[ ! "${actual_cert}" =~ ^[0-9A-F]{64}$ ]]; then
+            echo 'Stable debug APK did not report exactly one valid signing certificate.' >&2
+            exit 1
+          fi
+          if [[ "${actual_cert}" != "${EXPECTED_CERT_SHA256}" ]]; then
+            echo 'Stable debug APK has an unexpected signing certificate.' >&2
+            exit 1
+          fi
+
+      - name: Remove debug signing material
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/pluris-haven-debug-prerelease.p12"
+
+      - name: Upload stable-signed main debug APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pluris-haven-main-debug-signed-apk
+          path: release/signed/pluris-haven-debug.apk
+          if-no-files-found: error
+
+  publish:
+    name: Publish branch debug artifacts
+    needs: sign-main-android
+    if: >-
+      always() &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.actor.login != 'dependabot[bot]' &&
-      !startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+      !startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      (github.event.workflow_run.head_branch != 'main' || needs.sign-main-android.result == 'success')
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
@@ -97,8 +213,21 @@ jobs:
           gh release view "${TAG}" >/dev/null
           echo "Debug prerelease ${TAG} already targets this commit; no tag or release was changed."
 
-      - name: Download tested Android debug APK
-        if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
+      - name: Download stable-signed main debug APK
+        if: >-
+          steps.release.outputs.skip != 'true' &&
+          steps.existing.outputs.exists == 'false' &&
+          steps.release.outputs.head_branch == 'main'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pluris-haven-main-debug-signed-apk
+          path: release/raw
+
+      - name: Download tested branch Android debug APK
+        if: >-
+          steps.release.outputs.skip != 'true' &&
+          steps.existing.outputs.exists == 'false' &&
+          steps.release.outputs.head_branch != 'main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,7 +255,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/debug
-          cp release/raw/app-debug.apk release/debug/pluris-haven-debug.apk
+          if [[ "${HEAD_BRANCH}" == main ]]; then
+            cp release/raw/pluris-haven-debug.apk release/debug/pluris-haven-debug.apk
+            signing='stable main debug-prerelease certificate'
+          else
+            cp release/raw/app-debug.apk release/debug/pluris-haven-debug.apk
+            signing='disposable branch debug certificate'
+          fi
           cp release/raw/pluris-haven-dev-unsigned.ipa release/debug/pluris-haven-ios-unsigned.ipa
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           if [[ "${HEAD_BRANCH}" == main ]]; then
@@ -144,6 +279,7 @@ jobs:
             echo "ci_run_id=${RUN_ID}"
             echo "ci_run_url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
             echo "commit_range=${baseline}..${HEAD_SHA}"
+            echo "android_signing=${signing}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo 'These are debug/test artifacts, not official releases.'
             echo 'The iOS IPA is unsigned and is not installable or TestFlight evidence.'

@@ -15,7 +15,7 @@
   <a class="back" href="/">Back to Pluris Haven</a>
   <section>
     <p class="eyebrow">Android pre-alpha</p>
-    <h1>Install the Android build.</h1>
+    <h1>Download for Android</h1>
     <p>
       This is a signed release build for Android 7 and newer. It is pre-alpha: keep an encrypted
       export of data you care about, and expect some import or data-model changes before stable.
@@ -94,7 +94,7 @@
       The release also includes an <a href={mobileRelease.unsignedIpaUrl}>unsigned iOS IPA</a>. It
       will not install by itself. AltStore, SideStore, or Sideloadly must sign it with your Apple
       account first, and iOS may require it to be signed again every seven days with a free account.
-      This path still needs broader physical-device testing.
+      This path still needs more physical-device testing.
     </p>
   </section>
 
