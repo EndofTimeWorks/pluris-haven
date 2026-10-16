@@ -121,8 +121,10 @@ test('website deployment bootstraps the declared package manager after pulling m
   assert.match(workflow, /git pull --ff-only origin main[\s\S]*?scripts\/deploy-website\.sh/);
   assert.ok(workflow.indexOf('git pull --ff-only') < workflow.indexOf('scripts/deploy-website.sh'));
   assert.match(script, /corepack install/);
-  assert.ok(script.indexOf('corepack install') < script.indexOf('pnpm --version'));
-  assert.match(script, /pnpm --dir website install --frozen-lockfile/);
+  assert.match(script, /corepack pnpm --version/);
+  assert.ok(script.indexOf('corepack install') < script.indexOf('corepack pnpm --version'));
+  assert.match(script, /corepack pnpm --dir website install --frozen-lockfile/);
+  assert.doesNotMatch(script, /^pnpm /m);
 });
 
 test('official tag workflow configures an annotated-tag identity', () => {
