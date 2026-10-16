@@ -103,9 +103,26 @@ test('release workflows decode changelogs before quiet matching', () => {
   for (const workflow of releaseWorkflows) {
     const source = readFileSync(new URL(workflow, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /base64 --decode \| grep -Fq/);
+    assert.doesNotMatch(source, /base64 --decode \| awk/);
     assert.match(source, /changelog="\$\(gh api[\s\S]*?base64 --decode\)"/);
+    assert.match(source, /source_file="\$\(gh api[\s\S]*?base64 --decode\)"/);
+    assert.match(source, /awk '\/\^version:\/ \{print \$2; exit\}' <<<"\$\{source_file\}"/);
     assert.match(source, /grep -Fq "\$\{source_version\}" <<<"\$\{changelog\}"/);
   }
+});
+
+test('website deployment bootstraps the declared package manager after pulling main', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/deploy-website.yml', import.meta.url),
+    'utf8',
+  );
+  const script = readFileSync(new URL('./deploy-website.sh', import.meta.url), 'utf8');
+
+  assert.match(workflow, /git pull --ff-only origin main[\s\S]*?scripts\/deploy-website\.sh/);
+  assert.ok(workflow.indexOf('git pull --ff-only') < workflow.indexOf('scripts/deploy-website.sh'));
+  assert.match(script, /corepack install/);
+  assert.ok(script.indexOf('corepack install') < script.indexOf('pnpm --version'));
+  assert.match(script, /pnpm --dir website install --frozen-lockfile/);
 });
 
 test('official tag workflow configures an annotated-tag identity', () => {

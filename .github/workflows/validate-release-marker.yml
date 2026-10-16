@@ -67,7 +67,8 @@ jobs:
           RELEASE_VERSION: ${{ steps.marker.outputs.version }}
         run: |
           set -euo pipefail
-          source_version="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | awk '/^version:/ {print $2; exit}')"
+          source_file="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode)"
+          source_version="$(awk '/^version:/ {print $2; exit}' <<<"${source_file}")"
           test "${source_version%%+*}" = "${RELEASE_VERSION}" || {
             echo "Release marker ${RELEASE_VERSION} does not match mobile/pubspec.yaml (${source_version})." >&2
             exit 1
@@ -102,7 +103,8 @@ jobs:
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          version_with_build="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode | awk '/^version:/ {print $2; exit}')"
+          source_file="$(gh api "repos/${GITHUB_REPOSITORY}/contents/mobile/pubspec.yaml?ref=${RELEASE_SHA}" --jq .content | tr -d '\n' | base64 --decode)"
+          version_with_build="$(awk '/^version:/ {print $2; exit}' <<<"${source_file}")"
           tag="mobile-v${version_with_build}"
           existing="$(git ls-remote --tags origin "refs/tags/${tag}" "refs/tags/${tag}^{}" | awk '/\^\{\}$/ { peeled = $1; next } { direct = $1 } END { print peeled != "" ? peeled : direct }')"
           if [[ -n "${existing}" && "${existing}" != "${RELEASE_SHA}" ]]; then
