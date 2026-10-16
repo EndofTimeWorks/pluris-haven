@@ -14,13 +14,13 @@ export PATH="${HOME}/.local/node-v${node_version}/bin:${PATH}"
 echo '==> toolchain'
 node --version
 corepack install
-pnpm --version
+corepack pnpm --version
 
 echo '==> pnpm install --frozen-lockfile'
-pnpm --dir website install --frozen-lockfile
+corepack pnpm --dir website install --frozen-lockfile
 
 echo '==> pnpm build'
-pnpm --dir website build
+corepack pnpm --dir website build
 
 echo '==> verify'
 http_code="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8083/)"
