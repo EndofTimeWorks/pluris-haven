@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -191,4 +192,14 @@ test('same-repository pull requests do not duplicate resource-heavy CI', () => {
   const gate = workflowJob(source, 'ci-gate');
   assert.match(gate, /always\(\) &&/);
   assert.match(gate, /github\.event\.pull_request\.head\.repo\.full_name != github\.repository/);
+});
+
+test('branch policy accepts semantic release branches only when well formed', () => {
+  const script = new URL('./check-branch-name.sh', import.meta.url);
+  const check = (branch) => spawnSync(script.pathname, [branch], { encoding: 'utf8' });
+
+  assert.equal(check('release/0.3.1-alpha.1').status, 0);
+  assert.equal(check('release/1.0.0').status, 0);
+  assert.equal(check('release/0.3').status, 1);
+  assert.equal(check('release/0.3.1-alpha..1').status, 1);
 });
