@@ -172,3 +172,23 @@ test('stable debug signing is restricted to the exact current main tip', () => {
   assert.match(publisher, /stable main debug-prerelease certificate/);
   assert.match(publisher, /disposable branch debug certificate/);
 });
+
+test('same-repository pull requests do not duplicate resource-heavy CI', () => {
+  const source = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const fullValidationCondition =
+    /if: >-\n      github\.event_name != 'pull_request' \|\|\n      github\.event\.pull_request\.head\.repo\.full_name != github\.repository/;
+
+  for (const [job, nextJob] of [
+    ['mobile', 'ios'],
+    ['ios', 'website'],
+    ['website', 'server'],
+    ['server', 'codeql'],
+    ['codeql', 'ci-gate'],
+  ]) {
+    assert.match(workflowJob(source, job, nextJob), fullValidationCondition);
+  }
+
+  const gate = workflowJob(source, 'ci-gate');
+  assert.match(gate, /always\(\) &&/);
+  assert.match(gate, /github\.event\.pull_request\.head\.repo\.full_name != github\.repository/);
+});
