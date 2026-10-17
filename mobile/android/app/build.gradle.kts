@@ -77,6 +77,7 @@ tasks.configureEach {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.work:work-runtime:2.10.2")
+    testImplementation("junit:junit:4.13.2")
 }
 
 flutter {

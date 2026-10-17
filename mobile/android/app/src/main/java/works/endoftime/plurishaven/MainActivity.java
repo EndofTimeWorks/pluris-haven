@@ -29,7 +29,6 @@ import androidx.work.WorkManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -418,20 +417,7 @@ public final class MainActivity extends FlutterFragmentActivity {
     }
 
     private boolean isOwnedExportSource(File source) {
-        try {
-            File canonicalSource = source.getCanonicalFile();
-            File stagingDirectory = canonicalSource.getParentFile();
-            if (stagingDirectory == null
-                    || !stagingDirectory.getName().startsWith("pluris-haven-export-")) {
-                return false;
-            }
-            File stagingParent = stagingDirectory.getParentFile();
-            return canonicalSource.isFile()
-                    && stagingParent != null
-                    && stagingParent.equals(getCacheDir().getCanonicalFile());
-        } catch (IOException error) {
-            return false;
-        }
+        return ExportSourceValidator.isOwned(source, getCacheDir());
     }
 
     private List<Uri> selectedUris(Intent intent) {
