@@ -30,11 +30,22 @@ test('rejects invalid source versions and run numbers', () => {
   assert.throws(() => debugTag('1.0.0+4000', 0));
 });
 
-test('permits a successful ordinary development-branch push', () => {
-  assert.deepEqual(debugReleaseEligibility(ordinaryPush), {
+test('permits a successful ordinary main push', () => {
+  assert.deepEqual(debugReleaseEligibility({ ...ordinaryPush, headBranch: 'main' }), {
     eligible: true,
     reason: 'eligible',
   });
+});
+
+test('rejects feature and pull-request branch pushes', () => {
+  assert.deepEqual(debugReleaseEligibility(ordinaryPush), {
+    eligible: false,
+    reason: 'not-main',
+  });
+  assert.deepEqual(
+    debugReleaseEligibility({ ...ordinaryPush, headBranch: 'release/0.3.1-alpha.1' }),
+    { eligible: false, reason: 'not-main' },
+  );
 });
 
 test('rejects Dependabot as the workflow-run actor', () => {

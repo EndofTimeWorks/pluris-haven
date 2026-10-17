@@ -39,10 +39,13 @@ export function debugReleaseEligibility({
   if (headBranch?.startsWith('dependabot/')) {
     return { eligible: false, reason: 'dependabot-branch' };
   }
-  if (headBranch === 'main' && parseReleaseMarker(subject ?? '')) {
+  if (!headBranch) return { eligible: false, reason: 'missing-head-branch' };
+  if (headBranch !== 'main') {
+    return { eligible: false, reason: 'not-main' };
+  }
+  if (parseReleaseMarker(subject ?? '')) {
     return { eligible: false, reason: 'official-release-marker' };
   }
-  if (!headBranch) return { eligible: false, reason: 'missing-head-branch' };
   return { eligible: true, reason: 'eligible' };
 }
 

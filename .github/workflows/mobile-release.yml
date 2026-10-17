@@ -5,11 +5,17 @@ on:
     tags:
       - 'mobile-v*'
       - '!mobile-v*.dev.*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing signed official mobile tag
+        required: true
+        type: string
 
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.release_tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -37,9 +43,14 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
         run: |
           set -euo pipefail
 
+          if [[ ! "${RELEASE_TAG}" =~ ^mobile-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?\+[1-9][0-9]*$ ]]; then
+            echo 'Mobile release tag has an invalid name.' >&2
+            exit 1
+          fi
           trusted_manual_fingerprint='1B6BE8AB1CAD7BB96CCE5C6FD26A61973E7ACB14'
           trusted_ci_signing_fingerprint='BF89ABFBD583200EB70E43FA46525A21A09A8888'
           GNUPGHOME="${RUNNER_TEMP}/pluris-haven-official-release/tag-verification"
@@ -49,6 +60,7 @@ jobs:
           export GNUPGHOME
           trap 'rm -rf "${GNUPGHOME}"' EXIT
           gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
+          gpg --batch --import .github/keys/pluris-haven-ci-release-tag.asc >/dev/null
           imported_fingerprint="$(
             gpg --batch --with-colons --fingerprint "${trusted_manual_fingerprint}" |
               awk -F: '$1 == "fpr" { print $10; exit }'
@@ -57,22 +69,18 @@ jobs:
             echo 'Trusted release signing key fingerprint does not match.' >&2
             exit 1
           fi
-          if ! git cat-file -e "${GITHUB_REF_NAME}^{tag}" 2>/dev/null; then
+          if ! git cat-file -e "${RELEASE_TAG}^{tag}"; then
             echo 'Mobile release ref must be an annotated tag.' >&2
             exit 1
           fi
-          if ! git verify-tag "${GITHUB_REF_NAME}"; then
-            tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.sha')"
-            verification="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq '.verification')"
-            if [[ "$(jq -r '.verified' <<<"${verification}")" != true ]] || \
-              ! jq -r '.signature // empty' <<<"${verification}" | gpg --list-packets 2>/dev/null | grep -Fq "issuer fpr v4 ${trusted_ci_signing_fingerprint}"; then
-              echo 'Mobile release tag must have a valid trusted manual or CI signing identity.' >&2
-              exit 1
-            fi
+          verification="$(git verify-tag --raw "${RELEASE_TAG}" 2>&1 || true)"
+          if ! grep -Eq "\[GNUPG:\] VALIDSIG (${trusted_manual_fingerprint}|${trusted_ci_signing_fingerprint})( |$)" <<<"${verification}"; then
+            echo 'Mobile release tag must have a valid trusted manual or CI signing identity.' >&2
+            exit 1
           fi
 
           semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$'
-          version_with_build="${GITHUB_REF_NAME#mobile-v}"
+          version_with_build="${RELEASE_TAG#mobile-v}"
           if [[ "${version_with_build}" != *"+"* ]]; then
             echo "Mobile release tag must include a numeric build number." >&2
             exit 1
@@ -93,16 +101,13 @@ jobs:
             exit 1
           fi
 
-          release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           if ! git merge-base --is-ancestor "${release_commit}" origin/main; then
             echo 'Official mobile releases must target a commit contained in main.' >&2
             exit 1
           fi
-          if [[ "$(git rev-parse origin/main)" != "${release_commit}" ]]; then
-            echo 'ABORT — release marker is no longer the current main tip.' >&2
-            exit 1
-          fi
+          git checkout --detach "${RELEASE_TAG}"
           expected_subject="release: ${version}"
           actual_subject="$(git show -s --format=%s "${release_commit}")"
           if [[ "${actual_subject}" != "${expected_subject}" ]]; then
@@ -111,7 +116,7 @@ jobs:
           fi
 
           node scripts/check-mobile-release-version.mjs \
-            "${version_with_build}" "${GITHUB_REF_NAME}"
+            "${version_with_build}" "${RELEASE_TAG}"
           if ! grep -Fq "${version_with_build}" CHANGELOG.md; then
             echo "CHANGELOG.md does not mention ${version_with_build}." >&2
             exit 1
@@ -125,7 +130,7 @@ jobs:
           {
             echo "version=${version}"
             echo "build=${build}"
-            echo "tag=${GITHUB_REF_NAME}"
+            echo "tag=${RELEASE_TAG}"
             echo "prerelease=${prerelease}"
             echo "release_sha=${release_commit}"
           } >> "${GITHUB_OUTPUT}"
@@ -144,6 +149,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
+          persist-credentials: false
 
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -206,7 +214,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.metadata.outputs.tag }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Java
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -319,6 +329,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.metadata.outputs.tag }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Download Android artifacts
@@ -357,8 +368,9 @@ jobs:
             echo 'Official automation must never target the Play production track.' >&2
             exit 1
           fi
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "${RELEASE_SHA}" || {
-            echo 'ABORT — release marker is no longer the current main tip.' >&2
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+            echo 'ABORT -- release commit is no longer contained in main.' >&2
             exit 1
           }
           bundle="release/android/pluris-haven-${PLAY_VERSION}+${PLAY_BUILD}.aab"
@@ -400,8 +412,9 @@ jobs:
             --data "${release}" \
             "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}" \
             >/dev/null
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "${RELEASE_SHA}" || {
-            echo 'ABORT — release marker is no longer the current main tip.' >&2
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+            echo 'ABORT -- release commit is no longer contained in main.' >&2
             exit 1
           }
           curl --fail-with-body --silent --show-error \
@@ -515,8 +528,9 @@ jobs:
           : "${ARTIFACT_PASSPHRASE:?PLURIS_ARTIFACT_GPG_PASSPHRASE is not configured.}"
           : "${ARTIFACT_PRIMARY_FINGERPRINT:?Artefact primary fingerprint is not configured.}"
           : "${ARTIFACT_SIGNING_FINGERPRINT:?Artefact signing fingerprint is not configured.}"
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "${RELEASE_SHA}" || {
-            echo 'ABORT — release marker is no longer the current main tip.' >&2
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+            echo 'ABORT -- release commit is no longer contained in main.' >&2
             exit 1
           }
           work_dir="${RUNNER_TEMP}/pluris-haven-official-release/artefact-signing"
@@ -580,8 +594,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "${RELEASE_SHA}" || {
-            echo 'ABORT — release marker is no longer the current main tip.' >&2
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+            echo 'ABORT -- release commit is no longer contained in main.' >&2
             exit 1
           }
           if gh release view "${{ needs.metadata.outputs.tag }}" >/dev/null 2>&1; then

@@ -122,16 +122,17 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish branch debug artifacts
+    name: Publish main debug artifacts
     needs: sign-main-android
     if: >-
       always() &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.actor.login != 'dependabot[bot]' &&
       !startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
-      (github.event.workflow_run.head_branch != 'main' || needs.sign-main-android.result == 'success')
+      needs.sign-main-android.result == 'success'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
@@ -223,17 +224,6 @@ jobs:
           name: pluris-haven-main-debug-signed-apk
           path: release/raw
 
-      - name: Download tested branch Android debug APK
-        if: >-
-          steps.release.outputs.skip != 'true' &&
-          steps.existing.outputs.exists == 'false' &&
-          steps.release.outputs.head_branch != 'main'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.release.outputs.run_id }}
-        run: gh run download "${RUN_ID}" --name pluris-haven-android-debug-apk --dir release/raw
-
       - name: Download tested unsigned iOS artifact
         if: steps.release.outputs.skip != 'true' && steps.existing.outputs.exists == 'false'
         shell: bash
@@ -255,20 +245,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release/debug
-          if [[ "${HEAD_BRANCH}" == main ]]; then
-            cp release/raw/pluris-haven-debug.apk release/debug/pluris-haven-debug.apk
-            signing='stable main debug-prerelease certificate'
-          else
-            cp release/raw/app-debug.apk release/debug/pluris-haven-debug.apk
-            signing='disposable branch debug certificate'
-          fi
+          cp release/raw/pluris-haven-debug.apk release/debug/pluris-haven-debug.apk
+          signing='stable main debug-prerelease certificate'
           cp release/raw/pluris-haven-dev-unsigned.ipa release/debug/pluris-haven-ios-unsigned.ipa
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
-          if [[ "${HEAD_BRANCH}" == main ]]; then
-            baseline="$(git describe --tags --match 'mobile-v*' --abbrev=0 "${HEAD_SHA}")"
-          else
-            baseline="$(git merge-base "${HEAD_SHA}" origin/main)"
-          fi
+          baseline="$(git describe --tags --match 'mobile-v*' --abbrev=0 "${HEAD_SHA}")"
           node scripts/generate-release-notes.mjs --from "${baseline}" --to "${HEAD_SHA}" > release/debug/generated-notes.md
           {
             echo "source_version=${VERSION}"

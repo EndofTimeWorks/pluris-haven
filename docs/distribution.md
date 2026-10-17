@@ -9,8 +9,10 @@ used for managed Android testing.
 The mobile source version prepared for the first alpha candidate is
 `0.3.1-alpha.1+3006`.
 
-- Successful internal branch CI, including ordinary `main` CI, publishes a
-  clearly labelled `debug-v...` GitHub prerelease with debug/test artifacts.
+- Successful ordinary `main` CI publishes a clearly labelled `debug-v...`
+  GitHub prerelease with debug/test artefacts.
+- Pull-request and feature-branch builds remain CI artefacts and do not create
+  GitHub tags or Releases.
 - Versioned releases use an immutable GPG-signed `mobile-v...` tag only after
   an exact `release: <semantic-version>` marker at the current `main` tip has
   passed hosted CI. The protected release job creates the normal CI-signed tag;

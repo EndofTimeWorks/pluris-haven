@@ -24,7 +24,7 @@
     <ul>
       <li>Package id: <code>works.endoftime.plurishaven</code></li>
       <li>Canonical APK: <code>pluris-haven-&lt;version&gt;.apk</code></li>
-      <li>Debug tags: <code>debug-v*</code></li>
+      <li>Main-branch debug tags: <code>debug-v*</code> (not used by Obtainium)</li>
       <li>Versioned tags: <code>mobile-v&lt;version&gt;</code></li>
       <li>Current release: <code>{mobileRelease.version}</code></li>
     </ul>

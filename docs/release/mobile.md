@@ -1,19 +1,19 @@
 # Mobile releases
 
 There are two automation paths: automatic debug prereleases from successful
-internal branch CI (including ordinary `main` commits), and deliberate versioned
-releases from an exact validated release-marker tip on `main`.
+ordinary `main` CI, and deliberate versioned releases from an exact validated
+release-marker tip on `main`.
 
 Pluris Haven is currently **PRE-ALPHA**. Alpha is next; beta is later. Do not
 change maturity merely because a store/testing path exists.
 
 ## Debug prerelease
 
-Every successful push to an internal branch, including `main`, is eligible for
-an automatic GitHub debug prerelease after `CI` completes. The trusted publisher
-workflow runs from the default branch; this is deliberate privilege separation.
-The first governance PR does not receive this publication until that workflow
-has been merged to `main` once.
+Every successful ordinary `main` push is eligible for an automatic GitHub debug
+prerelease after `CI` completes. Pull-request and feature-branch builds remain CI
+artefacts only: they never create a GitHub tag or Release, so update clients such
+as Obtainium cannot discover them. The trusted publisher workflow runs from the
+default branch; this is deliberate privilege separation.
 
 Debug publication reads, but does not modify, `mobile/pubspec.yaml`. For source
 version `0.3.0-pre-alpha.4+3004`, CI run 127 creates:
@@ -28,11 +28,10 @@ source branch, exact commit, source version, CI run number/ID, signing class,
 and build time. Current `main` debug APKs are re-signed with a dedicated stable
 debug-prerelease key so that later `main` builds can upgrade them. The privileged
 signer requires the tested SHA to remain the exact `main` tip and verifies both
-the debug package ID and expected certificate fingerprint. Other branch builds
-retain disposable debug certificates and may require uninstalling an earlier
-branch build. These are test artifacts: they are never Play/App Store uploads,
-never official releases, and the unsigned IPA is not installable or TestFlight
-evidence.
+the debug package ID and expected certificate fingerprint. Branch builds use
+disposable runner certificates but are retained only as CI artefacts. These are
+test artefacts: they are never Play/App Store uploads, never official releases,
+and the unsigned IPA is not installable or TestFlight evidence.
 
 The first stable-signed `main` debug APK cannot upgrade a previously installed
 APK signed by a disposable runner key; uninstall that old debug package once.
@@ -109,7 +108,9 @@ unreleased until every release gate completes.
    commit lands first, refresh the release branch, regenerate the changelog, and
    make a new final marker; do not tag the older marker.
 8. The trusted default-branch workflow rechecks that the marker is still the
-   current `main` tip, then creates and verifies the signed immutable tag.
+   current `main` tip, then creates and verifies the signed immutable tag. It
+   explicitly dispatches `Mobile Release`, because tags pushed with
+   `GITHUB_TOKEN` do not trigger another workflow's tag-push event.
    `scripts/tag-mobile-release.sh` remains the maintainer's YubiKey-backed
    recovery path if that automation cannot complete.
 9. Watch `Mobile Release` through completion and inspect failed job logs rather
@@ -136,7 +137,7 @@ need a one-time uninstall before the current package can be installed.
 
 `Mobile Release`:
 
-1. verifies the pushed tag and its trusted GPG signature;
+1. verifies the selected tag and its trusted GPG signature;
 2. fetches `origin/main` and rejects a tag whose target commit is not contained
    in `main`;
 3. validates tag/version/build consistency and rejects `.dev.N`;

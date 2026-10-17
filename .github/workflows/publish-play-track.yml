@@ -53,6 +53,7 @@ jobs:
           export GNUPGHOME
           trap 'rm -rf "${GNUPGHOME}"' EXIT
           gpg --batch --import .github/keys/pluris-haven-release-tag.asc >/dev/null
+          gpg --batch --import .github/keys/pluris-haven-ci-release-tag.asc >/dev/null
           imported_fingerprint="$(
             gpg --batch --with-colons --fingerprint "${trusted_manual_fingerprint}" |
               awk -F: '$1 == "fpr" { print $10; exit }'
@@ -69,14 +70,10 @@ jobs:
             echo 'Play publication requires an existing annotated tag.' >&2
             exit 1
           fi
-          if ! git verify-tag "${RELEASE_TAG}"; then
-            tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq '.object.sha')"
-            verification="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq '.verification')"
-            if [[ "$(jq -r '.verified' <<<"${verification}")" != true ]] || \
-              ! jq -r '.signature // empty' <<<"${verification}" | gpg --list-packets 2>/dev/null | grep -Fq "issuer fpr v4 ${trusted_ci_signing_fingerprint}"; then
-              echo 'Play publication requires an existing valid trusted signed annotated tag.' >&2
-              exit 1
-            fi
+          verification="$(git verify-tag --raw "${RELEASE_TAG}" 2>&1 || true)"
+          if ! grep -Eq "\[GNUPG:\] VALIDSIG (${trusted_manual_fingerprint}|${trusted_ci_signing_fingerprint})( |$)" <<<"${verification}"; then
+            echo 'Play publication requires an existing valid trusted signed annotated tag.' >&2
+            exit 1
           fi
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           release_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
