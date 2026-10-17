@@ -388,40 +388,55 @@ jobs:
               "${publisher_base}/applications/${package_name}/edits"
           )"
           edit_id="$(jq -er '.id' <<<"${edit}")"
+          track="$(
+            curl --fail-with-body --silent --show-error \
+              --header "${authorization}" \
+              "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}"
+          )"
+          if jq -e --arg version_code "${PLAY_BUILD}" \
+            '[.releases[]? | select(.status == "completed") | .versionCodes[]? | tostring] | index($version_code) != null' \
+            <<<"${track}" >/dev/null; then
+            version_code="${PLAY_BUILD}"
+            echo "Play ${PLAY_TRACK} already contains completed build ${version_code}; reusing it."
+            curl --fail-with-body --silent --show-error \
+              --request DELETE \
+              --header "${authorization}" \
+              "${publisher_base}/applications/${package_name}/edits/${edit_id}"
+          else
+            uploaded_bundle="$(
+              curl --fail-with-body --silent --show-error \
+                --request POST \
+                --header "${authorization}" \
+                --header 'Content-Type: application/octet-stream' \
+                --data-binary @"${bundle}" \
+                "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${package_name}/edits/${edit_id}/bundles"
+            )"
+            version_code="$(jq -er '.versionCode | tostring' <<<"${uploaded_bundle}")"
+            if [[ "${version_code}" != "${PLAY_BUILD}" ]]; then
+              echo "Uploaded bundle version code ${version_code} does not match ${PLAY_BUILD}." >&2
+              exit 1
+            fi
 
-          uploaded_bundle="$(
+            release="$(jq -nc --arg version_code "${version_code}" \
+              '{releases: [{versionCodes: [$version_code], status: "completed"}]}')"
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "${authorization}" \
+              --header 'Content-Type: application/json' \
+              --data "${release}" \
+              "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}" \
+              >/dev/null
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+              echo 'ABORT -- release commit is no longer contained in main.' >&2
+              exit 1
+            }
             curl --fail-with-body --silent --show-error \
               --request POST \
               --header "${authorization}" \
-              --header 'Content-Type: application/octet-stream' \
-              --data-binary @"${bundle}" \
-              "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${package_name}/edits/${edit_id}/bundles"
-          )"
-          version_code="$(jq -er '.versionCode | tostring' <<<"${uploaded_bundle}")"
-          if [[ "${version_code}" != "${PLAY_BUILD}" ]]; then
-            echo "Uploaded bundle version code ${version_code} does not match ${PLAY_BUILD}." >&2
-            exit 1
+              "${publisher_base}/applications/${package_name}/edits/${edit_id}:commit" \
+              >/dev/null
           fi
-
-          release="$(jq -nc --arg version_code "${version_code}" \
-            '{releases: [{versionCodes: [$version_code], status: "completed"}]}')"
-          curl --fail-with-body --silent --show-error \
-            --request PUT \
-            --header "${authorization}" \
-            --header 'Content-Type: application/json' \
-            --data "${release}" \
-            "${publisher_base}/applications/${package_name}/edits/${edit_id}/tracks/${PLAY_TRACK}" \
-            >/dev/null
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
-          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
-            echo 'ABORT -- release commit is no longer contained in main.' >&2
-            exit 1
-          }
-          curl --fail-with-body --silent --show-error \
-            --request POST \
-            --header "${authorization}" \
-            "${publisher_base}/applications/${package_name}/edits/${edit_id}:commit" \
-            >/dev/null
 
           generated=''
           download_id=''

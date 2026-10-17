@@ -209,6 +209,13 @@ test('credential-bearing mobile release jobs require the official environment', 
   assert.match(playInternal, /secrets\.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON/);
   assert.match(playInternal, /play-generated-apk\.mjs select[\s\S]*?PLAY_APP_SIGNING_CERT_SHA256/);
   assert.match(playInternal, /:download\?alt=media/);
+  assert.match(playInternal, /tracks\/\$\{PLAY_TRACK\}/);
+  assert.match(playInternal, /select\(\.status == "completed"\)/);
+  assert.match(playInternal, /index\(\$version_code\) != null/);
+  assert.match(playInternal, /already contains completed build/);
+  assert.ok(
+    playInternal.indexOf('already contains completed build') < playInternal.indexOf('/bundles'),
+  );
 
   const repair = readFileSync(
     new URL('../.github/workflows/publish-play-track.yml', import.meta.url),
