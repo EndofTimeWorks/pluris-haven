@@ -13,7 +13,8 @@ export const obtainiumConfig = {
     includePrereleases: true,
     fallbackToOlderReleases: true,
     apkFilterRegEx: canonicalApkPattern,
-    versionExtractionRegEx: '^mobile-v.*\\+([1-9][0-9]*)$',
+    versionExtractionRegEx:
+      '^mobile-v(?!.*(?:[.-])debug(?:[.+-]|$))[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?\\+([1-9][0-9]*)$',
     matchGroupToUse: '$1',
     versionDetection: false,
     useVersionCodeAsOSVersion: true,

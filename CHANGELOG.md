@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.1-alpha.2 - 2026-10-16
+
+Android export and release safety update: `0.3.1-alpha.2+3007`.
+
+### Android
+
+- Fixed archive saving on Android devices where the system temporary directory
+  sits inside a nested app-cache directory. Export sources still have to remain
+  within the app's private cache before they can be saved or shared.
+
+### Release safety
+
+- Official signed tags now start the validated mobile release workflow
+  explicitly, avoiding GitHub's suppression of follow-up workflows created by
+  its own automation token.
+- Pull-request and feature-branch builds remain CI artefacts only. They no
+  longer create GitHub Releases, and Obtainium accepts only official mobile
+  release tags.
+- Release jobs verify automated tag signatures directly against the trusted
+  public signing key before building or publishing anything.
+
 ## 0.3.1-alpha.1 - 2026-10-14
 
 First alpha candidate: `0.3.1-alpha.1+3006`.

@@ -25,6 +25,29 @@
   </section>
 
   <section>
+    <h2>0.3.1-alpha.2</h2>
+    <p>Release candidate notes for build <code>0.3.1-alpha.2+3007</code>.</p>
+    <ul>
+      <li>
+        Archive saving now works on Android devices that place temporary files in a nested app-cache
+        directory. Export files must still remain inside the app's private cache.
+      </li>
+      <li>
+        Official signed tags now start the validated release workflow directly, so a completed tag
+        is not left waiting for a follow-up workflow that GitHub will not start automatically.
+      </li>
+      <li>
+        Pull-request and feature-branch builds stay in CI. They do not create GitHub Releases and
+        cannot be selected by Obtainium.
+      </li>
+      <li>
+        Automated release tags are checked against the trusted public signing key before a build or
+        publication begins.
+      </li>
+    </ul>
+  </section>
+
+  <section>
     <h2>0.3.1-alpha.1</h2>
     <p>Release candidate notes for build <code>0.3.1-alpha.1+3006</code>.</p>
     <ul>

@@ -6,20 +6,24 @@ used for managed Android testing.
 
 ## Current release channels
 
-The mobile source version prepared for the first alpha candidate is
-`0.3.1-alpha.1+3006`.
+The mobile source version prepared for the next alpha candidate is
+`0.3.1-alpha.2+3007`.
 
-- Successful internal branch CI, including ordinary `main` CI, publishes a
-  clearly labelled `debug-v...` GitHub prerelease with debug/test artifacts.
+- Successful ordinary `main` CI publishes a clearly labelled `debug-v...`
+  GitHub prerelease with debug/test artefacts.
+- Pull-request and feature-branch builds remain CI artefacts and do not create
+  GitHub tags or Releases.
 - Versioned releases use an immutable GPG-signed `mobile-v...` tag only after
   an exact `release: <semantic-version>` marker at the current `main` tip has
   passed hosted CI. The protected release job creates the normal CI-signed tag;
   the maintainer's YubiKey path remains a recovery option.
 - The project remains **PRE-ALPHA** until the first alpha release completes;
   beta is later.
-- `0.3.1-alpha.1` sorts after the `0.3.0-pre-alpha` line, and build `3006`
-  avoids reusing an Android version code. It is not a published release until
-  the release gates complete.
+- The signed `0.3.1-alpha.1+3006` tag remains unpublished because its Android
+  archive-save path failed on affected devices. Its immutable tag is not moved
+  or reused.
+- `0.3.1-alpha.2` and build `3007` advance both version components. It is not a
+  published release until every release gate completes.
 
 ## Android / GitHub Releases
 

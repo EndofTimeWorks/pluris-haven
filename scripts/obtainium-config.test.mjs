@@ -24,6 +24,14 @@ test('produces an Obtainium GitHub Releases configuration for the canonical APK 
     new RegExp(settings.versionExtractionRegEx).exec('mobile-v0.3.1-alpha.1+3006')?.[1],
     '3006',
   );
+  assert.doesNotMatch(
+    'debug-v0.3.1-alpha.1.debug.280+3006',
+    new RegExp(settings.versionExtractionRegEx),
+  );
+  assert.doesNotMatch(
+    'mobile-v0.3.1-alpha.1.debug.280+3006',
+    new RegExp(settings.versionExtractionRegEx),
+  );
 
   const apk = new RegExp(canonicalApkPattern);
   assert.match('pluris-haven-0.3.1-alpha.1+3006.apk', apk);

@@ -201,3 +201,26 @@ jobs:
             exit 1
           fi
           git push origin "refs/tags/${RELEASE_TAG}"
+
+  dispatch-release:
+    name: Start the official mobile release
+    needs:
+      - eligibility
+      - sign
+    if: needs.eligibility.outputs.eligible == 'true' && needs.sign.result == 'success'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Dispatch the validated signed tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.eligibility.outputs.tag }}
+        run: >-
+          gh workflow run mobile-release.yml
+          --repo "${GITHUB_REPOSITORY}"
+          --ref main
+          --field release_tag="${RELEASE_TAG}"

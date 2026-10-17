@@ -146,6 +146,56 @@ test('official tag signing job retains credentials for the tag push', () => {
   assert.match(signJob, /persist-credentials: true/);
 });
 
+test('official tag creation explicitly dispatches the validated release workflow', () => {
+  const tagWorkflow = readFileSync(
+    new URL('../.github/workflows/create-official-mobile-tag.yml', import.meta.url),
+    'utf8',
+  );
+  const dispatch = workflowJob(tagWorkflow, 'dispatch-release');
+  assert.match(dispatch, /needs\.sign\.result == 'success'/);
+  assert.match(dispatch, /actions: write/);
+  assert.match(dispatch, /gh workflow run mobile-release\.yml/);
+  assert.match(dispatch, /--ref main/);
+  assert.match(dispatch, /--field release_tag="\$\{RELEASE_TAG\}"/);
+
+  const release = readFileSync(
+    new URL('../.github/workflows/mobile-release.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(release, /workflow_dispatch:[\s\S]*?release_tag:[\s\S]*?required: true/);
+  assert.match(release, /git checkout --detach "\$\{RELEASE_TAG\}"/);
+  assert.match(release, /git merge-base --is-ancestor "\$\{release_commit\}" origin\/main/);
+  assert.doesNotMatch(release, /release marker is no longer the current main tip/);
+});
+
+test('official release jobs build the validated tag and trust both public signing keys', () => {
+  const release = readFileSync(
+    new URL('../.github/workflows/mobile-release.yml', import.meta.url),
+    'utf8',
+  );
+  for (const [job, nextJob] of [
+    ['ios', 'android'],
+    ['android', 'play-internal'],
+    ['play-internal', 'publish'],
+    ['publish', 'website-metadata'],
+  ]) {
+    assert.match(
+      workflowJob(release, job, nextJob),
+      /ref: \$\{\{ needs\.metadata\.outputs\.tag \}\}/,
+    );
+  }
+  for (const workflow of [
+    '../.github/workflows/mobile-release.yml',
+    '../.github/workflows/publish-play-track.yml',
+    '../.github/workflows/update-website-release.yml',
+  ]) {
+    const source = readFileSync(new URL(workflow, import.meta.url), 'utf8');
+    assert.match(source, /pluris-haven-release-tag\.asc/);
+    assert.match(source, /pluris-haven-ci-release-tag\.asc/);
+    assert.match(source, /git verify-tag --raw/);
+  }
+});
+
 test('credential-bearing mobile release jobs require the official environment', () => {
   const release = readFileSync(
     new URL('../.github/workflows/mobile-release.yml', import.meta.url),
@@ -169,7 +219,7 @@ test('credential-bearing mobile release jobs require the official environment', 
   assert.match(repairPublish, /secrets\.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON/);
 });
 
-test('stable debug signing is restricted to the exact current main tip', () => {
+test('debug GitHub releases are restricted to the exact current main tip', () => {
   const source = readFileSync(
     new URL('../.github/workflows/publish-debug-prerelease.yml', import.meta.url),
     'utf8',
@@ -185,12 +235,11 @@ test('stable debug signing is restricted to the exact current main tip', () => {
   assert.match(signer, /PLURIS_DEBUG_SIGNING_CERT_SHA256/);
   assert.match(signer, /certificate SHA-256 digest/);
   assert.doesNotMatch(publisher, /secrets\.DEBUG_KEY/);
-  assert.match(
-    publisher,
-    /head_branch != 'main' \|\| needs\.sign-main-android\.result == 'success'/,
-  );
+  assert.match(publisher, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(publisher, /needs\.sign-main-android\.result == 'success'/);
   assert.match(publisher, /stable main debug-prerelease certificate/);
-  assert.match(publisher, /disposable branch debug certificate/);
+  assert.doesNotMatch(publisher, /disposable branch debug certificate/);
+  assert.doesNotMatch(publisher, /Download tested branch Android debug APK/);
 });
 
 test('same-repository pull requests do not duplicate resource-heavy CI', () => {

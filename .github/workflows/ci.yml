@@ -147,6 +147,10 @@ jobs:
 
       - run: flutter test
 
+      - name: Test Android host integration
+        run: ./gradlew app:testDebugUnitTest --tests works.endoftime.plurishaven.ExportSourceValidatorTest
+        working-directory: mobile/android
+
       - run: flutter build apk --debug
 
       - name: Upload Android debug APK
