@@ -55,10 +55,10 @@ Use this for an explicitly approved named pre-alpha/alpha milestone. Prepare it
 on `release/<version>` from protected `main`; do not prepare or tag it from an
 ordinary feature branch.
 
-The current released/tagged baseline is `0.3.0-pre-alpha.4+3004`. Do not use
-`0.3.0-alpha.1`: SemVer orders `alpha` before `pre-alpha` at the same core
-version. The approved first alpha candidate is `0.3.1-alpha.1+3006`. It remains
-unreleased until every release gate completes.
+The latest signed tag is `0.3.1-alpha.1+3006`, but it remains unpublished after
+an Android archive-save defect was found. Do not move or reuse that tag. The
+prepared successor is `0.3.1-alpha.2+3007`; it remains unreleased until every
+release gate completes.
 
 1. Set the approved release version in `mobile/pubspec.yaml`. Versioned releases
    must not contain `.dev.N`, and the build after `+` must increase.
@@ -98,7 +98,7 @@ unreleased until every release gate completes.
    For the prepared candidate, use:
 
    ```text
-   release: 0.3.1-alpha.1
+   release: 0.3.1-alpha.2
    ```
 
 6. Review and GPG-sign the release-marker commit, then open and merge a PR to
