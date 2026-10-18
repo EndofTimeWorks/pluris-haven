@@ -60,6 +60,7 @@ test('encodes the full Obtainium configuration for direct and HTTPS links', () =
 
 test('keeps the README-facing first-party route connected to the canonical configuration', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const layout = readFileSync(new URL('../website/src/routes/+layout.ts', import.meta.url), 'utf8');
   const route = readFileSync(
     new URL('../website/src/routes/obtainium/+page.svelte', import.meta.url),
     'utf8',
@@ -71,4 +72,5 @@ test('keeps the README-facing first-party route connected to the canonical confi
   assert.match(route, /import \{ obtainiumRedirectUrl \} from '#lib\/obtainium-config\.js'/);
   assert.match(route, /window\.location\.replace\(obtainiumRedirectUrl\)/);
   assert.match(route, /href=\{obtainiumRedirectUrl\}/);
+  assert.match(layout, /export const trailingSlash = 'always'/);
 });
