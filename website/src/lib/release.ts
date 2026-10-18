@@ -1,23 +1,18 @@
 export const mobileRelease = {
-  version: '0.3.0-pre-alpha.2+3002',
-  tag: 'mobile-v0.3.0-pre-alpha.2+3002',
-  published: '22 August 2026',
+  version: '0.3.1-alpha.2+3007',
+  tag: 'mobile-v0.3.1-alpha.2+3007',
+  published: '18 October 2026',
   releaseUrl:
-    'https://github.com/EndofTimeWorks/pluris-haven/releases/tag/mobile-v0.3.0-pre-alpha.2+3002',
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/tag/mobile-v0.3.1-alpha.2+3007',
   universalApk: {
-    name: 'pluris-haven-0.3.0-pre-alpha.2+3002-universal.apk',
-    size: '68 MB',
-    url: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-universal.apk',
-  },
-  arm64Apk: {
-    name: 'pluris-haven-0.3.0-pre-alpha.2+3002-arm64-v8a.apk',
-    size: '24 MB',
-    url: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-arm64-v8a.apk',
+    name: 'pluris-haven-0.3.1-alpha.2+3007.apk',
+    size: '78 MB',
+    url: 'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.1-alpha.2%2B3007/pluris-haven-0.3.1-alpha.2%2B3007.apk',
   },
   checksumsUrl:
-    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/SHA256SUMS.txt',
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.1-alpha.2%2B3007/SHA256SUMS.txt',
   buildMetadataUrl:
-    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/BUILD.txt',
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.1-alpha.2%2B3007/BUILD.txt',
   unsignedIpaUrl:
-    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.0-pre-alpha.2%2B3002/pluris-haven-0.3.0-pre-alpha.2%2B3002-unsigned.ipa',
+    'https://github.com/EndofTimeWorks/pluris-haven/releases/download/mobile-v0.3.1-alpha.2%2B3007/pluris-haven-0.3.1-alpha.2%2B3007-unsigned.ipa',
 } as const;
