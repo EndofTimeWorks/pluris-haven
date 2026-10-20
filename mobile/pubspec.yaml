@@ -34,7 +34,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   dynamic_color: ^2.1.0
-  material_ui: ^1.6.0
+  material_ui: ^1.7.0
   flutter_colorpicker: ^1.1.0
 
   # The following adds the Cupertino Icons font to your application.
