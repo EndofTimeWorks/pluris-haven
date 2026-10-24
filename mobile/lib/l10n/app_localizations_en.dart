@@ -1136,7 +1136,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pasteJsonSizeHelp =>
-      'Paste up to 256 KiB. Choose a file for larger exports.';
+      'Paste up to 32 MiB. Larger exports need a file.';
+
+  @override
+  String get unsavedChangesTitle => 'Unsaved changes';
+
+  @override
+  String get unsavedChangesBody => 'Save your changes before closing?';
+
+  @override
+  String get keepEditingButton => 'Keep editing';
+
+  @override
+  String get discardChangesButton => 'Discard changes';
+
+  @override
+  String get editReminderTooltip => 'Edit reminder';
+
+  @override
+  String get reminderTimeError => 'Enter a valid time, such as 09:00 or 9am.';
 
   @override
   String get previewPastedJson => 'Preview pasted JSON';
@@ -1419,7 +1437,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importDedupeAmpersand => 'Ampersand UUIDs, normalised names';
 
   @override
-  String get importConflictPrompt => 'Ask for each match';
+  String get importConflictPrompt => 'Ask how to handle matches';
+
+  @override
+  String get importPreservesLocalProfile =>
+      'Your local system profile will stay unchanged.';
+
+  @override
+  String get nativeImportUpdatesProfile =>
+      'Update existing matches will replace your local system profile.';
+
+  @override
+  String get systemProfileConflictBody =>
+      'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.';
 
   @override
   String get importConflictCreate => 'Create new records';
@@ -1507,6 +1537,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importReasonPluralSpaceMarkers =>
       'file contains PluralSpace markers';
+
+  @override
+  String get importReasonAmpersandMarkers =>
+      'file contains Ampersand database markers';
 
   @override
   String get importReasonOpenPluralMarkers =>
