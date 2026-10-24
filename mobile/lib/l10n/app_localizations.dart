@@ -2121,8 +2121,44 @@ abstract class AppLocalizations {
   /// No description provided for @pasteJsonSizeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Paste up to 256 KiB. Choose a file for larger exports.'**
+  /// **'Paste up to 32 MiB. Larger exports need a file.'**
   String get pasteJsonSizeHelp;
+
+  /// No description provided for @unsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChangesTitle;
+
+  /// No description provided for @unsavedChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your changes before closing?'**
+  String get unsavedChangesBody;
+
+  /// No description provided for @keepEditingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditingButton;
+
+  /// No description provided for @discardChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get discardChangesButton;
+
+  /// No description provided for @editReminderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reminder'**
+  String get editReminderTooltip;
+
+  /// No description provided for @reminderTimeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid time, such as 09:00 or 9am.'**
+  String get reminderTimeError;
 
   /// No description provided for @previewPastedJson.
   ///
@@ -2571,8 +2607,26 @@ abstract class AppLocalizations {
   /// No description provided for @importConflictPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Ask for each match'**
+  /// **'Ask how to handle matches'**
   String get importConflictPrompt;
+
+  /// No description provided for @importPreservesLocalProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local system profile will stay unchanged.'**
+  String get importPreservesLocalProfile;
+
+  /// No description provided for @nativeImportUpdatesProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update existing matches will replace your local system profile.'**
+  String get nativeImportUpdatesProfile;
+
+  /// No description provided for @systemProfileConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.'**
+  String get systemProfileConflictBody;
 
   /// No description provided for @importConflictCreate.
   ///
@@ -2717,6 +2771,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'file contains PluralSpace markers'**
   String get importReasonPluralSpaceMarkers;
+
+  /// No description provided for @importReasonAmpersandMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains Ampersand database markers'**
+  String get importReasonAmpersandMarkers;
 
   /// No description provided for @importReasonOpenPluralMarkers.
   ///

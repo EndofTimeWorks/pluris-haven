@@ -61,6 +61,17 @@ void main() {
     expect(us.importStepPrepareSimplyPluralAvatarsDetail, contains('localize'));
   });
 
+  test('integrity warnings resolve for UK fallback and US English', () {
+    for (final locale in const [Locale('en', 'GB'), Locale('en', 'US')]) {
+      final l10n = lookupAppLocalizations(locale);
+      expect(l10n.importReasonAmpersandMarkers, contains('Ampersand'));
+      expect(l10n.importPreservesLocalProfile, contains('unchanged'));
+      expect(l10n.nativeImportUpdatesProfile, contains('system profile'));
+      expect(l10n.reminderTimeError, contains('9am'));
+      expect(l10n.unsavedChangesTitle, 'Unsaved changes');
+    }
+  });
+
   test('English interpolation and pluralisation remain intact', () {
     final uk = AppLocalizationsEn();
     final us = AppLocalizationsEnUs();
