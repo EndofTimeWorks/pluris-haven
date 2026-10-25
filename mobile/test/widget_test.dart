@@ -1687,6 +1687,7 @@ void main() {
     );
     expect(find.text('Simply Plural and PluralKit'), findsOneWidget);
     expect(find.text('github.com/EndofTimeWorks/pluris-haven'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Optional support'), 220);
     expect(find.text('Optional support'), findsOneWidget);
     expect(find.text('GitHub Sponsors'), findsOneWidget);
     expect(find.text('patreon.com/EndofTimeWorks'), findsOneWidget);

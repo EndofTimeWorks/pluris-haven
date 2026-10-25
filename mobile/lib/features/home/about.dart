@@ -37,6 +37,20 @@ class AboutPage extends StatelessWidget {
         SpSettingsGroup(
           title: l10n.aboutGroupTitle,
           rows: [
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) => SpSettingsRow(
+                l10n.appVersionLabel,
+                snapshot.hasData
+                    ? l10n.appVersionValue(
+                        snapshot.data!.version,
+                        snapshot.data!.buildNumber,
+                      )
+                    : l10n.unknownLabel,
+                trailing: const SizedBox.shrink(),
+                interactive: false,
+              ),
+            ),
             SpSettingsRow(l10n.storageLabel, l10n.storageValue),
             SpSettingsRow(
               l10n.compatibilityLabel,
