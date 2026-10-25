@@ -16,8 +16,30 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _savedFrontSearchController = TextEditingController();
   final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
+  bool _currentFrontLoaded = false;
+  bool _currentFrontLoadFailed = false;
   String _memberQuery = '';
   String _savedFrontQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentFront();
+  }
+
+  Future<void> _loadCurrentFront() async {
+    try {
+      final members = await widget.repository.watchCurrentFrontMembers().first;
+      if (!mounted) return;
+      setState(() {
+        _selectedMemberIds.addAll(members.map((member) => member.id));
+        _currentFrontLoaded = true;
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() => _currentFrontLoadFailed = true);
+    }
+  }
 
   @override
   void dispose() {
@@ -50,9 +72,20 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<MemberSummary>>(
-              stream: widget.repository.watchMembers(listOnly: true),
+              stream: _currentFrontLoaded
+                  ? widget.repository.watchMembers(listOnly: true)
+                  : null,
               initialData: const [],
               builder: (context, snapshot) {
+                if (_currentFrontLoadFailed) {
+                  return SpEmptyState(
+                    title: l10n.dataLoadFailedTitle,
+                    body: l10n.dataLoadFailedBody,
+                  );
+                }
+                if (!_currentFrontLoaded) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 final members = snapshot.data ?? const <MemberSummary>[];
                 final visibleMembers = [
                   for (final member in members)
