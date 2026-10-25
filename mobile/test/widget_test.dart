@@ -1002,6 +1002,48 @@ void main() {
     expect(repository._namedFronts.length, 1);
   });
 
+  testWidgets('front picker keeps current fronters when adding a member', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+    await repository.setFrontMembers(['fake-member-1']);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'River'))
+          .selected,
+      isTrue,
+    );
+    await tester.tap(find.widgetWithText(FilterChip, 'Wren'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('set-selected-members-front-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._currentFrontMemberIds, [
+      'fake-member-1',
+      'fake-member-2',
+    ]);
+  });
+
   testWidgets('manages custom fronts as saved front states', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -4456,8 +4498,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<MemberSummary>> watchCurrentFrontMembers() {
-    return _currentFrontMembersController.stream.map(List.unmodifiable);
+  Stream<List<MemberSummary>> watchCurrentFrontMembers() async* {
+    yield List.unmodifiable(_currentFrontMembers());
+    await for (final members in _currentFrontMembersController.stream) {
+      yield List.unmodifiable(members);
+    }
   }
 
   @override
