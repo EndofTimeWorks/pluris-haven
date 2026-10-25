@@ -1,6 +1,5 @@
 <script lang="ts">
   import { mobileRelease } from '#lib/release.js';
-  import { obtainiumRedirectUrl } from '#lib/obtainium-config.js';
 
   const status = [
     ['Version', mobileRelease.version],
@@ -77,7 +76,7 @@
       The APK is signed through Google Play App Signing and published with checksums and build
       metadata. Obtainium can follow the same release file.
     </p>
-    <p><a href={obtainiumRedirectUrl}>Add Pluris Haven to Obtainium</a></p>
+    <p><a href="/obtainium">Add Pluris Haven to Obtainium</a></p>
   </section>
 
   <section class="two-column" aria-label="Feature status">
@@ -262,7 +261,7 @@
 
   .button.primary {
     border-color: #7863ff;
-    background: #6750f0;
+    background: #5940db;
   }
 
   .button:hover,
