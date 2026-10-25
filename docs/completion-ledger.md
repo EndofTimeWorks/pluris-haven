@@ -7,7 +7,9 @@ but does not replace, the current decisions in
 [`engineering-readiness.md`](engineering-readiness.md). Later decisions in
 `project-state.md` win if a historical source disagrees.
 
-Last checked against the local pre-publication candidate on 2026-09-16.
+Original table checked against the local pre-publication candidate on 2026-09-16.
+Targeted October 2026 updates are recorded below; untouched rows retain their
+original verification date.
 `COMPLETE` means all applicable local product layers are present; `VERIFIED`
 also requires recorded test or runtime evidence. External and device evidence
 is recorded separately.
@@ -55,7 +57,7 @@ is recorded separately.
 | Google Play internal testing                      | **IMPLEMENTED / BLOCKED-EXTERNAL**        | Automation uploads the published release AAB after canonical GitHub publication. A real authorised Console upload is required before external verification.                                                                                                                                        |
 | Google Play closed alpha testing                  | **IMPLEMENTED / BLOCKED-EXTERNAL**        | A manual existing-release workflow accepts the exact configured Play track identifier, verifies the signed tag and AAB checksum, avoids duplicate version uploads and never recreates GitHub artifacts. Play Console track configuration and a real upload/promotion remain external verification. |
 | Store/listing readiness                           | **PARTIAL / BLOCKED-EXTERNAL**            | Local checklist and URLs must be verified against current site/deployment; Data Safety, age rating, listing media, tester instructions, signing/App Signing and Console values require authorised external configuration.                                                                          |
-| GitHub-hosted CI evidence                         | **MISSING / BLOCKED-EXTERNAL**            | Static workflow validation is not CI evidence. Inspect safe workflows and run/inspect nonpublishing GitHub Actions against a pushed commit.                                                                                                                                                        |
+| GitHub-hosted CI evidence                         | **PARTIAL / VERIFIED (upgrade PR)**       | The dependency upgrade PR passed its hosted CI gate and unsigned iOS build. Remediation commits after that merge have not received hosted CI; publication and release workflows still need their own nonpublishing verification.                                                                   |
 | Android upgrade/artifact evidence                 | **PARTIAL / BLOCKED-EXTERNAL**            | Local builds/checks and migration tests exist. Test a real signed artifact upgrade from supported pre-alpha state.                                                                                                                                                                                 |
 | Apple release/device evidence                     | **BLOCKED-EXTERNAL**                      | Linux can inspect bundle IDs, manifests and workflow assumptions. Signed install, notification/App Lock/privacy/accessibility/upgrade testing require macOS and simulator/physical hardware.                                                                                                       |
 
