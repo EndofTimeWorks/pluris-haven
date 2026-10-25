@@ -1,7 +1,7 @@
 # Engineering readiness
 
-Internal pre-alpha readiness record, last checked against the local candidate
-on 2026-10-07.
+Internal pre-alpha readiness record. Earlier baseline checks remain recorded;
+the mobile dependency upgrade was checked locally on 2026-10-24.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -125,9 +125,11 @@ mapper test exists.
 - Perform an actual Play internal upload before marking that external path
   verified, then configure/verify the intended closed-testing path.
 - Smoke-test Android upgrade/migration using actual distributed artifacts.
-- Replace the temporary Android Kotlin/DSL compatibility settings once
-  `sentry_flutter` supports built-in Kotlin and the selected Flutter release
-  builds with the new AGP DSL.
+- Verify the upgraded iOS dependency graph and Swift Package Manager migration
+  on the macOS CI runner before considering the mobile upgrade mergeable.
+- Replace the temporary Android Kotlin/DSL compatibility settings only after
+  every remaining plugin supports built-in Kotlin and the selected Flutter
+  release builds with the new AGP DSL.
 - Sign/install iOS builds and verify notification permission, App Lock,
   screen-capture privacy and upgrade behaviour on simulator/physical hardware.
 - Perform TalkBack, VoiceOver, keyboard, switch access, large-text, contrast and

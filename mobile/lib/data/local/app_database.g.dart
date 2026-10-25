@@ -18142,10 +18142,11 @@ class $$PluralSystemsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (systemGroupsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          SystemGroup
+                          SystemGroup,
+                          $SystemGroupsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18156,17 +18157,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).systemGroupsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (membersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Member
+                          Member,
+                          $MembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18177,17 +18177,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).membersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (notesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Note
+                          Note,
+                          $NotesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18198,17 +18197,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).notesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (chatCategoriesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ChatCategory
+                          ChatCategory,
+                          $ChatCategoriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18219,17 +18217,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).chatCategoriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (chatChannelsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ChatChannel
+                          ChatChannel,
+                          $ChatChannelsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18240,17 +18237,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).chatChannelsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (messagesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Message
+                          Message,
+                          $MessagesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18261,17 +18257,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).messagesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (remindersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Reminder
+                          Reminder,
+                          $RemindersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18282,17 +18277,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).remindersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (customFieldDefinitionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          CustomFieldDefinition
+                          CustomFieldDefinition,
+                          $CustomFieldDefinitionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18303,17 +18297,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).customFieldDefinitionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (pollsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Poll
+                          Poll,
+                          $PollsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18324,17 +18317,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).pollsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (frontSessionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          FrontSession
+                          FrontSession,
+                          $FrontSessionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18345,17 +18337,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).frontSessionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (importRecordsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ImportRecord
+                          ImportRecord,
+                          $ImportRecordsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18366,17 +18357,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).importRecordsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (importPayloadsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ImportPayload
+                          ImportPayload,
+                          $ImportPayloadsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18387,17 +18377,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).importPayloadsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (backgroundJobsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          BackgroundJob
+                          BackgroundJob,
+                          $BackgroundJobsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18408,17 +18397,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).backgroundJobsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (notificationEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          NotificationEvent
+                          NotificationEvent,
+                          $NotificationEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18429,17 +18417,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).notificationEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (tagsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Tag
+                          Tag,
+                          $TagsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18450,17 +18437,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).tagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (journalEntriesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          JournalEntry
+                          JournalEntry,
+                          $JournalEntriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18471,17 +18457,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).journalEntriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (pendingActionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          PendingAction
+                          PendingAction,
+                          $PendingActionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18492,17 +18477,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).pendingActionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (namedFrontsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          NamedFront
+                          NamedFront,
+                          $NamedFrontsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18513,17 +18497,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).namedFrontsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (privacyBucketsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          PrivacyBucket
+                          PrivacyBucket,
+                          $PrivacyBucketsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18534,10 +18517,8 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                     ];
@@ -19050,10 +19031,11 @@ class $$SystemGroupsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (groupMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           SystemGroup,
                           $SystemGroupsTable,
-                          GroupMember
+                          GroupMember,
+                          $GroupMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$SystemGroupsTableReferences
@@ -19064,10 +19046,8 @@ class $$SystemGroupsTableTableManager
                                 table,
                                 p0,
                               ).groupMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.groupId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'group_id',
                           typedResults: items,
                         ),
                     ];
@@ -20248,10 +20228,11 @@ class $$MembersTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (groupMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          GroupMember
+                          GroupMember,
+                          $GroupMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20262,17 +20243,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).groupMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (customFieldValuesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          CustomFieldValue
+                          CustomFieldValue,
+                          $CustomFieldValuesTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20283,17 +20263,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).customFieldValuesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (frontSessionMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          FrontSessionMember
+                          FrontSessionMember,
+                          $FrontSessionMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20304,17 +20283,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).frontSessionMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (memberTagsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          MemberTag
+                          MemberTag,
+                          $MemberTagsTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20325,17 +20303,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).memberTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (journalEntriesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          JournalEntry
+                          JournalEntry,
+                          $JournalEntriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20346,17 +20323,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).journalEntriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (namedFrontMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          NamedFrontMember
+                          NamedFrontMember,
+                          $NamedFrontMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20367,17 +20343,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).namedFrontMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (privacyBucketMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          PrivacyBucketMember
+                          PrivacyBucketMember,
+                          $PrivacyBucketMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20388,10 +20363,8 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                     ];
@@ -21531,10 +21504,11 @@ class $$ChatCategoriesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (chatChannelsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ChatCategory,
                           $ChatCategoriesTable,
-                          ChatChannel
+                          ChatChannel,
+                          $ChatChannelsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ChatCategoriesTableReferences
@@ -21545,10 +21519,8 @@ class $$ChatCategoriesTableTableManager
                                 table,
                                 p0,
                               ).chatChannelsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.categoryId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'category_id',
                           typedResults: items,
                         ),
                     ];
@@ -22186,10 +22158,11 @@ class $$ChatChannelsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (messagesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ChatChannel,
                           $ChatChannelsTable,
-                          Message
+                          Message,
+                          $MessagesTable
                         >(
                           currentTable: table,
                           referencedTable: $$ChatChannelsTableReferences
@@ -22200,10 +22173,8 @@ class $$ChatChannelsTableTableManager
                                 table,
                                 p0,
                               ).messagesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.channelId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'channel_id',
                           typedResults: items,
                         ),
                     ];
@@ -23914,10 +23885,11 @@ class $$CustomFieldDefinitionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (customFieldValuesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           CustomFieldDefinition,
                           $CustomFieldDefinitionsTable,
-                          CustomFieldValue
+                          CustomFieldValue,
+                          $CustomFieldValuesTable
                         >(
                           currentTable: table,
                           referencedTable:
@@ -23929,17 +23901,16 @@ class $$CustomFieldDefinitionsTableTableManager
                                 table,
                                 p0,
                               ).customFieldValuesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.fieldId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'field_id',
                           typedResults: items,
                         ),
                       if (customFieldValueMigrationProvenanceRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           CustomFieldDefinition,
                           $CustomFieldDefinitionsTable,
-                          CustomFieldValueMigrationProvenanceData
+                          CustomFieldValueMigrationProvenanceData,
+                          $CustomFieldValueMigrationProvenanceTable
                         >(
                           currentTable: table,
                           referencedTable:
@@ -23953,10 +23924,8 @@ class $$CustomFieldDefinitionsTableTableManager
                                 table,
                                 p0,
                               ).customFieldValueMigrationProvenanceRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.fieldId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'field_id',
                           typedResults: items,
                         ),
                     ];
@@ -25433,10 +25402,11 @@ class $$PollsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (pollOptionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Poll,
                           $PollsTable,
-                          PollOption
+                          PollOption,
+                          $PollOptionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
@@ -25447,14 +25417,17 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollOptionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                       if (pollVotesRefs)
-                        await $_getPrefetchedData<Poll, $PollsTable, PollVote>(
+                        await $_getPrefetchedDataByColumns<
+                          Poll,
+                          $PollsTable,
+                          PollVote,
+                          $PollVotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
                               ._pollVotesRefsTable(db),
@@ -25464,17 +25437,16 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollVotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                       if (pollVoteEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Poll,
                           $PollsTable,
-                          PollVoteEvent
+                          PollVoteEvent,
+                          $PollVoteEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
@@ -25485,10 +25457,8 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollVoteEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                     ];
@@ -25942,10 +25912,11 @@ class $$PollOptionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (pollVotesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PollOption,
                           $PollOptionsTable,
-                          PollVote
+                          PollVote,
+                          $PollVotesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollOptionsTableReferences
@@ -25956,17 +25927,16 @@ class $$PollOptionsTableTableManager
                                 table,
                                 p0,
                               ).pollVotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.optionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'option_id',
                           typedResults: items,
                         ),
                       if (pollVoteEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PollOption,
                           $PollOptionsTable,
-                          PollVoteEvent
+                          PollVoteEvent,
+                          $PollVoteEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollOptionsTableReferences
@@ -25977,10 +25947,8 @@ class $$PollOptionsTableTableManager
                                 table,
                                 p0,
                               ).pollVoteEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.optionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'option_id',
                           typedResults: items,
                         ),
                     ];
@@ -26884,10 +26852,11 @@ class $$FrontSessionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (frontSessionMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           FrontSession,
                           $FrontSessionsTable,
-                          FrontSessionMember
+                          FrontSessionMember,
+                          $FrontSessionMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$FrontSessionsTableReferences
@@ -26898,17 +26867,16 @@ class $$FrontSessionsTableTableManager
                                 table,
                                 p0,
                               ).frontSessionMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sessionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'session_id',
                           typedResults: items,
                         ),
                       if (frontAuditEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           FrontSession,
                           $FrontSessionsTable,
-                          FrontAuditEvent
+                          FrontAuditEvent,
+                          $FrontAuditEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$FrontSessionsTableReferences
@@ -26919,10 +26887,8 @@ class $$FrontSessionsTableTableManager
                                 table,
                                 p0,
                               ).frontAuditEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.frontId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'front_id',
                           typedResults: items,
                         ),
                     ];
@@ -27707,10 +27673,11 @@ class $$ImportRecordsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (importPayloadsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ImportRecord,
                           $ImportRecordsTable,
-                          ImportPayload
+                          ImportPayload,
+                          $ImportPayloadsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ImportRecordsTableReferences
@@ -27721,10 +27688,8 @@ class $$ImportRecordsTableTableManager
                                 table,
                                 p0,
                               ).importPayloadsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.importRecordId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'import_record_id',
                           typedResults: items,
                         ),
                     ];
@@ -29581,14 +29546,19 @@ class $$TagsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (memberTagsRefs)
-                    await $_getPrefetchedData<Tag, $TagsTable, MemberTag>(
+                    await $_getPrefetchedDataByColumns<
+                      Tag,
+                      $TagsTable,
+                      MemberTag,
+                      $MemberTagsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$TagsTableReferences
                           ._memberTagsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$TagsTableReferences(db, table, p0).memberTagsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.tagId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'tag_id',
                       typedResults: items,
                     ),
                 ];
@@ -32303,10 +32273,11 @@ class $$NamedFrontsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (namedFrontMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           NamedFront,
                           $NamedFrontsTable,
-                          NamedFrontMember
+                          NamedFrontMember,
+                          $NamedFrontMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$NamedFrontsTableReferences
@@ -32317,10 +32288,8 @@ class $$NamedFrontsTableTableManager
                                 table,
                                 p0,
                               ).namedFrontMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.namedFrontId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'named_front_id',
                           typedResults: items,
                         ),
                     ];
@@ -33142,10 +33111,11 @@ class $$PrivacyBucketsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (privacyBucketMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PrivacyBucket,
                           $PrivacyBucketsTable,
-                          PrivacyBucketMember
+                          PrivacyBucketMember,
+                          $PrivacyBucketMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PrivacyBucketsTableReferences
@@ -33156,10 +33126,8 @@ class $$PrivacyBucketsTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.bucketId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'bucket_id',
                           typedResults: items,
                         ),
                     ];
