@@ -1180,7 +1180,7 @@ void main() {
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Total front time'), findsOneWidget);
+    expect(find.text('Summed front time'), findsOneWidget);
     expect(find.text('Sessions'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     await tester.drag(find.byType(ListView).last, const Offset(0, -400));
@@ -1188,7 +1188,58 @@ void main() {
     expect(find.text('Top fronts'), findsOneWidget);
     expect(find.text('Asleep'), findsOneWidget);
     expect(find.text('Away'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Hour of day'), 220);
     expect(find.text('Hour of day'), findsOneWidget);
+  });
+
+  testWidgets('overlapping fronts explain summed analytics time', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final end = DateTime.now().subtract(const Duration(hours: 1));
+    final start = end.subtract(const Duration(hours: 1));
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: start,
+        endedAt: end,
+      ),
+      FrontHistoryEntry(
+        id: 'wren-front',
+        label: 'Wren',
+        startedAt: start,
+        endedAt: end,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2h'), findsOneWidget);
+    expect(find.text('Summed front time'), findsOneWidget);
+    expect(
+      find.text('Overlapping front sessions are counted separately.'),
+      findsOneWidget,
+    );
+  });
+
+  test('summed front time copy resolves for UK and US English', () {
+    for (final locale in const [Locale('en', 'GB'), Locale('en', 'US')]) {
+      final l10n = lookupAppLocalizations(locale);
+      expect(l10n.totalFrontTimeLabel, 'Summed front time');
+      expect(
+        l10n.summedFrontTimeExplanation,
+        'Overlapping front sessions are counted separately.',
+      );
+    }
   });
 
   testWidgets('keeps zero-length completed fronts finite in analytics', (

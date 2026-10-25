@@ -4142,7 +4142,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Make a front current or import Simply Plural front history to fill this in.';
 
   @override
-  String get totalFrontTimeLabel => 'Total front time';
+  String get totalFrontTimeLabel => 'Summed front time';
+
+  @override
+  String get summedFrontTimeExplanation =>
+      'Overlapping front sessions are counted separately.';
 
   @override
   String get sessionsLabel => 'Sessions';

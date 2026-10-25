@@ -7202,8 +7202,14 @@ abstract class AppLocalizations {
   /// No description provided for @totalFrontTimeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Total front time'**
+  /// **'Summed front time'**
   String get totalFrontTimeLabel;
+
+  /// No description provided for @summedFrontTimeExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlapping front sessions are counted separately.'**
+  String get summedFrontTimeExplanation;
 
   /// No description provided for @sessionsLabel.
   ///
