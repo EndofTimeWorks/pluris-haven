@@ -7,6 +7,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart' as material_ui show ColorScheme;
 
 import 'background/background_tasks.dart';
+import 'data/local/app_customization.dart' show appearanceColoursReadable;
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/local_migrations.dart';
@@ -487,6 +488,28 @@ class PlurisHavenApp extends StatelessWidget {
     };
   }
 
+  static HavenAppearanceOverrides _renderedAppearanceColours({
+    required HavenAppearanceOverrides appearance,
+    required Color background,
+    required Color surface,
+    required Color card,
+    required Color text,
+    required Color mutedText,
+  }) {
+    if (!appearance.hasColorOverrides ||
+        appearanceColoursReadable(
+          appearance: appearance,
+          background: background,
+          surface: surface,
+          card: card,
+          text: text,
+          mutedText: mutedText,
+        )) {
+      return appearance;
+    }
+    return const HavenAppearanceOverrides();
+  }
+
   ThemeData _buildTheme(
     AppCustomization customization,
     Brightness brightness, {
@@ -512,6 +535,14 @@ class PlurisHavenApp extends StatelessWidget {
             ),
       );
       final baseTheme = ThemeData.from(colorScheme: scheme, useMaterial3: true);
+      final renderedColours = _renderedAppearanceColours(
+        appearance: appearance,
+        background: scheme.surface,
+        surface: scheme.surface,
+        card: scheme.surfaceContainerHighest,
+        text: scheme.onSurface,
+        mutedText: scheme.onSurfaceVariant,
+      );
       return baseTheme.copyWith(
         textTheme: baseTheme.textTheme.apply(
           fontFamily: customization.fontFamily.fontFamily,
@@ -526,7 +557,8 @@ class PlurisHavenApp extends StatelessWidget {
             spacingScale: appearance.spacingScale,
           ),
         ],
-        scaffoldBackgroundColor: appearance.backgroundColor ?? scheme.surface,
+        scaffoldBackgroundColor:
+            renderedColours.backgroundColor ?? scheme.surface,
         visualDensity: visualDensity,
         appBarTheme: AppBarTheme(
           backgroundColor: scheme.surface,
@@ -585,12 +617,22 @@ class PlurisHavenApp extends StatelessWidget {
         : highContrast
         ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
         : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
-    final effectiveSurface = appearance.surfaceColor ?? surface;
-    final effectiveBackground = appearance.backgroundColor ?? background;
-    final effectiveCard = appearance.cardColor ?? card;
-    final effectiveOnSurface = appearance.textColor ?? onSurface;
-    final effectiveMuted = appearance.mutedTextColor ?? muted;
-    final effectiveOutline = appearance.outlineColor ?? outline;
+    // Keep the stored palette intact, but render the safe base palette if an
+    // imported or previously saved override is unreadable in this brightness.
+    final colours = _renderedAppearanceColours(
+      appearance: appearance,
+      background: background,
+      surface: surface,
+      card: card,
+      text: onSurface,
+      mutedText: muted,
+    );
+    final effectiveSurface = colours.surfaceColor ?? surface;
+    final effectiveBackground = colours.backgroundColor ?? background;
+    final effectiveCard = colours.cardColor ?? card;
+    final effectiveOnSurface = colours.textColor ?? onSurface;
+    final effectiveMuted = colours.mutedTextColor ?? muted;
+    final effectiveOutline = colours.outlineColor ?? outline;
     final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
     final baseTheme = ThemeData(
       brightness: brightness,
@@ -685,24 +727,31 @@ class PlurisHavenApp extends StatelessWidget {
             brightness: brightness,
           )
         : dynamicScheme;
+    final colours = _renderedAppearanceColours(
+      appearance: appearance,
+      background: baseScheme.surface,
+      surface: baseScheme.surface,
+      card: baseScheme.surfaceContainerHighest,
+      text: baseScheme.onSurface,
+      mutedText: baseScheme.onSurfaceVariant,
+    );
     return baseScheme.copyWith(
-      surface: appearance.surfaceColor ?? baseScheme.surface,
-      surfaceDim: appearance.surfaceColor ?? baseScheme.surfaceDim,
-      surfaceBright: appearance.surfaceColor ?? baseScheme.surfaceBright,
+      surface: colours.surfaceColor ?? baseScheme.surface,
+      surfaceDim: colours.surfaceColor ?? baseScheme.surfaceDim,
+      surfaceBright: colours.surfaceColor ?? baseScheme.surfaceBright,
       surfaceContainerLowest:
-          appearance.surfaceColor ?? baseScheme.surfaceContainerLowest,
+          colours.surfaceColor ?? baseScheme.surfaceContainerLowest,
       surfaceContainerLow:
-          appearance.surfaceColor ?? baseScheme.surfaceContainerLow,
-      surfaceContainer: appearance.cardColor ?? baseScheme.surfaceContainer,
+          colours.surfaceColor ?? baseScheme.surfaceContainerLow,
+      surfaceContainer: colours.cardColor ?? baseScheme.surfaceContainer,
       surfaceContainerHigh:
-          appearance.cardColor ?? baseScheme.surfaceContainerHigh,
+          colours.cardColor ?? baseScheme.surfaceContainerHigh,
       surfaceContainerHighest:
-          appearance.cardColor ?? baseScheme.surfaceContainerHighest,
-      onSurface: appearance.textColor ?? baseScheme.onSurface,
-      onSurfaceVariant:
-          appearance.mutedTextColor ?? baseScheme.onSurfaceVariant,
-      outline: appearance.outlineColor ?? baseScheme.outline,
-      outlineVariant: appearance.outlineColor ?? baseScheme.outlineVariant,
+          colours.cardColor ?? baseScheme.surfaceContainerHighest,
+      onSurface: colours.textColor ?? baseScheme.onSurface,
+      onSurfaceVariant: colours.mutedTextColor ?? baseScheme.onSurfaceVariant,
+      outline: colours.outlineColor ?? baseScheme.outline,
+      outlineVariant: colours.outlineColor ?? baseScheme.outlineVariant,
     );
   }
 
