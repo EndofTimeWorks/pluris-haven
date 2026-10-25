@@ -1,7 +1,7 @@
 {
   "name": "pluris-haven-tooling",
   "private": true,
-  "packageManager": "pnpm@12.11.2",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
     "prepare": "husky",
     "format": "git ls-files -z | xargs -0 prettier --write --ignore-unknown",
@@ -23,8 +23,8 @@
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "husky": "^9.1.7",
     "prettier": "^3.9.10",
     "prettier-plugin-svelte": "^4.1.1"

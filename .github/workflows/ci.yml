@@ -52,11 +52,11 @@ jobs:
 
       - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
         with:
-          version: 12.11.2
+          version: 12.15.0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.14.1
+          node-version: 26.12.1
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -229,11 +229,11 @@ jobs:
 
       - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
         with:
-          version: 12.11.2
+          version: 12.15.0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.14.1
+          node-version: 26.12.1
           cache: pnpm
           cache-dependency-path: website/pnpm-lock.yaml
 
@@ -260,7 +260,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:17.10-alpine3.23@sha256:8189a1f6e40904781fc9e2612687877791d21679866db58b1de996b31fc312e4
+        image: postgres:17.11-alpine3.23@sha256:01ea903aa65deb58eb49d6e09d859ecff63a6bb7d61feca55f2abad71d08f72a
         env:
           POSTGRES_DB: pluris_ci
           POSTGRES_USER: pluris
