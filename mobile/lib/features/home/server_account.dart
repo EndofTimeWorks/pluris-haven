@@ -251,41 +251,10 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
-    final passwordController = TextEditingController();
     final password = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteServerAccountTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.deleteServerAccountBody),
-            const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('delete-account-password-field'),
-              controller: passwordController,
-              obscureText: true,
-              autofillHints: const [AutofillHints.password],
-              decoration: InputDecoration(labelText: l10n.currentPasswordLabel),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancelButtonLabel),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-delete-server-account-button'),
-            onPressed: () => Navigator.pop(context, passwordController.text),
-            child: Text(l10n.deleteAccountButton),
-          ),
-        ],
-      ),
+      builder: (context) => const _DeleteAccountDialog(),
     );
-    passwordController.dispose();
     if (password != null && password.isNotEmpty && mounted) {
       await widget.controller!.deleteAccount(password);
     }
@@ -298,6 +267,57 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
       showDragHandle: true,
       builder: (context) =>
           _ChangePasswordSheet(controller: widget.controller!),
+    );
+  }
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.deleteServerAccountTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.deleteServerAccountBody),
+          const SizedBox(height: 12),
+          TextField(
+            key: const ValueKey('delete-account-password-field'),
+            controller: _passwordController,
+            obscureText: true,
+            autofillHints: const [AutofillHints.password],
+            decoration: InputDecoration(labelText: l10n.currentPasswordLabel),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancelButtonLabel),
+        ),
+        FilledButton(
+          key: const ValueKey('confirm-delete-server-account-button'),
+          onPressed: () => Navigator.pop(context, _passwordController.text),
+          child: Text(l10n.deleteAccountButton),
+        ),
+      ],
     );
   }
 }

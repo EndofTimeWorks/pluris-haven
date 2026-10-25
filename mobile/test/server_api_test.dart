@@ -561,6 +561,47 @@ void main() {
     expect(storage.values.values, isNot(contains('refresh')));
   });
 
+  testWidgets('account deletion closes its password dialog cleanly', (
+    tester,
+  ) async {
+    final controller = ServerAccountController(
+      storage: MemoryServerStorage(),
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await controller.connect('https://haven.example');
+    await controller.login(
+      email: 'test@example.com',
+      password: 'correct horse battery staple',
+      deviceName: 'Phone',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ServerAccountPanel(controller: controller),
+          ),
+        ),
+      ),
+    );
+
+    await tester.ensureVisible(find.text('Delete server account'));
+    await tester.tap(find.text('Delete server account'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('delete-account-password-field')),
+      'correct horse battery staple',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-delete-server-account-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(controller.signedIn, isFalse);
+  });
+
   test('startup refresh rejection clears stored server tokens', () async {
     final storage = MemoryServerStorage();
     final initial = ServerAccountController(
