@@ -322,6 +322,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
     if (!mounted) {
       return;
     }
+    await _syncFrontNotification(context, widget.repository);
+    if (!mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

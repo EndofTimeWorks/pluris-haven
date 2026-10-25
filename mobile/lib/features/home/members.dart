@@ -370,6 +370,9 @@ class MemberListTile extends StatelessWidget {
                       repository,
                       reminders,
                     );
+                    if (context.mounted) {
+                      await _syncFrontNotification(context, repository);
+                    }
                   }
                 },
               ),
@@ -386,6 +389,9 @@ class MemberListTile extends StatelessWidget {
                       repository,
                       reminders,
                     );
+                    if (context.mounted) {
+                      await _syncFrontNotification(context, repository);
+                    }
                   }
                 } else if (value == 'edit') {
                   final fullMember = await _fullMember();
@@ -730,6 +736,9 @@ class MemberProfileSheet extends StatelessWidget {
                           repository,
                           reminders,
                         );
+                        if (context.mounted) {
+                          await _syncFrontNotification(context, repository);
+                        }
                       }
                       if (context.mounted) {
                         Navigator.pop(context);
