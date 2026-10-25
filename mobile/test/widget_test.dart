@@ -5884,6 +5884,12 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> clearNotificationHistory() async {
+    _notificationEvents = const [];
+    _notificationEventsController.add(_notificationEvents);
+  }
+
+  @override
   Future<List<ReminderSummary>> setCustomFront(String label) async {
     final trimmed = label.trim();
     if (trimmed.isEmpty) {
