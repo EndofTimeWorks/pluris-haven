@@ -1031,6 +1031,11 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
   }
 
   Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = AppLocalizations.of(context).nameRequiredError);
+      return;
+    }
     final color = _colorController.text.trim();
     if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) {
       setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
@@ -1043,7 +1048,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
     try {
       await widget.repository.updateSystemProfile(
         SystemProfileDraft(
-          name: _nameController.text,
+          name: name,
           description: _descriptionController.text,
           colorHex: color,
           avatarUrl: _avatarUrl,

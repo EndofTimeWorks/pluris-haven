@@ -1790,6 +1790,35 @@ void main() {
     expect(report, isNot(contains('current front:')));
   });
 
+  testWidgets('empty system name explains why saving is blocked', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Account Settings');
+    await tester.tap(find.byTooltip('Edit system profile'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('system-name-field')), '');
+    await tester.tap(find.byKey(const ValueKey('save-system-profile-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('system-name-field')), findsOneWidget);
+    expect(repository._snapshot.systemName, 'Local system');
+  });
+
   testWidgets('adds a local group from the groups section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
