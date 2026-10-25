@@ -58,6 +58,13 @@ final class LocalAvatarStore {
     _evict('local-avatar:$fileName');
   }
 
+  Future<void> delete(String reference) async {
+    final file = await _fileForReference(reference);
+    if (file == null) return;
+    if (await file.exists()) await file.delete();
+    _evict(reference);
+  }
+
   Future<void> migrateLegacyFiles() async {
     final root = await _root();
     if (!await root.exists()) return;

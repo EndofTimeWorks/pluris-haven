@@ -1,6 +1,39 @@
 part of 'haven_repository.dart';
 
 extension LocalHavenRepositoryBackgroundJobs on LocalHavenRepository {
+  Future<void> _backgroundClearCompletedImportJobPayloads() async {
+    const marker = 'internal.completed_import_job_payloads_cleared.v1';
+    if (await _preferenceEquals(marker, 'true')) return;
+
+    await database.transaction(() async {
+      final completed =
+          await (database.select(database.backgroundJobs)..where(
+                (job) =>
+                    job.systemId.equals(localSystemId) &
+                    job.type.equals('import_archive') &
+                    job.status.equals('done'),
+              ))
+              .get();
+      for (final job in completed) {
+        await (database.update(
+          database.backgroundJobs,
+        )..where((row) => row.id.equals(job.id))).write(
+          BackgroundJobsCompanion(
+            payloadJson: Value(
+              await _encryptLocalText(
+                '{}',
+                'background_jobs',
+                job.id,
+                'payload_json',
+              ),
+            ),
+          ),
+        );
+      }
+      await _writePreference(marker, 'true');
+    });
+  }
+
   Stream<List<BackgroundJobSummary>> _backgroundWatchJobs() {
     final query = database.select(database.backgroundJobs)
       ..where((job) => job.systemId.equals(localSystemId))

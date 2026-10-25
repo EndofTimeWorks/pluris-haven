@@ -751,6 +751,16 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       )..where((job) => job.id.equals(jobId))).write(
         BackgroundJobsCompanion(
           status: const Value('done'),
+          // The source is needed while queued or running, but retaining it
+          // after a successful import duplicates sensitive archive content.
+          payloadJson: Value(
+            await _encryptLocalText(
+              '{}',
+              'background_jobs',
+              jobId,
+              'payload_json',
+            ),
+          ),
           updatedAt: Value(finished),
           finishedAt: Value(finished),
         ),
@@ -893,6 +903,40 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       namedFronts: namedFronts,
       namedFrontMembers: namedFrontMembers,
     );
+    final locallyPurgedMemberIds =
+        (await (database.select(
+              database.members,
+            )..where((member) => member.purgedAt.isNotNull())).get())
+            .map((member) => member.id)
+            .toSet();
+    if (locallyPurgedMemberIds.isNotEmpty) {
+      bool belongsToPurgedMember(Map<String, Object?> row) =>
+          locallyPurgedMemberIds.contains(_stringValue(row['member_id']));
+      final removedValueIds = customFieldValues
+          .where(belongsToPurgedMember)
+          .map((value) => _stringValue(value['id']))
+          .whereType<String>()
+          .toSet();
+      members.removeWhere(
+        (member) => locallyPurgedMemberIds.contains(_stringValue(member['id'])),
+      );
+      groupMembers.removeWhere(belongsToPurgedMember);
+      memberTags.removeWhere(belongsToPurgedMember);
+      frontMembers.removeWhere(belongsToPurgedMember);
+      namedFrontMembers.removeWhere(belongsToPurgedMember);
+      privacyBucketMembers.removeWhere(belongsToPurgedMember);
+      customFieldValues.removeWhere(belongsToPurgedMember);
+      customFieldMigrationProvenance.removeWhere(
+        (row) => removedValueIds.contains(_stringValue(row['value_id'])),
+      );
+      contentRevisions.removeWhere(
+        (revision) =>
+            revision['target_type'] == 'member_bio' &&
+            locallyPurgedMemberIds.contains(
+              _stringValue(revision['target_id']),
+            ),
+      );
+    }
     appDebugLog(
       'Import archive source=${source.name} file=${fileName ?? '(none)'} '
       'members=${members.length} groups=${groups.length} notes=${notes.length} '
@@ -2180,6 +2224,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final id = _requiredString(field, 'id');
     final name = _requiredString(field, 'name');
     final configuration = field['configuration'];
+    if (configuration != null && configuration is! Map) {
+      throw FormatException('Custom field configuration must be an object.');
+    }
     final encodedConfiguration = configuration is Map
         ? encodeCustomFieldConfiguration(
             Map<String, Object?>.from(configuration),
