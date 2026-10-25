@@ -30,6 +30,7 @@ import '../../data/local/app_database.dart'
         PollVoteEvent,
         Tag,
         localSystemId;
+import '../../data/local/app_customization.dart' show appearanceColoursReadable;
 import '../../data/local/custom_field_store.dart'
     show maximumCustomFieldConfigurationCharacters;
 import '../../data/notifications/notification_service.dart';

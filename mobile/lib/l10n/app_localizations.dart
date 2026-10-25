@@ -8099,6 +8099,12 @@ abstract class AppLocalizations {
   /// **'Save appearance'**
   String get saveAppearanceButton;
 
+  /// No description provided for @appearanceContrastError.
+  ///
+  /// In en, this message translates to:
+  /// **'Text colours need more contrast against the background, surface and card colours.'**
+  String get appearanceContrastError;
+
   /// No description provided for @deleteFailed.
   ///
   /// In en, this message translates to:
