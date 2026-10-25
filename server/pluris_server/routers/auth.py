@@ -506,7 +506,7 @@ async def security_events(
     auth: CurrentAuth,
     db: Db,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    before_id: Annotated[int | None, Query(ge=1)] = None,
+    before_id: Annotated[int | None, Query(ge=1, le=2**63 - 1)] = None,
 ) -> list[SecurityEvent]:
     query = select(SecurityEvent).where(SecurityEvent.user_id == auth.user.id)
     if before_id is not None:
