@@ -382,12 +382,14 @@ class _TopFrontsCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 7),
-                  LinearProgressIndicator(
-                    minHeight: 7,
-                    value: _analyticsRatio(item.totalSeconds, maxSeconds),
-                    color: scheme.primary,
-                    backgroundColor: scheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(99),
+                  ExcludeSemantics(
+                    child: LinearProgressIndicator(
+                      minHeight: 7,
+                      value: _analyticsRatio(item.totalSeconds, maxSeconds),
+                      color: scheme.primary,
+                      backgroundColor: scheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
