@@ -101,6 +101,7 @@ String localizeImportDetectionReason(
       l10n.importReasonSimplyPluralFields,
     ImportDetectionReason.pluralSpaceMarkers =>
       l10n.importReasonPluralSpaceMarkers,
+    ImportDetectionReason.ampersandMarkers => l10n.importReasonAmpersandMarkers,
     ImportDetectionReason.openPluralMarkers =>
       l10n.importReasonOpenPluralMarkers,
     ImportDetectionReason.pluralPortMarkers =>

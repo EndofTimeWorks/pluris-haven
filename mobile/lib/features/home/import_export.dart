@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-const _maximumPastedImportCharacters = 256 * 1024;
+const _maximumPastedImportBytes = 32 * 1024 * 1024;
 const _maximumClipboardArchiveBytes = 512 * 1024;
 
 String _withoutRawImportPayloads(String archiveJson) {
@@ -463,7 +463,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ? l10n.encryptedArchiveLoaded
           : preview == null
           ? unreadableStatus
-          : l10n.previewReadyStatus(_countSummary(preview.counts));
+          : _previewStatus(l10n, preview);
     });
   }
 
@@ -532,7 +532,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _restoreRehearsal = null;
       _importStatus = preview == null
           ? _importStatus
-          : l10n.previewReadyStatus(_countSummary(preview.counts));
+          : _previewStatus(l10n, preview);
     });
     if (preview != null) {
       appDebugLog(
@@ -594,7 +594,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       setState(() {
         _preview = preview;
         _restoreRehearsal = null;
-        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
+        _importStatus = _previewStatus(l10n, preview);
       });
       appDebugLog(
         'Import preview refreshed source=${preview.source.name} file=$fileName '
@@ -638,7 +638,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         _preview = preview;
         _restoreRehearsal = null;
         _isPickingImport = false;
-        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
+        _importStatus = _previewStatus(l10n, preview);
       });
     } on Object catch (error) {
       if (!mounted) return;
@@ -873,6 +873,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
+    final systemProfileConflict =
+        _source == ImportSource.plurisHavenArchive && decoded['system'] is Map;
 
     final existingMembers = await widget.repository.watchMembers().first;
     final existingGroups = await widget.repository.watchGroups().first;
@@ -925,7 +927,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
     }
 
-    if (memberConflicts.isEmpty && groupConflicts.isEmpty) {
+    if (memberConflicts.isEmpty &&
+        groupConflicts.isEmpty &&
+        !systemProfileConflict) {
       return const _ConflictPromptResult.noConflicts();
     }
 
@@ -938,6 +942,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       builder: (context) => _ConflictPromptDialog(
         memberCount: memberConflicts.length,
         groupCount: groupConflicts.length,
+        systemProfileConflict: systemProfileConflict,
         sourceLabel: localizeImportSource(l10n, _source),
       ),
     );
@@ -963,6 +968,16 @@ class _ImportExportPageState extends State<ImportExportPage> {
         .join(', ');
 
     return visible.isEmpty ? l10n.noRecordsFound : visible;
+  }
+
+  String _previewStatus(AppLocalizations l10n, ImportPreview preview) {
+    if (!preview.canApply) {
+      final problems = preview.warningsAndErrors;
+      if (problems.isNotEmpty) {
+        return localizeImportDiagnostic(l10n, problems.first.diagnostic);
+      }
+    }
+    return l10n.previewReadyStatus(_countSummary(preview.counts));
   }
 
   Future<void> _copyImportDetails(String details) async {
@@ -1067,11 +1082,13 @@ class _ConflictPromptDialog extends StatelessWidget {
   const _ConflictPromptDialog({
     required this.memberCount,
     required this.groupCount,
+    required this.systemProfileConflict,
     required this.sourceLabel,
   });
 
   final int memberCount;
   final int groupCount;
+  final bool systemProfileConflict;
   final String sourceLabel;
 
   @override
@@ -1088,7 +1105,11 @@ class _ConflictPromptDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(l10n.conflictsFoundTitle),
       content: Text(
-        l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
+        [
+          if (parts.isNotEmpty)
+            l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
+          if (systemProfileConflict) l10n.systemProfileConflictBody,
+        ].join('\n\n'),
       ),
       actions: [
         TextButton(
@@ -1653,6 +1674,7 @@ class PasteImportJsonSheet extends StatefulWidget {
 
 class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
   final _controller = TextEditingController();
+  bool _tooLarge = false;
 
   @override
   void dispose() {
@@ -1687,18 +1709,11 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
               minLines: 8,
               maxLines: 14,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              maxLength: _maximumPastedImportCharacters,
-              maxLengthEnforcement: MaxLengthEnforcement.enforced,
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(
-                  _maximumPastedImportCharacters,
-                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                ),
-              ],
               decoration: InputDecoration(
                 hintText: '{"members": [...]}',
                 labelText: l10n.exportJsonLabel,
                 helperText: l10n.pasteJsonSizeHelp,
+                errorText: _tooLarge ? l10n.importFileTooLarge : null,
                 alignLabelWithHint: true,
               ),
             ),
@@ -1706,6 +1721,10 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
             FilledButton.icon(
               onPressed: () {
                 final text = _controller.text.trim();
+                if (utf8.encode(text).length > _maximumPastedImportBytes) {
+                  setState(() => _tooLarge = true);
+                  return;
+                }
                 Navigator.pop(context, text.isEmpty ? null : text);
               },
               icon: const Icon(Icons.fact_check_rounded),
@@ -1767,6 +1786,7 @@ class ImportSetupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1857,6 +1877,16 @@ class ImportSetupCard extends StatelessWidget {
               }
             },
           ),
+          if (preview?.canApply == true) ...[
+            const SizedBox(height: 8),
+            Text(
+              source == ImportSource.plurisHavenArchive &&
+                      strategy == ImportConflictStrategy.update
+                  ? l10n.nativeImportUpdatesProfile
+                  : l10n.importPreservesLocalProfile,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+            ),
+          ],
           if (plan.requiresToken) ...[
             const SizedBox(height: 10),
             TextField(
