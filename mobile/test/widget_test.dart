@@ -1242,6 +1242,41 @@ void main() {
     }
   });
 
+  testWidgets('top-front bars do not announce a second relative value', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final end = DateTime.now().subtract(const Duration(hours: 1));
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: end.subtract(const Duration(hours: 1)),
+        endedAt: end,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Top fronts'));
+
+    final progress = tester.getSemantics(
+      find.byType(LinearProgressIndicator).first,
+    );
+    final value = progress.getSemanticsData().value;
+    await tester.pumpWidget(const SizedBox.shrink());
+    semantics.dispose();
+    expect(value, isEmpty);
+  });
+
   testWidgets('keeps zero-length completed fronts finite in analytics', (
     tester,
   ) async {
