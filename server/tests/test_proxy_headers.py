@@ -5,6 +5,8 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+from tests.conftest import register
+
 
 async def _client_address(request: Request) -> JSONResponse:
     return JSONResponse({"host": request.client.host})
@@ -64,3 +66,35 @@ def test_application_rate_limits_forwarded_clients_independently(client: TestCli
 
     assert first.status_code == 401
     assert second.status_code == 401
+
+
+def test_failed_logins_cannot_lock_out_account_from_another_ip(client: TestClient) -> None:
+    register(client, "victim@example.com", "Victim")
+    client.app.state.auth_rate_limiter.max_attempts = 2
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        login = {
+            "email": "victim@example.com",
+            "password": "wrong password phrase",
+            "device_name": "Test device",
+        }
+        for _ in range(2):
+            failed = proxied.post(
+                "/v1/auth/login",
+                headers={"X-Forwarded-For": "198.51.100.4"},
+                json=login,
+            )
+            assert failed.status_code == 401
+        attacker_limited = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "198.51.100.4"},
+            json=login,
+        )
+        legitimate = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "203.0.113.8"},
+            json={**login, "password": "correct horse battery staple"},
+        )
+
+    assert attacker_limited.status_code == 429
+    assert legitimate.status_code == 200
