@@ -266,7 +266,7 @@ def test_security_event_history_is_bounded(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     owner = register(client, "bounded-events@example.com", "Bounded events")
-    monkeypatch.setattr(security_event_store, "MAX_SECURITY_EVENTS_PER_USER", 5)
+    monkeypatch.setattr(security_event_store, "MAX_BACKUP_RECOVERY_EVENTS_PER_USER", 5)
 
     async def add_events() -> None:
         async with client.app.state.session_factory() as session:
