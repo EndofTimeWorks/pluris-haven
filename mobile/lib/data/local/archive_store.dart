@@ -909,20 +909,32 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     );
     final system = decoded['system'];
     final systemRecord = system is Map<String, Object?> ? system : null;
+    final importSystemProfile =
+        systemRecord != null &&
+        source == ImportSource.plurisHavenArchive &&
+        strategy == ImportConflictStrategy.update;
     final localAvatarRefs = localizeAvatars
         ? await _localizeImportAvatars(
-            members: [?systemRecord, ...members, ...namedFronts],
+            members: [
+              if (importSystemProfile) systemRecord,
+              ...members,
+              ...namedFronts,
+            ],
             avatarAssets: avatarAssets,
           )
         : const <String, String>{};
     if (localizeAvatars) {
-      for (final record in [?systemRecord, ...members, ...namedFronts]) {
+      for (final record in [
+        if (importSystemProfile) systemRecord,
+        ...members,
+        ...namedFronts,
+      ]) {
         record['avatar_url'] = localAvatarRefs[_requiredString(record, 'id')];
       }
     }
 
     await database.transaction(() async {
-      if (systemRecord != null) {
+      if (importSystemProfile) {
         final name = _stringValue(systemRecord['name'])?.trim();
         if (name != null && name.isNotEmpty) {
           await database
