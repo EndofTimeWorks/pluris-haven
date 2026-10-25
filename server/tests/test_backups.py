@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pluris_server import security_events as security_event_store
 from pluris_server.backup_cleanup import (
     queue_backup_deletions,
     reconcile_legacy_backup_chunks,
@@ -15,7 +16,13 @@ from pluris_server.backup_cleanup import (
     sweep_incomplete_backup_snapshots,
 )
 from pluris_server.main import _sweep_scheduled_cleanup
-from pluris_server.models import BackupChunk, BackupDeletion, BackupSnapshot
+from pluris_server.models import (
+    BackupChunk,
+    BackupDeletion,
+    BackupSnapshot,
+    SecurityEventType,
+    User,
+)
 from pluris_server.routers import backups
 from tests.conftest import auth, register
 
@@ -77,6 +84,60 @@ def test_authenticated_backup_snapshot_upload_download_and_delete(client: TestCl
         "backup_deleted",
         "backup_recovery_started",
     ]
+
+
+def test_repeated_backup_reads_preserve_other_security_history(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = register(client, "read-history@example.com", "Read history")
+    headers = auth(user["access_token"])
+    body = b"ciphertext"
+    assert (
+        client.post(
+            "/v1/backups/snapshots",
+            headers=headers,
+            json={
+                "snapshot_id": "history-snapshot",
+                "manifest_sha256": "a" * 64,
+                "chunk_count": 1,
+                "total_bytes": len(body),
+            },
+        ).status_code
+        == 201
+    )
+    assert (
+        client.put(
+            "/v1/backups/snapshots/history-snapshot/chunks/0",
+            headers={**headers, "X-Content-SHA256": hashlib.sha256(body).hexdigest()},
+            content=body,
+        ).status_code
+        == 200
+    )
+
+    async def record_sign_out() -> None:
+        async with client.app.state.session_factory() as session:
+            user_id = await session.scalar(
+                select(User.id).where(User.email == "read-history@example.com")
+            )
+            assert user_id is not None
+            await security_event_store.record_security_event(
+                session, user_id=user_id, event_type=SecurityEventType.SIGNED_OUT
+            )
+            await session.commit()
+
+    asyncio.run(record_sign_out())
+    monkeypatch.setattr(security_event_store, "MAX_SECURITY_EVENTS_PER_USER", 5)
+    monkeypatch.setattr(
+        security_event_store, "MAX_BACKUP_RECOVERY_EVENTS_PER_USER", 3, raising=False
+    )
+    for _ in range(8):
+        response = client.get("/v1/backups/snapshots/history-snapshot/chunks/0", headers=headers)
+        assert response.status_code == 200
+
+    events = client.get("/v1/auth/security-events", headers=headers)
+    assert events.status_code == 200
+    assert "signed_out" in [event["event_type"] for event in events.json()]
+    assert sum(event["event_type"] == "backup_recovery_started" for event in events.json()) <= 3
 
 
 def test_backup_upload_resumes_and_isolated_from_other_users(client: TestClient) -> None:
