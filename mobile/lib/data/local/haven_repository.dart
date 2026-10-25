@@ -719,6 +719,9 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> recordNotificationEvent(NotificationEventDraft draft) =>
       _notificationEvents.record(draft);
 
+  @override
+  Future<void> clearNotificationHistory() => _notificationEvents.clear();
+
   Future<bool> _preferenceEquals(String key, String expectedValue) async {
     final preference = await (database.select(
       database.appPreferences,

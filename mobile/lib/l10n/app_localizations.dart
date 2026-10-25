@@ -673,6 +673,24 @@ abstract class AppLocalizations {
   /// **'Notification history'**
   String get notificationHistoryTitle;
 
+  /// No description provided for @clearNotificationHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear history'**
+  String get clearNotificationHistoryButton;
+
+  /// No description provided for @clearNotificationHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear notification history?'**
+  String get clearNotificationHistoryTitle;
+
+  /// No description provided for @clearNotificationHistoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes notification history stored on this device and from future exports. Existing archives and other copies are unchanged.'**
+  String get clearNotificationHistoryBody;
+
   /// No description provided for @noNotificationsYetTitle.
   ///
   /// In en, this message translates to:

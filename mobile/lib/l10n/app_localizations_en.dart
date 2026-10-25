@@ -320,6 +320,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationHistoryTitle => 'Notification history';
 
   @override
+  String get clearNotificationHistoryButton => 'Clear history';
+
+  @override
+  String get clearNotificationHistoryTitle => 'Clear notification history?';
+
+  @override
+  String get clearNotificationHistoryBody =>
+      'This removes notification history stored on this device and from future exports. Existing archives and other copies are unchanged.';
+
+  @override
   String get noNotificationsYetTitle => 'No notifications yet';
 
   @override

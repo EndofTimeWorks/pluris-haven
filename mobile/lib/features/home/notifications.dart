@@ -24,6 +24,24 @@ class NotificationHistoryPage extends StatelessWidget {
                     title: l10n.notificationHistoryTitle,
                     trailing: StatusPill(text: '${events.length}'),
                   ),
+                  if (events.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        key: const ValueKey('clear-notification-history'),
+                        onPressed: () => confirmDelete(
+                          context,
+                          title: l10n.clearNotificationHistoryTitle,
+                          body: l10n.clearNotificationHistoryBody,
+                          confirmLabel: l10n.clearNotificationHistoryButton,
+                          onDelete: repository.clearNotificationHistory,
+                        ),
+                        icon: const Icon(Icons.delete_sweep_rounded),
+                        label: Text(l10n.clearNotificationHistoryButton),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   if (events.isEmpty)
                     SpEmptyState(

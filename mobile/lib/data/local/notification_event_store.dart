@@ -114,4 +114,8 @@ class LocalNotificationEventStore {
           ),
         );
   }
+
+  Future<void> clear() => (database.delete(
+    database.notificationEvents,
+  )..where((event) => event.systemId.equals(localSystemId))).go();
 }
