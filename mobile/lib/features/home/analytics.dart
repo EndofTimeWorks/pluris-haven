@@ -280,6 +280,17 @@ class _AnalyticsSummary extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              l10n.summedFrontTimeExplanation,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
