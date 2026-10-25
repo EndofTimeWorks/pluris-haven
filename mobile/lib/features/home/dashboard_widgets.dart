@@ -235,107 +235,112 @@ class CurrentFrontEntry extends StatelessWidget {
     final home = snapshot;
     final scheme = Theme.of(context).colorScheme;
 
-    return SpCard(
-      outlined: true,
-      onTap: () => _showFrontSheet(context),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(4),
+    return Semantics(
+      container: true,
+      button: true,
+      child: SpCard(
+        outlined: true,
+        onTap: () => _showFrontSheet(context),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.currentlyFrontingNotificationTitle,
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.currentlyFrontingNotificationTitle,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  home?.currentFrontText ?? l10n.noneTitle,
-                  style: TextStyle(
-                    color: scheme.onSurface,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: 5),
+                  Text(
+                    home?.currentFrontText ?? l10n.noneTitle,
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                StreamBuilder<List<MemberSummary>>(
-                  stream: repository.watchCurrentFrontMembers(),
-                  initialData: const [],
-                  builder: (context, snapshot) {
-                    final members = snapshot.data ?? const <MemberSummary>[];
-                    if (members.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          for (final member in members.take(4))
-                            Tooltip(
-                              message: member.displayName,
-                              child: Semantics(
-                                container: true,
-                                excludeSemantics: true,
-                                label: l10n.memberIsFronting(
-                                  member.displayName,
-                                ),
-                                child: MemberAvatar(
-                                  member: member,
-                                  color: _colorFromHex(
-                                    member.colorHex,
-                                    fallback: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                  StreamBuilder<List<MemberSummary>>(
+                    stream: repository.watchCurrentFrontMembers(),
+                    initialData: const [],
+                    builder: (context, snapshot) {
+                      final members = snapshot.data ?? const <MemberSummary>[];
+                      if (members.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            for (final member in members.take(4))
+                              Tooltip(
+                                message: member.displayName,
+                                excludeFromSemantics: true,
+                                child: Semantics(
+                                  container: true,
+                                  excludeSemantics: true,
+                                  label: l10n.memberIsFronting(
+                                    member.displayName,
                                   ),
-                                  label: _initialFor(member.displayName),
-                                  size: 28,
+                                  child: MemberAvatar(
+                                    member: member,
+                                    color: _colorFromHex(
+                                      member.colorHex,
+                                      fallback: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                                    label: _initialFor(member.displayName),
+                                    size: 28,
+                                  ),
                                 ),
                               ),
-                            ),
-                          if (members.length > 4)
-                            StatusPill(text: '+${members.length - 4}'),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      StatusPill(text: home?.currentFrontStatus ?? 'none'),
-                      Text(
-                        l10n.setFrontButton,
-                        style: TextStyle(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
+                            if (members.length > 4)
+                              StatusPill(text: '+${members.length - 4}'),
+                          ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        StatusPill(text: home?.currentFrontStatus ?? 'none'),
+                        Text(
+                          l10n.setFrontButton,
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
