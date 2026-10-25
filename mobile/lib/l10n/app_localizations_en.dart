@@ -641,7 +641,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteServerAccountBody =>
-      'This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.';
+      'This signs you out and schedules server data for deletion in 30 days. To recover the account during that time, reset its password, then sign in. Local app data stays on this device.';
 
   @override
   String get currentPasswordLabel => 'Current password';
