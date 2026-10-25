@@ -957,239 +957,250 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         systemRecord != null &&
         source == ImportSource.plurisHavenArchive &&
         strategy == ImportConflictStrategy.update;
-    final localAvatarRefs = localizeAvatars
-        ? await _localizeImportAvatars(
-            members: [
-              if (importSystemProfile) systemRecord,
-              ...members,
-              ...namedFronts,
-            ],
-            avatarAssets: avatarAssets,
-          )
-        : const <String, String>{};
-    if (localizeAvatars) {
-      for (final record in [
-        if (importSystemProfile) systemRecord,
-        ...members,
-        ...namedFronts,
-      ]) {
-        record['avatar_url'] = localAvatarRefs[_requiredString(record, 'id')];
-      }
-    }
-
-    await database.transaction(() async {
-      if (importSystemProfile) {
-        final name = _stringValue(systemRecord['name'])?.trim();
-        if (name != null && name.isNotEmpty) {
-          await database
-              .into(database.pluralSystems)
-              .insertOnConflictUpdate(
-                PluralSystemsCompanion.insert(
-                  id: localSystemId,
-                  name: await _encryptLocalText(
-                    name,
-                    'plural_systems',
-                    localSystemId,
-                    'name',
-                  ),
-                  colorHex: Value(
-                    await _encryptNullableLocalText(
-                      _stringValue(systemRecord['color_hex']),
-                      'plural_systems',
-                      localSystemId,
-                      'color_hex',
-                    ),
-                  ),
-                  avatarUrl: Value(
-                    await _encryptNullableLocalText(
-                      localAvatarRefs[localSystemId] ??
-                          _stringValue(systemRecord['avatar_url']),
-                      'plural_systems',
-                      localSystemId,
-                      'avatar_url',
-                    ),
-                  ),
-                  description: Value(
-                    await _encryptNullableLocalText(
-                      _stringValue(systemRecord['description']),
-                      'plural_systems',
-                      localSystemId,
-                      'description',
-                    ),
-                  ),
-                  createdAt: _dateValue(systemRecord['created_at']) ?? now,
-                  updatedAt: now,
-                ),
-              );
+    final createdAvatarReferences = <String>{};
+    try {
+      final localAvatarRefs = localizeAvatars
+          ? await _localizeImportAvatars(
+              members: [
+                if (importSystemProfile) systemRecord,
+                ...members,
+                ...namedFronts,
+              ],
+              avatarAssets: avatarAssets,
+              createdReferences: createdAvatarReferences,
+            )
+          : const <String, String>{};
+      if (localizeAvatars) {
+        for (final record in [
+          if (importSystemProfile) systemRecord,
+          ...members,
+          ...namedFronts,
+        ]) {
+          record['avatar_url'] = localAvatarRefs[_requiredString(record, 'id')];
         }
       }
 
-      for (final group in groups) {
-        await _importGroup(group, strategy, now);
-      }
-      for (final member in members) {
-        final memberId = _requiredString(member, 'id');
-        await _importMember(member, strategy, now, localAvatarRefs[memberId]);
-        final folderId = _stringValue(member['folder_id']);
-        if (folderId != null) {
-          await _importGroupMember({
-            'group_id': folderId,
-            'member_id': memberId,
-          });
+      await database.transaction(() async {
+        if (importSystemProfile) {
+          final name = _stringValue(systemRecord['name'])?.trim();
+          if (name != null && name.isNotEmpty) {
+            await database
+                .into(database.pluralSystems)
+                .insertOnConflictUpdate(
+                  PluralSystemsCompanion.insert(
+                    id: localSystemId,
+                    name: await _encryptLocalText(
+                      name,
+                      'plural_systems',
+                      localSystemId,
+                      'name',
+                    ),
+                    colorHex: Value(
+                      await _encryptNullableLocalText(
+                        _stringValue(systemRecord['color_hex']),
+                        'plural_systems',
+                        localSystemId,
+                        'color_hex',
+                      ),
+                    ),
+                    avatarUrl: Value(
+                      await _encryptNullableLocalText(
+                        localAvatarRefs[localSystemId] ??
+                            _stringValue(systemRecord['avatar_url']),
+                        'plural_systems',
+                        localSystemId,
+                        'avatar_url',
+                      ),
+                    ),
+                    description: Value(
+                      await _encryptNullableLocalText(
+                        _stringValue(systemRecord['description']),
+                        'plural_systems',
+                        localSystemId,
+                        'description',
+                      ),
+                    ),
+                    createdAt: _dateValue(systemRecord['created_at']) ?? now,
+                    updatedAt: now,
+                  ),
+                );
+          }
         }
-      }
-      for (final link in groupMembers) {
-        await _importGroupMember(link);
-      }
-      for (final note in notes) {
-        await _importNote(note, strategy, now);
-      }
-      for (final category in chatCategories) {
-        await _importChatCategory(category, strategy, now);
-      }
-      for (final channel in chatChannels) {
-        await _importChatChannel(channel, strategy, now);
-      }
-      for (final message in messages) {
-        await _importMessage(message, strategy, now);
-      }
-      for (final reminder in reminders) {
-        await _importReminder(reminder, strategy, now);
-      }
-      for (final tag in tags) {
-        await _importTag(tag, strategy, now);
-      }
-      for (final link in memberTags) {
-        await _importMemberTag(link);
-      }
-      for (final journal in journals) {
-        await _importJournal(journal, strategy, now);
-      }
-      for (final field in customFields) {
-        await _importCustomField(field, strategy, now);
-      }
-      for (final value in customFieldValues) {
-        await _importCustomFieldValue(value, strategy, now);
-      }
-      for (final provenance in customFieldMigrationProvenance) {
-        await _importCustomFieldValueMigrationProvenance(
-          provenance,
-          strategy,
-          now,
-        );
-      }
-      for (final poll in polls) {
-        await _importPoll(poll, strategy, now);
-      }
-      for (final option in pollOptions) {
-        await _importPollOption(option, strategy);
-      }
-      for (final vote in pollVotes) {
-        await _importPollVote(vote);
-      }
-      for (final event in pollVoteEvents) {
-        await _importPollVoteEvent(event, strategy, now);
-      }
-      for (final front in fronts) {
-        await _importFront(front, strategy, now);
-      }
-      for (final link in frontMembers) {
-        await _importFrontMember(link);
-      }
-      for (final event in frontAuditEvents) {
-        await _importFrontAuditEvent(event, strategy, now);
-      }
-      for (final namedFront in namedFronts) {
-        await _importNamedFront(
-          namedFront,
-          strategy,
-          now,
-          localAvatarRefs[_requiredString(namedFront, 'id')],
-        );
-      }
-      for (final link in namedFrontMembers) {
-        await _importNamedFrontMember(link);
-      }
-      for (final bucket in privacyBuckets) {
-        await _importPrivacyBucket(bucket, strategy, now);
-      }
-      for (final link in privacyBucketMembers) {
-        await _importPrivacyBucketMember(link);
-      }
-      for (final event in notificationEvents) {
-        await _importNotificationEvent(event, strategy, now);
-      }
-      for (final preference in preferences) {
-        await _importPreference(preference, strategy, now);
-      }
-      for (final revision in contentRevisions) {
-        await _importContentRevision(revision, strategy, now);
-      }
 
-      final importRecordId = newLocalId('import');
-      await database
-          .into(database.importRecords)
-          .insert(
-            ImportRecordsCompanion.insert(
-              id: importRecordId,
-              systemId: localSystemId,
-              source: source.jobSource,
-              fileName: Value(
-                await _encryptNullableLocalText(
-                  _nullIfBlank(fileName),
-                  'import_records',
-                  importRecordId,
-                  'file_name',
-                ),
-              ),
-              summaryJson: Value(
-                await _encryptLocalText(
-                  jsonEncode({
-                    'members': members.length,
-                    'groups': groups.length,
-                    'group_members': groupMembers.length,
-                    'notes': notes.length,
-                    'chat_categories': chatCategories.length,
-                    'chat_channels': chatChannels.length,
-                    'messages': messages.length,
-                    'reminders': reminders.length,
-                    'tags': tags.length,
-                    'member_tags': memberTags.length,
-                    'journals': journals.length,
-                    'content_revisions': contentRevisions.length,
-                    'custom_fields': customFields.length,
-                    'custom_field_values': customFieldValues.length,
-                    'custom_field_value_migration_provenance':
-                        customFieldMigrationProvenance.length,
-                    'polls': polls.length,
-                    'poll_options': pollOptions.length,
-                    'poll_votes': pollVotes.length,
-                    'poll_vote_events': pollVoteEvents.length,
-                    'fronts': fronts.length,
-                    'front_members': frontMembers.length,
-                    'front_audit_events': frontAuditEvents.length,
-                    'named_fronts': namedFronts.length,
-                    'named_front_members': namedFrontMembers.length,
-                    'privacy_buckets': privacyBuckets.length,
-                    'privacy_bucket_members': privacyBucketMembers.length,
-                    'avatar_assets': avatarAssets.length,
-                    'raw_payloads': rawPayloads.length,
-                    'notification_events': notificationEvents.length,
-                    'preferences': preferences.length,
-                  }),
-                  'import_records',
-                  importRecordId,
-                  'summary_json',
-                ),
-              ),
-              importedAt: now,
-            ),
+        for (final group in groups) {
+          await _importGroup(group, strategy, now);
+        }
+        for (final member in members) {
+          final memberId = _requiredString(member, 'id');
+          await _importMember(member, strategy, now, localAvatarRefs[memberId]);
+          final folderId = _stringValue(member['folder_id']);
+          if (folderId != null) {
+            await _importGroupMember({
+              'group_id': folderId,
+              'member_id': memberId,
+            });
+          }
+        }
+        for (final link in groupMembers) {
+          await _importGroupMember(link);
+        }
+        for (final note in notes) {
+          await _importNote(note, strategy, now);
+        }
+        for (final category in chatCategories) {
+          await _importChatCategory(category, strategy, now);
+        }
+        for (final channel in chatChannels) {
+          await _importChatChannel(channel, strategy, now);
+        }
+        for (final message in messages) {
+          await _importMessage(message, strategy, now);
+        }
+        for (final reminder in reminders) {
+          await _importReminder(reminder, strategy, now);
+        }
+        for (final tag in tags) {
+          await _importTag(tag, strategy, now);
+        }
+        for (final link in memberTags) {
+          await _importMemberTag(link);
+        }
+        for (final journal in journals) {
+          await _importJournal(journal, strategy, now);
+        }
+        for (final field in customFields) {
+          await _importCustomField(field, strategy, now);
+        }
+        for (final value in customFieldValues) {
+          await _importCustomFieldValue(value, strategy, now);
+        }
+        for (final provenance in customFieldMigrationProvenance) {
+          await _importCustomFieldValueMigrationProvenance(
+            provenance,
+            strategy,
+            now,
           );
+        }
+        for (final poll in polls) {
+          await _importPoll(poll, strategy, now);
+        }
+        for (final option in pollOptions) {
+          await _importPollOption(option, strategy);
+        }
+        for (final vote in pollVotes) {
+          await _importPollVote(vote);
+        }
+        for (final event in pollVoteEvents) {
+          await _importPollVoteEvent(event, strategy, now);
+        }
+        for (final front in fronts) {
+          await _importFront(front, strategy, now);
+        }
+        for (final link in frontMembers) {
+          await _importFrontMember(link);
+        }
+        for (final event in frontAuditEvents) {
+          await _importFrontAuditEvent(event, strategy, now);
+        }
+        for (final namedFront in namedFronts) {
+          await _importNamedFront(
+            namedFront,
+            strategy,
+            now,
+            localAvatarRefs[_requiredString(namedFront, 'id')],
+          );
+        }
+        for (final link in namedFrontMembers) {
+          await _importNamedFrontMember(link);
+        }
+        for (final bucket in privacyBuckets) {
+          await _importPrivacyBucket(bucket, strategy, now);
+        }
+        for (final link in privacyBucketMembers) {
+          await _importPrivacyBucketMember(link);
+        }
+        for (final event in notificationEvents) {
+          await _importNotificationEvent(event, strategy, now);
+        }
+        for (final preference in preferences) {
+          await _importPreference(preference, strategy, now);
+        }
+        for (final revision in contentRevisions) {
+          await _importContentRevision(revision, strategy, now);
+        }
 
-      for (final payload in rawPayloads) {
-        await _importPayload(payload, importRecordId, source, strategy, now);
+        final importRecordId = newLocalId('import');
+        await database
+            .into(database.importRecords)
+            .insert(
+              ImportRecordsCompanion.insert(
+                id: importRecordId,
+                systemId: localSystemId,
+                source: source.jobSource,
+                fileName: Value(
+                  await _encryptNullableLocalText(
+                    _nullIfBlank(fileName),
+                    'import_records',
+                    importRecordId,
+                    'file_name',
+                  ),
+                ),
+                summaryJson: Value(
+                  await _encryptLocalText(
+                    jsonEncode({
+                      'members': members.length,
+                      'groups': groups.length,
+                      'group_members': groupMembers.length,
+                      'notes': notes.length,
+                      'chat_categories': chatCategories.length,
+                      'chat_channels': chatChannels.length,
+                      'messages': messages.length,
+                      'reminders': reminders.length,
+                      'tags': tags.length,
+                      'member_tags': memberTags.length,
+                      'journals': journals.length,
+                      'content_revisions': contentRevisions.length,
+                      'custom_fields': customFields.length,
+                      'custom_field_values': customFieldValues.length,
+                      'custom_field_value_migration_provenance':
+                          customFieldMigrationProvenance.length,
+                      'polls': polls.length,
+                      'poll_options': pollOptions.length,
+                      'poll_votes': pollVotes.length,
+                      'poll_vote_events': pollVoteEvents.length,
+                      'fronts': fronts.length,
+                      'front_members': frontMembers.length,
+                      'front_audit_events': frontAuditEvents.length,
+                      'named_fronts': namedFronts.length,
+                      'named_front_members': namedFrontMembers.length,
+                      'privacy_buckets': privacyBuckets.length,
+                      'privacy_bucket_members': privacyBucketMembers.length,
+                      'avatar_assets': avatarAssets.length,
+                      'raw_payloads': rawPayloads.length,
+                      'notification_events': notificationEvents.length,
+                      'preferences': preferences.length,
+                    }),
+                    'import_records',
+                    importRecordId,
+                    'summary_json',
+                  ),
+                ),
+                importedAt: now,
+              ),
+            );
+
+        for (final payload in rawPayloads) {
+          await _importPayload(payload, importRecordId, source, strategy, now);
+        }
+      });
+    } on Object catch (error, stackTrace) {
+      for (final reference in createdAvatarReferences) {
+        if (!await _isAvatarReferenced(reference)) {
+          await _avatarStore.delete(reference);
+        }
       }
-    });
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   int _sanitizeArchiveReferences({
@@ -1512,6 +1523,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
   Future<Map<String, String?>> _localizeImportAvatars({
     required List<Map<String, Object?>> members,
     required List<Map<String, Object?>> avatarAssets,
+    required Set<String> createdReferences,
   }) async {
     final assetsById = <String, _ImportAvatarBytes>{};
     for (final asset in avatarAssets) {
@@ -1556,6 +1568,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
                 sourceName: asset.name,
                 mimeType: asset.mimeType,
                 bytes: asset.bytes,
+                createdReferences: createdReferences,
               );
         continue;
       }
@@ -1571,12 +1584,16 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
                 sourceName: asset.name,
                 mimeType: asset.mimeType,
                 bytes: asset.bytes,
+                createdReferences: createdReferences,
               );
         continue;
       }
 
       if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-        refs[memberId] = await _downloadAndStoreAvatar(avatarUrl);
+        refs[memberId] = await _downloadAndStoreAvatar(
+          avatarUrl,
+          createdReferences: createdReferences,
+        );
         continue;
       }
 
@@ -1630,7 +1647,10 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     return null;
   }
 
-  Future<String?> _downloadAndStoreAvatar(String url) async {
+  Future<String?> _downloadAndStoreAvatar(
+    String url, {
+    Set<String>? createdReferences,
+  }) async {
     var currentUri = Uri.tryParse(url);
     final visitedUris = <Uri>{};
     for (var redirect = 0; redirect <= 3; redirect++) {
@@ -1705,6 +1725,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
               : uri.pathSegments.last,
           mimeType: response.headers.contentType?.mimeType,
           bytes: bytes,
+          createdReferences: createdReferences,
         );
       } on Object catch (error, stackTrace) {
         appDebugLog(
@@ -1742,6 +1763,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required String sourceName,
     required String? mimeType,
     required Uint8List bytes,
+    Set<String>? createdReferences,
   }) async {
     final detectedMimeType = sniffAvatarMimeType(bytes) ?? mimeType;
     final extension = _avatarExtension(sourceName, detectedMimeType);
@@ -1750,8 +1772,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         .replaceAll('=', '')
         .substring(0, 24);
     final fileName = '$safeId-$digest$extension';
+    final reference = 'local-avatar:$fileName';
+    final existed = await _avatarStore.exists(reference);
     await _avatarStore.write(fileName, bytes);
-    return 'local-avatar:$fileName';
+    if (!existed) createdReferences?.add(reference);
+    return reference;
   }
 
   Future<String?> _validateAndStoreAvatarBytes({
@@ -1759,6 +1784,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required String sourceName,
     required String? mimeType,
     required Uint8List bytes,
+    Set<String>? createdReferences,
   }) async {
     try {
       validateRasterAvatarBytes(bytes);
@@ -1770,6 +1796,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       sourceName: sourceName,
       mimeType: mimeType,
       bytes: bytes,
+      createdReferences: createdReferences,
     );
   }
 
