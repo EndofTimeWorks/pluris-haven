@@ -82,6 +82,7 @@ class _RemindersPageState extends State<RemindersPage> {
                       ReminderTile(
                         reminder: reminder,
                         repository: widget.repository,
+                        notificationService: widget.notificationService,
                       ),
                       if (reminder != reminders.last) const Divider(height: 1),
                     ],
@@ -111,10 +112,12 @@ class ReminderTile extends StatelessWidget {
     super.key,
     required this.reminder,
     required this.repository,
+    required this.notificationService,
   });
 
   final ReminderSummary reminder;
   final HavenRepository repository;
+  final NotificationService notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +183,18 @@ class ReminderTile extends StatelessWidget {
                   },
                 ),
               ),
+              if (reminder.scheduleKind !=
+                  ReminderScheduleKind.afterFront.storageValue)
+                IconButton(
+                  tooltip: l10n.editReminderTooltip,
+                  onPressed: () => showAddReminderSheet(
+                    context,
+                    repository,
+                    notificationService: notificationService,
+                    reminder: reminder,
+                  ),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
               IconButton(
                 tooltip: l10n.deleteReminderTooltip,
                 onPressed: () => confirmDelete(
@@ -206,6 +221,7 @@ void showAddReminderSheet(
   BuildContext context,
   HavenRepository repository, {
   NotificationService? notificationService,
+  ReminderSummary? reminder,
 }) {
   showModalBottomSheet<void>(
     context: context,
@@ -215,6 +231,7 @@ void showAddReminderSheet(
     builder: (context) => AddReminderSheet(
       repository: repository,
       notificationService: notificationService,
+      reminder: reminder,
     ),
   );
 }
@@ -224,11 +241,13 @@ class AddReminderSheet extends StatefulWidget {
     super.key,
     required this.repository,
     NotificationService? notificationService,
+    this.reminder,
   }) : notificationService =
            notificationService ?? NotificationService.instance;
 
   final HavenRepository repository;
   final NotificationService notificationService;
+  final ReminderSummary? reminder;
 
   @override
   State<AddReminderSheet> createState() => _AddReminderSheetState();
@@ -262,6 +281,44 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   int _monthDay = 1;
   String? _triggerMemberId;
   String? _triggerMemberName;
+  bool _invalidTime = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final reminder = widget.reminder;
+    if (reminder == null) return;
+    _titleController.text = reminder.title;
+    _bodyController.text = reminder.body ?? '';
+    _timeController.text =
+        reminder.scheduleTime ??
+        _timeFromScheduleText(reminder.scheduleText) ??
+        '';
+    _scheduleKind =
+        ReminderScheduleKind.fromStorage(reminder.scheduleKind) ??
+        _kindFromScheduleText(reminder.scheduleText) ??
+        ReminderScheduleKind.daily;
+    final weekday =
+        _weekdayFromMask(reminder.scheduleDowMask) ??
+        _weekdayFromScheduleText(reminder.scheduleText);
+    if (weekday != null) {
+      _weekday = const [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ][weekday - 1];
+    }
+    _monthDay =
+        reminder.scheduleDom ??
+        _monthDayFromScheduleText(reminder.scheduleText) ??
+        1;
+    _triggerMemberId = reminder.triggerMemberId;
+    _afterFrontDelayController.text = '${reminder.delaySeconds ?? 0}';
+  }
 
   @override
   void dispose() {
@@ -288,7 +345,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              l10n.addReminderButton,
+              widget.reminder == null
+                  ? l10n.addReminderButton
+                  : l10n.editReminderTooltip,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
@@ -422,9 +481,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 key: const ValueKey('reminder-time-field'),
                 controller: _timeController,
                 keyboardType: TextInputType.datetime,
+                onChanged: (_) {
+                  if (_invalidTime) setState(() => _invalidTime = false);
+                },
                 decoration: InputDecoration(
                   labelText: l10n.timeFieldLabel,
                   helperText: l10n.timeFieldHelper,
+                  errorText: _invalidTime ? l10n.reminderTimeError : null,
                 ),
               ),
               const SizedBox(height: 10),
@@ -460,6 +523,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       );
       return;
     }
+    if (_scheduleKind != ReminderScheduleKind.afterFront &&
+        _timeController.text.trim().isNotEmpty &&
+        _parseTime(_timeController.text.trim()) == null) {
+      setState(() => _invalidTime = true);
+      return;
+    }
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
         ? null
         : _normalisedTimeValue;
@@ -488,14 +557,21 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         delaySeconds: _scheduleKind == ReminderScheduleKind.afterFront
             ? _afterFrontDelaySeconds
             : null,
+        enabled: widget.reminder?.enabled ?? true,
       ),
+      reminderId: widget.reminder?.id,
     );
     if (mounted && reminderId != null) {
       final notificationPermission = await ensureNotificationPermissionForSetup(
         widget.notificationService,
       );
+      if (widget.reminder != null) {
+        await widget.notificationService.cancelReminderNotification(reminderId);
+      }
       final time = _parseTime(scheduleTime ?? '');
-      if (time != null && _scheduleKind != ReminderScheduleKind.afterFront) {
+      if (time != null &&
+          _scheduleKind != ReminderScheduleKind.afterFront &&
+          (widget.reminder?.enabled ?? true)) {
         await widget.notificationService.scheduleReminderNotification(
           reminderId: reminderId,
           title: title,
@@ -526,6 +602,19 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   TimeOfDay? _parseTime(String text) {
+    final twelveHour = RegExp(
+      r'^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$',
+      caseSensitive: false,
+    ).firstMatch(text.trim());
+    if (twelveHour != null) {
+      final hour = int.parse(twelveHour.group(1)!);
+      final minute = int.tryParse(twelveHour.group(2) ?? '00');
+      if (hour < 1 || hour > 12 || minute == null || minute > 59) return null;
+      return TimeOfDay(
+        hour: hour % 12 + (twelveHour.group(3)!.toLowerCase() == 'pm' ? 12 : 0),
+        minute: minute,
+      );
+    }
     final parts = text.split(':');
     if (parts.length != 2) return null;
     final hour = int.tryParse(parts[0]);

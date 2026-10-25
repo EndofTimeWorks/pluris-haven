@@ -341,7 +341,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteChatChannel(String channelId);
 
-  Future<String?> saveReminder(ReminderDraft draft);
+  Future<String?> saveReminder(ReminderDraft draft, {String? reminderId});
 
   Future<void> setReminderEnabled(String reminderId, bool enabled);
 
