@@ -263,8 +263,6 @@ class CurrentFrontEntry extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   home?.currentFrontText ?? l10n.noneTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: scheme.onSurface,
                     fontSize: 26,
@@ -314,22 +312,28 @@ class CurrentFrontEntry extends StatelessWidget {
                     );
                   },
                 ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      StatusPill(text: home?.currentFrontStatus ?? 'none'),
+                      Text(
+                        l10n.setFrontButton,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              StatusPill(text: home?.currentFrontStatus ?? 'none'),
-              const SizedBox(height: 8),
-              Text(
-                l10n.setFrontButton,
-                style: TextStyle(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
           ),
         ],
       ),
