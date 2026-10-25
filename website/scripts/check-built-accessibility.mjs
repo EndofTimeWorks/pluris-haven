@@ -115,6 +115,25 @@ for (const path of await htmlFiles(buildDirectory)) {
       fail(`${match[1].toLowerCase()} has no associated label`);
     }
   }
+
+  if (page === 'obtainium/index.html') {
+    if (!html.includes('That page may load analytics, advertising and external fonts.')) {
+      fail('Obtainium transfer needs an explicit third-party disclosure');
+    }
+    if (!html.includes('>Continue to Obtainium</a>')) {
+      fail('Obtainium transfer needs an explicit continue link');
+    }
+  } else if (html.includes('apps.obtainium.imranr.dev/redirect')) {
+    fail('Obtainium entry links must lead through the disclosure page');
+  }
+
+  if (page === 'download/index.html' && !/<pre\b[^>]*\bclass="wrapped-command"[^>]*>/.test(html)) {
+    fail('the checksum command needs wrapping for narrow screens');
+  }
+
+  if (page === 'app/index.html' && html.includes('Open the current public path.')) {
+    fail('web app links need distinct descriptions');
+  }
 }
 
 if (failures.length) {
