@@ -248,6 +248,9 @@ class LocalHavenRepository implements HavenRepository {
 
   Future<void> migrateLegacyLocalTextToAad() => _migrateLegacyLocalTextToAad();
 
+  Future<void> clearCompletedImportJobPayloads() =>
+      _backgroundClearCompletedImportJobPayloads();
+
   Future<void> migrateUnauthenticatedEmptyCiphertexts() =>
       _migrateUnauthenticatedEmptyCiphertexts();
 
@@ -496,7 +499,59 @@ class LocalHavenRepository implements HavenRepository {
       _members.restoreDeleted(memberId);
 
   @override
-  Future<void> purgeMember(String memberId) => _members.purge(memberId);
+  Future<void> purgeMember(String memberId) async {
+    final member =
+        await (database.select(database.members)..where(
+              (row) =>
+                  row.systemId.equals(localSystemId) &
+                  row.id.equals(memberId) &
+                  row.deletedAt.isNotNull() &
+                  row.purgedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    if (member == null) return;
+    final avatar = await _decryptMember(member, 'avatar_url', member.avatarUrl);
+    await _members.purge(memberId);
+    if (avatar?.startsWith(localAvatarReferencePrefix) == true &&
+        !await _isAvatarReferenced(avatar!)) {
+      await _avatarStore.delete(avatar);
+    }
+  }
+
+  Future<bool> _isAvatarReferenced(String reference) async {
+    final systems = await database.select(database.pluralSystems).get();
+    for (final system in systems) {
+      if (await _decryptLocalText(
+            system.avatarUrl,
+            'plural_systems',
+            system.id,
+            'avatar_url',
+          ) ==
+          reference) {
+        return true;
+      }
+    }
+    final members = await database.select(database.members).get();
+    for (final member in members) {
+      if (await _decryptMember(member, 'avatar_url', member.avatarUrl) ==
+          reference) {
+        return true;
+      }
+    }
+    final fronts = await database.select(database.namedFronts).get();
+    for (final front in fronts) {
+      if (await _decryptLocalText(
+            front.avatarUrl,
+            'named_fronts',
+            front.id,
+            'avatar_url',
+          ) ==
+          reference) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @override
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId) =>
