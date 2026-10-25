@@ -202,8 +202,7 @@ async def put_chunk(
     db: Db,
     settings: AppSettings,
 ) -> BackupChunkView:
-    snapshot = await _get_snapshot(snapshot_id, auth, db, for_update=True)
-    if index < 0 or index >= snapshot.chunk_count:
+    if index < 0:
         raise HTTPException(status_code=422, detail="Backup chunk index is outside the manifest")
     content = await _read_limited_body(request, settings.backup_max_chunk_bytes)
     if not content:
@@ -212,6 +211,10 @@ async def put_chunk(
     digest = hashlib.sha256(content).hexdigest()
     if supplied_digest != digest:
         raise HTTPException(status_code=400, detail="Backup chunk digest does not match content")
+    # Read untrusted, potentially slow request streams before locking a row.
+    snapshot = await _get_snapshot(snapshot_id, auth, db, for_update=True)
+    if index >= snapshot.chunk_count:
+        raise HTTPException(status_code=422, detail="Backup chunk index is outside the manifest")
 
     existing = await db.scalar(
         select(BackupChunk).where(
