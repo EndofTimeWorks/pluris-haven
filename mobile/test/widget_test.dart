@@ -762,7 +762,7 @@ void main() {
     expect(repository._notificationEvents.first.title, 'Front changed');
     expect(
       repository._notificationEvents.first.body,
-      'blurry co-con is fronting.',
+      'Set blurry co-con as front',
     );
 
     await tester.tap(find.text('Make current front'));
@@ -999,6 +999,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
+    expect(
+      repository._notificationEvents.single.body,
+      'Set River, Sage as front',
+    );
     expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
     expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
 
@@ -1052,6 +1056,10 @@ void main() {
       'fake-member-1',
       'fake-member-2',
     ]);
+    expect(
+      repository._notificationEvents.single.body,
+      'Set River, Wren as front',
+    );
   });
 
   testWidgets('manages custom fronts as saved front states', (tester) async {
@@ -1299,6 +1307,7 @@ void main() {
 
     expect(repository._snapshot.currentFrontText, 'Iris');
     expect(repository._snapshot.frontHistoryCount, 1);
+    expect(repository._notificationEvents.single.body, 'Set Iris as front');
   });
 
   testWidgets('archives restores edits and deletes members', (tester) async {
@@ -1447,6 +1456,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
+    expect(repository._notificationEvents, hasLength(1));
+    expect(repository._notificationEvents.single.body, 'Set River as front');
   });
 
   testWidgets('duplicates a member profile into the editor', (tester) async {
@@ -4335,10 +4346,7 @@ class FakeHavenRepository implements HavenRepository {
     this.emitCustomizationOnWatch = true,
     this._localArchiveJson,
   }) {
-    _controller = StreamController<HomeSnapshot>.broadcast(
-      sync: true,
-      onListen: () => _controller.add(_snapshot),
-    );
+    _controller = StreamController<HomeSnapshot>.broadcast(sync: true);
     _customizationController = StreamController<AppCustomization>.broadcast(
       sync: true,
     );
@@ -4499,7 +4507,10 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
+  Stream<HomeSnapshot> watchHomeSnapshot() async* {
+    yield _snapshot;
+    yield* _controller.stream;
+  }
 
   @override
   Stream<List<MemberSummary>> watchMembers({

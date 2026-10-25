@@ -395,21 +395,24 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(label.trim());
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
   Future<void> _setMemberFront() async {
-    final label = await _selectedMemberFrontLabel();
     final reminders = await widget.repository.setFrontMembers(
       _selectedMemberIds.toList(),
     );
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(label);
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
@@ -425,11 +428,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(
-      front.customLabel?.trim().isNotEmpty == true
-          ? front.customLabel!.trim()
-          : front.name,
-    );
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
@@ -437,57 +438,12 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Future<void> _clearFront() async {
     await widget.repository.clearCurrentFront();
-    await _syncFrontNotification(null);
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
-  }
-
-  Future<String> _selectedMemberFrontLabel() async {
-    final ids = _selectedMemberIds.toSet();
-    final members = await widget.repository.watchMembers(listOnly: true).first;
-    final labels = [
-      for (final member in members)
-        if (ids.contains(member.id)) member.displayName,
-    ];
-    return labels.join(', ');
-  }
-
-  Future<void> _syncFrontNotification(String? label) async {
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final frontLabel = label?.trim();
-    final hasFront = frontLabel != null && frontLabel.isNotEmpty;
-    final notificationCopy = _notificationCopy(l10n);
-    try {
-      final customization = await widget.repository.loadCustomization();
-      if (customization.frontStatusNotification) {
-        await NotificationService.instance.showFrontStatusNotification(
-          frontLabel: hasFront ? frontLabel : null,
-          copy: notificationCopy,
-          showOnLockScreen: customization.frontStatusShowOnLockScreen,
-          revealMemberName: customization.frontStatusRevealMemberName,
-        );
-      } else {
-        await NotificationService.instance.cancelFrontStatusNotification();
-      }
-    } on Object catch (error, stackTrace) {
-      appDebugLog(
-        'Front status notification failed',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-
-    await widget.repository.recordNotificationEvent(
-      NotificationEventDraft(
-        kind: 'front',
-        title: hasFront ? l10n.frontChangedTitle : l10n.frontClearedTitle,
-        body: hasFront
-            ? l10n.memberIsFronting(frontLabel)
-            : l10n.noOneFrontingBody,
-      ),
-    );
   }
 
   Future<void> _showSaveSelectedFrontSheet() async {
@@ -632,6 +588,48 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       ),
     );
   }
+}
+
+Future<void> _syncFrontNotification(
+  BuildContext context,
+  HavenRepository repository,
+) async {
+  if (!context.mounted) return;
+  final l10n = AppLocalizations.of(context);
+  final frontLabel = (await repository.watchHomeSnapshot().first)
+      .currentFrontLabel
+      ?.trim();
+  final hasFront = frontLabel != null && frontLabel.isNotEmpty;
+  final notificationCopy = _notificationCopy(l10n);
+  try {
+    final customization = await repository.loadCustomization();
+    if (customization.frontStatusNotification) {
+      await NotificationService.instance.showFrontStatusNotification(
+        frontLabel: hasFront ? frontLabel : null,
+        copy: notificationCopy,
+        showOnLockScreen: customization.frontStatusShowOnLockScreen,
+        revealMemberName: customization.frontStatusRevealMemberName,
+      );
+    } else {
+      await NotificationService.instance.cancelFrontStatusNotification();
+    }
+  } on Object catch (error, stackTrace) {
+    appDebugLog(
+      'Front status notification failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  await repository.recordNotificationEvent(
+    NotificationEventDraft(
+      kind: 'front',
+      title: hasFront ? l10n.frontChangedTitle : l10n.frontClearedTitle,
+      body: hasFront
+          ? l10n.setFrontConfirmation(frontLabel)
+          : l10n.noOneFrontingBody,
+    ),
+  );
 }
 
 class _NamedFrontAvatar extends StatelessWidget {
