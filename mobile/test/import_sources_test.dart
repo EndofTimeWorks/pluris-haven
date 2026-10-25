@@ -170,6 +170,34 @@ void main() {
     );
   });
 
+  test('does not confuse foreign export signatures with PluralKit', () {
+    const ampersand =
+        '{"revision":{"count":1},"database":{"systems":[],"members":[{"uuid":"m1","system":"s1","avatar_url":"https://example.test/a.png"}]}}';
+    const pluralSpace =
+        '{"pluralspace":true,"system":{"name":"Other"},"members":[{"uuid":"m1","avatar_url":"https://example.test/a.png"}]}';
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: ampersand,
+      ).source,
+      ImportSource.ampersand,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: pluralSpace,
+      ).source,
+      ImportSource.pluralSpace,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: '{"pluralspace":true,"pluralkit":true,"members":[]}',
+      ).source,
+      isNull,
+    );
+  });
+
   test('previews Pluris Haven archive counts', () {
     final preview = previewImportText(
       fileName: 'pluris-haven.json',

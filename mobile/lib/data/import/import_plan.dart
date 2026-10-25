@@ -108,6 +108,7 @@ enum ImportDetectionReason {
   pluralKitFields,
   simplyPluralFields,
   pluralSpaceMarkers,
+  ampersandMarkers,
   openPluralMarkers,
   pluralPortMarkers,
   ambiguousMemberGroupJson,
@@ -272,11 +273,29 @@ ImportFileGuess guessImportSourceFromFile({
     );
   }
 
-  if (_hasAny(text, ['"tuppers"', '"brackets"', '"avatar_url"'])) {
+  if (_hasAny(text, ['"tuppers"', '"brackets"'])) {
     return const ImportFileGuess(
       source: ImportSource.tupperbox,
       confidence: 0.76,
       reason: ImportDetectionReason.tupperboxFields,
+    );
+  }
+
+  if (_hasAny(text, ['"pluralspace"', '"plural_space"'])) {
+    return ImportFileGuess(
+      source: _hasAny(text, ['"pluralkit"']) ? null : ImportSource.pluralSpace,
+      confidence: 0.78,
+      reason: ImportDetectionReason.pluralSpaceMarkers,
+    );
+  }
+
+  if (_hasAny(text, ['"database"']) &&
+      _hasAny(text, ['"systems"']) &&
+      _hasAny(text, ['"revision"'])) {
+    return const ImportFileGuess(
+      source: ImportSource.ampersand,
+      confidence: 0.78,
+      reason: ImportDetectionReason.ampersandMarkers,
     );
   }
 
@@ -294,14 +313,6 @@ ImportFileGuess guessImportSourceFromFile({
       source: ImportSource.simplyPlural,
       confidence: 0.78,
       reason: ImportDetectionReason.simplyPluralFields,
-    );
-  }
-
-  if (_hasAny(text, ['"pluralspace"', '"plural_space"'])) {
-    return const ImportFileGuess(
-      source: ImportSource.pluralSpace,
-      confidence: 0.78,
-      reason: ImportDetectionReason.pluralSpaceMarkers,
     );
   }
 
