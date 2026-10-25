@@ -265,6 +265,11 @@ def test_security_events_are_private_and_cursor_paginated(
     assert other_events.status_code == 200
     assert other_events.json() == []
 
+    oversized_cursor = client.get(
+        f"/v1/auth/security-events?before_id={2**70}", headers=fresh_headers
+    )
+    assert oversized_cursor.status_code == 422
+
 
 def test_security_event_history_is_bounded(
     client: TestClient,
