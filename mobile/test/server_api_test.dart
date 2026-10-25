@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -7,6 +8,8 @@ import 'package:pluris_haven/data/backup/encrypted_backup_snapshot.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/server/server_account_controller.dart';
 import 'package:pluris_haven/data/server/server_api.dart';
+import 'package:pluris_haven/features/home/home_page.dart';
+import 'package:pluris_haven/l10n/app_localizations.dart';
 
 import 'test_repository.dart';
 
@@ -498,6 +501,66 @@ void main() {
     expect(recovered.signedIn, isTrue);
   });
 
+  test(
+    'offline sign-out removes device tokens and reports remote uncertainty',
+    () async {
+      final storage = MemoryServerStorage();
+      final api = FakeServerApi()..failLogout = true;
+      final controller = ServerAccountController(
+        storage: storage,
+        apiFactory: (_) => api,
+      );
+      await controller.connect('https://haven.example');
+      await controller.login(
+        email: 'test@example.com',
+        password: 'correct horse battery staple',
+        deviceName: 'Phone',
+      );
+
+      await controller.logout();
+
+      expect(controller.signedIn, isFalse);
+      expect(storage.values.values, isNot(contains('access')));
+      expect(storage.values.values, isNot(contains('refresh')));
+      expect(controller.status, contains('could not be confirmed'));
+    },
+  );
+
+  testWidgets('offers disconnect when the saved server is offline', (
+    tester,
+  ) async {
+    final storage = MemoryServerStorage();
+    final initial = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await initial.connect('https://haven.example');
+    await initial.login(
+      email: 'test@example.com',
+      password: 'correct horse battery staple',
+      deviceName: 'Phone',
+    );
+    final offline = ServerAccountController(
+      storage: storage,
+      apiFactory: (_) => FakeServerApi()..failDescriptor = true,
+    );
+    await offline.initialize();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ServerAccountPanel(controller: offline)),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('offline-disconnect-button')));
+    await tester.pumpAndSettle();
+
+    expect(offline.serverUri, isNull);
+    expect(storage.values.values, isNot(contains('access')));
+    expect(storage.values.values, isNot(contains('refresh')));
+  });
+
   test('startup refresh rejection clears stored server tokens', () async {
     final storage = MemoryServerStorage();
     final initial = ServerAccountController(
@@ -597,6 +660,7 @@ class FakeServerApi extends ServerApi {
   bool rejectRefresh = false;
   bool failNextRefresh = false;
   bool failDescriptor = false;
+  bool failLogout = false;
   bool deletionScheduled = false;
 
   @override
@@ -787,5 +851,7 @@ class FakeServerApi extends ServerApi {
   }
 
   @override
-  Future<void> logout(String token) async {}
+  Future<void> logout(String token) async {
+    if (failLogout) throw const ServerApiException('Server unavailable.');
+  }
 }
