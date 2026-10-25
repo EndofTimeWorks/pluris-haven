@@ -1,4 +1,4 @@
-FROM python:3.14-slim@sha256:f85c5697265c178cc6887276c55fe16cf3d14ca35c3df6a5eab3b360534a55d2 AS runtime
+FROM python:3.14-slim@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -9,7 +9,7 @@ WORKDIR /app
 RUN install -d -o pluris -g pluris /app/data /app/data/backups
 
 COPY pyproject.toml uv.lock README.md alembic.ini ./
-RUN pip install uv==0.13.0 \
+RUN pip install uv==0.13.5 \
     && uv export --frozen --no-dev --no-hashes --no-emit-project --output-file /tmp/requirements.txt \
     && uv pip install --system --requirement /tmp/requirements.txt \
     && pip uninstall --yes uv \
