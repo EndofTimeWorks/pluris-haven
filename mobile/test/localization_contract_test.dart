@@ -69,6 +69,7 @@ void main() {
       expect(l10n.nativeImportUpdatesProfile, contains('system profile'));
       expect(l10n.reminderTimeError, contains('9am'));
       expect(l10n.unsavedChangesTitle, 'Unsaved changes');
+      expect(l10n.deleteServerAccountBody, contains('reset its password'));
     }
   });
 

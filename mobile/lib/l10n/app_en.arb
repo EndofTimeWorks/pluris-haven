@@ -249,7 +249,7 @@
   "signOutButton": "Sign out",
   "deleteServerAccountButton": "Delete server account",
   "deleteServerAccountTitle": "Delete server account?",
-  "deleteServerAccountBody": "This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.",
+  "deleteServerAccountBody": "This signs you out and schedules server data for deletion in 30 days. To recover the account during that time, reset its password, then sign in. Local app data stays on this device.",
   "currentPasswordLabel": "Current password",
   "changePasswordButton": "Change password",
   "changePasswordTitle": "Change server password",

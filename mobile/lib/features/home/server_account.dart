@@ -67,6 +67,12 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
                   icon: const Icon(Icons.dns_outlined),
                   label: Text(l10n.connectServerButton),
                 ),
+                if (controller.serverUri != null)
+                  TextButton(
+                    key: const ValueKey('offline-disconnect-button'),
+                    onPressed: controller.busy ? null : controller.disconnect,
+                    child: Text(l10n.disconnectButton),
+                  ),
               ] else ...[
                 Text(
                   controller.descriptor?.name ?? l10n.connectedServerFallback,

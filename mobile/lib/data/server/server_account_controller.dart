@@ -156,13 +156,16 @@ class ServerAccountController extends ChangeNotifier {
 
   Future<void> logout() async {
     await _run(() async {
+      var remoteRevoked = false;
       try {
         await _authenticated((api, token) => api.logout(token));
+        remoteRevoked = true;
       } on ServerApiException catch (caught) {
-        if (!caught.isUnauthorized) rethrow;
+        remoteRevoked = caught.isUnauthorized;
+      } finally {
+        await _clearTokens();
       }
-      await _clearTokens();
-      status = 'Signed out. Local data was not changed.';
+      status = remoteRevoked ? 'Signed out. Local data was not changed.' : 'Signed out on this device. Server session revocation could not be confirmed; review active sessions when you reconnect.';
     });
   }
 
