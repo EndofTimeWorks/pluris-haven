@@ -139,13 +139,77 @@ class LocalReminderStore {
     );
   }
 
-  Future<String?> save(ReminderDraft draft) async {
+  Future<String?> save(ReminderDraft draft, {String? reminderId}) async {
     final title = draft.title.trim();
     final scheduleText = draft.scheduleText.trim();
     if (title.isEmpty || scheduleText.isEmpty) return null;
 
     final now = DateTime.now().toUtc();
-    final id = newLocalId('reminder');
+    final id = reminderId ?? newLocalId('reminder');
+    if (reminderId != null) {
+      final existing =
+          await (database.select(database.reminders)..where(
+                (row) => row.id.equals(id) & row.systemId.equals(localSystemId),
+              ))
+              .getSingleOrNull();
+      if (existing == null) return null;
+      await (database.update(database.reminders)..where(
+            (row) => row.id.equals(id) & row.systemId.equals(localSystemId),
+          ))
+          .write(
+            RemindersCompanion(
+              title: Value(await encryptText(title, 'reminders', id, 'title')),
+              body: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.body),
+                  'reminders',
+                  id,
+                  'body',
+                ),
+              ),
+              scheduleText: Value(
+                await encryptText(
+                  scheduleText,
+                  'reminders',
+                  id,
+                  'schedule_text',
+                ),
+              ),
+              scheduleKind: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.scheduleKind),
+                  'reminders',
+                  id,
+                  'schedule_kind',
+                ),
+              ),
+              scheduleTime: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.scheduleTime),
+                  'reminders',
+                  id,
+                  'schedule_time',
+                ),
+              ),
+              scheduleDowMask: Value(draft.scheduleDowMask),
+              scheduleDom: Value(draft.scheduleDom),
+              triggerType: Value(_nullIfBlank(draft.triggerType) ?? 'repeated'),
+              triggerMemberId: Value(_nullIfBlank(draft.triggerMemberId)),
+              triggerEvent: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.triggerEvent),
+                  'reminders',
+                  id,
+                  'trigger_event',
+                ),
+              ),
+              delaySeconds: Value(draft.delaySeconds),
+              enabled: Value(draft.enabled),
+              updatedAt: Value(now),
+            ),
+          );
+      return id;
+    }
     await database
         .into(database.reminders)
         .insert(

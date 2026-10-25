@@ -18,6 +18,99 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('edited reminder time survives export and fresh restore', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final id = await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Daily at 09:00',
+        scheduleKind: 'daily',
+        scheduleTime: '09:00',
+      ),
+    );
+    expect(id, isNotNull);
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Daily at 10:15',
+        scheduleKind: 'daily',
+        scheduleTime: '10:15',
+      ),
+      reminderId: id,
+    );
+    expect(
+      (await repository.watchReminders().first).single.scheduleTime,
+      '10:15',
+    );
+    final archive = await repository.buildLocalArchiveJson();
+    expect(
+      (jsonDecode(archive)
+          as Map<String, dynamic>)['reminders'][0]['schedule_time'],
+      '10:15',
+    );
+
+    await database.close();
+    final freshDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(freshDatabase.close);
+    final fresh = testRepository(freshDatabase);
+    await fresh.ensureLocalSystem();
+    await fresh.importLocalArchiveJson(
+      archive,
+      strategy: ImportConflictStrategy.update,
+    );
+    expect((await fresh.watchReminders().first).single.scheduleTime, '10:15');
+  });
+
+  test('Skip and foreign imports preserve the local system profile', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.updateSystemProfile(
+      const SystemProfileDraft(
+        name: 'Local name',
+        description: 'Private local profile',
+      ),
+    );
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
+    (archive['system'] as Map<String, dynamic>)['name'] = 'Imported name';
+
+    for (final strategy in ImportConflictStrategy.values.where(
+      (strategy) => strategy != ImportConflictStrategy.prompt,
+    )) {
+      await repository.importLocalArchiveJson(
+        jsonEncode(archive),
+        strategy: strategy,
+        source: ImportSource.pluralSpace,
+      );
+      expect(
+        (await repository.loadHomeSnapshot()).systemName,
+        'Local name',
+        reason: 'foreign import with $strategy',
+      );
+    }
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.skip,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Local name');
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.create,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Local name');
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.update,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Imported name');
+  });
+
   test(
     'keeps locally purged members terminal during archive updates',
     () async {

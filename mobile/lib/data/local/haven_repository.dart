@@ -636,7 +636,8 @@ class LocalHavenRepository implements HavenRepository {
       _chat.deleteChannel(channelId);
 
   @override
-  Future<String?> saveReminder(ReminderDraft draft) => _reminders.save(draft);
+  Future<String?> saveReminder(ReminderDraft draft, {String? reminderId}) =>
+      _reminders.save(draft, reminderId: reminderId);
 
   @override
   Future<void> setReminderEnabled(String reminderId, bool enabled) =>

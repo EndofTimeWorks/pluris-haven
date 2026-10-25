@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:drift/native.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
+import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
@@ -2436,6 +2437,79 @@ void main() {
     expect(find.text('No journal entries yet'), findsOneWidget);
   });
 
+  testWidgets('Escape offers to keep a dirty journal draft', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-body-field')),
+      'Unfinished words',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(BottomSheet), const Offset(0, 500));
+    await tester.pumpAndSettle();
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.body, 'Unfinished words');
+  });
+
+  testWidgets('dirty note dismissal can discard explicitly', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('note-body-field')),
+      'Unsaved note',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+    expect(repository._notes, isEmpty);
+  });
+
   testWidgets('adds a local message from the chat section', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -2691,6 +2765,85 @@ void main() {
 
     expect(find.text('Medication'), findsNothing);
     expect(find.text('No reminders yet'), findsOneWidget);
+  });
+
+  testWidgets('saves 9am as a durable reminder time', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Meds',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '9am',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.scheduleTime, '09:00');
+  });
+
+  testWidgets('corrects a saved reminder without silently clearing its time', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    final id = await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Weekly on Friday',
+        scheduleKind: 'weekly',
+        scheduleDowMask: 1 << 4,
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.byTooltip('Edit reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '25:99',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter a valid time, such as 09:00 or 9am.'),
+      findsOneWidget,
+    );
+    expect(repository._reminders.single.scheduleTime, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '10:15',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.id, id);
+    expect(repository._reminders.single.scheduleTime, '10:15');
+    expect(repository._reminders.single.scheduleDowMask, 1 << 4);
   });
 
   testWidgets('stores an after-front reminder with a stable member target', (
@@ -3463,7 +3616,7 @@ void main() {
 
     expect(find.text('Paste JSON'), findsOneWidget);
     expect(
-      find.text('Paste up to 256 KiB. Choose a file for larger exports.'),
+      find.text('Paste up to 32 MiB. Larger exports need a file.'),
       findsOneWidget,
     );
     expect(
@@ -3472,7 +3625,7 @@ void main() {
             find.byKey(const ValueKey('paste-import-json-field')),
           )
           .maxLength,
-      256 * 1024,
+      isNull,
     );
 
     await tester.binding.handlePopRoute();
@@ -3481,6 +3634,146 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Paste JSON'), findsNothing);
     expect(find.text('Import setup'), findsOneWidget);
+  });
+
+  testWidgets('invalid pasted JSON reports parsing failure', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      'this is not json {{',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Could not parse JSON'));
+    expect(find.textContaining('Preview ready'), findsNothing);
+    expect(find.textContaining('Could not parse JSON'), findsWidgets);
+  });
+
+  testWidgets('paste keeps complete JSON at and beyond 256 KiB', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    String? pasted;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  pasted = await showPasteImportJsonSheet(context),
+              child: const Text('Open paste'),
+            ),
+          ),
+        ),
+      ),
+    );
+    const prefix = '{"members":[{"id":"m1","name":"Iris"}],"padding":"';
+    const suffix = '"}';
+    for (final size in [262143, 262144, 262145, 310 * 1024]) {
+      await tester.tap(find.text('Open paste'));
+      await tester.pumpAndSettle();
+      final fullText =
+          '$prefix${List.filled(size - prefix.length - suffix.length, 'x').join()}$suffix';
+      await tester.enterText(
+        find.byKey(const ValueKey('paste-import-json-field')),
+        fullText,
+      );
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('paste-import-json-field')),
+            )
+            .controller!
+            .text
+            .length,
+        size,
+      );
+      await tester.tap(find.text('Preview pasted JSON'));
+      await tester.pumpAndSettle();
+      expect(pasted, fullText);
+      expect(
+        previewImportText(
+          fileName: 'pasted-import.json',
+          text: pasted!,
+          selectedSource: ImportSource.simplyPlural,
+        ).counts['members'],
+        1,
+      );
+    }
+  });
+
+  testWidgets('native archive asks before replacing the system profile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Imported"},"members":[{"id":"m1","display_name":"Iris"}]}',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(
+      find.text('Your local system profile will stay unchanged.'),
+      findsOneWidget,
+    );
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(
+      tester,
+      find.textContaining('This archive includes a system profile'),
+    );
+    expect(
+      find.textContaining(
+        'Update existing matches will replace your local profile',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('opens failed import job details and copies full error', (
@@ -5323,14 +5616,17 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<String?> saveReminder(ReminderDraft draft) async {
+  Future<String?> saveReminder(
+    ReminderDraft draft, {
+    String? reminderId,
+  }) async {
     final title = draft.title.trim();
     final schedule = draft.scheduleText.trim();
     if (title.isEmpty || schedule.isEmpty) {
       return null;
     }
 
-    final id = 'fake-reminder-${_reminders.length + 1}';
+    final id = reminderId ?? 'fake-reminder-${_reminders.length + 1}';
     _reminders = [
       ReminderSummary(
         id: id,
@@ -5348,7 +5644,8 @@ class FakeHavenRepository implements HavenRepository {
         enabled: draft.enabled,
         updatedAt: DateTime(2026),
       ),
-      ..._reminders,
+      for (final reminder in _reminders)
+        if (reminder.id != id) reminder,
     ];
     _remindersController.add(_reminders);
     return id;

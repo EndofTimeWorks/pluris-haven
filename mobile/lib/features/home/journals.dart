@@ -196,7 +196,7 @@ void showJournalEntrySheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
         JournalEntrySheet(repository: repository, entry: entry),
@@ -220,6 +220,21 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
 
   bool get _isEditing => widget.entry != null;
 
+  bool get _isDirty =>
+      _titleController.text != (widget.entry?.title ?? '') ||
+      _bodyController.text != (widget.entry?.body ?? '');
+
+  Future<void> _tryDismiss() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -239,7 +254,15 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
