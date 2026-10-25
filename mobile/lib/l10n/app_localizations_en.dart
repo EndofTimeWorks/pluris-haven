@@ -4697,6 +4697,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveAppearanceButton => 'Save appearance';
 
   @override
+  String get appearanceContrastError =>
+      'Text colours need more contrast against the background, surface and card colours.';
+
+  @override
   String deleteFailed(String error) {
     return 'Could not remove this item: $error';
   }
@@ -4884,4 +4888,8 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get outlineColorLabel => 'Outline color';
+
+  @override
+  String get appearanceContrastError =>
+      'Text colors need more contrast against the background, surface and card colors.';
 }

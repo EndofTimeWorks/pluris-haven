@@ -1741,6 +1741,7 @@
   "borderWidthLabel": "Border weight",
   "cardElevationLabel": "Card elevation",
   "saveAppearanceButton": "Save appearance",
+  "appearanceContrastError": "Text colours need more contrast against the background, surface and card colours.",
   "deleteFailed": "Could not remove this item: {error}",
   "@deleteFailed": { "placeholders": { "error": { "type": "String" } } },
   "systemCounts": "{members, plural, =1{1 member} other{{members} members}} - {groups, plural, =1{1 group} other{{groups} groups}}",

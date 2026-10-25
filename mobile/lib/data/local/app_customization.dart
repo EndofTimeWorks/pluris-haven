@@ -257,6 +257,33 @@ class HavenAppearanceOverrides {
   }
 }
 
+bool appearanceColoursReadable({
+  required HavenAppearanceOverrides appearance,
+  required Color background,
+  required Color surface,
+  required Color card,
+  required Color text,
+  required Color mutedText,
+}) {
+  final backgrounds = [
+    appearance.backgroundColor ?? background,
+    appearance.surfaceColor ?? surface,
+    appearance.cardColor ?? card,
+  ];
+  bool readable(Color foreground) => backgrounds.every((colour) {
+    final lighter = foreground.computeLuminance() > colour.computeLuminance()
+        ? foreground.computeLuminance()
+        : colour.computeLuminance();
+    final darker = foreground.computeLuminance() < colour.computeLuminance()
+        ? foreground.computeLuminance()
+        : colour.computeLuminance();
+    return (lighter + .05) / (darker + .05) >= 4.5;
+  });
+
+  return readable(appearance.textColor ?? text) &&
+      readable(appearance.mutedTextColor ?? mutedText);
+}
+
 class AppCustomization {
   const AppCustomization({
     required this.themeMode,

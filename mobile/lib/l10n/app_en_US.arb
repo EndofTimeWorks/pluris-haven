@@ -47,5 +47,6 @@
   "cardColorLabel": "Card color",
   "textColorLabel": "Text color",
   "mutedTextColorLabel": "Muted text color",
-  "outlineColorLabel": "Outline color"
+  "outlineColorLabel": "Outline color",
+  "appearanceContrastError": "Text colors need more contrast against the background, surface and card colors."
 }

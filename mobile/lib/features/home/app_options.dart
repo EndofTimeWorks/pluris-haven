@@ -458,21 +458,34 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
       setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
       return;
     }
-    await widget.repository.setAppearanceOverrides(
-      HavenAppearanceOverrides(
-        backgroundHex: _normalizeUiHexColor(colors[0]),
-        surfaceHex: _normalizeUiHexColor(colors[1]),
-        cardHex: _normalizeUiHexColor(colors[2]),
-        textHex: _normalizeUiHexColor(colors[3]),
-        mutedTextHex: _normalizeUiHexColor(colors[4]),
-        outlineHex: _normalizeUiHexColor(colors[5]),
-        cardRadius: _radius,
-        textScale: _scale,
-        spacingScale: _spacing,
-        borderWidth: _borderWidth,
-        cardElevation: _elevation,
-      ),
+    final appearance = HavenAppearanceOverrides(
+      backgroundHex: _normalizeUiHexColor(colors[0]),
+      surfaceHex: _normalizeUiHexColor(colors[1]),
+      cardHex: _normalizeUiHexColor(colors[2]),
+      textHex: _normalizeUiHexColor(colors[3]),
+      mutedTextHex: _normalizeUiHexColor(colors[4]),
+      outlineHex: _normalizeUiHexColor(colors[5]),
+      cardRadius: _radius,
+      textScale: _scale,
+      spacingScale: _spacing,
+      borderWidth: _borderWidth,
+      cardElevation: _elevation,
     );
+    final scheme = Theme.of(context).colorScheme;
+    if (!appearanceColoursReadable(
+      appearance: appearance,
+      background: Theme.of(context).scaffoldBackgroundColor,
+      surface: scheme.surface,
+      card: scheme.surfaceContainerHighest,
+      text: scheme.onSurface,
+      mutedText: scheme.onSurfaceVariant,
+    )) {
+      setState(
+        () => _error = AppLocalizations.of(context).appearanceContrastError,
+      );
+      return;
+    }
+    await widget.repository.setAppearanceOverrides(appearance);
     if (mounted) Navigator.pop(context);
   }
 
