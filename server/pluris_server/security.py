@@ -43,10 +43,15 @@ async def _run_password_work(slots: asyncio.Semaphore, waiters: asyncio.Semaphor
             await asyncio.wait_for(slots.acquire(), timeout=_PASSWORD_WORK_WAIT_SECONDS)
         except TimeoutError as error:
             raise PasswordWorkSaturated from error
-        try:
-            return await asyncio.to_thread(function, *args)
-        finally:
+        worker = asyncio.create_task(asyncio.to_thread(function, *args))
+
+        def release_slot(done: asyncio.Task) -> None:
             slots.release()
+            if not done.cancelled():
+                done.exception()
+
+        worker.add_done_callback(release_slot)
+        return await asyncio.shield(worker)
 
 
 async def hash_password(password: str) -> str:
