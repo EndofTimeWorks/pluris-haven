@@ -830,6 +830,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No matching fronts'), findsOneWidget);
 
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Reset')),
+      alignment: 0.2,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
@@ -858,6 +863,11 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
     await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Add entry')),
+      alignment: 0.2,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add entry'));
     await tester.pumpAndSettle();
