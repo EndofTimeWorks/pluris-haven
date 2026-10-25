@@ -191,11 +191,11 @@ label.
 
 ## iOS support
 
-- Deployment target: iOS 14.
+- Deployment target for new builds: iOS 15, required by `sentry_flutter` 10.
 - GitHub build runner: `macos-26-intel`.
 - Workflow-selected Xcode: 26.4.1.
-- Building with a newer SDK does not change the iOS 14 deployment target.
-- Features that require a newer iOS version need an iOS 14 fallback.
+- Building with a newer SDK does not change the declared iOS 15 deployment
+  target. Previously published builds retain their own deployment target.
 - Unsigned CI IPA output is compile/package evidence, not TestFlight/App Store
   verification.
 

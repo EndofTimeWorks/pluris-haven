@@ -1,7 +1,7 @@
 # Engineering readiness
 
-Internal pre-alpha readiness record, last checked against the local candidate
-on 2026-10-07.
+Internal pre-alpha readiness record. Earlier baseline checks remain recorded;
+the mobile dependency upgrade was checked locally on 2026-10-24.
 
 This document records evidence, not marketing status. Pluris Haven remains
 **PRE-ALPHA**; alpha is the next maturity stage after the current completion and
@@ -23,11 +23,16 @@ distribution work is ready.
   front-audit preservation, chat tombstones, poll re-import, deletion/purge and
   custom-field provenance. This is local verification only; it is not hosted
   CI, real-device, store, or multi-device/sync evidence.
-- The complete Flutter test suite and `flutter analyze` passed after the final
-  notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
-  9.1.0, and Kotlin 2.4.0. It retains Flutter's documented temporary legacy
-  Kotlin and DSL settings because stable `sentry_flutter` 9.30.1 still applies
-  KGP. The verified Flutter baseline is 3.47.6.
+- The mobile dependency upgrade uses Flutter 3.47.8, Gradle 9.3.1, AGP 9.1.0,
+  Kotlin 2.4.0, and Java 21 for Android builds. `sentry_flutter` 10.2.0 raises
+  the minimum Android version for new builds to API 26 and requires iOS 15 and
+  Swift Package Manager on Apple platforms. The published alpha.2 APK still
+  targets API 24; the website describes that published artefact. Android emulator
+  installation is local evidence only. On this upgrade branch, Flutter analysis
+  found no issues, 368 Flutter tests passed with two private-fixture tests
+  skipped, and the Java 21 debug APK built and launched on an Android emulator.
+  The Android legacy Kotlin and DSL settings remain while upstream plugins
+  still apply the Kotlin Gradle plugin.
 - The full server suite passed with one-time-token password recovery, verifying
   STARTTLS, response-path-independent background email delivery, encrypted
   backups, and queued backup-deletion cleanup covered.
@@ -125,9 +130,11 @@ mapper test exists.
 - Perform an actual Play internal upload before marking that external path
   verified, then configure/verify the intended closed-testing path.
 - Smoke-test Android upgrade/migration using actual distributed artifacts.
-- Replace the temporary Android Kotlin/DSL compatibility settings once
-  `sentry_flutter` supports built-in Kotlin and the selected Flutter release
-  builds with the new AGP DSL.
+- Verify the upgraded iOS dependency graph and Swift Package Manager migration
+  on the macOS CI runner before considering the mobile upgrade mergeable.
+- Replace the temporary Android Kotlin/DSL compatibility settings only after
+  every remaining plugin supports built-in Kotlin and the selected Flutter
+  release builds with the new AGP DSL.
 - Sign/install iOS builds and verify notification permission, App Lock,
   screen-capture privacy and upgrade behaviour on simulator/physical hardware.
 - Perform TalkBack, VoiceOver, keyboard, switch access, large-text, contrast and
