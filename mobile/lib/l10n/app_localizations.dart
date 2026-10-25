@@ -727,6 +727,18 @@ abstract class AppLocalizations {
   /// **'About'**
   String get aboutGroupTitle;
 
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersionLabel;
+
+  /// No description provided for @appVersionValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{version} (build {buildNumber})'**
+  String appVersionValue(String version, String buildNumber);
+
   /// No description provided for @storageLabel.
   ///
   /// In en, this message translates to:
@@ -7834,6 +7846,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'stage: pre-alpha'**
   String get localReportStage;
+
+  /// No description provided for @localReportVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'app version: {version} (build {buildNumber})'**
+  String localReportVersion(String version, String buildNumber);
 
   /// No description provided for @localReportMembers.
   ///

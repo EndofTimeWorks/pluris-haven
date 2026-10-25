@@ -351,6 +351,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGroupTitle => 'About';
 
   @override
+  String get appVersionLabel => 'App version';
+
+  @override
+  String appVersionValue(String version, String buildNumber) {
+    return '$version (build $buildNumber)';
+  }
+
+  @override
   String get storageLabel => 'Storage';
 
   @override
@@ -4548,6 +4556,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localReportStage => 'stage: pre-alpha';
+
+  @override
+  String localReportVersion(String version, String buildNumber) {
+    return 'app version: $version (build $buildNumber)';
+  }
 
   @override
   String localReportMembers(int count) {
