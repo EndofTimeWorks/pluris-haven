@@ -65,6 +65,11 @@ final class LocalAvatarStore {
     _evict(reference);
   }
 
+  Future<bool> exists(String reference) async {
+    final file = await _fileForReference(reference);
+    return file != null && await file.exists();
+  }
+
   Future<void> migrateLegacyFiles() async {
     final root = await _root();
     if (!await root.exists()) return;
