@@ -78,7 +78,9 @@ async def _enforce_rate_limit(
 ) -> None:
     client_host = request.client.host if request.client is not None else "unknown"
     keys = [f"auth:{operation.value}:ip:{client_host}"] if include_client else []
-    if subject is not None:
+    # A caller must not exhaust an email-wide login bucket and deny that
+    # account access from a different IP. Login remains limited per client.
+    if subject is not None and operation != SecurityOperation.LOGIN:
         keys.append(f"auth:{operation.value}:subject:{subject}")
     retry_after = await request.app.state.auth_rate_limiter.retry_after(keys)
     if retry_after is not None:
