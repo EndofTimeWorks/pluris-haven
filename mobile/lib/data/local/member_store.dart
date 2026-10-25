@@ -650,6 +650,22 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
 
   Future<void> purge(String memberId) {
     return database.transaction(() async {
+      final target =
+          await (database.select(database.members)..where(
+                (member) =>
+                    member.systemId.equals(localSystemId) &
+                    member.id.equals(memberId) &
+                    member.deletedAt.isNotNull() &
+                    member.purgedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (target == null) return;
+      await (database.delete(database.contentRevisions)..where(
+            (revision) =>
+                revision.targetType.equals('member_bio') &
+                revision.targetId.equals(memberId),
+          ))
+          .go();
       final customFieldValueIds =
           await (database.select(database.customFieldValues)
                 ..where((value) => value.memberId.equals(memberId)))
