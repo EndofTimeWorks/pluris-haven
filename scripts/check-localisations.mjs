@@ -8,6 +8,7 @@ const expectedUsOverrides = new Set([
   'applyColorButton',
   'colorHexFieldLabel',
   'colorType',
+  'appearanceContrastError',
   'appearanceSubtitle',
   'backgroundColorLabel',
   'cardColorLabel',
