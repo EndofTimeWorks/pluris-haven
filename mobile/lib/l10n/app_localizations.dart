@@ -4969,6 +4969,12 @@ abstract class AppLocalizations {
   /// **'Could not record this vote. Try again.'**
   String get pollCouldNotVote;
 
+  /// No description provided for @importDiagnosticOrphanedFrontReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 front link refers to a missing session or member} other{{count} front links refer to missing sessions or members}}. The affected history may appear without a member after import.'**
+  String importDiagnosticOrphanedFrontReferences(int count);
+
   /// No description provided for @pollVoteCount.
   ///
   /// In en, this message translates to:

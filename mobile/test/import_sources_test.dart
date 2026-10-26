@@ -224,6 +224,32 @@ void main() {
     expect(preview.counts['preferences'], 1);
   });
 
+  test('warns when archived front links have missing targets', () {
+    final preview = previewImportText(
+      fileName: 'broken-fronts.json',
+      text: jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'members': [
+          {'id': 'm1'},
+        ],
+        'fronts': [
+          {'id': 'f1'},
+        ],
+        'front_members': [
+          {'session_id': 'missing', 'member_id': 'm1'},
+          {'session_id': 'f1', 'member_id': 'missing'},
+        ],
+      }),
+    );
+    expect(preview.canApply, isTrue);
+    expect(
+      preview.warningsAndErrors.single.diagnostic.code,
+      ImportDiagnosticCode.orphanedFrontReferences,
+    );
+    expect(_previewMessages(preview).single, contains('2 front links'));
+  });
+
   test('extracts the import JSON from a zipped backup', () async {
     final archive = Archive()
       ..addFile(ArchiveFile.string('avatars/avatar-1.png', 'not json'))
