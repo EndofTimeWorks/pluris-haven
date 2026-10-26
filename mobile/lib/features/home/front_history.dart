@@ -16,7 +16,6 @@ class FrontHistoryPage extends StatefulWidget {
 
 class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
   late Stream<List<FrontHistoryEntry>> _historyStream;
   String _filter = 'all';
   String _query = '';
@@ -31,19 +30,16 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     _historyStream = widget.repository.watchRecentFrontHistory(
       limit: _historyLimit,
     );
-    _scrollController.addListener(_loadOlderAtEnd);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
-  void _loadOlderAtEnd() {
-    if (_loadingOlder || !_scrollController.hasClients) return;
-    if (_scrollController.position.extentAfter > 300) return;
+  void _loadOlder() {
+    if (_loadingOlder) return;
     final total = widget.snapshot?.frontHistoryCount ?? 0;
     if (_historyLimit >= total) return;
     setState(() {
@@ -102,14 +98,14 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
         final hasMore =
             (widget.snapshot?.frontHistoryCount ?? entries.length) >
             entries.length;
-        if (_loadingOlder && (!hasMore || entries.length >= _historyLimit)) {
+        if (_loadingOlder &&
+            historySnapshot.connectionState == ConnectionState.active) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => _loadingOlder = false);
           });
         }
 
         return CustomScrollView(
-          controller: _scrollController,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(10, 14, 10, 0),
@@ -194,7 +190,12 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                       child: SpSectionHeader(
                         title: l10n.frontHistoryTitle,
                         trailing: StatusPill(
-                          text: '${filteredEntries.length}/${entries.length}',
+                          text: l10n.frontHistoryShownCount(
+                            filteredEntries.length,
+                            entries.length,
+                            widget.snapshot?.frontHistoryCount ??
+                                entries.length,
+                          ),
                         ),
                       ),
                     ),
@@ -208,7 +209,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                             )
                           : SpEmptyState(
                               title: l10n.noMatchingFronts,
-                              body: l10n.noMatchingFrontsBody,
+                              body: hasMore
+                                  ? l10n.frontHistorySearchLimitedBody
+                                  : l10n.noMatchingFrontsBody,
                             ),
                     ),
                 ],
@@ -251,7 +254,10 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
-                        : const SizedBox(height: 1),
+                        : OutlinedButton(
+                            onPressed: _loadOlder,
+                            child: Text(l10n.loadOlderFronts),
+                          ),
                   ),
                 ),
               ),
@@ -260,7 +266,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
               sliver: SliverToBoxAdapter(
                 child: SpActionRow(
                   primary: l10n.addEntryButton,
-                  secondary: l10n.resetButton,
+                  secondary: l10n.clearFrontHistoryFilters,
                   onPrimary: () => showFrontHistoryEditor(
                     context,
                     repository: widget.repository,

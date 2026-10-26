@@ -7391,6 +7391,24 @@ abstract class AppLocalizations {
   /// **'Load older fronts'**
   String get loadOlderFronts;
 
+  /// No description provided for @frontHistoryShownCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} shown, {loaded} loaded of {total} total'**
+  String frontHistoryShownCount(int shown, int loaded, int total);
+
+  /// No description provided for @frontHistorySearchLimitedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches in the loaded history. Load older fronts to search more entries.'**
+  String get frontHistorySearchLimitedBody;
+
+  /// No description provided for @clearFrontHistoryFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFrontHistoryFilters;
+
   /// No description provided for @analyticsNinetyDays.
   ///
   /// In en, this message translates to:

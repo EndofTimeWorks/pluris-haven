@@ -833,11 +833,11 @@ void main() {
     expect(find.text('No matching fronts'), findsOneWidget);
 
     await Scrollable.ensureVisible(
-      tester.element(find.text('Reset')),
+      tester.element(find.text('Clear filters')),
       alignment: 0.2,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Reset'));
+    await tester.tap(find.text('Clear filters'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
     await tester.pumpAndSettle();
@@ -848,6 +848,41 @@ void main() {
 
     expect(repository._frontHistory, isEmpty);
     expect(find.text('No front history yet'), findsOneWidget);
+  });
+
+  testWidgets('front history labels loaded and total counts separately', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 99,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setCustomFront('Away');
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 shown, 1 loaded of 100 total'), findsOneWidget);
+    expect(find.text('Load older fronts'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-search-field')),
+      'no match',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('0 shown, 1 loaded of 100 total'), findsOneWidget);
+    expect(
+      find.text(
+        'No matches in the loaded history. Load older fronts to search more entries.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('adds a completed front history interval', (tester) async {
