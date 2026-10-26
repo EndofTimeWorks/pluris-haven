@@ -333,6 +333,11 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   String? _parentGroupId;
   bool _isSubsystem = false;
   bool _isSaving = false;
+  late Future<List<MemberSummary>> _memberLoad;
+  final Set<String> _selectedMemberIds = {};
+  final Set<String> _initialMemberIds = {};
+  bool _membersLoaded = false;
+  String _memberQuery = '';
   late String _initialName;
   late String _initialDescription;
   late String _initialEmoji;
@@ -347,7 +352,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       _emojiController.text != _initialEmoji ||
       _colorController.text != _initialColor ||
       _parentGroupId != _initialParentGroupId ||
-      _isSubsystem != _initialIsSubsystem;
+      _isSubsystem != _initialIsSubsystem ||
+      _selectedMemberIds.length != _initialMemberIds.length ||
+      !_initialMemberIds.containsAll(_selectedMemberIds);
 
   Future<void> _tryDismiss() async {
     if (_isSaving) return;
@@ -364,6 +371,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   @override
   void initState() {
     super.initState();
+    _memberLoad = _loadMembers();
     final group = widget.group;
     if (group != null) {
       _nameController.text = group.name;
@@ -383,6 +391,29 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     _initialColor = _colorController.text;
     _initialParentGroupId = _parentGroupId;
     _initialIsSubsystem = _isSubsystem;
+  }
+
+  Future<List<MemberSummary>> _loadMembers() async {
+    final members = await widget.repository
+        .watchMembers(includeArchived: true, listOnly: true)
+        .first;
+    if (mounted) {
+      setState(() {
+        if (!_membersLoaded) {
+          final groupId = widget.group?.id;
+          if (groupId != null) {
+            _selectedMemberIds.addAll(
+              members
+                  .where((member) => member.groupIds.contains(groupId))
+                  .map((member) => member.id),
+            );
+          }
+          _initialMemberIds.addAll(_selectedMemberIds);
+          _membersLoaded = true;
+        }
+      });
+    }
+    return members;
   }
 
   @override
@@ -525,10 +556,94 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                     value: _isSubsystem,
                     onChanged: (value) => setState(() => _isSubsystem = value),
                   ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<List<MemberSummary>>(
+                    future: _memberLoad,
+                    builder: (context, membersSnapshot) {
+                      if (membersSnapshot.hasError) {
+                        return SpDataLoadState(
+                          error: membersSnapshot.error,
+                          onRetry: () => setState(() {
+                            _memberLoad = _loadMembers();
+                          }),
+                        );
+                      }
+                      if (!membersSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final members = membersSnapshot.data!;
+                      final query = _memberQuery.trim().toLowerCase();
+                      final visible = [
+                        for (final member in members)
+                          if (query.isEmpty ||
+                              member.displayName.toLowerCase().contains(
+                                query,
+                              ) ||
+                              (member.pronouns?.toLowerCase().contains(query) ??
+                                  false))
+                            member,
+                      ];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.groupMembersTitle,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(l10n.groupMembersHelp),
+                          if (members.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              key: const ValueKey('group-member-search-field'),
+                              decoration: InputDecoration(
+                                labelText: l10n.searchMembersHint,
+                              ),
+                              onChanged: (value) =>
+                                  setState(() => _memberQuery = value),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.groupMemberCount(_selectedMemberIds.length),
+                            ),
+                            SizedBox(
+                              height: 220,
+                              child: ListView.builder(
+                                itemCount: visible.length,
+                                itemBuilder: (context, index) {
+                                  final member = visible[index];
+                                  return CheckboxListTile(
+                                    key: ValueKey('group-member-${member.id}'),
+                                    title: Text(member.displayName),
+                                    subtitle: Text(
+                                      member.id.substring(
+                                        member.id.length > 8
+                                            ? member.id.length - 8
+                                            : 0,
+                                      ),
+                                    ),
+                                    value: _selectedMemberIds.contains(
+                                      member.id,
+                                    ),
+                                    onChanged: (selected) => setState(() {
+                                      if (selected == true) {
+                                        _selectedMemberIds.add(member.id);
+                                      } else {
+                                        _selectedMemberIds.remove(member.id);
+                                      }
+                                    }),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
                   const SizedBox(height: 14),
                   FilledButton(
                     key: const ValueKey('save-group-button'),
-                    onPressed: _isSaving ? null : _save,
+                    onPressed: _isSaving || !_membersLoaded ? null : _save,
                     child: Text(
                       _isEditing
                           ? l10n.saveChangesButton
@@ -545,7 +660,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   }
 
   Future<void> _save() async {
-    if (_isSaving) return;
+    if (_isSaving || !_membersLoaded) return;
     if (_nameController.text.trim().isEmpty) {
       setState(
         () => _nameError = AppLocalizations.of(context).nameRequiredError,
@@ -567,6 +682,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       colorHex: colorHex,
       description: _descriptionController.text,
       isSubsystem: _isSubsystem,
+      memberIds: _selectedMemberIds.toList(growable: false),
     );
     setState(() => _isSaving = true);
     try {
