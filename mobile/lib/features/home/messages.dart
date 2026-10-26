@@ -290,6 +290,7 @@ void showMessageSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    enableDrag: false,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => MessageSheet(
@@ -338,6 +339,32 @@ class _MessageSheetState extends State<MessageSheet> {
   String? _channelId;
 
   bool get _isEditing => widget.message != null;
+  bool _isSaving = false;
+
+  bool get _isDirty =>
+      _bodyController.text != (widget.message?.body ?? '') ||
+      _memberId != widget.message?.memberId ||
+      _boardKind !=
+          (widget.message?.boardKind ??
+              widget.parentMessage?.boardKind ??
+              'system') ||
+      _boardMemberId !=
+          (widget.message?.boardMemberId ??
+              widget.parentMessage?.boardMemberId) ||
+      _channelId !=
+          (widget.message?.channelId ?? widget.parentMessage?.channelId);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -359,7 +386,15 @@ class _MessageSheetState extends State<MessageSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -521,7 +556,7 @@ class _MessageSheetState extends State<MessageSheet> {
             if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-message-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(
                 _isEditing ? l10n.saveMessageButton : l10n.saveButtonLabel,
               ),
@@ -533,6 +568,7 @@ class _MessageSheetState extends State<MessageSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (_boardKind == 'member' && _boardMemberId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -558,14 +594,25 @@ class _MessageSheetState extends State<MessageSheet> {
       parentMessageId:
           widget.message?.parentMessageId ?? widget.parentMessage?.id,
     );
-    final message = widget.message;
-    if (message == null) {
-      await widget.repository.saveMessage(draft);
-    } else {
-      await widget.repository.updateMessage(message.id, draft);
-    }
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final message = widget.message;
+      if (message == null) {
+        await widget.repository.saveMessage(draft);
+      } else {
+        await widget.repository.updateMessage(message.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

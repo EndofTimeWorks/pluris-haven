@@ -3496,6 +3496,31 @@ void main() {
     expect(find.text('No messages yet'), findsOneWidget);
   });
 
+  testWidgets('chat draft can be saved after backing out', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Chat');
+    await tester.tap(find.text('Add message'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('message-body-field')),
+      'A message worth keeping',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('A message worth keeping'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+    await tester.pumpAndSettle();
+    expect(repository._messages.single.body, 'A message worth keeping');
+  });
+
   testWidgets('sends a local message to a configured channel', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
