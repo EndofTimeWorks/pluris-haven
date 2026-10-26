@@ -612,6 +612,7 @@
   "importPreservesLocalProfile": "Your local system profile will stay unchanged.",
   "nativeImportUpdatesProfile": "Update existing matches will replace your local system profile.",
   "systemProfileConflictBody": "This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.",
+  "nativeImportPreferencesPolicy": "For app preferences, Skip matches and Create duplicates keep settings you already have. Update existing replaces matching settings. Only portable preferences are imported.",
   "importConflictCreate": "Create new records",
   "importConflictSkip": "Skip existing matches",
   "importConflictUpdate": "Update existing matches",
