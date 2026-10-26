@@ -6077,6 +6077,18 @@ abstract class AppLocalizations {
   /// **'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.'**
   String get memberTagsDescription;
 
+  /// No description provided for @deleteTagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tag {name}?'**
+  String deleteTagTitle(String name);
+
+  /// No description provided for @deleteTagBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the tag from every member.'**
+  String get deleteTagBody;
+
   /// No description provided for @noTagsYet.
   ///
   /// In en, this message translates to:

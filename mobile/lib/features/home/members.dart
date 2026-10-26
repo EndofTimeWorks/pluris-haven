@@ -991,6 +991,7 @@ void showMemberTagsSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    enableDrag: false,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
@@ -1016,8 +1017,34 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   final _nameController = TextEditingController();
   final _colorController = TextEditingController(text: '#F2C75C');
   final Set<String> _selectedTagIds = {};
+  final Set<String> _initialTagIds = {};
+  late final Stream<List<Tag>> _tagsStream;
+  late final Stream<List<Tag>> _memberTagsStream;
   bool _seeded = false;
   String? _error;
+
+  bool get _isDirty =>
+      _nameController.text.trim().isNotEmpty ||
+      !_selectedTagIds.containsAll(_initialTagIds) ||
+      !_initialTagIds.containsAll(_selectedTagIds);
+
+  @override
+  void initState() {
+    super.initState();
+    _tagsStream = widget.repository.watchTags();
+    _memberTagsStream = widget.repository.watchTagsForMember(widget.memberId);
+  }
+
+  Future<void> _tryDismiss() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void dispose() {
@@ -1027,7 +1054,15 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -1039,19 +1074,24 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
           18 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: StreamBuilder<List<Tag>>(
-          stream: widget.repository.watchTags(),
+          stream: _tagsStream,
           initialData: const [],
           builder: (context, allTagsSnapshot) {
             final allTags = allTagsSnapshot.data ?? const <Tag>[];
             return StreamBuilder<List<Tag>>(
-              stream: widget.repository.watchTagsForMember(widget.memberId),
-              initialData: const [],
+              stream: _memberTagsStream,
               builder: (context, memberTagsSnapshot) {
+                if (!memberTagsSnapshot.hasData) {
+                  return SpDataLoadState(error: memberTagsSnapshot.error);
+                }
                 final memberTags = memberTagsSnapshot.data ?? const <Tag>[];
                 if (!_seeded) {
                   _selectedTagIds
                     ..clear()
                     ..addAll(memberTags.map((tag) => tag.id));
+                  _initialTagIds
+                    ..clear()
+                    ..addAll(_selectedTagIds);
                   _seeded = true;
                 }
 
@@ -1175,18 +1215,18 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
     );
   }
 
-  Future<void> _createTag() async {
+  Future<bool> _createTag() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _error = AppLocalizations.of(context).nameTagFirstError);
-      return;
+      return false;
     }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
         () => _error = AppLocalizations.of(context).invalidHexColorError,
       );
-      return;
+      return false;
     }
     final now = DateTime.now().toUtc();
     final tag = Tag(
@@ -1199,23 +1239,31 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
     );
     await widget.repository.saveTag(tag);
     if (!mounted) {
-      return;
+      return false;
     }
     setState(() {
       _selectedTagIds.add(tag.id);
       _nameController.clear();
       _error = null;
     });
+    return true;
   }
 
   Future<void> _deleteTag(Tag tag) async {
-    await widget.repository.deleteTag(tag.id);
-    if (mounted) {
-      setState(() => _selectedTagIds.remove(tag.id));
-    }
+    final l10n = AppLocalizations.of(context);
+    await confirmDelete(
+      context,
+      title: l10n.deleteTagTitle(tag.name),
+      body: l10n.deleteTagBody,
+      onDelete: () async {
+        await widget.repository.deleteTag(tag.id);
+        if (mounted) setState(() => _selectedTagIds.remove(tag.id));
+      },
+    );
   }
 
   Future<void> _save() async {
+    if (_nameController.text.trim().isNotEmpty && !await _createTag()) return;
     await widget.repository.setMemberTags(
       widget.memberId,
       _selectedTagIds.toList(growable: false),
