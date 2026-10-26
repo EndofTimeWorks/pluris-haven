@@ -1676,6 +1676,42 @@ void main() {
     expect(repository._notificationEvents.single.body, 'Set Iris as front');
   });
 
+  testWidgets('member editor keeps invalid and unsaved drafts visible', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('Add member'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(repository._members, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Kai',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('member-name-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.displayName, 'Kai');
+  });
+
   testWidgets('archives restores edits and deletes members', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -3664,6 +3700,31 @@ void main() {
     );
     expect(find.byKey(const ValueKey('reminder-title-field')), findsOneWidget);
     expect(repository._reminders, isEmpty);
+  });
+
+  testWidgets('Escape offers to save an unfinished reminder', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.title, 'Medication');
   });
 
   testWidgets('rapid reminder save taps create one reminder', (tester) async {

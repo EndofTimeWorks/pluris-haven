@@ -1943,6 +1943,7 @@ void showMemberSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddMemberSheet(
       repository: repository,
@@ -1983,9 +1984,39 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   String? _folderId;
   final Set<String> _groupIds = {};
   String? _colorError;
+  String? _nameError;
   String? _avatarMessage;
+  bool _isSaving = false;
+  late String _initialSignature;
 
   bool get _isEditing => widget.member != null;
+  bool get _isDirty => _signature() != _initialSignature;
+
+  String _signature() => jsonEncode([
+    _nameController.text,
+    _pronounsController.text,
+    _birthdayController.text,
+    _emojiController.text,
+    _privacyController.text,
+    _descriptionController.text,
+    _avatarController.text,
+    _pluralKitController.text,
+    _colorController.text,
+    _folderId,
+    _groupIds.toList()..sort(),
+  ]);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -1997,11 +2028,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
         _seedFromDraft(draft);
       }
       _attachAvatarPreviewListeners();
+      _initialSignature = _signature();
       return;
     }
 
     _seedFromMember(member);
     _attachAvatarPreviewListeners();
+    _initialSignature = _signature();
   }
 
   void _seedFromMember(MemberSummary member) {
@@ -2070,7 +2103,15 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final previewName = _nameController.text.trim().isEmpty
@@ -2097,7 +2138,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _nameController,
               autofocus: true,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+              decoration: InputDecoration(
+                labelText: l10n.nameFieldLabel,
+                errorText: _nameError,
+              ),
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
             ),
             const SizedBox(height: 10),
             TextField(
@@ -2328,7 +2375,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-member-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(
                 _isEditing ? l10n.saveAlterButton : l10n.createAlterButton,
               ),
@@ -2340,6 +2387,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
+    if (_nameController.text.trim().isEmpty) {
+      setState(
+        () => _nameError = AppLocalizations.of(context).nameRequiredError,
+      );
+      return;
+    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
@@ -2349,7 +2403,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
 
     final draft = MemberDraft(
-      displayName: _nameController.text,
+      displayName: _nameController.text.trim(),
       pronouns: _pronounsController.text,
       colorHex: colorHex,
       birthday: _birthdayController.text,
@@ -2361,15 +2415,25 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       folderId: _folderId,
       groupIds: _groupIds.toList(growable: false),
     );
-    final member = widget.member;
-    if (member == null) {
-      await widget.repository.saveMember(draft);
-    } else {
-      await widget.repository.updateMember(member.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final member = widget.member;
+      if (member == null) {
+        await widget.repository.saveMember(draft);
+      } else {
+        await widget.repository.updateMember(member.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
