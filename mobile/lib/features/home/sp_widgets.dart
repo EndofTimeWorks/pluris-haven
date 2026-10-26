@@ -152,7 +152,7 @@ class SpSearchField extends StatelessWidget {
       onChanged: onChanged,
       readOnly: onChanged == null,
       decoration: InputDecoration(
-        hintText: hintText,
+        labelText: hintText,
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: scheme.surfaceContainerHighest,
