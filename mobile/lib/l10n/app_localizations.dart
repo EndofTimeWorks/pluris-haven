@@ -7607,6 +7607,12 @@ abstract class AppLocalizations {
   /// **'Front timeline'**
   String get frontTimelineTitle;
 
+  /// No description provided for @frontTimelineRange.
+  ///
+  /// In en, this message translates to:
+  /// **'From {start} to {end}'**
+  String frontTimelineRange(String start, String end);
+
   /// No description provided for @noAnalyticsTitle.
   ///
   /// In en, this message translates to:
@@ -7672,6 +7678,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hour of day'**
   String get hourOfDayTitle;
+
+  /// No description provided for @hourOfDayExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Time with anyone fronting, by local hour. Overlapping fronts count once here.'**
+  String get hourOfDayExplanation;
 
   /// No description provided for @unknownLabel.
   ///

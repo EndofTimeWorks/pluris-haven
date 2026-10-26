@@ -145,6 +145,16 @@ class _FrontTimelineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colours = [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+      Theme.of(context).colorScheme.tertiary,
+      Theme.of(context).colorScheme.error,
+    ];
+    final starts = stats.timeline.map((segment) => segment.start);
+    final ends = stats.timeline.map((segment) => segment.end);
+    final first = starts.reduce((a, b) => a.isBefore(b) ? a : b);
+    final last = ends.reduce((a, b) => a.isAfter(b) ? a : b);
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,16 +169,59 @@ class _FrontTimelineCard extends StatelessWidget {
                 painter: _FrontTimelinePainter(
                   segments: stats.timeline,
                   lanes: stats.timelineLanes,
-                  colours: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                    Theme.of(context).colorScheme.tertiary,
-                    Theme.of(context).colorScheme.error,
-                  ],
+                  colours: colours,
                   gridColour: Theme.of(context).colorScheme.outlineVariant,
                 ),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.frontTimelineRange(
+              _shortDateTime(context, first),
+              _shortDateTime(context, last),
+            ),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              for (var index = 0; index < stats.timelineLanes.length; index++)
+                Semantics(
+                  container: true,
+                  excludeSemantics: true,
+                  label: stats.timelineLanes[index],
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: colours[index % colours.length],
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            stats.timelineLanes[index],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -442,6 +495,7 @@ class _HourChartCard extends StatelessWidget {
                 for (var hour = 0; hour < 24; hour++)
                   Expanded(
                     child: Semantics(
+                      container: true,
                       label: l10n.hourAnalyticsSemantic(
                         hour,
                         _formatAnalyticsDuration(l10n, stats.hourSeconds[hour]),
@@ -476,6 +530,11 @@ class _HourChartCard extends StatelessWidget {
               Spacer(),
               Text('23', style: TextStyle(fontSize: 12)),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.hourOfDayExplanation,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
           ),
         ],
       ),
@@ -563,6 +622,7 @@ _FrontAnalytics _buildAnalytics(
   final since = window.duration == null ? null : now.subtract(window.duration!);
   final labels = <String, _LabelAccumulator>{};
   final timeline = <_TimelineSegment>[];
+  final intervals = <({DateTime start, DateTime end})>[];
   final hourSeconds = List<int>.filled(24, 0);
   var totalSeconds = 0;
   var longestSeconds = 0;
@@ -591,10 +651,31 @@ _FrontAnalytics _buildAnalytics(
     labelStats.sessions += 1;
     labelStats.totalSeconds += seconds;
 
-    _addHourBuckets(hourSeconds, interval.start, interval.end);
+    intervals.add(interval);
     timeline.add(
       _TimelineSegment(label: label, start: interval.start, end: interval.end),
     );
+  }
+
+  // The headline sums time per front. This chart shows elapsed time with at
+  // least one front active, so overlapping entries share the same clock time.
+  intervals.sort((a, b) => a.start.compareTo(b.start));
+  DateTime? occupiedStart;
+  DateTime? occupiedEnd;
+  for (final interval in intervals) {
+    if (occupiedStart == null) {
+      occupiedStart = interval.start;
+      occupiedEnd = interval.end;
+    } else if (interval.start.isAfter(occupiedEnd!)) {
+      _addHourBuckets(hourSeconds, occupiedStart, occupiedEnd);
+      occupiedStart = interval.start;
+      occupiedEnd = interval.end;
+    } else if (interval.end.isAfter(occupiedEnd)) {
+      occupiedEnd = interval.end;
+    }
+  }
+  if (occupiedStart != null) {
+    _addHourBuckets(hourSeconds, occupiedStart, occupiedEnd!);
   }
 
   final topLabels =
