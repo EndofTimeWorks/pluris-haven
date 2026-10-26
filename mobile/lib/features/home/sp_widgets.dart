@@ -227,9 +227,12 @@ class SpSectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
           ),
         ),
         ?trailing,
@@ -358,9 +361,15 @@ class SpSettingsGroup extends StatelessWidget {
               16 * spacing,
               8 * spacing,
             ),
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
           for (var i = 0; i < rows.length; i++) ...[

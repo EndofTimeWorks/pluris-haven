@@ -118,12 +118,15 @@ class DashboardSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Text(
-      label,
-      style: TextStyle(
-        color: scheme.onSurfaceVariant,
-        fontSize: 12,
-        fontWeight: FontWeight.w900,
+    return Semantics(
+      header: true,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: scheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
