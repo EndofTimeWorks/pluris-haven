@@ -5771,6 +5771,24 @@ abstract class AppLocalizations {
   /// **'Search members'**
   String get searchMembersHint;
 
+  /// No description provided for @sortMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort members'**
+  String get sortMembers;
+
+  /// No description provided for @savedMemberOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved order'**
+  String get savedMemberOrder;
+
+  /// No description provided for @memberNameOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Name A–Z'**
+  String get memberNameOrder;
+
   /// No description provided for @noMembersSavedLocally.
   ///
   /// In en, this message translates to:
@@ -5786,7 +5804,7 @@ abstract class AppLocalizations {
   /// No description provided for @membersEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add members here or import a local archive or supported export.'**
+  /// **'Add a member or import your data.'**
   String get membersEmptyBody;
 
   /// No description provided for @addMemberButton.

@@ -1214,6 +1214,35 @@ void main() {
     expect(updatedTiles.map((tile) => tile.member.id), ['fake-member-1']);
   });
 
+  testWidgets('member name sort leaves saved order intact', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+
+    List<String> visibleNames() => tester
+        .widgetList<MemberListTile>(find.byType(MemberListTile))
+        .map((tile) => tile.member.displayName)
+        .toList();
+
+    expect(visibleNames(), ['Wren', 'Kai']);
+    await tester.tap(find.text('Saved order'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Name A–Z').last);
+    await tester.pumpAndSettle();
+    expect(visibleNames(), ['Kai', 'Wren']);
+
+    await tester.tap(find.text('Name A–Z').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved order').last);
+    await tester.pumpAndSettle();
+    expect(visibleNames(), ['Wren', 'Kai']);
+  });
+
   testWidgets('front picker ends one member without ending a cofronter', (
     tester,
   ) async {
