@@ -2286,6 +2286,30 @@ void main() {
     expect(repository._snapshot.groupCount, 1);
   });
 
+  testWidgets('keeps an unnamed group draft open for correction', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      '   ',
+    );
+    await tester.ensureVisible(find.byKey(const ValueKey('save-group-button')));
+    await tester.tap(find.byKey(const ValueKey('save-group-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    expect(repository._groups, isEmpty);
+  });
+
   testWidgets('edits and deletes nested groups locally', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
