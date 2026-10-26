@@ -37,6 +37,12 @@ void main() {
         .getSemanticsData()
         .flagsCollection
         .isButton;
+    final cardLabel = tester
+        .getSemantics(find.byType(CurrentFrontEntry))
+        .getSemanticsData()
+        .label;
+    expect(cardLabel, contains('River'));
+    expect(find.bySemanticsLabel('River is fronting.'), findsNothing);
     final avatarTooltip = tester
         .getSemantics(find.byType(Tooltip))
         .getSemanticsData()
