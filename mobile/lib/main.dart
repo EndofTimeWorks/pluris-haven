@@ -108,7 +108,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
   var _missingMasterKey = false;
-  var _retryingMissingKey = false;
+  var _retryingStartup = false;
   var _waitingForKey = false;
   Object? _startupError;
 
@@ -188,13 +188,14 @@ class _BootstrapAppState extends State<BootstrapApp> {
     }
   }
 
-  void _retryMissingKey() {
-    if (_retryingMissingKey) return;
-    _retryingMissingKey = true;
-    setState(() => _missingMasterKey = false);
-    unawaited(
-      _openLocalArchive().whenComplete(() => _retryingMissingKey = false),
-    );
+  void _retryStartup() {
+    if (_retryingStartup) return;
+    _retryingStartup = true;
+    setState(() {
+      _missingMasterKey = false;
+      _startupError = null;
+    });
+    unawaited(_openLocalArchive().whenComplete(() => _retryingStartup = false));
   }
 
   @override
@@ -206,9 +207,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
   @override
   Widget build(BuildContext context) {
     if (_missingMasterKey) {
-      return MissingMasterKeyApp(onRetry: _retryMissingKey);
+      return MissingMasterKeyApp(onRetry: _retryStartup);
     }
-    if (_startupError != null) return const LocalMigrationFailureApp();
+    if (_startupError != null) {
+      return LocalMigrationFailureApp(onRetry: _retryStartup);
+    }
     if (_waitingForKey) return const WaitingForKeyApp();
     final repository = _repository;
     if (repository != null) {
@@ -347,11 +350,12 @@ class MissingMasterKeyApp extends StatelessWidget {
 }
 
 class LocalMigrationFailureApp extends StatelessWidget {
-  const LocalMigrationFailureApp({super.key});
+  const LocalMigrationFailureApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(local-data-model): offer a non-destructive archive recovery path.
     return MaterialApp(
       supportedLocales: supportedLanguageLocales,
       localizationsDelegates: const [
@@ -380,6 +384,11 @@ class LocalMigrationFailureApp extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(l10n.localMigrationFailureBody),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.tryAgainButton),
+                    ),
                   ],
                 ),
               ),
