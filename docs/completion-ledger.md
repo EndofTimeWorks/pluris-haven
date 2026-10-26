@@ -84,7 +84,7 @@ is not proof that current code still fails.
 | F14, N7–N12, N14 | Fixed in client; Flutter regressions pass | Verify touch and screen-reader behaviour on a supported device.                                                                         |
 | N13              | Partial                                   | Overlapping hours are no longer summed in the hour chart; the timeline still needs a clearer time axis.                                 |
 | N24              | Partial                                   | Journal entries can be about a member, but that field does not record who wrote them.                                                   |
-| N25              | Partial                                   | A channel can be selected from Chat; categories are still only shown in management.                                                     |
+| N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.            |
 | N27, N52         | Partial                                   | Import previews disclose more conflicts and orphaned front links; conflict handling and malformed references still need broader review. |
 | N28, N31         | Partial                                   | Dashboard scaling and UK front-history dates are corrected; other scaled and RTL layouts need review.                                   |
 | N29, N30, N32    | Open                                      | Focus return after sheets, visual consistency and dashboard shortcut order.                                                             |

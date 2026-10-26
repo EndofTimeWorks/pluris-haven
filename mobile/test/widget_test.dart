@@ -3702,7 +3702,15 @@ void main() {
       ),
     );
     addTearDown(repository.close);
-    await repository.saveChatChannel(const ChatChannelDraft(name: 'kitchen'));
+    await repository.saveChatCategory(
+      const ChatCategoryDraft(name: 'Daily life'),
+    );
+    await repository.saveChatChannel(
+      const ChatChannelDraft(
+        name: 'kitchen',
+        categoryId: 'fake-chat-category-1',
+      ),
+    );
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -3743,7 +3751,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('chat-channel-filter-null')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('kitchen').last);
+    await tester.tap(find.text('Daily life / kitchen').last);
     await tester.pumpAndSettle();
     expect(find.text('Tea is ready.'), findsOneWidget);
     expect(find.text('The plants are watered.'), findsNothing);
