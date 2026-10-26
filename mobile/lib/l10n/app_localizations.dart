@@ -5873,6 +5873,18 @@ abstract class AppLocalizations {
   /// **'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?'**
   String get endMemberFrontWarning;
 
+  /// No description provided for @endAllCurrentFrontsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End all current fronts'**
+  String get endAllCurrentFrontsButton;
+
+  /// No description provided for @endAllCurrentFrontsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends every active member and custom front. Their history remains available. Continue?'**
+  String get endAllCurrentFrontsWarning;
+
   /// No description provided for @replaceCurrentMembersButton.
   ///
   /// In en, this message translates to:
@@ -7022,7 +7034,7 @@ abstract class AppLocalizations {
   /// No description provided for @howToTrackFrontStep3.
   ///
   /// In en, this message translates to:
-  /// **'Use Clear when nobody is fronting or the state ended.'**
+  /// **'Use End all current fronts when nobody is fronting or the state ended.'**
   String get howToTrackFrontStep3;
 
   /// No description provided for @howToTrackFrontStep4.

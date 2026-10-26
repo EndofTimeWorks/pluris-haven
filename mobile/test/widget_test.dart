@@ -770,7 +770,15 @@ void main() {
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Clear'));
+    await tester.tap(find.text('End all current fronts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._notificationEvents, hasLength(1));
+
+    await tester.tap(find.text('End all current fronts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('End all current fronts').last);
     await tester.pumpAndSettle();
 
     expect(find.text('None'), findsOneWidget);

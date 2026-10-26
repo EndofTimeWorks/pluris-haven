@@ -3398,6 +3398,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?';
 
   @override
+  String get endAllCurrentFrontsButton => 'End all current fronts';
+
+  @override
+  String get endAllCurrentFrontsWarning =>
+      'This ends every active member and custom front. Their history remains available. Continue?';
+
+  @override
   String get replaceCurrentMembersButton => 'Replace selected members';
 
   @override
@@ -4053,7 +4060,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howToTrackFrontStep3 =>
-      'Use Clear when nobody is fronting or the state ended.';
+      'Use End all current fronts when nobody is fronting or the state ended.';
 
   @override
   String get howToTrackFrontStep4 => 'Front History keeps the local timeline.';
