@@ -2876,6 +2876,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pollCouldNotVote => 'Could not record this vote. Try again.';
 
   @override
+  String importDiagnosticOrphanedFrontReferences(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count front links refer to missing sessions or members',
+      one: '1 front link refers to a missing session or member',
+    );
+    return '$_temp0. The affected history may appear without a member after import.';
+  }
+
+  @override
   String pollVoteCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

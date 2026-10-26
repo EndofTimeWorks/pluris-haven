@@ -1089,6 +1089,8 @@
   "pollVoteAsMemberLabel": "Vote as member",
   "pollChooseMemberHint": "Choose a member",
   "pollCouldNotVote": "Could not record this vote. Try again.",
+  "importDiagnosticOrphanedFrontReferences": "{count, plural, =1{1 front link refers to a missing session or member} other{{count} front links refer to missing sessions or members}}. The affected history may appear without a member after import.",
+  "@importDiagnosticOrphanedFrontReferences": { "placeholders": { "count": { "type": "int" } } },
   "pollVoteCount": "{count, plural, =1{1 vote} other{{count} votes}}",
   "@pollVoteCount": { "placeholders": { "count": { "type": "int" } } },
   "pollOptionFieldLabel": "Option {number}",

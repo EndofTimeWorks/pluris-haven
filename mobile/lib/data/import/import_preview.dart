@@ -257,6 +257,29 @@ ImportPreview _previewPlurisArchive(
     ),
   );
 
+  final frontIds = _archiveIds(decoded['fronts']);
+  final memberIds = _archiveIds(decoded['members']);
+  final links = decoded['front_members'];
+  if (links is List) {
+    final orphaned = links.where((link) {
+      if (link is! Map) return true;
+      return !frontIds.contains(link['session_id']) ||
+          !memberIds.contains(link['member_id']);
+    }).length;
+    if (orphaned > 0) {
+      events.add(
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: ImportPreviewStage.validate,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.orphanedFrontReferences,
+            {'count': orphaned},
+          ),
+        ),
+      );
+    }
+  }
+
   return ImportPreview(
     source: ImportSource.plurisHavenArchive,
     fileName: fileName,
@@ -266,6 +289,14 @@ ImportPreview _previewPlurisArchive(
       (event) => event.severity != ImportPreviewSeverity.error,
     ),
   );
+}
+
+Set<String> _archiveIds(Object? value) {
+  if (value is! List) return const {};
+  return {
+    for (final row in value)
+      if (row is Map && row['id'] is String) row['id'] as String,
+  };
 }
 
 ImportPreview _previewSimplyPlural(
