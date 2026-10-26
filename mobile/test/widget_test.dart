@@ -2225,7 +2225,7 @@ void main() {
     expect(repository._groups.last.name, 'Gatekeepers');
     expect(repository._groups.last.parentGroupId, 'fake-group-1');
 
-    await tester.tap(find.byTooltip('Group actions').first);
+    await tester.tap(find.byTooltip('Group actions for Caretakers (-group-1)'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();

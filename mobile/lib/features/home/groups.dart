@@ -243,7 +243,12 @@ class GroupListTile extends StatelessWidget {
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(
-              tooltip: l10n.groupActionsTooltip,
+              tooltip: l10n.groupActionsFor(
+                group.name,
+                group.id.substring(
+                  group.id.length > 8 ? group.id.length - 8 : 0,
+                ),
+              ),
               onSelected: (value) {
                 switch (value) {
                   case 'edit':

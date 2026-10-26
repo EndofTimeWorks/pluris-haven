@@ -5137,6 +5137,12 @@ abstract class AppLocalizations {
   /// **'Group actions'**
   String get groupActionsTooltip;
 
+  /// No description provided for @groupActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions for {name} ({id})'**
+  String groupActionsFor(String name, String id);
+
   /// No description provided for @deleteGroupTitle.
   ///
   /// In en, this message translates to:
