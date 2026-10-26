@@ -187,13 +187,8 @@ jobs:
         run: flutter pub get
 
       - name: Build unsigned iOS app
-        env:
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: >
           flutter build ios --release --no-codesign
-          --dart-define=SENTRY_ENABLED=true
-          --dart-define=SENTRY_DSN="$SENTRY_DSN"
-          --dart-define=SENTRY_ENVIRONMENT=development
 
       - name: Package unsigned IPA
         shell: bash
