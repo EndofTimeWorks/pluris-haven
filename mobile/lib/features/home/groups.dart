@@ -279,6 +279,7 @@ void showAddGroupSheet(BuildContext context, HavenRepository repository) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddGroupSheet(repository: repository),
   );
@@ -294,6 +295,7 @@ void showEditGroupSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddGroupSheet(
       repository: repository,
@@ -331,8 +333,33 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   String? _parentGroupId;
   bool _isSubsystem = false;
   bool _isSaving = false;
+  late String _initialName;
+  late String _initialDescription;
+  late String _initialEmoji;
+  late String _initialColor;
+  String? _initialParentGroupId;
+  late bool _initialIsSubsystem;
 
   bool get _isEditing => widget.group != null;
+  bool get _isDirty =>
+      _nameController.text != _initialName ||
+      _descriptionController.text != _initialDescription ||
+      _emojiController.text != _initialEmoji ||
+      _colorController.text != _initialColor ||
+      _parentGroupId != _initialParentGroupId ||
+      _isSubsystem != _initialIsSubsystem;
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -350,6 +377,12 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       _parentGroupId = group.parentGroupId;
       _isSubsystem = group.isSubsystem;
     }
+    _initialName = _nameController.text;
+    _initialDescription = _descriptionController.text;
+    _initialEmoji = _emojiController.text;
+    _initialColor = _colorController.text;
+    _initialParentGroupId = _parentGroupId;
+    _initialIsSubsystem = _isSubsystem;
   }
 
   @override
@@ -363,140 +396,151 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<GroupSummary>>(
-      stream: widget.repository.watchGroups(),
-      initialData: widget.initialGroups,
-      builder: (context, snapshot) {
-        final l10n = AppLocalizations.of(context);
-        final allGroups = snapshot.data ?? widget.initialGroups;
-        final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
-        if (_parentGroupId != null &&
-            !parentOptions.any((group) => group.id == _parentGroupId)) {
-          _parentGroupId = null;
-        }
-
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              18,
-              0,
-              18,
-              18 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _isEditing ? l10n.editGroupTitle : l10n.addGroupButton,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  key: const ValueKey('group-name-field'),
-                  controller: _nameController,
-                  autofocus: true,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: l10n.nameFieldLabel,
-                    errorText: _nameError,
-                  ),
-                  onChanged: (_) {
-                    if (_nameError != null) setState(() => _nameError = null);
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const ValueKey('group-emoji-field'),
-                  controller: _emojiController,
-                  maxLength: 4,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(labelText: l10n.emojiFieldLabel),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String?>(
-                  key: const ValueKey('group-parent-field'),
-                  initialValue: _parentGroupId,
-                  decoration: InputDecoration(
-                    labelText: l10n.parentGroupFieldLabel,
-                  ),
-                  items: [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text(l10n.noParentOption),
-                    ),
-                    for (final option in parentOptions)
-                      DropdownMenuItem<String?>(
-                        value: option.id,
-                        child: Text(option.name),
-                      ),
-                  ],
-                  onChanged: (value) => setState(() => _parentGroupId = value),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _descriptionController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: l10n.descriptionFieldLabel,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final color in HavenAccentColor.values)
-                      ChoiceChip(
-                        label: Text(_localizedAccentLabel(color, l10n)),
-                        selected:
-                            _normalizeUiHexColor(_colorController.text) ==
-                            _hexFromAccent(color),
-                        onSelected: (_) => setState(() {
-                          _colorController.text = _hexFromAccent(color);
-                          _colorError = null;
-                        }),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const ValueKey('group-color-hex-field'),
-                  controller: _colorController,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: l10n.colorHexFieldLabel,
-                    hintText: '#F2C75C',
-                    errorText: _colorError,
-                  ),
-                  onChanged: (_) {
-                    if (_colorError != null) {
-                      setState(() => _colorError = null);
-                    }
-                  },
-                ),
-                SwitchListTile(
-                  key: const ValueKey('group-subsystem-toggle'),
-                  title: Text(l10n.subsystemToggleTitle),
-                  subtitle: Text(l10n.subsystemToggleBody),
-                  value: _isSubsystem,
-                  onChanged: (value) => setState(() => _isSubsystem = value),
-                ),
-                const SizedBox(height: 14),
-                FilledButton(
-                  key: const ValueKey('save-group-button'),
-                  onPressed: _isSaving ? null : _save,
-                  child: Text(
-                    _isEditing ? l10n.saveChangesButton : l10n.saveGroupButton,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _tryDismiss();
       },
+      child: StreamBuilder<List<GroupSummary>>(
+        stream: widget.repository.watchGroups(),
+        initialData: widget.initialGroups,
+        builder: (context, snapshot) {
+          final l10n = AppLocalizations.of(context);
+          final allGroups = snapshot.data ?? widget.initialGroups;
+          final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
+          if (_parentGroupId != null &&
+              !parentOptions.any((group) => group.id == _parentGroupId)) {
+            _parentGroupId = null;
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                0,
+                18,
+                18 + MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _isEditing ? l10n.editGroupTitle : l10n.addGroupButton,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    key: const ValueKey('group-name-field'),
+                    controller: _nameController,
+                    autofocus: true,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: l10n.nameFieldLabel,
+                      errorText: _nameError,
+                    ),
+                    onChanged: (_) {
+                      if (_nameError != null) setState(() => _nameError = null);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    key: const ValueKey('group-emoji-field'),
+                    controller: _emojiController,
+                    maxLength: 4,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: l10n.emojiFieldLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String?>(
+                    key: const ValueKey('group-parent-field'),
+                    initialValue: _parentGroupId,
+                    decoration: InputDecoration(
+                      labelText: l10n.parentGroupFieldLabel,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(l10n.noParentOption),
+                      ),
+                      for (final option in parentOptions)
+                        DropdownMenuItem<String?>(
+                          value: option.id,
+                          child: Text(option.name),
+                        ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _parentGroupId = value),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _descriptionController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: l10n.descriptionFieldLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final color in HavenAccentColor.values)
+                        ChoiceChip(
+                          label: Text(_localizedAccentLabel(color, l10n)),
+                          selected:
+                              _normalizeUiHexColor(_colorController.text) ==
+                              _hexFromAccent(color),
+                          onSelected: (_) => setState(() {
+                            _colorController.text = _hexFromAccent(color);
+                            _colorError = null;
+                          }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    key: const ValueKey('group-color-hex-field'),
+                    controller: _colorController,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      labelText: l10n.colorHexFieldLabel,
+                      hintText: '#F2C75C',
+                      errorText: _colorError,
+                    ),
+                    onChanged: (_) {
+                      if (_colorError != null) {
+                        setState(() => _colorError = null);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    key: const ValueKey('group-subsystem-toggle'),
+                    title: Text(l10n.subsystemToggleTitle),
+                    subtitle: Text(l10n.subsystemToggleBody),
+                    value: _isSubsystem,
+                    onChanged: (value) => setState(() => _isSubsystem = value),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton(
+                    key: const ValueKey('save-group-button'),
+                    onPressed: _isSaving ? null : _save,
+                    child: Text(
+                      _isEditing
+                          ? l10n.saveChangesButton
+                          : l10n.saveGroupButton,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
