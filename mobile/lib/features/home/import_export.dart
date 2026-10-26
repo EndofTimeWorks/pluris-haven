@@ -1344,6 +1344,15 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
               icon: const Icon(Icons.password_rounded),
               label: Text(l10n.generateRecoveryCodeButton),
             ),
+            if (_recoveryCode != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('copy-archive-recovery-code-button'),
+                onPressed: _isSaving ? null : _copyRecoveryCode,
+                icon: const Icon(Icons.copy_rounded),
+                label: Text(l10n.copyRecoveryCodeButton),
+              ),
+            ],
             if (_status != null) ...[
               const SizedBox(height: 10),
               Semantics(
@@ -1396,6 +1405,36 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       _obscurePassphrases = false;
       _status = AppLocalizations.of(context).generatedRecoveryCodeStatus;
     });
+  }
+
+  Future<void> _copyRecoveryCode() async {
+    final recoveryCode = _recoveryCode;
+    if (recoveryCode == null) return;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.copyRecoveryCodeTitle),
+        content: Text(l10n.copyRecoveryCodeWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.copyRecoveryCodeButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await SensitiveClipboard.copy(recoveryCode.value);
+      if (mounted) setState(() => _status = l10n.recoveryCodeCopied);
+    } on Object {
+      if (mounted) setState(() => _status = l10n.recoveryCodeCopyFailed);
+    }
   }
 
   Future<void> _saveEncryptedArchive() async {

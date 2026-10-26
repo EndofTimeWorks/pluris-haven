@@ -4279,6 +4279,36 @@ abstract class AppLocalizations {
   /// **'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.'**
   String get generatedRecoveryCodeStatus;
 
+  /// No description provided for @copyRecoveryCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy recovery code'**
+  String get copyRecoveryCodeButton;
+
+  /// No description provided for @copyRecoveryCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy recovery code?'**
+  String get copyRecoveryCodeTitle;
+
+  /// No description provided for @copyRecoveryCodeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard history and other apps may keep this code. Anyone with the code and archive can read your data.'**
+  String get copyRecoveryCodeWarning;
+
+  /// No description provided for @recoveryCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery code copied. Clear it from your clipboard when finished.'**
+  String get recoveryCodeCopied;
+
+  /// No description provided for @recoveryCodeCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy the recovery code. You can still write it down.'**
+  String get recoveryCodeCopyFailed;
+
   /// No description provided for @showRecoveryCodeTooltip.
   ///
   /// In en, this message translates to:
