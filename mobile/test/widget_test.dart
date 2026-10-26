@@ -3069,7 +3069,9 @@ void main() {
     expect(find.text('Check in after dinner. Bring water.'), findsOneWidget);
     expect(repository._messages.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Message actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Message actions for Sage \(.+\)$')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -3165,6 +3167,14 @@ void main() {
 
     expect(repository._chatCategories.single.name, 'Daily life');
     expect(repository._chatChannels.single.name, 'kitchen');
+    expect(
+      find.byTooltip(RegExp(r'^Delete channel kitchen \(.+\)$')),
+      findsOneWidget,
+    );
+    expect(
+      find.byTooltip(RegExp(r'^Delete category Daily life \(.+\)$')),
+      findsOneWidget,
+    );
     expect(
       repository._chatChannels.single.categoryId,
       repository._chatCategories.single.id,
