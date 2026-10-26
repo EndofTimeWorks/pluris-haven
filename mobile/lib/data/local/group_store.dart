@@ -34,6 +34,7 @@ class GroupDraft {
     this.description,
     this.emoji,
     this.isSubsystem = false,
+    this.memberIds,
   });
 
   final String name;
@@ -42,6 +43,8 @@ class GroupDraft {
   final String? description;
   final String? emoji;
   final bool isSubsystem;
+  // Null leaves existing membership unchanged when callers edit group details.
+  final List<String>? memberIds;
 }
 
 class LocalGroupStore {
@@ -131,43 +134,48 @@ GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g
 
     final now = DateTime.now().toUtc();
     final groupId = newLocalId('group');
-    await database
-        .into(database.systemGroups)
-        .insert(
-          SystemGroupsCompanion.insert(
-            id: groupId,
-            systemId: localSystemId,
-            name: await encryptText(name, 'system_groups', groupId, 'name'),
-            parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
-            colorHex: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.colorHex),
-                'system_groups',
-                groupId,
-                'color_hex',
+    await database.transaction(() async {
+      await database
+          .into(database.systemGroups)
+          .insert(
+            SystemGroupsCompanion.insert(
+              id: groupId,
+              systemId: localSystemId,
+              name: await encryptText(name, 'system_groups', groupId, 'name'),
+              parentGroupId: Value(_nullIfBlank(draft.parentGroupId)),
+              colorHex: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.colorHex),
+                  'system_groups',
+                  groupId,
+                  'color_hex',
+                ),
               ),
-            ),
-            description: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.description),
-                'system_groups',
-                groupId,
-                'description',
+              description: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.description),
+                  'system_groups',
+                  groupId,
+                  'description',
+                ),
               ),
-            ),
-            emoji: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.emoji),
-                'system_groups',
-                groupId,
-                'emoji',
+              emoji: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.emoji),
+                  'system_groups',
+                  groupId,
+                  'emoji',
+                ),
               ),
+              isSubsystem: Value(draft.isSubsystem),
+              createdAt: now,
+              updatedAt: now,
             ),
-            isSubsystem: Value(draft.isSubsystem),
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
+          );
+      if (draft.memberIds != null) {
+        await _updateMembers(groupId, draft.memberIds!);
+      }
+    });
   }
 
   Future<void> update(String groupId, GroupDraft draft) async {
@@ -179,44 +187,102 @@ GROUP BY g.id, g.parent_group_id, g.name, g.color_hex, g.description, g.emoji, g
       return;
     }
 
-    await (database.update(database.systemGroups)..where(
-          (group) =>
-              group.id.equals(groupId) & group.systemId.equals(localSystemId),
-        ))
-        .write(
-          SystemGroupsCompanion(
-            parentGroupId: Value(parentId),
-            name: Value(
-              await encryptText(name, 'system_groups', groupId, 'name'),
-            ),
-            colorHex: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.colorHex),
-                'system_groups',
-                groupId,
-                'color_hex',
+    await database.transaction(() async {
+      await (database.update(database.systemGroups)..where(
+            (group) =>
+                group.id.equals(groupId) & group.systemId.equals(localSystemId),
+          ))
+          .write(
+            SystemGroupsCompanion(
+              parentGroupId: Value(parentId),
+              name: Value(
+                await encryptText(name, 'system_groups', groupId, 'name'),
               ),
-            ),
-            description: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.description),
-                'system_groups',
-                groupId,
-                'description',
+              colorHex: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.colorHex),
+                  'system_groups',
+                  groupId,
+                  'color_hex',
+                ),
               ),
-            ),
-            emoji: Value(
-              await encryptNullableText(
-                _nullIfBlank(draft.emoji),
-                'system_groups',
-                groupId,
-                'emoji',
+              description: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.description),
+                  'system_groups',
+                  groupId,
+                  'description',
+                ),
               ),
+              emoji: Value(
+                await encryptNullableText(
+                  _nullIfBlank(draft.emoji),
+                  'system_groups',
+                  groupId,
+                  'emoji',
+                ),
+              ),
+              isSubsystem: Value(draft.isSubsystem),
+              updatedAt: Value(DateTime.now().toUtc()),
             ),
-            isSubsystem: Value(draft.isSubsystem),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
+          );
+      if (draft.memberIds != null) {
+        await _updateMembers(groupId, draft.memberIds!);
+      }
+    });
+  }
+
+  Future<void> _updateMembers(String groupId, List<String> memberIds) async {
+    final editableMembers =
+        await (database.select(database.members)..where(
+              (member) =>
+                  member.systemId.equals(localSystemId) &
+                  member.deletedAt.isNull() &
+                  member.purgedAt.isNull() &
+                  member.isCustomFront.equals(false),
+            ))
+            .get();
+    final editableIds = {for (final member in editableMembers) member.id};
+    final selectedIds = memberIds.toSet();
+    if (!editableIds.containsAll(selectedIds)) {
+      throw StateError('A selected group member is no longer available.');
+    }
+
+    final existing = await (database.select(
+      database.groupMembers,
+    )..where((link) => link.groupId.equals(groupId))).get();
+    final existingIds = {for (final link in existing) link.memberId};
+    final removed = existingIds
+        .intersection(editableIds)
+        .difference(selectedIds);
+    final added = selectedIds.difference(existingIds);
+
+    if (removed.isNotEmpty) {
+      await (database.delete(database.groupMembers)..where(
+            (link) =>
+                link.groupId.equals(groupId) & link.memberId.isIn(removed),
+          ))
+          .go();
+      await (database.update(database.members)..where(
+            (member) =>
+                member.id.isIn(removed) &
+                member.systemId.equals(localSystemId) &
+                member.folderId.equals(groupId),
+          ))
+          .write(
+            MembersCompanion(
+              folderId: const Value(null),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+    }
+    for (final memberId in added) {
+      await database
+          .into(database.groupMembers)
+          .insert(
+            GroupMembersCompanion.insert(groupId: groupId, memberId: memberId),
+          );
+    }
   }
 
   Future<void> delete(String groupId) async {
