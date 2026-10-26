@@ -220,7 +220,7 @@ void main() {
   });
 
   test('English is the deterministic Flutter fallback for system locales', () {
-    expect(supportedLanguageLocales.first, const Locale('en'));
+    expect(supportedLanguageLocales.first, const Locale('en', 'GB'));
     expect(supportedLanguageLocales[1], const Locale('en', 'US'));
     expect(
       supportedLanguageForCode(systemLanguageCode).code,
