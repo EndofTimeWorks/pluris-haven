@@ -6239,6 +6239,12 @@ abstract class AppLocalizations {
   /// **'No primary group'**
   String get noPrimaryGroupOption;
 
+  /// No description provided for @unknownGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown group (saved reference)'**
+  String get unknownGroupLabel;
+
   /// No description provided for @memberGroupsTitle.
   ///
   /// In en, this message translates to:

@@ -5,17 +5,15 @@ collectives, individuals, and anyone else who finds its tools useful. It does
 not assume how many are present, what words they use, or what their experience
 looks like.
 
-The app works locally without an account. Accounts, encrypted server backups,
-friends, and other network features are optional. The long-term sync model is
-transport-independent; a central server is infrastructure, not a requirement
-for local use.
+The app works locally without an account or server. Network features are still
+experimental.
 
 ## Targets
 
 - `mobile` - Flutter app targeting Android and iOS.
 - `website` - static SvelteKit project site.
-- `server` - optional accounts, sessions, friends, password recovery, and
-  encrypted backup storage.
+- `server` - optional backend prototype; it is not part of the current local
+  app release scope.
 
 ## What works
 
@@ -29,10 +27,7 @@ for local use.
   carried in a namespaced extension with warnings
 - Tupperbox, PluralSpace, and Ampersand file-normalisation paths with checked-in
   mapper coverage
-- local export, password-protected portable recovery, and encrypted server
-  backup upload/download/restore
-- optional server accounts, revocable sessions, one-time-token password
-  recovery, encrypted backups, and experimental friends/blocking
+- local export and password-protected portable recovery
 - automatic dev prereleases and signed-tag versioned releases through GitHub
   Actions
 - Android AAB/APK release artifacts and Play internal-testing automation after a

@@ -2165,44 +2165,42 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               builder: (context, snapshot) {
                 final groups = snapshot.data ?? const <GroupSummary>[];
                 final groupIds = groups.map((group) => group.id).toSet();
-                if (groups.isNotEmpty &&
-                    _folderId != null &&
-                    !groupIds.contains(_folderId)) {
-                  _folderId = null;
-                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DropdownButtonFormField<String?>(
-                      initialValue: null,
-                      decoration: InputDecoration(
-                        labelText: l10n.primaryGroupFieldLabel,
+                    KeyedSubtree(
+                      key: ValueKey(
+                        'primary-group-${groups.map((group) => group.id).join(',')}-$_folderId',
                       ),
-                      hint: Text(
-                        groups
-                                .where((group) => group.id == _folderId)
-                                .firstOrNull
-                                ?.name ??
-                            l10n.noPrimaryGroupOption,
-                      ),
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(l10n.noPrimaryGroupOption),
+                      child: DropdownButtonFormField<String?>(
+                        key: const ValueKey('member-primary-group-field'),
+                        initialValue: _folderId,
+                        decoration: InputDecoration(
+                          labelText: l10n.primaryGroupFieldLabel,
                         ),
-                        for (final group in groups)
+                        items: [
                           DropdownMenuItem<String?>(
-                            value: group.id,
-                            child: Text(group.name),
+                            value: null,
+                            child: Text(l10n.noPrimaryGroupOption),
                           ),
-                      ],
-                      onChanged: (value) => setState(() {
-                        _folderId = value;
-                        if (_folderId != null) {
-                          _groupIds.add(_folderId!);
-                        }
-                      }),
+                          if (_folderId != null &&
+                              !groupIds.contains(_folderId))
+                            DropdownMenuItem<String?>(
+                              value: _folderId,
+                              child: Text(l10n.unknownGroupLabel),
+                            ),
+                          for (final group in groups)
+                            DropdownMenuItem<String?>(
+                              value: group.id,
+                              child: Text(group.name),
+                            ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _folderId = value;
+                          if (_folderId != null) _groupIds.add(_folderId!);
+                        }),
+                      ),
                     ),
                     if (groups.isNotEmpty) ...[
                       const SizedBox(height: 10),
