@@ -1105,6 +1105,8 @@
   "untitledEntry": "Untitled entry",
   "emptyJournal": "empty journal",
   "deleteJournalEntryTooltip": "Delete journal entry",
+  "deleteJournalEntryFor": "Delete journal entry {title} ({id})",
+  "@deleteJournalEntryFor": { "placeholders": { "title": { "type": "String" }, "id": { "type": "String" } } },
   "deleteJournalEntryTitle": "Delete journal entry?",
   "deleteJournalEntryBody": "This entry will be permanently removed from this device.",
   "editJournalEntryTitle": "Edit journal entry",

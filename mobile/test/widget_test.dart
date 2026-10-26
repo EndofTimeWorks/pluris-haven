@@ -3109,7 +3109,7 @@ void main() {
 
     expect(find.text('Long day edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete journal entry'));
+    await tester.tap(find.byTooltip(RegExp(r'^Delete journal entry .+ \(')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
