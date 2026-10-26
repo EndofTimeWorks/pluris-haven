@@ -397,6 +397,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDashboardShortcutsTitle => 'No dashboard shortcuts';
 
   @override
+  String get firstRunTitle => 'Start here';
+
+  @override
+  String get firstRunBody =>
+      'Add a member or bring in your existing data. You can do both later from the menu.';
+
+  @override
+  String get firstRunImportAction => 'Bring in existing data';
+
+  @override
   String get noDashboardShortcutsBody =>
       'Open App options to add shortcuts back.';
 

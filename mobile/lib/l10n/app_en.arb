@@ -151,6 +151,9 @@
   "deleteButtonLabel": "Delete",
   "dashboardMainSectionTitle": "Main",
   "noDashboardShortcutsTitle": "No dashboard shortcuts",
+  "firstRunTitle": "Start here",
+  "firstRunBody": "Add a member or bring in your existing data. You can do both later from the menu.",
+  "firstRunImportAction": "Bring in existing data",
   "noDashboardShortcutsBody": "Open App options to add shortcuts back.",
   "dashboardShortcutSemanticLabel": "{title} dashboard shortcut",
   "@dashboardShortcutSemanticLabel": {

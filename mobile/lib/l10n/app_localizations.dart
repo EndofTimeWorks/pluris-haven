@@ -811,6 +811,24 @@ abstract class AppLocalizations {
   /// **'No dashboard shortcuts'**
   String get noDashboardShortcutsTitle;
 
+  /// No description provided for @firstRunTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here'**
+  String get firstRunTitle;
+
+  /// No description provided for @firstRunBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a member or bring in your existing data. You can do both later from the menu.'**
+  String get firstRunBody;
+
+  /// No description provided for @firstRunImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in existing data'**
+  String get firstRunImportAction;
+
   /// No description provided for @noDashboardShortcutsBody.
   ///
   /// In en, this message translates to:
