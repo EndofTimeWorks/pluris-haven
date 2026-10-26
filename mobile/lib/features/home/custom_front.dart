@@ -401,29 +401,32 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: FilledButton(
-                    key: const ValueKey('make-custom-front-current-button'),
-                    onPressed: () => _setFront(_controller.text),
-                    child: Text(l10n.setButtonLabel),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        key: const ValueKey('make-custom-front-current-button'),
+                        onPressed: () => _setFront(_controller.text),
+                        child: Text(l10n.setButtonLabel),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const ValueKey('save-custom-front-button'),
+                        onPressed: () => _saveCustomFront(_controller.text),
+                        child: Text(l10n.saveButtonLabel),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    key: const ValueKey('save-custom-front-button'),
-                    onPressed: () => _saveCustomFront(_controller.text),
-                    child: Text(l10n.saveButtonLabel),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _clearFront,
-                    child: Text(l10n.clearButton),
-                  ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: _clearFront,
+                  child: Text(l10n.endAllCurrentFrontsButton),
                 ),
               ],
             ),
@@ -540,6 +543,25 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _clearFront() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endAllCurrentFrontsButton),
+        content: Text(l10n.endAllCurrentFrontsWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endAllCurrentFrontsButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await widget.repository.clearCurrentFront();
     if (mounted) {
       await _syncFrontNotification(context, widget.repository);
