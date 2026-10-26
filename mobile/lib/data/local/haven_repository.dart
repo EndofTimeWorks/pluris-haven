@@ -69,7 +69,7 @@ export 'member_store.dart'
 export 'notification_event_store.dart'
     show NotificationEventDraft, NotificationEventSummary;
 export 'poll_store.dart'
-    show PollDraft, PollKind, PollOptionSummary, PollSummary;
+    show PollDraft, PollKind, PollOptionSummary, PollSummary, PollVoteMode;
 export 'privacy_bucket_store.dart'
     show PrivacyBucketDraft, PrivacyBucketSummary;
 export 'reminder_store.dart' show ReminderDraft, ReminderSummary;
@@ -706,8 +706,11 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> savePoll(PollDraft draft) => _polls.save(draft);
 
   @override
-  Future<void> togglePollOption(String pollId, String optionId) =>
-      _polls.toggleOption(pollId, optionId);
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  }) => _polls.toggleOption(pollId, optionId, memberId: memberId);
 
   @override
   Future<void> closePoll(String pollId) => _polls.close(pollId);

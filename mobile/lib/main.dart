@@ -53,6 +53,7 @@ class BootstrapDependencies {
     this.runMigrations = runLocalMigrations,
     this.retireLegacyLocalApi = _retireLegacyLocalApi,
     this.startServices = _startStartupServices,
+    this.keyLoadWarningDelay = const Duration(seconds: 15),
   });
 
   final AppDatabase Function() openDatabase;
@@ -64,6 +65,7 @@ class BootstrapDependencies {
   final LocalMigrationRunner runMigrations;
   final LocalApiRetirement retireLegacyLocalApi;
   final StartupServices startServices;
+  final Duration keyLoadWarningDelay;
 }
 
 Future<HavenCrypto> _loadStartupCrypto() =>
@@ -107,6 +109,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   LocalApiController? _localApi;
   var _missingMasterKey = false;
   var _retryingMissingKey = false;
+  var _waitingForKey = false;
   Object? _startupError;
 
   @override
@@ -119,6 +122,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   Future<void> _openLocalArchive() async {
     final database = widget.dependencies.openDatabase();
+    final keyLoadTimer = Timer(widget.dependencies.keyLoadWarningDelay, () {
+      if (mounted) setState(() => _waitingForKey = true);
+    });
     late final HavenCrypto crypto;
     try {
       crypto = await widget.dependencies.loadCrypto();
@@ -135,6 +141,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
       await database.close();
       if (mounted) setState(() => _startupError = error);
       return;
+    } finally {
+      keyLoadTimer.cancel();
+      if (mounted && _waitingForKey) {
+        setState(() => _waitingForKey = false);
+      }
     }
     try {
       final repository = widget.dependencies.createRepository(database, crypto);
@@ -198,6 +209,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       return MissingMasterKeyApp(onRetry: _retryMissingKey);
     }
     if (_startupError != null) return const LocalMigrationFailureApp();
+    if (_waitingForKey) return const WaitingForKeyApp();
     final repository = _repository;
     if (repository != null) {
       return PlurisHavenApp(
@@ -211,6 +223,50 @@ class _BootstrapAppState extends State<BootstrapApp> {
       home: Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
+}
+
+class WaitingForKeyApp extends StatelessWidget {
+  const WaitingForKeyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    supportedLocales: supportedLanguageLocales,
+    localizationsDelegates: const [
+      FallbackAppLocalizationsDelegate(),
+      GlobalMaterialLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+    ],
+    home: Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.waitingForEncryptionKeyTitle,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(l10n.waitingForEncryptionKeyBody),
+                  const SizedBox(height: 16),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 Future<void> _completeStartup() async {

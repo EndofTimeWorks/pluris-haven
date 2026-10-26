@@ -1209,6 +1209,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.';
 
   @override
+  String get waitingForEncryptionKeyTitle => 'Waiting for encryption key';
+
+  @override
+  String get waitingForEncryptionKeyBody =>
+      'Unlock your device keyring if needed. Pluris Haven will continue when the key becomes available. If it remains here, restart the app after unlocking. Keep the app\'s files: clearing storage may lose data.';
+
+  @override
   String get tryAgainButton => 'Try again';
 
   @override
@@ -1693,6 +1700,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importCountPollVotes => 'poll votes';
+
+  @override
+  String get importCountPollMemberVotes => 'member votes';
 
   @override
   String get importCountPollVoteEvents => 'poll vote events';
@@ -2846,6 +2856,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get votingFieldLabel => 'Voting';
+
+  @override
+  String get pollVoteModeLabel => 'Vote mode';
+
+  @override
+  String get pollSharedChoiceLabel => 'Shared system choice';
+
+  @override
+  String get pollMemberVoteLabel => 'Votes by member';
+
+  @override
+  String get pollVoteAsMemberLabel => 'Vote as member';
+
+  @override
+  String get pollChooseMemberHint => 'Choose a member';
+
+  @override
+  String get pollCouldNotVote => 'Could not record this vote. Try again.';
+
+  @override
+  String pollVoteCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
 
   @override
   String pollOptionFieldLabel(int number) {

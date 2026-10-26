@@ -219,6 +219,7 @@ class Polls extends Table {
   TextColumn get question => text()();
   TextColumn get description => text().nullable()();
   TextColumn get kind => text().withDefault(const Constant('single_choice'))();
+  TextColumn get voteMode => text().withDefault(const Constant('shared'))();
   BoolColumn get restrictVotingToFronters =>
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get closesAt => dateTime().nullable()();
@@ -248,6 +249,17 @@ class PollVotes extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {pollId, optionId};
+}
+
+class PollMemberVotes extends Table {
+  TextColumn get pollId => text().references(Polls, #id)();
+  TextColumn get optionId => text().references(PollOptions, #id)();
+  TextColumn get memberId =>
+      text().references(Members, #id, onDelete: KeyAction.cascade)();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {pollId, optionId, memberId};
 }
 
 @TableIndex.sql(
@@ -415,6 +427,8 @@ class PollVoteEvents extends Table {
   TextColumn get pollId => text().references(Polls, #id)();
   TextColumn get optionId => text().references(PollOptions, #id)();
   TextColumn get action => text()();
+  TextColumn get memberId =>
+      text().nullable().references(Members, #id, onDelete: KeyAction.setNull)();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -503,6 +517,7 @@ class PrivacyBucketMembers extends Table {
     Polls,
     PollOptions,
     PollVotes,
+    PollMemberVotes,
     FrontSessions,
     FrontSessionMembers,
     ImportRecords,
@@ -527,7 +542,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   // `migrator.createTable(x)` always creates `x` using its current
   // Dart column definition - there is no per-historical-version table shape
@@ -810,6 +825,15 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 26) {
           await migrator.createTable(customFieldValueMigrationProvenance);
+        }
+        if (from < 27) {
+          await _addColumnIfMissing(migrator, polls, polls.voteMode);
+          await _addColumnIfMissing(
+            migrator,
+            pollVoteEvents,
+            pollVoteEvents.memberId,
+          );
+          await migrator.createTable(pollMemberVotes);
         }
       });
     },
