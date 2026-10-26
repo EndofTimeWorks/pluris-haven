@@ -2382,6 +2382,35 @@ void main() {
     expect(repository._groups, isEmpty);
   });
 
+  testWidgets('Escape offers to keep an unsaved group', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      'Caretakers',
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    await tester.drag(find.byType(BottomSheet), const Offset(0, 500));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._groups.single.name, 'Caretakers');
+  });
+
   testWidgets('edits and deletes nested groups locally', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
