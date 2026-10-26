@@ -869,6 +869,11 @@ String _frontTimingLabel(
 String _shortDateTime(BuildContext context, DateTime value) {
   final local = value.toLocal();
   final material = MaterialLocalizations.of(context);
-  return '${material.formatShortDate(local)} '
+  final locale = Localizations.localeOf(context);
+  final date = locale.languageCode == 'en'
+      ? intl.DateFormat.yMMMd(locale.countryCode == 'US' ? 'en_US' : 'en_GB')
+            .format(local)
+      : material.formatShortDate(local);
+  return '$date '
       '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}';
 }
