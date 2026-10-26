@@ -143,7 +143,7 @@ void main() {
   testWidgets('shows recovery guidance when local data initialization fails', (
     tester,
   ) async {
-    await tester.pumpWidget(const LocalMigrationFailureApp());
+    await tester.pumpWidget(LocalMigrationFailureApp(onRetry: () {}));
 
     expect(find.text('Local data needs recovery'), findsOneWidget);
     expect(
@@ -241,6 +241,44 @@ void main() {
     expect(database.closed, isTrue);
     expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('retries local startup after a migration failure', (
+    tester,
+  ) async {
+    final databases = <_TrackingDatabase>[];
+    var attempts = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () {
+            final database = _TrackingDatabase();
+            databases.add(database);
+            return database;
+          },
+          loadCrypto: () async => testCrypto(),
+          runMigrations: (_) async {
+            attempts++;
+            if (attempts == 1) throw StateError('temporarily unavailable');
+          },
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(databases.single.closed, isTrue);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(attempts, 2);
+    expect(databases, hasLength(2));
+    expect(databases.last.closed, isFalse);
+    expect(find.byType(PlurisHavenApp), findsOneWidget);
+    await databases.last.close();
   });
 
   testWidgets('retries a missing local key without clearing data', (
