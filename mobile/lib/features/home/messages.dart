@@ -117,29 +117,56 @@ class _MessagesPageState extends State<MessagesPage> {
                     ),
                     if (_boardFilter == 'channel' && channels.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String?>(
-                        key: ValueKey('chat-channel-filter-$selectedChannelId'),
-                        initialValue: selectedChannelId,
-                        decoration: InputDecoration(
-                          labelText: l10n.channelViewFieldLabel,
-                        ),
-                        items: [
-                          DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text(l10n.allChannelsFilter),
-                          ),
-                          for (final channel in channels)
-                            DropdownMenuItem<String?>(
-                              value: channel.id,
-                              child: Text(
-                                channelNameCounts[channel.name] == 1
-                                    ? channel.name
-                                    : '${channel.name} (${channel.id.substring(channel.id.length > 8 ? channel.id.length - 8 : 0)})',
-                              ),
+                      StreamBuilder<List<ChatCategorySummary>>(
+                        stream: widget.repository.watchChatCategories(),
+                        initialData: const [],
+                        builder: (context, categorySnapshot) {
+                          final categoryNames = {
+                            for (final category
+                                in categorySnapshot.data ??
+                                    const <ChatCategorySummary>[])
+                              category.id: category.name,
+                          };
+                          String labelFor(ChatChannelSummary channel) {
+                            final category = categoryNames[channel.categoryId];
+                            final name = category == null
+                                ? channel.name
+                                : '$category / ${channel.name}';
+                            if (channelNameCounts[channel.name] == 1) {
+                              return name;
+                            }
+                            final id = channel.id;
+                            return '$name (${id.substring(id.length > 8 ? id.length - 8 : 0)})';
+                          }
+
+                          return DropdownButtonFormField<String?>(
+                            key: ValueKey(
+                              'chat-channel-filter-$selectedChannelId',
                             ),
-                        ],
-                        onChanged: (id) =>
-                            setState(() => _channelFilterId = id),
+                            isExpanded: true,
+                            initialValue: selectedChannelId,
+                            decoration: InputDecoration(
+                              labelText: l10n.channelViewFieldLabel,
+                            ),
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(l10n.allChannelsFilter),
+                              ),
+                              for (final channel in channels)
+                                DropdownMenuItem<String?>(
+                                  value: channel.id,
+                                  child: Text(
+                                    labelFor(channel),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (id) =>
+                                setState(() => _channelFilterId = id),
+                          );
+                        },
                       ),
                     ],
                     const SizedBox(height: 12),
