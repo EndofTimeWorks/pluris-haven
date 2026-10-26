@@ -1366,6 +1366,7 @@
   "chooseImageButton": "Choose image",
   "primaryGroupFieldLabel": "Primary group",
   "noPrimaryGroupOption": "No primary group",
+  "unknownGroupLabel": "Unknown group (saved reference)",
   "memberGroupsTitle": "Member groups",
   "saveAlterButton": "Save alter",
   "createAlterButton": "Create alter",

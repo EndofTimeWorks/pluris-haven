@@ -3602,6 +3602,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPrimaryGroupOption => 'No primary group';
 
   @override
+  String get unknownGroupLabel => 'Unknown group (saved reference)';
+
+  @override
   String get memberGroupsTitle => 'Member groups';
 
   @override

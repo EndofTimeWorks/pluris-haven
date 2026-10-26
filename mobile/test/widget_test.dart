@@ -2017,6 +2017,71 @@ void main() {
     ]);
   });
 
+  testWidgets('member editor selects and keeps its saved primary group', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Iris',
+        folderId: 'fake-group-1',
+        groupIds: ['fake-group-1'],
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    final primary = tester.widget<DropdownButtonFormField<String?>>(
+      find.byKey(const ValueKey('member-primary-group-field')),
+    );
+    expect(primary.initialValue, 'fake-group-1');
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.folderId, 'fake-group-1');
+    expect(repository._members.single.groupIds, ['fake-group-1']);
+  });
+
+  testWidgets('member editor keeps an unresolved imported group reference', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Iris',
+        folderId: 'imported-group',
+        groupIds: ['imported-group'],
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unknown group (saved reference)'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.folderId, 'imported-group');
+    expect(repository._members.single.groupIds, ['imported-group']);
+  });
+
   testWidgets('opens local useful links and how-to guides', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
