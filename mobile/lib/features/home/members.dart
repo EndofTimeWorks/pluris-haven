@@ -1637,9 +1637,8 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
       textInputAction: multiline
           ? TextInputAction.newline
           : TextInputAction.done,
-      readOnly: type == 'date' || type == 'datetime',
+      readOnly: type == 'datetime',
       onTap: switch (type) {
-        'date' => _pickDate,
         'datetime' => _pickDateTime,
         _ => null,
       },
@@ -1648,9 +1647,15 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
         hintText: noChoices
             ? l10n.customFieldNoChoices
             : l10n.leaveBlankToClearHint,
+        helperText: type == 'date' ? l10n.customFieldDateFormat : null,
         errorText: _valueError,
         suffixIcon: switch (type) {
-          'date' || 'datetime' => const Icon(Icons.calendar_month_rounded),
+          'date' => IconButton(
+            tooltip: l10n.chooseDateButton,
+            onPressed: _pickDate,
+            icon: const Icon(Icons.calendar_month_rounded),
+          ),
+          'datetime' => const Icon(Icons.calendar_month_rounded),
           'url' => const Icon(Icons.link_rounded),
           'color' => const Icon(Icons.palette_outlined),
           'markdown' => const Icon(Icons.text_fields_rounded),
@@ -1682,6 +1687,28 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
           setState(() => _valueError = l10n.customFieldInvalidNumber);
           return;
         }
+      case 'date':
+        if (text.isNotEmpty && !_isValidDateOnly(text)) {
+          setState(() => _valueError = l10n.customFieldInvalidDate);
+          return;
+        }
+        value = text;
+      case 'url':
+        final uri = Uri.tryParse(text);
+        if (text.isNotEmpty &&
+            (uri == null ||
+                (uri.scheme != 'https' && uri.scheme != 'http') ||
+                uri.host.isEmpty)) {
+          setState(() => _valueError = l10n.customFieldInvalidLink);
+          return;
+        }
+        value = text;
+      case 'color':
+        if (text.isNotEmpty && _customFieldColor(text) == null) {
+          setState(() => _valueError = l10n.invalidHexColorError);
+          return;
+        }
+        value = text;
       case 'json':
         if (text.isEmpty) {
           value = null;
@@ -1764,6 +1791,16 @@ String _dateOnlyText(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-'
     '${date.month.toString().padLeft(2, '0')}-'
     '${date.day.toString().padLeft(2, '0')}';
+
+bool _isValidDateOnly(String text) {
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(text);
+  if (match == null) return false;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final date = DateTime.utc(year, month, day);
+  return date.year == year && date.month == month && date.day == day;
+}
 
 String _memberPronouns(MemberSummary member, AppLocalizations l10n) {
   final pronouns = member.pronouns?.trim();
