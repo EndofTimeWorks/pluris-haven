@@ -327,8 +327,10 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     text: _hexFromAccent(HavenAccentColor.gold),
   );
   String? _colorError;
+  String? _nameError;
   String? _parentGroupId;
   bool _isSubsystem = false;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.group != null;
 
@@ -397,7 +399,13 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   controller: _nameController,
                   autofocus: true,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+                  decoration: InputDecoration(
+                    labelText: l10n.nameFieldLabel,
+                    errorText: _nameError,
+                  ),
+                  onChanged: (_) {
+                    if (_nameError != null) setState(() => _nameError = null);
+                  },
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -479,7 +487,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                 const SizedBox(height: 14),
                 FilledButton(
                   key: const ValueKey('save-group-button'),
-                  onPressed: _save,
+                  onPressed: _isSaving ? null : _save,
                   child: Text(
                     _isEditing ? l10n.saveChangesButton : l10n.saveGroupButton,
                   ),
@@ -493,6 +501,13 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
+    if (_nameController.text.trim().isEmpty) {
+      setState(
+        () => _nameError = AppLocalizations.of(context).nameRequiredError,
+      );
+      return;
+    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
@@ -502,22 +517,32 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     }
 
     final draft = GroupDraft(
-      name: _nameController.text,
+      name: _nameController.text.trim(),
       parentGroupId: _parentGroupId,
       emoji: _emojiController.text,
       colorHex: colorHex,
       description: _descriptionController.text,
       isSubsystem: _isSubsystem,
     );
-    final group = widget.group;
-    if (group == null) {
-      await widget.repository.saveGroup(draft);
-    } else {
-      await widget.repository.updateGroup(group.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final group = widget.group;
+      if (group == null) {
+        await widget.repository.saveGroup(draft);
+      } else {
+        await widget.repository.updateGroup(group.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 }
