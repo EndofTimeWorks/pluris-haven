@@ -3804,6 +3804,18 @@ void main() {
     await tester.tap(find.text('Add reminder'));
     await tester.pumpAndSettle();
 
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('reminder-title-field')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus,
+      isTrue,
+    );
     await tester.enterText(
       find.byKey(const ValueKey('reminder-title-field')),
       'Medication',
@@ -4081,6 +4093,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('After a front starts').last);
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('reminder-after-front-delay-field')),
+          )
+          .decoration
+          ?.helperMaxLines,
+      3,
+    );
     await tester.tap(find.byKey(const ValueKey('reminder-front-detail-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Iris').last);

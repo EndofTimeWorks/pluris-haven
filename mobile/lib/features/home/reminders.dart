@@ -402,6 +402,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             const SizedBox(height: 14),
             TextField(
               key: const ValueKey('reminder-title-field'),
+              autofocus: widget.reminder == null,
               controller: _titleController,
               onChanged: (_) {
                 if (_invalidTitle) setState(() => _invalidTitle = false);
@@ -492,6 +493,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                     decoration: InputDecoration(
                       labelText: l10n.afterFrontTargetLabel,
                       helperText: l10n.afterFrontTargetHelper,
+                      helperMaxLines: 3,
                     ),
                     items: [
                       DropdownMenuItem<String?>(
@@ -538,6 +540,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 decoration: InputDecoration(
                   labelText: l10n.afterFrontDelayLabel,
                   helperText: l10n.afterFrontDelayHelper,
+                  helperMaxLines: 3,
                   errorText: _invalidDelay ? l10n.afterFrontDelayError : null,
                 ),
               ),
@@ -554,6 +557,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 decoration: InputDecoration(
                   labelText: l10n.timeFieldLabel,
                   helperText: l10n.timeFieldHelper,
+                  helperMaxLines: 3,
                   errorText: _invalidTime ? l10n.reminderTimeError : null,
                   suffixIcon: IconButton(
                     tooltip: l10n.chooseReminderTime,
