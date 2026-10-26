@@ -893,6 +893,22 @@ void main() {
     );
   });
 
+  testWidgets('search keeps its accessible name after typing', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+
+    final search = find.byKey(const ValueKey('front-history-search-field'));
+    await tester.enterText(search, 'Kai');
+    await tester.pumpAndSettle();
+    expect(tester.getSemantics(search).label, contains('Search front history'));
+    semantics.dispose();
+  });
+
   testWidgets('adds a completed front history interval', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
