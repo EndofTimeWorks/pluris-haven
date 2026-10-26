@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter/services.dart';
@@ -4293,9 +4294,37 @@ void main() {
     expect(repository._notificationEvents, hasLength(1));
   });
 
+  testWidgets('desktop options do not claim mobile privacy controls', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AppOptionsPage(
+            snapshot: _testHomeSnapshot,
+            customization: AppCustomization.defaults,
+            repository: repository,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Block screenshots'), findsNothing);
+    expect(find.text('Fronting notification'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets(
     'front status notification only requests permission when needed',
     (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final repository = FakeHavenRepository(_testHomeSnapshot);
@@ -4333,12 +4362,15 @@ void main() {
       expect(permissionChecks, 1);
       expect(permissionRequests, 0);
       expect(repository._customization.frontStatusNotification, isTrue);
+      debugDefaultTargetPlatformOverride = null;
     },
   );
 
   testWidgets(
     'front status notification stays disabled when permission is denied',
     (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final repository = FakeHavenRepository(_testHomeSnapshot);
@@ -4377,6 +4409,7 @@ void main() {
         ),
         findsOneWidget,
       );
+      debugDefaultTargetPlatformOverride = null;
     },
   );
 
