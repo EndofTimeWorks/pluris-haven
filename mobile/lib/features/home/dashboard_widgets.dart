@@ -290,15 +290,9 @@ class CurrentFrontEntry extends StatelessWidget {
                           runSpacing: 6,
                           children: [
                             for (final member in members.take(4))
-                              Tooltip(
-                                message: member.displayName,
-                                excludeFromSemantics: true,
-                                child: Semantics(
-                                  container: true,
-                                  excludeSemantics: true,
-                                  label: l10n.memberIsFronting(
-                                    member.displayName,
-                                  ),
+                              ExcludeSemantics(
+                                child: Tooltip(
+                                  message: member.displayName,
                                   child: MemberAvatar(
                                     member: member,
                                     color: _colorFromHex(
@@ -313,7 +307,11 @@ class CurrentFrontEntry extends StatelessWidget {
                                 ),
                               ),
                             if (members.length > 4)
-                              StatusPill(text: '+${members.length - 4}'),
+                              ExcludeSemantics(
+                                child: StatusPill(
+                                  text: '+${members.length - 4}',
+                                ),
+                              ),
                           ],
                         ),
                       );
