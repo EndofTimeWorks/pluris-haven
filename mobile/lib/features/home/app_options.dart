@@ -117,30 +117,32 @@ class AppOptionsPage extends StatelessWidget {
               value: customization.reducedMotion,
               onChanged: repository.setReducedMotion,
             ),
-            SpSwitchRow(
-              title: l10n.frontingNotificationTitle,
-              subtitle: l10n.frontingNotificationSubtitle,
-              value: customization.frontStatusNotification,
-              onChanged: (enabled) async {
-                if (enabled &&
-                    !await ensureNotificationPermissionForSetup(
-                      notificationService,
-                    )) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.notificationsPermissionDeniedBody),
-                      ),
-                    );
+            if (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS)
+              SpSwitchRow(
+                title: l10n.frontingNotificationTitle,
+                subtitle: l10n.frontingNotificationSubtitle,
+                value: customization.frontStatusNotification,
+                onChanged: (enabled) async {
+                  if (enabled &&
+                      !await ensureNotificationPermissionForSetup(
+                        notificationService,
+                      )) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.notificationsPermissionDeniedBody),
+                        ),
+                      );
+                    }
+                    return;
                   }
-                  return;
-                }
-                await repository.setFrontStatusNotification(enabled);
-                if (!enabled) {
-                  await notificationService.cancelFrontStatusNotification();
-                }
-              },
-            ),
+                  await repository.setFrontStatusNotification(enabled);
+                  if (!enabled) {
+                    await notificationService.cancelFrontStatusNotification();
+                  }
+                },
+              ),
             if (customization.frontStatusNotification &&
                 defaultTargetPlatform == TargetPlatform.android) ...[
               SpSwitchRow(
@@ -188,16 +190,18 @@ class AppOptionsPage extends StatelessWidget {
                 }
               },
             ),
-            SpSwitchRow(
-              title: defaultTargetPlatform == TargetPlatform.iOS
-                  ? l10n.iosPrivacyScreenTitle
-                  : l10n.screenshotBlockingTitle,
-              subtitle: defaultTargetPlatform == TargetPlatform.iOS
-                  ? l10n.iosPrivacyScreenSubtitle
-                  : l10n.screenshotBlockingSubtitle,
-              value: customization.screenshotBlockingEnabled,
-              onChanged: repository.setScreenshotBlockingEnabled,
-            ),
+            if (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS)
+              SpSwitchRow(
+                title: defaultTargetPlatform == TargetPlatform.iOS
+                    ? l10n.iosPrivacyScreenTitle
+                    : l10n.screenshotBlockingTitle,
+                subtitle: defaultTargetPlatform == TargetPlatform.iOS
+                    ? l10n.iosPrivacyScreenSubtitle
+                    : l10n.screenshotBlockingSubtitle,
+                value: customization.screenshotBlockingEnabled,
+                onChanged: repository.setScreenshotBlockingEnabled,
+              ),
             SpSwitchRow(
               title: l10n.highContrastTitle,
               subtitle: l10n.highContrastSubtitle,
