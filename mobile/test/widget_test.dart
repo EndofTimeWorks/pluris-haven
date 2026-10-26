@@ -537,10 +537,35 @@ void main() {
 
     expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Members'), findsWidgets);
+    expect(find.text('Start here'), findsOneWidget);
+    expect(find.text('Local system'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('Front History'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Front History'), findsOneWidget);
     expect(find.text('App options'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Local system'), findsWidgets);
+  });
+
+  testWidgets('first-run guidance opens local import and clears after setup', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    expect(find.text('Start here'), findsOneWidget);
+
+    await tester.tap(find.text('Bring in existing data'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import / Export'), findsWidgets);
+
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Start here'), findsNothing);
   });
 
   testWidgets('keeps the app locked until customization loads', (tester) async {
@@ -739,7 +764,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Make current front').first);
@@ -806,7 +831,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
     await tester.pumpAndSettle();
@@ -875,7 +900,7 @@ void main() {
     await repository.setCustomFront('Away');
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text('1 shown, 1 loaded of 100 total'), findsOneWidget);
     expect(find.text('Load older fronts'), findsOneWidget);
@@ -899,7 +924,7 @@ void main() {
     addTearDown(repository.close);
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
 
     final search = find.byKey(const ValueKey('front-history-search-field'));
@@ -923,7 +948,7 @@ void main() {
     addTearDown(repository.close);
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
     await Scrollable.ensureVisible(
       tester.element(find.text('Add entry')),
@@ -966,7 +991,7 @@ void main() {
     await repository.setCustomFront('Away');
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Away').last);
     await tester.pumpAndSettle();
@@ -1007,7 +1032,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Make current front'));
@@ -4800,6 +4825,21 @@ Future<void> openDrawerSection(WidgetTester tester, String label) async {
   await tester.ensureVisible(labelFinder.last);
   await tester.pumpAndSettle();
   await tester.tap(labelFinder.last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> openDashboardFrontHistory(WidgetTester tester) async {
+  final target = find.text('Front History');
+  if (!tester.any(target)) {
+    await tester.scrollUntilVisible(
+      target,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
   await tester.pumpAndSettle();
 }
 

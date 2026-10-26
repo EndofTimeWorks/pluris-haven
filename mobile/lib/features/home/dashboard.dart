@@ -59,6 +59,46 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
+bool _isEmptyLocalSystem(HomeSnapshot? snapshot) =>
+    snapshot != null &&
+    snapshot.memberCount == 0 &&
+    snapshot.groupCount == 0 &&
+    snapshot.noteCount == 0 &&
+    snapshot.frontHistoryCount == 0;
+
+class _FirstRunCard extends StatelessWidget {
+  const _FirstRunCard({required this.onSelect});
+
+  final ValueChanged<SpSection> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SpCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.firstRunTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 6),
+          Text(l10n.firstRunBody),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: () => onSelect(SpSection.members),
+            child: Text(l10n.navigationMembers),
+          ),
+          TextButton(
+            onPressed: () => onSelect(SpSection.importExport),
+            child: Text(l10n.firstRunImportAction),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _OriginalDashboard extends StatelessWidget {
   const _OriginalDashboard({
     required this.snapshot,
@@ -83,6 +123,11 @@ class _OriginalDashboard extends StatelessWidget {
         SystemListEntry(snapshot: snapshot),
         const SizedBox(height: 10),
         CurrentFrontEntry(snapshot: snapshot, repository: repository),
+        if (_isEmptyLocalSystem(snapshot) &&
+            customization.dashboardShortcutIds.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _FirstRunCard(onSelect: onSelect),
+        ],
         const SizedBox(height: 18),
         DashboardSectionTitle(l10n.dashboardMainSectionTitle),
         const SizedBox(height: 8),
@@ -120,7 +165,7 @@ class _SimplyPluralDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(8, 10, 8, 20),
-      itemCount: items.length + 2,
+      itemCount: items.length + 2 + (_isEmptyLocalSystem(snapshot) ? 1 : 0),
       separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 12 : 8),
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -129,7 +174,10 @@ class _SimplyPluralDashboard extends StatelessWidget {
         if (index == 1) {
           return DashboardSystemHeader(snapshot: snapshot);
         }
-        final item = items[index - 2];
+        if (_isEmptyLocalSystem(snapshot) && index == 2) {
+          return _FirstRunCard(onSelect: onSelect);
+        }
+        final item = items[index - 2 - (_isEmptyLocalSystem(snapshot) ? 1 : 0)];
         return SpNavigationEntry(
           item: item,
           onTap: () => onSelect(item.section),
@@ -165,6 +213,10 @@ class _AmpersandDashboard extends StatelessWidget {
           children: [
             DashboardSystemHeader(snapshot: snapshot),
             CurrentFrontEntry(snapshot: snapshot, repository: repository),
+            if (_isEmptyLocalSystem(snapshot)) ...[
+              const SizedBox(height: 12),
+              _FirstRunCard(onSelect: onSelect),
+            ],
             const SizedBox(height: 20),
             DashboardSectionTitle(l10n.currentlyFrontingNotificationTitle),
             const SizedBox(height: 8),
