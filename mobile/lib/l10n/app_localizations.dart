@@ -628,7 +628,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffDescription.
   ///
   /// In en, this message translates to:
-  /// **'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.'**
+  /// **'Device synchronisation isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.'**
   String get syncOffDescription;
 
   /// No description provided for @encryptedSyncLabel.
@@ -664,7 +664,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupsValue.
   ///
   /// In en, this message translates to:
-  /// **'manual for now'**
+  /// **'encrypted .pluris files in Import / Export'**
   String get backupsValue;
 
   /// No description provided for @notificationHistoryTitle.

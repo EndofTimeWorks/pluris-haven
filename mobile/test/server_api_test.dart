@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pluris_haven/data/backup/encrypted_backup_snapshot.dart';
+import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/server/server_account_controller.dart';
 import 'package:pluris_haven/data/server/server_api.dart';
@@ -525,6 +527,35 @@ void main() {
       expect(controller.status, contains('could not be confirmed'));
     },
   );
+
+  testWidgets('unconfigured server panels stay out of the client', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    final controller = ServerAccountController(
+      storage: MemoryServerStorage(),
+      apiFactory: (_) => FakeServerApi(),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Column(
+            children: [
+              ServerAccountPanel(controller: controller),
+              ServerBackupPanel(controller: controller, repository: repository),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('server-url-field')), findsNothing);
+    expect(find.text('Encrypted online backup'), findsNothing);
+  });
 
   testWidgets('offers disconnect when the saved server is offline', (
     tester,

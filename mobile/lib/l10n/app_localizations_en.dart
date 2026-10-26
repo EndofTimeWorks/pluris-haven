@@ -296,7 +296,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncOffDescription =>
-      'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
+      'Device synchronisation isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.';
 
   @override
   String get encryptedSyncLabel => 'Encrypted sync';
@@ -314,7 +314,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupsLabel => 'Backups';
 
   @override
-  String get backupsValue => 'manual for now';
+  String get backupsValue => 'encrypted .pluris files in Import / Export';
 
   @override
   String get notificationHistoryTitle => 'Notification history';
@@ -4879,7 +4879,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get syncOffDescription =>
-      'General device synchronization is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
+      'Device synchronization isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.';
 
   @override
   String get importCancelledStatus => 'Import canceled.';
