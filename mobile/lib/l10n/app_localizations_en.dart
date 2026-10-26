@@ -4257,6 +4257,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadOlderFronts => 'Load older fronts';
 
   @override
+  String frontHistoryShownCount(int shown, int loaded, int total) {
+    return '$shown shown, $loaded loaded of $total total';
+  }
+
+  @override
+  String get frontHistorySearchLimitedBody =>
+      'No matches in the loaded history. Load older fronts to search more entries.';
+
+  @override
+  String get clearFrontHistoryFilters => 'Clear filters';
+
+  @override
   String get analyticsNinetyDays => '90d';
 
   @override
