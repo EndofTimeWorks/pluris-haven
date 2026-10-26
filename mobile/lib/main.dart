@@ -106,6 +106,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
   var _missingMasterKey = false;
+  var _retryingMissingKey = false;
   Object? _startupError;
 
   @override
@@ -176,6 +177,15 @@ class _BootstrapAppState extends State<BootstrapApp> {
     }
   }
 
+  void _retryMissingKey() {
+    if (_retryingMissingKey) return;
+    _retryingMissingKey = true;
+    setState(() => _missingMasterKey = false);
+    unawaited(
+      _openLocalArchive().whenComplete(() => _retryingMissingKey = false),
+    );
+  }
+
   @override
   void dispose() {
     unawaited(_localApi?.close() ?? Future<void>.value());
@@ -184,7 +194,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_missingMasterKey) return const MissingMasterKeyApp();
+    if (_missingMasterKey) {
+      return MissingMasterKeyApp(onRetry: _retryMissingKey);
+    }
     if (_startupError != null) return const LocalMigrationFailureApp();
     final repository = _repository;
     if (repository != null) {
@@ -228,34 +240,51 @@ Future<void> _completeStartup() async {
 }
 
 class MissingMasterKeyApp extends StatelessWidget {
-  const MissingMasterKeyApp({super.key});
+  const MissingMasterKeyApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(local-data-model): validate device-transfer recovery on real devices.
-    return const MaterialApp(
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Encryption key missing',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return MaterialApp(
+      supportedLocales: supportedLanguageLocales,
+      localizationsDelegates: const [
+        FallbackAppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      home: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      l10n.encryptionKeyUnavailableTitle,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(l10n.encryptionKeyUnavailableBody),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.tryAgainButton),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'This device no longer has the key that decrypts your local data. '
-                  'Pluris Haven will not replace it. Restore an encrypted backup on '
-                  'a device that still has the original key.',
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

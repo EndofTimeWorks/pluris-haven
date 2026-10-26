@@ -2232,6 +2232,24 @@ abstract class AppLocalizations {
   /// **'Could not save this reminder. Check whether it still exists and try again.'**
   String get couldNotSaveReminder;
 
+  /// No description provided for @encryptionKeyUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encryption key unavailable'**
+  String get encryptionKeyUnavailableTitle;
+
+  /// No description provided for @encryptionKeyUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.'**
+  String get encryptionKeyUnavailableBody;
+
+  /// No description provided for @tryAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgainButton;
+
   /// No description provided for @reminderSavedNotificationFailed.
   ///
   /// In en, this message translates to:
