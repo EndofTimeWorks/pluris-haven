@@ -232,6 +232,7 @@ void showAddReminderSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddReminderSheet(
       repository: repository,
@@ -290,12 +291,41 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   bool _invalidTime = false;
   bool _invalidDelay = false;
   bool _isSaving = false;
+  late String _initialSignature;
+
+  bool get _isDirty => _signature() != _initialSignature;
+
+  String _signature() => jsonEncode([
+    _titleController.text,
+    _bodyController.text,
+    _timeController.text,
+    _afterFrontDelayController.text,
+    _scheduleKind.storageValue,
+    _weekday,
+    _monthDay,
+    _triggerMemberId,
+  ]);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
     super.initState();
     final reminder = widget.reminder;
-    if (reminder == null) return;
+    if (reminder == null) {
+      _initialSignature = _signature();
+      return;
+    }
     _titleController.text = reminder.title;
     _bodyController.text = reminder.body ?? '';
     _timeController.text =
@@ -326,6 +356,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         1;
     _triggerMemberId = reminder.triggerMemberId;
     _afterFrontDelayController.text = '${reminder.delaySeconds ?? 0}';
+    _initialSignature = _signature();
   }
 
   @override
@@ -338,7 +369,15 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
