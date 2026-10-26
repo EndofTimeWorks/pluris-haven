@@ -41,6 +41,8 @@ class PollsPage extends StatelessWidget {
                       Semantics(
                         container: true,
                         explicitChildNodes: true,
+                        header: true,
+                        label: poll.question,
                         child: PollTile(poll: poll, repository: repository),
                       ),
                       if (poll != polls.last) const Divider(height: 1),
@@ -84,8 +86,7 @@ class PollTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Semantics(
-                      header: true,
+                    ExcludeSemantics(
                       child: Text(
                         poll.question,
                         style: const TextStyle(
@@ -131,7 +132,7 @@ class PollTile extends StatelessWidget {
               selected: option.selected,
               enabled: !poll.closed,
               label: l10n.pollOptionSemanticLabel(
-                '${poll.question}: ${option.body}',
+                option.body,
                 option.selected ? l10n.selectedStatus : l10n.notSelectedStatus,
               ),
               onTap: poll.closed
