@@ -21,6 +21,7 @@ class _MembersPageState extends State<MembersPage> {
   late Stream<List<MemberSummary>> _currentFrontStream;
   String _query = '';
   String _filter = 'all';
+  bool _sortByName = false;
 
   @override
   void initState() {
@@ -108,6 +109,7 @@ class _MembersPageState extends State<MembersPage> {
                       .key,
                 ),
               ),
+              _sortControl(l10n),
               const SizedBox(height: 12),
               SpCard(
                 child: Column(
@@ -210,6 +212,7 @@ class _MembersPageState extends State<MembersPage> {
                       .key,
                 ),
               ),
+              _sortControl(l10n),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -284,11 +287,37 @@ class _MembersPageState extends State<MembersPage> {
     return MemberListTile(member: member, repository: widget.repository);
   }
 
+  Widget _sortControl(AppLocalizations l10n) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: PopupMenuButton<bool>(
+        tooltip: l10n.sortMembers,
+        initialValue: _sortByName,
+        onSelected: (value) => setState(() => _sortByName = value),
+        itemBuilder: (context) => [
+          PopupMenuItem(value: false, child: Text(l10n.savedMemberOrder)),
+          PopupMenuItem(value: true, child: Text(l10n.memberNameOrder)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.sort_rounded, size: 20),
+              const SizedBox(width: 6),
+              Text(_sortByName ? l10n.memberNameOrder : l10n.savedMemberOrder),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   List<MemberSummary> _filteredMembers(
     List<MemberSummary> members,
     Set<String> activeMemberIds,
   ) {
-    return [
+    final filtered = [
       for (final member in members)
         if (_matchesQuery(_query, [member.displayName, member.pronouns]) &&
             switch (_filter) {
@@ -298,6 +327,15 @@ class _MembersPageState extends State<MembersPage> {
             })
           member,
     ];
+    if (_sortByName) {
+      filtered.sort((a, b) {
+        final byName = a.displayName.toLowerCase().compareTo(
+          b.displayName.toLowerCase(),
+        );
+        return byName != 0 ? byName : a.id.compareTo(b.id);
+      });
+    }
+    return filtered;
   }
 }
 

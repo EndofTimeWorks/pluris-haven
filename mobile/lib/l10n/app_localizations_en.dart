@@ -3337,14 +3337,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchMembersHint => 'Search members';
 
   @override
+  String get sortMembers => 'Sort members';
+
+  @override
+  String get savedMemberOrder => 'Saved order';
+
+  @override
+  String get memberNameOrder => 'Name A–Z';
+
+  @override
   String get noMembersSavedLocally => 'No members saved locally';
 
   @override
   String get noMatchingMembers => 'No matching members';
 
   @override
-  String get membersEmptyBody =>
-      'Add members here or import a local archive or supported export.';
+  String get membersEmptyBody => 'Add a member or import your data.';
 
   @override
   String get addMemberButton => 'Add member';
