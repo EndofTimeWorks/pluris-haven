@@ -23,14 +23,12 @@ class _ServerAccountPanelState extends State<ServerAccountPanel> {
     final l10n = AppLocalizations.of(context);
     final controller = widget.controller;
     if (controller == null) {
-      return SpCard(
-        outlined: true,
-        child: Text(l10n.serverAccountsUnavailable),
-      );
+      return const SizedBox.shrink();
     }
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        if (controller.serverUri == null) return const SizedBox.shrink();
         final scheme = Theme.of(context).colorScheme;
         return SpCard(
           outlined: true,
@@ -740,11 +738,12 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
     final l10n = AppLocalizations.of(context);
     final controller = widget.controller;
     if (controller == null) {
-      return SpCard(outlined: true, child: Text(l10n.onlineBackupUnavailable));
+      return const SizedBox.shrink();
     }
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        if (controller.serverUri == null) return const SizedBox.shrink();
         final scheme = Theme.of(context).colorScheme;
         return SpCard(
           outlined: true,

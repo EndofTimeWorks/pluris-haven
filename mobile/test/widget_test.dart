@@ -1983,7 +1983,7 @@ void main() {
     await openDrawerSection(tester, 'Account Settings');
     expect(
       find.text('Server accounts are unavailable in this app session.'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Member name encryption'), findsOneWidget);
 
@@ -2054,6 +2054,22 @@ void main() {
         );
     expect(report, isNot(contains('Night Garden')));
     expect(report, isNot(contains('current front:')));
+  });
+
+  testWidgets('sync page points to local encrypted archives', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Sync');
+
+    expect(
+      find.textContaining(
+        'Use Import / Export to save an encrypted .pluris archive.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Encrypted online backup'), findsNothing);
   });
 
   testWidgets('empty system name explains why saving is blocked', (
