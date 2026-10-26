@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../security/local_file_permissions.dart';
 import '../security/master_key_store.dart';
 
 const localAvatarReferencePrefix = 'local-avatar:';
@@ -15,6 +16,7 @@ final class LocalAvatarStore {
 
   final HavenMasterKeyStore _keyStore;
   final Future<Directory> Function()? _rootDirectory;
+  late final Future<Directory> _resolvedRoot = _openRoot();
   final Map<String, Uint8List> _readCache = {};
   var _cachedBytes = 0;
 
@@ -54,6 +56,7 @@ final class LocalAvatarStore {
     );
     final temporary = File('${file.path}.tmp');
     await temporary.writeAsBytes(utf8.encode(encrypted), flush: true);
+    await protectLocalFile(temporary);
     await temporary.rename(file.path);
     _evict('local-avatar:$fileName');
   }
@@ -91,11 +94,14 @@ final class LocalAvatarStore {
   Future<File> _fileForName(String name) async =>
       File('${(await _root()).path}/$name');
 
-  Future<Directory> _root() async {
+  Future<Directory> _root() => _resolvedRoot;
+
+  Future<Directory> _openRoot() async {
     final configured = _rootDirectory;
     if (configured != null) {
       final root = await configured();
       if (!await root.exists()) await root.create(recursive: true);
+      await _protectRoot(root);
       return root;
     }
     Directory base;
@@ -106,7 +112,16 @@ final class LocalAvatarStore {
     }
     final root = Directory('${base.path}/avatars');
     if (!await root.exists()) await root.create(recursive: true);
+    await _protectRoot(root);
     return root;
+  }
+
+  Future<void> _protectRoot(Directory root) async {
+    await protectLocalDirectory(root);
+    if (!Platform.isLinux) return;
+    await for (final entry in root.list()) {
+      if (entry is File) await protectLocalFile(entry);
+    }
   }
 
   bool _isEncrypted(Uint8List bytes) =>
