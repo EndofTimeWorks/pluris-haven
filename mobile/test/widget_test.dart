@@ -3598,6 +3598,48 @@ void main() {
     expect(repository._messages.single.body, 'A message worth keeping');
   });
 
+  testWidgets(
+    'chat sender follows one fronter and stays explicit for co-fronting',
+    (tester) async {
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+      await repository.saveMember(const MemberDraft(displayName: 'Sol'));
+      await repository.setFrontMembers(['fake-member-1']);
+
+      await tester.pumpWidget(PlurisHavenApp(repository: repository));
+      await tester.pump();
+      await openDrawerSection(tester, 'Chat');
+      await tester.tap(find.text('Add message'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('message-member-field')),
+          matching: find.text('Wren'),
+        ),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('message-body-field')),
+        'I can help.',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-message-button')));
+      await tester.pumpAndSettle();
+      expect(repository._messages.single.memberId, 'fake-member-1');
+
+      await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+      await tester.tap(find.text('Add message'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('message-member-field')),
+          matching: find.text('System message'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('sends a local message to a configured channel', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -3637,6 +3679,33 @@ void main() {
     expect(repository._messages.single.boardKind, 'channel');
     expect(repository._messages.single.channelId, 'fake-chat-channel-1');
     expect(find.textContaining('kitchen channel'), findsOneWidget);
+
+    await repository.saveChatChannel(const ChatChannelDraft(name: 'garden'));
+    await repository.saveMessage(
+      const MessageDraft(
+        body: 'The plants are watered.',
+        boardKind: 'channel',
+        channelId: 'fake-chat-channel-2',
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Channel').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat-channel-filter-null')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('kitchen').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsOneWidget);
+    expect(find.text('The plants are watered.'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('chat-channel-filter-fake-chat-channel-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('garden').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsNothing);
+    expect(find.text('The plants are watered.'), findsOneWidget);
   });
 
   testWidgets('manages local chat categories and channels', (tester) async {

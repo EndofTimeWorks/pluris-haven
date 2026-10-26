@@ -1242,6 +1242,8 @@
   "memberBoardLabel": "Member board",
   "channelBoardLabel": "Channel",
   "channelFilter": "Channel",
+  "channelViewFieldLabel": "View channel",
+  "allChannelsFilter": "All channels",
   "channelBoardMessageMetadata": "{channel} channel - {sender} - {date}{replyMarker}",
   "@channelBoardMessageMetadata": {
     "placeholders": {
