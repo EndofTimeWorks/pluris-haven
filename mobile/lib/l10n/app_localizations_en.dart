@@ -2903,6 +2903,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteJournalEntryTooltip => 'Delete journal entry';
 
   @override
+  String deleteJournalEntryFor(String title, String id) {
+    return 'Delete journal entry $title ($id)';
+  }
+
+  @override
   String get deleteJournalEntryTitle => 'Delete journal entry?';
 
   @override

@@ -5017,6 +5017,12 @@ abstract class AppLocalizations {
   /// **'Delete journal entry'**
   String get deleteJournalEntryTooltip;
 
+  /// No description provided for @deleteJournalEntryFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry {title} ({id})'**
+  String deleteJournalEntryFor(String title, String id);
+
   /// No description provided for @deleteJournalEntryTitle.
   ///
   /// In en, this message translates to:

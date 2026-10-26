@@ -173,7 +173,10 @@ class JournalEntryTile extends StatelessWidget {
           ],
         ),
         trailing: IconButton(
-          tooltip: l10n.deleteJournalEntryTooltip,
+          tooltip: l10n.deleteJournalEntryFor(
+            title == null || title.isEmpty ? l10n.untitledEntry : title,
+            entry.id.substring(entry.id.length > 8 ? entry.id.length - 8 : 0),
+          ),
           onPressed: () => confirmDelete(
             context,
             title: l10n.deleteJournalEntryTitle,
