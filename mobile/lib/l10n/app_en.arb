@@ -1435,6 +1435,8 @@
   "valueCount": "{count, plural, =1{1 value} other{{count} values}}",
   "@valueCount": { "placeholders": { "count": { "type": "int" } } },
   "customFieldActionsTooltip": "Custom field actions",
+  "customFieldActionsFor": "Custom field actions for {name} ({id})",
+  "@customFieldActionsFor": { "placeholders": { "name": { "type": "String" }, "id": { "type": "String" } } },
   "deleteCustomFieldTitle": "Delete custom field?",
   "deleteCustomFieldBody": "This removes “{name}” and {count, plural, =1{1 saved value} other{{count} saved values}} from this device.",
   "@deleteCustomFieldBody": {

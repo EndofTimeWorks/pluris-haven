@@ -3791,6 +3791,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customFieldActionsTooltip => 'Custom field actions';
 
   @override
+  String customFieldActionsFor(String name, String id) {
+    return 'Custom field actions for $name ($id)';
+  }
+
+  @override
   String get deleteCustomFieldTitle => 'Delete custom field?';
 
   @override
