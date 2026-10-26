@@ -5182,6 +5182,28 @@ void main() {
     expect(confirmationField.controller!.text, isEmpty);
     expect(passphraseField.obscureText, isFalse);
     expect(find.textContaining('192 bits of randomness'), findsOneWidget);
+    final priorClipboard = copiedArchive;
+    await tester.tap(
+      find.byKey(const ValueKey('copy-archive-recovery-code-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Clipboard history and other apps may keep this code',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(copiedArchive, priorClipboard);
+    await tester.tap(
+      find.byKey(const ValueKey('copy-archive-recovery-code-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Copy recovery code'));
+    await tester.pumpAndSettle();
+    expect(copiedArchive, passphraseField.controller!.text);
+    expect(find.textContaining('Recovery code copied.'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('encrypted-export-confirm-field')),
       'not-the-generated-code',

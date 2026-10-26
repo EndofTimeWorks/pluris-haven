@@ -2471,6 +2471,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.';
 
   @override
+  String get copyRecoveryCodeButton => 'Copy recovery code';
+
+  @override
+  String get copyRecoveryCodeTitle => 'Copy recovery code?';
+
+  @override
+  String get copyRecoveryCodeWarning =>
+      'Clipboard history and other apps may keep this code. Anyone with the code and archive can read your data.';
+
+  @override
+  String get recoveryCodeCopied =>
+      'Recovery code copied. Clear it from your clipboard when finished.';
+
+  @override
+  String get recoveryCodeCopyFailed =>
+      'Could not copy the recovery code. You can still write it down.';
+
+  @override
   String get showRecoveryCodeTooltip => 'Show recovery code';
 
   @override
