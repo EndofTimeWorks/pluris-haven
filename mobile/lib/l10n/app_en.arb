@@ -1647,6 +1647,13 @@
   "analyticsTitle": "Analytics",
   "analyticsDescription": "Fronting patterns from local history.",
   "frontTimelineTitle": "Front timeline",
+  "frontTimelineRange": "From {start} to {end}",
+  "@frontTimelineRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
   "noAnalyticsTitle": "No analytics yet",
   "noAnalyticsBody": "Make a front current or import front history to fill this in.",
   "noAnalyticsInWindowTitle": "No fronts in this period",
@@ -1658,6 +1665,7 @@
   "longestLabel": "Longest",
   "topFrontsTitle": "Top fronts",
   "hourOfDayTitle": "Hour of day",
+  "hourOfDayExplanation": "Time with anyone fronting, by local hour. Overlapping fronts count once here.",
   "unknownLabel": "Unknown",
   "analyticsSevenDays": "7d",
   "analyticsThirtyDays": "30d",

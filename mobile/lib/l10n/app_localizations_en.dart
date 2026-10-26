@@ -4438,6 +4438,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontTimelineTitle => 'Front timeline';
 
   @override
+  String frontTimelineRange(String start, String end) {
+    return 'From $start to $end';
+  }
+
+  @override
   String get noAnalyticsTitle => 'No analytics yet';
 
   @override
@@ -4472,6 +4477,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hourOfDayTitle => 'Hour of day';
+
+  @override
+  String get hourOfDayExplanation =>
+      'Time with anyone fronting, by local hour. Overlapping fronts count once here.';
 
   @override
   String get unknownLabel => 'Unknown';
