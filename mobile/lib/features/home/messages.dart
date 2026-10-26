@@ -231,7 +231,12 @@ class MessageTile extends StatelessWidget {
                 child: const Icon(Icons.edit_outlined, size: 18),
               ),
             PopupMenuButton<String>(
-              tooltip: l10n.messageActionsTooltip,
+              tooltip: l10n.messageActionsFor(
+                senderLabel,
+                message.id.substring(
+                  message.id.length > 8 ? message.id.length - 8 : 0,
+                ),
+              ),
               onSelected: (action) {
                 if (action == 'reply') {
                   showMessageSheet(context, repository, parentMessage: message);
@@ -640,7 +645,12 @@ class _ChatOrganisationSheet extends StatelessWidget {
                       isThreeLine:
                           channel.description?.trim().isNotEmpty == true,
                       trailing: IconButton(
-                        tooltip: l10n.deleteButton,
+                        tooltip: l10n.deleteChannelFor(
+                          channel.name,
+                          channel.id.substring(
+                            channel.id.length > 8 ? channel.id.length - 8 : 0,
+                          ),
+                        ),
                         icon: const Icon(Icons.delete_outline_rounded),
                         onPressed: () => confirmDelete(
                           context,
@@ -684,7 +694,12 @@ class _ChatOrganisationSheet extends StatelessWidget {
                           ? Text(category.description!)
                           : null,
                       trailing: IconButton(
-                        tooltip: l10n.deleteButton,
+                        tooltip: l10n.deleteCategoryFor(
+                          category.name,
+                          category.id.substring(
+                            category.id.length > 8 ? category.id.length - 8 : 0,
+                          ),
+                        ),
                         icon: const Icon(Icons.delete_outline_rounded),
                         onPressed: () => confirmDelete(
                           context,

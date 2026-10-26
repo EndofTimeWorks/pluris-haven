@@ -3095,6 +3095,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionsTooltip => 'Message actions';
 
   @override
+  String messageActionsFor(String sender, String id) {
+    return 'Message actions for $sender ($id)';
+  }
+
+  @override
   String get messageEditedLabel => 'Edited';
 
   @override
@@ -3146,6 +3151,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoriesTitle => 'Categories';
+
+  @override
+  String deleteChannelFor(String name, String id) {
+    return 'Delete channel $name ($id)';
+  }
+
+  @override
+  String deleteCategoryFor(String name, String id) {
+    return 'Delete category $name ($id)';
+  }
 
   @override
   String get addChannelButton => 'Add channel';

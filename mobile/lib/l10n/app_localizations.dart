@@ -5346,6 +5346,12 @@ abstract class AppLocalizations {
   /// **'Message actions'**
   String get messageActionsTooltip;
 
+  /// No description provided for @messageActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions for {sender} ({id})'**
+  String messageActionsFor(String sender, String id);
+
   /// No description provided for @messageEditedLabel.
   ///
   /// In en, this message translates to:
@@ -5440,6 +5446,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Categories'**
   String get categoriesTitle;
+
+  /// No description provided for @deleteChannelFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete channel {name} ({id})'**
+  String deleteChannelFor(String name, String id);
+
+  /// No description provided for @deleteCategoryFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category {name} ({id})'**
+  String deleteCategoryFor(String name, String id);
 
   /// No description provided for @addChannelButton.
   ///
