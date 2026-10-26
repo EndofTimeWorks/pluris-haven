@@ -3383,13 +3383,18 @@ void main() {
     );
     await tester.enterText(
       find.byKey(const ValueKey('journal-body-field')),
-      'Lots happened after switching.',
+      '**Lots happened** after switching.',
     );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Long day'), findsOneWidget);
-    expect(repository._journals.single.body, 'Lots happened after switching.');
+    expect(
+      repository._journals.single.body,
+      '**Lots happened** after switching.',
+    );
+    expect(find.text('Lots happened after switching.'), findsOneWidget);
+    expect(find.textContaining('**Lots happened**'), findsNothing);
 
     await tester.enterText(find.byType(TextField).first, 'switching');
     await tester.pumpAndSettle();

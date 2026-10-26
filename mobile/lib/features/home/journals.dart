@@ -145,7 +145,7 @@ class JournalEntryTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final title = entry.title?.trim();
-    final body = entry.body.trim();
+    final body = _plainTextPreview(entry.body);
 
     return Material(
       color: Colors.transparent,

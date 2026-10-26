@@ -183,7 +183,7 @@ class NoteListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final body = _notePlainTextPreview(note.body);
+    final body = _plainTextPreview(note.body);
     final ownerLabel = _noteMemberLabel(note, memberName, l10n);
 
     return Material(
@@ -220,7 +220,7 @@ class NoteListTile extends StatelessWidget {
   }
 }
 
-String _notePlainTextPreview(String body) {
+String _plainTextPreview(String body) {
   if (body.trim().isEmpty) return '';
   final text = StringBuffer();
 
