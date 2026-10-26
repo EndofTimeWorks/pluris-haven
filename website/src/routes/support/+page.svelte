@@ -9,8 +9,10 @@
     <p class="eyebrow">Support</p>
     <h1>Support</h1>
     <p>
-      Pre-alpha feedback is most useful when it includes the version, device, source file type, and
-      what screen failed. Funding links are optional and should never block core data access.
+      In the app, open <strong>User Report</strong> to see the installed version and copy a report. For
+      pre-alpha feedback, include the version, device, what screen failed, and the source file type if
+      an import was involved. Do not attach a private archive or recovery code to a public report. Funding
+      links are optional and should never block core data access.
     </p>
   </section>
 
@@ -19,7 +21,10 @@
     <div class="cards">
       <a class="card" href="https://github.com/EndofTimeWorks/pluris-haven/issues">
         <strong>GitHub Issues</strong>
-        <span>Best for import failures, crashes, broken buttons, and accessibility bugs.</span>
+        <span
+          >Report import failures, crashes, broken buttons, and accessibility bugs. A GitHub account
+          is required to file an issue.</span
+        >
       </a>
       <a class="card" href="https://github.com/EndofTimeWorks/pluris-haven/releases">
         <strong>Releases</strong>

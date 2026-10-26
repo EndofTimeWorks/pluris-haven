@@ -131,8 +131,8 @@
 
   :global(body) {
     margin: 0;
-    background: #151820;
-    color: #f4f0ff;
+    background: var(--page-bg);
+    color: var(--text);
     font-family:
       ui-sans-serif,
       system-ui,
@@ -144,7 +144,7 @@
   }
 
   :global(a) {
-    color: #d5ccff;
+    color: var(--link);
     text-underline-offset: 0.18em;
   }
 
@@ -165,11 +165,11 @@
   }
 
   .site-head {
-    border-bottom: 1px solid #343846;
+    border-bottom: 1px solid var(--border);
   }
 
   .brand {
-    color: #f4f0ff;
+    color: var(--text);
     font-size: 1.05rem;
     font-weight: 750;
     text-decoration: none;
@@ -182,7 +182,7 @@
   }
 
   nav a {
-    color: #c9c4d4;
+    color: var(--body-text);
   }
 
   main {
@@ -195,7 +195,7 @@
   }
 
   section + section {
-    border-top: 1px solid #343846;
+    border-top: 1px solid var(--border);
   }
 
   .intro {
@@ -204,7 +204,7 @@
 
   .release-state,
   .caution {
-    color: #aaa4b5;
+    color: var(--muted-text);
     font-size: 0.92rem;
   }
 
@@ -230,7 +230,7 @@
   p,
   li,
   dd {
-    color: #c9c4d4;
+    color: var(--body-text);
     line-height: 1.65;
   }
 
@@ -251,27 +251,28 @@
     min-height: 48px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #565b6d;
+    border: 1px solid var(--button-border);
     border-radius: 6px;
     padding: 0 16px;
-    color: #f4f0ff;
+    color: var(--text);
     font-weight: 700;
     text-decoration: none;
   }
 
   .button.primary {
-    border-color: #7863ff;
-    background: #5940db;
+    border-color: var(--primary-border);
+    background: var(--primary-bg);
+    color: var(--primary-text);
   }
 
   .button:hover,
   .button:focus-visible {
-    border-color: #a99aff;
+    border-color: var(--button-hover-border);
   }
 
   .button span {
     margin-left: 8px;
-    color: #ebe7ff;
+    color: var(--button-subtext);
     font-size: 0.86rem;
   }
 
@@ -283,17 +284,17 @@
     display: grid;
     grid-template-columns: minmax(100px, 0.35fr) 1fr;
     gap: 20px;
-    border-bottom: 1px solid #343846;
+    border-bottom: 1px solid var(--border);
     padding-block: 10px;
   }
 
   .status-list dt {
-    color: #aaa4b5;
+    color: var(--muted-text);
   }
 
   .status-list dd {
     margin: 0;
-    color: #f4f0ff;
+    color: var(--text);
   }
 
   .two-column {
@@ -313,8 +314,8 @@
   }
 
   footer {
-    border-top: 1px solid #343846;
-    color: #aaa4b5;
+    border-top: 1px solid var(--border);
+    color: var(--muted-text);
     font-size: 0.9rem;
   }
 

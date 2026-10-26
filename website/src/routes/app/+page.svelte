@@ -43,7 +43,7 @@
     <h2>Expected shape</h2>
     <p>
       The first web build should install as a PWA, import and export without an account, and keep
-      data local by default. Optional sync comes later, after the offline archive format is ready.
+      data local by default. Optional sync is deferred; there is no public sync service today.
     </p>
   </section>
 
