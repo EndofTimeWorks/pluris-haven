@@ -966,7 +966,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthlySchedule => 'Monthly';
 
   @override
-  String get afterFrontSchedule => 'After member fronts';
+  String get afterFrontSchedule => 'After a front starts';
 
   @override
   String get titleFieldLabel => 'Title';
@@ -1015,15 +1015,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose one member, or trigger for any newly started front.';
 
   @override
-  String get afterFrontDelayLabel => 'Delay after fronting (seconds)';
+  String get afterFrontDelayLabel => 'Delay after fronting';
 
   @override
   String get afterFrontDelayHelper =>
-      'Deliver this reminder after this many seconds. Use 0 for immediately.';
+      'Use 0 for immediately, 90m, or 1h 30m. A number alone means seconds.';
 
   @override
   String get afterFrontDelayError =>
-      'Enter zero or a positive whole number of seconds.';
+      'Enter 0 or a positive delay, such as 90m or 1h 30m.';
 
   @override
   String get anyFrontStartsOption => 'Any front starts';
@@ -1056,7 +1056,48 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get afterSelectedFrontStarts => 'After a selected front starts';
+  String get afterSelectedFrontStarts => 'When any front starts';
+
+  @override
+  String get anyFrontStartsTrigger => 'any front starts';
+
+  @override
+  String memberFrontsTrigger(String detail) {
+    return '$detail fronts';
+  }
+
+  @override
+  String reminderDelayHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reminderDelayMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reminderDelaySeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
 
   @override
   String afterFrontLabel(String detail) {
@@ -1064,8 +1105,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String afterFrontDelayedLabel(int delay, String detail) {
-    return '$delay seconds after $detail fronts';
+  String afterFrontDelayedLabel(String delay, String detail) {
+    return '$delay after $detail';
   }
 
   @override

@@ -355,7 +355,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         _monthDayFromScheduleText(reminder.scheduleText) ??
         1;
     _triggerMemberId = reminder.triggerMemberId;
-    _afterFrontDelayController.text = '${reminder.delaySeconds ?? 0}';
+    _afterFrontDelayController.text = _editableAfterFrontDelay(
+      reminder.delaySeconds ?? 0,
+    );
     _initialSignature = _signature();
   }
 
@@ -529,7 +531,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               TextField(
                 key: const ValueKey('reminder-after-front-delay-field'),
                 controller: _afterFrontDelayController,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 onChanged: (_) {
                   if (_invalidDelay) setState(() => _invalidDelay = false);
                 },
@@ -770,12 +772,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       ReminderScheduleKind.afterFront =>
         _afterFrontDelaySeconds > 0
             ? l10n.afterFrontDelayedLabel(
-                _afterFrontDelaySeconds,
-                detail.isEmpty
-                    ? (_triggerMemberId == null
-                          ? l10n.anyFrontStartsOption
-                          : l10n.unknownMemberLabel)
-                    : detail,
+                _readableAfterFrontDelay(l10n, _afterFrontDelaySeconds),
+                _triggerMemberId == null
+                    ? l10n.anyFrontStartsTrigger
+                    : l10n.memberFrontsTrigger(
+                        detail.isEmpty ? l10n.unknownMemberLabel : detail,
+                      ),
               )
             : detail.isEmpty
             ? _triggerMemberId == null
@@ -802,14 +804,61 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   int get _afterFrontDelaySeconds {
-    final value = int.tryParse(_afterFrontDelayController.text.trim());
-    return value == null || value < 0 ? 0 : value;
+    return _parseAfterFrontDelay(_afterFrontDelayController.text) ?? 0;
   }
 
   bool get _hasValidAfterFrontDelay {
-    final value = int.tryParse(_afterFrontDelayController.text.trim());
-    return value != null && value >= 0;
+    return _parseAfterFrontDelay(_afterFrontDelayController.text) != null;
   }
+}
+
+int? _parseAfterFrontDelay(String text) {
+  final input = text.trim().toLowerCase();
+  if (input.isEmpty) return null;
+  final seconds = int.tryParse(input);
+  if (seconds != null) return seconds >= 0 ? seconds : null;
+
+  final units = RegExp(r'(\d+)\s*([hms])');
+  var index = 0;
+  var total = 0;
+  var found = false;
+  for (final match in units.allMatches(input)) {
+    if (input.substring(index, match.start).trim().isNotEmpty) return null;
+    final amount = int.tryParse(match.group(1)!);
+    if (amount == null) return null;
+    final multiplier = switch (match.group(2)!) {
+      'h' => 3600,
+      'm' => 60,
+      _ => 1,
+    };
+    total += amount * multiplier;
+    index = match.end;
+    found = true;
+  }
+  return found && input.substring(index).trim().isEmpty ? total : null;
+}
+
+String _editableAfterFrontDelay(int seconds) {
+  if (seconds == 0) return '0';
+  final hours = seconds ~/ 3600;
+  final minutes = (seconds % 3600) ~/ 60;
+  final remainder = seconds % 60;
+  return [
+    if (hours > 0) '${hours}h',
+    if (minutes > 0) '${minutes}m',
+    if (remainder > 0) '${remainder}s',
+  ].join(' ');
+}
+
+String _readableAfterFrontDelay(AppLocalizations l10n, int seconds) {
+  final hours = seconds ~/ 3600;
+  final minutes = (seconds % 3600) ~/ 60;
+  final remainder = seconds % 60;
+  return [
+    if (hours > 0) l10n.reminderDelayHours(hours),
+    if (minutes > 0) l10n.reminderDelayMinutes(minutes),
+    if (remainder > 0) l10n.reminderDelaySeconds(remainder),
+  ].join(' ');
 }
 
 String _reminderScheduleLabel(

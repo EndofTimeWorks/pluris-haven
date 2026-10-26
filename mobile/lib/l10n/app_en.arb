@@ -382,7 +382,7 @@
   "dailySchedule": "Daily",
   "weeklySchedule": "Weekly",
   "monthlySchedule": "Monthly",
-  "afterFrontSchedule": "After member fronts",
+  "afterFrontSchedule": "After a front starts",
   "titleFieldLabel": "Title",
   "scheduleFieldLabel": "Schedule",
   "dayFieldLabel": "Day",
@@ -398,9 +398,9 @@
   "memberOrFrontHelper": "Queued until this member or label fronts",
   "afterFrontTargetLabel": "Who should trigger it?",
   "afterFrontTargetHelper": "Choose one member, or trigger for any newly started front.",
-  "afterFrontDelayLabel": "Delay after fronting (seconds)",
-  "afterFrontDelayHelper": "Deliver this reminder after this many seconds. Use 0 for immediately.",
-  "afterFrontDelayError": "Enter zero or a positive whole number of seconds.",
+  "afterFrontDelayLabel": "Delay after fronting",
+  "afterFrontDelayHelper": "Use 0 for immediately, 90m, or 1h 30m. A number alone means seconds.",
+  "afterFrontDelayError": "Enter 0 or a positive delay, such as 90m or 1h 30m.",
   "anyFrontStartsOption": "Any front starts",
   "timeFieldLabel": "Time",
   "chooseReminderTime": "Choose reminder time",
@@ -424,15 +424,32 @@
       "time": { "type": "String" }
     }
   },
-  "afterSelectedFrontStarts": "After a selected front starts",
+  "afterSelectedFrontStarts": "When any front starts",
+  "anyFrontStartsTrigger": "any front starts",
+  "memberFrontsTrigger": "{detail} fronts",
+  "@memberFrontsTrigger": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "reminderDelayHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@reminderDelayHours": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "reminderDelayMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@reminderDelayMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "reminderDelaySeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@reminderDelaySeconds": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "afterFrontLabel": "After {detail} fronts",
   "@afterFrontLabel": {
     "placeholders": { "detail": { "type": "String" } }
   },
-  "afterFrontDelayedLabel": "{delay} seconds after {detail} fronts",
+  "afterFrontDelayedLabel": "{delay} after {detail}",
   "@afterFrontDelayedLabel": {
     "placeholders": {
-      "delay": { "type": "int" },
+      "delay": { "type": "String" },
       "detail": { "type": "String" }
     }
   },

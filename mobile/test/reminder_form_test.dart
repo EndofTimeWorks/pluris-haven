@@ -115,7 +115,7 @@ void main() {
       find.byKey(const ValueKey('reminder-schedule-kind-field')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('After member fronts').last);
+    await tester.tap(find.text('After a front starts').last);
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reminder-after-front-delay-field')),
@@ -126,7 +126,7 @@ void main() {
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(
-      find.text('Enter zero or a positive whole number of seconds.'),
+      find.text('Enter 0 or a positive delay, such as 90m or 1h 30m.'),
       findsOneWidget,
     );
     expect(await repository.watchReminders().first, isEmpty);

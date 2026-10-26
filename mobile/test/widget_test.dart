@@ -3988,7 +3988,7 @@ void main() {
       find.byKey(const ValueKey('reminder-schedule-kind-field')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('After member fronts').last);
+    await tester.tap(find.text('After a front starts').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reminder-front-detail-field')));
     await tester.pumpAndSettle();
@@ -3996,7 +3996,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reminder-after-front-delay-field')),
-      '90',
+      '1h 30m',
     );
     await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
     await tester.pumpAndSettle();
@@ -4006,8 +4006,15 @@ void main() {
     expect(reminder.triggerType, 'event');
     expect(reminder.triggerMemberId, 'fake-member-1');
     expect(reminder.triggerEvent, 'front_started');
-    expect(reminder.delaySeconds, 90);
-    expect(find.text('90 seconds after Iris fronts'), findsOneWidget);
+    expect(reminder.delaySeconds, 5400);
+    expect(find.text('1 hour 30 minutes after Iris fronts'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.edit_outlined).last);
+    await tester.pumpAndSettle();
+    final delayField = tester.widget<TextField>(
+      find.byKey(const ValueKey('reminder-after-front-delay-field')),
+    );
+    expect(delayField.controller?.text, '1h 30m');
   });
 
   testWidgets(
