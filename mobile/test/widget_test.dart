@@ -854,6 +854,10 @@ void main() {
       find.byKey(const ValueKey('custom-front-label-field')),
       'blurry co-con',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('make-custom-front-current-button')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('make-custom-front-current-button')),
     );
@@ -875,6 +879,8 @@ void main() {
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('End all current fronts').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('End all current fronts'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
@@ -1214,6 +1220,10 @@ void main() {
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
     expect(find.byTooltip(RegExp(r'^Delete front Asleep \(')), findsWidgets);
+    await tester.ensureVisible(
+      find.byTooltip(RegExp(r'^Delete front Asleep \(')).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip(RegExp(r'^Delete front Asleep \(')).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
