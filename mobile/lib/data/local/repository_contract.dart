@@ -349,7 +349,11 @@ abstract interface class HavenRepository {
 
   Future<void> savePoll(PollDraft draft);
 
-  Future<void> togglePollOption(String pollId, String optionId);
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  });
 
   Future<void> closePoll(String pollId);
 

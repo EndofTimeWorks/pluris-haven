@@ -13,6 +13,7 @@ import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/local_api/local_api_controller.dart';
 import 'package:pluris_haven/features/app_lock_gate.dart';
@@ -281,6 +282,42 @@ void main() {
     expect(databases, hasLength(2));
     expect(databases.last.closed, isFalse);
     await databases.last.close();
+  });
+
+  testWidgets('explains a stalled keyring without starting another key load', (
+    tester,
+  ) async {
+    final pendingKey = Completer<HavenCrypto>();
+    final database = _TrackingDatabase();
+    var keyLoads = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () {
+            keyLoads++;
+            return pendingKey.future;
+          },
+          keyLoadWarningDelay: const Duration(seconds: 5),
+          runMigrations: (_) async {},
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(WaitingForKeyApp), findsOneWidget);
+    expect(find.text('Waiting for encryption key'), findsOneWidget);
+    expect(
+      find.textContaining('restart the app after unlocking'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsNothing);
+    expect(keyLoads, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('retires a saved Local API enable choice during bootstrap', (
@@ -4306,6 +4343,71 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('cofronters vote separately through the poll screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final members = await repository.watchMembers().first;
+    await repository.setFrontMembers([for (final member in members) member.id]);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Polls');
+    await tester.tap(find.text('Create poll'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-question-field')),
+      'Dinner?',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-0')),
+      'Soup',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-1')),
+      'Rice',
+    );
+    await tester.tap(find.byKey(const ValueKey('poll-vote-mode-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Votes by member').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('save-poll-button')));
+    await tester.tap(find.byKey(const ValueKey('save-poll-button')));
+    await tester.pumpAndSettle();
+
+    final poll = (await repository.watchPolls().first).single;
+    await tester.tap(find.byKey(ValueKey('poll-voter-${poll.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kai').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Soup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('poll-voter-${poll.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('River').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rice'));
+    await tester.pumpAndSettle();
+
+    final voted = (await repository.watchPolls().first).single;
+    expect(voted.voteMode, PollVoteMode.perMember);
+    expect(voted.options.first.memberIds, {
+      members.singleWhere((m) => m.displayName == 'Kai').id,
+    });
+    expect(voted.options.last.memberIds, {
+      members.singleWhere((m) => m.displayName == 'River').id,
+    });
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   testWidgets('updates customization from the app options page', (
     tester,
   ) async {
@@ -4812,8 +4914,10 @@ void main() {
     await tester.tap(find.text('Preview pasted JSON'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
     expect(
-      find.text('Your local system profile will stay unchanged.'),
-      findsOneWidget,
+      find.textContaining(
+        'Update existing matches will replace your local profile',
+      ),
+      findsWidgets,
     );
     final importButton = find.byKey(const ValueKey('import-archive-button'));
     await tester.scrollUntilVisible(
@@ -4832,8 +4936,44 @@ void main() {
       find.textContaining(
         'Update existing matches will replace your local profile',
       ),
-      findsOneWidget,
+      findsWidgets,
     );
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._backgroundJobs, isEmpty);
+  });
+
+  testWidgets('identical archive profile does not raise a conflict', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Local system"}}',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.textContaining('Import complete'));
+    expect(find.text('Conflicts found'), findsNothing);
+    expect(repository._backgroundJobs, hasLength(1));
   });
 
   testWidgets('opens failed import job details and copies full error', (
@@ -6887,6 +7027,7 @@ class FakeHavenRepository implements HavenRepository {
         question: question,
         description: _nullIfBlank(draft.description),
         kind: draft.kind,
+        voteMode: draft.voteMode,
         closed: false,
         updatedAt: DateTime(2026),
         options: [
@@ -6905,7 +7046,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> togglePollOption(String pollId, String optionId) async {
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  }) async {
     _polls = [
       for (final poll in _polls)
         if (poll.id == pollId && !poll.closed)
@@ -6914,6 +7059,7 @@ class FakeHavenRepository implements HavenRepository {
             question: poll.question,
             description: poll.description,
             kind: poll.kind,
+            voteMode: poll.voteMode,
             closed: poll.closed,
             updatedAt: DateTime(2026),
             options: [
@@ -6927,6 +7073,20 @@ class FakeHavenRepository implements HavenRepository {
                       : option.id == optionId
                       ? !option.selected
                       : option.selected,
+                  memberIds:
+                      poll.voteMode == PollVoteMode.perMember &&
+                          memberId != null
+                      ? {
+                          for (final id in option.memberIds)
+                            if (id != memberId ||
+                                (poll.kind == PollKind.multipleChoice &&
+                                    option.id != optionId))
+                              id,
+                          if (option.id == optionId &&
+                              !option.memberIds.contains(memberId))
+                            memberId,
+                        }
+                      : option.memberIds,
                 ),
             ],
           )
@@ -6946,6 +7106,7 @@ class FakeHavenRepository implements HavenRepository {
             question: poll.question,
             description: poll.description,
             kind: poll.kind,
+            voteMode: poll.voteMode,
             closed: true,
             options: poll.options,
             updatedAt: DateTime(2026),

@@ -419,6 +419,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
       'description',
     ),
     'kind': poll.kind,
+    'vote_mode': poll.voteMode,
     'restrict_voting_to_fronters': poll.restrictVotingToFronters,
     'closes_at': poll.closesAt?.toUtc().toIso8601String(),
     'retention_days': poll.retentionDays,
@@ -447,11 +448,19 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
     'created_at': vote.createdAt.toUtc().toIso8601String(),
   };
 
+  Map<String, Object?> _pollMemberVoteToJson(PollMemberVote vote) => {
+    'poll_id': vote.pollId,
+    'option_id': vote.optionId,
+    'member_id': vote.memberId,
+    'created_at': vote.createdAt.toUtc().toIso8601String(),
+  };
+
   Map<String, Object?> _pollVoteEventToJson(PollVoteEvent event) => {
     'id': event.id,
     'poll_id': event.pollId,
     'option_id': event.optionId,
     'action': event.action,
+    'member_id': event.memberId,
     'created_at': event.createdAt.toUtc().toIso8601String(),
   };
 

@@ -246,6 +246,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final pollOptions = await database.select(database.pollOptions).get();
     final pollOptionIds = pollOptions.map((option) => option.id).toSet();
     final pollVotes = await database.select(database.pollVotes).get();
+    final pollMemberVotes = await database
+        .select(database.pollMemberVotes)
+        .get();
     final pollVoteEvents = await database.select(database.pollVoteEvents).get();
     final fronts = await (database.select(
       database.frontSessions,
@@ -369,6 +372,12 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       'poll_votes': [
         for (final vote in pollVotes)
           if (pollIds.contains(vote.pollId)) _pollVoteToJson(vote),
+      ],
+      'poll_member_votes': [
+        for (final vote in pollMemberVotes)
+          if (pollIds.contains(vote.pollId) &&
+              memberIds.contains(vote.memberId))
+            _pollMemberVoteToJson(vote),
       ],
       'poll_vote_events': [
         for (final event in pollVoteEvents)
@@ -573,6 +582,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final polls = await database.select(database.polls).get();
     final pollOptions = await database.select(database.pollOptions).get();
     final pollVotes = await database.select(database.pollVotes).get();
+    final pollMemberVotes = await database
+        .select(database.pollMemberVotes)
+        .get();
     final pollVoteEvents = await database.select(database.pollVoteEvents).get();
     final fronts = await database.select(database.frontSessions).get();
     final frontMembers = await database
@@ -621,6 +633,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       'polls': polls.length,
       'poll_options': pollOptions.length,
       'poll_votes': pollVotes.length,
+      'poll_member_votes': pollMemberVotes.length,
       'poll_vote_events': pollVoteEvents.length,
       'fronts': fronts.length,
       'front_members': frontMembers.length,
@@ -864,6 +877,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     final polls = _jsonObjectList(decoded['polls']);
     final pollOptions = _jsonObjectList(decoded['poll_options']);
     final pollVotes = _jsonObjectList(decoded['poll_votes']);
+    final pollMemberVotes = _jsonObjectList(decoded['poll_member_votes']);
     final pollVoteEvents = _jsonObjectList(decoded['poll_vote_events']);
     final fronts = _jsonObjectList(decoded['fronts']);
     final frontMembers = _jsonObjectList(decoded['front_members']);
@@ -896,6 +910,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       polls: polls,
       pollOptions: pollOptions,
       pollVotes: pollVotes,
+      pollMemberVotes: pollMemberVotes,
       pollVoteEvents: pollVoteEvents,
       fronts: fronts,
       frontMembers: frontMembers,
@@ -926,6 +941,10 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       namedFrontMembers.removeWhere(belongsToPurgedMember);
       privacyBucketMembers.removeWhere(belongsToPurgedMember);
       customFieldValues.removeWhere(belongsToPurgedMember);
+      pollMemberVotes.removeWhere(belongsToPurgedMember);
+      for (final event in pollVoteEvents) {
+        if (belongsToPurgedMember(event)) event['member_id'] = null;
+      }
       customFieldMigrationProvenance.removeWhere(
         (row) => removedValueIds.contains(_stringValue(row['value_id'])),
       );
@@ -945,6 +964,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       'tags=${tags.length} memberTags=${memberTags.length} journals=${journals.length} '
       'contentRevisions=${contentRevisions.length} frontAuditEvents=${frontAuditEvents.length} '
       'pollVoteEvents=${pollVoteEvents.length} '
+      'pollMemberVotes=${pollMemberVotes.length} '
       'customFields=${customFields.length} customFieldValues=${customFieldValues.length} '
       'customFieldMigrationProvenance=${customFieldMigrationProvenance.length} '
       'polls=${polls.length} pollOptions=${pollOptions.length} pollVotes=${pollVotes.length} '
@@ -1090,6 +1110,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         for (final vote in pollVotes) {
           await _importPollVote(vote);
         }
+        for (final vote in pollMemberVotes) {
+          await _importPollMemberVote(vote);
+        }
         for (final event in pollVoteEvents) {
           await _importPollVoteEvent(event, strategy, now);
         }
@@ -1167,6 +1190,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
                       'polls': polls.length,
                       'poll_options': pollOptions.length,
                       'poll_votes': pollVotes.length,
+                      'poll_member_votes': pollMemberVotes.length,
                       'poll_vote_events': pollVoteEvents.length,
                       'fronts': fronts.length,
                       'front_members': frontMembers.length,
@@ -1221,6 +1245,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
     required List<Map<String, Object?>> polls,
     required List<Map<String, Object?>> pollOptions,
     required List<Map<String, Object?>> pollVotes,
+    required List<Map<String, Object?>> pollMemberVotes,
     required List<Map<String, Object?>> pollVoteEvents,
     required List<Map<String, Object?>> fronts,
     required List<Map<String, Object?>> frontMembers,
@@ -1429,6 +1454,21 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       return !keep;
     });
 
+    pollMemberVotes.removeWhere((vote) {
+      final pollId = _stringValue(vote['poll_id']);
+      final optionId = _stringValue(vote['option_id']);
+      final memberId = _stringValue(vote['member_id']);
+      final keep =
+          pollId != null &&
+          optionId != null &&
+          memberId != null &&
+          pollIds.contains(pollId) &&
+          pollOptionIds.contains(optionId) &&
+          memberIds.contains(memberId);
+      if (!keep) cleanupCount++;
+      return !keep;
+    });
+
     pollVoteEvents.removeWhere((event) {
       final pollId = _stringValue(event['poll_id']);
       final optionId = _stringValue(event['option_id']);
@@ -1442,6 +1482,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       }
       return !keep;
     });
+    for (final event in pollVoteEvents) {
+      final memberId = _stringValue(event['member_id']);
+      if (memberId != null && !memberIds.contains(memberId)) {
+        event['member_id'] = null;
+        cleanupCount++;
+      }
+    }
 
     frontMembers.removeWhere((link) {
       final sessionId = _stringValue(link['session_id']);
@@ -2389,6 +2436,9 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       kind: Value(
         PollKind.fromStorage(_stringValue(poll['kind'])).storageValue,
       ),
+      voteMode: Value(
+        PollVoteMode.fromStorage(_stringValue(poll['vote_mode'])).storageValue,
+      ),
       restrictVotingToFronters: Value(
         poll['restrict_voting_to_fronters'] == true,
       ),
@@ -2431,7 +2481,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
               ..where((existing) => existing.pollId.equals(pollId))
               ..limit(1))
             .getSingleOrNull();
-    return vote != null;
+    if (vote != null) return true;
+    final memberVote =
+        await (database.select(database.pollMemberVotes)
+              ..where((existing) => existing.pollId.equals(pollId))
+              ..limit(1))
+            .getSingleOrNull();
+    return memberVote != null;
   }
 
   Future<void> _importPollVote(Map<String, Object?> vote) {
@@ -2441,6 +2497,20 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
           PollVotesCompanion.insert(
             pollId: _requiredString(vote, 'poll_id'),
             optionId: _requiredString(vote, 'option_id'),
+            createdAt: _dateValue(vote['created_at']) ?? DateTime.now().toUtc(),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
+  Future<void> _importPollMemberVote(Map<String, Object?> vote) {
+    return database
+        .into(database.pollMemberVotes)
+        .insert(
+          PollMemberVotesCompanion.insert(
+            pollId: _requiredString(vote, 'poll_id'),
+            optionId: _requiredString(vote, 'option_id'),
+            memberId: _requiredString(vote, 'member_id'),
             createdAt: _dateValue(vote['created_at']) ?? DateTime.now().toUtc(),
           ),
           mode: InsertMode.insertOrIgnore,
@@ -2458,6 +2528,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       pollId: _requiredString(event, 'poll_id'),
       optionId: _requiredString(event, 'option_id'),
       action: _requiredString(event, 'action'),
+      memberId: Value(_stringValue(event['member_id'])),
       createdAt: _dateValue(event['created_at']) ?? now,
     );
     return _insertArchiveRow(database.pollVoteEvents, companion, strategy);

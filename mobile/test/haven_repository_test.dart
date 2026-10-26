@@ -18,6 +18,63 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('member poll votes stay attributed through local recovery', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final members = await repository.watchMembers().first;
+    final kai = members.singleWhere((member) => member.displayName == 'Kai');
+    final river = members.singleWhere(
+      (member) => member.displayName == 'River',
+    );
+    await repository.setFrontMembers([kai.id, river.id]);
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.singleChoice,
+        voteMode: PollVoteMode.perMember,
+        options: ['Soup', 'Rice'],
+        restrictVotingToFronters: true,
+      ),
+    );
+    var poll = (await repository.watchPolls().first).single;
+    await repository.togglePollOption(
+      poll.id,
+      poll.options.first.id,
+      memberId: kai.id,
+    );
+    await repository.togglePollOption(
+      poll.id,
+      poll.options.last.id,
+      memberId: river.id,
+    );
+    poll = (await repository.watchPolls().first).single;
+    expect(poll.selectedCount, 2);
+    expect(poll.options.first.memberIds, {kai.id});
+    expect(poll.options.last.memberIds, {river.id});
+    expect(
+      (await repository.watchPollVoteEvents(poll.id).first).map(
+        (event) => event.memberId,
+      ),
+      containsAll([kai.id, river.id]),
+    );
+
+    final archive = await repository.buildLocalArchiveJson();
+    await database.close();
+    final freshDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(freshDatabase.close);
+    final fresh = testRepository(freshDatabase);
+    await fresh.ensureLocalSystem();
+    await fresh.importLocalArchiveJson(archive);
+    final restored = (await fresh.watchPolls().first).single;
+    expect(restored.voteMode, PollVoteMode.perMember);
+    expect(restored.options.first.memberIds, {kai.id});
+    expect(restored.options.last.memberIds, {river.id});
+  });
+
   test('edited reminder time survives export and fresh restore', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -3115,6 +3172,7 @@ END;
       'polls': 'polls',
       'poll_options': 'poll_options',
       'poll_votes': 'poll_votes',
+      'poll_member_votes': 'poll_member_votes',
       'front_sessions': 'fronts',
       'front_session_members': 'front_members',
       'import_records': 'import_records',

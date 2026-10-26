@@ -955,8 +955,22 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
-    final systemProfileConflict =
-        _source == ImportSource.plurisHavenArchive && decoded['system'] is Map;
+    var systemProfileConflict = false;
+    final archivedSystem = decoded['system'];
+    if (_source == ImportSource.plurisHavenArchive &&
+        archivedSystem is Map<String, Object?>) {
+      final archivedName = _stringValue(archivedSystem['name'])?.trim();
+      if (archivedName != null && archivedName.isNotEmpty) {
+        final local = await widget.repository.watchHomeSnapshot().first;
+        systemProfileConflict =
+            archivedName != local.systemName ||
+            _stringValue(archivedSystem['color_hex']) != local.systemColorHex ||
+            _stringValue(archivedSystem['avatar_url']) !=
+                local.systemAvatarUrl ||
+            _stringValue(archivedSystem['description']) !=
+                local.systemDescription;
+      }
+    }
 
     final existingMembers = await widget.repository.watchMembers().first;
     final existingGroups = await widget.repository.watchGroups().first;
@@ -1104,6 +1118,7 @@ String _importCountLabel(AppLocalizations l10n, String key, int count) {
     'polls' => l10n.importCountPolls,
     'poll_options' => l10n.importCountPollOptions,
     'poll_votes' => l10n.importCountPollVotes,
+    'poll_member_votes' => l10n.importCountPollMemberVotes,
     'poll_vote_events' => l10n.importCountPollVoteEvents,
     'fronts' => l10n.importCountFronts,
     'front_members' => l10n.importCountFrontMembers,
@@ -1194,6 +1209,10 @@ class _ConflictPromptDialog extends StatelessWidget {
         ].join('\n\n'),
       ),
       actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancelButtonLabel),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context, ImportConflictStrategy.skip),
           child: Text(l10n.skipMatchesButton),
@@ -2020,8 +2039,11 @@ class ImportSetupCard extends StatelessWidget {
           if (preview?.canApply == true) ...[
             const SizedBox(height: 8),
             Text(
-              source == ImportSource.plurisHavenArchive &&
-                      strategy == ImportConflictStrategy.update
+              source != ImportSource.plurisHavenArchive
+                  ? l10n.importPreservesLocalProfile
+                  : strategy == ImportConflictStrategy.prompt
+                  ? l10n.systemProfileConflictBody
+                  : strategy == ImportConflictStrategy.update
                   ? l10n.nativeImportUpdatesProfile
                   : l10n.importPreservesLocalProfile,
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),

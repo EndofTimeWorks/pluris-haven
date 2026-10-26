@@ -2244,6 +2244,18 @@ abstract class AppLocalizations {
   /// **'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.'**
   String get encryptionKeyUnavailableBody;
 
+  /// No description provided for @waitingForEncryptionKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for encryption key'**
+  String get waitingForEncryptionKeyTitle;
+
+  /// No description provided for @waitingForEncryptionKeyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock your device keyring if needed. Pluris Haven will continue when the key becomes available. If it remains here, restart the app after unlocking. Keep the app\'s files: clearing storage may lose data.'**
+  String get waitingForEncryptionKeyBody;
+
   /// No description provided for @tryAgainButton.
   ///
   /// In en, this message translates to:
@@ -3053,6 +3065,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'poll votes'**
   String get importCountPollVotes;
+
+  /// No description provided for @importCountPollMemberVotes.
+  ///
+  /// In en, this message translates to:
+  /// **'member votes'**
+  String get importCountPollMemberVotes;
 
   /// No description provided for @importCountPollVoteEvents.
   ///
@@ -4914,6 +4932,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voting'**
   String get votingFieldLabel;
+
+  /// No description provided for @pollVoteModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote mode'**
+  String get pollVoteModeLabel;
+
+  /// No description provided for @pollSharedChoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared system choice'**
+  String get pollSharedChoiceLabel;
+
+  /// No description provided for @pollMemberVoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Votes by member'**
+  String get pollMemberVoteLabel;
+
+  /// No description provided for @pollVoteAsMemberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote as member'**
+  String get pollVoteAsMemberLabel;
+
+  /// No description provided for @pollChooseMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a member'**
+  String get pollChooseMemberHint;
+
+  /// No description provided for @pollCouldNotVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record this vote. Try again.'**
+  String get pollCouldNotVote;
+
+  /// No description provided for @pollVoteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
+  String pollVoteCount(int count);
 
   /// No description provided for @pollOptionFieldLabel.
   ///
