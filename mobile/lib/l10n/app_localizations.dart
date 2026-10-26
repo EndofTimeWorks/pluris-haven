@@ -2232,6 +2232,12 @@ abstract class AppLocalizations {
   /// **'Could not save this reminder. Check whether it still exists and try again.'**
   String get couldNotSaveReminder;
 
+  /// No description provided for @reminderSavedNotificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder saved, but its notification could not be set. Check notification settings.'**
+  String get reminderSavedNotificationFailed;
+
   /// No description provided for @previewPastedJson.
   ///
   /// In en, this message translates to:

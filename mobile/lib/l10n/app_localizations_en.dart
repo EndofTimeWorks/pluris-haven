@@ -1202,6 +1202,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save this reminder. Check whether it still exists and try again.';
 
   @override
+  String get reminderSavedNotificationFailed =>
+      'Reminder saved, but its notification could not be set. Check notification settings.';
+
+  @override
   String get previewPastedJson => 'Preview pasted JSON';
 
   @override

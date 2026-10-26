@@ -641,7 +641,8 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       }
       return;
     }
-    if (mounted) {
+    if (!mounted) return;
+    try {
       final notificationPermission = await ensureNotificationPermissionForSetup(
         widget.notificationService,
       );
@@ -678,6 +679,15 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           SnackBar(content: Text(l10n.notificationsPermissionDeniedBody)),
         );
       }
+    } on Object {
+      if (mounted) {
+        Navigator.pop(context);
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.reminderSavedNotificationFailed)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

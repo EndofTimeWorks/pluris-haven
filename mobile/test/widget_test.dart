@@ -3511,6 +3511,42 @@ void main() {
     expect(repository._reminders, hasLength(1));
   });
 
+  testWidgets('notification failure does not lose a saved reminder', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    showAddReminderSheet(
+      tester.element(find.byType(RemindersPage)),
+      repository,
+      notificationService: NotificationService.forTesting(
+        permissionChecker: () async => true,
+        permissionRequester: () async => true,
+        scheduledReminderDelivery: () async =>
+            throw StateError('OS unavailable'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._reminders, hasLength(1));
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsNothing);
+    expect(
+      find.text(
+        'Reminder saved, but its notification could not be set. Check notification settings.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('saves 9am as a durable reminder time', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
