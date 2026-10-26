@@ -3,9 +3,8 @@
 Internal pre-alpha readiness record. Earlier baseline checks remain recorded;
 the current local remediation baseline was checked on 2026-10-25.
 
-This document records evidence, not marketing status. Pluris Haven remains
-**PRE-ALPHA**; alpha is the next maturity stage after the current completion and
-distribution work is ready.
+Pluris Haven remains **PRE-ALPHA**. This page records the checks still needed
+before calling it alpha-ready.
 
 ## Current locally verified baseline
 

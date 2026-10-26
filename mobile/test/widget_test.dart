@@ -2528,7 +2528,9 @@ void main() {
       'choices': <String>[],
     });
 
-    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Custom field actions for Favorite drink \(')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -2600,7 +2602,9 @@ void main() {
 
     await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Custom field actions for Comfort drink \(')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();

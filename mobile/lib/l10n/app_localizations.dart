@@ -6551,6 +6551,12 @@ abstract class AppLocalizations {
   /// **'Custom field actions'**
   String get customFieldActionsTooltip;
 
+  /// No description provided for @customFieldActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom field actions for {name} ({id})'**
+  String customFieldActionsFor(String name, String id);
+
   /// No description provided for @deleteCustomFieldTitle.
   ///
   /// In en, this message translates to:
