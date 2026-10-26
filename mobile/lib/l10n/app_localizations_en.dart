@@ -251,7 +251,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bottomNavigationShortcutsBody =>
-      'Choose up to three quick destinations. Dashboard and the menu stay available.';
+      'Choose up to three tabs. You can still open everything from the menu.';
 
   @override
   String get navigationShortcutShownLabel => 'shown in bottom navigation';
@@ -265,10 +265,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get resetNavigationTitle => 'Reset navigation';
+  String get resetNavigationTitle => 'Restore default bottom shortcuts';
 
   @override
-  String get resetNavigationValue => 'restore default quick destinations';
+  String get resetNavigationValue => 'replace these shortcuts and their order';
 
   @override
   String get shortcutShownLabel => 'shown on dashboard';
@@ -283,10 +283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moveDownTooltip => 'Move down';
 
   @override
-  String get resetDashboardTitle => 'Reset dashboard';
+  String get resetDashboardTitle => 'Restore default dashboard shortcuts';
 
   @override
-  String get resetDashboardValue => 'restore default shortcut order';
+  String get resetDashboardValue => 'replace these shortcuts and their order';
 
   @override
   String get syncOffTitle => 'Device sync is not available';

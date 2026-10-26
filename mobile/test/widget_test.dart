@@ -3823,12 +3823,12 @@ void main() {
       isNot(contains('analytics')),
     );
     await tester.scrollUntilVisible(
-      find.text('Reset dashboard'),
+      find.text('Restore default dashboard shortcuts'),
       220,
       scrollable: pageScrollable,
       maxScrolls: 30,
     );
-    await tester.tap(find.text('Reset dashboard'));
+    await tester.tap(find.text('Restore default dashboard shortcuts'));
     await tester.pumpAndSettle();
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,

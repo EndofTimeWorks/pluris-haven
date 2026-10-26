@@ -544,7 +544,7 @@ abstract class AppLocalizations {
   /// No description provided for @bottomNavigationShortcutsBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose up to three quick destinations. Dashboard and the menu stay available.'**
+  /// **'Choose up to three tabs. You can still open everything from the menu.'**
   String get bottomNavigationShortcutsBody;
 
   /// No description provided for @navigationShortcutShownLabel.
@@ -568,13 +568,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetNavigationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reset navigation'**
+  /// **'Restore default bottom shortcuts'**
   String get resetNavigationTitle;
 
   /// No description provided for @resetNavigationValue.
   ///
   /// In en, this message translates to:
-  /// **'restore default quick destinations'**
+  /// **'replace these shortcuts and their order'**
   String get resetNavigationValue;
 
   /// No description provided for @shortcutShownLabel.
@@ -604,13 +604,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetDashboardTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reset dashboard'**
+  /// **'Restore default dashboard shortcuts'**
   String get resetDashboardTitle;
 
   /// No description provided for @resetDashboardValue.
   ///
   /// In en, this message translates to:
-  /// **'restore default shortcut order'**
+  /// **'replace these shortcuts and their order'**
   String get resetDashboardValue;
 
   /// No description provided for @syncOffTitle.
