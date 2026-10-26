@@ -3906,16 +3906,14 @@ void main() {
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
     final semantics = tester.ensureSemantics();
-    expect(
-      find.bySemanticsLabel('Dinner?: Soup, not selected'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Soup, not selected'), findsOneWidget);
+    expect(find.bySemanticsLabel('Dinner?'), findsOneWidget);
     expect(find.bySemanticsLabel('Soup'), findsNothing);
     expect(find.bySemanticsLabel('Vote history: Dinner?'), findsOneWidget);
     expect(find.byTooltip('Delete poll: Dinner?'), findsOneWidget);
     expect(
       tester
-          .getSemantics(find.text('Dinner?'))
+          .getSemantics(find.bySemanticsLabel('Dinner?'))
           .getSemanticsData()
           .flagsCollection
           .isHeader,
@@ -3928,7 +3926,7 @@ void main() {
     final votedPoll = (await repository.watchPolls().first).single;
     expect(votedPoll.selectedCount, 1);
     expect(votedPoll.options.first.selected, isTrue);
-    expect(find.bySemanticsLabel('Dinner?: Soup, selected'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup, selected'), findsOneWidget);
 
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
