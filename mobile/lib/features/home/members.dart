@@ -18,8 +18,23 @@ class MembersPage extends StatefulWidget {
 
 class _MembersPageState extends State<MembersPage> {
   final _searchController = TextEditingController();
+  late Stream<List<MemberSummary>> _currentFrontStream;
   String _query = '';
   String _filter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFrontStream = widget.repository.watchCurrentFrontMembers();
+  }
+
+  @override
+  void didUpdateWidget(covariant MembersPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      _currentFrontStream = widget.repository.watchCurrentFrontMembers();
+    }
+  }
 
   @override
   void dispose() {
@@ -57,77 +72,107 @@ class _MembersPageState extends State<MembersPage> {
         if (!membersSnapshot.hasData) {
           return const SpPage(children: [SpDataLoadState()]);
         }
-        final members = _filteredMembers(membersSnapshot.data!);
-        final visualTheme = _visualThemeOf(context);
-        final profileLayout =
-            visualTheme == HavenVisualTheme.simplyPlural ||
-            visualTheme == HavenVisualTheme.ampersand;
-        if (profileLayout) {
-          return _buildProfileLayout(
-            context,
-            l10n,
-            filters,
-            members,
-            deleted: _filter == 'deleted',
+        Widget showMembers(Set<String> activeMemberIds) {
+          final members = _filteredMembers(
+            membersSnapshot.data!,
+            activeMemberIds,
+          );
+          final visualTheme = _visualThemeOf(context);
+          final profileLayout =
+              visualTheme == HavenVisualTheme.simplyPlural ||
+              visualTheme == HavenVisualTheme.ampersand;
+          if (profileLayout) {
+            return _buildProfileLayout(
+              context,
+              l10n,
+              filters,
+              members,
+              deleted: _filter == 'deleted',
+            );
+          }
+
+          return SpPage(
+            children: [
+              SpSearchField(
+                hintText: l10n.searchMembersHint,
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 12),
+              SpFilterRow(
+                filters: filters.values.toList(growable: false),
+                selected: filters[_filter]!,
+                onSelected: (label) => setState(
+                  () => _filter = filters.entries
+                      .firstWhere((entry) => entry.value == label)
+                      .key,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SpCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SpSectionHeader(
+                      title: l10n.navigationMembers,
+                      trailing: StatusPill(
+                        text: '${widget.snapshot?.memberCount ?? 0}',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (members.isEmpty)
+                      SpEmptyState(
+                        title: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.noMembersSavedLocally
+                            : l10n.noMatchingMembers,
+                        body: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.membersEmptyBody
+                            : l10n.tryAnotherSearchOrFilter,
+                      )
+                    else
+                      for (final member in members) ...[
+                        _memberTile(member, deleted: _filter == 'deleted'),
+                        if (member != members.last) const Divider(height: 1),
+                      ],
+                    const SizedBox(height: 14),
+                    SpActionRow(
+                      primary: l10n.addMemberButton,
+                      secondary: l10n.importTitle,
+                      onPrimary: () =>
+                          showAddMemberSheet(context, widget.repository),
+                      onSecondary: widget.onImport,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         }
 
-        return SpPage(
-          children: [
-            SpSearchField(
-              hintText: l10n.searchMembersHint,
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            const SizedBox(height: 12),
-            SpFilterRow(
-              filters: filters.values.toList(growable: false),
-              selected: filters[_filter]!,
-              onSelected: (label) => setState(
-                () => _filter = filters.entries
-                    .firstWhere((entry) => entry.value == label)
-                    .key,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SpSectionHeader(
-                    title: l10n.navigationMembers,
-                    trailing: StatusPill(
-                      text: '${widget.snapshot?.memberCount ?? 0}',
+        if (_filter == 'fronting') {
+          return StreamBuilder<List<MemberSummary>>(
+            stream: _currentFrontStream,
+            builder: (context, activeSnapshot) {
+              if (activeSnapshot.hasError && !activeSnapshot.hasData) {
+                return SpPage(
+                  children: [
+                    SpDataLoadState(
+                      error: activeSnapshot.error,
+                      onRetry: () => setState(() {}),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (members.isEmpty)
-                    SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.noMembersSavedLocally
-                          : l10n.noMatchingMembers,
-                      body: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.membersEmptyBody
-                          : l10n.tryAnotherSearchOrFilter,
-                    )
-                  else
-                    for (final member in members) ...[
-                      _memberTile(member, deleted: _filter == 'deleted'),
-                      if (member != members.last) const Divider(height: 1),
-                    ],
-                  const SizedBox(height: 14),
-                  SpActionRow(
-                    primary: l10n.addMemberButton,
-                    secondary: l10n.importTitle,
-                    onPrimary: () =>
-                        showAddMemberSheet(context, widget.repository),
-                    onSecondary: widget.onImport,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
+                  ],
+                );
+              }
+              if (!activeSnapshot.hasData) {
+                return const SpPage(children: [SpDataLoadState()]);
+              }
+              return showMembers(
+                activeSnapshot.data!.map((member) => member.id).toSet(),
+              );
+            },
+          );
+        }
+        return showMembers(const {});
       },
     );
   }
@@ -239,21 +284,16 @@ class _MembersPageState extends State<MembersPage> {
     return MemberListTile(member: member, repository: widget.repository);
   }
 
-  List<MemberSummary> _filteredMembers(List<MemberSummary> members) {
-    final frontNames = (widget.snapshot?.currentFrontLabel ?? '')
-        .split(',')
-        .map((name) => name.trim().toLowerCase())
-        .where((name) => name.isNotEmpty)
-        .toSet();
-
+  List<MemberSummary> _filteredMembers(
+    List<MemberSummary> members,
+    Set<String> activeMemberIds,
+  ) {
     return [
       for (final member in members)
         if (_matchesQuery(_query, [member.displayName, member.pronouns]) &&
             switch (_filter) {
               'archived' => member.archived,
-              'fronting' => frontNames.contains(
-                member.displayName.toLowerCase(),
-              ),
+              'fronting' => activeMemberIds.contains(member.id),
               _ => true,
             })
           member,

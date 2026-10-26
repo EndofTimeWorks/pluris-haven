@@ -1134,6 +1134,33 @@ void main() {
     );
   });
 
+  testWidgets('fronting member filter uses IDs for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.setFrontMembers(['fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.widgetWithText(FilterChip, 'Fronting'));
+    await tester.pumpAndSettle();
+
+    final tiles = tester.widgetList<MemberListTile>(
+      find.byType(MemberListTile),
+    );
+    expect(tiles.map((tile) => tile.member.id), ['fake-member-2']);
+
+    await repository.setFrontMembers(['fake-member-1']);
+    await tester.pumpAndSettle();
+    final updatedTiles = tester.widgetList<MemberListTile>(
+      find.byType(MemberListTile),
+    );
+    expect(updatedTiles.map((tile) => tile.member.id), ['fake-member-1']);
+  });
+
   testWidgets('front picker ends one member without ending a cofronter', (
     tester,
   ) async {
