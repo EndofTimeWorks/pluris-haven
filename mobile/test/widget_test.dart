@@ -1268,6 +1268,36 @@ void main() {
     );
   });
 
+  testWidgets('front picker keeps its actions visible in a large system', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    for (var index = 0; index < 100; index++) {
+      await repository.saveMember(MemberDraft(displayName: 'Member $index'));
+    }
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    final action = find.byKey(
+      const ValueKey('set-selected-members-front-button'),
+    );
+    expect(action, findsOneWidget);
+    final initialPosition = tester.getTopLeft(action);
+    await tester.drag(
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(action), initialPosition);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('fronting member filter uses IDs for duplicate names', (
     tester,
   ) async {
