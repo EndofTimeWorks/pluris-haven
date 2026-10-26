@@ -301,6 +301,7 @@ class _NoteSheetState extends State<NoteSheet> {
   final _bodyController = TextEditingController();
   String? _memberId;
   bool _preview = false;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.note != null;
 
@@ -379,29 +380,35 @@ class _NoteSheetState extends State<NoteSheet> {
               initialData: const [],
               builder: (context, snapshot) {
                 final members = snapshot.data ?? const <MemberSummary>[];
-                final value = _memberId == null
-                    ? _systemNoteValue
-                    : members.any((member) => member.id == _memberId)
-                    ? _memberId!
-                    : _systemNoteValue;
-                return DropdownButtonFormField<String>(
-                  key: const ValueKey('note-member-field'),
-                  initialValue: value,
-                  decoration: InputDecoration(labelText: l10n.forFieldLabel),
-                  items: [
-                    DropdownMenuItem(
-                      value: _systemNoteValue,
-                      child: Text(l10n.systemNoteLabel),
-                    ),
-                    for (final member in members)
+                final hasSelectedMember = members.any(
+                  (member) => member.id == _memberId,
+                );
+                return KeyedSubtree(
+                  key: ValueKey('note-for-${members.length}-$_memberId'),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('note-member-field'),
+                    initialValue: _memberId ?? _systemNoteValue,
+                    decoration: InputDecoration(labelText: l10n.forFieldLabel),
+                    items: [
                       DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
+                        value: _systemNoteValue,
+                        child: Text(l10n.systemNoteLabel),
                       ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _memberId = value == _systemNoteValue ? null : value;
-                  }),
+                      if (_memberId != null && !hasSelectedMember)
+                        DropdownMenuItem(
+                          value: _memberId,
+                          child: Text(l10n.unknownMemberNoteLabel),
+                        ),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _memberId = value == _systemNoteValue ? null : value;
+                    }),
+                  ),
                 );
               },
             ),
@@ -440,7 +447,7 @@ class _NoteSheetState extends State<NoteSheet> {
             if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-note-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(l10n.saveNoteButton),
             ),
           ],
@@ -450,20 +457,38 @@ class _NoteSheetState extends State<NoteSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
+    if (_titleController.text.trim().isEmpty &&
+        _bodyController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).writeBeforeSaving)),
+      );
+      return;
+    }
     final draft = NoteDraft(
       title: _titleController.text,
       body: _bodyController.text,
       memberId: _memberId,
     );
     final note = widget.note;
-    if (note == null) {
-      await widget.repository.saveNote(draft);
-    } else {
-      await widget.repository.updateNote(note.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      if (note == null) {
+        await widget.repository.saveNote(draft);
+      } else {
+        await widget.repository.updateNote(note.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

@@ -144,7 +144,6 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _FrontActionButton(
-                            repository: widget.repository,
                             actionKey: 'named-front-${front.id}',
                             onPressed: (action) => _applyFront(front, action),
                           ),
@@ -278,7 +277,6 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _FrontActionButton(
-                            repository: widget.repository,
                             actionKey: 'named-front-${front.id}',
                             onPressed: (action) => _applyFront(front, action),
                           ),
@@ -404,7 +402,6 @@ class _CustomFrontRow extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _FrontActionButton(
-                          repository: repository,
                           actionKey: 'named-front-${front.id}',
                           onPressed: onUse,
                         ),
@@ -433,7 +430,6 @@ class _CustomFrontRow extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _FrontActionButton(
-                          repository: repository,
                           actionKey: 'named-front-${front.id}',
                           onPressed: onUse,
                         ),
@@ -475,6 +471,8 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   late final TextEditingController _avatarController;
   late final TextEditingController _descriptionController;
   String? _avatarMessage;
+  bool _nameInvalid = false;
+  bool _colorInvalid = false;
 
   @override
   void initState() {
@@ -564,7 +562,10 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               controller: _nameController,
               autofocus: !editing,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+              decoration: InputDecoration(
+                labelText: l10n.nameFieldLabel,
+                errorText: _nameInvalid ? l10n.nameRequiredError : null,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -574,6 +575,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               decoration: InputDecoration(
                 labelText: l10n.colourFieldLabel,
                 hintText: '#F2C75C',
+                errorText: _colorInvalid ? l10n.invalidHexColorError : null,
                 prefixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _colorController,
                   builder: (context, value, child) {
@@ -659,18 +661,12 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      return;
-    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
-    if (colorHex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).invalidHexColorError),
-        ),
-      );
-      return;
-    }
+    setState(() {
+      _nameInvalid = name.isEmpty;
+      _colorInvalid = colorHex == null;
+    });
+    if (_nameInvalid || _colorInvalid) return;
 
     final now = DateTime.now().toUtc();
     final existing = widget.front;

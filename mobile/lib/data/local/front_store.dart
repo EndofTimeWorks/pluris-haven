@@ -111,7 +111,37 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         .toSet()
         .toList();
     if (ids.isEmpty) {
-      if (replaceExisting) await _frontClearCurrentFront();
+      if (replaceExisting) {
+        final now = DateTime.now().toUtc();
+        await database.transaction(() async {
+          final active =
+              await (database.select(database.frontSessions)..where(
+                    (front) =>
+                        front.systemId.equals(localSystemId) &
+                        front.endedAt.isNull(),
+                  ))
+                  .get();
+          final links = active.isEmpty
+              ? const <FrontSessionMember>[]
+              : await (database.select(database.frontSessionMembers)..where(
+                      (link) => link.sessionId.isIn(
+                        active.map((front) => front.id).toList(),
+                      ),
+                    ))
+                    .get();
+          final memberSessionIds = links.map((link) => link.sessionId).toSet();
+          if (memberSessionIds.isNotEmpty) {
+            await (database.update(
+              database.frontSessions,
+            )..where((front) => front.id.isIn(memberSessionIds))).write(
+              FrontSessionsCompanion(
+                endedAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+          }
+        });
+      }
       return const [];
     }
 
@@ -126,8 +156,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
             ))
             .get();
     if (members.isEmpty) {
-      if (replaceExisting) await _frontClearCurrentFront();
-      return const [];
+      throw const FormatException('No available members were selected.');
     }
 
     final now = DateTime.now().toUtc();
@@ -152,21 +181,100 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         activeMemberIds.add(link.memberId);
       }
       final desiredMemberIds = members.map((member) => member.id).toSet();
-      final hasCustomFront = openSessions.any(
-        (session) => session.label != null,
-      );
       if (replaceExisting &&
-          !hasCustomFront &&
           activeMemberIds.length == desiredMemberIds.length &&
           activeMemberIds.containsAll(desiredMemberIds)) {
         return const <ReminderSummary>[];
       }
-      if (replaceExisting) await _endOpenFrontSessions(now);
+      if (replaceExisting) {
+        final retainedMemberIds = <String>{};
+        for (final session in openSessions) {
+          final sessionMemberIds = {
+            for (final link in openLinks)
+              if (link.sessionId == session.id) link.memberId,
+          };
+          if (sessionMemberIds.isEmpty) continue;
+          final retained = sessionMemberIds.intersection(desiredMemberIds);
+          retainedMemberIds.addAll(retained);
+          if (retained.length == sessionMemberIds.length) continue;
+          if (retained.isEmpty) {
+            await (database.update(
+              database.frontSessions,
+            )..where((front) => front.id.equals(session.id))).write(
+              FrontSessionsCompanion(
+                endedAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+            continue;
+          }
+          // Imported sessions may contain several members. Keep the original
+          // interval open for retained members and close a copy for removals.
+          final endedId = newLocalId('front');
+          await database
+              .into(database.frontSessions)
+              .insert(
+                FrontSessionsCompanion.insert(
+                  id: endedId,
+                  systemId: localSystemId,
+                  label: Value(
+                    await _encryptNullableLocalText(
+                      await _decryptLocalText(
+                        session.label,
+                        'front_sessions',
+                        session.id,
+                        'label',
+                      ),
+                      'front_sessions',
+                      endedId,
+                      'label',
+                    ),
+                  ),
+                  statusNote: Value(
+                    await _encryptNullableLocalText(
+                      await _decryptLocalText(
+                        session.statusNote,
+                        'front_sessions',
+                        session.id,
+                        'status_note',
+                      ),
+                      'front_sessions',
+                      endedId,
+                      'status_note',
+                    ),
+                  ),
+                  startedAt: session.startedAt,
+                  endedAt: Value(now),
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              );
+          for (final removedId in sessionMemberIds.difference(retained)) {
+            await (database.delete(database.frontSessionMembers)..where(
+                  (link) =>
+                      link.sessionId.equals(session.id) &
+                      link.memberId.equals(removedId),
+                ))
+                .go();
+            await database
+                .into(database.frontSessionMembers)
+                .insert(
+                  FrontSessionMembersCompanion.insert(
+                    sessionId: endedId,
+                    memberId: removedId,
+                  ),
+                );
+          }
+        }
+        activeMemberIds
+          ..clear()
+          ..addAll(retainedMemberIds);
+      }
 
       var offset = 0;
       final newlyStartedMemberIds = <String>{};
       for (final member in members) {
-        if (!replaceExisting && activeMemberIds.contains(member.id)) {
+        if (activeMemberIds.contains(member.id)) {
           continue;
         }
         final startedAt = now.add(Duration(microseconds: offset++));
@@ -255,8 +363,8 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     required bool create,
   }) async {
     final startedAt = draft.startedAt.toUtc();
-    final endedAt = draft.endedAt.toUtc();
-    if (endedAt.isBefore(startedAt)) {
+    final endedAt = draft.endedAt?.toUtc();
+    if (endedAt != null && endedAt.isBefore(startedAt)) {
       throw const FormatException('Front end cannot be before its start.');
     }
     final memberIds = draft.memberIds.toSet().toList(growable: false);

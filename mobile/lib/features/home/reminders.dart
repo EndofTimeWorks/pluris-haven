@@ -165,7 +165,8 @@ class ReminderTile extends StatelessWidget {
                 text: reminder.enabled ? l10n.onStatus : l10n.offValue,
               ),
               Semantics(
-                label: l10n.reminderSemanticLabel(reminder.title),
+                label:
+                    '${l10n.reminderSemanticLabel(reminder.title)}, ${reminder.scheduleText}',
                 toggled: reminder.enabled,
                 child: Switch(
                   value: reminder.enabled,
@@ -183,20 +184,24 @@ class ReminderTile extends StatelessWidget {
                   },
                 ),
               ),
-              if (reminder.scheduleKind !=
-                  ReminderScheduleKind.afterFront.storageValue)
-                IconButton(
-                  tooltip: l10n.editReminderTooltip,
-                  onPressed: () => showAddReminderSheet(
-                    context,
-                    repository,
-                    notificationService: notificationService,
-                    reminder: reminder,
-                  ),
-                  icon: const Icon(Icons.edit_outlined),
-                ),
               IconButton(
-                tooltip: l10n.deleteReminderTooltip,
+                tooltip: l10n.editReminderFor(
+                  reminder.title,
+                  reminder.scheduleText,
+                ),
+                onPressed: () => showAddReminderSheet(
+                  context,
+                  repository,
+                  notificationService: notificationService,
+                  reminder: reminder,
+                ),
+                icon: const Icon(Icons.edit_outlined),
+              ),
+              IconButton(
+                tooltip: l10n.deleteReminderFor(
+                  reminder.title,
+                  reminder.scheduleText,
+                ),
                 onPressed: () => confirmDelete(
                   context,
                   title: l10n.deleteReminderTitle,
@@ -281,7 +286,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   int _monthDay = 1;
   String? _triggerMemberId;
   String? _triggerMemberName;
+  bool _invalidTitle = false;
   bool _invalidTime = false;
+  bool _invalidDelay = false;
 
   @override
   void initState() {
@@ -354,7 +361,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             TextField(
               key: const ValueKey('reminder-title-field'),
               controller: _titleController,
-              decoration: InputDecoration(labelText: l10n.titleFieldLabel),
+              onChanged: (_) {
+                if (_invalidTitle) setState(() => _invalidTitle = false);
+              },
+              decoration: InputDecoration(
+                labelText: l10n.titleFieldLabel,
+                errorText: _invalidTitle ? l10n.requiredFieldError : null,
+              ),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<ReminderScheduleKind>(
@@ -443,6 +456,14 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                         value: null,
                         child: Text(l10n.anyFrontStartsOption),
                       ),
+                      if (_triggerMemberId != null &&
+                          !members.any(
+                            (member) => member.id == _triggerMemberId,
+                          ))
+                        DropdownMenuItem<String?>(
+                          value: _triggerMemberId,
+                          child: Text(l10n.unknownMemberLabel),
+                        ),
                       for (final member in members)
                         DropdownMenuItem<String?>(
                           value: member.id,
@@ -469,9 +490,13 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 key: const ValueKey('reminder-after-front-delay-field'),
                 controller: _afterFrontDelayController,
                 keyboardType: TextInputType.number,
+                onChanged: (_) {
+                  if (_invalidDelay) setState(() => _invalidDelay = false);
+                },
                 decoration: InputDecoration(
                   labelText: l10n.afterFrontDelayLabel,
                   helperText: l10n.afterFrontDelayHelper,
+                  errorText: _invalidDelay ? l10n.afterFrontDelayError : null,
                 ),
               ),
               const SizedBox(height: 10),
@@ -488,6 +513,11 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                   labelText: l10n.timeFieldLabel,
                   helperText: l10n.timeFieldHelper,
                   errorText: _invalidTime ? l10n.reminderTimeError : null,
+                  suffixIcon: IconButton(
+                    tooltip: l10n.chooseReminderTime,
+                    onPressed: _pickTime,
+                    icon: const Icon(Icons.schedule_rounded),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -511,23 +541,50 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     );
   }
 
+  Future<void> _pickTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime:
+          _parseTime(_timeController.text.trim()) ??
+          const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (selected == null || !mounted) return;
+    _timeController.text =
+        '${selected.hour.toString().padLeft(2, '0')}:'
+        '${selected.minute.toString().padLeft(2, '0')}';
+    setState(() => _invalidTime = false);
+  }
+
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _invalidTitle = true);
+      return;
+    }
     if (_scheduleKind == ReminderScheduleKind.afterFront &&
         !_hasValidAfterFrontDelay) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.afterFrontDelayError)),
-      );
+      setState(() => _invalidDelay = true);
       return;
     }
     if (_scheduleKind != ReminderScheduleKind.afterFront &&
-        _timeController.text.trim().isNotEmpty &&
         _parseTime(_timeController.text.trim()) == null) {
       setState(() => _invalidTime = true);
       return;
+    }
+    if (_scheduleKind == ReminderScheduleKind.afterFront &&
+        _triggerMemberId != null &&
+        _triggerMemberName == null) {
+      final members = await widget.repository.watchMembers().first;
+      for (final member in members) {
+        if (member.id == _triggerMemberId) {
+          _triggerMemberName = member.displayName;
+          break;
+        }
+      }
+      if (!mounted) return;
     }
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
         ? null
@@ -561,7 +618,15 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       ),
       reminderId: widget.reminder?.id,
     );
-    if (mounted && reminderId != null) {
+    if (reminderId == null) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.couldNotSaveReminder)),
+        );
+      }
+      return;
+    }
+    if (mounted) {
       final notificationPermission = await ensureNotificationPermissionForSetup(
         widget.notificationService,
       );
@@ -642,10 +707,16 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         _afterFrontDelaySeconds > 0
             ? l10n.afterFrontDelayedLabel(
                 _afterFrontDelaySeconds,
-                detail.isEmpty ? l10n.anyFrontStartsOption : detail,
+                detail.isEmpty
+                    ? (_triggerMemberId == null
+                          ? l10n.anyFrontStartsOption
+                          : l10n.unknownMemberLabel)
+                    : detail,
               )
             : detail.isEmpty
-            ? l10n.afterSelectedFrontStarts
+            ? _triggerMemberId == null
+                  ? l10n.afterSelectedFrontStarts
+                  : l10n.afterFrontLabel(l10n.unknownMemberLabel)
             : l10n.afterFrontLabel(detail),
     };
   }

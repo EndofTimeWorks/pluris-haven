@@ -293,7 +293,12 @@ class DeletedMemberListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: l10n.memberActionsTooltip,
+          tooltip: l10n.memberActionsFor(
+            member.displayName,
+            member.id.substring(
+              member.id.length > 8 ? member.id.length - 8 : 0,
+            ),
+          ),
           onSelected: (value) async {
             if (value == 'restore') {
               await repository.restoreDeletedMember(member.id);
@@ -358,7 +363,6 @@ class MemberListTile extends StatelessWidget {
           children: [
             if (!member.archived)
               _FrontActionButton(
-                repository: repository,
                 actionKey: 'member-${member.id}',
                 onPressed: (action) async {
                   final reminders = action == HavenFrontAction.add
@@ -377,9 +381,15 @@ class MemberListTile extends StatelessWidget {
                 },
               ),
             PopupMenuButton<String>(
-              tooltip: l10n.memberActionsTooltip,
+              tooltip: l10n.memberActionsFor(
+                member.displayName,
+                member.id.substring(
+                  member.id.length > 8 ? member.id.length - 8 : 0,
+                ),
+              ),
               onSelected: (value) async {
                 if (value == 'front') {
+                  if (!await _confirmReplaceCurrentFront(context)) return;
                   final reminders = await repository.setFrontMembers([
                     member.id,
                   ]);
@@ -484,56 +494,58 @@ class MemberListTile extends StatelessWidget {
 }
 
 class _FrontActionButton extends StatelessWidget {
-  const _FrontActionButton({
-    required this.repository,
-    required this.actionKey,
-    required this.onPressed,
-  });
+  const _FrontActionButton({required this.actionKey, required this.onPressed});
 
-  final HavenRepository repository;
   final String actionKey;
   final Future<void> Function(HavenFrontAction action) onPressed;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return StreamBuilder<AppCustomization>(
-      stream: repository.watchCustomization(),
-      initialData: AppCustomization.defaults,
-      builder: (context, snapshot) {
-        final action = snapshot.data?.frontAction ?? HavenFrontAction.add;
-        final isAdd = action == HavenFrontAction.add;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              key: ValueKey('front-action-button-$actionKey'),
-              tooltip: isAdd ? l10n.addToFrontButton : l10n.setAsFrontButton,
-              onPressed: () => onPressed(action),
-              icon: Icon(isAdd ? Icons.add_rounded : Icons.play_arrow_rounded),
-            ),
-            PopupMenuButton<HavenFrontAction>(
-              key: ValueKey('front-action-picker-$actionKey'),
-              tooltip: l10n.frontActionPickerTooltip,
-              onSelected: repository.setFrontAction,
-              itemBuilder: (context) => [
-                CheckedPopupMenuItem(
-                  value: HavenFrontAction.add,
-                  checked: isAdd,
-                  child: Text(l10n.addToFrontButton),
-                ),
-                CheckedPopupMenuItem(
-                  value: HavenFrontAction.replace,
-                  checked: !isAdd,
-                  child: Text(l10n.setAsFrontButton),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: ValueKey('front-action-button-$actionKey'),
+          tooltip: l10n.addToFrontButton,
+          onPressed: () => onPressed(HavenFrontAction.add),
+          icon: const Icon(Icons.add_rounded),
+        ),
+        IconButton(
+          key: ValueKey('front-action-replace-$actionKey'),
+          tooltip: l10n.replaceCurrentFrontButton,
+          onPressed: () async {
+            if (await _confirmReplaceCurrentFront(context)) {
+              await onPressed(HavenFrontAction.replace);
+            }
+          },
+          icon: const Icon(Icons.swap_horiz_rounded),
+        ),
+      ],
     );
   }
+}
+
+Future<bool> _confirmReplaceCurrentFront(BuildContext context) async {
+  final l10n = AppLocalizations.of(context);
+  return await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.replaceCurrentFrontButton),
+          content: Text(l10n.replaceCurrentFrontWarning),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.replaceCurrentFrontButton),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 }
 
 void showMemberProfileSheet(
@@ -727,6 +739,7 @@ class MemberProfileSheet extends StatelessWidget {
                 if (!member.archived)
                   FilledButton.icon(
                     onPressed: () async {
+                      if (!await _confirmReplaceCurrentFront(context)) return;
                       final reminders = await repository.setFrontMembers([
                         member.id,
                       ]);

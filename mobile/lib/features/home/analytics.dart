@@ -103,8 +103,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 12),
             if (stats.sessions == 0)
               SpEmptyState(
-                title: l10n.noAnalyticsTitle,
-                body: l10n.noAnalyticsBody,
+                title: entries.isNotEmpty && _window != _AnalyticsWindow.all
+                    ? l10n.noAnalyticsInWindowTitle
+                    : l10n.noAnalyticsTitle,
+                body: entries.isNotEmpty && _window != _AnalyticsWindow.all
+                    ? l10n.noAnalyticsInWindowBody
+                    : l10n.noAnalyticsBody,
               )
             else ...[
               _AnalyticsSummary(stats: stats),
@@ -352,6 +356,8 @@ class _TopFrontsCard extends StatelessWidget {
           const SizedBox(height: 12),
           for (final item in top) ...[
             Semantics(
+              container: true,
+              excludeSemantics: true,
               label: l10n.frontAnalyticsSemantic(
                 item.label,
                 _formatAnalyticsDuration(l10n, item.totalSeconds),
@@ -382,14 +388,12 @@ class _TopFrontsCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 7),
-                  ExcludeSemantics(
-                    child: LinearProgressIndicator(
-                      minHeight: 7,
-                      value: _analyticsRatio(item.totalSeconds, maxSeconds),
-                      color: scheme.primary,
-                      backgroundColor: scheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
+                  LinearProgressIndicator(
+                    minHeight: 7,
+                    value: _analyticsRatio(item.totalSeconds, maxSeconds),
+                    color: scheme.primary,
+                    backgroundColor: scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(99),
                   ),
                   const SizedBox(height: 4),
                   Text(

@@ -377,10 +377,13 @@ class LocalPollStore {
 
   Future<bool> _hasCurrentFront() async {
     final current =
-        await (database.select(database.frontSessions)..where(
-              (front) =>
-                  front.systemId.equals(localSystemId) & front.endedAt.isNull(),
-            ))
+        await (database.select(database.frontSessions)
+              ..where(
+                (front) =>
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              )
+              ..limit(1))
             .getSingleOrNull();
     return current != null;
   }

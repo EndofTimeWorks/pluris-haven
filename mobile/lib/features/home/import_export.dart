@@ -9,6 +9,20 @@ String _withoutRawImportPayloads(String archiveJson) {
   return jsonEncode({...decoded, 'raw_payloads': const <Object?>[]});
 }
 
+typedef _ImportInputDraft = ({
+  String? name,
+  int? size,
+  String? text,
+  List<ImportAvatarAsset> avatars,
+  String passphrase,
+  ImportFileGuess? guess,
+  ImportPreview? preview,
+  RestoreRehearsalSummary? rehearsal,
+  bool retainRawPayloads,
+  String? status,
+  bool canReportIssue,
+});
+
 class ImportExportPage extends StatefulWidget {
   const ImportExportPage({super.key, required this.repository});
 
@@ -27,6 +41,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
   List<ImportAvatarAsset> _fileAvatarAssets = const [];
   String _importPassphrase = '';
   String _pluralKitToken = '';
+  String _pastedImportDraft = '';
+  final _importPassphraseController = TextEditingController();
+  final _pluralKitTokenController = TextEditingController();
+  _ImportInputDraft? _fileDraft;
+  _ImportInputDraft? _liveDraft;
   ImportFileGuess? _guess;
   ImportPreview? _preview;
   RestoreRehearsalSummary? _restoreRehearsal;
@@ -43,6 +62,42 @@ class _ImportExportPageState extends State<ImportExportPage> {
   bool get _needsImportPassphrase =>
       (_fileText != null && archiveTextLooksEncrypted(_fileText!)) ||
       _plan.requiresPassphrase;
+
+  @override
+  void dispose() {
+    _importPassphraseController.dispose();
+    _pluralKitTokenController.dispose();
+    super.dispose();
+  }
+
+  _ImportInputDraft _captureDraft() => (
+    name: _fileName,
+    size: _fileSize,
+    text: _fileText,
+    avatars: _fileAvatarAssets,
+    passphrase: _importPassphrase,
+    guess: _guess,
+    preview: _preview,
+    rehearsal: _restoreRehearsal,
+    retainRawPayloads: _retainRawPayloads,
+    status: _importStatus,
+    canReportIssue: _canReportImportIssue,
+  );
+
+  void _restoreDraft(_ImportInputDraft? draft) {
+    _fileName = draft?.name;
+    _fileSize = draft?.size;
+    _fileText = draft?.text;
+    _fileAvatarAssets = draft?.avatars ?? const [];
+    _importPassphrase = draft?.passphrase ?? '';
+    _importPassphraseController.text = _importPassphrase;
+    _guess = draft?.guess;
+    _preview = draft?.preview;
+    _restoreRehearsal = draft?.rehearsal;
+    _retainRawPayloads = draft?.retainRawPayloads ?? false;
+    _importStatus = draft?.status;
+    _canReportImportIssue = draft?.canReportIssue ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +141,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
           onPassphraseChanged: (value) {
             _importPassphrase = value;
           },
-          onTokenChanged: (value) => _pluralKitToken = value,
+          onTokenChanged: (value) => setState(() => _pluralKitToken = value),
+          passphraseController: _importPassphraseController,
+          tokenController: _pluralKitTokenController,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
           canPreview:
@@ -288,7 +345,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _pasteImportJson() async {
     final l10n = AppLocalizations.of(context);
-    final pasted = await showPasteImportJsonSheet(context);
+    final pasted = await showPasteImportJsonSheet(
+      context,
+      initialText: _pastedImportDraft,
+      onDraftChanged: (value) => _pastedImportDraft = value,
+    );
     if (pasted == null || !mounted) {
       return;
     }
@@ -422,6 +483,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
       textPreview: text,
     );
     final isEncrypted = text != null && archiveTextLooksEncrypted(text);
+    final selectedSource = isEncrypted
+        ? ImportSource.plurisHavenArchive
+        : guess.source ??
+              (_source == ImportSource.pluralKitLive
+                  ? ImportSource.simplyPlural
+                  : _source);
     final generation = ++_previewGeneration;
     setState(() {
       _isPickingImport = true;
@@ -434,27 +501,27 @@ class _ImportExportPageState extends State<ImportExportPage> {
         : await previewImportTextInBackground(
             fileName: displayName,
             text: text,
-            selectedSource: guess.source ?? _source,
+            selectedSource: selectedSource,
             avatarAssets: avatarAssets,
           );
 
     if (!mounted || generation != _previewGeneration) return;
 
     setState(() {
+      if (_source == ImportSource.pluralKitLive) {
+        _liveDraft = _captureDraft();
+      }
       _fileName = displayName;
       _fileSize = fileSize;
       _fileText = text;
       _fileAvatarAssets = avatarAssets;
       _importPassphrase = '';
+      _importPassphraseController.clear();
       _guess = guess;
       _preview = preview;
       _restoreRehearsal = null;
       _canReportImportIssue = false;
-      if (isEncrypted) {
-        _source = ImportSource.plurisHavenArchive;
-      } else if (guess.source != null) {
-        _source = guess.source!;
-      }
+      _source = selectedSource;
       if (_source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
@@ -499,20 +566,35 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _selectImportSource(ImportSource source) async {
     final l10n = AppLocalizations.of(context);
-    final fileName = _fileName;
-    final text = _fileText;
-    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
-
     final generation = ++_previewGeneration;
     setState(() {
+      final wasLive = _source == ImportSource.pluralKitLive;
+      final isLive = source == ImportSource.pluralKitLive;
+      if (wasLive != isLive) {
+        if (wasLive) {
+          _liveDraft = _captureDraft();
+        } else {
+          _fileDraft = _captureDraft();
+        }
+        _restoreDraft(isLive ? _liveDraft : _fileDraft);
+      }
       _source = source;
       if (source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
-      _preview = null;
-      _restoreRehearsal = null;
-      _importStatus = l10n.preparingImportPreviewStatus;
+      _isPickingImport = false;
+      if (!isLive) {
+        _preview = null;
+        _restoreRehearsal = null;
+      }
+      if (!isLive) {
+        _importStatus = l10n.preparingImportPreviewStatus;
+      }
     });
+    final fileName = _fileName;
+    final text = _fileText;
+    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
+    if (source == ImportSource.pluralKitLive) return;
     final preview = fileName == null || text == null
         ? null
         : isEncrypted
@@ -613,6 +695,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _fetchPluralKitPreview() async {
     final l10n = AppLocalizations.of(context);
+    final generation = ++_previewGeneration;
     setState(() {
       _isPickingImport = true;
       _importStatus = l10n.fetchingPluralKitData;
@@ -621,8 +704,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       final text = await PluralKitLiveClient().fetchArchiveJson(
         _pluralKitToken,
       );
-      if (!mounted) return;
-      final generation = ++_previewGeneration;
+      if (!mounted || generation != _previewGeneration) return;
       final preview = await previewImportTextInBackground(
         fileName: 'pluralkit-live.json',
         text: text,
@@ -641,7 +723,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         _importStatus = _previewStatus(l10n, preview);
       });
     } on Object catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _previewGeneration) return;
       setState(() {
         _isPickingImport = false;
         _preview = null;
@@ -1655,25 +1737,39 @@ class LocalArchiveSheet extends StatelessWidget {
   }
 }
 
-Future<String?> showPasteImportJsonSheet(BuildContext context) {
+Future<String?> showPasteImportJsonSheet(
+  BuildContext context, {
+  String initialText = '',
+  ValueChanged<String>? onDraftChanged,
+}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) => const PasteImportJsonSheet(),
+    builder: (context) => PasteImportJsonSheet(
+      initialText: initialText,
+      onDraftChanged: onDraftChanged,
+    ),
   );
 }
 
 class PasteImportJsonSheet extends StatefulWidget {
-  const PasteImportJsonSheet({super.key});
+  const PasteImportJsonSheet({
+    super.key,
+    this.initialText = '',
+    this.onDraftChanged,
+  });
+
+  final String initialText;
+  final ValueChanged<String>? onDraftChanged;
 
   @override
   State<PasteImportJsonSheet> createState() => _PasteImportJsonSheetState();
 }
 
 class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
-  final _controller = TextEditingController();
+  late final _controller = TextEditingController(text: widget.initialText);
   bool _tooLarge = false;
 
   @override
@@ -1705,6 +1801,7 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
             TextField(
               key: const ValueKey('paste-import-json-field'),
               controller: _controller,
+              onChanged: widget.onDraftChanged,
               autofocus: true,
               minLines: 8,
               maxLines: 14,
@@ -1754,6 +1851,8 @@ class ImportSetupCard extends StatelessWidget {
     required this.onPreview,
     required this.onPassphraseChanged,
     required this.onTokenChanged,
+    required this.passphraseController,
+    required this.tokenController,
     required this.onSourceChanged,
     required this.onStrategyChanged,
     required this.canPreview,
@@ -1779,6 +1878,8 @@ class ImportSetupCard extends StatelessWidget {
   final VoidCallback onPreview;
   final ValueChanged<String> onPassphraseChanged;
   final ValueChanged<String> onTokenChanged;
+  final TextEditingController passphraseController;
+  final TextEditingController tokenController;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
   final ValueChanged<bool> onRetainRawPayloadsChanged;
@@ -1891,6 +1992,7 @@ class ImportSetupCard extends StatelessWidget {
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('pluralkit-token-field'),
+              controller: tokenController,
               obscureText: true,
               autocorrect: false,
               enableSuggestions: false,
@@ -1905,6 +2007,7 @@ class ImportSetupCard extends StatelessWidget {
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('import-passphrase-field'),
+              controller: passphraseController,
               obscureText: true,
               onChanged: onPassphraseChanged,
               decoration: InputDecoration(

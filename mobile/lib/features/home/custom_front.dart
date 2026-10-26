@@ -16,6 +16,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _savedFrontSearchController = TextEditingController();
   final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
+  final _activeMemberIds = <String>{};
   bool _currentFrontLoaded = false;
   bool _currentFrontLoadFailed = false;
   String _memberQuery = '';
@@ -33,6 +34,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       if (!mounted) return;
       setState(() {
         _selectedMemberIds.addAll(members.map((member) => member.id));
+        _activeMemberIds.addAll(members.map((member) => member.id));
         _currentFrontLoaded = true;
       });
     } on Object {
@@ -87,6 +89,11 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final members = snapshot.data ?? const <MemberSummary>[];
+                final nameCounts = <String, int>{};
+                for (final member in members) {
+                  final name = member.displayName.trim().toLowerCase();
+                  nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+                }
                 final visibleMembers = [
                   for (final member in members)
                     if (_matchesQuery(_memberQuery, [
@@ -143,18 +150,51 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                         runSpacing: 8,
                         children: [
                           for (final member in visibleMembers)
-                            FilterChip(
-                              label: Text(member.displayName),
-                              selected: _selectedMemberIds.contains(member.id),
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedMemberIds.add(member.id);
-                                  } else {
-                                    _selectedMemberIds.remove(member.id);
-                                  }
-                                });
-                              },
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FilterChip(
+                                  label: Text(
+                                    (nameCounts[member.displayName
+                                                    .trim()
+                                                    .toLowerCase()] ??
+                                                0) >
+                                            1
+                                        ? l10n.memberWithId(
+                                            member.displayName,
+                                            member.id.substring(
+                                              member.id.length > 8
+                                                  ? member.id.length - 8
+                                                  : 0,
+                                            ),
+                                          )
+                                        : member.displayName,
+                                  ),
+                                  selected: _selectedMemberIds.contains(
+                                    member.id,
+                                  ),
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        _selectedMemberIds.add(member.id);
+                                      } else {
+                                        _selectedMemberIds.remove(member.id);
+                                      }
+                                    });
+                                  },
+                                ),
+                                if (_activeMemberIds.contains(member.id))
+                                  IconButton(
+                                    key: ValueKey('end-front-${member.id}'),
+                                    tooltip: l10n.endMemberFrontButton(
+                                      member.displayName,
+                                    ),
+                                    onPressed: () => _endMemberFront(member),
+                                    icon: const Icon(
+                                      Icons.stop_circle_outlined,
+                                    ),
+                                  ),
+                              ],
                             ),
                         ],
                       ),
@@ -173,16 +213,20 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    OutlinedButton(
+                      key: const ValueKey('add-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : () => _setMemberFront(replaceExisting: false),
+                      child: Text(l10n.addToFrontButton),
+                    ),
+                    const SizedBox(height: 8),
                     FilledButton(
                       key: const ValueKey('set-selected-members-front-button'),
                       onPressed: _selectedMemberIds.isEmpty
                           ? null
-                          : _setMemberFront,
-                      child: Text(
-                        _selectedMemberIds.length <= 1
-                            ? l10n.setSelectedButton
-                            : l10n.setCofrontButton,
-                      ),
+                          : () => _setMemberFront(replaceExisting: true),
+                      child: Text(l10n.replaceCurrentMembersButton),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton(
@@ -289,7 +333,6 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _FrontActionButton(
-                                  repository: widget.repository,
                                   actionKey:
                                       'dashboard-named-front-${front.id}',
                                   onPressed: (action) =>
@@ -391,6 +434,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   }
 
   Future<void> _setFront(String label) async {
+    if (!await _confirmReplaceCurrentFront(context) || !mounted) return;
     final reminders = await widget.repository.setCustomFront(label);
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
@@ -403,10 +447,35 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     }
   }
 
-  Future<void> _setMemberFront() async {
-    final reminders = await widget.repository.setFrontMembers(
-      _selectedMemberIds.toList(),
-    );
+  Future<void> _setMemberFront({required bool replaceExisting}) async {
+    if (replaceExisting) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(AppLocalizations.of(context).replaceCurrentMembersButton),
+          content: Text(
+            AppLocalizations.of(context).replaceCurrentMembersWarning,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(AppLocalizations.of(context).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(
+                AppLocalizations.of(context).replaceCurrentMembersButton,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    final ids = _selectedMemberIds.toList();
+    final reminders = replaceExisting
+        ? await widget.repository.setFrontMembers(ids)
+        : await widget.repository.addFrontMembers(ids);
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
@@ -416,6 +485,40 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _endMemberFront(MemberSummary member) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endMemberFrontButton(member.displayName)),
+        content: Text(l10n.endMemberFrontWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endMemberFrontButton(member.displayName)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final active = await widget.repository.watchCurrentFrontMembers().first;
+    if (!mounted) return;
+    await widget.repository.setFrontMembers([
+      for (final current in active)
+        if (current.id != member.id) current.id,
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _activeMemberIds.remove(member.id);
+      _selectedMemberIds.remove(member.id);
+    });
+    await _syncFrontNotification(context, widget.repository);
   }
 
   Future<void> _applyNamedFront(

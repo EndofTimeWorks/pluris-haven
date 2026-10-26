@@ -753,6 +753,8 @@ void main() {
       find.byKey(const ValueKey('make-custom-front-current-button')),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
+    await tester.pumpAndSettle();
 
     expect(find.text('blurry co-con'), findsWidgets);
     expect(find.text('fronting'), findsOneWidget);
@@ -888,6 +890,41 @@ void main() {
     expect(find.text('Blurry'), findsOneWidget);
     expect(find.text('Retrospective entry'), findsOneWidget);
     expect(repository._frontHistory.single.isActive, isFalse);
+  });
+
+  testWidgets('editing an active front leaves its end unset', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setCustomFront('Away');
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Front History'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Away').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit entry'));
+    await tester.pumpAndSettle();
+    expect(find.text('active'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-note-field')),
+      'Still fronting',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-front-history-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-front-history-button')));
+    await tester.pumpAndSettle();
+    expect(repository._frontHistory.single.isActive, isTrue);
+    expect(repository._frontHistory.single.statusNote, 'Still fronting');
   });
 
   testWidgets('saves applies and deletes custom and named fronts', (
@@ -1048,7 +1085,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilterChip, 'Wren'));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const ValueKey('set-selected-members-front-button')),
+      find.byKey(const ValueKey('add-selected-members-front-button')),
     );
     await tester.pumpAndSettle();
 
@@ -1059,6 +1096,40 @@ void main() {
     expect(
       repository._notificationEvents.single.body,
       'Set River, Wren as front',
+    );
+  });
+
+  testWidgets('front picker ends one member without ending a cofronter', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('end-front-fake-member-1')));
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, hasLength(2));
+    await tester.tap(find.text("End River's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, ['fake-member-2']);
+    expect(
+      find.byKey(const ValueKey('end-front-fake-member-2')),
+      findsOneWidget,
     );
   });
 
@@ -1087,6 +1158,18 @@ void main() {
       find.byKey(const ValueKey('add-custom-front-page-button')),
     );
     await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-color-field')),
+      'not a colour',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-front-page-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.text('Use 6 hex digits, like #F2C75C.'), findsOneWidget);
+    expect(repository._namedFronts, isEmpty);
 
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-page-name-field')),
@@ -1129,23 +1212,24 @@ void main() {
 
     final frontActionKey = 'named-front-${repository._namedFronts.single.id}';
     await tester.tap(
-      find.byKey(ValueKey('front-action-picker-$frontActionKey')),
+      find.byKey(ValueKey('front-action-replace-$frontActionKey')),
     );
     await tester.pumpAndSettle();
-    final setAsFront = find.ancestor(
-      of: find.text('Make current front'),
-      matching: find.byType(CheckedPopupMenuItem<HavenFrontAction>),
+    expect(
+      find.text('This ends other active member fronts. Continue?'),
+      findsOneWidget,
     );
-    await tester.ensureVisible(setAsFront);
-    await tester.tap(setAsFront);
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(repository._customization.frontAction, HavenFrontAction.replace);
-
+    expect(repository._snapshot.currentFrontLabel, isNull);
     await tester.tap(
-      find.byKey(ValueKey('front-action-button-$frontActionKey')),
+      find.byKey(ValueKey('front-action-replace-$frontActionKey')),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'Away');
+    expect(repository._customization.frontAction, HavenFrontAction.add);
 
     await tester.tap(find.byTooltip('Delete custom front'));
     await tester.pumpAndSettle();
@@ -1386,9 +1470,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Iris'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'Iris');
@@ -1427,7 +1513,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Archive'));
     await tester.pumpAndSettle();
@@ -1437,14 +1523,14 @@ void main() {
     expect(find.text('no pronouns - archived'), findsOneWidget);
     expect(repository._snapshot.memberCount, 0);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.memberCount, 1);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -1460,7 +1546,7 @@ void main() {
 
     expect(find.text('Iris edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
@@ -1478,7 +1564,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
@@ -1540,6 +1626,8 @@ void main() {
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Make current front'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
+    await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
     expect(repository._notificationEvents, hasLength(1));
@@ -1580,7 +1668,7 @@ void main() {
     await tester.pump();
 
     await openDrawerSection(tester, 'Members');
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Duplicate'));
     await tester.pumpAndSettle();
@@ -2550,6 +2638,75 @@ void main() {
     expect(repository._snapshot.noteCount, 0);
   });
 
+  testWidgets('blank notes stay open and title-only notes save', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Write something before saving.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('note-title-field')), findsOneWidget);
+    expect(repository._notes, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('note-title-field')),
+      'A title is enough',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+    expect(repository._notes.single.title, 'A title is enough');
+    expect(repository._notes.single.body, isEmpty);
+  });
+
+  testWidgets('journal title-only entry keeps its about-member target', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Write something before saving.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('journal-title-field')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-title-field')),
+      'About today',
+    );
+    await tester.tap(find.byKey(const ValueKey('journal-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('River').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.title, 'About today');
+    expect(repository._journals.single.body, isEmpty);
+    expect(repository._journals.single.memberId, 'fake-member-1');
+
+    await tester.tap(find.text('About today'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('journal-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('System journal').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.memberId, isNull);
+  });
+
   testWidgets('creates edits searches and deletes journal entries', (
     tester,
   ) async {
@@ -2937,7 +3094,7 @@ void main() {
     expect(repository._reminders.single.enabled, isTrue);
     expect(find.text('on'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete reminder'));
+    await tester.tap(find.byTooltip(RegExp(r'^Delete reminder ')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -3001,7 +3158,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
     await openDrawerSection(tester, 'Reminders');
-    await tester.tap(find.byTooltip('Edit reminder'));
+    await tester.tap(find.byTooltip(RegExp(r'^Edit reminder ')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reminder-time-field')),
@@ -3400,6 +3557,22 @@ void main() {
     expect(find.text('Rice'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
+    final semantics = tester.ensureSemantics();
+    expect(
+      find.bySemanticsLabel('Dinner?: Soup, not selected'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Soup'), findsNothing);
+    expect(find.bySemanticsLabel('Vote history: Dinner?'), findsOneWidget);
+    expect(find.byTooltip('Delete poll: Dinner?'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(find.text('Dinner?'))
+          .getSemanticsData()
+          .flagsCollection
+          .isHeader,
+      isTrue,
+    );
 
     await tester.tap(find.text('Soup'));
     await tester.pumpAndSettle();
@@ -3407,19 +3580,21 @@ void main() {
     final votedPoll = (await repository.watchPolls().first).single;
     expect(votedPoll.selectedCount, 1);
     expect(votedPoll.options.first.selected, isTrue);
+    expect(find.bySemanticsLabel('Dinner?: Soup, selected'), findsOneWidget);
 
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect((await repository.watchPolls().first).single.closed, isTrue);
     expect(find.text('Closed'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete poll'));
+    await tester.tap(find.byTooltip('Delete poll: Dinner?'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dinner?'), findsNothing);
     expect(find.text('No polls yet'), findsOneWidget);
+    semantics.dispose();
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
@@ -4098,6 +4273,84 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
+  });
+
+  testWidgets('switching to PluralKit live keeps pasted input isolated', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'members': [
+          {'_id': 'sp-member-1', 'name': 'Iris'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(find.text('pasted-import.json'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('paste-import-json-field')),
+          )
+          .controller!
+          .text,
+      contains('sp-member-1'),
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(find.text('pasted-import.json'), findsNothing);
+    expect(find.textContaining('Preview ready'), findsNothing);
+    final previewButton = find.widgetWithText(OutlinedButton, 'Preview import');
+    expect(tester.widget<OutlinedButton>(previewButton).onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('pluralkit-token-field')),
+      'pk;test-token',
+    );
+    await tester.pump();
+    expect(tester.widget<OutlinedButton>(previewButton).onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simply Plural').last);
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(find.text('pasted-import.json'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(find.text('pasted-import.json'), findsNothing);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('pluralkit-token-field')),
+          )
+          .controller!
+          .text,
+      'pk;test-token',
+    );
   });
 
   testWidgets('detects renamed import members by their mapped source ID', (
@@ -5177,7 +5430,6 @@ class FakeHavenRepository implements HavenRepository {
       return const [];
     }
 
-    _currentCustomFrontLabels = const [];
     _currentFrontMemberIds = [for (final member in selected) member.id];
     _emitCurrentFrontMembers();
     _emitSnapshot(

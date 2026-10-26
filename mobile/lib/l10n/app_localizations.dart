@@ -1764,6 +1764,12 @@ abstract class AppLocalizations {
   /// **'Delete reminder'**
   String get deleteReminderTooltip;
 
+  /// No description provided for @deleteReminderFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete reminder {title}, {schedule}'**
+  String deleteReminderFor(String title, String schedule);
+
   /// No description provided for @deleteReminderTitle.
   ///
   /// In en, this message translates to:
@@ -1919,6 +1925,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time'**
   String get timeFieldLabel;
+
+  /// No description provided for @chooseReminderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose reminder time'**
+  String get chooseReminderTime;
 
   /// No description provided for @timeFieldHelper.
   ///
@@ -2184,11 +2196,23 @@ abstract class AppLocalizations {
   /// **'Edit reminder'**
   String get editReminderTooltip;
 
+  /// No description provided for @editReminderFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reminder {title}, {schedule}'**
+  String editReminderFor(String title, String schedule);
+
   /// No description provided for @reminderTimeError.
   ///
   /// In en, this message translates to:
   /// **'Enter a valid time, such as 09:00 or 9am.'**
   String get reminderTimeError;
+
+  /// No description provided for @couldNotSaveReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this reminder. Check whether it still exists and try again.'**
+  String get couldNotSaveReminder;
 
   /// No description provided for @previewPastedJson.
   ///
@@ -4933,6 +4957,24 @@ abstract class AppLocalizations {
   /// **'Add journal entry'**
   String get addJournalEntryButton;
 
+  /// No description provided for @journalAboutMemberFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get journalAboutMemberFieldLabel;
+
+  /// No description provided for @systemJournalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System journal'**
+  String get systemJournalLabel;
+
+  /// No description provided for @memberJournalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About {name}'**
+  String memberJournalLabel(String name);
+
   /// No description provided for @untitledEntry.
   ///
   /// In en, this message translates to:
@@ -4992,6 +5034,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write something before saving.'**
   String get writeBeforeSaving;
+
+  /// No description provided for @couldNotSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Your draft is still open; try again.'**
+  String get couldNotSaveDraft;
 
   /// No description provided for @searchGroupsHint.
   ///
@@ -5794,6 +5842,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Make current front'**
   String get setAsFrontButton;
+
+  /// No description provided for @replaceCurrentFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace current front'**
+  String get replaceCurrentFrontButton;
+
+  /// No description provided for @replaceCurrentFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends other active member fronts. Continue?'**
+  String get replaceCurrentFrontWarning;
+
+  /// No description provided for @endMemberFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End {name}\'s front'**
+  String endMemberFrontButton(String name);
+
+  /// No description provided for @endMemberFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?'**
+  String get endMemberFrontWarning;
+
+  /// No description provided for @replaceCurrentMembersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace selected members'**
+  String get replaceCurrentMembersButton;
+
+  /// No description provided for @replaceCurrentMembersWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends active member fronts that are not selected. Active custom fronts stay current. Continue?'**
+  String get replaceCurrentMembersWarning;
+
+  /// No description provided for @memberActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Member actions for {name} ({id})'**
+  String memberActionsFor(String name, String id);
+
+  /// No description provided for @memberWithId.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({id})'**
+  String memberWithId(String name, String id);
 
   /// No description provided for @frontActionPickerTooltip.
   ///
@@ -7196,8 +7292,20 @@ abstract class AppLocalizations {
   /// No description provided for @noAnalyticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Make a front current or import Simply Plural front history to fill this in.'**
+  /// **'Make a front current or import front history to fill this in.'**
   String get noAnalyticsBody;
+
+  /// No description provided for @noAnalyticsInWindowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No fronts in this period'**
+  String get noAnalyticsInWindowTitle;
+
+  /// No description provided for @noAnalyticsInWindowBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a longer period or All to see earlier front history.'**
+  String get noAnalyticsInWindowBody;
 
   /// No description provided for @totalFrontTimeLabel.
   ///

@@ -936,6 +936,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteReminderTooltip => 'Delete reminder';
 
   @override
+  String deleteReminderFor(String title, String schedule) {
+    return 'Delete reminder $title, $schedule';
+  }
+
+  @override
   String get deleteReminderTitle => 'Delete reminder?';
 
   @override
@@ -1015,6 +1020,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeFieldLabel => 'Time';
+
+  @override
+  String get chooseReminderTime => 'Choose reminder time';
 
   @override
   String get timeFieldHelper => '24-hour local time, like 09:00';
@@ -1172,7 +1180,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editReminderTooltip => 'Edit reminder';
 
   @override
+  String editReminderFor(String title, String schedule) {
+    return 'Edit reminder $title, $schedule';
+  }
+
+  @override
   String get reminderTimeError => 'Enter a valid time, such as 09:00 or 9am.';
+
+  @override
+  String get couldNotSaveReminder =>
+      'Could not save this reminder. Check whether it still exists and try again.';
 
   @override
   String get previewPastedJson => 'Preview pasted JSON';
@@ -2851,6 +2868,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addJournalEntryButton => 'Add journal entry';
 
   @override
+  String get journalAboutMemberFieldLabel => 'About';
+
+  @override
+  String get systemJournalLabel => 'System journal';
+
+  @override
+  String memberJournalLabel(String name) {
+    return 'About $name';
+  }
+
+  @override
   String get untitledEntry => 'Untitled entry';
 
   @override
@@ -2880,6 +2908,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get writeBeforeSaving => 'Write something before saving.';
+
+  @override
+  String get couldNotSaveDraft =>
+      'Could not save. Your draft is still open; try again.';
 
   @override
   String get searchGroupsHint => 'Search groups';
@@ -3343,6 +3375,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setAsFrontButton => 'Make current front';
+
+  @override
+  String get replaceCurrentFrontButton => 'Replace current front';
+
+  @override
+  String get replaceCurrentFrontWarning =>
+      'This ends other active member fronts. Continue?';
+
+  @override
+  String endMemberFrontButton(String name) {
+    return 'End $name\'s front';
+  }
+
+  @override
+  String get endMemberFrontWarning =>
+      'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?';
+
+  @override
+  String get replaceCurrentMembersButton => 'Replace selected members';
+
+  @override
+  String get replaceCurrentMembersWarning =>
+      'This ends active member fronts that are not selected. Active custom fronts stay current. Continue?';
+
+  @override
+  String memberActionsFor(String name, String id) {
+    return 'Member actions for $name ($id)';
+  }
+
+  @override
+  String memberWithId(String name, String id) {
+    return '$name ($id)';
+  }
 
   @override
   String get frontActionPickerTooltip => 'Choose front action';
@@ -4139,7 +4204,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noAnalyticsBody =>
-      'Make a front current or import Simply Plural front history to fill this in.';
+      'Make a front current or import front history to fill this in.';
+
+  @override
+  String get noAnalyticsInWindowTitle => 'No fronts in this period';
+
+  @override
+  String get noAnalyticsInWindowBody =>
+      'Choose a longer period or All to see earlier front history.';
 
   @override
   String get totalFrontTimeLabel => 'Summed front time';
