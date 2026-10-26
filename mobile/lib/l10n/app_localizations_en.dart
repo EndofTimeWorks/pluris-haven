@@ -3528,24 +3528,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteMemberBody(String name) {
-    return '$name will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.';
+    return 'Remove $name from active lists? Their current front will end. History and content stay available, and you can restore their profile from Removed.';
   }
 
   @override
-  String deleteMemberImpact(
-    int groupLinks,
-    int tagLinks,
-    int namedFrontLinks,
-    int privacyBucketLinks,
-    int customFieldValues,
-    int activeFrontSessions,
-    int frontHistoryLinks,
-    int notes,
-    int messages,
-    int journals,
-    int reminderTriggers,
-  ) {
-    return 'Removal summary -- group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained -- front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
+  String memberArchived(String name) {
+    return '$name moved to Archived.';
+  }
+
+  @override
+  String memberRestored(String name) {
+    return '$name restored to active members.';
+  }
+
+  @override
+  String memberRestoredToArchive(String name) {
+    return '$name restored to Archived. Restore them there to make them active.';
   }
 
   @override

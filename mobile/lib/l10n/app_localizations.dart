@@ -6044,26 +6044,26 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'{name} will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.'**
+  /// **'Remove {name} from active lists? Their current front will end. History and content stay available, and you can restore their profile from Removed.'**
   String deleteMemberBody(String name);
 
-  /// No description provided for @deleteMemberImpact.
+  /// No description provided for @memberArchived.
   ///
   /// In en, this message translates to:
-  /// **'Removal summary -- group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained -- front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
-  String deleteMemberImpact(
-    int groupLinks,
-    int tagLinks,
-    int namedFrontLinks,
-    int privacyBucketLinks,
-    int customFieldValues,
-    int activeFrontSessions,
-    int frontHistoryLinks,
-    int notes,
-    int messages,
-    int journals,
-    int reminderTriggers,
-  );
+  /// **'{name} moved to Archived.'**
+  String memberArchived(String name);
+
+  /// No description provided for @memberRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} restored to active members.'**
+  String memberRestored(String name);
+
+  /// No description provided for @memberRestoredToArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} restored to Archived. Restore them there to make them active.'**
+  String memberRestoredToArchive(String name);
 
   /// No description provided for @setFrontButton.
   ///

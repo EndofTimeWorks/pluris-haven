@@ -1829,6 +1829,7 @@ void main() {
 
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('no pronouns - archived'), findsOneWidget);
+    expect(find.text('Iris moved to Archived.'), findsOneWidget);
     expect(repository._snapshot.memberCount, 0);
 
     await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
@@ -1837,6 +1838,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.memberCount, 1);
+    expect(find.text('Iris restored to active members.'), findsOneWidget);
 
     await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
@@ -1859,7 +1861,7 @@ void main() {
     await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Removal summary -- group links: 0'),
+      find.textContaining('Their current front will end.'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Remove member'));
@@ -1878,6 +1880,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Iris edited'), findsNothing);
+    expect(
+      find.text('Iris edited restored to active members.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
