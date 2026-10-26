@@ -13,6 +13,7 @@ import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/local_api/local_api_controller.dart';
 import 'package:pluris_haven/features/app_lock_gate.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
@@ -238,6 +239,48 @@ void main() {
     expect(database.closed, isTrue);
     expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('retries a missing local key without clearing data', (
+    tester,
+  ) async {
+    final databases = <_TrackingDatabase>[];
+    var attempts = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () {
+            final database = _TrackingDatabase();
+            databases.add(database);
+            return database;
+          },
+          loadCrypto: () async {
+            attempts++;
+            if (attempts == 1) throw const MissingMasterKeyException();
+            return testCrypto();
+          },
+          runMigrations: (_) async {},
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(databases.single.closed, isTrue);
+    expect(find.text('Encryption key unavailable'), findsOneWidget);
+    expect(
+      find.textContaining('clearing storage may lose data'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.byType(PlurisHavenApp), findsOneWidget);
+    expect(databases, hasLength(2));
+    expect(databases.last.closed, isFalse);
+    await databases.last.close();
   });
 
   testWidgets('retires a saved Local API enable choice during bootstrap', (

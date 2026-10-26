@@ -1202,6 +1202,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save this reminder. Check whether it still exists and try again.';
 
   @override
+  String get encryptionKeyUnavailableTitle => 'Encryption key unavailable';
+
+  @override
+  String get encryptionKeyUnavailableBody =>
+      'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.';
+
+  @override
+  String get tryAgainButton => 'Try again';
+
+  @override
   String get reminderSavedNotificationFailed =>
       'Reminder saved, but its notification could not be set. Check notification settings.';
 
