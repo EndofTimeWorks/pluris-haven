@@ -18,6 +18,7 @@ class _MessagesPageState extends State<MessagesPage> {
   final _searchController = TextEditingController();
   String _query = '';
   String _boardFilter = 'all';
+  String? _channelFilterId;
 
   @override
   void dispose() {
@@ -36,11 +37,23 @@ class _MessagesPageState extends State<MessagesPage> {
           stream: widget.repository.watchChatChannels(includeArchived: true),
           initialData: const [],
           builder: (context, channelSnapshot) {
+            final channels =
+                channelSnapshot.data ?? const <ChatChannelSummary>[];
             final channelNamesById = {
-              for (final channel
-                  in channelSnapshot.data ?? const <ChatChannelSummary>[])
-                channel.id: channel.name,
+              for (final channel in channels) channel.id: channel.name,
             };
+            final selectedChannelId =
+                channels.any((channel) => channel.id == _channelFilterId)
+                ? _channelFilterId
+                : null;
+            final channelNameCounts = <String, int>{};
+            for (final channel in channels) {
+              channelNameCounts.update(
+                channel.name,
+                (count) => count + 1,
+                ifAbsent: () => 1,
+              );
+            }
             return StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
               initialData: const [],
@@ -55,6 +68,9 @@ class _MessagesPageState extends State<MessagesPage> {
                       (message) =>
                           (_boardFilter == 'all' ||
                               message.boardKind == _boardFilter) &&
+                          (_boardFilter != 'channel' ||
+                              selectedChannelId == null ||
+                              message.channelId == selectedChannelId) &&
                           _matchesQuery(_query, [
                             message.body,
                             _messageSenderLabel(
@@ -99,6 +115,33 @@ class _MessagesPageState extends State<MessagesPage> {
                       onSelectionChanged: (value) =>
                           setState(() => _boardFilter = value.single),
                     ),
+                    if (_boardFilter == 'channel' && channels.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String?>(
+                        key: ValueKey('chat-channel-filter-$selectedChannelId'),
+                        initialValue: selectedChannelId,
+                        decoration: InputDecoration(
+                          labelText: l10n.channelViewFieldLabel,
+                        ),
+                        items: [
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text(l10n.allChannelsFilter),
+                          ),
+                          for (final channel in channels)
+                            DropdownMenuItem<String?>(
+                              value: channel.id,
+                              child: Text(
+                                channelNameCounts[channel.name] == 1
+                                    ? channel.name
+                                    : '${channel.name} (${channel.id.substring(channel.id.length > 8 ? channel.id.length - 8 : 0)})',
+                              ),
+                            ),
+                        ],
+                        onChanged: (id) =>
+                            setState(() => _channelFilterId = id),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     SpCard(
                       child: Column(
@@ -111,10 +154,12 @@ class _MessagesPageState extends State<MessagesPage> {
                           const SizedBox(height: 12),
                           if (messages.isEmpty)
                             SpEmptyState(
-                              title: _query.trim().isEmpty
+                              title:
+                                  _query.trim().isEmpty && _boardFilter == 'all'
                                   ? l10n.noMessagesYet
                                   : l10n.noMatchingMessages,
-                              body: _query.trim().isEmpty
+                              body:
+                                  _query.trim().isEmpty && _boardFilter == 'all'
                                   ? l10n.messagesEmptyBody
                                   : l10n.tryAnotherSearch,
                             )
@@ -334,6 +379,8 @@ class _MessageSheetState extends State<MessageSheet> {
 
   final _bodyController = TextEditingController();
   String? _memberId;
+  String? _initialMemberId;
+  bool _senderTouched = false;
   String _boardKind = 'system';
   String? _boardMemberId;
   String? _channelId;
@@ -343,7 +390,7 @@ class _MessageSheetState extends State<MessageSheet> {
 
   bool get _isDirty =>
       _bodyController.text != (widget.message?.body ?? '') ||
-      _memberId != widget.message?.memberId ||
+      _memberId != _initialMemberId ||
       _boardKind !=
           (widget.message?.boardKind ??
               widget.parentMessage?.boardKind ??
@@ -372,11 +419,31 @@ class _MessageSheetState extends State<MessageSheet> {
     final message = widget.message;
     _bodyController.text = message?.body ?? '';
     _memberId = message?.memberId;
+    _initialMemberId = _memberId;
     _boardKind =
         message?.boardKind ?? widget.parentMessage?.boardKind ?? 'system';
     _boardMemberId =
         message?.boardMemberId ?? widget.parentMessage?.boardMemberId;
     _channelId = message?.channelId ?? widget.parentMessage?.channelId;
+    if (message == null) _loadDefaultSender();
+  }
+
+  Future<void> _loadDefaultSender() async {
+    try {
+      final fronters = await widget.repository.watchCurrentFrontMembers().first;
+      if (!mounted ||
+          fronters.length != 1 ||
+          _senderTouched ||
+          _bodyController.text.isNotEmpty) {
+        return;
+      }
+      setState(() {
+        _memberId = fronters.single.id;
+        _initialMemberId = _memberId;
+      });
+    } on Object {
+      // The System sender remains available if the current front cannot load.
+    }
   }
 
   @override
@@ -424,24 +491,28 @@ class _MessageSheetState extends State<MessageSheet> {
                     : members.any((member) => member.id == _memberId)
                     ? _memberId!
                     : _systemMessageValue;
-                return DropdownButtonFormField<String>(
-                  key: const ValueKey('message-member-field'),
-                  initialValue: value,
-                  decoration: InputDecoration(labelText: l10n.fromFieldLabel),
-                  items: [
-                    DropdownMenuItem(
-                      value: _systemMessageValue,
-                      child: Text(l10n.systemMessageLabel),
-                    ),
-                    for (final member in members)
+                return KeyedSubtree(
+                  key: ValueKey('message-sender-$value'),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('message-member-field'),
+                    initialValue: value,
+                    decoration: InputDecoration(labelText: l10n.fromFieldLabel),
+                    items: [
                       DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
+                        value: _systemMessageValue,
+                        child: Text(l10n.systemMessageLabel),
                       ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _memberId = value == _systemMessageValue ? null : value;
-                  }),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _senderTouched = true;
+                      _memberId = value == _systemMessageValue ? null : value;
+                    }),
+                  ),
                 );
               },
             ),

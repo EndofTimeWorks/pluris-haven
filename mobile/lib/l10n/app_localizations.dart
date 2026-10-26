@@ -5580,6 +5580,18 @@ abstract class AppLocalizations {
   /// **'Channel'**
   String get channelFilter;
 
+  /// No description provided for @channelViewFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View channel'**
+  String get channelViewFieldLabel;
+
+  /// No description provided for @allChannelsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All channels'**
+  String get allChannelsFilter;
+
   /// No description provided for @channelBoardMessageMetadata.
   ///
   /// In en, this message translates to:
