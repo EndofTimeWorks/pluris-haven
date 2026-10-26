@@ -2662,6 +2662,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteNoteTooltip => 'Delete note';
 
   @override
+  String deleteNoteForTooltip(String name, String id) {
+    return 'Delete note $name ($id)';
+  }
+
+  @override
   String get deleteNoteTitle => 'Delete note?';
 
   @override
@@ -3309,7 +3314,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get membersEmptyBody =>
-      'Add members here or import a Simply Plural export.';
+      'Add members here or import a local archive or supported export.';
 
   @override
   String get addMemberButton => 'Add member';

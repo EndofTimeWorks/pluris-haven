@@ -2663,7 +2663,7 @@ void main() {
     );
     expect(repository._notes.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Delete note'));
+    await tester.tap(find.byTooltip('Delete note Grounding edited (e-note-1)'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -2698,6 +2698,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository._notes.single.title, 'A title is enough');
     expect(repository._notes.single.body, isEmpty);
+  });
+
+  testWidgets('notes list shows readable Markdown excerpts', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveNote(
+      const NoteDraft(
+        title: 'Reminder',
+        body:
+            '**Bring water** and [check the map](https://example.com).\n- Rest',
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+
+    expect(
+      find.textContaining('Bring water and check the map.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('**Bring water**'), findsNothing);
+    expect(repository._notes.single.body, contains('**Bring water**'));
   });
 
   testWidgets('journal title-only entry keeps its about-member target', (

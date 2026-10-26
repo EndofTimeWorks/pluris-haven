@@ -183,7 +183,7 @@ class NoteListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final body = note.body.trim();
+    final body = _notePlainTextPreview(note.body);
     final ownerLabel = _noteMemberLabel(note, memberName, l10n);
 
     return Material(
@@ -202,7 +202,10 @@ class NoteListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: IconButton(
-          tooltip: l10n.deleteNoteTooltip,
+          tooltip: l10n.deleteNoteForTooltip(
+            note.title,
+            note.id.substring(note.id.length > 8 ? note.id.length - 8 : 0),
+          ),
           onPressed: () => confirmDelete(
             context,
             title: l10n.deleteNoteTitle,
@@ -215,6 +218,38 @@ class NoteListTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _notePlainTextPreview(String body) {
+  if (body.trim().isEmpty) return '';
+  final text = StringBuffer();
+
+  void appendNodes(List<markdown.Node> nodes) {
+    for (final node in nodes) {
+      if (node is markdown.Text) {
+        text.write(node.text);
+      } else if (node is markdown.Element) {
+        if (node.tag == 'img') continue;
+        appendNodes(node.children ?? const []);
+        if (const {
+          'p',
+          'li',
+          'h1',
+          'h2',
+          'h3',
+          'h4',
+          'h5',
+          'h6',
+          'pre',
+        }.contains(node.tag)) {
+          text.write(' ');
+        }
+      }
+    }
+  }
+
+  appendNodes(markdown.Document().parseLines(body.split('\n')));
+  return text.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 String _noteMemberLabel(
