@@ -1821,7 +1821,7 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontSchedule.
   ///
   /// In en, this message translates to:
-  /// **'After member fronts'**
+  /// **'After a front starts'**
   String get afterFrontSchedule;
 
   /// No description provided for @titleFieldLabel.
@@ -1917,19 +1917,19 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontDelayLabel.
   ///
   /// In en, this message translates to:
-  /// **'Delay after fronting (seconds)'**
+  /// **'Delay after fronting'**
   String get afterFrontDelayLabel;
 
   /// No description provided for @afterFrontDelayHelper.
   ///
   /// In en, this message translates to:
-  /// **'Deliver this reminder after this many seconds. Use 0 for immediately.'**
+  /// **'Use 0 for immediately, 90m, or 1h 30m. A number alone means seconds.'**
   String get afterFrontDelayHelper;
 
   /// No description provided for @afterFrontDelayError.
   ///
   /// In en, this message translates to:
-  /// **'Enter zero or a positive whole number of seconds.'**
+  /// **'Enter 0 or a positive delay, such as 90m or 1h 30m.'**
   String get afterFrontDelayError;
 
   /// No description provided for @anyFrontStartsOption.
@@ -1983,8 +1983,38 @@ abstract class AppLocalizations {
   /// No description provided for @afterSelectedFrontStarts.
   ///
   /// In en, this message translates to:
-  /// **'After a selected front starts'**
+  /// **'When any front starts'**
   String get afterSelectedFrontStarts;
+
+  /// No description provided for @anyFrontStartsTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'any front starts'**
+  String get anyFrontStartsTrigger;
+
+  /// No description provided for @memberFrontsTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'{detail} fronts'**
+  String memberFrontsTrigger(String detail);
+
+  /// No description provided for @reminderDelayHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String reminderDelayHours(int count);
+
+  /// No description provided for @reminderDelayMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String reminderDelayMinutes(int count);
+
+  /// No description provided for @reminderDelaySeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String reminderDelaySeconds(int count);
 
   /// No description provided for @afterFrontLabel.
   ///
@@ -1995,8 +2025,8 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontDelayedLabel.
   ///
   /// In en, this message translates to:
-  /// **'{delay} seconds after {detail} fronts'**
-  String afterFrontDelayedLabel(int delay, String detail);
+  /// **'{delay} after {detail}'**
+  String afterFrontDelayedLabel(String delay, String detail);
 
   /// No description provided for @importTitle.
   ///
