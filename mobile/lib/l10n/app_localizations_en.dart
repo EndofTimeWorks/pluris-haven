@@ -2980,6 +2980,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupActionsTooltip => 'Group actions';
 
   @override
+  String groupActionsFor(String name, String id) {
+    return 'Group actions for $name ($id)';
+  }
+
+  @override
   String get deleteGroupTitle => 'Delete group?';
 
   @override

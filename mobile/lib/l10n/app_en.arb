@@ -1137,6 +1137,8 @@
   "groupAvatarSemanticLabel": "Avatar for group {name}",
   "@groupAvatarSemanticLabel": { "placeholders": { "name": { "type": "String" } } },
   "groupActionsTooltip": "Group actions",
+  "groupActionsFor": "Group actions for {name} ({id})",
+  "@groupActionsFor": { "placeholders": { "name": { "type": "String" }, "id": { "type": "String" } } },
   "deleteGroupTitle": "Delete group?",
   "deleteGroupBody": "Members stay saved. Child groups move up one level.",
   "editButton": "Edit",
