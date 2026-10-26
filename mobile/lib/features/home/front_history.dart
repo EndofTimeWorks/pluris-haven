@@ -609,7 +609,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   late final TextEditingController _noteController;
   late final TextEditingController _memberSearchController;
   late DateTime _startedAt;
-  late DateTime _endedAt;
+  DateTime? _endedAt;
   late final Set<String> _memberIds;
   String _memberQuery = '';
   String? _error;
@@ -621,7 +621,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
     final entry = widget.entry;
     _startedAt =
         entry?.startedAt.toLocal() ?? now.subtract(const Duration(hours: 1));
-    _endedAt = entry?.endedAt?.toLocal() ?? now;
+    _endedAt = entry == null ? now : entry.endedAt?.toLocal();
     _memberIds = {...?entry?.memberIds};
     _labelController = TextEditingController(
       text: entry?.memberIds.isEmpty == true ? entry?.label : null,
@@ -670,10 +670,20 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.endedFieldLabel),
-              subtitle: Text(_shortDateTime(context, _endedAt)),
+              subtitle: Text(
+                _endedAt == null
+                    ? l10n.activeStatus
+                    : _shortDateTime(context, _endedAt!),
+              ),
               trailing: const Icon(Icons.event_available_outlined),
               onTap: () => _pickDateTime(start: false),
             ),
+            if (_endedAt != null)
+              TextButton(
+                key: const ValueKey('keep-front-active-button'),
+                onPressed: () => setState(() => _endedAt = null),
+                child: Text(l10n.activeStatus),
+              ),
             const SizedBox(height: 8),
             Text(
               l10n.navigationMembers,
@@ -778,7 +788,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 
   Future<void> _pickDateTime({required bool start}) async {
-    final initial = start ? _startedAt : _endedAt;
+    final initial = start ? _startedAt : (_endedAt ?? DateTime.now());
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -808,7 +818,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 
   Future<void> _save() async {
-    if (_endedAt.isBefore(_startedAt)) {
+    if (_endedAt != null && _endedAt!.isBefore(_startedAt)) {
       setState(() => _error = AppLocalizations.of(context).endBeforeStartError);
       return;
     }

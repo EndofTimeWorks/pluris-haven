@@ -38,7 +38,11 @@ class PollsPage extends StatelessWidget {
                     )
                   else
                     for (final poll in polls) ...[
-                      PollTile(poll: poll, repository: repository),
+                      Semantics(
+                        container: true,
+                        explicitChildNodes: true,
+                        child: PollTile(poll: poll, repository: repository),
+                      ),
                       if (poll != polls.last) const Divider(height: 1),
                     ],
                   const SizedBox(height: 14),
@@ -80,11 +84,14 @@ class PollTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      poll.question,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        poll.question,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                     if (poll.description?.trim().isNotEmpty == true) ...[
@@ -119,39 +126,45 @@ class PollTile extends StatelessWidget {
           const SizedBox(height: 10),
           for (final option in poll.options)
             Semantics(
+              container: true,
               button: true,
               selected: option.selected,
               enabled: !poll.closed,
               label: l10n.pollOptionSemanticLabel(
-                option.body,
+                '${poll.question}: ${option.body}',
                 option.selected ? l10n.selectedStatus : l10n.notSelectedStatus,
               ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: poll.closed
-                    ? null
-                    : () => repository.togglePollOption(poll.id, option.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        option.selected
-                            ? Icons.check_circle_rounded
-                            : poll.kind == PollKind.singleChoice
-                            ? Icons.radio_button_unchecked_rounded
-                            : Icons.check_box_outline_blank_rounded,
-                        color: option.selected
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(option.body)),
-                    ],
+              onTap: poll.closed
+                  ? null
+                  : () => repository.togglePollOption(poll.id, option.id),
+              child: ExcludeSemantics(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: poll.closed
+                      ? null
+                      : () => repository.togglePollOption(poll.id, option.id),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          option.selected
+                              ? Icons.check_circle_rounded
+                              : poll.kind == PollKind.singleChoice
+                              ? Icons.radio_button_unchecked_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          color: option.selected
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(option.body)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -170,7 +183,10 @@ class PollTile extends StatelessWidget {
               if (!poll.closed)
                 TextButton(
                   onPressed: () => repository.closePoll(poll.id),
-                  child: Text(l10n.closeButton),
+                  child: Semantics(
+                    label: '${l10n.closeButton}: ${poll.question}',
+                    child: ExcludeSemantics(child: Text(l10n.closeButton)),
+                  ),
                 ),
               TextButton(
                 onPressed: () => showPollVoteHistory(
@@ -178,10 +194,15 @@ class PollTile extends StatelessWidget {
                   repository: repository,
                   poll: poll,
                 ),
-                child: Text(l10n.pollVoteHistoryButton),
+                child: Semantics(
+                  label: '${l10n.pollVoteHistoryButton}: ${poll.question}',
+                  child: ExcludeSemantics(
+                    child: Text(l10n.pollVoteHistoryButton),
+                  ),
+                ),
               ),
               IconButton(
-                tooltip: l10n.deletePollTooltip,
+                tooltip: '${l10n.deletePollTooltip}: ${poll.question}',
                 onPressed: () => confirmDelete(
                   context,
                   title: l10n.deletePollTitle,

@@ -125,7 +125,7 @@ class FrontHistoryDraft {
   });
 
   final DateTime startedAt;
-  final DateTime endedAt;
+  final DateTime? endedAt;
   final List<String> memberIds;
   final String? label;
   final String? statusNote;

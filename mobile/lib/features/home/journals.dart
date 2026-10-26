@@ -214,15 +214,20 @@ class JournalEntrySheet extends StatefulWidget {
 }
 
 class _JournalEntrySheetState extends State<JournalEntrySheet> {
+  static const _systemJournalValue = '__system_journal__';
+
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+  String? _memberId;
   bool _preview = false;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.entry != null;
 
   bool get _isDirty =>
       _titleController.text != (widget.entry?.title ?? '') ||
-      _bodyController.text != (widget.entry?.body ?? '');
+      _bodyController.text != (widget.entry?.body ?? '') ||
+      _memberId != widget.entry?.memberId;
 
   Future<void> _tryDismiss() async {
     if (!_isDirty) {
@@ -244,6 +249,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     }
     _titleController.text = entry.title ?? '';
     _bodyController.text = entry.body;
+    _memberId = entry.memberId;
   }
 
   @override
@@ -290,6 +296,46 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               decoration: InputDecoration(labelText: l10n.titleFieldLabel),
             ),
             const SizedBox(height: 10),
+            StreamBuilder<List<MemberSummary>>(
+              stream: widget.repository.watchMembers(includeArchived: true),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                final hasSelectedMember = members.any(
+                  (member) => member.id == _memberId,
+                );
+                return KeyedSubtree(
+                  key: ValueKey('journal-about-${members.length}-$_memberId'),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('journal-member-field'),
+                    initialValue: _memberId ?? _systemJournalValue,
+                    decoration: InputDecoration(
+                      labelText: l10n.journalAboutMemberFieldLabel,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: _systemJournalValue,
+                        child: Text(l10n.systemJournalLabel),
+                      ),
+                      if (_memberId != null && !hasSelectedMember)
+                        DropdownMenuItem(
+                          value: _memberId,
+                          child: Text(l10n.unknownMemberLabel),
+                        ),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _memberId = value == _systemJournalValue ? null : value;
+                    }),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -325,7 +371,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
             if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-journal-entry-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(
                 _isEditing ? l10n.saveEntryButton : l10n.createEntryButton,
               ),
@@ -337,8 +383,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   }
 
   Future<void> _save() async {
-    final body = _bodyController.text.trim();
-    if (body.isEmpty) {
+    if (_isSaving) return;
+    if (_titleController.text.trim().isEmpty &&
+        _bodyController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).writeBeforeSaving)),
       );
@@ -346,20 +393,31 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     }
     final now = DateTime.now().toUtc();
     final existing = widget.entry;
-    await widget.repository.saveJournal(
-      JournalEntry(
-        id: existing?.id ?? newLocalId('journal'),
-        systemId: localSystemId,
-        memberId: existing?.memberId,
-        title: _nullIfBlank(_titleController.text),
-        body: _bodyController.text,
-        visibility: existing?.visibility ?? 'system',
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      ),
-    );
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      await widget.repository.saveJournal(
+        JournalEntry(
+          id: existing?.id ?? newLocalId('journal'),
+          systemId: localSystemId,
+          memberId: _memberId,
+          title: _nullIfBlank(_titleController.text),
+          body: _bodyController.text,
+          visibility: existing?.visibility ?? 'system',
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

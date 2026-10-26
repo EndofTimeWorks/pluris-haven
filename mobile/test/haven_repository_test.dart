@@ -785,7 +785,10 @@ void main() {
     );
 
     await repository.setFrontMembers([sage.id]);
-    expect((await repository.loadHomeSnapshot()).currentFrontText, 'Sage');
+    expect(
+      (await repository.loadHomeSnapshot()).currentFrontText,
+      'Away, Asleep, Sage',
+    );
   });
 
   test('creates and edits historical front intervals', () async {
@@ -830,6 +833,163 @@ void main() {
     expect(audit.single.beforeSnapshot, contains('Morning'));
     expect(audit.single.afterSnapshot, contains('Blurry'));
   });
+
+  test('replacing selected members preserves overlapping active intervals and custom fronts', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    for (final name in ['Iris', 'Sage', 'River']) {
+      await repository.saveMember(MemberDraft(displayName: name));
+    }
+    final members = await repository.watchMembers().first;
+    final ids = {for (final member in members) member.displayName: member.id};
+
+    await repository.setFrontMembers([ids['Iris']!, ids['Sage']!]);
+    await repository.addCustomFront('Away');
+    final before = await repository.watchFrontHistory().first;
+    final iris = before.singleWhere(
+      (entry) => entry.memberIds.contains(ids['Iris']),
+    );
+    final sage = before.singleWhere(
+      (entry) => entry.memberIds.contains(ids['Sage']),
+    );
+    final custom = before.singleWhere((entry) => entry.label == 'Away');
+
+    await repository.setFrontMembers([ids['Iris']!, ids['River']!]);
+    await repository.setFrontMembers([ids['Iris']!, ids['River']!]);
+    final after = await repository.watchFrontHistory().first;
+    expect(after.singleWhere((entry) => entry.id == iris.id).isActive, isTrue);
+    expect(
+      after.singleWhere((entry) => entry.id == iris.id).startedAt,
+      iris.startedAt,
+    );
+    expect(after.singleWhere((entry) => entry.id == sage.id).isActive, isFalse);
+    expect(
+      after.singleWhere((entry) => entry.id == custom.id).isActive,
+      isTrue,
+    );
+    expect(
+      after.where((entry) => entry.memberIds.contains(ids['River'])),
+      hasLength(1),
+    );
+    expect(after, hasLength(4));
+
+    await repository.setFrontMembers(const []);
+    final clearedMembers = await repository.watchFrontHistory().first;
+    expect(
+      clearedMembers.where(
+        (entry) => entry.memberIds.isNotEmpty && entry.isActive,
+      ),
+      isEmpty,
+    );
+    expect(
+      clearedMembers.singleWhere((entry) => entry.id == custom.id).isActive,
+      isTrue,
+    );
+  });
+
+  test(
+    'editing an active front keeps its end unset until explicitly supplied',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.setFrontMembers([member.id]);
+      final active = (await repository.watchFrontHistory().first).single;
+
+      await repository.updateFrontHistoryEntry(
+        active.id,
+        FrontHistoryDraft(
+          startedAt: active.startedAt,
+          endedAt: null,
+          memberIds: active.memberIds,
+          statusNote: 'Updated note',
+        ),
+      );
+      final updated = (await repository.watchFrontHistory().first).single;
+      expect(updated.isActive, isTrue);
+      expect(updated.startedAt, active.startedAt);
+      expect(updated.statusNote, 'Updated note');
+
+      final end = DateTime.now().toUtc();
+      await repository.updateFrontHistoryEntry(
+        active.id,
+        FrontHistoryDraft(
+          startedAt: active.startedAt,
+          endedAt: end,
+          memberIds: active.memberIds,
+          statusNote: 'Updated note',
+        ),
+      );
+      expect(
+        (await repository.watchFrontHistory().first).single.isActive,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'replacing part of an imported grouped front preserves the retained start',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+      await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+      final members = await repository.watchMembers().first;
+      final iris = members.singleWhere(
+        (member) => member.displayName == 'Iris',
+      );
+      final sage = members.singleWhere(
+        (member) => member.displayName == 'Sage',
+      );
+      final started = DateTime.utc(2026, 1, 1, 10);
+      await database
+          .into(database.frontSessions)
+          .insert(
+            FrontSessionsCompanion.insert(
+              id: 'grouped-front',
+              systemId: localSystemId,
+              startedAt: started,
+              createdAt: started,
+              updatedAt: started,
+            ),
+          );
+      for (final member in [iris, sage]) {
+        await database
+            .into(database.frontSessionMembers)
+            .insert(
+              FrontSessionMembersCompanion.insert(
+                sessionId: 'grouped-front',
+                memberId: member.id,
+              ),
+            );
+      }
+      final originalStart =
+          (await repository.watchFrontHistory().first).single.startedAt;
+
+      await repository.setFrontMembers([iris.id]);
+      final history = await repository.watchFrontHistory().first;
+      expect(history, hasLength(2));
+      final retained = history.singleWhere(
+        (entry) => entry.id == 'grouped-front',
+      );
+      expect(retained.isActive, isTrue);
+      expect(retained.memberIds, [iris.id]);
+      expect(retained.startedAt, originalStart);
+      final removed = history.singleWhere(
+        (entry) => entry.id != 'grouped-front',
+      );
+      expect(removed.isActive, isFalse);
+      expect(removed.memberIds, [sage.id]);
+      expect(removed.startedAt, originalStart);
+    },
+  );
 
   test(
     'rolls back a front mutation when its required audit insert fails',
@@ -1485,7 +1645,10 @@ END;
         database.members,
       )..where((row) => row.id.equals(member.id))).getSingle();
       expect(storedMember.deletedAt, isNotNull);
-      expect(await repository.setFrontMembers([member.id]), isEmpty);
+      await expectLater(
+        repository.setFrontMembers([member.id]),
+        throwsA(isA<FormatException>()),
+      );
       expect(await database.select(database.groupMembers).get(), hasLength(1));
       expect(await database.select(database.memberTags).get(), hasLength(1));
       expect(
@@ -2691,36 +2854,46 @@ END;
     expect(multipleChoicePoll.selectedCount, 2);
   });
 
-  test(
-    'enforces a currently-fronting requirement for restricted polls',
-    () async {
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
-      final repository = testRepository(database);
-      await repository.ensureLocalSystem();
-      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
-      final member = (await repository.watchMembers().first).single;
-      await repository.savePoll(
-        const PollDraft(
-          question: 'Take a break?',
-          kind: PollKind.singleChoice,
-          options: ['Yes', 'No'],
-          restrictVotingToFronters: true,
-        ),
-      );
-      var poll = (await repository.watchPolls().first).single;
-      expect(poll.restrictVotingToFronters, isTrue);
+  for (final kind in PollKind.values) {
+    test(
+      'enforces a currently-fronting requirement for ${kind.label} polls',
+      () async {
+        final database = AppDatabase(NativeDatabase.memory());
+        addTearDown(database.close);
+        final repository = testRepository(database);
+        await repository.ensureLocalSystem();
+        await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+        await repository.saveMember(const MemberDraft(displayName: 'River'));
+        final members = await repository.watchMembers().first;
+        await repository.savePoll(
+          PollDraft(
+            question: 'Take a break?',
+            kind: kind,
+            options: const ['Yes', 'No'],
+            restrictVotingToFronters: true,
+          ),
+        );
+        var poll = (await repository.watchPolls().first).single;
+        expect(poll.restrictVotingToFronters, isTrue);
 
-      await repository.togglePollOption(poll.id, poll.options.first.id);
-      poll = (await repository.watchPolls().first).single;
-      expect(poll.selectedCount, 0);
+        await repository.togglePollOption(poll.id, poll.options.first.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.selectedCount, 0);
 
-      await repository.setFrontMembers([member.id]);
-      await repository.togglePollOption(poll.id, poll.options.first.id);
-      poll = (await repository.watchPolls().first).single;
-      expect(poll.selectedCount, 1);
-    },
-  );
+        await repository.setFrontMembers([members.first.id]);
+        await repository.togglePollOption(poll.id, poll.options.first.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.selectedCount, 1);
+        expect(poll.options.first.selected, isTrue);
+
+        await repository.addFrontMembers([members.last.id]);
+        await repository.togglePollOption(poll.id, poll.options.last.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.options.last.selected, isTrue);
+        expect(poll.selectedCount, kind == PollKind.singleChoice ? 1 : 2);
+      },
+    );
+  }
 
   test('round-trips persisted poll closing and retention settings', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
