@@ -1133,7 +1133,8 @@ void main() {
 
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Delete saved front').first);
+    expect(find.byTooltip(RegExp(r'^Delete front Asleep \(')), findsWidgets);
+    await tester.tap(find.byTooltip(RegExp(r'^Delete front Asleep \(')).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -1205,6 +1206,10 @@ void main() {
       find.byType(MemberListTile),
     );
     expect(tiles.map((tile) => tile.member.id), ['fake-member-2']);
+    expect(
+      find.byTooltip('Add member to current front: Kai (member-2)'),
+      findsOneWidget,
+    );
 
     await repository.setFrontMembers(['fake-member-1']);
     await tester.pumpAndSettle();
@@ -1340,7 +1345,8 @@ void main() {
     );
     expect(find.text('Asleep'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Edit custom front'));
+    expect(find.byTooltip(RegExp(r'^Edit front Asleep \(')), findsOneWidget);
+    await tester.tap(find.byTooltip(RegExp(r'^Edit front Asleep \(')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-page-name-field')),
@@ -1375,7 +1381,8 @@ void main() {
     expect(repository._snapshot.currentFrontText, 'Away');
     expect(repository._customization.frontAction, HavenFrontAction.add);
 
-    await tester.tap(find.byTooltip('Delete custom front'));
+    expect(find.byTooltip(RegExp(r'^Delete front Away \(')), findsOneWidget);
+    await tester.tap(find.byTooltip(RegExp(r'^Delete front Away \(')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();

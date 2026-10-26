@@ -442,6 +442,8 @@ class MemberListTile extends StatelessWidget {
             if (!member.archived)
               _FrontActionButton(
                 actionKey: 'member-${member.id}',
+                targetName: member.displayName,
+                targetId: member.id,
                 onPressed: (action) async {
                   final reminders = action == HavenFrontAction.add
                       ? await repository.addFrontMembers([member.id])
@@ -572,9 +574,16 @@ class MemberListTile extends StatelessWidget {
 }
 
 class _FrontActionButton extends StatelessWidget {
-  const _FrontActionButton({required this.actionKey, required this.onPressed});
+  const _FrontActionButton({
+    required this.actionKey,
+    required this.targetName,
+    required this.targetId,
+    required this.onPressed,
+  });
 
   final String actionKey;
+  final String targetName;
+  final String targetId;
   final Future<void> Function(HavenFrontAction action) onPressed;
 
   @override
@@ -585,13 +594,21 @@ class _FrontActionButton extends StatelessWidget {
       children: [
         IconButton(
           key: ValueKey('front-action-button-$actionKey'),
-          tooltip: l10n.addToFrontButton,
+          tooltip: l10n.frontActionFor(
+            l10n.addToFrontButton,
+            targetName,
+            _shortFrontId(targetId),
+          ),
           onPressed: () => onPressed(HavenFrontAction.add),
           icon: const Icon(Icons.add_rounded),
         ),
         IconButton(
           key: ValueKey('front-action-replace-$actionKey'),
-          tooltip: l10n.replaceCurrentFrontButton,
+          tooltip: l10n.frontActionFor(
+            l10n.replaceCurrentFrontButton,
+            targetName,
+            _shortFrontId(targetId),
+          ),
           onPressed: () async {
             if (await _confirmReplaceCurrentFront(context)) {
               await onPressed(HavenFrontAction.replace);

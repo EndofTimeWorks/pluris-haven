@@ -145,10 +145,15 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         children: [
                           _FrontActionButton(
                             actionKey: 'named-front-${front.id}',
+                            targetName: front.name,
+                            targetId: front.id,
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteNamedFrontTooltip,
+                            tooltip: l10n.deleteFrontFor(
+                              front.name,
+                              _shortFrontId(front.id),
+                            ),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -278,10 +283,15 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         children: [
                           _FrontActionButton(
                             actionKey: 'named-front-${front.id}',
+                            targetName: front.name,
+                            targetId: front.id,
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteNamedFrontTooltip,
+                            tooltip: l10n.deleteFrontFor(
+                              front.name,
+                              _shortFrontId(front.id),
+                            ),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -403,9 +413,15 @@ class _CustomFrontRow extends StatelessWidget {
                       children: [
                         _FrontActionButton(
                           actionKey: 'named-front-${front.id}',
+                          targetName: title,
+                          targetId: front.id,
                           onPressed: onUse,
                         ),
                         PopupMenuButton<String>(
+                          tooltip: l10n.frontActionsFor(
+                            title,
+                            _shortFrontId(front.id),
+                          ),
                           onSelected: (value) {
                             if (value == 'edit') {
                               onEdit();
@@ -431,15 +447,23 @@ class _CustomFrontRow extends StatelessWidget {
                       children: [
                         _FrontActionButton(
                           actionKey: 'named-front-${front.id}',
+                          targetName: title,
+                          targetId: front.id,
                           onPressed: onUse,
                         ),
                         IconButton(
-                          tooltip: l10n.editCustomFrontTooltip,
+                          tooltip: l10n.editFrontFor(
+                            title,
+                            _shortFrontId(front.id),
+                          ),
                           onPressed: onEdit,
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         IconButton(
-                          tooltip: l10n.deleteCustomFrontTooltip,
+                          tooltip: l10n.deleteFrontFor(
+                            title,
+                            _shortFrontId(front.id),
+                          ),
                           onPressed: onDelete,
                           icon: const Icon(Icons.delete_outline_rounded),
                         ),
@@ -453,6 +477,9 @@ class _CustomFrontRow extends StatelessWidget {
     );
   }
 }
+
+String _shortFrontId(String id) =>
+    id.substring(id.length > 8 ? id.length - 8 : 0);
 
 class _CustomFrontEditorSheet extends StatefulWidget {
   const _CustomFrontEditorSheet({required this.repository, this.front});
