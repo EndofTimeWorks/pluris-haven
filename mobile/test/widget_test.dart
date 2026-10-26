@@ -3462,6 +3462,55 @@ void main() {
     expect(find.text('No reminders yet'), findsOneWidget);
   });
 
+  testWidgets('reminder save failure keeps the draft open', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository.failReminderSave = true;
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Could not save this reminder. Check whether it still exists and try again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsOneWidget);
+    expect(repository._reminders, isEmpty);
+  });
+
+  testWidgets('rapid reminder save taps create one reminder', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final saveGate = Completer<void>();
+    repository.reminderSaveGate = saveGate;
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    final save = find.byKey(const ValueKey('save-reminder-button'));
+    await tester.tap(save);
+    await tester.tap(save);
+    expect(repository._reminders, isEmpty);
+    saveGate.complete();
+    await tester.pumpAndSettle();
+    expect(repository._reminders, hasLength(1));
+  });
+
   testWidgets('saves 9am as a durable reminder time', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -5170,6 +5219,8 @@ class FakeHavenRepository implements HavenRepository {
   List<ChatCategorySummary> _chatCategories = const [];
   List<ChatChannelSummary> _chatChannels = const [];
   List<ReminderSummary> _reminders = const [];
+  bool failReminderSave = false;
+  Completer<void>? reminderSaveGate;
   List<CustomFieldSummary> _customFields = const [];
   List<CustomFieldValueSummary> _customFieldValues = const [];
   List<PollSummary> _polls = const [];
@@ -6426,6 +6477,8 @@ class FakeHavenRepository implements HavenRepository {
     ReminderDraft draft, {
     String? reminderId,
   }) async {
+    if (failReminderSave) throw StateError('Local write failed');
+    await reminderSaveGate?.future;
     final title = draft.title.trim();
     final schedule = draft.scheduleText.trim();
     if (title.isEmpty || schedule.isEmpty) {
