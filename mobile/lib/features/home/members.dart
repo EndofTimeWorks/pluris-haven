@@ -380,6 +380,19 @@ class DeletedMemberListTile extends StatelessWidget {
           onSelected: (value) async {
             if (value == 'restore') {
               await repository.restoreDeletedMember(member.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context)
+                  ..removeCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        member.archived
+                            ? l10n.memberRestoredToArchive(member.displayName)
+                            : l10n.memberRestored(member.displayName),
+                      ),
+                    ),
+                  );
+              }
             } else if (value == 'purge') {
               if (!context.mounted) return;
               confirmDelete(
@@ -496,20 +509,37 @@ class MemberListTile extends StatelessWidget {
                     initialDraft: _duplicateMemberDraft(fullMember, l10n),
                   );
                 } else if (value == 'archive') {
-                  repository.archiveMember(member.id);
+                  await repository.archiveMember(member.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.memberArchived(member.displayName),
+                          ),
+                        ),
+                      );
+                  }
                 } else if (value == 'restore') {
-                  repository.restoreMember(member.id);
+                  await repository.restoreMember(member.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.memberRestored(member.displayName),
+                          ),
+                        ),
+                      );
+                  }
                 } else if (value == 'delete') {
-                  final impact = await repository.previewMemberDeletion(
-                    member.id,
-                  );
                   if (!context.mounted) return;
                   confirmDelete(
                     context,
                     title: l10n.deleteMemberTitle,
-                    body:
-                        '${l10n.deleteMemberBody(member.displayName)}\n\n'
-                        '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.customFieldValues, impact.activeFrontSessions, impact.frontHistoryLinks, impact.notes, impact.messages, impact.journals, impact.reminderTriggers)}',
+                    body: l10n.deleteMemberBody(member.displayName),
                     onDelete: () => repository.deleteMember(member.id),
                     confirmLabel: l10n.removeMemberButton,
                     failureMessage: (error) =>
@@ -889,6 +919,19 @@ class MemberProfileSheet extends StatelessWidget {
                     }
                     if (context.mounted) {
                       Navigator.pop(context);
+                    }
+                    if (hostContext.mounted) {
+                      ScaffoldMessenger.of(hostContext)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              member.archived
+                                  ? l10n.memberRestored(member.displayName)
+                                  : l10n.memberArchived(member.displayName),
+                            ),
+                          ),
+                        );
                     }
                   },
                   icon: Icon(
