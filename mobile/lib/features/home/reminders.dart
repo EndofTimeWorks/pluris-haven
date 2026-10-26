@@ -289,6 +289,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   bool _invalidTitle = false;
   bool _invalidTime = false;
   bool _invalidDelay = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -532,7 +533,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-reminder-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(l10n.saveButtonLabel),
             ),
           ],
@@ -556,6 +557,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final title = _titleController.text.trim();
@@ -589,40 +591,53 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     final scheduleTime = _scheduleKind == ReminderScheduleKind.afterFront
         ? null
         : _normalisedTimeValue;
-    final reminderId = await widget.repository.saveReminder(
-      ReminderDraft(
-        title: title,
-        body: body,
-        scheduleText: _scheduleText(context, l10n),
-        scheduleKind: _scheduleKind.storageValue,
-        scheduleTime: scheduleTime,
-        scheduleDowMask: _scheduleKind == ReminderScheduleKind.weekly
-            ? _weekdayMask(_weekdayNumber(_weekday))
-            : null,
-        scheduleDom: _scheduleKind == ReminderScheduleKind.monthly
-            ? _monthDay
-            : null,
-        triggerType: _scheduleKind == ReminderScheduleKind.afterFront
-            ? 'event'
-            : 'repeated',
-        triggerMemberId: _scheduleKind == ReminderScheduleKind.afterFront
-            ? _triggerMemberId
-            : null,
-        triggerEvent: _scheduleKind == ReminderScheduleKind.afterFront
-            ? 'front_started'
-            : null,
-        delaySeconds: _scheduleKind == ReminderScheduleKind.afterFront
-            ? _afterFrontDelaySeconds
-            : null,
-        enabled: widget.reminder?.enabled ?? true,
-      ),
-      reminderId: widget.reminder?.id,
-    );
+    setState(() => _isSaving = true);
+    String? reminderId;
+    try {
+      reminderId = await widget.repository.saveReminder(
+        ReminderDraft(
+          title: title,
+          body: body,
+          scheduleText: _scheduleText(context, l10n),
+          scheduleKind: _scheduleKind.storageValue,
+          scheduleTime: scheduleTime,
+          scheduleDowMask: _scheduleKind == ReminderScheduleKind.weekly
+              ? _weekdayMask(_weekdayNumber(_weekday))
+              : null,
+          scheduleDom: _scheduleKind == ReminderScheduleKind.monthly
+              ? _monthDay
+              : null,
+          triggerType: _scheduleKind == ReminderScheduleKind.afterFront
+              ? 'event'
+              : 'repeated',
+          triggerMemberId: _scheduleKind == ReminderScheduleKind.afterFront
+              ? _triggerMemberId
+              : null,
+          triggerEvent: _scheduleKind == ReminderScheduleKind.afterFront
+              ? 'front_started'
+              : null,
+          delaySeconds: _scheduleKind == ReminderScheduleKind.afterFront
+              ? _afterFrontDelaySeconds
+              : null,
+          enabled: widget.reminder?.enabled ?? true,
+        ),
+        reminderId: widget.reminder?.id,
+      );
+    } on Object {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.couldNotSaveReminder)),
+        );
+        setState(() => _isSaving = false);
+      }
+      return;
+    }
     if (reminderId == null) {
       if (mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(l10n.couldNotSaveReminder)),
         );
+        setState(() => _isSaving = false);
       }
       return;
     }
