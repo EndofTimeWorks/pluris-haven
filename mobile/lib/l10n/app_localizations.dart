@@ -6263,6 +6263,18 @@ abstract class AppLocalizations {
   /// **'Member groups'**
   String get memberGroupsTitle;
 
+  /// No description provided for @groupMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members in this group'**
+  String get groupMembersTitle;
+
+  /// No description provided for @groupMembersHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose members here. Primary groups can be changed on each member\'s profile.'**
+  String get groupMembersHelp;
+
   /// No description provided for @saveAlterButton.
   ///
   /// In en, this message translates to:
@@ -6724,6 +6736,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One choice per line'**
   String get customFieldChoicesHint;
+
+  /// No description provided for @customFieldDateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Use YYYY-MM-DD or choose a date.'**
+  String get customFieldDateFormat;
+
+  /// No description provided for @customFieldInvalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date as YYYY-MM-DD.'**
+  String get customFieldInvalidDate;
+
+  /// No description provided for @customFieldInvalidLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a link starting with https:// or http://.'**
+  String get customFieldInvalidLink;
+
+  /// No description provided for @chooseDateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get chooseDateButton;
 
   /// No description provided for @customFieldChoicesTooMany.
   ///

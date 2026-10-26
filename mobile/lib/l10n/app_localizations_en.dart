@@ -3617,6 +3617,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberGroupsTitle => 'Member groups';
 
   @override
+  String get groupMembersTitle => 'Members in this group';
+
+  @override
+  String get groupMembersHelp =>
+      'Choose members here. Primary groups can be changed on each member\'s profile.';
+
+  @override
   String get saveAlterButton => 'Save alter';
 
   @override
@@ -3898,6 +3905,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldChoicesHint => 'One choice per line';
+
+  @override
+  String get customFieldDateFormat => 'Use YYYY-MM-DD or choose a date.';
+
+  @override
+  String get customFieldInvalidDate => 'Enter a valid date as YYYY-MM-DD.';
+
+  @override
+  String get customFieldInvalidLink =>
+      'Enter a link starting with https:// or http://.';
+
+  @override
+  String get chooseDateButton => 'Choose date';
 
   @override
   String get customFieldChoicesTooMany => 'Use no more than 100 choices.';

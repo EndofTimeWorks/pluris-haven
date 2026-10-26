@@ -469,6 +469,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
                   decoration: InputDecoration(
                     labelText: l10n.customFieldChoicesLabel,
                     hintText: l10n.customFieldChoicesHint,
+                    helperText: l10n.customFieldChoicesHint,
                     errorText: _choicesError,
                   ),
                 ),

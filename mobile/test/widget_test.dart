@@ -2788,6 +2788,112 @@ void main() {
     );
   });
 
+  testWidgets('date field accepts typed dates and rejects invalid dates', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'date-field',
+        name: 'Anniversary',
+        fieldType: 'date',
+        position: 0,
+        valueCount: 0,
+      ),
+    ];
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.tap(find.text('Anniversary'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+
+    final field = find.byKey(const ValueKey('custom-field-value-field'));
+    expect(tester.widget<TextField>(field).readOnly, isFalse);
+    expect(find.byTooltip('Choose date'), findsOneWidget);
+    await tester.enterText(field, '2026-02-31');
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a valid date as YYYY-MM-DD.'), findsOneWidget);
+    expect(repository._customFieldValues, isEmpty);
+
+    await tester.enterText(field, '2026-02-28');
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(repository._customFieldValues.single.value, '2026-02-28');
+  });
+
+  testWidgets('link and colour fields reject values they cannot render', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'link-field',
+        name: 'Reference link',
+        fieldType: 'url',
+        position: 0,
+        valueCount: 0,
+      ),
+      CustomFieldSummary(
+        id: 'colour-field',
+        name: 'Accent',
+        fieldType: 'color',
+        position: 1,
+        valueCount: 0,
+      ),
+    ];
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.tap(find.text('Reference link'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    final field = find.byKey(const ValueKey('custom-field-value-field'));
+    final save = find.byKey(const ValueKey('save-custom-field-value-button'));
+    await tester.enterText(field, 'not a url');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter a link starting with https:// or http://.'),
+      findsOneWidget,
+    );
+    expect(repository._customFieldValues, isEmpty);
+    await tester.enterText(field, 'https://example.org/help');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(
+      repository._customFieldValues.single.value,
+      'https://example.org/help',
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Accent'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'blue');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('Use 6 hex digits, like #F2C75C.'), findsOneWidget);
+    expect(repository._customFieldValues, hasLength(1));
+  });
+
   testWidgets('renders Markdown fields without loading embedded images', (
     tester,
   ) async {
