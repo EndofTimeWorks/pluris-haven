@@ -482,6 +482,7 @@
   "@editReminderFor": { "placeholders": { "title": { "type": "String" }, "schedule": { "type": "String" } } },
   "reminderTimeError": "Enter a valid time, such as 09:00 or 9am.",
   "couldNotSaveReminder": "Could not save this reminder. Check whether it still exists and try again.",
+  "reminderSavedNotificationFailed": "Reminder saved, but its notification could not be set. Check notification settings.",
   "previewPastedJson": "Preview pasted JSON",
   "waitingForAvatarZip": "Waiting for avatar ZIP...",
   "chooseAvatarZipTitle": "Choose avatar ZIP",

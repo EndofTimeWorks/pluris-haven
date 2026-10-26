@@ -32,6 +32,7 @@ class NotificationService {
     this._permissionChecker,
     this._permissionRequester,
     this._triggeredReminderDelivery,
+    this._scheduledReminderDelivery,
   ]);
   static final NotificationService instance = NotificationService._();
   static const frontStatusNotificationId = 1001;
@@ -41,11 +42,13 @@ class NotificationService {
     required Future<bool> Function() permissionChecker,
     required Future<bool> Function() permissionRequester,
     Future<bool> Function()? triggeredReminderDelivery,
+    Future<bool> Function()? scheduledReminderDelivery,
   }) {
     return NotificationService._(
       permissionChecker,
       permissionRequester,
       triggeredReminderDelivery,
+      scheduledReminderDelivery,
     );
   }
 
@@ -53,6 +56,7 @@ class NotificationService {
   final Future<bool> Function()? _permissionChecker;
   final Future<bool> Function()? _permissionRequester;
   final Future<bool> Function()? _triggeredReminderDelivery;
+  final Future<bool> Function()? _scheduledReminderDelivery;
   bool _initialized = false;
   bool _setupFailed = false;
 
@@ -144,7 +148,12 @@ class NotificationService {
     int? monthDay,
     required NotificationCopy copy,
   }) async {
-    if (!await notificationsPermitted() || _plugin == null) return false;
+    if (!await notificationsPermitted()) return false;
+    final scheduledReminderDelivery = _scheduledReminderDelivery;
+    if (scheduledReminderDelivery != null) {
+      return scheduledReminderDelivery();
+    }
+    if (_plugin == null) return false;
 
     final id = reminderNotificationId(reminderId);
     final now = tz.TZDateTime.now(tz.local);
