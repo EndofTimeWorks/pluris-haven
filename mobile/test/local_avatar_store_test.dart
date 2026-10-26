@@ -38,6 +38,22 @@ void main() {
     );
   });
 
+  test('protects existing and newly written Linux avatar files', () async {
+    if (!Platform.isLinux) return;
+    final existing = File('${root.path}/old.png');
+    await existing.writeAsBytes([1, 2, 3]);
+    await Process.run('chmod', ['0755', root.path]);
+    await Process.run('chmod', ['0644', existing.path]);
+
+    await store.write('new.png', Uint8List.fromList([4, 5, 6]));
+
+    expect((await root.stat()).mode & 0x1ff, 0x1c0);
+    expect((await existing.stat()).mode & 0x1ff, 0x180);
+    final written = File('${root.path}/new.png');
+    expect((await written.stat()).mode & 0x1ff, 0x180);
+    expect(await store.read('local-avatar:new.png'), [4, 5, 6]);
+  });
+
   test('migrates legacy plaintext avatar files in place', () async {
     final original = Uint8List.fromList([255, 216, 255, 4, 5, 6]);
     final file = File('${root.path}/member.jpg');
