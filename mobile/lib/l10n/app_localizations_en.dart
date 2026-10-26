@@ -3516,6 +3516,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.';
 
   @override
+  String deleteTagTitle(String name) {
+    return 'Delete tag $name?';
+  }
+
+  @override
+  String get deleteTagBody => 'This removes the tag from every member.';
+
+  @override
   String get noTagsYet => 'No tags yet.';
 
   @override

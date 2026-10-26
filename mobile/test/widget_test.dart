@@ -1124,8 +1124,12 @@ void main() {
       repository._notificationEvents.single.body,
       'Set River, Sage as front',
     );
-    expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
-    expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byType(CurrentFrontEntry)).label,
+      contains('River, Sage'),
+    );
+    expect(find.bySemanticsLabel('River is fronting.'), findsNothing);
+    expect(find.bySemanticsLabel('Sage is fronting.'), findsNothing);
 
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
@@ -1866,6 +1870,73 @@ void main() {
 
     expect(find.text('Protector'), findsOneWidget);
     expect(repository._tags.single.colorHex, '#80FFAA');
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Protector'))
+          .selected,
+      isTrue,
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-tags-button')));
+    await tester.pumpAndSettle();
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Protector'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(FilterChip, 'Protector'),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Delete tag Protector?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._tags, hasLength(1));
+  });
+
+  testWidgets('saving tags keeps a typed new tag', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('River'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Member tags'));
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-tag-name-field')),
+      'Planner',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-tags-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._tags.single.name, 'Planner');
     expect(repository._memberTagIds[repository._members.single.id], [
       repository._tags.single.id,
     ]);
@@ -6644,14 +6715,19 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<Tag>> watchTagsForMember(String memberId) {
-    return _memberTagsController.stream.map((assignments) {
+  Stream<List<Tag>> watchTagsForMember(String memberId) async* {
+    List<Tag> assignedTags(Map<String, List<String>> assignments) {
       final ids = assignments[memberId]?.toSet() ?? const <String>{};
       return List.unmodifiable([
         for (final tag in _tags)
           if (ids.contains(tag.id)) tag,
       ]);
-    });
+    }
+
+    yield assignedTags(_memberTagIds);
+    await for (final assignments in _memberTagsController.stream) {
+      yield assignedTags(assignments);
+    }
   }
 
   @override
