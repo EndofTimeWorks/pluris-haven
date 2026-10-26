@@ -2736,6 +2736,12 @@ abstract class AppLocalizations {
   /// **'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.'**
   String get systemProfileConflictBody;
 
+  /// No description provided for @nativeImportPreferencesPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'For app preferences, Skip matches and Create duplicates keep settings you already have. Update existing replaces matching settings. Only portable preferences are imported.'**
+  String get nativeImportPreferencesPolicy;
+
   /// No description provided for @importConflictCreate.
   ///
   /// In en, this message translates to:

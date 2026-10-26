@@ -955,6 +955,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
+    final hasArchivePreferences =
+        _source == ImportSource.plurisHavenArchive &&
+        _jsonObjectList(decoded['preferences']).isNotEmpty;
     var systemProfileConflict = false;
     final archivedSystem = decoded['system'];
     if (_source == ImportSource.plurisHavenArchive &&
@@ -1039,6 +1042,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         memberCount: memberConflicts.length,
         groupCount: groupConflicts.length,
         systemProfileConflict: systemProfileConflict,
+        hasArchivePreferences: hasArchivePreferences,
         sourceLabel: localizeImportSource(l10n, _source),
       ),
     );
@@ -1180,12 +1184,14 @@ class _ConflictPromptDialog extends StatelessWidget {
     required this.memberCount,
     required this.groupCount,
     required this.systemProfileConflict,
+    required this.hasArchivePreferences,
     required this.sourceLabel,
   });
 
   final int memberCount;
   final int groupCount;
   final bool systemProfileConflict;
+  final bool hasArchivePreferences;
   final String sourceLabel;
 
   @override
@@ -1206,6 +1212,7 @@ class _ConflictPromptDialog extends StatelessWidget {
           if (parts.isNotEmpty)
             l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
           if (systemProfileConflict) l10n.systemProfileConflictBody,
+          if (hasArchivePreferences) l10n.nativeImportPreferencesPolicy,
         ].join('\n\n'),
       ),
       actions: [
@@ -2048,6 +2055,14 @@ class ImportSetupCard extends StatelessWidget {
                   : l10n.importPreservesLocalProfile,
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
             ),
+            if (source == ImportSource.plurisHavenArchive &&
+                (preview?.counts['preferences'] ?? 0) > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.nativeImportPreferencesPolicy,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
+            ],
           ],
           if (plan.requiresToken) ...[
             const SizedBox(height: 10),
