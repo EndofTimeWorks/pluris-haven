@@ -60,51 +60,39 @@ class SpDashboardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: scheme.surfaceContainerHighest,
+        foregroundColor: scheme.onSurface,
+        elevation: 0,
+        padding: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: ElevatedButton(
-          onPressed: onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: scheme.surfaceContainerHighest,
-            foregroundColor: scheme.onSurface,
-            elevation: 0,
-            padding: const EdgeInsets.all(10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(item.icon, color: scheme.primary, size: 22),
+          SizedBox(height: compact ? 10 : 14),
+          Text(
+            item.title,
+            textAlign: TextAlign.center,
+            maxLines: textScale > 1.3 ? 4 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, height: 1.15),
+          ),
+          if (showSubtitle && !compact) ...[
+            const SizedBox(height: 5),
+            Text(
+              item.subtitle,
+              textAlign: TextAlign.center,
+              maxLines: textScale > 1.3 ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item.icon, color: scheme.primary, size: 22),
-              SizedBox(height: compact ? 10 : 14),
-              Text(
-                item.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, height: 1.15),
-              ),
-              if (showSubtitle && !compact) ...[
-                const SizedBox(height: 5),
-                Text(
-                  item.subtitle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }
@@ -146,14 +134,15 @@ class DashboardActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
     return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 170,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: textScale > 1.3 ? 220 : 170,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
-        childAspectRatio: 1.15,
+        childAspectRatio: textScale <= 1.3 ? 1.15 : 1.15 * 1.3 / textScale,
       ),
       children: [
         for (final item in items)

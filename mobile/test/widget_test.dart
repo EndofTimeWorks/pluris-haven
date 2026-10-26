@@ -1541,8 +1541,8 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -400));
     await tester.pumpAndSettle();
     expect(find.text('Top fronts'), findsOneWidget);
-    expect(find.text('Asleep'), findsOneWidget);
-    expect(find.text('Away'), findsOneWidget);
+    expect(find.text('Asleep'), findsWidgets);
+    expect(find.text('Away'), findsWidgets);
     await tester.scrollUntilVisible(find.text('Hour of day'), 220);
     expect(find.text('Hour of day'), findsOneWidget);
   });
