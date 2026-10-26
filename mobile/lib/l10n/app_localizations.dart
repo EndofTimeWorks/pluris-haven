@@ -4603,6 +4603,12 @@ abstract class AppLocalizations {
   /// **'Delete note'**
   String get deleteNoteTooltip;
 
+  /// No description provided for @deleteNoteForTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note {name} ({id})'**
+  String deleteNoteForTooltip(String name, String id);
+
   /// No description provided for @deleteNoteTitle.
   ///
   /// In en, this message translates to:
@@ -5738,7 +5744,7 @@ abstract class AppLocalizations {
   /// No description provided for @membersEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add members here or import a Simply Plural export.'**
+  /// **'Add members here or import a local archive or supported export.'**
   String get membersEmptyBody;
 
   /// No description provided for @addMemberButton.
