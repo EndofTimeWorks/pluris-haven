@@ -6857,6 +6857,30 @@ abstract class AppLocalizations {
   /// **'Delete named front'**
   String get deleteNamedFrontTooltip;
 
+  /// No description provided for @frontActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Front actions for {name} ({id})'**
+  String frontActionsFor(String name, String id);
+
+  /// No description provided for @frontActionFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {name} ({id})'**
+  String frontActionFor(String action, String name, String id);
+
+  /// No description provided for @editFrontFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit front {name} ({id})'**
+  String editFrontFor(String name, String id);
+
+  /// No description provided for @deleteFrontFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete front {name} ({id})'**
+  String deleteFrontFor(String name, String id);
+
   /// No description provided for @setFrontConfirmation.
   ///
   /// In en, this message translates to:

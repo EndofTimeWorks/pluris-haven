@@ -335,11 +335,16 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                                 _FrontActionButton(
                                   actionKey:
                                       'dashboard-named-front-${front.id}',
+                                  targetName: _frontTitle(front),
+                                  targetId: front.id,
                                   onPressed: (action) =>
                                       _applyNamedFront(front, action),
                                 ),
                                 IconButton(
-                                  tooltip: l10n.deleteSavedFrontTooltip,
+                                  tooltip: l10n.deleteFrontFor(
+                                    _frontTitle(front),
+                                    _shortFrontId(front.id),
+                                  ),
                                   onPressed: () => _deleteNamedFront(front),
                                   icon: const Icon(Icons.delete_outline),
                                 ),

@@ -3968,6 +3968,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteNamedFrontTooltip => 'Delete named front';
 
   @override
+  String frontActionsFor(String name, String id) {
+    return 'Front actions for $name ($id)';
+  }
+
+  @override
+  String frontActionFor(String action, String name, String id) {
+    return '$action: $name ($id)';
+  }
+
+  @override
+  String editFrontFor(String name, String id) {
+    return 'Edit front $name ($id)';
+  }
+
+  @override
+  String deleteFrontFor(String name, String id) {
+    return 'Delete front $name ($id)';
+  }
+
+  @override
   String setFrontConfirmation(String name) {
     return 'Set $name as front';
   }
