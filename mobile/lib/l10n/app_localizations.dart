@@ -4741,6 +4741,12 @@ abstract class AppLocalizations {
   /// **'Delete note {name} ({id})'**
   String deleteNoteForTooltip(String name, String id);
 
+  /// No description provided for @deleteNoteForTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note {name}'**
+  String deleteNoteForTitle(String name);
+
   /// No description provided for @deleteNoteTitle.
   ///
   /// In en, this message translates to:
@@ -5220,6 +5226,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete journal entry {title} ({id})'**
   String deleteJournalEntryFor(String title, String id);
+
+  /// No description provided for @deleteJournalEntryForTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry {title}'**
+  String deleteJournalEntryForTitle(String title);
 
   /// No description provided for @deleteJournalEntryTitle.
   ///

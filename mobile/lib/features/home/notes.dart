@@ -67,6 +67,11 @@ class _NotesPageState extends State<NotesPage> {
                 member.id: member.displayName,
             };
             final notes = _filteredNotes(noteSnapshot.data!, memberNamesById);
+            final titleCounts = <String, int>{};
+            for (final note in notes) {
+              final title = note.title.trim().toLowerCase();
+              titleCounts[title] = (titleCounts[title] ?? 0) + 1;
+            }
 
             return SpPage(
               children: [
@@ -117,6 +122,10 @@ class _NotesPageState extends State<NotesPage> {
                           NoteListTile(
                             note: note,
                             repository: widget.repository,
+                            duplicateTitle:
+                                (titleCounts[note.title.trim().toLowerCase()] ??
+                                    0) >
+                                1,
                             memberName: note.memberId == null
                                 ? null
                                 : memberNamesById[note.memberId],
@@ -172,11 +181,13 @@ class NoteListTile extends StatelessWidget {
     super.key,
     required this.note,
     required this.repository,
+    required this.duplicateTitle,
     this.memberName,
   });
 
   final NoteSummary note;
   final HavenRepository repository;
+  final bool duplicateTitle;
   final String? memberName;
 
   @override
@@ -202,10 +213,14 @@ class NoteListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: IconButton(
-          tooltip: l10n.deleteNoteForTooltip(
-            note.title,
-            note.id.substring(note.id.length > 8 ? note.id.length - 8 : 0),
-          ),
+          tooltip: duplicateTitle
+              ? l10n.deleteNoteForTooltip(
+                  note.title,
+                  note.id.substring(
+                    note.id.length > 8 ? note.id.length - 8 : 0,
+                  ),
+                )
+              : l10n.deleteNoteForTitle(note.title),
           onPressed: () => confirmDelete(
             context,
             title: l10n.deleteNoteTitle,

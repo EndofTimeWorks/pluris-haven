@@ -48,6 +48,11 @@ class _JournalsPageState extends State<JournalsPage> {
               return const SpPage(children: [SpDataLoadState()]);
             }
             final entries = _filteredEntries(snapshot.data!);
+            final titleCounts = <String, int>{};
+            for (final entry in entries) {
+              final title = entry.title?.trim().toLowerCase() ?? '';
+              titleCounts[title] = (titleCounts[title] ?? 0) + 1;
+            }
 
             return SpPage(
               children: [
@@ -97,6 +102,13 @@ class _JournalsPageState extends State<JournalsPage> {
                           JournalEntryTile(
                             entry: entry,
                             repository: widget.repository,
+                            duplicateTitle:
+                                (titleCounts[entry.title
+                                            ?.trim()
+                                            .toLowerCase() ??
+                                        ''] ??
+                                    0) >
+                                1,
                             authorName: memberNames[entry.authorMemberId],
                           ),
                           if (entry != entries.last) const Divider(height: 1),
@@ -149,11 +161,13 @@ class JournalEntryTile extends StatelessWidget {
     super.key,
     required this.entry,
     required this.repository,
+    required this.duplicateTitle,
     this.authorName,
   });
 
   final JournalEntry entry;
   final HavenRepository repository;
+  final bool duplicateTitle;
   final String? authorName;
 
   @override
@@ -196,10 +210,16 @@ class JournalEntryTile extends StatelessWidget {
           ],
         ),
         trailing: IconButton(
-          tooltip: l10n.deleteJournalEntryFor(
-            title == null || title.isEmpty ? l10n.untitledEntry : title,
-            entry.id.substring(entry.id.length > 8 ? entry.id.length - 8 : 0),
-          ),
+          tooltip: duplicateTitle
+              ? l10n.deleteJournalEntryFor(
+                  title == null || title.isEmpty ? l10n.untitledEntry : title,
+                  entry.id.substring(
+                    entry.id.length > 8 ? entry.id.length - 8 : 0,
+                  ),
+                )
+              : l10n.deleteJournalEntryForTitle(
+                  title == null || title.isEmpty ? l10n.untitledEntry : title,
+                ),
           onPressed: () => confirmDelete(
             context,
             title: l10n.deleteJournalEntryTitle,
