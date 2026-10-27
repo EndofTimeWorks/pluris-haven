@@ -1559,6 +1559,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.';
 
   @override
+  String get archivePreferencesConflictBody =>
+      'Some app preferences differ from settings already saved on this device.';
+
+  @override
   String get nativeImportPreferencesPolicy =>
       'For app preferences, Skip matches and Create duplicates keep settings you already have. Update existing replaces matching settings. Only portable preferences are imported.';
 

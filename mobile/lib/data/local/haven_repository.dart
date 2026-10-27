@@ -732,6 +732,23 @@ class LocalHavenRepository implements HavenRepository {
     return preference?.value == expectedValue;
   }
 
+  @override
+  Future<bool> hasPortablePreferenceConflict(
+    Map<String, String> imported,
+  ) async {
+    if (imported.isEmpty) return false;
+    final local = {
+      for (final row in await database.select(database.appPreferences).get())
+        if (_archivePreferencePortability(row.key) ==
+            _ArchivePreferencePortability.portableUserIntent)
+          row.key: row.value,
+    };
+    return imported.entries.any(
+      (entry) =>
+          local.containsKey(entry.key) && local[entry.key] != entry.value,
+    );
+  }
+
   Future<void> _writePreference(String key, String value) {
     final now = DateTime.now().toUtc();
 
