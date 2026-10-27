@@ -104,6 +104,8 @@ void main() {
     expect(find.textContaining('From '), findsOneWidget);
     expect(find.text('River'), findsWidgets);
     expect(find.text('Wren'), findsWidgets);
+    expect(find.bySemanticsLabel('River'), findsOneWidget);
+    expect(find.bySemanticsLabel('Wren'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 10));
