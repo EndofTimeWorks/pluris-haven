@@ -115,6 +115,63 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   test(
+    'empty appearance preferences restore from plain and encrypted archives',
+    () async {
+      final sourceDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(sourceDatabase.close);
+      final source = testRepository(sourceDatabase);
+      await source.ensureLocalSystem();
+      await source.saveMember(const MemberDraft(displayName: 'River'));
+      await source.setAppearanceOverrides(const HavenAppearanceOverrides());
+      await source.setCustomAccentColor(null);
+
+      final archive = await source.buildLocalArchiveJson();
+      final decoded = jsonDecode(archive) as Map<String, dynamic>;
+      final preferences = decoded['preferences'] as List<dynamic>;
+      expect(
+        preferences.where(
+          (entry) =>
+              entry['key'] == 'appearance_overrides' && entry['value'] == '',
+        ),
+        hasLength(1),
+      );
+      expect(
+        preferences.where(
+          (entry) =>
+              entry['key'] == 'custom_accent_hex' && entry['value'] == '',
+        ),
+        hasLength(1),
+      );
+
+      final code = await generateArchiveRecoveryCode();
+      final encrypted = await encryptArchiveJson(
+        archiveJson: archive,
+        recoveryCode: code,
+      );
+      final decrypted = await decryptArchiveJson(
+        encryptedArchiveJson: encrypted,
+        passphrase: code.value,
+      );
+      await sourceDatabase.close();
+
+      for (final archiveText in [archive, decrypted]) {
+        final targetDatabase = AppDatabase(NativeDatabase.memory());
+        addTearDown(targetDatabase.close);
+        final target = testRepository(targetDatabase);
+        await target.ensureLocalSystem();
+        final rehearsal = await target.rehearseLocalArchiveRestore(archiveText);
+        expect(rehearsal.canRestore, isTrue, reason: rehearsal.error);
+        await target.importLocalArchiveJson(archiveText);
+        expect((await target.watchMembers().first).single.displayName, 'River');
+        expect((await target.loadCustomization()).appearance.isEmpty, isTrue);
+        expect((await target.loadCustomization()).customAccentHex, isNull);
+        await targetDatabase.close();
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
     'imports and restores a local Simply Plural export without data loss',
     () async {
       final sourceText = await File(exportPath!).readAsString();
