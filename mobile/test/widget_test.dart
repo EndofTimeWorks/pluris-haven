@@ -4577,7 +4577,7 @@ void main() {
     );
   });
 
-  testWidgets('saves 9am as a durable reminder time', (tester) async {
+  testWidgets('saves 9am and 9.30pm as durable reminder times', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
         systemName: 'Local system',
@@ -4605,6 +4605,25 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
     await tester.pumpAndSettle();
     expect(repository._reminders.single.scheduleTime, '09:00');
+
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Evening meds',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '9.30pm',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(
+      repository._reminders
+          .singleWhere((reminder) => reminder.title == 'Evening meds')
+          .scheduleTime,
+      '21:30',
+    );
   });
 
   testWidgets('corrects a saved reminder without silently clearing its time', (

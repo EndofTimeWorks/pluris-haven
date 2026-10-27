@@ -740,7 +740,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   TimeOfDay? _parseTime(String text) {
     final twelveHour = RegExp(
-      r'^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$',
+      r'^(\d{1,2})(?:(?::|\.)(\d{2}))?\s*(am|pm)$',
       caseSensitive: false,
     ).firstMatch(text.trim());
     if (twelveHour != null) {
