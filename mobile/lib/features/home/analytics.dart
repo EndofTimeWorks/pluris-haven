@@ -155,24 +155,86 @@ class _FrontTimelineCard extends StatelessWidget {
     final ends = stats.timeline.map((segment) => segment.end);
     final first = starts.reduce((a, b) => a.isBefore(b) ? a : b);
     final last = ends.reduce((a, b) => a.isAfter(b) ? a : b);
+    final chartHeight = math.max(
+      220.0,
+      stats.timelineLanes.length * MediaQuery.textScalerOf(context).scale(28),
+    );
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SpSectionHeader(title: l10n.frontTimelineTitle),
           const SizedBox(height: 12),
-          RepaintBoundary(
-            child: SizedBox(
-              height: 220,
-              width: double.infinity,
-              child: CustomPaint(
-                painter: _FrontTimelinePainter(
-                  segments: stats.timeline,
-                  lanes: stats.timelineLanes,
-                  colours: colours,
-                  gridColour: Theme.of(context).colorScheme.outlineVariant,
+          SizedBox(
+            height: chartHeight,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 104,
+                  child: Column(
+                    children: [
+                      for (final lane in stats.timelineLanes)
+                        Expanded(
+                          child: Semantics(
+                            container: true,
+                            label: lane,
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ExcludeSemantics(
+                                child: Tooltip(
+                                  message: lane,
+                                  child: Text(
+                                    lane,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _FrontTimelinePainter(
+                        segments: stats.timeline,
+                        lanes: stats.timelineLanes,
+                        colours: colours,
+                        gridColour: Theme.of(context)
+                            .colorScheme
+                            .outlineVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 112, top: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _shortDateTime(context, first),
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    _shortDateTime(context, last),
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -185,43 +247,6 @@ class _FrontTimelineCard extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 12,
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 6,
-            children: [
-              for (var index = 0; index < stats.timelineLanes.length; index++)
-                Semantics(
-                  container: true,
-                  excludeSemantics: true,
-                  label: stats.timelineLanes[index],
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: colours[index % colours.length],
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            stats.timelineLanes[index],
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
           ),
         ],
       ),

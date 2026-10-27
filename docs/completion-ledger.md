@@ -82,7 +82,7 @@ is not proof that current code still fails.
 | Finding          | Status                                    | Remaining check or work                                                                                                                 |
 | ---------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | F14, N7–N12, N14 | Fixed in client; Flutter regressions pass | Verify touch and screen-reader behaviour on a supported device.                                                                         |
-| N13              | Partial                                   | Overlapping hours are no longer summed in the hour chart; the timeline still needs a clearer time axis.                                 |
+| N13              | Partial                                   | Hourly overlap counts once; timeline rows have names and endpoints. The hour chart still needs a value axis.                            |
 | N24              | Partial                                   | Journal entries can be about a member, but that field does not record who wrote them.                                                   |
 | N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.            |
 | N27, N52         | Partial                                   | Import previews disclose more conflicts and orphaned front links; conflict handling and malformed references still need broader review. |
