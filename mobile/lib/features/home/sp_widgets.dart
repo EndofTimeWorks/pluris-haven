@@ -555,12 +555,14 @@ class SpCard extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.focusNode,
     this.outlined = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
   });
 
   final Widget child;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
   final bool outlined;
   final EdgeInsetsGeometry padding;
 
@@ -603,6 +605,7 @@ class SpCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(radius),
+        focusNode: focusNode,
         onTap: onTap,
         child: content,
       ),

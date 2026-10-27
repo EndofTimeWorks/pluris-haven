@@ -97,4 +97,40 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
   });
+
+  testWidgets('closing the front picker returns focus to its card', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: CurrentFrontEntry(
+            snapshot: await repository.loadHomeSnapshot(),
+            repository: repository,
+          ),
+        ),
+      ),
+    );
+    final card = find.descendant(
+      of: find.byType(CurrentFrontEntry),
+      matching: find.byType(InkWell),
+    );
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+    expect(find.byType(CustomFrontSheet), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(CustomFrontSheet))).pop();
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<InkWell>(card).focusNode?.hasFocus, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
 }

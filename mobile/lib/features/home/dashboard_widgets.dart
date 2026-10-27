@@ -211,7 +211,7 @@ class SystemListEntry extends StatelessWidget {
   }
 }
 
-class CurrentFrontEntry extends StatelessWidget {
+class CurrentFrontEntry extends StatefulWidget {
   const CurrentFrontEntry({
     super.key,
     required this.snapshot,
@@ -222,9 +222,22 @@ class CurrentFrontEntry extends StatelessWidget {
   final HavenRepository repository;
 
   @override
+  State<CurrentFrontEntry> createState() => _CurrentFrontEntryState();
+}
+
+class _CurrentFrontEntryState extends State<CurrentFrontEntry> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final home = snapshot;
+    final home = widget.snapshot;
     final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -232,6 +245,7 @@ class CurrentFrontEntry extends StatelessWidget {
       button: true,
       child: SpCard(
         outlined: true,
+        focusNode: _focusNode,
         onTap: () => _showFrontSheet(context),
         child: Row(
           children: [
@@ -265,7 +279,7 @@ class CurrentFrontEntry extends StatelessWidget {
                     ),
                   ),
                   StreamBuilder<List<MemberSummary>>(
-                    stream: repository.watchCurrentFrontMembers(),
+                    stream: widget.repository.watchCurrentFrontMembers(),
                     initialData: const [],
                     builder: (context, snapshot) {
                       final members = snapshot.data ?? const <MemberSummary>[];
@@ -335,13 +349,14 @@ class CurrentFrontEntry extends StatelessWidget {
     );
   }
 
-  Future<void> _showFrontSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
+  Future<void> _showFrontSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       enableDrag: false,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => CustomFrontSheet(repository: repository),
+      builder: (context) => CustomFrontSheet(repository: widget.repository),
     );
+    if (mounted) _focusNode.requestFocus();
   }
 }
