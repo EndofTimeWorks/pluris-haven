@@ -87,7 +87,8 @@ is not proof that current code still fails.
 | N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.            |
 | N27, N52         | Partial                                   | Import previews disclose more conflicts and orphaned front links; conflict handling and malformed references still need broader review. |
 | N28, N31         | Partial                                   | Dashboard scaling and UK front-history dates are corrected; other scaled and RTL layouts need review.                                   |
-| N29, N30, N32    | Open                                      | Focus return after sheets, visual consistency and dashboard shortcut order.                                                             |
+| N29              | Partial                                   | Closing the main front picker now returns focus to its card; other sheets and dialogs still need review.                                |
+| N30, N32         | Open                                      | Visual consistency and dashboard shortcut order.                                                                                        |
 | N33              | Partial                                   | Missing keys and startup failures have non-destructive retry; a lost key still needs safe recovery guidance and device testing.         |
 | N43              | Partial                                   | The reminder form shows its guidance and focuses Title; weekly scheduling still chooses one day.                                        |
 | N44              | Requires device verification              | Linux semantics tests cannot establish TalkBack or VoiceOver bounds.                                                                    |
