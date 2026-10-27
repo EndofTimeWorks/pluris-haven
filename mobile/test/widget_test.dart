@@ -3824,6 +3824,24 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Channel').first);
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat-category-filter-null')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily life').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsOneWidget);
+    expect(find.text('The plants are watered.'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('chat-category-filter-fake-chat-category-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All categories').last);
+    await tester.pumpAndSettle();
+    expect(find.text('The plants are watered.'), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('chat-channel-filter-null')),
+    );
     await tester.tap(find.byKey(const ValueKey('chat-channel-filter-null')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Daily life / kitchen').last);
