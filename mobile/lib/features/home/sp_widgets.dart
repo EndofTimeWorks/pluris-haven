@@ -49,12 +49,14 @@ class SpNavigationEntry extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            '>',
-            style: TextStyle(
-              color: scheme.onSurfaceVariant,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          ExcludeSemantics(
+            child: Text(
+              '>',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -420,7 +422,7 @@ class SpSettingsGroup extends StatelessWidget {
   }
 }
 
-class SpSettingsRow extends StatelessWidget {
+class SpSettingsRow extends StatefulWidget {
   const SpSettingsRow(
     this.title,
     this.subtitle, {
@@ -437,6 +439,19 @@ class SpSettingsRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool interactive;
   final Widget? subtitleWidget;
+
+  @override
+  State<SpSettingsRow> createState() => _SpSettingsRowState();
+}
+
+class _SpSettingsRowState extends State<SpSettingsRow> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,16 +471,16 @@ class SpSettingsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 SizedBox(height: 3 * spacing),
-                subtitleWidget ??
+                widget.subtitleWidget ??
                     Text(
-                      subtitle,
+                      widget.subtitle,
                       style: TextStyle(
                         color: scheme.onSurfaceVariant,
                         fontSize: 13,
@@ -474,33 +489,41 @@ class SpSettingsRow extends StatelessWidget {
               ],
             ),
           ),
-          trailing ??
-              Text(
-                '>',
-                style: TextStyle(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w800,
+          widget.trailing ??
+              ExcludeSemantics(
+                child: Text(
+                  '>',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
         ],
       ),
     );
 
-    if (!interactive) {
+    if (!widget.interactive) {
       return content;
     }
 
     return Semantics(
       button: true,
-      label: '$title. $subtitle',
+      label: '${widget.title}. ${widget.subtitle}',
       child: InkWell(
-        onTap:
-            onTap ??
-            () => showPlannedFeaturePopup(
+        focusNode: _focusNode,
+        onTap: () {
+          _focusNode.requestFocus();
+          if (widget.onTap case final onTap?) {
+            onTap();
+          } else {
+            showPlannedFeaturePopup(
               context,
-              title: title,
-              detail: subtitle,
-            ),
+              title: widget.title,
+              detail: widget.subtitle,
+            );
+          }
+        },
         child: content,
       ),
     );

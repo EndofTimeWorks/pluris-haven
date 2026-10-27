@@ -671,6 +671,30 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
+  testWidgets('navigation chevrons are not announced', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpNavigationEntry(
+            item: const HomeNavigationItem(
+              'Members',
+              '2',
+              SpSection.members,
+              Icons.people,
+            ),
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(SpNavigationEntry)).label,
+      isNot(contains('>')),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('first-run guidance opens local import and clears after setup', (
     tester,
   ) async {
@@ -5056,7 +5080,7 @@ void main() {
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
     final semantics = tester.ensureSemantics();
-    expect(find.bySemanticsLabel('Soup'), findsOneWidget);
+    expect(find.bySemanticsLabel('Dinner?: Soup'), findsOneWidget);
     expect(find.bySemanticsLabel('Dinner?'), findsOneWidget);
     expect(find.bySemanticsLabel('Soup, not selected'), findsNothing);
     expect(find.bySemanticsLabel('Vote history: Dinner?'), findsOneWidget);
@@ -5076,11 +5100,11 @@ void main() {
     final votedPoll = (await repository.watchPolls().first).single;
     expect(votedPoll.selectedCount, 1);
     expect(votedPoll.options.first.selected, isTrue);
-    expect(find.bySemanticsLabel('Soup'), findsOneWidget);
+    expect(find.bySemanticsLabel('Dinner?: Soup'), findsOneWidget);
     expect(find.bySemanticsLabel('Soup, selected'), findsNothing);
     expect(
       tester
-          .getSemantics(find.bySemanticsLabel('Soup'))
+          .getSemantics(find.bySemanticsLabel('Dinner?: Soup'))
           .getSemanticsData()
           .flagsCollection
           .isSelected,
@@ -5331,6 +5355,26 @@ void main() {
     await tester.tap(toggle);
     await tester.pumpAndSettle();
     expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
+  });
+
+  testWidgets('settings picker returns focus to its launching row', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'App options');
+    await tester.tap(find.text('Visual style'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Material You'));
+    await tester.pumpAndSettle();
+
+    final row = find.widgetWithText(SpSettingsRow, 'Visual style');
+    final inkWell = tester.widget<InkWell>(
+      find.descendant(of: row, matching: find.byType(InkWell)),
+    );
+    expect(inkWell.focusNode?.hasFocus, isTrue);
   });
 
   testWidgets('keeps an intentionally empty dashboard shortcut list', (

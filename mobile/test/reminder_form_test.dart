@@ -182,6 +182,16 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    final semantics = tester.ensureSemantics();
+
+    expect(
+      find.bySemanticsLabel('Reminder Medication, Daily at 09:00'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Reminder Medication, Daily at 21:00'),
+      findsOneWidget,
+    );
 
     expect(
       find.byTooltip('Delete reminder Medication, Daily at 09:00'),
@@ -195,6 +205,8 @@ void main() {
       find.byTooltip('Edit reminder Medication, Daily at 09:00'),
       findsOneWidget,
     );
+
+    semantics.dispose();
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 10));
