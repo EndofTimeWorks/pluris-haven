@@ -19,6 +19,18 @@ class PollsPage extends StatelessWidget {
       builder: (context, snapshot) {
         final polls = snapshot.data ?? const <PollSummary>[];
         final openCount = polls.where((poll) => !poll.closed).length;
+        final questionCounts = <String, int>{};
+        for (final poll in polls) {
+          final question = poll.question.trim().toLowerCase();
+          questionCounts[question] = (questionCounts[question] ?? 0) + 1;
+        }
+        final accessibleQuestions = {
+          for (final poll in polls)
+            poll.id:
+                (questionCounts[poll.question.trim().toLowerCase()] ?? 0) > 1
+                ? '${poll.question.trim()} (${poll.id.length <= 6 ? poll.id : poll.id.substring(0, 6)})'
+                : poll.question.trim(),
+        };
 
         return SpPage(
           children: [
@@ -42,11 +54,12 @@ class PollsPage extends StatelessWidget {
                         container: true,
                         explicitChildNodes: true,
                         header: true,
-                        label: poll.question,
+                        label: accessibleQuestions[poll.id],
                         child: PollTile(
                           key: ValueKey(poll.id),
                           poll: poll,
                           repository: repository,
+                          accessibleQuestion: accessibleQuestions[poll.id]!,
                         ),
                       ),
                       if (poll != polls.last) const Divider(height: 1),
@@ -69,10 +82,16 @@ class PollsPage extends StatelessWidget {
 }
 
 class PollTile extends StatefulWidget {
-  const PollTile({super.key, required this.poll, required this.repository});
+  const PollTile({
+    super.key,
+    required this.poll,
+    required this.repository,
+    required this.accessibleQuestion,
+  });
 
   final PollSummary poll;
   final HavenRepository repository;
+  final String accessibleQuestion;
 
   @override
   State<PollTile> createState() => _PollTileState();
@@ -248,7 +267,7 @@ class _PollTileState extends State<PollTile> {
                   button: true,
                   selected: selected,
                   enabled: canVote,
-                  label: '${poll.question}: ${option.body}',
+                  label: '${widget.accessibleQuestion}: ${option.body}',
                   onTap: !canVote ? null : () => _vote(poll, option),
                   child: ExcludeSemantics(
                     child: InkWell(
@@ -301,7 +320,7 @@ class _PollTileState extends State<PollTile> {
                 TextButton(
                   onPressed: () => repository.closePoll(poll.id),
                   child: Semantics(
-                    label: '${l10n.closeButton}: ${poll.question}',
+                    label: '${l10n.closeButton}: ${widget.accessibleQuestion}',
                     child: ExcludeSemantics(child: Text(l10n.closeButton)),
                   ),
                 ),
@@ -312,14 +331,16 @@ class _PollTileState extends State<PollTile> {
                   poll: poll,
                 ),
                 child: Semantics(
-                  label: '${l10n.pollVoteHistoryButton}: ${poll.question}',
+                  label:
+                      '${l10n.pollVoteHistoryButton}: ${widget.accessibleQuestion}',
                   child: ExcludeSemantics(
                     child: Text(l10n.pollVoteHistoryButton),
                   ),
                 ),
               ),
               IconButton(
-                tooltip: '${l10n.deletePollTooltip}: ${poll.question}',
+                tooltip:
+                    '${l10n.deletePollTooltip}: ${widget.accessibleQuestion}',
                 onPressed: () => confirmDelete(
                   context,
                   title: l10n.deletePollTitle,
