@@ -5481,6 +5481,44 @@ void main() {
     expect(find.text('Full error copied'), findsOneWidget);
   });
 
+  testWidgets('pasted import and preview survive visiting another section', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    const archive = '{"members":[{"_id":"sp-member-1","name":"Iris"}]}';
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      archive,
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+
+    await openDrawerSection(tester, 'Members');
+    await openDrawerSection(tester, 'Import / Export');
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    expect(find.textContaining('1 members'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('paste-import-json-field')),
+          )
+          .controller
+          ?.text,
+      archive,
+    );
+  });
+
   testWidgets('pasted JSON creates an import preview', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1;
@@ -5643,6 +5681,24 @@ void main() {
           .controller!
           .text,
       'pk;test-token',
+    );
+
+    await openDrawerSection(tester, 'Members');
+    await openDrawerSection(tester, 'Import / Export');
+    expect(find.text('pasted-import.json'), findsOneWidget);
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('pluralkit-token-field')),
+          )
+          .controller!
+          .text,
+      isEmpty,
     );
   });
 
