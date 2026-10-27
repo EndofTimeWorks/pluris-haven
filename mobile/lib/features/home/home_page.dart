@@ -48,6 +48,7 @@ import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/import_diagnostic_localizations.dart';
 import '../../l10n/import_plan_localizations.dart';
+
 import '../../platform/native_file_dialog.dart';
 import '../../platform/app_lock.dart';
 import '../../platform/sensitive_clipboard.dart';
@@ -76,6 +77,25 @@ part 'custom_front.dart';
 part 'custom_fronts_page.dart';
 part 'sp_widgets.dart';
 part 'server_account.dart';
+
+String _memberPickerLabel(
+  MemberSummary member,
+  Iterable<MemberSummary> members,
+  AppLocalizations l10n,
+) {
+  final key = memberNameComparisonKey(member.displayName);
+  final duplicates = members
+      .where(
+        (candidate) => memberNameComparisonKey(candidate.displayName) == key,
+      )
+      .length;
+  if (duplicates < 2) return member.displayName;
+  final id = member.id;
+  return l10n.memberWithId(
+    member.displayName,
+    id.substring(id.length > 8 ? id.length - 8 : 0),
+  );
+}
 
 final _localAvatarStore = LocalAvatarStore();
 

@@ -251,23 +251,27 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
             StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
               initialData: const [],
-              builder: (context, snapshot) => Column(
-                children: [
-                  for (final member in snapshot.data ?? const <MemberSummary>[])
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(member.displayName),
-                      value: _memberIds.contains(member.id),
-                      onChanged: (selected) => setState(() {
-                        if (selected == true) {
-                          _memberIds.add(member.id);
-                        } else {
-                          _memberIds.remove(member.id);
-                        }
-                      }),
-                    ),
-                ],
-              ),
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                return Column(
+                  children: [
+                    for (final member in members)
+                      CheckboxListTile(
+                        key: ValueKey('privacy-bucket-member-${member.id}'),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_memberPickerLabel(member, members, l10n)),
+                        value: _memberIds.contains(member.id),
+                        onChanged: (selected) => setState(() {
+                          if (selected == true) {
+                            _memberIds.add(member.id);
+                          } else {
+                            _memberIds.remove(member.id);
+                          }
+                        }),
+                      ),
+                  ],
+                );
+              },
             ),
             if (_error != null)
               Text(
