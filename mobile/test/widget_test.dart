@@ -3653,6 +3653,13 @@ void main() {
     await tester.tap(find.text('Discard changes'));
     await tester.pumpAndSettle();
     expect(repository._notes, isEmpty);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Add note'))
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
   });
 
   testWidgets('adds a local message from the chat section', (tester) async {
@@ -3959,6 +3966,17 @@ void main() {
       repository._chatChannels.single.categoryId,
       repository._chatCategories.single.id,
     );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Manage channels'),
+          )
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
   });
 
   testWidgets('adds a local reminder from the reminders section', (
@@ -4103,6 +4121,15 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
     await tester.pumpAndSettle();
     expect(repository._reminders.single.title, 'Medication');
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Add reminder'),
+          )
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
   });
 
   testWidgets('rapid reminder save taps create one reminder', (tester) async {

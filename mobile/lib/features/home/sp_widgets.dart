@@ -313,7 +313,7 @@ class SpDataLoadState extends StatelessWidget {
   }
 }
 
-class SpActionRow extends StatelessWidget {
+class SpActionRow extends StatefulWidget {
   const SpActionRow({
     super.key,
     required this.primary,
@@ -328,13 +328,46 @@ class SpActionRow extends StatelessWidget {
   final VoidCallback? onSecondary;
 
   @override
+  State<SpActionRow> createState() => _SpActionRowState();
+}
+
+class _SpActionRowState extends State<SpActionRow> {
+  final _primaryFocus = FocusNode();
+  final _secondaryFocus = FocusNode();
+
+  @override
+  void dispose() {
+    _primaryFocus.dispose();
+    _secondaryFocus.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final spacing = _spacingOf(context);
     return Row(
       children: [
-        FilledButton(onPressed: onPrimary, child: Text(primary)),
+        FilledButton(
+          focusNode: _primaryFocus,
+          onPressed: widget.onPrimary == null
+              ? null
+              : () {
+                  _primaryFocus.requestFocus();
+                  widget.onPrimary!();
+                },
+          child: Text(widget.primary),
+        ),
         SizedBox(width: 10 * spacing),
-        OutlinedButton(onPressed: onSecondary, child: Text(secondary)),
+        OutlinedButton(
+          focusNode: _secondaryFocus,
+          onPressed: widget.onSecondary == null
+              ? null
+              : () {
+                  _secondaryFocus.requestFocus();
+                  widget.onSecondary!();
+                },
+          child: Text(widget.secondary),
+        ),
       ],
     );
   }
