@@ -115,6 +115,17 @@ class LocalNotificationEventStore {
         );
   }
 
+  Future<void> markRead(String eventId) =>
+      (database.update(database.notificationEvents)..where(
+            (event) =>
+                event.systemId.equals(localSystemId) &
+                event.id.equals(eventId) &
+                event.readAt.isNull(),
+          ))
+          .write(
+            NotificationEventsCompanion(readAt: Value(DateTime.now().toUtc())),
+          );
+
   Future<void> clear() => (database.delete(
     database.notificationEvents,
   )..where((event) => event.systemId.equals(localSystemId))).go();

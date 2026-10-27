@@ -65,7 +65,12 @@ export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart'
-    show MemberDeletionImpact, MemberDraft, MemberSummary;
+    show
+        MemberDeletionImpact,
+        MemberDraft,
+        MemberSummary,
+        memberNameComparisonKey,
+        memberNameHasInvisibleControls;
 export 'notification_event_store.dart'
     show NotificationEventDraft, NotificationEventSummary;
 export 'poll_store.dart'
@@ -725,6 +730,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<void> recordNotificationEvent(NotificationEventDraft draft) =>
       _notificationEvents.record(draft);
+
+  @override
+  Future<void> markNotificationRead(String eventId) =>
+      _notificationEvents.markRead(eventId);
 
   @override
   Future<void> clearNotificationHistory() => _notificationEvents.clear();

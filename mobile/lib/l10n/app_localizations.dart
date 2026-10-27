@@ -709,6 +709,12 @@ abstract class AppLocalizations {
   /// **'new'**
   String get newStatusPill;
 
+  /// No description provided for @markNotificationReadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {title} as read'**
+  String markNotificationReadButton(String title);
+
   /// No description provided for @appTagline.
   ///
   /// In en, this message translates to:
@@ -6131,6 +6137,12 @@ abstract class AppLocalizations {
   /// **'Add member to current front'**
   String get addToFrontButton;
 
+  /// No description provided for @addSelectedFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add selected'**
+  String get addSelectedFrontButton;
+
   /// No description provided for @setAsFrontButton.
   ///
   /// In en, this message translates to:
@@ -6196,6 +6208,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replace selected members'**
   String get replaceCurrentMembersButton;
+
+  /// No description provided for @replaceSelectedFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace members'**
+  String get replaceSelectedFrontButton;
 
   /// No description provided for @replaceCurrentMembersWarning.
   ///
@@ -8084,8 +8102,14 @@ abstract class AppLocalizations {
   /// No description provided for @privacyBucketsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Group members by who may see them. Sharing stays off until sync is configured.'**
+  /// **'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.'**
   String get privacyBucketsDescription;
+
+  /// No description provided for @editPrivacyBucketNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit privacy bucket {name}'**
+  String editPrivacyBucketNamed(String name);
 
   /// No description provided for @noPrivacyBucketsTitle.
   ///
@@ -8188,6 +8212,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name is required.'**
   String get nameRequiredError;
+
+  /// No description provided for @memberNameInvisibleControlsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove invisible or directional control characters from the name.'**
+  String get memberNameInvisibleControlsError;
+
+  /// No description provided for @memberNameDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member name already in use'**
+  String get memberNameDuplicateTitle;
+
+  /// No description provided for @memberNameDuplicateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A member named {name} already exists. You can keep both; the app will show an ID where the names need distinguishing.'**
+  String memberNameDuplicateBody(String name);
+
+  /// No description provided for @saveDuplicateMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get saveDuplicateMemberButton;
 
   /// No description provided for @disabledStatusLabel.
   ///

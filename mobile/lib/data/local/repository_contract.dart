@@ -371,6 +371,8 @@ abstract interface class HavenRepository {
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
 
+  Future<void> markNotificationRead(String eventId);
+
   Future<void> clearNotificationHistory();
 
   Future<List<ReminderSummary>> setCustomFront(String label);

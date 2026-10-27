@@ -584,7 +584,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                       final members = membersSnapshot.data!;
                       final nameCounts = <String, int>{};
                       for (final member in members) {
-                        final name = member.displayName.trim().toLowerCase();
+                        final name = memberNameComparisonKey(
+                          member.displayName,
+                        );
                         nameCounts[name] = (nameCounts[name] ?? 0) + 1;
                       }
                       final query = _memberQuery.trim().toLowerCase();
@@ -630,9 +632,9 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                                     key: ValueKey('group-member-${member.id}'),
                                     title: Text(member.displayName),
                                     subtitle:
-                                        (nameCounts[member.displayName
-                                                    .trim()
-                                                    .toLowerCase()] ??
+                                        (nameCounts[memberNameComparisonKey(
+                                                  member.displayName,
+                                                )] ??
                                                 0) >
                                             1
                                         ? Text(

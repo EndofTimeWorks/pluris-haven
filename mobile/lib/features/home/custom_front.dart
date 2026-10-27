@@ -89,6 +89,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
 
   Widget _buildSelectionBar(BuildContext context, AppLocalizations l10n) {
     return Material(
+      key: const ValueKey('front-selection-bar'),
       color: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
@@ -101,38 +102,35 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    key: const ValueKey('add-selected-members-front-button'),
-                    onPressed: _selectedMemberIds.isEmpty
-                        ? null
-                        : () => _setMemberFront(replaceExisting: false),
-                    child: Text(l10n.addToFrontButton),
+                  child: Semantics(
+                    label: l10n.addToFrontButton,
+                    child: OutlinedButton(
+                      key: const ValueKey('add-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : () => _setMemberFront(replaceExisting: false),
+                      child: ExcludeSemantics(
+                        child: Text(l10n.addSelectedFrontButton),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: FilledButton(
-                    key: const ValueKey('set-selected-members-front-button'),
-                    onPressed: _selectedMemberIds.isEmpty
-                        ? null
-                        : () => _setMemberFront(replaceExisting: true),
-                    child: Text(l10n.replaceCurrentMembersButton),
+                  child: Semantics(
+                    label: l10n.replaceCurrentMembersButton,
+                    child: FilledButton(
+                      key: const ValueKey('set-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : () => _setMemberFront(replaceExisting: true),
+                      child: ExcludeSemantics(
+                        child: Text(l10n.replaceSelectedFrontButton),
+                      ),
+                    ),
                   ),
                 ),
               ],
-            ),
-            TextButton(
-              key: const ValueKey('save-selected-named-front-button'),
-              onPressed: _selectedMemberIds.isEmpty
-                  ? null
-                  : _showSaveSelectedFrontSheet,
-              child: Text(l10n.saveSelectedNamedFrontButton),
-            ),
-            TextButton(
-              onPressed: _selectedMemberIds.isEmpty
-                  ? null
-                  : () => setState(_selectedMemberIds.clear),
-              child: Text(l10n.clearSelectionButton),
             ),
           ],
         ),
@@ -170,7 +168,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               final members = snapshot.data ?? const <MemberSummary>[];
               final nameCounts = <String, int>{};
               for (final member in members) {
-                final name = member.displayName.trim().toLowerCase();
+                final name = memberNameComparisonKey(member.displayName);
                 nameCounts[name] = (nameCounts[name] ?? 0) + 1;
               }
               final visibleMembers =
@@ -223,6 +221,22 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          key: const ValueKey(
+                            'save-selected-named-front-button',
+                          ),
+                          onPressed: _showSaveSelectedFrontSheet,
+                          child: Text(l10n.saveSelectedNamedFrontButton),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(_selectedMemberIds.clear),
+                          child: Text(l10n.clearSelectionButton),
+                        ),
+                      ],
+                    ),
                   ],
                   const SizedBox(height: 10),
                   if (visibleMembers.isEmpty)
@@ -241,9 +255,9 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                             children: [
                               FilterChip(
                                 label: Text(
-                                  (nameCounts[member.displayName
-                                                  .trim()
-                                                  .toLowerCase()] ??
+                                  (nameCounts[memberNameComparisonKey(
+                                                member.displayName,
+                                              )] ??
                                               0) >
                                           1
                                       ? l10n.memberWithId(

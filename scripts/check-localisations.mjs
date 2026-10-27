@@ -18,6 +18,7 @@ const expectedUsOverrides = new Set([
   'customizeTitle',
   'customizeDashboardTitle',
   'groupsEmptyBody',
+  'privacyBucketsDescription',
   'openColorPickerTooltip',
   'outlineColorLabel',
   'pickCustomColorButton',

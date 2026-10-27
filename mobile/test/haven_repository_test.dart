@@ -658,6 +658,32 @@ void main() {
     );
   });
 
+  test('rejects invisible and directional controls in member names', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    final member = (await repository.watchMembers().first).single;
+
+    for (final disguisedName in ['Ka\u200Bi', 'ev\u202Eil']) {
+      expect(
+        repository.saveMember(MemberDraft(displayName: disguisedName)),
+        throwsFormatException,
+      );
+      expect(
+        repository.updateMember(
+          member.id,
+          MemberDraft(displayName: disguisedName),
+        ),
+        throwsFormatException,
+      );
+    }
+    expect((await repository.watchMembers().first).single.displayName, 'Kai');
+    expect(memberNameComparisonKey('Ka\u200Bi'), 'kai');
+    expect(memberNameComparisonKey(' Kai  '), 'kai');
+  });
+
   test('reuses member decryptions when only metadata changes', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -2676,6 +2702,15 @@ END;
     expect(disabledReminders.single.enabled, isFalse);
     expect(events.single.kind, 'front');
     expect(events.single.title, 'Front changed');
+    expect(events.single.isUnread, isTrue);
+    await repository.markNotificationRead(events.single.id);
+    final readEvent = (await repository.watchNotificationEvents().first).single;
+    expect(readEvent.isUnread, isFalse);
+    await repository.markNotificationRead(events.single.id);
+    expect(
+      (await repository.watchNotificationEvents().first).single.readAt,
+      readEvent.readAt,
+    );
   });
 
   test(

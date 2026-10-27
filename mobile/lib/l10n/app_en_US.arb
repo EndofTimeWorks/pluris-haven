@@ -12,6 +12,7 @@
   "useCustomColorLabel": "Use custom color",
   "saveCancelled": "Save canceled.",
   "groupsEmptyBody": "Groups keep members organized without needing sync.",
+  "privacyBucketsDescription": "Organize members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.",
   "syncOffDescription": "Device synchronization isn't available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.",
   "importDedupePlurisHaven": "local IDs, PluralKit IDs, normalized names",
   "importDedupeSimplyPlural": "Simply Plural IDs, PluralKit IDs, normalized names",

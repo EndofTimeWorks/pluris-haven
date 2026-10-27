@@ -80,7 +80,7 @@ class _MembersPageState extends State<MembersPage> {
           );
           final nameCounts = <String, int>{};
           for (final member in membersSnapshot.data!) {
-            final name = member.displayName.trim().toLowerCase();
+            final name = memberNameComparisonKey(member.displayName);
             nameCounts[name] = (nameCounts[name] ?? 0) + 1;
           }
           final visualTheme = _visualThemeOf(context);
@@ -145,9 +145,9 @@ class _MembersPageState extends State<MembersPage> {
                           deleted: _filter == 'deleted',
                           isFronting: activeMemberIds.contains(member.id),
                           duplicateName:
-                              (nameCounts[member.displayName
-                                      .trim()
-                                      .toLowerCase()] ??
+                              (nameCounts[memberNameComparisonKey(
+                                    member.displayName,
+                                  )] ??
                                   0) >
                               1,
                         ),
@@ -285,9 +285,9 @@ class _MembersPageState extends State<MembersPage> {
                     deleted: deleted,
                     isFronting: activeMemberIds.contains(members[index].id),
                     duplicateName:
-                        (nameCounts[members[index].displayName
-                                .trim()
-                                .toLowerCase()] ??
+                        (nameCounts[memberNameComparisonKey(
+                              members[index].displayName,
+                            )] ??
                             0) >
                         1,
                   ),
@@ -2573,10 +2573,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
   Future<void> _save() async {
     if (_isSaving) return;
+    final l10n = AppLocalizations.of(context);
     if (_nameController.text.trim().isEmpty) {
-      setState(
-        () => _nameError = AppLocalizations.of(context).nameRequiredError,
-      );
+      setState(() => _nameError = l10n.nameRequiredError);
+      return;
+    }
+    if (memberNameHasInvisibleControls(_nameController.text)) {
+      setState(() => _nameError = l10n.memberNameInvisibleControlsError);
       return;
     }
     final colorHex = _normalizeUiHexColor(_colorController.text);
@@ -2603,6 +2606,35 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     setState(() => _isSaving = true);
     try {
       final member = widget.member;
+      final existing = await widget.repository
+          .watchMembers(includeArchived: true)
+          .first;
+      if (!mounted) return;
+      final nameKey = memberNameComparisonKey(draft.displayName);
+      if (existing.any(
+        (candidate) =>
+            candidate.id != member?.id &&
+            memberNameComparisonKey(candidate.displayName) == nameKey,
+      )) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l10n.memberNameDuplicateTitle),
+            content: Text(l10n.memberNameDuplicateBody(draft.displayName)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.cancelButtonLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(l10n.saveDuplicateMemberButton),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
       if (member == null) {
         await widget.repository.saveMember(draft);
       } else {
