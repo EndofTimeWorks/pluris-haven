@@ -5129,6 +5129,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('duplicate poll questions have distinct accessible actions', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    for (var index = 0; index < 2; index++) {
+      await repository.savePoll(
+        const PollDraft(
+          question: 'Dinner?',
+          kind: PollKind.singleChoice,
+          options: ['Soup', 'Rice'],
+        ),
+      );
+    }
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Polls');
+    await tester.pumpAndSettle();
+    final semantics = tester.ensureSemantics();
+    final polls = await repository.watchPolls().first;
+    expect(polls, hasLength(2));
+    for (final poll in polls) {
+      final question = 'Dinner? (${poll.id.substring(0, 6)})';
+      expect(find.bySemanticsLabel(question), findsOneWidget);
+      expect(find.bySemanticsLabel('$question: Soup'), findsOneWidget);
+      expect(find.bySemanticsLabel('Vote history: $question'), findsOneWidget);
+      expect(find.byTooltip('Delete poll: $question'), findsOneWidget);
+    }
+    semantics.dispose();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   testWidgets('cofronters vote separately through the poll screen', (
     tester,
   ) async {
