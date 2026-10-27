@@ -1625,6 +1625,49 @@ void main() {
     );
   });
 
+  testWidgets('hour chart shows its value scale on a phone width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: DateTime(2025, 1, 1, 10),
+        endedAt: DateTime(2025, 1, 1, 11),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('hour-chart-maximum')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('hour-chart-maximum')),
+    );
+
+    expect(find.text('1h'), findsWidgets);
+    expect(find.text('0m'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   test('summed front time copy resolves for UK and US English', () {
     for (final locale in const [Locale('en', 'GB'), Locale('en', 'US')]) {
       final l10n = lookupAppLocalizations(locale);

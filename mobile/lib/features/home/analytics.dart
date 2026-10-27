@@ -505,6 +505,9 @@ class _HourChartCard extends StatelessWidget {
       1,
       (current, value) => value > current ? value : current,
     );
+    final maxLabel = maxSeconds < 60
+        ? l10n.reminderDelaySeconds(maxSeconds)
+        : _formatAnalyticsDuration(l10n, maxSeconds);
 
     return SpCard(
       child: Column(
@@ -515,34 +518,75 @@ class _HourChartCard extends StatelessWidget {
           SizedBox(
             height: 120,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (var hour = 0; hour < 24; hour++)
-                  Expanded(
-                    child: Semantics(
-                      container: true,
-                      label: l10n.hourAnalyticsSemantic(
-                        hour,
-                        _formatAnalyticsDuration(l10n, stats.hourSeconds[hour]),
+                SizedBox(
+                  width: 72,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        maxLabel,
+                        key: const ValueKey('hour-chart-maximum'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: FractionallySizedBox(
-                            heightFactor: stats.hourSeconds[hour] / maxSeconds,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: scheme.secondary,
-                                borderRadius: BorderRadius.circular(4),
+                      Text(
+                        l10n.durationMinutes(0),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var hour = 0; hour < 24; hour++)
+                        Expanded(
+                          child: Semantics(
+                            container: true,
+                            label: l10n.hourAnalyticsSemantic(
+                              hour,
+                              _formatAnalyticsDuration(
+                                l10n,
+                                stats.hourSeconds[hour],
                               ),
-                              child: const SizedBox(width: double.infinity),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 1.5,
+                              ),
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: FractionallySizedBox(
+                                  heightFactor:
+                                      stats.hourSeconds[hour] / maxSeconds,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: scheme.secondary,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const SizedBox(
+                                      width: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
