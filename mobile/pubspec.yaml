@@ -90,7 +90,7 @@ flutter:
 
   assets:
     - assets/brand/pluris_haven_icon.png
-    - assets/brand/pluris_haven_alternate_dark.jpg
+    - assets/brand/pluris_haven_alternate_dark.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

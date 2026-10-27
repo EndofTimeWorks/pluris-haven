@@ -16,7 +16,7 @@ class AboutPage extends StatelessWidget {
             children: [
               Image.asset(
                 darkLogo
-                    ? 'assets/brand/pluris_haven_alternate_dark.jpg'
+                    ? 'assets/brand/pluris_haven_alternate_dark.png'
                     : 'assets/brand/pluris_haven_icon.png',
                 key: const ValueKey('about-brand-logo'),
                 width: darkLogo ? 120 : 96,

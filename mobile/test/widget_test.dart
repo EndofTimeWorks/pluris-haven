@@ -2391,7 +2391,7 @@ void main() {
     );
     expect(
       ((darkLogo.image as ResizeImage).imageProvider as AssetImage).assetName,
-      'assets/brand/pluris_haven_alternate_dark.jpg',
+      'assets/brand/pluris_haven_alternate_dark.png',
     );
     await repository.setThemeMode(HavenThemeMode.light);
     await tester.pumpAndSettle();
