@@ -4909,24 +4909,6 @@ abstract class AppLocalizations {
   /// **'Create poll'**
   String get createPollButton;
 
-  /// No description provided for @pollOptionSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'{option}, {status}'**
-  String pollOptionSemanticLabel(String option, String status);
-
-  /// No description provided for @selectedStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'selected'**
-  String get selectedStatus;
-
-  /// No description provided for @notSelectedStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'not selected'**
-  String get notSelectedStatus;
-
   /// No description provided for @pollSelectionSummary.
   ///
   /// In en, this message translates to:
@@ -7175,6 +7157,12 @@ abstract class AppLocalizations {
   /// **'Front actions for {name} ({id})'**
   String frontActionsFor(String name, String id);
 
+  /// No description provided for @frontActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Front actions for {name}'**
+  String frontActionsForName(String name);
+
   /// No description provided for @frontActionFor.
   ///
   /// In en, this message translates to:
@@ -7193,11 +7181,23 @@ abstract class AppLocalizations {
   /// **'Edit front {name} ({id})'**
   String editFrontFor(String name, String id);
 
+  /// No description provided for @editFrontForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit front {name}'**
+  String editFrontForName(String name);
+
   /// No description provided for @deleteFrontFor.
   ///
   /// In en, this message translates to:
   /// **'Delete front {name} ({id})'**
   String deleteFrontFor(String name, String id);
+
+  /// No description provided for @deleteFrontForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete front {name}'**
+  String deleteFrontForName(String name);
 
   /// No description provided for @setFrontConfirmation.
   ///

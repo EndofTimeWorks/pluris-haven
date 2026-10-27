@@ -121,6 +121,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                       _CustomFrontRow(
                         repository: widget.repository,
                         front: customFronts[index],
+                        showId: _hasDuplicateFrontTitle(
+                          customFronts[index],
+                          fronts,
+                        ),
                         showDivider: index != customFronts.length - 1,
                         compactActions: false,
                         onUse: (action) =>
@@ -147,13 +151,16 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                             actionKey: 'named-front-${front.id}',
                             targetName: front.name,
                             targetId: front.id,
+                            showId: _hasDuplicateFrontTitle(front, fronts),
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteFrontFor(
-                              front.name,
-                              _shortFrontId(front.id),
-                            ),
+                            tooltip: _hasDuplicateFrontTitle(front, fronts)
+                                ? l10n.deleteFrontFor(
+                                    front.name,
+                                    _shortFrontId(front.id),
+                                  )
+                                : l10n.deleteFrontForName(front.name),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -244,6 +251,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                     child: _CustomFrontRow(
                       repository: widget.repository,
                       front: front,
+                      showId: _hasDuplicateFrontTitle(front, fronts),
                       showDivider: false,
                       compactActions: true,
                       onUse: (action) => _applyFront(front, action),
@@ -285,13 +293,16 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                             actionKey: 'named-front-${front.id}',
                             targetName: front.name,
                             targetId: front.id,
+                            showId: _hasDuplicateFrontTitle(front, fronts),
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteFrontFor(
-                              front.name,
-                              _shortFrontId(front.id),
-                            ),
+                            tooltip: _hasDuplicateFrontTitle(front, fronts)
+                                ? l10n.deleteFrontFor(
+                                    front.name,
+                                    _shortFrontId(front.id),
+                                  )
+                                : l10n.deleteFrontForName(front.name),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -359,6 +370,7 @@ class _CustomFrontRow extends StatelessWidget {
   const _CustomFrontRow({
     required this.repository,
     required this.front,
+    required this.showId,
     required this.showDivider,
     required this.compactActions,
     required this.onUse,
@@ -368,6 +380,7 @@ class _CustomFrontRow extends StatelessWidget {
 
   final HavenRepository repository;
   final NamedFront front;
+  final bool showId;
   final bool showDivider;
   final bool compactActions;
   final Future<void> Function(HavenFrontAction action) onUse;
@@ -384,7 +397,9 @@ class _CustomFrontRow extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: l10n.customFrontSemanticLabel(title),
+          label: l10n.customFrontSemanticLabel(
+            showId ? l10n.memberWithId(title, _shortFrontId(front.id)) : title,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ListTile(
@@ -415,13 +430,16 @@ class _CustomFrontRow extends StatelessWidget {
                           actionKey: 'named-front-${front.id}',
                           targetName: title,
                           targetId: front.id,
+                          showId: showId,
                           onPressed: onUse,
                         ),
                         PopupMenuButton<String>(
-                          tooltip: l10n.frontActionsFor(
-                            title,
-                            _shortFrontId(front.id),
-                          ),
+                          tooltip: showId
+                              ? l10n.frontActionsFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.frontActionsForName(title),
                           onSelected: (value) {
                             if (value == 'edit') {
                               onEdit();
@@ -449,21 +467,26 @@ class _CustomFrontRow extends StatelessWidget {
                           actionKey: 'named-front-${front.id}',
                           targetName: title,
                           targetId: front.id,
+                          showId: showId,
                           onPressed: onUse,
                         ),
                         IconButton(
-                          tooltip: l10n.editFrontFor(
-                            title,
-                            _shortFrontId(front.id),
-                          ),
+                          tooltip: showId
+                              ? l10n.editFrontFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.editFrontForName(title),
                           onPressed: onEdit,
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         IconButton(
-                          tooltip: l10n.deleteFrontFor(
-                            title,
-                            _shortFrontId(front.id),
-                          ),
+                          tooltip: showId
+                              ? l10n.deleteFrontFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.deleteFrontForName(title),
                           onPressed: onDelete,
                           icon: const Icon(Icons.delete_outline_rounded),
                         ),
@@ -836,6 +859,16 @@ String _frontTitle(NamedFront front) {
     return label;
   }
   return front.name;
+}
+
+bool _hasDuplicateFrontTitle(NamedFront front, Iterable<NamedFront> fronts) {
+  final title = _frontTitle(front).trim().toLowerCase();
+  return fronts
+          .where(
+            (candidate) => _frontTitle(candidate).trim().toLowerCase() == title,
+          )
+          .length >
+      1;
 }
 
 String? _nullIfBlank(String value) {

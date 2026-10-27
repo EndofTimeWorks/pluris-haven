@@ -1,5 +1,21 @@
 part of 'home_page.dart';
 
+String _activeCustomFrontName(
+  FrontHistoryEntry entry,
+  Iterable<FrontHistoryEntry> activeFronts,
+  AppLocalizations l10n,
+) {
+  final name = entry.label.trim().toLowerCase();
+  final duplicate =
+      activeFronts
+          .where((front) => front.label.trim().toLowerCase() == name)
+          .length >
+      1;
+  return duplicate
+      ? l10n.memberWithId(entry.label, _shortFrontId(entry.id))
+      : entry.label;
+}
+
 class CustomFrontSheet extends StatefulWidget {
   const CustomFrontSheet({super.key, required this.repository});
 
@@ -297,11 +313,26 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                     ListTile(
                       key: ValueKey('active-custom-front-${entry.id}'),
                       contentPadding: EdgeInsets.zero,
-                      title: Text(entry.label),
+                      title: Text(
+                        _activeCustomFrontName(entry, activeCustomFronts, l10n),
+                      ),
                       trailing: IconButton(
                         key: ValueKey('end-custom-front-${entry.id}'),
-                        tooltip: l10n.endCustomFrontButton(entry.label),
-                        onPressed: () => _endCustomFront(entry),
+                        tooltip: l10n.endCustomFrontButton(
+                          _activeCustomFrontName(
+                            entry,
+                            activeCustomFronts,
+                            l10n,
+                          ),
+                        ),
+                        onPressed: () => _endCustomFront(
+                          entry,
+                          _activeCustomFrontName(
+                            entry,
+                            activeCustomFronts,
+                            l10n,
+                          ),
+                        ),
                         icon: const Icon(Icons.stop_circle_outlined),
                       ),
                     ),
@@ -401,14 +432,23 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
                                 actionKey: 'dashboard-named-front-${front.id}',
                                 targetName: _frontTitle(front),
                                 targetId: front.id,
+                                showId: _hasDuplicateFrontTitle(
+                                  front,
+                                  namedFronts,
+                                ),
                                 onPressed: (action) =>
                                     _applyNamedFront(front, action),
                               ),
                               IconButton(
-                                tooltip: l10n.deleteFrontFor(
-                                  _frontTitle(front),
-                                  _shortFrontId(front.id),
-                                ),
+                                tooltip:
+                                    _hasDuplicateFrontTitle(front, namedFronts)
+                                    ? l10n.deleteFrontFor(
+                                        _frontTitle(front),
+                                        _shortFrontId(front.id),
+                                      )
+                                    : l10n.deleteFrontForName(
+                                        _frontTitle(front),
+                                      ),
                                 onPressed: () => _deleteNamedFront(front),
                                 icon: const Icon(Icons.delete_outline),
                               ),
@@ -592,12 +632,15 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     await _syncFrontNotification(context, widget.repository);
   }
 
-  Future<void> _endCustomFront(FrontHistoryEntry entry) async {
+  Future<void> _endCustomFront(
+    FrontHistoryEntry entry,
+    String displayName,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.endCustomFrontButton(entry.label)),
+        title: Text(l10n.endCustomFrontButton(displayName)),
         content: Text(l10n.endCustomFrontWarning),
         actions: [
           TextButton(
@@ -606,7 +649,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.endCustomFrontButton(entry.label)),
+            child: Text(l10n.endCustomFrontButton(displayName)),
           ),
         ],
       ),

@@ -1086,12 +1086,6 @@
   "noPollsYet": "No polls yet",
   "pollsEmptyBody": "Create a local vote for system decisions.",
   "createPollButton": "Create poll",
-  "pollOptionSemanticLabel": "{option}, {status}",
-  "@pollOptionSemanticLabel": {
-    "placeholders": { "option": { "type": "String" }, "status": { "type": "String" } }
-  },
-  "selectedStatus": "selected",
-  "notSelectedStatus": "not selected",
   "pollSelectionSummary": "{kind} - {count, plural, =1{1 selected} other{{count} selected}}",
   "@pollSelectionSummary": {
     "placeholders": { "kind": { "type": "String" }, "count": { "type": "int" } }
@@ -1578,14 +1572,20 @@
   "deleteNamedFrontTooltip": "Delete named front",
   "frontActionsFor": "Front actions for {name} ({id})",
   "@frontActionsFor": { "placeholders": { "name": { "type": "String" }, "id": { "type": "String" } } },
+  "frontActionsForName": "Front actions for {name}",
+  "@frontActionsForName": { "placeholders": { "name": { "type": "String" } } },
   "frontActionFor": "{action}: {name} ({id})",
   "@frontActionFor": { "placeholders": { "action": { "type": "String" }, "name": { "type": "String" }, "id": { "type": "String" } } },
   "frontActionForName": "{action}: {name}",
   "@frontActionForName": { "placeholders": { "action": { "type": "String" }, "name": { "type": "String" } } },
   "editFrontFor": "Edit front {name} ({id})",
   "@editFrontFor": { "placeholders": { "name": { "type": "String" }, "id": { "type": "String" } } },
+  "editFrontForName": "Edit front {name}",
+  "@editFrontForName": { "placeholders": { "name": { "type": "String" } } },
   "deleteFrontFor": "Delete front {name} ({id})",
   "@deleteFrontFor": { "placeholders": { "name": { "type": "String" }, "id": { "type": "String" } } },
+  "deleteFrontForName": "Delete front {name}",
+  "@deleteFrontForName": { "placeholders": { "name": { "type": "String" } } },
   "setFrontConfirmation": "Set {name} as front",
   "@setFrontConfirmation": { "placeholders": { "name": { "type": "String" } } },
   "deleteCustomFrontTitle": "Delete custom front?",
