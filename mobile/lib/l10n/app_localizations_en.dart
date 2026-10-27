@@ -2865,17 +2865,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPollButton => 'Create poll';
 
   @override
-  String pollOptionSemanticLabel(String option, String status) {
-    return '$option, $status';
-  }
-
-  @override
-  String get selectedStatus => 'selected';
-
-  @override
-  String get notSelectedStatus => 'not selected';
-
-  @override
   String pollSelectionSummary(String kind, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4196,6 +4185,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String frontActionsForName(String name) {
+    return 'Front actions for $name';
+  }
+
+  @override
   String frontActionFor(String action, String name, String id) {
     return '$action: $name ($id)';
   }
@@ -4211,8 +4205,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String editFrontForName(String name) {
+    return 'Edit front $name';
+  }
+
+  @override
   String deleteFrontFor(String name, String id) {
     return 'Delete front $name ($id)';
+  }
+
+  @override
+  String deleteFrontForName(String name) {
+    return 'Delete front $name';
   }
 
   @override

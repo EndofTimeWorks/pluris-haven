@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -1500,6 +1501,47 @@ void main() {
     expect(repository._currentFrontMemberIds, isEmpty);
   });
 
+  testWidgets('saved-front actions use IDs only for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final now = DateTime.utc(2026, 10, 26);
+    for (final id in ['away-1', 'away-2']) {
+      await repository.saveNamedFront(
+        NamedFront(
+          id: id,
+          systemId: localSystemId,
+          name: 'Away',
+          customLabel: 'Away',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        const [],
+      );
+    }
+    await repository.saveNamedFront(
+      NamedFront(
+        id: 'asleep',
+        systemId: localSystemId,
+        name: 'Asleep',
+        customLabel: 'Asleep',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      const [],
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fronts');
+
+    expect(find.byTooltip('Edit front Asleep'), findsOneWidget);
+    expect(
+      find.byTooltip(RegExp(r'^Edit front Away \([^)]+\)$')),
+      findsNWidgets(2),
+    );
+  });
+
   testWidgets('manages custom fronts as saved front states', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1563,8 +1605,8 @@ void main() {
     );
     expect(find.text('Asleep'), findsWidgets);
 
-    expect(find.byTooltip(RegExp(r'^Edit front Asleep \(')), findsOneWidget);
-    await tester.tap(find.byTooltip(RegExp(r'^Edit front Asleep \(')));
+    expect(find.byTooltip('Edit front Asleep'), findsOneWidget);
+    await tester.tap(find.byTooltip('Edit front Asleep'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-page-name-field')),
@@ -1599,8 +1641,8 @@ void main() {
     expect(repository._snapshot.currentFrontText, 'Away');
     expect(repository._customization.frontAction, HavenFrontAction.add);
 
-    expect(find.byTooltip(RegExp(r'^Delete front Away \(')), findsOneWidget);
-    await tester.tap(find.byTooltip(RegExp(r'^Delete front Away \(')));
+    expect(find.byTooltip('Delete front Away'), findsOneWidget);
+    await tester.tap(find.byTooltip('Delete front Away'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -4848,9 +4890,9 @@ void main() {
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
     final semantics = tester.ensureSemantics();
-    expect(find.bySemanticsLabel('Soup, not selected'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup'), findsOneWidget);
     expect(find.bySemanticsLabel('Dinner?'), findsOneWidget);
-    expect(find.bySemanticsLabel('Soup'), findsNothing);
+    expect(find.bySemanticsLabel('Soup, not selected'), findsNothing);
     expect(find.bySemanticsLabel('Vote history: Dinner?'), findsOneWidget);
     expect(find.byTooltip('Delete poll: Dinner?'), findsOneWidget);
     expect(
@@ -4868,7 +4910,16 @@ void main() {
     final votedPoll = (await repository.watchPolls().first).single;
     expect(votedPoll.selectedCount, 1);
     expect(votedPoll.options.first.selected, isTrue);
-    expect(find.bySemanticsLabel('Soup, selected'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup, selected'), findsNothing);
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Soup'))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected,
+      Tristate.isTrue,
+    );
 
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();

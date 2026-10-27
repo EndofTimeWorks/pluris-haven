@@ -248,10 +248,7 @@ class _PollTileState extends State<PollTile> {
                   button: true,
                   selected: selected,
                   enabled: canVote,
-                  label: l10n.pollOptionSemanticLabel(
-                    option.body,
-                    selected ? l10n.selectedStatus : l10n.notSelectedStatus,
-                  ),
+                  label: option.body,
                   onTap: !canVote ? null : () => _vote(poll, option),
                   child: ExcludeSemantics(
                     child: InkWell(
