@@ -273,6 +273,44 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 12),
+          StreamBuilder<List<FrontHistoryEntry>>(
+            stream: widget.repository.watchFrontHistory(),
+            builder: (context, snapshot) {
+              final activeCustomFronts = [
+                for (final entry
+                    in snapshot.data ?? const <FrontHistoryEntry>[])
+                  if (entry.isActive && entry.memberIds.isEmpty) entry,
+              ];
+              if (activeCustomFronts.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.activeCustomFrontsTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final entry in activeCustomFronts)
+                    ListTile(
+                      key: ValueKey('active-custom-front-${entry.id}'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(entry.label),
+                      trailing: IconButton(
+                        key: ValueKey('end-custom-front-${entry.id}'),
+                        tooltip: l10n.endCustomFrontButton(entry.label),
+                        onPressed: () => _endCustomFront(entry),
+                        icon: const Icon(Icons.stop_circle_outlined),
+                      ),
+                    ),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
           StreamBuilder<List<NamedFront>>(
             stream: widget.repository.watchNamedFronts(),
             initialData: const [],
@@ -552,6 +590,30 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       _selectedMemberIds.remove(member.id);
     });
     await _syncFrontNotification(context, widget.repository);
+  }
+
+  Future<void> _endCustomFront(FrontHistoryEntry entry) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endCustomFrontButton(entry.label)),
+        content: Text(l10n.endCustomFrontWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endCustomFrontButton(entry.label)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.repository.endCustomFrontSession(entry.id);
+    if (mounted) await _syncFrontNotification(context, widget.repository);
   }
 
   Future<void> _applyNamedFront(

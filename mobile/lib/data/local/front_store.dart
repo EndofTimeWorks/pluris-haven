@@ -534,6 +534,41 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     });
   }
 
+  Future<void> _frontEndCustomFrontSession(String frontId) async {
+    await database.transaction(() async {
+      final session =
+          await (database.select(database.frontSessions)..where(
+                (front) =>
+                    front.id.equals(frontId) &
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (session == null) return;
+      final memberLink =
+          await (database.select(database.frontSessionMembers)
+                ..where((link) => link.sessionId.equals(frontId))
+                ..limit(1))
+              .getSingleOrNull();
+      if (memberLink != null) {
+        throw const FormatException(
+          'This is a member front, not a custom front.',
+        );
+      }
+      final before = await _frontSnapshot(frontId);
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.frontSessions,
+      )..where((front) => front.id.equals(frontId))).write(
+        FrontSessionsCompanion(endedAt: Value(now), updatedAt: Value(now)),
+      );
+      final after = await _frontSnapshot(frontId);
+      if (before != null && after != null) {
+        await _frontRecordAudit(frontId, before, after);
+      }
+    });
+  }
+
   Future<List<ReminderSummary>> _frontSetCustomFront(String label) =>
       _frontApplyCustomFront(label, replaceExisting: true);
 

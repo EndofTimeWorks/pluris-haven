@@ -11,6 +11,8 @@ import 'package:drift/native.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
+import 'package:pluris_haven/data/local/app_customization.dart'
+    show defaultDashboardShortcutOrderIds;
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
@@ -1365,10 +1367,7 @@ void main() {
       find.byType(MemberListTile),
     );
     expect(tiles.map((tile) => tile.member.id), ['fake-member-2']);
-    expect(
-      find.byTooltip('Add member to current front: Kai (member-2)'),
-      findsOneWidget,
-    );
+    expect(find.byTooltip("End Kai's front"), findsOneWidget);
 
     await repository.setFrontMembers(['fake-member-1']);
     await tester.pumpAndSettle();
@@ -1439,6 +1438,66 @@ void main() {
       find.byKey(const ValueKey('end-front-fake-member-2')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('member list and profile end only the selected active front', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+
+    await tester.tap(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text("End River's front"), findsWidgets);
+    await tester.tap(find.text('Cancel').last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, [
+      'fake-member-1',
+      'fake-member-2',
+    ]);
+
+    await tester.tap(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End River's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, ['fake-member-2']);
+    expect(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Sage').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('profile-end-front-fake-member-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('profile-end-front-fake-member-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End Sage's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, isEmpty);
   });
 
   testWidgets('manages custom fronts as saved front states', (tester) async {
@@ -1547,6 +1606,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository._namedFronts, isEmpty);
+    expect(repository._frontHistory.first.label, 'Away');
+    expect(repository._frontHistory.first.isActive, isTrue);
+
+    await openDrawerSection(tester, 'Dashboard');
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+    final activeFrontId = repository._frontHistory.first.id;
+    expect(
+      find.byKey(ValueKey('end-custom-front-$activeFrontId')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(ValueKey('end-custom-front-$activeFrontId')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End Away's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._frontHistory.first.isActive, isFalse);
+    expect(repository._frontHistory.first.label, 'Away');
+    expect(repository._snapshot.currentFrontLabel, isNull);
   });
 
   testWidgets('shows local analytics from front history', (tester) async {
@@ -2643,6 +2720,34 @@ void main() {
     expect(repository._groups, isEmpty);
   });
 
+  testWidgets('group member picker shows IDs only for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    final river = tester.widget<CheckboxListTile>(
+      find.byKey(const ValueKey('group-member-fake-member-1')),
+    );
+    expect(river.subtitle, isNull);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    final duplicateRiver = tester.widget<CheckboxListTile>(
+      find.byKey(const ValueKey('group-member-fake-member-1')),
+    );
+    expect(duplicateRiver.subtitle, isNotNull);
+  });
+
   testWidgets('Escape offers to keep an unsaved group', (tester) async {
     final repository = FakeHavenRepository(_testHomeSnapshot);
     addTearDown(repository.close);
@@ -2711,7 +2816,7 @@ void main() {
     expect(repository._groups.last.name, 'Gatekeepers');
     expect(repository._groups.last.parentGroupId, 'fake-group-1');
 
-    await tester.tap(find.byTooltip('Group actions for Caretakers (-group-1)'));
+    await tester.tap(find.byTooltip('Group actions for Caretakers'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -4927,16 +5032,23 @@ void main() {
       220,
       scrollable: pageScrollable,
     );
-    final analyticsSwitch = find.byKey(
-      const ValueKey('shortcut-visible-analytics'),
+    final analyticsSwitch = find.descendant(
+      of: find.byType(DashboardShortcutManager),
+      matching: find.byKey(const ValueKey('shortcut-visible-analytics')),
     );
     await tester.scrollUntilVisible(
       analyticsSwitch,
       220,
       scrollable: pageScrollable,
     );
+    final shortcutOrder =
+        (await repository.loadCustomization()).dashboardShortcutOrderIds;
     await tester.tap(analyticsSwitch);
     await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).dashboardShortcutOrderIds,
+      shortcutOrder,
+    );
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
       isNot(contains('analytics')),
@@ -6548,7 +6660,14 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
-    _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: shortcutIds,
+      dashboardShortcutOrderIds: [
+        ...shortcutIds,
+        for (final id in _customization.dashboardShortcutOrderIds)
+          if (!shortcutIds.contains(id)) id,
+      ],
+    );
     _customizationController.add(_customization);
   }
 
@@ -6587,19 +6706,28 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setDashboardShortcutVisible(String shortcutId, bool visible) {
-    final ids = _customization.dashboardShortcutIds.toList();
-    final existingIndex = ids.indexOf(shortcutId);
-    if (visible && existingIndex == -1) {
-      ids.add(shortcutId);
-    } else if (!visible && existingIndex != -1) {
-      ids.removeAt(existingIndex);
+    final visibleIds = _customization.dashboardShortcutIds.toSet();
+    final order = _customization.dashboardShortcutOrderIds.toList();
+    if (!order.contains(shortcutId)) order.add(shortcutId);
+    if (visible) {
+      visibleIds.add(shortcutId);
+    } else {
+      visibleIds.remove(shortcutId);
     }
-    return setDashboardShortcutIds(ids);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: [
+        for (final id in order)
+          if (visibleIds.contains(id)) id,
+      ],
+      dashboardShortcutOrderIds: order,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
   Future<void> moveDashboardShortcut(String shortcutId, int delta) {
-    final ids = _customization.dashboardShortcutIds.toList();
+    final ids = _customization.dashboardShortcutIds;
     final index = ids.indexOf(shortcutId);
     if (index == -1 || delta == 0) {
       return Future.value();
@@ -6608,14 +6736,29 @@ class FakeHavenRepository implements HavenRepository {
     if (newIndex == index) {
       return Future.value();
     }
-    final id = ids.removeAt(index);
-    ids.insert(newIndex, id);
-    return setDashboardShortcutIds(ids);
+    final order = _customization.dashboardShortcutOrderIds.toList();
+    order.remove(shortcutId);
+    final neighbourIndex = order.indexOf(ids[newIndex]);
+    order.insert(delta < 0 ? neighbourIndex : neighbourIndex + 1, shortcutId);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: [
+        for (final id in order)
+          if (ids.contains(id)) id,
+      ],
+      dashboardShortcutOrderIds: order,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
   Future<void> resetDashboardShortcuts() {
-    return setDashboardShortcutIds(defaultDashboardShortcutIds);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: defaultDashboardShortcutIds,
+      dashboardShortcutOrderIds: defaultDashboardShortcutOrderIds,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
@@ -6937,6 +7080,40 @@ class FakeHavenRepository implements HavenRepository {
           entry,
     ];
     _frontHistoryController.add(_frontHistory);
+  }
+
+  @override
+  Future<void> endCustomFrontSession(String frontId) async {
+    final active = _frontHistory.where(
+      (entry) =>
+          entry.id == frontId && entry.isActive && entry.memberIds.isEmpty,
+    );
+    if (active.isEmpty) return;
+    final label = active.single.label;
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        if (entry.id == frontId)
+          FrontHistoryEntry(
+            id: entry.id,
+            label: entry.label,
+            statusNote: entry.statusNote,
+            startedAt: entry.startedAt,
+            endedAt: DateTime(2026, 1, 1, 13),
+            memberIds: entry.memberIds,
+          )
+        else
+          entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
+    _currentCustomFrontLabels = [
+      for (final current in _currentCustomFrontLabels)
+        if (current != label) current,
+    ];
+    _emitSnapshot(
+      currentFrontLabel: _currentFrontLabel(),
+      clearCurrentFront:
+          _currentCustomFrontLabels.isEmpty && _currentFrontMemberIds.isEmpty,
+    );
   }
 
   String _frontDraftLabel(FrontHistoryDraft draft) {

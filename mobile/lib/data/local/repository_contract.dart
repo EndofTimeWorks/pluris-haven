@@ -284,6 +284,8 @@ abstract interface class HavenRepository {
 
   Future<void> updateFrontHistoryEntry(String frontId, FrontHistoryDraft draft);
 
+  Future<void> endCustomFrontSession(String frontId);
+
   Future<void> deleteFrontSession(String frontId);
 
   Future<void> saveGroup(GroupDraft draft);

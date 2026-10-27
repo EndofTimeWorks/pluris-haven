@@ -78,6 +78,11 @@ class _MembersPageState extends State<MembersPage> {
             membersSnapshot.data!,
             activeMemberIds,
           );
+          final nameCounts = <String, int>{};
+          for (final member in membersSnapshot.data!) {
+            final name = member.displayName.trim().toLowerCase();
+            nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+          }
           final visualTheme = _visualThemeOf(context);
           final profileLayout =
               visualTheme == HavenVisualTheme.simplyPlural ||
@@ -88,6 +93,8 @@ class _MembersPageState extends State<MembersPage> {
               l10n,
               filters,
               members,
+              activeMemberIds: activeMemberIds,
+              nameCounts: nameCounts,
               deleted: _filter == 'deleted',
             );
           }
@@ -133,7 +140,17 @@ class _MembersPageState extends State<MembersPage> {
                       )
                     else
                       for (final member in members) ...[
-                        _memberTile(member, deleted: _filter == 'deleted'),
+                        _memberTile(
+                          member,
+                          deleted: _filter == 'deleted',
+                          isFronting: activeMemberIds.contains(member.id),
+                          duplicateName:
+                              (nameCounts[member.displayName
+                                      .trim()
+                                      .toLowerCase()] ??
+                                  0) >
+                              1,
+                        ),
                         if (member != members.last) const Divider(height: 1),
                       ],
                     const SizedBox(height: 14),
@@ -151,11 +168,11 @@ class _MembersPageState extends State<MembersPage> {
           );
         }
 
-        if (_filter == 'fronting') {
-          return StreamBuilder<List<MemberSummary>>(
-            stream: _currentFrontStream,
-            builder: (context, activeSnapshot) {
-              if (activeSnapshot.hasError && !activeSnapshot.hasData) {
+        return StreamBuilder<List<MemberSummary>>(
+          stream: _currentFrontStream,
+          builder: (context, activeSnapshot) {
+            if (activeSnapshot.hasError && !activeSnapshot.hasData) {
+              if (_filter == 'fronting') {
                 return SpPage(
                   children: [
                     SpDataLoadState(
@@ -165,16 +182,19 @@ class _MembersPageState extends State<MembersPage> {
                   ],
                 );
               }
-              if (!activeSnapshot.hasData) {
+              return showMembers(const {});
+            }
+            if (!activeSnapshot.hasData) {
+              if (_filter == 'fronting') {
                 return const SpPage(children: [SpDataLoadState()]);
               }
-              return showMembers(
-                activeSnapshot.data!.map((member) => member.id).toSet(),
-              );
-            },
-          );
-        }
-        return showMembers(const {});
+              return showMembers(const {});
+            }
+            return showMembers(
+              activeSnapshot.data!.map((member) => member.id).toSet(),
+            );
+          },
+        );
       },
     );
   }
@@ -184,6 +204,8 @@ class _MembersPageState extends State<MembersPage> {
     AppLocalizations l10n,
     Map<String, String> filters,
     List<MemberSummary> members, {
+    required Set<String> activeMemberIds,
+    required Map<String, int> nameCounts,
     required bool deleted,
   }) {
     final visualTheme = _visualThemeOf(context);
@@ -258,7 +280,17 @@ class _MembersPageState extends State<MembersPage> {
                     horizontal: 10,
                     vertical: 6,
                   ),
-                  child: _memberTile(members[index], deleted: deleted),
+                  child: _memberTile(
+                    members[index],
+                    deleted: deleted,
+                    isFronting: activeMemberIds.contains(members[index].id),
+                    duplicateName:
+                        (nameCounts[members[index].displayName
+                                .trim()
+                                .toLowerCase()] ??
+                            0) >
+                        1,
+                  ),
                 ),
               ),
             ),
@@ -277,14 +309,25 @@ class _MembersPageState extends State<MembersPage> {
     );
   }
 
-  Widget _memberTile(MemberSummary member, {required bool deleted}) {
+  Widget _memberTile(
+    MemberSummary member, {
+    required bool deleted,
+    required bool isFronting,
+    required bool duplicateName,
+  }) {
     if (deleted) {
       return DeletedMemberListTile(
         member: member,
         repository: widget.repository,
+        duplicateName: duplicateName,
       );
     }
-    return MemberListTile(member: member, repository: widget.repository);
+    return MemberListTile(
+      member: member,
+      repository: widget.repository,
+      isFronting: isFronting,
+      duplicateName: duplicateName,
+    );
   }
 
   Widget _sortControl(AppLocalizations l10n) {
@@ -344,10 +387,12 @@ class DeletedMemberListTile extends StatelessWidget {
     super.key,
     required this.member,
     required this.repository,
+    required this.duplicateName,
   });
 
   final MemberSummary member;
   final HavenRepository repository;
+  final bool duplicateName;
 
   @override
   Widget build(BuildContext context) {
@@ -371,12 +416,14 @@ class DeletedMemberListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: l10n.memberActionsFor(
-            member.displayName,
-            member.id.substring(
-              member.id.length > 8 ? member.id.length - 8 : 0,
-            ),
-          ),
+          tooltip: duplicateName
+              ? l10n.memberActionsFor(
+                  member.displayName,
+                  member.id.substring(
+                    member.id.length > 8 ? member.id.length - 8 : 0,
+                  ),
+                )
+              : l10n.memberActionsForName(member.displayName),
           onSelected: (value) async {
             if (value == 'restore') {
               await repository.restoreDeletedMember(member.id);
@@ -418,10 +465,14 @@ class MemberListTile extends StatelessWidget {
     super.key,
     required this.member,
     required this.repository,
+    required this.isFronting,
+    required this.duplicateName,
   });
 
   final MemberSummary member;
   final HavenRepository repository;
+  final bool isFronting;
+  final bool duplicateName;
 
   @override
   Widget build(BuildContext context) {
@@ -452,11 +503,20 @@ class MemberListTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!member.archived)
+            if (isFronting)
+              IconButton(
+                key: ValueKey('end-front-member-${member.id}'),
+                tooltip: l10n.endMemberFrontButton(member.displayName),
+                onPressed: () =>
+                    _endOneMemberFront(context, repository, member),
+                icon: const Icon(Icons.stop_circle_outlined),
+              )
+            else if (!member.archived)
               _FrontActionButton(
                 actionKey: 'member-${member.id}',
                 targetName: member.displayName,
                 targetId: member.id,
+                showId: duplicateName,
                 onPressed: (action) async {
                   final reminders = action == HavenFrontAction.add
                       ? await repository.addFrontMembers([member.id])
@@ -474,14 +534,18 @@ class MemberListTile extends StatelessWidget {
                 },
               ),
             PopupMenuButton<String>(
-              tooltip: l10n.memberActionsFor(
-                member.displayName,
-                member.id.substring(
-                  member.id.length > 8 ? member.id.length - 8 : 0,
-                ),
-              ),
+              tooltip: duplicateName
+                  ? l10n.memberActionsFor(
+                      member.displayName,
+                      member.id.substring(
+                        member.id.length > 8 ? member.id.length - 8 : 0,
+                      ),
+                    )
+                  : l10n.memberActionsForName(member.displayName),
               onSelected: (value) async {
-                if (value == 'front') {
+                if (value == 'end-front') {
+                  await _endOneMemberFront(context, repository, member);
+                } else if (value == 'front') {
                   if (!await _confirmReplaceCurrentFront(context)) return;
                   final reminders = await repository.setFrontMembers([
                     member.id,
@@ -548,6 +612,11 @@ class MemberListTile extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
+                if (isFronting)
+                  PopupMenuItem(
+                    value: 'end-front',
+                    child: Text(l10n.endMemberFrontButton(member.displayName)),
+                  ),
                 if (!member.archived)
                   PopupMenuItem(
                     value: 'front',
@@ -587,6 +656,7 @@ class MemberListTile extends StatelessWidget {
     final privacy = member.privacy?.trim();
     final parts = [
       pronouns,
+      if (isFronting) l10n.frontingFilter,
       if (privacy != null && privacy.isNotEmpty) privacy,
       if (member.archived) l10n.archivedStatus,
     ];
@@ -609,11 +679,13 @@ class _FrontActionButton extends StatelessWidget {
     required this.targetName,
     required this.targetId,
     required this.onPressed,
+    this.showId = false,
   });
 
   final String actionKey;
   final String targetName;
   final String targetId;
+  final bool showId;
   final Future<void> Function(HavenFrontAction action) onPressed;
 
   @override
@@ -624,21 +696,28 @@ class _FrontActionButton extends StatelessWidget {
       children: [
         IconButton(
           key: ValueKey('front-action-button-$actionKey'),
-          tooltip: l10n.frontActionFor(
-            l10n.addToFrontButton,
-            targetName,
-            _shortFrontId(targetId),
-          ),
+          tooltip: showId
+              ? l10n.frontActionFor(
+                  l10n.addToFrontButton,
+                  targetName,
+                  _shortFrontId(targetId),
+                )
+              : l10n.frontActionForName(l10n.addToFrontButton, targetName),
           onPressed: () => onPressed(HavenFrontAction.add),
           icon: const Icon(Icons.add_rounded),
         ),
         IconButton(
           key: ValueKey('front-action-replace-$actionKey'),
-          tooltip: l10n.frontActionFor(
-            l10n.replaceCurrentFrontButton,
-            targetName,
-            _shortFrontId(targetId),
-          ),
+          tooltip: showId
+              ? l10n.frontActionFor(
+                  l10n.replaceCurrentFrontButton,
+                  targetName,
+                  _shortFrontId(targetId),
+                )
+              : l10n.frontActionForName(
+                  l10n.replaceCurrentFrontButton,
+                  targetName,
+                ),
           onPressed: () async {
             if (await _confirmReplaceCurrentFront(context)) {
               await onPressed(HavenFrontAction.replace);
@@ -671,6 +750,42 @@ Future<bool> _confirmReplaceCurrentFront(BuildContext context) async {
         ),
       ) ??
       false;
+}
+
+Future<bool> _endOneMemberFront(
+  BuildContext context,
+  HavenRepository repository,
+  MemberSummary member,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.endMemberFrontButton(member.displayName)),
+      content: Text(l10n.endMemberFrontWarning),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: Text(l10n.cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(l10n.endMemberFrontButton(member.displayName)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return false;
+  final active = await repository.watchCurrentFrontMembers().first;
+  if (!context.mounted || !active.any((current) => current.id == member.id)) {
+    return false;
+  }
+  await repository.setFrontMembers([
+    for (final current in active)
+      if (current.id != member.id) current.id,
+  ]);
+  if (context.mounted) await _syncFrontNotification(context, repository);
+  return true;
 }
 
 void showMemberProfileSheet(
@@ -861,30 +976,57 @@ class MemberProfileSheet extends StatelessWidget {
                     label: Text(l10n.shareAvatarTemporarilyButton),
                   ),
                 ],
-                if (!member.archived)
-                  FilledButton.icon(
-                    onPressed: () async {
-                      if (!await _confirmReplaceCurrentFront(context)) return;
-                      final reminders = await repository.setFrontMembers([
-                        member.id,
-                      ]);
-                      if (context.mounted) {
-                        await deliverAfterFrontReminders(
-                          context,
-                          repository,
-                          reminders,
-                        );
+                StreamBuilder<List<MemberSummary>>(
+                  stream: repository.watchCurrentFrontMembers(),
+                  builder: (context, snapshot) {
+                    final isFronting =
+                        snapshot.data?.any(
+                          (current) => current.id == member.id,
+                        ) ??
+                        false;
+                    if (isFronting) {
+                      return OutlinedButton.icon(
+                        key: ValueKey('profile-end-front-${member.id}'),
+                        onPressed: () async {
+                          if (await _endOneMemberFront(
+                                context,
+                                repository,
+                                member,
+                              ) &&
+                              context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        icon: const Icon(Icons.stop_circle_outlined),
+                        label: Text(
+                          l10n.endMemberFrontButton(member.displayName),
+                        ),
+                      );
+                    }
+                    if (member.archived) return const SizedBox.shrink();
+                    return FilledButton.icon(
+                      onPressed: () async {
+                        if (!await _confirmReplaceCurrentFront(context)) return;
+                        final reminders = await repository.setFrontMembers([
+                          member.id,
+                        ]);
                         if (context.mounted) {
-                          await _syncFrontNotification(context, repository);
+                          await deliverAfterFrontReminders(
+                            context,
+                            repository,
+                            reminders,
+                          );
+                          if (context.mounted) {
+                            await _syncFrontNotification(context, repository);
+                          }
                         }
-                      }
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.radio_button_checked_rounded),
-                    label: Text(l10n.setFrontButton),
-                  ),
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.radio_button_checked_rounded),
+                      label: Text(l10n.setFrontButton),
+                    );
+                  },
+                ),
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);

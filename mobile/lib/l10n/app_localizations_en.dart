@@ -3141,6 +3141,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String groupActionsForName(String name) {
+    return 'Group actions for $name';
+  }
+
+  @override
   String get deleteGroupTitle => 'Delete group?';
 
   @override
@@ -3602,6 +3607,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?';
 
   @override
+  String get activeCustomFrontsTitle => 'Active custom fronts';
+
+  @override
+  String endCustomFrontButton(String name) {
+    return 'End $name\'s front';
+  }
+
+  @override
+  String get endCustomFrontWarning =>
+      'This ends only this custom front. Other active fronts stay current, and its history remains available. Continue?';
+
+  @override
   String get endAllCurrentFrontsButton => 'End all current fronts';
 
   @override
@@ -3618,6 +3635,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String memberActionsFor(String name, String id) {
     return 'Member actions for $name ($id)';
+  }
+
+  @override
+  String memberActionsForName(String name) {
+    return 'Member actions for $name';
   }
 
   @override
@@ -4169,6 +4191,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String frontActionForName(String action, String name) {
+    return '$action: $name';
+  }
+
+  @override
   String editFrontFor(String name, String id) {
     return 'Edit front $name ($id)';
   }
@@ -4191,7 +4218,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteSavedFrontBody =>
-      'This only removes the saved shortcut. Front history stays.';
+      'This removes the saved shortcut. Current fronts and history stay available. You can end an active custom front from the front picker.';
 
   @override
   String customFrontSemanticLabel(String name) {

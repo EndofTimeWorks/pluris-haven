@@ -947,6 +947,71 @@ void main() {
   });
 
   test(
+    'deleted custom shortcut leaves an active front reachable to end',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.setFrontMembers([member.id]);
+      await repository.addCustomFront('Away');
+      final before = await repository.watchFrontHistory().first;
+      final memberFront = before.singleWhere(
+        (entry) => entry.memberIds.contains(member.id),
+      );
+      final customFront = before.singleWhere((entry) => entry.label == 'Away');
+      final now = DateTime.now().toUtc();
+      await repository.saveNamedFront(
+        NamedFront(
+          id: 'saved-away',
+          systemId: localSystemId,
+          name: 'Away',
+          customLabel: 'Away',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        const [],
+      );
+
+      await repository.deleteNamedFront('saved-away');
+      expect(await repository.watchNamedFronts().first, isEmpty);
+      expect(
+        (await repository.watchFrontHistory().first)
+            .singleWhere((entry) => entry.id == customFront.id)
+            .isActive,
+        isTrue,
+      );
+      await expectLater(
+        repository.endCustomFrontSession(memberFront.id),
+        throwsFormatException,
+      );
+
+      await repository.endCustomFrontSession(customFront.id);
+      await repository.endCustomFrontSession(customFront.id);
+      final after = await repository.watchFrontHistory().first;
+      expect(
+        after.singleWhere((entry) => entry.id == customFront.id).isActive,
+        isFalse,
+      );
+      expect(
+        after.singleWhere((entry) => entry.id == customFront.id).label,
+        'Away',
+      );
+      expect(
+        after.singleWhere((entry) => entry.id == memberFront.id).isActive,
+        isTrue,
+      );
+      expect((await repository.loadHomeSnapshot()).currentFrontText, 'River');
+      expect(
+        await repository.watchFrontAuditEvents(customFront.id).first,
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
     'editing an active front keeps its end unset until explicitly supplied',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
@@ -1183,6 +1248,49 @@ END;
     customization = await repository.loadCustomization();
     expect(customization.dashboardShortcutIds, isEmpty);
   });
+
+  test(
+    'dashboard shortcuts keep their positions when hidden and shown',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      final original = await repository.loadCustomization();
+      final originalOrder = original.dashboardShortcutOrderIds;
+      final originalVisible = original.dashboardShortcutIds;
+
+      await repository.setDashboardShortcutVisible('notes', false);
+      var customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, isNot(contains('notes')));
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+
+      await repository.setDashboardShortcutVisible('notes', true);
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, originalVisible);
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+
+      await repository.moveDashboardShortcut('groups', 1);
+      final moved = await repository.loadCustomization();
+      expect(
+        moved.dashboardShortcutIds.indexOf('groups'),
+        originalVisible.indexOf('groups') + 1,
+      );
+      await repository.setDashboardShortcutVisible('groups', false);
+      await repository.setDashboardShortcutVisible('groups', true);
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, moved.dashboardShortcutIds);
+      expect(
+        customization.dashboardShortcutOrderIds,
+        moved.dashboardShortcutOrderIds,
+      );
+
+      await repository.resetDashboardShortcuts();
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+    },
+  );
 
   test('migrates plaintext member names to encrypted storage', () async {
     final database = AppDatabase(NativeDatabase.memory());

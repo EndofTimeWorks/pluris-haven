@@ -996,7 +996,9 @@ class DashboardShortcutManager extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeIds = customization.dashboardShortcutIds;
     final rows = <Widget>[
-      for (final shortcut in _orderedShortcutDefinitions(activeIds))
+      for (final shortcut in _orderedShortcutDefinitions(
+        customization.dashboardShortcutOrderIds,
+      ))
         DashboardShortcutRow(
           shortcut: shortcut,
           visible: activeIds.contains(shortcut.id),
