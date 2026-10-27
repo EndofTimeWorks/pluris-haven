@@ -3284,6 +3284,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelFilter => 'Channel';
 
   @override
+  String get categoryViewFieldLabel => 'View category';
+
+  @override
+  String get allCategoriesFilter => 'All categories';
+
+  @override
   String get channelViewFieldLabel => 'View channel';
 
   @override

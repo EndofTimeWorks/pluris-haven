@@ -18,6 +18,7 @@ class _MessagesPageState extends State<MessagesPage> {
   final _searchController = TextEditingController();
   String _query = '';
   String _boardFilter = 'all';
+  String? _categoryFilterId;
   String? _channelFilterId;
 
   @override
@@ -42,8 +43,22 @@ class _MessagesPageState extends State<MessagesPage> {
             final channelNamesById = {
               for (final channel in channels) channel.id: channel.name,
             };
+            final channelCategoriesById = {
+              for (final channel in channels) channel.id: channel.categoryId,
+            };
+            final selectedCategoryId =
+                channels.any(
+                  (channel) => channel.categoryId == _categoryFilterId,
+                )
+                ? _categoryFilterId
+                : null;
             final selectedChannelId =
-                channels.any((channel) => channel.id == _channelFilterId)
+                channels.any(
+                  (channel) =>
+                      channel.id == _channelFilterId &&
+                      (selectedCategoryId == null ||
+                          channel.categoryId == selectedCategoryId),
+                )
                 ? _channelFilterId
                 : null;
             final channelNameCounts = <String, int>{};
@@ -68,6 +83,10 @@ class _MessagesPageState extends State<MessagesPage> {
                       (message) =>
                           (_boardFilter == 'all' ||
                               message.boardKind == _boardFilter) &&
+                          (_boardFilter != 'channel' ||
+                              selectedCategoryId == null ||
+                              channelCategoriesById[message.channelId] ==
+                                  selectedCategoryId) &&
                           (_boardFilter != 'channel' ||
                               selectedChannelId == null ||
                               message.channelId == selectedChannelId) &&
@@ -139,32 +158,70 @@ class _MessagesPageState extends State<MessagesPage> {
                             return '$name (${id.substring(id.length > 8 ? id.length - 8 : 0)})';
                           }
 
-                          return DropdownButtonFormField<String?>(
-                            key: ValueKey(
-                              'chat-channel-filter-$selectedChannelId',
-                            ),
-                            isExpanded: true,
-                            initialValue: selectedChannelId,
-                            decoration: InputDecoration(
-                              labelText: l10n.channelViewFieldLabel,
-                            ),
-                            items: [
-                              DropdownMenuItem<String?>(
-                                value: null,
-                                child: Text(l10n.allChannelsFilter),
-                              ),
-                              for (final channel in channels)
-                                DropdownMenuItem<String?>(
-                                  value: channel.id,
-                                  child: Text(
-                                    labelFor(channel),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                          final categories =
+                              categorySnapshot.data ??
+                              const <ChatCategorySummary>[];
+                          return Column(
+                            children: [
+                              if (categories.isNotEmpty) ...[
+                                DropdownButtonFormField<String?>(
+                                  key: ValueKey(
+                                    'chat-category-filter-$selectedCategoryId',
                                   ),
+                                  isExpanded: true,
+                                  initialValue: selectedCategoryId,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.categoryViewFieldLabel,
+                                  ),
+                                  items: [
+                                    DropdownMenuItem<String?>(
+                                      value: null,
+                                      child: Text(l10n.allCategoriesFilter),
+                                    ),
+                                    for (final category in categories)
+                                      DropdownMenuItem<String?>(
+                                        value: category.id,
+                                        child: Text(category.name),
+                                      ),
+                                  ],
+                                  onChanged: (id) => setState(() {
+                                    _categoryFilterId = id;
+                                    _channelFilterId = null;
+                                  }),
                                 ),
+                                const SizedBox(height: 10),
+                              ],
+                              DropdownButtonFormField<String?>(
+                                key: ValueKey(
+                                  'chat-channel-filter-$selectedChannelId',
+                                ),
+                                isExpanded: true,
+                                initialValue: selectedChannelId,
+                                decoration: InputDecoration(
+                                  labelText: l10n.channelViewFieldLabel,
+                                ),
+                                items: [
+                                  DropdownMenuItem<String?>(
+                                    value: null,
+                                    child: Text(l10n.allChannelsFilter),
+                                  ),
+                                  for (final channel in channels)
+                                    if (selectedCategoryId == null ||
+                                        channel.categoryId ==
+                                            selectedCategoryId)
+                                      DropdownMenuItem<String?>(
+                                        value: channel.id,
+                                        child: Text(
+                                          labelFor(channel),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                ],
+                                onChanged: (id) =>
+                                    setState(() => _channelFilterId = id),
+                              ),
                             ],
-                            onChanged: (id) =>
-                                setState(() => _channelFilterId = id),
                           );
                         },
                       ),
