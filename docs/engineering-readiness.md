@@ -6,36 +6,6 @@ the current local remediation baseline was checked on 2026-10-25.
 Pluris Haven remains **PRE-ALPHA**. This page records the checks still needed
 before calling it alpha-ready.
 
-## Current locally verified baseline
-
-- The protected local-text upgrade path migrates supported recent `ph1:` data to
-  context-bound `ph2:` data before later readers/migrations, in both foreground
-  and background startup.
-- App Lock hides private UI while persisted security state is unknown without
-  triggering premature OS authentication, and remains fail-closed if device
-  credentials disappear.
-- Notification permission logic separates explicit prompting from nonprompting
-  delivery checks. Reminder/front delivery does not claim notification success
-  when permission blocks delivery.
-- Phase-1 local data changes are covered by direct migration and lifecycle
-  tests: backup upload reconciliation, transactional revision edits/restores,
-  front-audit preservation, chat tombstones, poll re-import, deletion/purge and
-  custom-field provenance. This is local verification only; it is not hosted
-  CI, real-device, store, or multi-device/sync evidence.
-- The complete Flutter test suite and `flutter analyze` passed after the final
-  notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
-  9.1.0, and Kotlin 2.4.0. It retains Flutter's documented temporary legacy
-  Kotlin and DSL settings because stable `sentry_flutter` 9.30.1 still applies
-  KGP. The verified Flutter baseline is 3.47.6.
-- The full server suite passed with one-time-token password recovery, verifying
-  STARTTLS, response-path-independent background email delivery, encrypted
-  backups, and queued backup-deletion cleanup covered.
-- The static website passes its build, type/check, generated accessibility and
-  security-header/CSP checks.
-- Release workflows pass static `actionlint` validation. Real GitHub-hosted CI
-  and external publication paths must still be checked separately; static YAML
-  validation is not an external release verification.
-
 ## Release/distribution state
 
 - Android release builds produce signed APKs plus an AAB using the configured
