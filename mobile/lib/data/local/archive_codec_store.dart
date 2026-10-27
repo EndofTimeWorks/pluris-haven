@@ -289,6 +289,7 @@ extension LocalHavenRepositoryArchiveCodec on LocalHavenRepository {
   Future<Map<String, Object?>> _journalToJson(JournalEntry journal) async => {
     'id': journal.id,
     'member_id': journal.memberId,
+    'author_member_id': journal.authorMemberId,
     'title': await _decryptLocalText(
       journal.title,
       'journal_entries',

@@ -5149,6 +5149,24 @@ abstract class AppLocalizations {
   /// **'About'**
   String get journalAboutMemberFieldLabel;
 
+  /// No description provided for @journalAuthorFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by'**
+  String get journalAuthorFieldLabel;
+
+  /// No description provided for @journalAuthorNotRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get journalAuthorNotRecorded;
+
+  /// No description provided for @journalWrittenBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by {name}'**
+  String journalWrittenBy(String name);
+
   /// No description provided for @aboutMemberFilter.
   ///
   /// In en, this message translates to:

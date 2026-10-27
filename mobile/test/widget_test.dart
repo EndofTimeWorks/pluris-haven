@@ -3356,6 +3356,7 @@ void main() {
     final repository = FakeHavenRepository(_testHomeSnapshot);
     addTearDown(repository.close);
     await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
     await openDrawerSection(tester, 'Journals');
@@ -3375,11 +3376,20 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('River').last);
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('journal-author-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kai').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
     expect(repository._journals.single.title, 'About today');
     expect(repository._journals.single.body, isEmpty);
     expect(repository._journals.single.memberId, 'fake-member-1');
+    expect(repository._journals.single.authorMemberId, 'fake-member-2');
+    expect(find.text('Written by Kai'), findsOneWidget);
 
     await tester.tap(find.text('About a member'));
     await tester.pumpAndSettle();
@@ -3396,9 +3406,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('System journal').last);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
     expect(repository._journals.single.memberId, isNull);
+    expect(repository._journals.single.authorMemberId, 'fake-member-2');
   });
 
   testWidgets('creates edits searches and deletes journal entries', (
@@ -3432,6 +3446,9 @@ void main() {
       find.byKey(const ValueKey('journal-body-field')),
       '**Lots happened** after switching.',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
 
@@ -3458,11 +3475,17 @@ void main() {
       find.byKey(const ValueKey('journal-title-field')),
       'Long day edited',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Long day edited'), findsOneWidget);
 
+    await tester.ensureVisible(
+      find.byTooltip(RegExp(r'^Delete journal entry .+ \(')),
+    );
     await tester.tap(find.byTooltip(RegExp(r'^Delete journal entry .+ \(')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));

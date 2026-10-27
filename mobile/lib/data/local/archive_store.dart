@@ -1387,6 +1387,11 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         journal['member_id'] = null;
         cleanupCount++;
       }
+      final authorMemberId = _stringValue(journal['author_member_id']);
+      if (authorMemberId != null && !memberIds.contains(authorMemberId)) {
+        journal['author_member_id'] = null;
+        cleanupCount++;
+      }
     }
 
     contentRevisions.removeWhere((revision) {
@@ -2237,6 +2242,7 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       id: id,
       systemId: localSystemId,
       memberId: Value(_stringValue(journal['member_id'])),
+      authorMemberId: Value(_stringValue(journal['author_member_id'])),
       title: Value(
         await _encryptNullableLocalText(
           _stringValue(journal['title']),

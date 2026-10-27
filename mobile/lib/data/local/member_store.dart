@@ -555,7 +555,8 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
         await (database.select(database.journalEntries)..where(
               (journal) =>
                   journal.systemId.equals(localSystemId) &
-                  journal.memberId.equals(memberId),
+                  (journal.memberId.equals(memberId) |
+                      journal.authorMemberId.equals(memberId)),
             ))
             .get();
     final reminderTriggers =

@@ -3017,6 +3017,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalAboutMemberFieldLabel => 'About';
 
   @override
+  String get journalAuthorFieldLabel => 'Written by';
+
+  @override
+  String get journalAuthorNotRecorded => 'Not recorded';
+
+  @override
+  String journalWrittenBy(String name) {
+    return 'Written by $name';
+  }
+
+  @override
   String get aboutMemberFilter => 'About a member';
 
   @override
