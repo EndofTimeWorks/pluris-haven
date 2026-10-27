@@ -79,21 +79,21 @@ This is the current status for the findings below. The October test report
 remains the evidence for findings not listed here; an older open observation
 is not proof that current code still fails.
 
-| Finding          | Status                                    | Remaining check or work                                                                                                                 |
-| ---------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| F14, N7–N12, N14 | Fixed in client; Flutter regressions pass | Verify touch and screen-reader behaviour on a supported device.                                                                         |
-| N13              | Partial                                   | Hourly overlap counts once; timeline rows have names and endpoints. The hour chart still needs a value axis.                            |
-| N24              | Partial                                   | Journal entries can be about a member, but that field does not record who wrote them.                                                   |
-| N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.            |
-| N27, N52         | Partial                                   | Import previews disclose more conflicts and orphaned front links; conflict handling and malformed references still need broader review. |
-| N28, N31         | Partial                                   | Dashboard scaling and UK front-history dates are corrected; other scaled and RTL layouts need review.                                   |
-| N29              | Partial                                   | Closing the main front picker now returns focus to its card; other sheets and dialogs still need review.                                |
-| N30, N32         | Open                                      | Visual consistency and dashboard shortcut order.                                                                                        |
-| N33              | Partial                                   | Missing keys and startup failures have non-destructive retry; a lost key still needs safe recovery guidance and device testing.         |
-| N43              | Partial                                   | The reminder form shows its guidance and focuses Title; weekly scheduling still chooses one day.                                        |
-| N44              | Requires device verification              | Linux semantics tests cannot establish TalkBack or VoiceOver bounds.                                                                    |
-| W4               | Fixed; website checks pass                | Test real browser preference switching before publication.                                                                              |
-| W5               | Open                                      | A support route independent of GitHub needs an approved contact destination.                                                            |
+| Finding          | Status                                    | Remaining check or work                                                                                                         |
+| ---------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| F14, N7–N12, N14 | Fixed in client; Flutter regressions pass | Verify touch and screen-reader behaviour on a supported device.                                                                 |
+| N13              | Partial                                   | Hourly overlap counts once; timeline rows have names and endpoints. The hour chart still needs a value axis.                    |
+| N24              | Partial                                   | Journal entries can be about a member, but that field does not record who wrote them.                                           |
+| N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.    |
+| N27, N52         | Partial                                   | Changed native preferences now prompt; orphaned front links are flagged. Other import conflicts still need review.              |
+| N28, N31         | Partial                                   | Dashboard scaling and UK front-history dates are corrected; other scaled and RTL layouts need review.                           |
+| N29              | Partial                                   | Closing the main front picker now returns focus to its card; other sheets and dialogs still need review.                        |
+| N30, N32         | Open                                      | Visual consistency and dashboard shortcut order.                                                                                |
+| N33              | Partial                                   | Missing keys and startup failures have non-destructive retry; a lost key still needs safe recovery guidance and device testing. |
+| N43              | Partial                                   | The reminder form shows its guidance and focuses Title; weekly scheduling still chooses one day.                                |
+| N44              | Requires device verification              | Linux semantics tests cannot establish TalkBack or VoiceOver bounds.                                                            |
+| W4               | Fixed; website checks pass                | Test real browser preference switching before publication.                                                                      |
+| W5               | Open                                      | A support route independent of GitHub needs an approved contact destination.                                                    |
 
 ## Completion protocol
 

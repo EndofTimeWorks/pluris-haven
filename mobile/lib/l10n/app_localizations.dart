@@ -2766,6 +2766,12 @@ abstract class AppLocalizations {
   /// **'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.'**
   String get systemProfileConflictBody;
 
+  /// No description provided for @archivePreferencesConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some app preferences differ from settings already saved on this device.'**
+  String get archivePreferencesConflictBody;
+
   /// No description provided for @nativeImportPreferencesPolicy.
   ///
   /// In en, this message translates to:

@@ -5177,6 +5177,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository.portablePreferenceValues['theme_mode'] = 'dark';
     addTearDown(repository.close);
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -5185,7 +5186,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('paste-import-json-field')),
-      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Local system"}}',
+      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Local system"},"preferences":[{"key":"theme_mode","value":"dark"}]}',
     );
     await tester.tap(find.text('Preview pasted JSON'));
     await _pumpUntilFound(tester, find.textContaining('Preview ready'));
@@ -5201,6 +5202,50 @@ void main() {
     await _pumpUntilFound(tester, find.textContaining('Import complete'));
     expect(find.text('Conflicts found'), findsNothing);
     expect(repository._backgroundJobs, hasLength(1));
+  });
+
+  testWidgets('changed archive preferences require a conflict choice', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository.portablePreferenceValues['theme_mode'] = 'dark';
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'system': {'id': 'local-system', 'name': 'Local system'},
+        'preferences': [
+          {'key': 'theme_mode', 'value': 'light'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.text('Conflicts found'));
+
+    expect(find.textContaining('Some app preferences differ'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._backgroundJobs, isEmpty);
   });
 
   testWidgets('opens failed import job details and copies full error', (
@@ -6114,6 +6159,19 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<AppCustomization> loadCustomization() async => _customization;
+
+  final portablePreferenceValues = <String, String>{};
+
+  @override
+  Future<bool> hasPortablePreferenceConflict(
+    Map<String, String> imported,
+  ) async {
+    return imported.entries.any(
+      (entry) =>
+          portablePreferenceValues.containsKey(entry.key) &&
+          portablePreferenceValues[entry.key] != entry.value,
+    );
+  }
 
   @override
   Future<void> setThemeMode(HavenThemeMode mode) async {

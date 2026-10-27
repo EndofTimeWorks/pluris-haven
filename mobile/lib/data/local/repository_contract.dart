@@ -193,6 +193,8 @@ abstract interface class HavenRepository {
 
   Future<AppCustomization> loadCustomization();
 
+  Future<bool> hasPortablePreferenceConflict(Map<String, String> imported);
+
   Future<void> setThemeMode(HavenThemeMode mode);
 
   Future<void> setVisualTheme(HavenVisualTheme theme);

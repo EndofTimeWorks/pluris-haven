@@ -958,6 +958,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
     final hasArchivePreferences =
         _source == ImportSource.plurisHavenArchive &&
         _jsonObjectList(decoded['preferences']).isNotEmpty;
+    final preferenceConflict =
+        hasArchivePreferences &&
+        await widget.repository.hasPortablePreferenceConflict({
+          for (final preference in _jsonObjectList(decoded['preferences']))
+            if (preference['key'] is String && preference['value'] is String)
+              preference['key'] as String: preference['value'] as String,
+        });
     var systemProfileConflict = false;
     final archivedSystem = decoded['system'];
     if (_source == ImportSource.plurisHavenArchive &&
@@ -1028,7 +1035,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     if (memberConflicts.isEmpty &&
         groupConflicts.isEmpty &&
-        !systemProfileConflict) {
+        !systemProfileConflict &&
+        !preferenceConflict) {
       return const _ConflictPromptResult.noConflicts();
     }
 
@@ -1043,6 +1051,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
         groupCount: groupConflicts.length,
         systemProfileConflict: systemProfileConflict,
         hasArchivePreferences: hasArchivePreferences,
+        preferenceConflict: preferenceConflict,
         sourceLabel: localizeImportSource(l10n, _source),
       ),
     );
@@ -1185,6 +1194,7 @@ class _ConflictPromptDialog extends StatelessWidget {
     required this.groupCount,
     required this.systemProfileConflict,
     required this.hasArchivePreferences,
+    required this.preferenceConflict,
     required this.sourceLabel,
   });
 
@@ -1192,6 +1202,7 @@ class _ConflictPromptDialog extends StatelessWidget {
   final int groupCount;
   final bool systemProfileConflict;
   final bool hasArchivePreferences;
+  final bool preferenceConflict;
   final String sourceLabel;
 
   @override
@@ -1212,6 +1223,7 @@ class _ConflictPromptDialog extends StatelessWidget {
           if (parts.isNotEmpty)
             l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
           if (systemProfileConflict) l10n.systemProfileConflictBody,
+          if (preferenceConflict) l10n.archivePreferencesConflictBody,
           if (hasArchivePreferences) l10n.nativeImportPreferencesPolicy,
         ].join('\n\n'),
       ),

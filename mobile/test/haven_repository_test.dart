@@ -3251,6 +3251,36 @@ END;
   });
 
   test(
+    'reports only changed portable preferences as import conflicts',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.setThemeMode(HavenThemeMode.dark);
+      await repository.setAppLockEnabled(true);
+
+      expect(
+        await repository.hasPortablePreferenceConflict({
+          'theme_mode': 'dark',
+          'app_lock_enabled': 'false',
+        }),
+        isFalse,
+      );
+      expect(
+        await repository.hasPortablePreferenceConflict({
+          'font_family': 'serif',
+        }),
+        isFalse,
+      );
+      expect(
+        await repository.hasPortablePreferenceConflict({'theme_mode': 'light'}),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'does not activate device or security-local preferences from an archive',
     () async {
       final sourceDatabase = AppDatabase(NativeDatabase.memory());
