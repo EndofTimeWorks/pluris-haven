@@ -5155,6 +5155,18 @@ abstract class AppLocalizations {
   /// **'Written by'**
   String get journalAuthorFieldLabel;
 
+  /// No description provided for @journalDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal date'**
+  String get journalDateFieldLabel;
+
+  /// No description provided for @journalTimeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal time'**
+  String get journalTimeFieldLabel;
+
   /// No description provided for @journalAuthorNotRecorded.
   ///
   /// In en, this message translates to:

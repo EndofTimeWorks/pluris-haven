@@ -1141,6 +1141,8 @@
   "addJournalEntryButton": "Add journal entry",
   "journalAboutMemberFieldLabel": "About",
   "journalAuthorFieldLabel": "Written by",
+  "journalDateFieldLabel": "Journal date",
+  "journalTimeFieldLabel": "Journal time",
   "journalAuthorNotRecorded": "Not recorded",
   "journalWrittenBy": "Written by {name}",
   "@journalWrittenBy": { "placeholders": { "name": { "type": "String" } } },

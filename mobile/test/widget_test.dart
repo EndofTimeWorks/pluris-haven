@@ -3406,6 +3406,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
     expect(find.text('Write something before saving.'), findsOneWidget);
@@ -3426,9 +3429,14 @@ void main() {
     await tester.ensureVisible(
       find.byKey(const ValueKey('save-journal-entry-button')),
     );
+    final saveStartedAt = DateTime.now().toUtc();
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
     expect(repository._journals.single.title, 'About today');
+    expect(
+      repository._journals.single.createdAt.isBefore(saveStartedAt),
+      isFalse,
+    );
     expect(repository._journals.single.body, isEmpty);
     expect(repository._journals.single.memberId, 'fake-member-1');
     expect(repository._journals.single.authorMemberId, 'fake-member-2');
@@ -3456,6 +3464,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository._journals.single.memberId, isNull);
     expect(repository._journals.single.authorMemberId, 'fake-member-2');
+  });
+
+  testWidgets('editing a journal date keeps its recorded time', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final recordedAt = DateTime(2025, 1, 15, 12, 30).toUtc();
+    repository._journals = [
+      JournalEntry(
+        id: 'backdated-journal',
+        systemId: localSystemId,
+        title: 'Backdated note',
+        body: 'A past entry.',
+        visibility: 'system',
+        createdAt: recordedAt,
+        updatedAt: recordedAt,
+      ),
+    ];
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.text('Backdated note'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('journal-date-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('16').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    final savedDate = repository._journals.single.createdAt.toLocal();
+    expect(savedDate, DateTime(2025, 1, 16, 12, 30));
   });
 
   testWidgets('creates edits searches and deletes journal entries', (

@@ -247,6 +247,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   final _bodyController = TextEditingController();
   String? _memberId;
   String? _authorMemberId;
+  late DateTime _entryDateTime;
+  late DateTime _initialEntryDateTime;
+  bool _dateTimeEdited = false;
   bool _preview = false;
   bool _isSaving = false;
 
@@ -256,7 +259,8 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
       _titleController.text != (widget.entry?.title ?? '') ||
       _bodyController.text != (widget.entry?.body ?? '') ||
       _memberId != widget.entry?.memberId ||
-      _authorMemberId != widget.entry?.authorMemberId;
+      _authorMemberId != widget.entry?.authorMemberId ||
+      _entryDateTime != _initialEntryDateTime;
 
   Future<void> _tryDismiss() async {
     if (!_isDirty) {
@@ -273,6 +277,8 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   void initState() {
     super.initState();
     final entry = widget.entry;
+    _entryDateTime = (entry?.createdAt ?? DateTime.now()).toLocal();
+    _initialEntryDateTime = _entryDateTime;
     if (entry == null) {
       return;
     }
@@ -410,6 +416,24 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               },
             ),
             const SizedBox(height: 10),
+            OutlinedButton(
+              key: const ValueKey('journal-date-field'),
+              onPressed: _chooseDate,
+              child: Text(
+                '${l10n.journalDateFieldLabel}: '
+                '${MaterialLocalizations.of(context).formatMediumDate(_entryDateTime)}',
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              key: const ValueKey('journal-time-field'),
+              onPressed: _chooseTime,
+              child: Text(
+                '${l10n.journalTimeFieldLabel}: '
+                '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(_entryDateTime))}',
+              ),
+            ),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -478,7 +502,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
           title: _nullIfBlank(_titleController.text),
           body: _bodyController.text,
           visibility: existing?.visibility ?? 'system',
-          createdAt: existing?.createdAt ?? now,
+          createdAt: existing == null && !_dateTimeEdited
+              ? now
+              : _entryDateTime.toUtc(),
           updatedAt: now,
         ),
       );
@@ -494,6 +520,47 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _chooseDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _entryDateTime,
+      firstDate: DateTime(1),
+      lastDate: DateTime(9999, 12, 31),
+    );
+    if (date == null || !mounted) return;
+    setState(() {
+      _dateTimeEdited = true;
+      _entryDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        _entryDateTime.hour,
+        _entryDateTime.minute,
+        _entryDateTime.second,
+        _entryDateTime.millisecond,
+        _entryDateTime.microsecond,
+      );
+    });
+  }
+
+  Future<void> _chooseTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_entryDateTime),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _dateTimeEdited = true;
+      _entryDateTime = DateTime(
+        _entryDateTime.year,
+        _entryDateTime.month,
+        _entryDateTime.day,
+        time.hour,
+        time.minute,
+      );
+    });
   }
 
   Future<void> _showHistory() async {
