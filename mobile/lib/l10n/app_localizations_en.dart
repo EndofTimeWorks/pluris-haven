@@ -2768,6 +2768,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String deleteNoteForTitle(String name) {
+    return 'Delete note $name';
+  }
+
+  @override
   String get deleteNoteTitle => 'Delete note?';
 
   @override
@@ -3056,6 +3061,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String deleteJournalEntryFor(String title, String id) {
     return 'Delete journal entry $title ($id)';
+  }
+
+  @override
+  String deleteJournalEntryForTitle(String title) {
+    return 'Delete journal entry $title';
   }
 
   @override

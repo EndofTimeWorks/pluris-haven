@@ -3456,7 +3456,7 @@ void main() {
     );
     expect(repository._notes.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Delete note Grounding edited (e-note-1)'));
+    await tester.tap(find.byTooltip('Delete note Grounding edited'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -3491,6 +3491,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository._notes.single.title, 'A title is enough');
     expect(repository._notes.single.body, isEmpty);
+  });
+
+  testWidgets('note actions show IDs only for duplicate titles', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveNote(const NoteDraft(title: 'Plan', body: 'One'));
+    await repository.saveNote(const NoteDraft(title: 'Plan', body: 'Two'));
+    await repository.saveNote(
+      const NoteDraft(title: 'Reminder', body: 'Three'),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+
+    expect(find.byTooltip('Delete note Reminder'), findsOneWidget);
+    expect(
+      find.byTooltip(RegExp(r'^Delete note Plan \([^)]+\)$')),
+      findsNWidgets(2),
+    );
   });
 
   testWidgets('notes list shows readable Markdown excerpts', (tester) async {
@@ -3704,9 +3725,9 @@ void main() {
     expect(find.text('Long day edited'), findsOneWidget);
 
     await tester.ensureVisible(
-      find.byTooltip(RegExp(r'^Delete journal entry .+ \(')),
+      find.byTooltip('Delete journal entry Long day edited'),
     );
-    await tester.tap(find.byTooltip(RegExp(r'^Delete journal entry .+ \(')));
+    await tester.tap(find.byTooltip('Delete journal entry Long day edited'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
