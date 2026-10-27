@@ -125,8 +125,8 @@ enum _JournalFilter { all, member, system }
 extension on _JournalFilter {
   String label(AppLocalizations l10n) => switch (this) {
     _JournalFilter.all => l10n.allFilter,
-    _JournalFilter.member => l10n.memberFilter,
-    _JournalFilter.system => l10n.systemFilter,
+    _JournalFilter.member => l10n.aboutMemberFilter,
+    _JournalFilter.system => l10n.systemJournalLabel,
   };
 }
 

@@ -83,7 +83,7 @@ is not proof that current code still fails.
 | ---------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | F14, N7–N12, N14 | Fixed in client; Flutter regressions pass | Verify touch and screen-reader behaviour on a supported device.                                                                 |
 | N13              | Partial                                   | Hourly overlap counts once; timeline rows have names and endpoints. The hour chart still needs a value axis.                    |
-| N24              | Partial                                   | Journal entries can be about a member, but that field does not record who wrote them.                                           |
+| N24              | Partial                                   | The filter now says "About a member"; journals still do not record who wrote an entry.                                          |
 | N25              | Partial                                   | Chat filters by stable channel ID and shows category names in the channel chooser; a separate category view is still absent.    |
 | N27, N52         | Partial                                   | Changed native preferences now prompt; orphaned front links are flagged. Other import conflicts still need review.              |
 | N28, N31         | Partial                                   | Dashboard scaling and UK front-history dates are corrected; other scaled and RTL layouts need review.                           |
