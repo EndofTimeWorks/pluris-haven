@@ -19,6 +19,13 @@
   <section>
     <h2>Bug reports</h2>
     <div class="cards">
+      <a class="card" href="mailto:security@plurishaven.app">
+        <strong>Email support</strong>
+        <span>
+          Write to security@plurishaven.app for help, bugs or security concerns. No GitHub account
+          is needed. Please leave private archives and recovery codes out of the message.
+        </span>
+      </a>
       <a class="card" href="https://github.com/EndofTimeWorks/pluris-haven/issues">
         <strong>GitHub Issues</strong>
         <span
