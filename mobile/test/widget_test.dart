@@ -3453,6 +3453,10 @@ void main() {
 
     await tester.tap(find.text('About today'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('journal-member-field')), findsNothing);
+    expect(find.text('Written by: Kai'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('journal-member-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('System journal').last);
@@ -3485,6 +3489,9 @@ void main() {
     await tester.pump();
     await openDrawerSection(tester, 'Journals');
     await tester.tap(find.text('Backdated note'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('journal-date-field')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('journal-date-field')));
@@ -3544,7 +3551,7 @@ void main() {
       repository._journals.single.body,
       '**Lots happened** after switching.',
     );
-    expect(find.text('Lots happened after switching.'), findsOneWidget);
+    expect(find.text('Lots happened after switching.'), findsWidgets);
     expect(find.textContaining('**Lots happened**'), findsNothing);
 
     await tester.enterText(find.byType(TextField).first, 'switching');
@@ -3557,6 +3564,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Long day'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lots happened after switching.'), findsWidgets);
+    expect(find.byKey(const ValueKey('journal-title-field')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('journal-title-field')),

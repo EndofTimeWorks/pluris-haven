@@ -250,6 +250,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   late DateTime _entryDateTime;
   late DateTime _initialEntryDateTime;
   bool _dateTimeEdited = false;
+  bool _readOnly = false;
   bool _preview = false;
   bool _isSaving = false;
 
@@ -277,6 +278,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   void initState() {
     super.initState();
     final entry = widget.entry;
+    _readOnly = entry != null;
     _entryDateTime = (entry?.createdAt ?? DateTime.now()).toLocal();
     _initialEntryDateTime = _entryDateTime;
     if (entry == null) {
@@ -306,6 +308,69 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
 
   Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (_readOnly) {
+      final entry = widget.entry!;
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          child: StreamBuilder<List<MemberSummary>>(
+            stream: widget.repository.watchMembers(includeArchived: true),
+            initialData: const [],
+            builder: (context, snapshot) {
+              final memberNames = {
+                for (final member in snapshot.data ?? const <MemberSummary>[])
+                  member.id: member.displayName,
+              };
+              final about = entry.memberId == null
+                  ? l10n.systemJournalLabel
+                  : memberNames[entry.memberId] ?? l10n.unknownMemberLabel;
+              final author = entry.authorMemberId == null
+                  ? l10n.journalAuthorNotRecorded
+                  : memberNames[entry.authorMemberId] ??
+                        l10n.unknownMemberLabel;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      entry.title?.trim().isNotEmpty == true
+                          ? entry.title!
+                          : l10n.untitledEntry,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(_shortDateTime(context, entry.createdAt)),
+                  const SizedBox(height: 8),
+                  Text('${l10n.journalAboutMemberFieldLabel}: $about'),
+                  Text('${l10n.journalAuthorFieldLabel}: $author'),
+                  const SizedBox(height: 14),
+                  if (entry.body.trim().isNotEmpty)
+                    _MarkdownPreview(body: entry.body)
+                  else
+                    Text(l10n.emptyJournal),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    key: const ValueKey('edit-journal-entry-button'),
+                    onPressed: () => setState(() => _readOnly = false),
+                    child: Text(l10n.editJournalEntryTitle),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(l10n.closeButton),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+    }
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
