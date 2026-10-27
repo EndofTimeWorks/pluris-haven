@@ -49,9 +49,9 @@
     <div class="brand-art" aria-hidden="true">
       <img
         class="dark-logo"
-        src="/brand/pluris-haven-alternate-dark-600x800.jpg"
-        width="600"
-        height="800"
+        src="/brand/pluris-haven-alternate-dark.png"
+        width="1200"
+        height="1600"
         alt=""
       />
       <img class="light-logo" src={lightLogo} width="96" height="96" alt="" />
