@@ -123,6 +123,17 @@ class ReminderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    Future<void> setEnabled(bool enabled) async {
+      await repository.setReminderEnabled(reminder.id, enabled);
+      if (enabled) {
+        await scheduleReminderSummary(reminder.copyWithEnabled(), l10n);
+      } else {
+        await NotificationService.instance.cancelReminderNotification(
+          reminder.id,
+        );
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -168,20 +179,9 @@ class ReminderTile extends StatelessWidget {
                 label:
                     '${l10n.reminderSemanticLabel(reminder.title)}, ${reminder.scheduleText}',
                 toggled: reminder.enabled,
-                child: Switch(
-                  value: reminder.enabled,
-                  onChanged: (enabled) async {
-                    await repository.setReminderEnabled(reminder.id, enabled);
-                    if (enabled) {
-                      await scheduleReminderSummary(
-                        reminder.copyWithEnabled(),
-                        l10n,
-                      );
-                    } else {
-                      await NotificationService.instance
-                          .cancelReminderNotification(reminder.id);
-                    }
-                  },
+                onTap: () => setEnabled(!reminder.enabled),
+                child: ExcludeSemantics(
+                  child: Switch(value: reminder.enabled, onChanged: setEnabled),
                 ),
               ),
               IconButton(

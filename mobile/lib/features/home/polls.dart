@@ -248,7 +248,7 @@ class _PollTileState extends State<PollTile> {
                   button: true,
                   selected: selected,
                   enabled: canVote,
-                  label: option.body,
+                  label: '${poll.question}: ${option.body}',
                   onTap: !canVote ? null : () => _vote(poll, option),
                   child: ExcludeSemantics(
                     child: InkWell(
