@@ -5276,6 +5276,34 @@ void main() {
     );
   });
 
+  testWidgets('dashboard shortcut stays under the finger when hidden', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'App options');
+
+    final toggle = find.byKey(const ValueKey('shortcut-visible-groups'));
+    await tester.scrollUntilVisible(
+      toggle,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    final before = tester.getCenter(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
+  });
+
   testWidgets('keeps an intentionally empty dashboard shortcut list', (
     tester,
   ) async {
