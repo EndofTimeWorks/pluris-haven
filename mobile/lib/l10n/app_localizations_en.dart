@@ -3020,6 +3020,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalAuthorFieldLabel => 'Written by';
 
   @override
+  String get journalDateFieldLabel => 'Journal date';
+
+  @override
+  String get journalTimeFieldLabel => 'Journal time';
+
+  @override
   String get journalAuthorNotRecorded => 'Not recorded';
 
   @override
