@@ -2782,9 +2782,13 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
         _ArchivePreferencePortability.portableUserIntent) {
       return Future.value();
     }
+    final value = _stringValue(preference['value']);
+    if (value == null) {
+      throw const FormatException('Missing required archive field: value.');
+    }
     final companion = AppPreferencesCompanion.insert(
       key: key,
-      value: _requiredString(preference, 'value'),
+      value: value,
       updatedAt: strategy == ImportConflictStrategy.update
           ? now
           : (_dateValue(preference['updated_at']) ?? now),
