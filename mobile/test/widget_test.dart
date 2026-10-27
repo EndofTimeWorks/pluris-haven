@@ -2386,6 +2386,23 @@ void main() {
 
     await openDrawerSection(tester, 'About');
 
+    final darkLogo = tester.widget<Image>(
+      find.byKey(const ValueKey('about-brand-logo')),
+    );
+    expect(
+      ((darkLogo.image as ResizeImage).imageProvider as AssetImage).assetName,
+      'assets/brand/pluris_haven_alternate_dark.jpg',
+    );
+    await repository.setThemeMode(HavenThemeMode.light);
+    await tester.pumpAndSettle();
+    final lightLogo = tester.widget<Image>(
+      find.byKey(const ValueKey('about-brand-logo')),
+    );
+    expect(
+      ((lightLogo.image as ResizeImage).imageProvider as AssetImage).assetName,
+      'assets/brand/pluris_haven_icon.png',
+    );
+
     expect(
       find.text('Offline-first system, identity, and journaling tools.'),
       findsOneWidget,

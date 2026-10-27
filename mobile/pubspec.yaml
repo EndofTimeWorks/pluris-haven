@@ -88,6 +88,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/brand/pluris_haven_icon.png
+    - assets/brand/pluris_haven_alternate_dark.jpg
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

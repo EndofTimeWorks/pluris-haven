@@ -40,7 +40,7 @@ test('Android manifest and adaptive icon resources use the branded layers', asyn
   }
 
   const colors = await readFile(new URL('res/values/colors.xml', androidRoot), 'utf8');
-  assert.match(colors, /<color name="ic_launcher_background">#272757<\/color>/);
+  assert.match(colors, /<color name="ic_launcher_background">#11062D<\/color>/);
 });
 
 test('Android icon bitmaps cover legacy and adaptive launcher densities', async () => {
