@@ -2160,8 +2160,6 @@ class ImportSetupCard extends StatelessWidget {
             value: localizeImportInput(l10n, source),
           ),
           const SizedBox(height: 8),
-          ImportMetaRow(label: l10n.jobLabel, value: source.jobSource),
-          const SizedBox(height: 8),
           ImportMetaRow(
             label: l10n.dedupeLabel,
             value: localizeImportDedupe(l10n, source),
@@ -2701,7 +2699,10 @@ class ImportJobRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final title = job.fileName ?? job.type;
+    final typeLabel = job.type == 'import_archive'
+        ? l10n.archiveImportJobType
+        : job.type;
+    final title = job.fileName ?? typeLabel;
     final subtitle = job.error == null
         ? '${job.status} - ${_shortDateTime(context, job.updatedAt)}'
         : '${_oneLineJobError(job.error!)} - ${l10n.tapForDetails}';
@@ -2736,6 +2737,14 @@ class ImportJobRow extends StatelessWidget {
 
   void _showJobDetails(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final typeLabel = job.type == 'import_archive'
+        ? l10n.archiveImportJobType
+        : job.type;
+    final title = job.fileName ?? typeLabel;
+    final source = ImportSource.values.where((item) => item.name == job.source);
+    final sourceLabel = source.isEmpty
+        ? job.source
+        : localizeImportSource(l10n, source.first);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -2759,7 +2768,7 @@ class ImportJobRow extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        job.fileName ?? job.type,
+                        title,
                         style: Theme.of(context).textTheme.titleLarge
                             ?.copyWith(fontWeight: FontWeight.w900),
                       ),
@@ -2768,11 +2777,11 @@ class ImportJobRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _JobDetailLine(label: l10n.typeFieldLabel, value: job.type),
-                if (job.source != null)
+                _JobDetailLine(label: l10n.typeFieldLabel, value: typeLabel),
+                if (sourceLabel != null)
                   _JobDetailLine(
                     label: l10n.sourceFieldLabel,
-                    value: job.source!,
+                    value: sourceLabel,
                   ),
                 _JobDetailLine(
                   label: l10n.createdFieldLabel,

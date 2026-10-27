@@ -594,7 +594,7 @@
   "retainRawImportPayloadsDescription": "Keeps encrypted copies of unsupported source collections for future export or debugging. Leave off to import only mapped records.",
   "retainPluralPortPayloadsDescription": "Required for PluralPort: unsupported and underspecified records stay encrypted so they are not silently discarded.",
   "inputLabel": "Input",
-  "jobLabel": "Job",
+  "archiveImportJobType": "Archive import",
   "dedupeLabel": "Dedupe",
   "previewImportButton": "Preview import",
   "refreshPreviewButton": "Refresh preview",
@@ -1427,7 +1427,7 @@
     "placeholders": { "name": { "type": "String" } }
   },
   "memberPreviewName": "Preview",
-  "alterProfileTitle": "Alter profile",
+  "alterProfileTitle": "Member profile",
   "birthdayFieldHint": "YYYY-MM-DD, MM-DD, or free text",
   "privacyFieldHint": "private, friends, public, or bucket name",
   "avatarReferenceFieldLabel": "Avatar URL or local ref",
@@ -1438,8 +1438,8 @@
   "memberGroupsTitle": "Member groups",
   "groupMembersTitle": "Members in this group",
   "groupMembersHelp": "Choose members here. Primary groups can be changed on each member's profile.",
-  "saveAlterButton": "Save alter",
-  "createAlterButton": "Create alter",
+  "saveAlterButton": "Save member",
+  "createAlterButton": "Create member",
   "openingImagePickerStatus": "Opening image picker...",
   "chooseMemberAvatarTitle": "Choose member avatar",
   "noImageSelectedStatus": "No image selected.",
@@ -1492,13 +1492,13 @@
       "ended": { "type": "String" }
     }
   },
-  "customFieldsImportDescription": "Import a Simply Plural export to bring custom profile fields into the local archive.",
+  "customFieldsImportDescription": "Supported imports can bring custom profile fields into the local archive.",
   "customFieldsWithValues": "{count, plural, =1{1 field has imported values.} other{{count} fields have imported values.}}",
   "@customFieldsWithValues": {
     "placeholders": { "count": { "type": "int" } }
   },
   "noCustomFieldsYet": "No custom fields yet",
-  "customFieldsEmptyBody": "SP custom fields will show here after import.",
+  "customFieldsEmptyBody": "Add a field here, or import fields from a supported file.",
   "addFieldButton": "Add field",
   "valueCount": "{count, plural, =1{1 value} other{{count} values}}",
   "@valueCount": { "placeholders": { "count": { "type": "int" } } },
@@ -1568,7 +1568,7 @@
   "addCustomFrontButton": "Add custom front",
   "noCustomFronts": "No custom fronts",
   "noMatches": "No matches",
-  "customFrontsEmptyBody": "Add one here, or import them from SimplyPlural.",
+  "customFrontsEmptyBody": "Add one here, or import custom fronts from a supported file.",
   "tryDifferentSearch": "Try a different search.",
   "namedCombinationsTitle": "Named combinations",
   "memberShortcutLabel": "member shortcut",

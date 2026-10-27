@@ -1451,7 +1451,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputLabel => 'Input';
 
   @override
-  String get jobLabel => 'Job';
+  String get archiveImportJobType => 'Archive import';
 
   @override
   String get dedupeLabel => 'Dedupe';
@@ -3779,7 +3779,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberPreviewName => 'Preview';
 
   @override
-  String get alterProfileTitle => 'Alter profile';
+  String get alterProfileTitle => 'Member profile';
 
   @override
   String get birthdayFieldHint => 'YYYY-MM-DD, MM-DD, or free text';
@@ -3813,10 +3813,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose members here. Primary groups can be changed on each member\'s profile.';
 
   @override
-  String get saveAlterButton => 'Save alter';
+  String get saveAlterButton => 'Save member';
 
   @override
-  String get createAlterButton => 'Create alter';
+  String get createAlterButton => 'Create member';
 
   @override
   String get openingImagePickerStatus => 'Opening image picker...';
@@ -3953,7 +3953,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldsImportDescription =>
-      'Import a Simply Plural export to bring custom profile fields into the local archive.';
+      'Supported imports can bring custom profile fields into the local archive.';
 
   @override
   String customFieldsWithValues(int count) {
@@ -3971,7 +3971,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldsEmptyBody =>
-      'SP custom fields will show here after import.';
+      'Add a field here, or import fields from a supported file.';
 
   @override
   String get addFieldButton => 'Add field';
@@ -4173,7 +4173,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFrontsEmptyBody =>
-      'Add one here, or import them from SimplyPlural.';
+      'Add one here, or import custom fronts from a supported file.';
 
   @override
   String get tryDifferentSearch => 'Try a different search.';

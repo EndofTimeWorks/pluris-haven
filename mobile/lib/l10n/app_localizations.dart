@@ -2568,11 +2568,11 @@ abstract class AppLocalizations {
   /// **'Input'**
   String get inputLabel;
 
-  /// No description provided for @jobLabel.
+  /// No description provided for @archiveImportJobType.
   ///
   /// In en, this message translates to:
-  /// **'Job'**
-  String get jobLabel;
+  /// **'Archive import'**
+  String get archiveImportJobType;
 
   /// No description provided for @dedupeLabel.
   ///
@@ -6470,7 +6470,7 @@ abstract class AppLocalizations {
   /// No description provided for @alterProfileTitle.
   ///
   /// In en, this message translates to:
-  /// **'Alter profile'**
+  /// **'Member profile'**
   String get alterProfileTitle;
 
   /// No description provided for @birthdayFieldHint.
@@ -6536,13 +6536,13 @@ abstract class AppLocalizations {
   /// No description provided for @saveAlterButton.
   ///
   /// In en, this message translates to:
-  /// **'Save alter'**
+  /// **'Save member'**
   String get saveAlterButton;
 
   /// No description provided for @createAlterButton.
   ///
   /// In en, this message translates to:
-  /// **'Create alter'**
+  /// **'Create member'**
   String get createAlterButton;
 
   /// No description provided for @openingImagePickerStatus.
@@ -6788,7 +6788,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFieldsImportDescription.
   ///
   /// In en, this message translates to:
-  /// **'Import a Simply Plural export to bring custom profile fields into the local archive.'**
+  /// **'Supported imports can bring custom profile fields into the local archive.'**
   String get customFieldsImportDescription;
 
   /// No description provided for @customFieldsWithValues.
@@ -6806,7 +6806,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFieldsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'SP custom fields will show here after import.'**
+  /// **'Add a field here, or import fields from a supported file.'**
   String get customFieldsEmptyBody;
 
   /// No description provided for @addFieldButton.
@@ -7136,7 +7136,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFrontsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add one here, or import them from SimplyPlural.'**
+  /// **'Add one here, or import custom fronts from a supported file.'**
   String get customFrontsEmptyBody;
 
   /// No description provided for @tryDifferentSearch.

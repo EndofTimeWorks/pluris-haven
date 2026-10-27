@@ -2737,8 +2737,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Trusted'), findsOneWidget);
     expect(
-      find.text(
-        'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.',
+      find.textContaining(
+        'Buckets do not change the separate Privacy field on member profiles',
       ),
       findsOneWidget,
     );
@@ -5838,6 +5838,8 @@ void main() {
     await tester.tap(find.text('simplyplural.json'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Archive import'), findsOneWidget);
+    expect(find.text('Simply Plural'), findsWidgets);
     expect(find.text('Error'), findsOneWidget);
     expect(find.textContaining('FOREIGN KEY constraint failed'), findsWidgets);
 
