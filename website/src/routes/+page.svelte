@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '#lib/release.js';
+  import lightLogo from '#lib/assets/favicon.svg';
 
   const status = [
     ['Version', mobileRelease.version],
@@ -45,6 +46,16 @@
 
 <main id="main-content" tabindex="-1">
   <section class="intro" aria-labelledby="intro-heading">
+    <div class="brand-art" aria-hidden="true">
+      <img
+        class="dark-logo"
+        src="/brand/pluris-haven-alternate-dark-600x800.jpg"
+        width="600"
+        height="800"
+        alt=""
+      />
+      <img class="light-logo" src={lightLogo} width="96" height="96" alt="" />
+    </div>
     <p class="release-state">Android pre-alpha · {mobileRelease.version}</p>
     <h1 id="intro-heading">Pluris Haven</h1>
     <p class="lede">
@@ -200,6 +211,40 @@
 
   .intro {
     padding-block: clamp(48px, 7vw, 72px) 48px;
+  }
+
+  .brand-art {
+    float: right;
+    width: clamp(104px, 22vw, 168px);
+    margin: 0 0 16px 24px;
+  }
+
+  .brand-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .brand-art .light-logo {
+    display: none;
+  }
+
+  :global(html[data-theme='light']) .brand-art .dark-logo {
+    display: none;
+  }
+
+  :global(html[data-theme='light']) .brand-art .light-logo {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :global(html:not([data-theme='dark'])) .brand-art .dark-logo {
+      display: none;
+    }
+
+    :global(html:not([data-theme='dark'])) .brand-art .light-logo {
+      display: block;
+    }
   }
 
   .release-state,
