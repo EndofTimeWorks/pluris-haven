@@ -23,84 +23,98 @@ class _JournalsPageState extends State<JournalsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return StreamBuilder<List<JournalEntry>>(
-      stream: widget.repository.watchJournals(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError && !snapshot.hasData) {
-          return SpPage(
-            children: [
-              SpDataLoadState(
-                error: snapshot.error,
-                onRetry: () => setState(() {}),
-              ),
-            ],
-          );
-        }
-        if (!snapshot.hasData) {
-          return const SpPage(children: [SpDataLoadState()]);
-        }
-        final entries = _filteredEntries(snapshot.data!);
-
-        return SpPage(
-          children: [
-            SpSearchField(
-              hintText: l10n.searchJournalsHint,
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            const SizedBox(height: 12),
-            SpFilterRow(
-              filters: [
-                for (final filter in _JournalFilter.values) filter.label(l10n),
-              ],
-              selected: _filter.label(l10n),
-              onSelected: (label) => setState(() {
-                _filter = _JournalFilter.values.firstWhere(
-                  (filter) => filter.label(l10n) == label,
-                );
-              }),
-            ),
-            const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return StreamBuilder<List<MemberSummary>>(
+      stream: widget.repository.watchMembers(includeArchived: true),
+      initialData: const [],
+      builder: (context, membersSnapshot) {
+        final memberNames = {
+          for (final member in membersSnapshot.data ?? const <MemberSummary>[])
+            member.id: member.displayName,
+        };
+        return StreamBuilder<List<JournalEntry>>(
+          stream: widget.repository.watchJournals(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError && !snapshot.hasData) {
+              return SpPage(
                 children: [
-                  SpSectionHeader(
-                    title: l10n.journalsTitle,
-                    trailing: StatusPill(text: '${entries.length}'),
-                  ),
-                  const SizedBox(height: 12),
-                  if (entries.isEmpty)
-                    SpEmptyState(
-                      title:
-                          _query.trim().isEmpty && _filter == _JournalFilter.all
-                          ? l10n.noJournalEntriesYet
-                          : l10n.noMatchingJournals,
-                      body:
-                          _query.trim().isEmpty && _filter == _JournalFilter.all
-                          ? l10n.journalsEmptyBody
-                          : l10n.tryAnotherSearchOrFilter,
-                    )
-                  else
-                    for (final entry in entries) ...[
-                      JournalEntryTile(
-                        entry: entry,
-                        repository: widget.repository,
-                      ),
-                      if (entry != entries.last) const Divider(height: 1),
-                    ],
-                  const SizedBox(height: 14),
-                  FilledButton.icon(
-                    key: const ValueKey('add-journal-entry-button'),
-                    onPressed: () =>
-                        showJournalEntrySheet(context, widget.repository),
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(l10n.addJournalEntryButton),
+                  SpDataLoadState(
+                    error: snapshot.error,
+                    onRetry: () => setState(() {}),
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+            if (!snapshot.hasData) {
+              return const SpPage(children: [SpDataLoadState()]);
+            }
+            final entries = _filteredEntries(snapshot.data!);
+
+            return SpPage(
+              children: [
+                SpSearchField(
+                  hintText: l10n.searchJournalsHint,
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+                const SizedBox(height: 12),
+                SpFilterRow(
+                  filters: [
+                    for (final filter in _JournalFilter.values)
+                      filter.label(l10n),
+                  ],
+                  selected: _filter.label(l10n),
+                  onSelected: (label) => setState(() {
+                    _filter = _JournalFilter.values.firstWhere(
+                      (filter) => filter.label(l10n) == label,
+                    );
+                  }),
+                ),
+                const SizedBox(height: 12),
+                SpCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SpSectionHeader(
+                        title: l10n.journalsTitle,
+                        trailing: StatusPill(text: '${entries.length}'),
+                      ),
+                      const SizedBox(height: 12),
+                      if (entries.isEmpty)
+                        SpEmptyState(
+                          title:
+                              _query.trim().isEmpty &&
+                                  _filter == _JournalFilter.all
+                              ? l10n.noJournalEntriesYet
+                              : l10n.noMatchingJournals,
+                          body:
+                              _query.trim().isEmpty &&
+                                  _filter == _JournalFilter.all
+                              ? l10n.journalsEmptyBody
+                              : l10n.tryAnotherSearchOrFilter,
+                        )
+                      else
+                        for (final entry in entries) ...[
+                          JournalEntryTile(
+                            entry: entry,
+                            repository: widget.repository,
+                            authorName: memberNames[entry.authorMemberId],
+                          ),
+                          if (entry != entries.last) const Divider(height: 1),
+                        ],
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        key: const ValueKey('add-journal-entry-button'),
+                        onPressed: () =>
+                            showJournalEntrySheet(context, widget.repository),
+                        icon: const Icon(Icons.add_rounded),
+                        label: Text(l10n.addJournalEntryButton),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -135,10 +149,12 @@ class JournalEntryTile extends StatelessWidget {
     super.key,
     required this.entry,
     required this.repository,
+    this.authorName,
   });
 
   final JournalEntry entry;
   final HavenRepository repository;
+  final String? authorName;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +181,13 @@ class JournalEntryTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
+            if (entry.authorMemberId != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.journalWrittenBy(authorName ?? l10n.unknownMemberLabel),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 4),
             Text(
               _shortDateTime(context, entry.createdAt),
@@ -218,10 +241,12 @@ class JournalEntrySheet extends StatefulWidget {
 
 class _JournalEntrySheetState extends State<JournalEntrySheet> {
   static const _systemJournalValue = '__system_journal__';
+  static const _authorNotRecordedValue = '__author_not_recorded__';
 
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   String? _memberId;
+  String? _authorMemberId;
   bool _preview = false;
   bool _isSaving = false;
 
@@ -230,7 +255,8 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
   bool get _isDirty =>
       _titleController.text != (widget.entry?.title ?? '') ||
       _bodyController.text != (widget.entry?.body ?? '') ||
-      _memberId != widget.entry?.memberId;
+      _memberId != widget.entry?.memberId ||
+      _authorMemberId != widget.entry?.authorMemberId;
 
   Future<void> _tryDismiss() async {
     if (!_isDirty) {
@@ -253,6 +279,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
     _titleController.text = entry.title ?? '';
     _bodyController.text = entry.body;
     _memberId = entry.memberId;
+    _authorMemberId = entry.authorMemberId;
   }
 
   @override
@@ -339,6 +366,50 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
               },
             ),
             const SizedBox(height: 10),
+            StreamBuilder<List<MemberSummary>>(
+              stream: widget.repository.watchMembers(includeArchived: true),
+              initialData: const [],
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                final hasAuthor = members.any(
+                  (member) => member.id == _authorMemberId,
+                );
+                return KeyedSubtree(
+                  key: ValueKey(
+                    'journal-author-${members.length}-$_authorMemberId',
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('journal-author-field'),
+                    initialValue: _authorMemberId ?? _authorNotRecordedValue,
+                    decoration: InputDecoration(
+                      labelText: l10n.journalAuthorFieldLabel,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: _authorNotRecordedValue,
+                        child: Text(l10n.journalAuthorNotRecorded),
+                      ),
+                      if (_authorMemberId != null && !hasAuthor)
+                        DropdownMenuItem(
+                          value: _authorMemberId,
+                          child: Text(l10n.unknownMemberLabel),
+                        ),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _authorMemberId = value == _authorNotRecordedValue
+                          ? null
+                          : value;
+                    }),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -403,6 +474,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
           id: existing?.id ?? newLocalId('journal'),
           systemId: localSystemId,
           memberId: _memberId,
+          authorMemberId: _authorMemberId,
           title: _nullIfBlank(_titleController.text),
           body: _bodyController.text,
           visibility: existing?.visibility ?? 'system',

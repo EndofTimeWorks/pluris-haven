@@ -12860,6 +12860,20 @@ class $JournalEntriesTable extends JournalEntries
       'REFERENCES members (id)',
     ),
   );
+  static const VerificationMeta _authorMemberIdMeta = const VerificationMeta(
+    'authorMemberId',
+  );
+  @override
+  late final GeneratedColumn<String> authorMemberId = GeneratedColumn<String>(
+    'author_member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES members (id)',
+    ),
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -12917,6 +12931,7 @@ class $JournalEntriesTable extends JournalEntries
     id,
     systemId,
     memberId,
+    authorMemberId,
     title,
     body,
     visibility,
@@ -12952,6 +12967,15 @@ class $JournalEntriesTable extends JournalEntries
       context.handle(
         _memberIdMeta,
         memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
+    if (data.containsKey('author_member_id')) {
+      context.handle(
+        _authorMemberIdMeta,
+        authorMemberId.isAcceptableOrUnknown(
+          data['author_member_id']!,
+          _authorMemberIdMeta,
+        ),
       );
     }
     if (data.containsKey('title')) {
@@ -13011,6 +13035,10 @@ class $JournalEntriesTable extends JournalEntries
         DriftSqlType.string,
         data['${effectivePrefix}member_id'],
       ),
+      authorMemberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_member_id'],
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -13044,6 +13072,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
   final String id;
   final String systemId;
   final String? memberId;
+  final String? authorMemberId;
   final String? title;
   final String body;
   final String visibility;
@@ -13053,6 +13082,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     required this.id,
     required this.systemId,
     this.memberId,
+    this.authorMemberId,
     this.title,
     required this.body,
     required this.visibility,
@@ -13066,6 +13096,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     map['system_id'] = Variable<String>(systemId);
     if (!nullToAbsent || memberId != null) {
       map['member_id'] = Variable<String>(memberId);
+    }
+    if (!nullToAbsent || authorMemberId != null) {
+      map['author_member_id'] = Variable<String>(authorMemberId);
     }
     if (!nullToAbsent || title != null) {
       map['title'] = Variable<String>(title);
@@ -13084,6 +13117,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       memberId: memberId == null && nullToAbsent
           ? const Value.absent()
           : Value(memberId),
+      authorMemberId: authorMemberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorMemberId),
       title: title == null && nullToAbsent
           ? const Value.absent()
           : Value(title),
@@ -13103,6 +13139,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       id: serializer.fromJson<String>(json['id']),
       systemId: serializer.fromJson<String>(json['systemId']),
       memberId: serializer.fromJson<String?>(json['memberId']),
+      authorMemberId: serializer.fromJson<String?>(json['authorMemberId']),
       title: serializer.fromJson<String?>(json['title']),
       body: serializer.fromJson<String>(json['body']),
       visibility: serializer.fromJson<String>(json['visibility']),
@@ -13117,6 +13154,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       'id': serializer.toJson<String>(id),
       'systemId': serializer.toJson<String>(systemId),
       'memberId': serializer.toJson<String?>(memberId),
+      'authorMemberId': serializer.toJson<String?>(authorMemberId),
       'title': serializer.toJson<String?>(title),
       'body': serializer.toJson<String>(body),
       'visibility': serializer.toJson<String>(visibility),
@@ -13129,6 +13167,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     String? id,
     String? systemId,
     Value<String?> memberId = const Value.absent(),
+    Value<String?> authorMemberId = const Value.absent(),
     Value<String?> title = const Value.absent(),
     String? body,
     String? visibility,
@@ -13138,6 +13177,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     id: id ?? this.id,
     systemId: systemId ?? this.systemId,
     memberId: memberId.present ? memberId.value : this.memberId,
+    authorMemberId: authorMemberId.present
+        ? authorMemberId.value
+        : this.authorMemberId,
     title: title.present ? title.value : this.title,
     body: body ?? this.body,
     visibility: visibility ?? this.visibility,
@@ -13149,6 +13191,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       id: data.id.present ? data.id.value : this.id,
       systemId: data.systemId.present ? data.systemId.value : this.systemId,
       memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      authorMemberId: data.authorMemberId.present
+          ? data.authorMemberId.value
+          : this.authorMemberId,
       title: data.title.present ? data.title.value : this.title,
       body: data.body.present ? data.body.value : this.body,
       visibility: data.visibility.present
@@ -13165,6 +13210,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('memberId: $memberId, ')
+          ..write('authorMemberId: $authorMemberId, ')
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('visibility: $visibility, ')
@@ -13179,6 +13225,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     id,
     systemId,
     memberId,
+    authorMemberId,
     title,
     body,
     visibility,
@@ -13192,6 +13239,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
           other.id == this.id &&
           other.systemId == this.systemId &&
           other.memberId == this.memberId &&
+          other.authorMemberId == this.authorMemberId &&
           other.title == this.title &&
           other.body == this.body &&
           other.visibility == this.visibility &&
@@ -13203,6 +13251,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
   final Value<String> id;
   final Value<String> systemId;
   final Value<String?> memberId;
+  final Value<String?> authorMemberId;
   final Value<String?> title;
   final Value<String> body;
   final Value<String> visibility;
@@ -13213,6 +13262,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     this.id = const Value.absent(),
     this.systemId = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.authorMemberId = const Value.absent(),
     this.title = const Value.absent(),
     this.body = const Value.absent(),
     this.visibility = const Value.absent(),
@@ -13224,6 +13274,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     required String id,
     required String systemId,
     this.memberId = const Value.absent(),
+    this.authorMemberId = const Value.absent(),
     this.title = const Value.absent(),
     required String body,
     this.visibility = const Value.absent(),
@@ -13239,6 +13290,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     Expression<String>? id,
     Expression<String>? systemId,
     Expression<String>? memberId,
+    Expression<String>? authorMemberId,
     Expression<String>? title,
     Expression<String>? body,
     Expression<String>? visibility,
@@ -13250,6 +13302,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
       if (id != null) 'id': id,
       if (systemId != null) 'system_id': systemId,
       if (memberId != null) 'member_id': memberId,
+      if (authorMemberId != null) 'author_member_id': authorMemberId,
       if (title != null) 'title': title,
       if (body != null) 'body': body,
       if (visibility != null) 'visibility': visibility,
@@ -13263,6 +13316,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     Value<String>? id,
     Value<String>? systemId,
     Value<String?>? memberId,
+    Value<String?>? authorMemberId,
     Value<String?>? title,
     Value<String>? body,
     Value<String>? visibility,
@@ -13274,6 +13328,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
       id: id ?? this.id,
       systemId: systemId ?? this.systemId,
       memberId: memberId ?? this.memberId,
+      authorMemberId: authorMemberId ?? this.authorMemberId,
       title: title ?? this.title,
       body: body ?? this.body,
       visibility: visibility ?? this.visibility,
@@ -13294,6 +13349,9 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     }
     if (memberId.present) {
       map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (authorMemberId.present) {
+      map['author_member_id'] = Variable<String>(authorMemberId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -13322,6 +13380,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('memberId: $memberId, ')
+          ..write('authorMemberId: $authorMemberId, ')
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('visibility: $visibility, ')
@@ -19684,18 +19743,41 @@ final class $$MembersTableReferences
   }
 
   static MultiTypedResultKey<$JournalEntriesTable, List<JournalEntry>>
-  _journalEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+  _journalsAboutMemberTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.journalEntries,
     aliasName: 'members__id__journal_entries__member_id',
   );
 
-  $$JournalEntriesTableProcessedTableManager get journalEntriesRefs {
+  $$JournalEntriesTableProcessedTableManager get journalsAboutMember {
     final manager = $$JournalEntriesTableTableManager(
       $_db,
       $_db.journalEntries,
     ).filter((f) => f.memberId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_journalEntriesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _journalsAboutMemberTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$JournalEntriesTable, List<JournalEntry>>
+  _journalsAuthoredByMemberTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.journalEntries,
+        aliasName: 'members__id__journal_entries__author_member_id',
+      );
+
+  $$JournalEntriesTableProcessedTableManager get journalsAuthoredByMember {
+    final manager = $$JournalEntriesTableTableManager(
+      $_db,
+      $_db.journalEntries,
+    ).filter((f) => f.authorMemberId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _journalsAuthoredByMemberTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -20028,7 +20110,7 @@ class $$MembersTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> journalEntriesRefs(
+  Expression<bool> journalsAboutMember(
     Expression<bool> Function($$JournalEntriesTableFilterComposer f) f,
   ) {
     final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
@@ -20036,6 +20118,31 @@ class $$MembersTableFilterComposer
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.journalEntries,
       getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> journalsAuthoredByMember(
+    Expression<bool> Function($$JournalEntriesTableFilterComposer f) f,
+  ) {
+    final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.authorMemberId,
       builder:
           (
             joinBuilder, {
@@ -20503,7 +20610,7 @@ class $$MembersTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> journalEntriesRefs<T extends Object>(
+  Expression<T> journalsAboutMember<T extends Object>(
     Expression<T> Function($$JournalEntriesTableAnnotationComposer a) f,
   ) {
     final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
@@ -20511,6 +20618,31 @@ class $$MembersTableAnnotationComposer
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.journalEntries,
       getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> journalsAuthoredByMember<T extends Object>(
+    Expression<T> Function($$JournalEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.authorMemberId,
       builder:
           (
             joinBuilder, {
@@ -20626,7 +20758,8 @@ class $$MembersTableTableManager
             bool pollMemberVotesRefs,
             bool frontSessionMembersRefs,
             bool memberTagsRefs,
-            bool journalEntriesRefs,
+            bool journalsAboutMember,
+            bool journalsAuthoredByMember,
             bool pollVoteEventsRefs,
             bool namedFrontMembersRefs,
             bool privacyBucketMembersRefs,
@@ -20759,7 +20892,8 @@ class $$MembersTableTableManager
                 pollMemberVotesRefs = false,
                 frontSessionMembersRefs = false,
                 memberTagsRefs = false,
-                journalEntriesRefs = false,
+                journalsAboutMember = false,
+                journalsAuthoredByMember = false,
                 pollVoteEventsRefs = false,
                 namedFrontMembersRefs = false,
                 privacyBucketMembersRefs = false,
@@ -20772,7 +20906,8 @@ class $$MembersTableTableManager
                     if (pollMemberVotesRefs) db.pollMemberVotes,
                     if (frontSessionMembersRefs) db.frontSessionMembers,
                     if (memberTagsRefs) db.memberTags,
-                    if (journalEntriesRefs) db.journalEntries,
+                    if (journalsAboutMember) db.journalEntries,
+                    if (journalsAuthoredByMember) db.journalEntries,
                     if (pollVoteEventsRefs) db.pollVoteEvents,
                     if (namedFrontMembersRefs) db.namedFrontMembers,
                     if (privacyBucketMembersRefs) db.privacyBucketMembers,
@@ -20909,7 +21044,7 @@ class $$MembersTableTableManager
                           referencedColumn: 'member_id',
                           typedResults: items,
                         ),
-                      if (journalEntriesRefs)
+                      if (journalsAboutMember)
                         await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
@@ -20918,15 +21053,35 @@ class $$MembersTableTableManager
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
-                              ._journalEntriesRefsTable(db),
+                              ._journalsAboutMemberTable(db),
                           managerFromTypedResult: (p0) =>
                               $$MembersTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).journalEntriesRefs,
+                              ).journalsAboutMember,
                           currentColumn: 'id',
                           referencedColumn: 'member_id',
+                          typedResults: items,
+                        ),
+                      if (journalsAuthoredByMember)
+                        await $_getPrefetchedDataByColumns<
+                          Member,
+                          $MembersTable,
+                          JournalEntry,
+                          $JournalEntriesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MembersTableReferences
+                              ._journalsAuthoredByMemberTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MembersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalsAuthoredByMember,
+                          currentColumn: 'id',
+                          referencedColumn: 'author_member_id',
                           typedResults: items,
                         ),
                       if (pollVoteEventsRefs)
@@ -21016,7 +21171,8 @@ typedef $$MembersTableProcessedTableManager =
         bool pollMemberVotesRefs,
         bool frontSessionMembersRefs,
         bool memberTagsRefs,
-        bool journalEntriesRefs,
+        bool journalsAboutMember,
+        bool journalsAuthoredByMember,
         bool pollVoteEventsRefs,
         bool namedFrontMembersRefs,
         bool privacyBucketMembersRefs,
@@ -31231,6 +31387,7 @@ typedef $$JournalEntriesTableCreateCompanionBuilder =
       required String id,
       required String systemId,
       Value<String?> memberId,
+      Value<String?> authorMemberId,
       Value<String?> title,
       required String body,
       Value<String> visibility,
@@ -31243,6 +31400,7 @@ typedef $$JournalEntriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> systemId,
       Value<String?> memberId,
+      Value<String?> authorMemberId,
       Value<String?> title,
       Value<String> body,
       Value<String> visibility,
@@ -31288,6 +31446,23 @@ final class $$JournalEntriesTableReferences
       $_db.members,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_memberIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MembersTable _authorMemberIdTable(_$AppDatabase db) =>
+      db.members.createAlias('journal_entries__author_member_id__members__id');
+
+  $$MembersTableProcessedTableManager? get authorMemberId {
+    final $_column = $_itemColumn<String>('author_member_id');
+    if ($_column == null) return null;
+    final manager = $$MembersTableTableManager(
+      $_db,
+      $_db.members,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_authorMemberIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -31361,6 +31536,29 @@ class $$JournalEntriesTableFilterComposer
     final $$MembersTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableFilterComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableFilterComposer get authorMemberId {
+    final $$MembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
       referencedTable: $db.members,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -31465,6 +31663,29 @@ class $$JournalEntriesTableOrderingComposer
     );
     return composer;
   }
+
+  $$MembersTableOrderingComposer get authorMemberId {
+    final $$MembersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableOrderingComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$JournalEntriesTableAnnotationComposer
@@ -31541,6 +31762,29 @@ class $$JournalEntriesTableAnnotationComposer
     );
     return composer;
   }
+
+  $$MembersTableAnnotationComposer get authorMemberId {
+    final $$MembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$JournalEntriesTableTableManager
@@ -31556,7 +31800,11 @@ class $$JournalEntriesTableTableManager
           $$JournalEntriesTableUpdateCompanionBuilder,
           (JournalEntry, $$JournalEntriesTableReferences),
           JournalEntry,
-          PrefetchHooks Function({bool systemId, bool memberId})
+          PrefetchHooks Function({
+            bool systemId,
+            bool memberId,
+            bool authorMemberId,
+          })
         > {
   $$JournalEntriesTableTableManager(
     _$AppDatabase db,
@@ -31576,6 +31824,7 @@ class $$JournalEntriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> systemId = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> authorMemberId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<String> visibility = const Value.absent(),
@@ -31586,6 +31835,7 @@ class $$JournalEntriesTableTableManager
                 id: id,
                 systemId: systemId,
                 memberId: memberId,
+                authorMemberId: authorMemberId,
                 title: title,
                 body: body,
                 visibility: visibility,
@@ -31598,6 +31848,7 @@ class $$JournalEntriesTableTableManager
                 required String id,
                 required String systemId,
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> authorMemberId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 required String body,
                 Value<String> visibility = const Value.absent(),
@@ -31608,6 +31859,7 @@ class $$JournalEntriesTableTableManager
                 id: id,
                 systemId: systemId,
                 memberId: memberId,
+                authorMemberId: authorMemberId,
                 title: title,
                 body: body,
                 visibility: visibility,
@@ -31623,56 +31875,68 @@ class $$JournalEntriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({systemId = false, memberId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (systemId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.systemId,
-                        referencedTable: $$JournalEntriesTableReferences
-                            ._systemIdTable(db),
-                        referencedColumn: $$JournalEntriesTableReferences
-                            ._systemIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-                    if (memberId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.memberId,
-                        referencedTable: $$JournalEntriesTableReferences
-                            ._memberIdTable(db),
-                        referencedColumn: $$JournalEntriesTableReferences
-                            ._memberIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({systemId = false, memberId = false, authorMemberId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (memberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.memberId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._memberIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._memberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (authorMemberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.authorMemberId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._authorMemberIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._authorMemberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -31689,7 +31953,11 @@ typedef $$JournalEntriesTableProcessedTableManager =
       $$JournalEntriesTableUpdateCompanionBuilder,
       (JournalEntry, $$JournalEntriesTableReferences),
       JournalEntry,
-      PrefetchHooks Function({bool systemId, bool memberId})
+      PrefetchHooks Function({
+        bool systemId,
+        bool memberId,
+        bool authorMemberId,
+      })
     >;
 typedef $$ContentRevisionsTableCreateCompanionBuilder =
     ContentRevisionsCompanion Function({

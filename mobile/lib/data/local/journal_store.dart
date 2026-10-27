@@ -91,6 +91,7 @@ class LocalJournalStore {
               id: entry.id,
               systemId: localSystemId,
               memberId: Value(entry.memberId),
+              authorMemberId: Value(entry.authorMemberId),
               title: Value(
                 await encryptNullableText(
                   entry.title,

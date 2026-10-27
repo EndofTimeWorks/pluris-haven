@@ -3053,6 +3053,7 @@ END;
         id: 'journal-1',
         systemId: localSystemId,
         memberId: member.id,
+        authorMemberId: member.id,
         title: 'Switch notes',
         body: 'Felt close to front.',
         visibility: 'system',
@@ -3136,6 +3137,7 @@ END;
     expect((archive['tags'] as List), hasLength(1));
     expect((archive['member_tags'] as List), hasLength(1));
     expect((archive['journals'] as List), hasLength(1));
+    expect((archive['journals'] as List).single['author_member_id'], member.id);
     expect((archive['content_revisions'] as List), hasLength(1));
     expect((archive['polls'] as List), hasLength(1));
     expect((archive['poll_options'] as List), hasLength(2));
@@ -3399,6 +3401,7 @@ END;
         id: 'journal-1',
         systemId: localSystemId,
         memberId: member.id,
+        authorMemberId: member.id,
         title: 'Switch notes',
         body: 'Felt close to front.',
         visibility: 'system',
@@ -3473,6 +3476,10 @@ END;
     expect(sourceArchive['group_members'], hasLength(1));
     expect(sourceArchive['member_tags'], hasLength(1));
     expect(sourceArchive['journals'], hasLength(1));
+    expect(
+      (sourceArchive['journals'] as List).single['author_member_id'],
+      member.id,
+    );
     expect(sourceArchive['content_revisions'], hasLength(1));
     expect(sourceArchive['front_audit_events'], hasLength(1));
     expect(sourceArchive['poll_vote_events'], hasLength(1));
@@ -3536,6 +3543,10 @@ END;
     expect(targetArchive['group_members'], hasLength(1));
     expect(targetArchive['member_tags'], hasLength(1));
     expect(targetArchive['journals'], hasLength(1));
+    expect(
+      (targetArchive['journals'] as List).single['author_member_id'],
+      member.id,
+    );
     expect(targetArchive['content_revisions'], hasLength(1));
     expect(targetArchive['front_audit_events'], hasLength(1));
     expect(targetArchive['poll_vote_events'], hasLength(1));

@@ -380,7 +380,10 @@ class MemberTags extends Table {
 class JournalEntries extends Table {
   TextColumn get id => text()();
   TextColumn get systemId => text().references(PluralSystems, #id)();
+  @ReferenceName('journalsAboutMember')
   TextColumn get memberId => text().nullable().references(Members, #id)();
+  @ReferenceName('journalsAuthoredByMember')
+  TextColumn get authorMemberId => text().nullable().references(Members, #id)();
   TextColumn get title => text().nullable()();
   TextColumn get body => text()();
   TextColumn get visibility => text().withDefault(const Constant('system'))();
@@ -542,7 +545,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   // `migrator.createTable(x)` always creates `x` using its current
   // Dart column definition - there is no per-historical-version table shape
@@ -834,6 +837,13 @@ class AppDatabase extends _$AppDatabase {
             pollVoteEvents.memberId,
           );
           await migrator.createTable(pollMemberVotes);
+        }
+        if (from < 28) {
+          await _addColumnIfMissing(
+            migrator,
+            journalEntries,
+            journalEntries.authorMemberId,
+          );
         }
       });
     },
