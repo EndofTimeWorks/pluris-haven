@@ -23,8 +23,8 @@
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "husky": "^9.1.7",
     "prettier": "^3.9.10",
     "prettier-plugin-svelte": "^4.1.1"
