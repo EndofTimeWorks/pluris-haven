@@ -1140,6 +1140,7 @@
   "journalsEmptyBody": "Write longer dated entries here. Use Notes for short scratchpad items.",
   "addJournalEntryButton": "Add journal entry",
   "journalAboutMemberFieldLabel": "About",
+  "aboutMemberFilter": "About a member",
   "systemJournalLabel": "System journal",
   "memberJournalLabel": "About {name}",
   "@memberJournalLabel": { "placeholders": { "name": { "type": "String" } } },

@@ -5149,6 +5149,12 @@ abstract class AppLocalizations {
   /// **'About'**
   String get journalAboutMemberFieldLabel;
 
+  /// No description provided for @aboutMemberFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'About a member'**
+  String get aboutMemberFilter;
+
   /// No description provided for @systemJournalLabel.
   ///
   /// In en, this message translates to:

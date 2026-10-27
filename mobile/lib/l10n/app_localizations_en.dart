@@ -3017,6 +3017,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalAboutMemberFieldLabel => 'About';
 
   @override
+  String get aboutMemberFilter => 'About a member';
+
+  @override
   String get systemJournalLabel => 'System journal';
 
   @override

@@ -3381,6 +3381,15 @@ void main() {
     expect(repository._journals.single.body, isEmpty);
     expect(repository._journals.single.memberId, 'fake-member-1');
 
+    await tester.tap(find.text('About a member'));
+    await tester.pumpAndSettle();
+    expect(find.text('About today'), findsOneWidget);
+    await tester.tap(find.text('System journal'));
+    await tester.pumpAndSettle();
+    expect(find.text('About today'), findsNothing);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('About today'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('journal-member-field')));
