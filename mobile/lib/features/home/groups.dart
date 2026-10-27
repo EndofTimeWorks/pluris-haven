@@ -243,12 +243,22 @@ class GroupListTile extends StatelessWidget {
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(
-              tooltip: l10n.groupActionsFor(
-                group.name,
-                group.id.substring(
-                  group.id.length > 8 ? group.id.length - 8 : 0,
-                ),
-              ),
+              tooltip:
+                  allGroups
+                          .where(
+                            (candidate) =>
+                                candidate.name.trim().toLowerCase() ==
+                                group.name.trim().toLowerCase(),
+                          )
+                          .length >
+                      1
+                  ? l10n.groupActionsFor(
+                      group.name,
+                      group.id.substring(
+                        group.id.length > 8 ? group.id.length - 8 : 0,
+                      ),
+                    )
+                  : l10n.groupActionsForName(group.name),
               onSelected: (value) {
                 switch (value) {
                   case 'edit':
@@ -572,6 +582,11 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       final members = membersSnapshot.data!;
+                      final nameCounts = <String, int>{};
+                      for (final member in members) {
+                        final name = member.displayName.trim().toLowerCase();
+                        nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+                      }
                       final query = _memberQuery.trim().toLowerCase();
                       final visible = [
                         for (final member in members)
@@ -614,13 +629,20 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                                   return CheckboxListTile(
                                     key: ValueKey('group-member-${member.id}'),
                                     title: Text(member.displayName),
-                                    subtitle: Text(
-                                      member.id.substring(
-                                        member.id.length > 8
-                                            ? member.id.length - 8
-                                            : 0,
-                                      ),
-                                    ),
+                                    subtitle:
+                                        (nameCounts[member.displayName
+                                                    .trim()
+                                                    .toLowerCase()] ??
+                                                0) >
+                                            1
+                                        ? Text(
+                                            member.id.substring(
+                                              member.id.length > 8
+                                                  ? member.id.length - 8
+                                                  : 0,
+                                            ),
+                                          )
+                                        : null,
                                     value: _selectedMemberIds.contains(
                                       member.id,
                                     ),

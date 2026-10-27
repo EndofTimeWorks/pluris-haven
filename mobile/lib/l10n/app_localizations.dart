@@ -5347,6 +5347,12 @@ abstract class AppLocalizations {
   /// **'Group actions for {name} ({id})'**
   String groupActionsFor(String name, String id);
 
+  /// No description provided for @groupActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions for {name}'**
+  String groupActionsForName(String name);
+
   /// No description provided for @deleteGroupTitle.
   ///
   /// In en, this message translates to:
@@ -6161,6 +6167,24 @@ abstract class AppLocalizations {
   /// **'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?'**
   String get endMemberFrontWarning;
 
+  /// No description provided for @activeCustomFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active custom fronts'**
+  String get activeCustomFrontsTitle;
+
+  /// No description provided for @endCustomFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End {name}\'s front'**
+  String endCustomFrontButton(String name);
+
+  /// No description provided for @endCustomFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends only this custom front. Other active fronts stay current, and its history remains available. Continue?'**
+  String get endCustomFrontWarning;
+
   /// No description provided for @endAllCurrentFrontsButton.
   ///
   /// In en, this message translates to:
@@ -6190,6 +6214,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Member actions for {name} ({id})'**
   String memberActionsFor(String name, String id);
+
+  /// No description provided for @memberActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Member actions for {name}'**
+  String memberActionsForName(String name);
 
   /// No description provided for @memberWithId.
   ///
@@ -7139,6 +7169,12 @@ abstract class AppLocalizations {
   /// **'{action}: {name} ({id})'**
   String frontActionFor(String action, String name, String id);
 
+  /// No description provided for @frontActionForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {name}'**
+  String frontActionForName(String action, String name);
+
   /// No description provided for @editFrontFor.
   ///
   /// In en, this message translates to:
@@ -7172,7 +7208,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteSavedFrontBody.
   ///
   /// In en, this message translates to:
-  /// **'This only removes the saved shortcut. Front history stays.'**
+  /// **'This removes the saved shortcut. Current fronts and history stay available. You can end an active custom front from the front picker.'**
   String get deleteSavedFrontBody;
 
   /// No description provided for @customFrontSemanticLabel.

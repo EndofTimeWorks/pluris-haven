@@ -580,6 +580,10 @@ class LocalHavenRepository implements HavenRepository {
   ) => _frontUpdateFrontHistoryEntry(frontId, draft);
 
   @override
+  Future<void> endCustomFrontSession(String frontId) =>
+      _frontEndCustomFrontSession(frontId);
+
+  @override
   Future<void> deleteFrontSession(String frontId) =>
       _frontDeleteFrontSession(frontId);
   @override
