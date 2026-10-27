@@ -1261,12 +1261,10 @@ void main() {
 
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
-    expect(find.byTooltip(RegExp(r'^Delete front Asleep \(')), findsWidgets);
-    await tester.ensureVisible(
-      find.byTooltip(RegExp(r'^Delete front Asleep \(')).first,
-    );
+    expect(find.byTooltip('Delete front Asleep'), findsWidgets);
+    await tester.ensureVisible(find.byTooltip('Delete front Asleep').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(RegExp(r'^Delete front Asleep \(')).first);
+    await tester.tap(find.byTooltip('Delete front Asleep').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -1347,6 +1345,34 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(action), initialPosition);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('front picker leaves members visible at double text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(() {
+      tester.view.reset();
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    final bar = find.byKey(const ValueKey('front-selection-bar'));
+    expect(tester.getSize(bar).height, lessThan(190));
+    expect(
+      tester.getBottomLeft(find.widgetWithText(FilterChip, 'River')).dy,
+      lessThan(tester.getTopLeft(bar).dy),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -1990,6 +2016,98 @@ void main() {
     expect(repository._members.single.displayName, 'Kai');
   });
 
+  testWidgets(
+    'member editor warns on duplicate names and rejects hidden controls',
+    (tester) async {
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+      await tester.pumpWidget(PlurisHavenApp(repository: repository));
+      await tester.pump();
+      await openDrawerSection(tester, 'Members');
+      await tester.tap(find.text('Add member'));
+      await tester.pumpAndSettle();
+
+      final nameField = find.byKey(const ValueKey('member-name-field'));
+      final saveButton = find.byKey(const ValueKey('save-member-button'));
+      await tester.enterText(nameField, 'Ka\u200Bi');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Remove invisible or directional control characters from the name.',
+        ),
+        findsOneWidget,
+      );
+      expect(repository._members, hasLength(1));
+
+      await tester.enterText(nameField, 'Kai ');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Member name already in use'), findsOneWidget);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(repository._members, hasLength(1));
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save anyway'));
+      await tester.pumpAndSettle();
+      expect(repository._members, hasLength(2));
+      expect(
+        find.byTooltip(RegExp(r'^Member actions for Kai \(')),
+        findsNWidgets(2),
+      );
+    },
+  );
+
+  testWidgets('notification events have separate read actions', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'front',
+        title: 'Front changed',
+        body: 'Kai is fronting.',
+      ),
+    );
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'reminder',
+        title: 'Medication',
+        body: 'Take with water.',
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: NotificationHistoryPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Medication\. Take with water\.')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Front changed\. Kai is fronting\.')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Mark Medication as read'), findsOneWidget);
+    await tester.tap(find.byTooltip('Mark Medication as read'));
+    await tester.pumpAndSettle();
+    expect(repository._notificationEvents.first.isUnread, isFalse);
+    expect(repository._notificationEvents.last.isUnread, isTrue);
+    expect(find.byTooltip('Mark Medication as read'), findsNothing);
+    expect(find.byTooltip('Mark Front changed as read'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('archives restores edits and deletes members', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -2618,6 +2736,25 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
     await tester.pumpAndSettle();
     expect(find.text('Trusted'), findsOneWidget);
+    expect(
+      find.text(
+        'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Edit privacy bucket Trusted'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit privacy bucket'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Description'),
+      'People I trust',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-privacy-bucket-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('People I trust'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
@@ -7919,6 +8056,22 @@ class FakeHavenRepository implements HavenRepository {
         createdAt: DateTime(2026),
       ),
       ..._notificationEvents,
+    ];
+    _notificationEventsController.add(_notificationEvents);
+  }
+
+  @override
+  Future<void> markNotificationRead(String eventId) async {
+    _notificationEvents = [
+      for (final event in _notificationEvents)
+        NotificationEventSummary(
+          id: event.id,
+          kind: event.kind,
+          title: event.title,
+          body: event.body,
+          readAt: event.id == eventId ? DateTime(2026) : event.readAt,
+          createdAt: event.createdAt,
+        ),
     ];
     _notificationEventsController.add(_notificationEvents);
   }

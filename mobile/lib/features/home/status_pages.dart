@@ -66,16 +66,34 @@ class LocalPrivacyPage extends StatelessWidget {
                                   )
                                 : l10n.memberCount(bucket.memberIds.length),
                           ),
-                          trailing: IconButton(
-                            tooltip: l10n.deleteNamedItem(bucket.name),
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => confirmDelete(
-                              context,
-                              title: l10n.deletePrivacyBucketTitle,
-                              body: l10n.deletePrivacyBucketBody(bucket.name),
-                              onDelete: () =>
-                                  repository.deletePrivacyBucket(bucket.id),
-                            ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: l10n.editPrivacyBucketNamed(
+                                  bucket.name,
+                                ),
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => showPrivacyBucketEditor(
+                                  context,
+                                  repository: repository,
+                                  bucket: bucket,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: l10n.deleteNamedItem(bucket.name),
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => confirmDelete(
+                                  context,
+                                  title: l10n.deletePrivacyBucketTitle,
+                                  body: l10n.deletePrivacyBucketBody(
+                                    bucket.name,
+                                  ),
+                                  onDelete: () =>
+                                      repository.deletePrivacyBucket(bucket.id),
+                                ),
+                              ),
+                            ],
                           ),
                           onTap: () => showPrivacyBucketEditor(
                             context,

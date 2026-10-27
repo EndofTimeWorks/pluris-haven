@@ -340,6 +340,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newStatusPill => 'new';
 
   @override
+  String markNotificationReadButton(String title) {
+    return 'Mark $title as read';
+  }
+
+  @override
   String get appTagline =>
       'Offline-first system, identity, and journaling tools.';
 
@@ -3587,6 +3592,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToFrontButton => 'Add member to current front';
 
   @override
+  String get addSelectedFrontButton => 'Add selected';
+
+  @override
   String get setAsFrontButton => 'Make current front';
 
   @override
@@ -3626,6 +3634,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replaceCurrentMembersButton => 'Replace selected members';
+
+  @override
+  String get replaceSelectedFrontButton => 'Replace members';
 
   @override
   String get replaceCurrentMembersWarning =>
@@ -4742,7 +4753,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyBucketsDescription =>
-      'Group members by who may see them. Sharing stays off until sync is configured.';
+      'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.';
+
+  @override
+  String editPrivacyBucketNamed(String name) {
+    return 'Edit privacy bucket $name';
+  }
 
   @override
   String get noPrivacyBucketsTitle => 'No privacy buckets';
@@ -4815,6 +4831,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameRequiredError => 'Name is required.';
+
+  @override
+  String get memberNameInvisibleControlsError =>
+      'Remove invisible or directional control characters from the name.';
+
+  @override
+  String get memberNameDuplicateTitle => 'Member name already in use';
+
+  @override
+  String memberNameDuplicateBody(String name) {
+    return 'A member named $name already exists. You can keep both; the app will show an ID where the names need distinguishing.';
+  }
+
+  @override
+  String get saveDuplicateMemberButton => 'Save anyway';
 
   @override
   String get disabledStatusLabel => 'disabled';
@@ -5300,6 +5331,10 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get customizeDashboardTitle => 'Customize dashboard';
+
+  @override
+  String get privacyBucketsDescription =>
+      'Organize members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.';
 
   @override
   String get appearanceSubtitle => 'colors, shape and text size';

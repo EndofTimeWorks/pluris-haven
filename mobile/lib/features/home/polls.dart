@@ -202,7 +202,7 @@ class _PollTileState extends State<PollTile> {
                 final duplicateNames = <String, int>{};
                 for (final member in members) {
                   duplicateNames.update(
-                    member.displayName,
+                    memberNameComparisonKey(member.displayName),
                     (count) => count + 1,
                     ifAbsent: () => 1,
                   );
@@ -380,7 +380,7 @@ Future<void> showPollVoteHistory(
                       final names = <String, int>{};
                       for (final member in members) {
                         names.update(
-                          member.displayName,
+                          memberNameComparisonKey(member.displayName),
                           (count) => count + 1,
                           ifAbsent: () => 1,
                         );
@@ -432,7 +432,9 @@ String _pollVoterLabel(
 }
 
 String _pollMemberLabel(MemberSummary member, Map<String, int> nameCounts) {
-  if (nameCounts[member.displayName] == 1) return member.displayName;
+  if (nameCounts[memberNameComparisonKey(member.displayName)] == 1) {
+    return member.displayName;
+  }
   final shortId = member.id.length <= 6 ? member.id : member.id.substring(0, 6);
   return '${member.displayName} ($shortId)';
 }
