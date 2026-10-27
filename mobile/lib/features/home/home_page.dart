@@ -150,6 +150,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final Stream<HomeSnapshot> _homeStream;
   late final Stream<AppCustomization> _customizationStream;
+  final _importDraftCache = ImportPageDraftCache();
   SpSection _section = SpSection.dashboard;
   final _sectionHistory = <SpSection>[];
 
@@ -453,7 +454,10 @@ class _HomePageState extends State<HomePage> {
           onSelect: _selectSection,
         );
       case SpSection.importExport:
-        return ImportExportPage(repository: widget.repository);
+        return ImportExportPage(
+          repository: widget.repository,
+          draftCache: _importDraftCache,
+        );
       case SpSection.sync:
         return SyncPage(
           repository: widget.repository,

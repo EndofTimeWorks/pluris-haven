@@ -23,10 +23,22 @@ typedef _ImportInputDraft = ({
   bool canReportIssue,
 });
 
+class ImportPageDraftCache {
+  ImportSource fileSource = ImportSource.simplyPlural;
+  ImportConflictStrategy strategy = ImportConflictStrategy.prompt;
+  _ImportInputDraft? _fileDraft;
+  String pastedText = '';
+}
+
 class ImportExportPage extends StatefulWidget {
-  const ImportExportPage({super.key, required this.repository});
+  const ImportExportPage({
+    super.key,
+    required this.repository,
+    required this.draftCache,
+  });
 
   final HavenRepository repository;
+  final ImportPageDraftCache draftCache;
 
   @override
   State<ImportExportPage> createState() => _ImportExportPageState();
@@ -64,7 +76,25 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _plan.requiresPassphrase;
 
   @override
+  void initState() {
+    super.initState();
+    _source = widget.draftCache.fileSource;
+    _strategy = widget.draftCache.strategy;
+    _fileDraft = widget.draftCache._fileDraft;
+    _pastedImportDraft = widget.draftCache.pastedText;
+    _restoreDraft(_fileDraft);
+  }
+
+  @override
   void dispose() {
+    widget.draftCache.strategy = _strategy;
+    widget.draftCache.pastedText = _pastedImportDraft;
+    if (_source == ImportSource.pluralKitLive) {
+      widget.draftCache._fileDraft = _fileDraft;
+    } else {
+      widget.draftCache.fileSource = _source;
+      widget.draftCache._fileDraft = _captureDraft();
+    }
     _importPassphraseController.dispose();
     _pluralKitTokenController.dispose();
     super.dispose();
@@ -575,6 +605,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           _liveDraft = _captureDraft();
         } else {
           _fileDraft = _captureDraft();
+          widget.draftCache.fileSource = _source;
         }
         _restoreDraft(isLive ? _liveDraft : _fileDraft);
       }
