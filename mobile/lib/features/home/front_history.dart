@@ -730,7 +730,9 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
                         children: [
                           for (final member in visibleMembers)
                             FilterChip(
-                              label: Text(member.displayName),
+                              label: Text(
+                                _memberPickerLabel(member, members, l10n),
+                              ),
                               selected: _memberIds.contains(member.id),
                               onSelected: (selected) => setState(() {
                                 if (selected) {

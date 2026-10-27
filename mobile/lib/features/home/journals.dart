@@ -446,7 +446,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                       for (final member in members)
                         DropdownMenuItem(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (value) => setState(() {
@@ -488,7 +490,9 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                       for (final member in members)
                         DropdownMenuItem(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (value) => setState(() {

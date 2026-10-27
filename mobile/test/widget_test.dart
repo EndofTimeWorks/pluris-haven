@@ -2786,6 +2786,35 @@ void main() {
     expect(report, isNot(contains('current front:')));
   });
 
+  testWidgets('privacy bucket picker distinguishes duplicate member names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Privacy buckets');
+    await tester.tap(find.byKey(const ValueKey('add-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Kai ('), findsNWidgets(2));
+    await tester.tap(
+      find.byKey(const ValueKey('privacy-bucket-member-fake-member-2')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('privacy-bucket-name-field')),
+      'Trusted',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-privacy-bucket-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    expect(repository._privacyBuckets.single.memberIds, ['fake-member-2']);
+  });
+
   testWidgets('sync page points to local encrypted archives', (tester) async {
     final repository = FakeHavenRepository(_testHomeSnapshot);
     addTearDown(repository.close);

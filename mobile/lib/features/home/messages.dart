@@ -589,7 +589,9 @@ class _MessageSheetState extends State<MessageSheet> {
                       for (final member in members)
                         DropdownMenuItem(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (value) => setState(() {
@@ -645,7 +647,9 @@ class _MessageSheetState extends State<MessageSheet> {
                       for (final member in members)
                         DropdownMenuItem(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (value) =>

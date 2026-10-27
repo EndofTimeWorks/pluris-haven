@@ -511,7 +511,9 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                       for (final member in members)
                         DropdownMenuItem<String?>(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (memberId) {
