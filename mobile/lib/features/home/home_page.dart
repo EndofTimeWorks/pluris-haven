@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:intl/intl.dart' as intl;
+import 'package:markdown/markdown.dart' as markdown;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,6 +33,7 @@ import '../../data/local/app_database.dart'
         PollVoteEvent,
         Tag,
         localSystemId;
+import '../../data/local/app_customization.dart' show appearanceColoursReadable;
 import '../../data/local/custom_field_store.dart'
     show maximumCustomFieldConfigurationCharacters;
 import '../../data/notifications/notification_service.dart';
@@ -44,6 +48,7 @@ import '../../debug/debug_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/import_diagnostic_localizations.dart';
 import '../../l10n/import_plan_localizations.dart';
+
 import '../../platform/native_file_dialog.dart';
 import '../../platform/app_lock.dart';
 import '../../platform/sensitive_clipboard.dart';
@@ -72,6 +77,25 @@ part 'custom_front.dart';
 part 'custom_fronts_page.dart';
 part 'sp_widgets.dart';
 part 'server_account.dart';
+
+String _memberPickerLabel(
+  MemberSummary member,
+  Iterable<MemberSummary> members,
+  AppLocalizations l10n,
+) {
+  final key = memberNameComparisonKey(member.displayName);
+  final duplicates = members
+      .where(
+        (candidate) => memberNameComparisonKey(candidate.displayName) == key,
+      )
+      .length;
+  if (duplicates < 2) return member.displayName;
+  final id = member.id;
+  return l10n.memberWithId(
+    member.displayName,
+    id.substring(id.length > 8 ? id.length - 8 : 0),
+  );
+}
 
 final _localAvatarStore = LocalAvatarStore();
 
@@ -146,6 +170,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final Stream<HomeSnapshot> _homeStream;
   late final Stream<AppCustomization> _customizationStream;
+  final _importDraftCache = ImportPageDraftCache();
   SpSection _section = SpSection.dashboard;
   final _sectionHistory = <SpSection>[];
 
@@ -449,7 +474,10 @@ class _HomePageState extends State<HomePage> {
           onSelect: _selectSection,
         );
       case SpSection.importExport:
-        return ImportExportPage(repository: widget.repository);
+        return ImportExportPage(
+          repository: widget.repository,
+          draftCache: _importDraftCache,
+        );
       case SpSection.sync:
         return SyncPage(
           repository: widget.repository,

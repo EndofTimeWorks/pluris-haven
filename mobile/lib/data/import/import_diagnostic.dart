@@ -6,6 +6,7 @@ enum ImportDiagnosticCode {
   unsupportedArchiveVersion,
   invalidPortableFormat,
   foundMembersAndFronts,
+  orphanedFrontReferences,
   recognizedRecords,
   noImportableRecords,
   preservedRawPayloads,

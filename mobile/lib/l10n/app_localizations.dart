@@ -544,7 +544,7 @@ abstract class AppLocalizations {
   /// No description provided for @bottomNavigationShortcutsBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose up to three quick destinations. Dashboard and the menu stay available.'**
+  /// **'Choose up to three tabs. You can still open everything from the menu.'**
   String get bottomNavigationShortcutsBody;
 
   /// No description provided for @navigationShortcutShownLabel.
@@ -568,13 +568,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetNavigationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reset navigation'**
+  /// **'Restore default bottom shortcuts'**
   String get resetNavigationTitle;
 
   /// No description provided for @resetNavigationValue.
   ///
   /// In en, this message translates to:
-  /// **'restore default quick destinations'**
+  /// **'replace these shortcuts and their order'**
   String get resetNavigationValue;
 
   /// No description provided for @shortcutShownLabel.
@@ -604,13 +604,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetDashboardTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reset dashboard'**
+  /// **'Restore default dashboard shortcuts'**
   String get resetDashboardTitle;
 
   /// No description provided for @resetDashboardValue.
   ///
   /// In en, this message translates to:
-  /// **'restore default shortcut order'**
+  /// **'replace these shortcuts and their order'**
   String get resetDashboardValue;
 
   /// No description provided for @syncOffTitle.
@@ -628,7 +628,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncOffDescription.
   ///
   /// In en, this message translates to:
-  /// **'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.'**
+  /// **'Device synchronisation isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.'**
   String get syncOffDescription;
 
   /// No description provided for @encryptedSyncLabel.
@@ -664,7 +664,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupsValue.
   ///
   /// In en, this message translates to:
-  /// **'manual for now'**
+  /// **'encrypted .pluris files in Import / Export'**
   String get backupsValue;
 
   /// No description provided for @notificationHistoryTitle.
@@ -672,6 +672,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notification history'**
   String get notificationHistoryTitle;
+
+  /// No description provided for @clearNotificationHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear history'**
+  String get clearNotificationHistoryButton;
+
+  /// No description provided for @clearNotificationHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear notification history?'**
+  String get clearNotificationHistoryTitle;
+
+  /// No description provided for @clearNotificationHistoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes notification history stored on this device and from future exports. Existing archives and other copies are unchanged.'**
+  String get clearNotificationHistoryBody;
 
   /// No description provided for @noNotificationsYetTitle.
   ///
@@ -691,6 +709,12 @@ abstract class AppLocalizations {
   /// **'new'**
   String get newStatusPill;
 
+  /// No description provided for @markNotificationReadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {title} as read'**
+  String markNotificationReadButton(String title);
+
   /// No description provided for @appTagline.
   ///
   /// In en, this message translates to:
@@ -708,6 +732,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get aboutGroupTitle;
+
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersionLabel;
+
+  /// No description provided for @appVersionValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{version} (build {buildNumber})'**
+  String appVersionValue(String version, String buildNumber);
 
   /// No description provided for @storageLabel.
   ///
@@ -780,6 +816,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No dashboard shortcuts'**
   String get noDashboardShortcutsTitle;
+
+  /// No description provided for @firstRunTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here'**
+  String get firstRunTitle;
+
+  /// No description provided for @firstRunBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a member or bring in your existing data. You can do both later from the menu.'**
+  String get firstRunBody;
+
+  /// No description provided for @firstRunImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in existing data'**
+  String get firstRunImportAction;
 
   /// No description provided for @noDashboardShortcutsBody.
   ///
@@ -1240,7 +1294,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteServerAccountBody.
   ///
   /// In en, this message translates to:
-  /// **'This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.'**
+  /// **'This signs you out and schedules server data for deletion in 30 days. To recover the account during that time, reset its password, then sign in. Local app data stays on this device.'**
   String get deleteServerAccountBody;
 
   /// No description provided for @currentPasswordLabel.
@@ -1734,6 +1788,12 @@ abstract class AppLocalizations {
   /// **'Delete reminder'**
   String get deleteReminderTooltip;
 
+  /// No description provided for @deleteReminderFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete reminder {title}, {schedule}'**
+  String deleteReminderFor(String title, String schedule);
+
   /// No description provided for @deleteReminderTitle.
   ///
   /// In en, this message translates to:
@@ -1767,7 +1827,7 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontSchedule.
   ///
   /// In en, this message translates to:
-  /// **'After member fronts'**
+  /// **'After a front starts'**
   String get afterFrontSchedule;
 
   /// No description provided for @titleFieldLabel.
@@ -1863,19 +1923,19 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontDelayLabel.
   ///
   /// In en, this message translates to:
-  /// **'Delay after fronting (seconds)'**
+  /// **'Delay after fronting'**
   String get afterFrontDelayLabel;
 
   /// No description provided for @afterFrontDelayHelper.
   ///
   /// In en, this message translates to:
-  /// **'Deliver this reminder after this many seconds. Use 0 for immediately.'**
+  /// **'Use 0 for immediately, 90m, or 1h 30m. A number alone means seconds.'**
   String get afterFrontDelayHelper;
 
   /// No description provided for @afterFrontDelayError.
   ///
   /// In en, this message translates to:
-  /// **'Enter zero or a positive whole number of seconds.'**
+  /// **'Enter 0 or a positive delay, such as 90m or 1h 30m.'**
   String get afterFrontDelayError;
 
   /// No description provided for @anyFrontStartsOption.
@@ -1889,6 +1949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time'**
   String get timeFieldLabel;
+
+  /// No description provided for @chooseReminderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose reminder time'**
+  String get chooseReminderTime;
 
   /// No description provided for @timeFieldHelper.
   ///
@@ -1923,8 +1989,38 @@ abstract class AppLocalizations {
   /// No description provided for @afterSelectedFrontStarts.
   ///
   /// In en, this message translates to:
-  /// **'After a selected front starts'**
+  /// **'When any front starts'**
   String get afterSelectedFrontStarts;
+
+  /// No description provided for @anyFrontStartsTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'any front starts'**
+  String get anyFrontStartsTrigger;
+
+  /// No description provided for @memberFrontsTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'{detail} fronts'**
+  String memberFrontsTrigger(String detail);
+
+  /// No description provided for @reminderDelayHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String reminderDelayHours(int count);
+
+  /// No description provided for @reminderDelayMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String reminderDelayMinutes(int count);
+
+  /// No description provided for @reminderDelaySeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String reminderDelaySeconds(int count);
 
   /// No description provided for @afterFrontLabel.
   ///
@@ -1935,8 +2031,8 @@ abstract class AppLocalizations {
   /// No description provided for @afterFrontDelayedLabel.
   ///
   /// In en, this message translates to:
-  /// **'{delay} seconds after {detail} fronts'**
-  String afterFrontDelayedLabel(int delay, String detail);
+  /// **'{delay} after {detail}'**
+  String afterFrontDelayedLabel(String delay, String detail);
 
   /// No description provided for @importTitle.
   ///
@@ -2121,8 +2217,92 @@ abstract class AppLocalizations {
   /// No description provided for @pasteJsonSizeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Paste up to 256 KiB. Choose a file for larger exports.'**
+  /// **'Paste up to 32 MiB. Larger exports need a file.'**
   String get pasteJsonSizeHelp;
+
+  /// No description provided for @unsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChangesTitle;
+
+  /// No description provided for @unsavedChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your changes before closing?'**
+  String get unsavedChangesBody;
+
+  /// No description provided for @keepEditingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditingButton;
+
+  /// No description provided for @discardChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get discardChangesButton;
+
+  /// No description provided for @editReminderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reminder'**
+  String get editReminderTooltip;
+
+  /// No description provided for @editReminderFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reminder {title}, {schedule}'**
+  String editReminderFor(String title, String schedule);
+
+  /// No description provided for @reminderTimeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid time, such as 09:00 or 9am.'**
+  String get reminderTimeError;
+
+  /// No description provided for @couldNotSaveReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this reminder. Check whether it still exists and try again.'**
+  String get couldNotSaveReminder;
+
+  /// No description provided for @encryptionKeyUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encryption key unavailable'**
+  String get encryptionKeyUnavailableTitle;
+
+  /// No description provided for @encryptionKeyUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.'**
+  String get encryptionKeyUnavailableBody;
+
+  /// No description provided for @waitingForEncryptionKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for encryption key'**
+  String get waitingForEncryptionKeyTitle;
+
+  /// No description provided for @waitingForEncryptionKeyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock your device keyring if needed. Pluris Haven will continue when the key becomes available. If it remains here, restart the app after unlocking. Keep the app\'s files: clearing storage may lose data.'**
+  String get waitingForEncryptionKeyBody;
+
+  /// No description provided for @tryAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgainButton;
+
+  /// No description provided for @reminderSavedNotificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder saved, but its notification could not be set. Check notification settings.'**
+  String get reminderSavedNotificationFailed;
 
   /// No description provided for @previewPastedJson.
   ///
@@ -2388,11 +2568,11 @@ abstract class AppLocalizations {
   /// **'Input'**
   String get inputLabel;
 
-  /// No description provided for @jobLabel.
+  /// No description provided for @archiveImportJobType.
   ///
   /// In en, this message translates to:
-  /// **'Job'**
-  String get jobLabel;
+  /// **'Archive import'**
+  String get archiveImportJobType;
 
   /// No description provided for @dedupeLabel.
   ///
@@ -2571,8 +2751,38 @@ abstract class AppLocalizations {
   /// No description provided for @importConflictPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Ask for each match'**
+  /// **'Ask how to handle matches'**
   String get importConflictPrompt;
+
+  /// No description provided for @importPreservesLocalProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local system profile will stay unchanged.'**
+  String get importPreservesLocalProfile;
+
+  /// No description provided for @nativeImportUpdatesProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update existing matches will replace your local system profile.'**
+  String get nativeImportUpdatesProfile;
+
+  /// No description provided for @systemProfileConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.'**
+  String get systemProfileConflictBody;
+
+  /// No description provided for @archivePreferencesConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some app preferences differ from settings already saved on this device.'**
+  String get archivePreferencesConflictBody;
+
+  /// No description provided for @nativeImportPreferencesPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'For app preferences, Skip matches and Create duplicates keep settings you already have. Update existing replaces matching settings. Only portable preferences are imported.'**
+  String get nativeImportPreferencesPolicy;
 
   /// No description provided for @importConflictCreate.
   ///
@@ -2717,6 +2927,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'file contains PluralSpace markers'**
   String get importReasonPluralSpaceMarkers;
+
+  /// No description provided for @importReasonAmpersandMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'file contains Ampersand database markers'**
+  String get importReasonAmpersandMarkers;
 
   /// No description provided for @importReasonOpenPluralMarkers.
   ///
@@ -2897,6 +3113,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'poll votes'**
   String get importCountPollVotes;
+
+  /// No description provided for @importCountPollMemberVotes.
+  ///
+  /// In en, this message translates to:
+  /// **'member votes'**
+  String get importCountPollMemberVotes;
 
   /// No description provided for @importCountPollVoteEvents.
   ///
@@ -4141,6 +4363,36 @@ abstract class AppLocalizations {
   /// **'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.'**
   String get generatedRecoveryCodeStatus;
 
+  /// No description provided for @copyRecoveryCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy recovery code'**
+  String get copyRecoveryCodeButton;
+
+  /// No description provided for @copyRecoveryCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy recovery code?'**
+  String get copyRecoveryCodeTitle;
+
+  /// No description provided for @copyRecoveryCodeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard history and other apps may keep this code. Anyone with the code and archive can read your data.'**
+  String get copyRecoveryCodeWarning;
+
+  /// No description provided for @recoveryCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery code copied. Clear it from your clipboard when finished.'**
+  String get recoveryCodeCopied;
+
+  /// No description provided for @recoveryCodeCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy the recovery code. You can still write it down.'**
+  String get recoveryCodeCopyFailed;
+
   /// No description provided for @showRecoveryCodeTooltip.
   ///
   /// In en, this message translates to:
@@ -4489,6 +4741,18 @@ abstract class AppLocalizations {
   /// **'Delete note'**
   String get deleteNoteTooltip;
 
+  /// No description provided for @deleteNoteForTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note {name} ({id})'**
+  String deleteNoteForTooltip(String name, String id);
+
+  /// No description provided for @deleteNoteForTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note {name}'**
+  String deleteNoteForTitle(String name);
+
   /// No description provided for @deleteNoteTitle.
   ///
   /// In en, this message translates to:
@@ -4651,24 +4915,6 @@ abstract class AppLocalizations {
   /// **'Create poll'**
   String get createPollButton;
 
-  /// No description provided for @pollOptionSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'{option}, {status}'**
-  String pollOptionSemanticLabel(String option, String status);
-
-  /// No description provided for @selectedStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'selected'**
-  String get selectedStatus;
-
-  /// No description provided for @notSelectedStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'not selected'**
-  String get notSelectedStatus;
-
   /// No description provided for @pollSelectionSummary.
   ///
   /// In en, this message translates to:
@@ -4722,6 +4968,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voting'**
   String get votingFieldLabel;
+
+  /// No description provided for @pollVoteModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote mode'**
+  String get pollVoteModeLabel;
+
+  /// No description provided for @pollSharedChoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared system choice'**
+  String get pollSharedChoiceLabel;
+
+  /// No description provided for @pollMemberVoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Votes by member'**
+  String get pollMemberVoteLabel;
+
+  /// No description provided for @pollVoteAsMemberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote as member'**
+  String get pollVoteAsMemberLabel;
+
+  /// No description provided for @pollChooseMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a member'**
+  String get pollChooseMemberHint;
+
+  /// No description provided for @pollCouldNotVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record this vote. Try again.'**
+  String get pollCouldNotVote;
+
+  /// No description provided for @importDiagnosticOrphanedFrontReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 front link refers to a missing session or member} other{{count} front links refer to missing sessions or members}}. The affected history may appear without a member after import.'**
+  String importDiagnosticOrphanedFrontReferences(int count);
+
+  /// No description provided for @pollVoteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
+  String pollVoteCount(int count);
 
   /// No description provided for @pollOptionFieldLabel.
   ///
@@ -4843,6 +5137,60 @@ abstract class AppLocalizations {
   /// **'Add journal entry'**
   String get addJournalEntryButton;
 
+  /// No description provided for @journalAboutMemberFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get journalAboutMemberFieldLabel;
+
+  /// No description provided for @journalAuthorFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by'**
+  String get journalAuthorFieldLabel;
+
+  /// No description provided for @journalDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal date'**
+  String get journalDateFieldLabel;
+
+  /// No description provided for @journalTimeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal time'**
+  String get journalTimeFieldLabel;
+
+  /// No description provided for @journalAuthorNotRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get journalAuthorNotRecorded;
+
+  /// No description provided for @journalWrittenBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by {name}'**
+  String journalWrittenBy(String name);
+
+  /// No description provided for @aboutMemberFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'About a member'**
+  String get aboutMemberFilter;
+
+  /// No description provided for @systemJournalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System journal'**
+  String get systemJournalLabel;
+
+  /// No description provided for @memberJournalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About {name}'**
+  String memberJournalLabel(String name);
+
   /// No description provided for @untitledEntry.
   ///
   /// In en, this message translates to:
@@ -4860,6 +5208,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete journal entry'**
   String get deleteJournalEntryTooltip;
+
+  /// No description provided for @deleteJournalEntryFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry {title} ({id})'**
+  String deleteJournalEntryFor(String title, String id);
+
+  /// No description provided for @deleteJournalEntryForTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete journal entry {title}'**
+  String deleteJournalEntryForTitle(String title);
 
   /// No description provided for @deleteJournalEntryTitle.
   ///
@@ -4902,6 +5262,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write something before saving.'**
   String get writeBeforeSaving;
+
+  /// No description provided for @couldNotSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Your draft is still open; try again.'**
+  String get couldNotSaveDraft;
 
   /// No description provided for @searchGroupsHint.
   ///
@@ -4974,6 +5340,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group actions'**
   String get groupActionsTooltip;
+
+  /// No description provided for @groupActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions for {name} ({id})'**
+  String groupActionsFor(String name, String id);
+
+  /// No description provided for @groupActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions for {name}'**
+  String groupActionsForName(String name);
 
   /// No description provided for @deleteGroupTitle.
   ///
@@ -5178,6 +5556,12 @@ abstract class AppLocalizations {
   /// **'Message actions'**
   String get messageActionsTooltip;
 
+  /// No description provided for @messageActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions for {sender} ({id})'**
+  String messageActionsFor(String sender, String id);
+
   /// No description provided for @messageEditedLabel.
   ///
   /// In en, this message translates to:
@@ -5244,6 +5628,30 @@ abstract class AppLocalizations {
   /// **'Channel'**
   String get channelFilter;
 
+  /// No description provided for @categoryViewFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View category'**
+  String get categoryViewFieldLabel;
+
+  /// No description provided for @allCategoriesFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategoriesFilter;
+
+  /// No description provided for @channelViewFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View channel'**
+  String get channelViewFieldLabel;
+
+  /// No description provided for @allChannelsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All channels'**
+  String get allChannelsFilter;
+
   /// No description provided for @channelBoardMessageMetadata.
   ///
   /// In en, this message translates to:
@@ -5272,6 +5680,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Categories'**
   String get categoriesTitle;
+
+  /// No description provided for @deleteChannelFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete channel {name} ({id})'**
+  String deleteChannelFor(String name, String id);
+
+  /// No description provided for @deleteCategoryFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category {name} ({id})'**
+  String deleteCategoryFor(String name, String id);
 
   /// No description provided for @addChannelButton.
   ///
@@ -5585,6 +6005,24 @@ abstract class AppLocalizations {
   /// **'Search members'**
   String get searchMembersHint;
 
+  /// No description provided for @sortMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort members'**
+  String get sortMembers;
+
+  /// No description provided for @savedMemberOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved order'**
+  String get savedMemberOrder;
+
+  /// No description provided for @memberNameOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Name A–Z'**
+  String get memberNameOrder;
+
   /// No description provided for @noMembersSavedLocally.
   ///
   /// In en, this message translates to:
@@ -5600,7 +6038,7 @@ abstract class AppLocalizations {
   /// No description provided for @membersEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add members here or import a Simply Plural export.'**
+  /// **'Add a member or import your data.'**
   String get membersEmptyBody;
 
   /// No description provided for @addMemberButton.
@@ -5666,26 +6104,26 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'{name} will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.'**
+  /// **'Remove {name} from active lists? Their current front will end. History and content stay available, and you can restore their profile from Removed.'**
   String deleteMemberBody(String name);
 
-  /// No description provided for @deleteMemberImpact.
+  /// No description provided for @memberArchived.
   ///
   /// In en, this message translates to:
-  /// **'Removal summary -- group links: {groupLinks}; tag links: {tagLinks}; saved-front links: {namedFrontLinks}; privacy-bucket membership: {privacyBucketLinks}; custom-field values removed only by permanent purge: {customFieldValues}; active front sessions ending: {activeFrontSessions}. Historical links retained -- front history: {frontHistoryLinks}; notes: {notes}; messages: {messages}; journals: {journals}; reminder triggers: {reminderTriggers}.'**
-  String deleteMemberImpact(
-    int groupLinks,
-    int tagLinks,
-    int namedFrontLinks,
-    int privacyBucketLinks,
-    int customFieldValues,
-    int activeFrontSessions,
-    int frontHistoryLinks,
-    int notes,
-    int messages,
-    int journals,
-    int reminderTriggers,
-  );
+  /// **'{name} moved to Archived.'**
+  String memberArchived(String name);
+
+  /// No description provided for @memberRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} restored to active members.'**
+  String memberRestored(String name);
+
+  /// No description provided for @memberRestoredToArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} restored to Archived. Restore them there to make them active.'**
+  String memberRestoredToArchive(String name);
 
   /// No description provided for @setFrontButton.
   ///
@@ -5699,11 +6137,107 @@ abstract class AppLocalizations {
   /// **'Add member to current front'**
   String get addToFrontButton;
 
+  /// No description provided for @addSelectedFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add selected'**
+  String get addSelectedFrontButton;
+
   /// No description provided for @setAsFrontButton.
   ///
   /// In en, this message translates to:
   /// **'Make current front'**
   String get setAsFrontButton;
+
+  /// No description provided for @replaceCurrentFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace current front'**
+  String get replaceCurrentFrontButton;
+
+  /// No description provided for @replaceCurrentFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends other active member fronts. Continue?'**
+  String get replaceCurrentFrontWarning;
+
+  /// No description provided for @endMemberFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End {name}\'s front'**
+  String endMemberFrontButton(String name);
+
+  /// No description provided for @endMemberFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?'**
+  String get endMemberFrontWarning;
+
+  /// No description provided for @activeCustomFrontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active custom fronts'**
+  String get activeCustomFrontsTitle;
+
+  /// No description provided for @endCustomFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End {name}\'s front'**
+  String endCustomFrontButton(String name);
+
+  /// No description provided for @endCustomFrontWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends only this custom front. Other active fronts stay current, and its history remains available. Continue?'**
+  String get endCustomFrontWarning;
+
+  /// No description provided for @endAllCurrentFrontsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'End all current fronts'**
+  String get endAllCurrentFrontsButton;
+
+  /// No description provided for @endAllCurrentFrontsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends every active member and custom front. Their history remains available. Continue?'**
+  String get endAllCurrentFrontsWarning;
+
+  /// No description provided for @replaceCurrentMembersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace selected members'**
+  String get replaceCurrentMembersButton;
+
+  /// No description provided for @replaceSelectedFrontButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace members'**
+  String get replaceSelectedFrontButton;
+
+  /// No description provided for @replaceCurrentMembersWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends active member fronts that are not selected. Active custom fronts stay current. Continue?'**
+  String get replaceCurrentMembersWarning;
+
+  /// No description provided for @memberActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Member actions for {name} ({id})'**
+  String memberActionsFor(String name, String id);
+
+  /// No description provided for @memberActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Member actions for {name}'**
+  String memberActionsForName(String name);
+
+  /// No description provided for @memberWithId.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({id})'**
+  String memberWithId(String name, String id);
 
   /// No description provided for @frontActionPickerTooltip.
   ///
@@ -5831,6 +6365,18 @@ abstract class AppLocalizations {
   /// **'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.'**
   String get memberTagsDescription;
 
+  /// No description provided for @deleteTagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tag {name}?'**
+  String deleteTagTitle(String name);
+
+  /// No description provided for @deleteTagBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the tag from every member.'**
+  String get deleteTagBody;
+
   /// No description provided for @noTagsYet.
   ///
   /// In en, this message translates to:
@@ -5924,7 +6470,7 @@ abstract class AppLocalizations {
   /// No description provided for @alterProfileTitle.
   ///
   /// In en, this message translates to:
-  /// **'Alter profile'**
+  /// **'Member profile'**
   String get alterProfileTitle;
 
   /// No description provided for @birthdayFieldHint.
@@ -5963,22 +6509,40 @@ abstract class AppLocalizations {
   /// **'No primary group'**
   String get noPrimaryGroupOption;
 
+  /// No description provided for @unknownGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown group (saved reference)'**
+  String get unknownGroupLabel;
+
   /// No description provided for @memberGroupsTitle.
   ///
   /// In en, this message translates to:
   /// **'Member groups'**
   String get memberGroupsTitle;
 
+  /// No description provided for @groupMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members in this group'**
+  String get groupMembersTitle;
+
+  /// No description provided for @groupMembersHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose members here. Primary groups can be changed on each member\'s profile.'**
+  String get groupMembersHelp;
+
   /// No description provided for @saveAlterButton.
   ///
   /// In en, this message translates to:
-  /// **'Save alter'**
+  /// **'Save member'**
   String get saveAlterButton;
 
   /// No description provided for @createAlterButton.
   ///
   /// In en, this message translates to:
-  /// **'Create alter'**
+  /// **'Create member'**
   String get createAlterButton;
 
   /// No description provided for @openingImagePickerStatus.
@@ -6224,7 +6788,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFieldsImportDescription.
   ///
   /// In en, this message translates to:
-  /// **'Import a Simply Plural export to bring custom profile fields into the local archive.'**
+  /// **'Supported imports can bring custom profile fields into the local archive.'**
   String get customFieldsImportDescription;
 
   /// No description provided for @customFieldsWithValues.
@@ -6242,7 +6806,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFieldsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'SP custom fields will show here after import.'**
+  /// **'Add a field here, or import fields from a supported file.'**
   String get customFieldsEmptyBody;
 
   /// No description provided for @addFieldButton.
@@ -6262,6 +6826,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom field actions'**
   String get customFieldActionsTooltip;
+
+  /// No description provided for @customFieldActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom field actions for {name} ({id})'**
+  String customFieldActionsFor(String name, String id);
 
   /// No description provided for @deleteCustomFieldTitle.
   ///
@@ -6425,6 +6995,30 @@ abstract class AppLocalizations {
   /// **'One choice per line'**
   String get customFieldChoicesHint;
 
+  /// No description provided for @customFieldDateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Use YYYY-MM-DD or choose a date.'**
+  String get customFieldDateFormat;
+
+  /// No description provided for @customFieldInvalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date as YYYY-MM-DD.'**
+  String get customFieldInvalidDate;
+
+  /// No description provided for @customFieldInvalidLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a link starting with https:// or http://.'**
+  String get customFieldInvalidLink;
+
+  /// No description provided for @chooseDateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get chooseDateButton;
+
   /// No description provided for @customFieldChoicesTooMany.
   ///
   /// In en, this message translates to:
@@ -6542,7 +7136,7 @@ abstract class AppLocalizations {
   /// No description provided for @customFrontsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add one here, or import them from SimplyPlural.'**
+  /// **'Add one here, or import custom fronts from a supported file.'**
   String get customFrontsEmptyBody;
 
   /// No description provided for @tryDifferentSearch.
@@ -6575,6 +7169,54 @@ abstract class AppLocalizations {
   /// **'Delete named front'**
   String get deleteNamedFrontTooltip;
 
+  /// No description provided for @frontActionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Front actions for {name} ({id})'**
+  String frontActionsFor(String name, String id);
+
+  /// No description provided for @frontActionsForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Front actions for {name}'**
+  String frontActionsForName(String name);
+
+  /// No description provided for @frontActionFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {name} ({id})'**
+  String frontActionFor(String action, String name, String id);
+
+  /// No description provided for @frontActionForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {name}'**
+  String frontActionForName(String action, String name);
+
+  /// No description provided for @editFrontFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit front {name} ({id})'**
+  String editFrontFor(String name, String id);
+
+  /// No description provided for @editFrontForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit front {name}'**
+  String editFrontForName(String name);
+
+  /// No description provided for @deleteFrontFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete front {name} ({id})'**
+  String deleteFrontFor(String name, String id);
+
+  /// No description provided for @deleteFrontForName.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete front {name}'**
+  String deleteFrontForName(String name);
+
   /// No description provided for @setFrontConfirmation.
   ///
   /// In en, this message translates to:
@@ -6596,7 +7238,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteSavedFrontBody.
   ///
   /// In en, this message translates to:
-  /// **'This only removes the saved shortcut. Front history stays.'**
+  /// **'This removes the saved shortcut. Current fronts and history stay available. You can end an active custom front from the front picker.'**
   String get deleteSavedFrontBody;
 
   /// No description provided for @customFrontSemanticLabel.
@@ -6830,7 +7472,7 @@ abstract class AppLocalizations {
   /// No description provided for @howToTrackFrontStep3.
   ///
   /// In en, this message translates to:
-  /// **'Use Clear when nobody is fronting or the state ended.'**
+  /// **'Use End all current fronts when nobody is fronting or the state ended.'**
   String get howToTrackFrontStep3;
 
   /// No description provided for @howToTrackFrontStep4.
@@ -7097,6 +7739,12 @@ abstract class AppLocalizations {
   /// **'Front timeline'**
   String get frontTimelineTitle;
 
+  /// No description provided for @frontTimelineRange.
+  ///
+  /// In en, this message translates to:
+  /// **'From {start} to {end}'**
+  String frontTimelineRange(String start, String end);
+
   /// No description provided for @noAnalyticsTitle.
   ///
   /// In en, this message translates to:
@@ -7106,14 +7754,32 @@ abstract class AppLocalizations {
   /// No description provided for @noAnalyticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Make a front current or import Simply Plural front history to fill this in.'**
+  /// **'Make a front current or import front history to fill this in.'**
   String get noAnalyticsBody;
+
+  /// No description provided for @noAnalyticsInWindowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No fronts in this period'**
+  String get noAnalyticsInWindowTitle;
+
+  /// No description provided for @noAnalyticsInWindowBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a longer period or All to see earlier front history.'**
+  String get noAnalyticsInWindowBody;
 
   /// No description provided for @totalFrontTimeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Total front time'**
+  /// **'Summed front time'**
   String get totalFrontTimeLabel;
+
+  /// No description provided for @summedFrontTimeExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlapping front sessions are counted separately.'**
+  String get summedFrontTimeExplanation;
 
   /// No description provided for @sessionsLabel.
   ///
@@ -7144,6 +7810,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hour of day'**
   String get hourOfDayTitle;
+
+  /// No description provided for @hourOfDayExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Time with anyone fronting, by local hour. Overlapping fronts count once here.'**
+  String get hourOfDayExplanation;
 
   /// No description provided for @unknownLabel.
   ///
@@ -7186,6 +7858,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load older fronts'**
   String get loadOlderFronts;
+
+  /// No description provided for @frontHistoryShownCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} shown, {loaded} loaded of {total} total'**
+  String frontHistoryShownCount(int shown, int loaded, int total);
+
+  /// No description provided for @frontHistorySearchLimitedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches in the loaded history. Load older fronts to search more entries.'**
+  String get frontHistorySearchLimitedBody;
+
+  /// No description provided for @clearFrontHistoryFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFrontHistoryFilters;
 
   /// No description provided for @analyticsNinetyDays.
   ///
@@ -7412,8 +8102,14 @@ abstract class AppLocalizations {
   /// No description provided for @privacyBucketsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Group members by who may see them. Sharing stays off until sync is configured.'**
+  /// **'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.'**
   String get privacyBucketsDescription;
+
+  /// No description provided for @editPrivacyBucketNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit privacy bucket {name}'**
+  String editPrivacyBucketNamed(String name);
 
   /// No description provided for @noPrivacyBucketsTitle.
   ///
@@ -7516,6 +8212,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name is required.'**
   String get nameRequiredError;
+
+  /// No description provided for @memberNameInvisibleControlsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove invisible or directional control characters from the name.'**
+  String get memberNameInvisibleControlsError;
+
+  /// No description provided for @memberNameDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member name already in use'**
+  String get memberNameDuplicateTitle;
+
+  /// No description provided for @memberNameDuplicateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A member named {name} already exists. You can keep both; the app will show an ID where the names need distinguishing.'**
+  String memberNameDuplicateBody(String name);
+
+  /// No description provided for @saveDuplicateMemberButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get saveDuplicateMemberButton;
 
   /// No description provided for @disabledStatusLabel.
   ///
@@ -7756,6 +8476,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'stage: pre-alpha'**
   String get localReportStage;
+
+  /// No description provided for @localReportVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'app version: {version} (build {buildNumber})'**
+  String localReportVersion(String version, String buildNumber);
 
   /// No description provided for @localReportMembers.
   ///
@@ -8038,6 +8764,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save appearance'**
   String get saveAppearanceButton;
+
+  /// No description provided for @appearanceContrastError.
+  ///
+  /// In en, this message translates to:
+  /// **'Text colours need more contrast against the background, surface and card colours.'**
+  String get appearanceContrastError;
 
   /// No description provided for @deleteFailed.
   ///

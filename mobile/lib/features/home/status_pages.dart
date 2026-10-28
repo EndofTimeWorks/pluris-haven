@@ -66,16 +66,34 @@ class LocalPrivacyPage extends StatelessWidget {
                                   )
                                 : l10n.memberCount(bucket.memberIds.length),
                           ),
-                          trailing: IconButton(
-                            tooltip: l10n.deleteNamedItem(bucket.name),
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => confirmDelete(
-                              context,
-                              title: l10n.deletePrivacyBucketTitle,
-                              body: l10n.deletePrivacyBucketBody(bucket.name),
-                              onDelete: () =>
-                                  repository.deletePrivacyBucket(bucket.id),
-                            ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: l10n.editPrivacyBucketNamed(
+                                  bucket.name,
+                                ),
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => showPrivacyBucketEditor(
+                                  context,
+                                  repository: repository,
+                                  bucket: bucket,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: l10n.deleteNamedItem(bucket.name),
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => confirmDelete(
+                                  context,
+                                  title: l10n.deletePrivacyBucketTitle,
+                                  body: l10n.deletePrivacyBucketBody(
+                                    bucket.name,
+                                  ),
+                                  onDelete: () =>
+                                      repository.deletePrivacyBucket(bucket.id),
+                                ),
+                              ),
+                            ],
                           ),
                           onTap: () => showPrivacyBucketEditor(
                             context,
@@ -233,23 +251,27 @@ class _PrivacyBucketEditorSheetState extends State<PrivacyBucketEditorSheet> {
             StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
               initialData: const [],
-              builder: (context, snapshot) => Column(
-                children: [
-                  for (final member in snapshot.data ?? const <MemberSummary>[])
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(member.displayName),
-                      value: _memberIds.contains(member.id),
-                      onChanged: (selected) => setState(() {
-                        if (selected == true) {
-                          _memberIds.add(member.id);
-                        } else {
-                          _memberIds.remove(member.id);
-                        }
-                      }),
-                    ),
-                ],
-              ),
+              builder: (context, snapshot) {
+                final members = snapshot.data ?? const <MemberSummary>[];
+                return Column(
+                  children: [
+                    for (final member in members)
+                      CheckboxListTile(
+                        key: ValueKey('privacy-bucket-member-${member.id}'),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_memberPickerLabel(member, members, l10n)),
+                        value: _memberIds.contains(member.id),
+                        onChanged: (selected) => setState(() {
+                          if (selected == true) {
+                            _memberIds.add(member.id);
+                          } else {
+                            _memberIds.remove(member.id);
+                          }
+                        }),
+                      ),
+                  ],
+                );
+              },
             ),
             if (_error != null)
               Text(
@@ -609,78 +631,106 @@ class UserReportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final report = _buildReport(snapshot, l10n);
     final scheme = Theme.of(context).colorScheme;
 
-    return SpPage(
-      children: [
-        SpCard(
-          outlined: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SpSectionHeader(
-                title: l10n.navigationUserReport,
-                trailing: StatusPill(text: l10n.localStatusLabel),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.userReportDescription,
-                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, packageSnapshot) {
+        final report = _buildReport(snapshot, l10n, packageSnapshot.data);
+        return SpPage(
+          children: [
+            SpCard(
+              outlined: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FilledButton.icon(
-                    onPressed: () => _copyReport(context, report),
-                    icon: const Icon(Icons.copy_rounded),
-                    label: Text(l10n.copyReportButton),
+                  SpSectionHeader(
+                    title: l10n.navigationUserReport,
+                    trailing: StatusPill(text: l10n.localStatusLabel),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        launchExternalUrl(context, _bugReportUri(report)),
-                    icon: const Icon(Icons.bug_report_outlined),
-                    label: Text(l10n.reportBugButton),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.userReportDescription,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed:
+                            packageSnapshot.connectionState ==
+                                ConnectionState.waiting
+                            ? null
+                            : () => _copyReport(context, report),
+                        icon: const Icon(Icons.copy_rounded),
+                        label: Text(l10n.copyReportButton),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            packageSnapshot.connectionState ==
+                                ConnectionState.waiting
+                            ? null
+                            : () => launchExternalUrl(
+                                context,
+                                _bugReportUri(report),
+                              ),
+                        icon: const Icon(Icons.bug_report_outlined),
+                        label: Text(l10n.reportBugButton),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        SpCard(
-          child: SelectableText(
-            report,
-            style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SpSettingsGroup(
-          title: l10n.relatedTitle,
-          rows: [
-            SpSettingsRow(
-              l10n.importJobsTitle,
-              l10n.importJobsSubtitle,
-              onTap: () => onSelect(SpSection.importExport),
             ),
-            SpSettingsRow(
-              l10n.notificationHistoryTitle,
-              l10n.localEventLogSubtitle,
-              onTap: () => onSelect(SpSection.notificationHistory),
+            const SizedBox(height: 12),
+            SpCard(
+              child: SelectableText(
+                report,
+                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.35),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SpSettingsGroup(
+              title: l10n.relatedTitle,
+              rows: [
+                SpSettingsRow(
+                  l10n.importJobsTitle,
+                  l10n.importJobsSubtitle,
+                  onTap: () => onSelect(SpSection.importExport),
+                ),
+                SpSettingsRow(
+                  l10n.notificationHistoryTitle,
+                  l10n.localEventLogSubtitle,
+                  onTap: () => onSelect(SpSection.notificationHistory),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  String _buildReport(HomeSnapshot? snapshot, AppLocalizations l10n) {
+  String _buildReport(
+    HomeSnapshot? snapshot,
+    AppLocalizations l10n,
+    PackageInfo? packageInfo,
+  ) {
     final home = snapshot;
     return [
       l10n.localReportHeading,
       l10n.localReportStage,
+      packageInfo == null
+          ? '${l10n.appVersionLabel}: ${l10n.unknownLabel}'
+          : l10n.localReportVersion(
+              packageInfo.version,
+              packageInfo.buildNumber,
+            ),
       l10n.localReportMembers(home?.memberCount ?? 0),
       l10n.localReportGroups(home?.groupCount ?? 0),
       l10n.localReportNotes(home?.noteCount ?? 0),
@@ -1031,6 +1081,11 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
   }
 
   Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = AppLocalizations.of(context).nameRequiredError);
+      return;
+    }
     final color = _colorController.text.trim();
     if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) {
       setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
@@ -1043,7 +1098,7 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
     try {
       await widget.repository.updateSystemProfile(
         SystemProfileDraft(
-          name: _nameController.text,
+          name: name,
           description: _descriptionController.text,
           colorHex: color,
           avatarUrl: _avatarUrl,

@@ -170,6 +170,34 @@ void main() {
     );
   });
 
+  test('does not confuse foreign export signatures with PluralKit', () {
+    const ampersand =
+        '{"revision":{"count":1},"database":{"systems":[],"members":[{"uuid":"m1","system":"s1","avatar_url":"https://example.test/a.png"}]}}';
+    const pluralSpace =
+        '{"pluralspace":true,"system":{"name":"Other"},"members":[{"uuid":"m1","avatar_url":"https://example.test/a.png"}]}';
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: ampersand,
+      ).source,
+      ImportSource.ampersand,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: pluralSpace,
+      ).source,
+      ImportSource.pluralSpace,
+    );
+    expect(
+      guessImportSourceFromFile(
+        fileName: 'export.json',
+        textPreview: '{"pluralspace":true,"pluralkit":true,"members":[]}',
+      ).source,
+      isNull,
+    );
+  });
+
   test('previews Pluris Haven archive counts', () {
     final preview = previewImportText(
       fileName: 'pluris-haven.json',
@@ -194,6 +222,32 @@ void main() {
     expect(preview.counts['groups'], 1);
     expect(preview.counts['fronts'], 1);
     expect(preview.counts['preferences'], 1);
+  });
+
+  test('warns when archived front links have missing targets', () {
+    final preview = previewImportText(
+      fileName: 'broken-fronts.json',
+      text: jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'members': [
+          {'id': 'm1'},
+        ],
+        'fronts': [
+          {'id': 'f1'},
+        ],
+        'front_members': [
+          {'session_id': 'missing', 'member_id': 'm1'},
+          {'session_id': 'f1', 'member_id': 'missing'},
+        ],
+      }),
+    );
+    expect(preview.canApply, isTrue);
+    expect(
+      preview.warningsAndErrors.single.diagnostic.code,
+      ImportDiagnosticCode.orphanedFrontReferences,
+    );
+    expect(_previewMessages(preview).single, contains('2 front links'));
   });
 
   test('extracts the import JSON from a zipped backup', () async {

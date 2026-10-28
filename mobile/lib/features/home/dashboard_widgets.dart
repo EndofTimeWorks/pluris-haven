@@ -60,51 +60,39 @@ class SpDashboardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: scheme.surfaceContainerHighest,
+        foregroundColor: scheme.onSurface,
+        elevation: 0,
+        padding: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: ElevatedButton(
-          onPressed: onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: scheme.surfaceContainerHighest,
-            foregroundColor: scheme.onSurface,
-            elevation: 0,
-            padding: const EdgeInsets.all(10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(item.icon, color: scheme.primary, size: 22),
+          SizedBox(height: compact ? 10 : 14),
+          Text(
+            item.title,
+            textAlign: TextAlign.center,
+            maxLines: textScale > 1.3 ? 4 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, height: 1.15),
+          ),
+          if (showSubtitle && !compact) ...[
+            const SizedBox(height: 5),
+            Text(
+              item.subtitle,
+              textAlign: TextAlign.center,
+              maxLines: textScale > 1.3 ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item.icon, color: scheme.primary, size: 22),
-              SizedBox(height: compact ? 10 : 14),
-              Text(
-                item.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, height: 1.15),
-              ),
-              if (showSubtitle && !compact) ...[
-                const SizedBox(height: 5),
-                Text(
-                  item.subtitle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }
@@ -118,12 +106,15 @@ class DashboardSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Text(
-      label,
-      style: TextStyle(
-        color: scheme.onSurfaceVariant,
-        fontSize: 12,
-        fontWeight: FontWeight.w900,
+    return Semantics(
+      header: true,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: scheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -143,14 +134,15 @@ class DashboardActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
     return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 170,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: textScale > 1.3 ? 220 : 170,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
-        childAspectRatio: 1.15,
+        childAspectRatio: textScale <= 1.3 ? 1.15 : 1.15 * 1.3 / textScale,
       ),
       children: [
         for (final item in items)
@@ -219,7 +211,7 @@ class SystemListEntry extends StatelessWidget {
   }
 }
 
-class CurrentFrontEntry extends StatelessWidget {
+class CurrentFrontEntry extends StatefulWidget {
   const CurrentFrontEntry({
     super.key,
     required this.snapshot,
@@ -230,119 +222,141 @@ class CurrentFrontEntry extends StatelessWidget {
   final HavenRepository repository;
 
   @override
+  State<CurrentFrontEntry> createState() => _CurrentFrontEntryState();
+}
+
+class _CurrentFrontEntryState extends State<CurrentFrontEntry> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final home = snapshot;
+    final home = widget.snapshot;
     final scheme = Theme.of(context).colorScheme;
 
-    return SpCard(
-      outlined: true,
-      onTap: () => _showFrontSheet(context),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(4),
+    return Semantics(
+      container: true,
+      button: true,
+      child: SpCard(
+        outlined: true,
+        focusNode: _focusNode,
+        onTap: () => _showFrontSheet(context),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.currentlyFrontingNotificationTitle,
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.currentlyFrontingNotificationTitle,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  home?.currentFrontText ?? l10n.noneTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: scheme.onSurface,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: 5),
+                  Text(
+                    home?.currentFrontText ?? l10n.noneTitle,
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                StreamBuilder<List<MemberSummary>>(
-                  stream: repository.watchCurrentFrontMembers(),
-                  initialData: const [],
-                  builder: (context, snapshot) {
-                    final members = snapshot.data ?? const <MemberSummary>[];
-                    if (members.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          for (final member in members.take(4))
-                            Tooltip(
-                              message: member.displayName,
-                              child: Semantics(
-                                container: true,
-                                excludeSemantics: true,
-                                label: l10n.memberIsFronting(
-                                  member.displayName,
-                                ),
-                                child: MemberAvatar(
-                                  member: member,
-                                  color: _colorFromHex(
-                                    member.colorHex,
-                                    fallback: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                  StreamBuilder<List<MemberSummary>>(
+                    stream: widget.repository.watchCurrentFrontMembers(),
+                    initialData: const [],
+                    builder: (context, snapshot) {
+                      final members = snapshot.data ?? const <MemberSummary>[];
+                      if (members.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            for (final member in members.take(4))
+                              ExcludeSemantics(
+                                child: Tooltip(
+                                  message: member.displayName,
+                                  child: MemberAvatar(
+                                    member: member,
+                                    color: _colorFromHex(
+                                      member.colorHex,
+                                      fallback: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                                    label: _initialFor(member.displayName),
+                                    size: 28,
                                   ),
-                                  label: _initialFor(member.displayName),
-                                  size: 28,
                                 ),
                               ),
-                            ),
-                          if (members.length > 4)
-                            StatusPill(text: '+${members.length - 4}'),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              StatusPill(text: home?.currentFrontStatus ?? 'none'),
-              const SizedBox(height: 8),
-              Text(
-                l10n.setFrontButton,
-                style: TextStyle(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
+                            if (members.length > 4)
+                              ExcludeSemantics(
+                                child: StatusPill(
+                                  text: '+${members.length - 4}',
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        StatusPill(text: home?.currentFrontStatus ?? 'none'),
+                        Text(
+                          l10n.setFrontButton,
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _showFrontSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
+  Future<void> _showFrontSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       enableDrag: false,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => CustomFrontSheet(repository: repository),
+      builder: (context) => CustomFrontSheet(repository: widget.repository),
     );
+    if (mounted) _focusNode.requestFocus();
   }
 }

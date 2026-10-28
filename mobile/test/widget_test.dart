@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Tristate;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter/services.dart';
@@ -8,10 +10,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:drift/native.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
+import 'package:pluris_haven/data/import/import_preview.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
+import 'package:pluris_haven/data/local/app_customization.dart'
+    show defaultDashboardShortcutOrderIds;
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/notifications/notification_service.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/data/security/haven_crypto.dart';
+import 'package:pluris_haven/data/security/master_key_store.dart';
 import 'package:pluris_haven/data/local_api/local_api_controller.dart';
 import 'package:pluris_haven/features/app_lock_gate.dart';
 import 'package:pluris_haven/features/home/home_page.dart';
@@ -139,7 +146,7 @@ void main() {
   testWidgets('shows recovery guidance when local data initialization fails', (
     tester,
   ) async {
-    await tester.pumpWidget(const LocalMigrationFailureApp());
+    await tester.pumpWidget(LocalMigrationFailureApp(onRetry: () {}));
 
     expect(find.text('Local data needs recovery'), findsOneWidget);
     expect(
@@ -237,6 +244,122 @@ void main() {
     expect(database.closed, isTrue);
     expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('retries local startup after a migration failure', (
+    tester,
+  ) async {
+    final databases = <_TrackingDatabase>[];
+    var attempts = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () {
+            final database = _TrackingDatabase();
+            databases.add(database);
+            return database;
+          },
+          loadCrypto: () async => testCrypto(),
+          runMigrations: (_) async {
+            attempts++;
+            if (attempts == 1) throw StateError('temporarily unavailable');
+          },
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(databases.single.closed, isTrue);
+    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(attempts, 2);
+    expect(databases, hasLength(2));
+    expect(databases.last.closed, isFalse);
+    expect(find.byType(PlurisHavenApp), findsOneWidget);
+    await databases.last.close();
+  });
+
+  testWidgets('retries a missing local key without clearing data', (
+    tester,
+  ) async {
+    final databases = <_TrackingDatabase>[];
+    var attempts = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () {
+            final database = _TrackingDatabase();
+            databases.add(database);
+            return database;
+          },
+          loadCrypto: () async {
+            attempts++;
+            if (attempts == 1) throw const MissingMasterKeyException();
+            return testCrypto();
+          },
+          runMigrations: (_) async {},
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(databases.single.closed, isTrue);
+    expect(find.text('Encryption key unavailable'), findsOneWidget);
+    expect(
+      find.textContaining('clearing storage may lose data'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.byType(PlurisHavenApp), findsOneWidget);
+    expect(databases, hasLength(2));
+    expect(databases.last.closed, isFalse);
+    await databases.last.close();
+  });
+
+  testWidgets('explains a stalled keyring without starting another key load', (
+    tester,
+  ) async {
+    final pendingKey = Completer<HavenCrypto>();
+    final database = _TrackingDatabase();
+    var keyLoads = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () => database,
+          loadCrypto: () {
+            keyLoads++;
+            return pendingKey.future;
+          },
+          keyLoadWarningDelay: const Duration(seconds: 5),
+          runMigrations: (_) async {},
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(WaitingForKeyApp), findsOneWidget);
+    expect(find.text('Waiting for encryption key'), findsOneWidget);
+    expect(
+      find.textContaining('restart the app after unlocking'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsNothing);
+    expect(keyLoads, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('retires a saved Local API enable choice during bootstrap', (
@@ -536,10 +659,59 @@ void main() {
 
     expect(find.text('Dashboard'), findsOneWidget);
     expect(find.text('Members'), findsWidgets);
+    expect(find.text('Start here'), findsOneWidget);
+    expect(find.text('Local system'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('Front History'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Front History'), findsOneWidget);
     expect(find.text('App options'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Local system'), findsWidgets);
+  });
+
+  testWidgets('navigation chevrons are not announced', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpNavigationEntry(
+            item: const HomeNavigationItem(
+              'Members',
+              '2',
+              SpSection.members,
+              Icons.people,
+            ),
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(SpNavigationEntry)).label,
+      isNot(contains('>')),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('first-run guidance opens local import and clears after setup', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    expect(find.text('Start here'), findsOneWidget);
+
+    await tester.tap(find.text('Bring in existing data'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import / Export'), findsWidgets);
+
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Start here'), findsNothing);
   });
 
   testWidgets('keeps the app locked until customization loads', (tester) async {
@@ -738,7 +910,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Make current front').first);
@@ -748,9 +920,15 @@ void main() {
       find.byKey(const ValueKey('custom-front-label-field')),
       'blurry co-con',
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('make-custom-front-current-button')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('make-custom-front-current-button')),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
     await tester.pumpAndSettle();
 
     expect(find.text('blurry co-con'), findsWidgets);
@@ -761,13 +939,23 @@ void main() {
     expect(repository._notificationEvents.first.title, 'Front changed');
     expect(
       repository._notificationEvents.first.body,
-      'blurry co-con is fronting.',
+      'Set blurry co-con as front',
     );
 
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Clear'));
+    await tester.ensureVisible(find.text('End all current fronts').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('End all current fronts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._notificationEvents, hasLength(1));
+
+    await tester.tap(find.text('End all current fronts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('End all current fronts').last);
     await tester.pumpAndSettle();
 
     expect(find.text('None'), findsOneWidget);
@@ -795,7 +983,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
     await tester.pumpAndSettle();
@@ -829,7 +1017,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No matching fronts'), findsOneWidget);
 
-    await tester.tap(find.text('Reset'));
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Clear filters')),
+      alignment: 0.2,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear filters'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('blurry co-con').last);
     await tester.pumpAndSettle();
@@ -840,6 +1033,57 @@ void main() {
 
     expect(repository._frontHistory, isEmpty);
     expect(find.text('No front history yet'), findsOneWidget);
+  });
+
+  testWidgets('front history labels loaded and total counts separately', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 99,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setCustomFront('Away');
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDashboardFrontHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('1 shown, 1 loaded of 100 total'), findsOneWidget);
+    expect(find.text('Load older fronts'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-search-field')),
+      'no match',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('0 shown, 1 loaded of 100 total'), findsOneWidget);
+    expect(
+      find.text(
+        'No matches in the loaded history. Load older fronts to search more entries.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('search keeps its accessible name after typing', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDashboardFrontHistory(tester);
+    await tester.pumpAndSettle();
+
+    final search = find.byKey(const ValueKey('front-history-search-field'));
+    await tester.enterText(search, 'Kai');
+    await tester.pumpAndSettle();
+    expect(tester.getSemantics(search).label, contains('Search front history'));
+    semantics.dispose();
   });
 
   testWidgets('adds a completed front history interval', (tester) async {
@@ -856,7 +1100,12 @@ void main() {
     addTearDown(repository.close);
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
+    await tester.pumpAndSettle();
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Add entry')),
+      alignment: 0.2,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add entry'));
     await tester.pumpAndSettle();
@@ -877,6 +1126,41 @@ void main() {
     expect(find.text('Blurry'), findsOneWidget);
     expect(find.text('Retrospective entry'), findsOneWidget);
     expect(repository._frontHistory.single.isActive, isFalse);
+  });
+
+  testWidgets('editing an active front leaves its end unset', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.setCustomFront('Away');
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDashboardFrontHistory(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Away').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit entry'));
+    await tester.pumpAndSettle();
+    expect(find.text('active'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const ValueKey('front-history-note-field')),
+      'Still fronting',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-front-history-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-front-history-button')));
+    await tester.pumpAndSettle();
+    expect(repository._frontHistory.single.isActive, isTrue);
+    expect(repository._frontHistory.single.statusNote, 'Still fronting');
   });
 
   testWidgets('saves applies and deletes custom and named fronts', (
@@ -900,7 +1184,7 @@ void main() {
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
-    await tester.tap(find.text('Front History'));
+    await openDashboardFrontHistory(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Make current front'));
@@ -988,17 +1272,324 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'River, Sage');
-    expect(find.bySemanticsLabel('River is fronting.'), findsOneWidget);
-    expect(find.bySemanticsLabel('Sage is fronting.'), findsOneWidget);
+    expect(
+      repository._notificationEvents.single.body,
+      'Set River, Sage as front',
+    );
+    expect(
+      tester.getSemantics(find.byType(CurrentFrontEntry)).label,
+      contains('River, Sage'),
+    );
+    expect(find.bySemanticsLabel('River is fronting.'), findsNothing);
+    expect(find.bySemanticsLabel('Sage is fronting.'), findsNothing);
 
     await tester.tap(find.text('Make current front'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Delete saved front').first);
+    expect(find.byTooltip('Delete front Asleep'), findsWidgets);
+    await tester.ensureVisible(find.byTooltip('Delete front Asleep').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete front Asleep').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
     expect(repository._namedFronts.length, 1);
+  });
+
+  testWidgets('front picker keeps current fronters when adding a member', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+    await repository.setFrontMembers(['fake-member-1']);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'River'))
+          .selected,
+      isTrue,
+    );
+    await tester.tap(find.widgetWithText(FilterChip, 'Wren'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('add-selected-members-front-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository._currentFrontMemberIds, [
+      'fake-member-1',
+      'fake-member-2',
+    ]);
+    expect(
+      repository._notificationEvents.single.body,
+      'Set River, Wren as front',
+    );
+  });
+
+  testWidgets('front picker keeps its actions visible in a large system', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    for (var index = 0; index < 100; index++) {
+      await repository.saveMember(MemberDraft(displayName: 'Member $index'));
+    }
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    final action = find.byKey(
+      const ValueKey('set-selected-members-front-button'),
+    );
+    expect(action, findsOneWidget);
+    final initialPosition = tester.getTopLeft(action);
+    await tester.drag(
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(action), initialPosition);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('front picker leaves members visible at double text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(() {
+      tester.view.reset();
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    final bar = find.byKey(const ValueKey('front-selection-bar'));
+    expect(tester.getSize(bar).height, lessThan(190));
+    expect(
+      tester.getBottomLeft(find.widgetWithText(FilterChip, 'River')).dy,
+      lessThan(tester.getTopLeft(bar).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('fronting member filter uses IDs for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.setFrontMembers(['fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.widgetWithText(FilterChip, 'Fronting'));
+    await tester.pumpAndSettle();
+
+    final tiles = tester.widgetList<MemberListTile>(
+      find.byType(MemberListTile),
+    );
+    expect(tiles.map((tile) => tile.member.id), ['fake-member-2']);
+    expect(find.byTooltip("End Kai's front"), findsOneWidget);
+
+    await repository.setFrontMembers(['fake-member-1']);
+    await tester.pumpAndSettle();
+    final updatedTiles = tester.widgetList<MemberListTile>(
+      find.byType(MemberListTile),
+    );
+    expect(updatedTiles.map((tile) => tile.member.id), ['fake-member-1']);
+  });
+
+  testWidgets('member name sort leaves saved order intact', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+
+    List<String> visibleNames() => tester
+        .widgetList<MemberListTile>(find.byType(MemberListTile))
+        .map((tile) => tile.member.displayName)
+        .toList();
+
+    expect(visibleNames(), ['Wren', 'Kai']);
+    await tester.tap(find.text('Saved order'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Name A–Z').last);
+    await tester.pumpAndSettle();
+    expect(visibleNames(), ['Kai', 'Wren']);
+
+    await tester.tap(find.text('Name A–Z').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved order').last);
+    await tester.pumpAndSettle();
+    expect(visibleNames(), ['Wren', 'Kai']);
+  });
+
+  testWidgets('front picker ends one member without ending a cofronter', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('end-front-fake-member-1')));
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, hasLength(2));
+    await tester.tap(find.text("End River's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, ['fake-member-2']);
+    expect(
+      find.byKey(const ValueKey('end-front-fake-member-2')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('member list and profile end only the selected active front', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+
+    await tester.tap(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text("End River's front"), findsWidgets);
+    await tester.tap(find.text('Cancel').last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, [
+      'fake-member-1',
+      'fake-member-2',
+    ]);
+
+    await tester.tap(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End River's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, ['fake-member-2']);
+    expect(
+      find.byKey(const ValueKey('end-front-member-fake-member-1')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Sage').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('profile-end-front-fake-member-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('profile-end-front-fake-member-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End Sage's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._currentFrontMemberIds, isEmpty);
+  });
+
+  testWidgets('saved-front actions use IDs only for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final now = DateTime.utc(2026, 10, 26);
+    for (final id in ['away-1', 'away-2']) {
+      await repository.saveNamedFront(
+        NamedFront(
+          id: id,
+          systemId: localSystemId,
+          name: 'Away',
+          customLabel: 'Away',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        const [],
+      );
+    }
+    await repository.saveNamedFront(
+      NamedFront(
+        id: 'asleep',
+        systemId: localSystemId,
+        name: 'Asleep',
+        customLabel: 'Asleep',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      const [],
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fronts');
+
+    expect(find.byTooltip('Edit front Asleep'), findsOneWidget);
+    expect(
+      find.byTooltip(RegExp(r'^Edit front Away \([^)]+\)$')),
+      findsNWidgets(2),
+    );
   });
 
   testWidgets('manages custom fronts as saved front states', (tester) async {
@@ -1028,6 +1619,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
+      find.byKey(const ValueKey('custom-front-page-color-field')),
+      'not a colour',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-front-page-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.text('Use 6 hex digits, like #F2C75C.'), findsOneWidget);
+    expect(repository._namedFronts, isEmpty);
+
+    await tester.enterText(
       find.byKey(const ValueKey('custom-front-page-name-field')),
       'Asleep',
     );
@@ -1052,7 +1655,8 @@ void main() {
     );
     expect(find.text('Asleep'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Edit custom front'));
+    expect(find.byTooltip('Edit front Asleep'), findsOneWidget);
+    await tester.tap(find.byTooltip('Edit front Asleep'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('custom-front-page-name-field')),
@@ -1068,30 +1672,50 @@ void main() {
 
     final frontActionKey = 'named-front-${repository._namedFronts.single.id}';
     await tester.tap(
-      find.byKey(ValueKey('front-action-picker-$frontActionKey')),
+      find.byKey(ValueKey('front-action-replace-$frontActionKey')),
     );
     await tester.pumpAndSettle();
-    final setAsFront = find.ancestor(
-      of: find.text('Make current front'),
-      matching: find.byType(CheckedPopupMenuItem<HavenFrontAction>),
+    expect(
+      find.text('This ends other active member fronts. Continue?'),
+      findsOneWidget,
     );
-    await tester.ensureVisible(setAsFront);
-    await tester.tap(setAsFront);
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(repository._customization.frontAction, HavenFrontAction.replace);
-
+    expect(repository._snapshot.currentFrontLabel, isNull);
     await tester.tap(
-      find.byKey(ValueKey('front-action-button-$frontActionKey')),
+      find.byKey(ValueKey('front-action-replace-$frontActionKey')),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
     await tester.pumpAndSettle();
     expect(repository._snapshot.currentFrontText, 'Away');
+    expect(repository._customization.frontAction, HavenFrontAction.add);
 
-    await tester.tap(find.byTooltip('Delete custom front'));
+    expect(find.byTooltip('Delete front Away'), findsOneWidget);
+    await tester.tap(find.byTooltip('Delete front Away'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
     expect(repository._namedFronts, isEmpty);
+    expect(repository._frontHistory.first.label, 'Away');
+    expect(repository._frontHistory.first.isActive, isTrue);
+
+    await openDrawerSection(tester, 'Dashboard');
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+    final activeFrontId = repository._frontHistory.first.id;
+    expect(
+      find.byKey(ValueKey('end-custom-front-$activeFrontId')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(ValueKey('end-custom-front-$activeFrontId')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("End Away's front").last);
+    await tester.pumpAndSettle();
+    expect(repository._frontHistory.first.isActive, isFalse);
+    expect(repository._frontHistory.first.label, 'Away');
+    expect(repository._snapshot.currentFrontLabel, isNull);
   });
 
   testWidgets('shows local analytics from front history', (tester) async {
@@ -1119,15 +1743,144 @@ void main() {
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Total front time'), findsOneWidget);
+    expect(find.text('Summed front time'), findsOneWidget);
     expect(find.text('Sessions'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     await tester.drag(find.byType(ListView).last, const Offset(0, -400));
     await tester.pumpAndSettle();
     expect(find.text('Top fronts'), findsOneWidget);
-    expect(find.text('Asleep'), findsOneWidget);
-    expect(find.text('Away'), findsOneWidget);
+    expect(find.text('Asleep'), findsWidgets);
+    expect(find.text('Away'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('Hour of day'), 220);
     expect(find.text('Hour of day'), findsOneWidget);
+  });
+
+  testWidgets('overlapping fronts explain summed analytics time', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final end = DateTime.now().subtract(const Duration(hours: 1));
+    final start = end.subtract(const Duration(hours: 1));
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: start,
+        endedAt: end,
+      ),
+      FrontHistoryEntry(
+        id: 'wren-front',
+        label: 'Wren',
+        startedAt: start,
+        endedAt: end,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2h'), findsOneWidget);
+    expect(find.text('Summed front time'), findsOneWidget);
+    expect(
+      find.text('Overlapping front sessions are counted separately.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hour chart shows its value scale on a phone width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: DateTime(2025, 1, 1, 10),
+        endedAt: DateTime(2025, 1, 1, 11),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('hour-chart-maximum')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('hour-chart-maximum')),
+    );
+
+    expect(find.text('1h'), findsWidgets);
+    expect(find.text('0m'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('summed front time copy resolves for UK and US English', () {
+    for (final locale in const [Locale('en', 'GB'), Locale('en', 'US')]) {
+      final l10n = lookupAppLocalizations(locale);
+      expect(l10n.totalFrontTimeLabel, 'Summed front time');
+      expect(
+        l10n.summedFrontTimeExplanation,
+        'Overlapping front sessions are counted separately.',
+      );
+    }
+  });
+
+  testWidgets('top-front bars do not announce a second relative value', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final end = DateTime.now().subtract(const Duration(hours: 1));
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'river-front',
+        label: 'River',
+        startedAt: end.subtract(const Duration(hours: 1)),
+        endedAt: end,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: AnalyticsPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Top fronts'));
+
+    final progress = tester.getSemantics(
+      find.byType(LinearProgressIndicator).first,
+    );
+    final value = progress.getSemanticsData().value;
+    await tester.pumpWidget(const SizedBox.shrink());
+    semantics.dispose();
+    expect(value, isEmpty);
   });
 
   testWidgets('keeps zero-length completed fronts finite in analytics', (
@@ -1239,13 +1992,144 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Iris'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'Iris');
     expect(repository._snapshot.frontHistoryCount, 1);
+    expect(repository._notificationEvents.single.body, 'Set Iris as front');
+  });
+
+  testWidgets('member editor keeps invalid and unsaved drafts visible', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('Add member'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(repository._members, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-name-field')),
+      'Kai',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('member-name-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.displayName, 'Kai');
+  });
+
+  testWidgets(
+    'member editor warns on duplicate names and rejects hidden controls',
+    (tester) async {
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+      await tester.pumpWidget(PlurisHavenApp(repository: repository));
+      await tester.pump();
+      await openDrawerSection(tester, 'Members');
+      await tester.tap(find.text('Add member'));
+      await tester.pumpAndSettle();
+
+      final nameField = find.byKey(const ValueKey('member-name-field'));
+      final saveButton = find.byKey(const ValueKey('save-member-button'));
+      await tester.enterText(nameField, 'Ka\u200Bi');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Remove invisible or directional control characters from the name.',
+        ),
+        findsOneWidget,
+      );
+      expect(repository._members, hasLength(1));
+
+      await tester.enterText(nameField, 'Kai ');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Member name already in use'), findsOneWidget);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(repository._members, hasLength(1));
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save anyway'));
+      await tester.pumpAndSettle();
+      expect(repository._members, hasLength(2));
+      expect(
+        find.byTooltip(RegExp(r'^Member actions for Kai \(')),
+        findsNWidgets(2),
+      );
+    },
+  );
+
+  testWidgets('notification events have separate read actions', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'front',
+        title: 'Front changed',
+        body: 'Kai is fronting.',
+      ),
+    );
+    await repository.recordNotificationEvent(
+      const NotificationEventDraft(
+        kind: 'reminder',
+        title: 'Medication',
+        body: 'Take with water.',
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: NotificationHistoryPage(repository: repository)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Medication\. Take with water\.')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Front changed\. Kai is fronting\.')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Mark Medication as read'), findsOneWidget);
+    await tester.tap(find.byTooltip('Mark Medication as read'));
+    await tester.pumpAndSettle();
+    expect(repository._notificationEvents.first.isUnread, isFalse);
+    expect(repository._notificationEvents.last.isUnread, isTrue);
+    expect(find.byTooltip('Mark Medication as read'), findsNothing);
+    expect(find.byTooltip('Mark Front changed as read'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('archives restores edits and deletes members', (tester) async {
@@ -1279,7 +2163,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-member-button')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Archive'));
     await tester.pumpAndSettle();
@@ -1287,16 +2171,18 @@ void main() {
 
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('no pronouns - archived'), findsOneWidget);
+    expect(find.text('Iris moved to Archived.'), findsOneWidget);
     expect(repository._snapshot.memberCount, 0);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
 
     expect(repository._snapshot.memberCount, 1);
+    expect(find.text('Iris restored to active members.'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -1312,12 +2198,12 @@ void main() {
 
     expect(find.text('Iris edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove member'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Removal summary -- group links: 0'),
+      find.textContaining('Their current front will end.'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Remove member'));
@@ -1330,12 +2216,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
 
     expect(find.text('Iris edited'), findsNothing);
+    expect(
+      find.text('Iris edited restored to active members.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
     expect(find.text('Iris edited'), findsOneWidget);
@@ -1392,8 +2282,12 @@ void main() {
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Make current front'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace current front').last);
+    await tester.pumpAndSettle();
 
     expect(repository._snapshot.currentFrontText, 'River');
+    expect(repository._notificationEvents, hasLength(1));
+    expect(repository._notificationEvents.single.body, 'Set River as front');
   });
 
   testWidgets('duplicates a member profile into the editor', (tester) async {
@@ -1430,7 +2324,7 @@ void main() {
     await tester.pump();
 
     await openDrawerSection(tester, 'Members');
-    await tester.tap(find.byTooltip('Member actions'));
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Duplicate'));
     await tester.pumpAndSettle();
@@ -1520,6 +2414,73 @@ void main() {
     expect(repository._memberTagIds[repository._members.single.id], [
       repository._tags.single.id,
     ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Protector'))
+          .selected,
+      isTrue,
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-tags-button')));
+    await tester.pumpAndSettle();
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Protector'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
+
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(FilterChip, 'Protector'),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Delete tag Protector?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._tags, hasLength(1));
+  });
+
+  testWidgets('saving tags keeps a typed new tag', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.text('River'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Member tags'));
+    await tester.tap(find.text('Member tags'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('member-tag-name-field')),
+      'Planner',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-tags-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._tags.single.name, 'Planner');
+    expect(repository._memberTagIds[repository._members.single.id], [
+      repository._tags.single.id,
+    ]);
   });
 
   testWidgets('assigns multiple groups from the member editor', (tester) async {
@@ -1566,6 +2527,71 @@ void main() {
       'fake-group-1',
       'fake-group-2',
     ]);
+  });
+
+  testWidgets('member editor selects and keeps its saved primary group', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Iris',
+        folderId: 'fake-group-1',
+        groupIds: ['fake-group-1'],
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    final primary = tester.widget<DropdownButtonFormField<String?>>(
+      find.byKey(const ValueKey('member-primary-group-field')),
+    );
+    expect(primary.initialValue, 'fake-group-1');
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.folderId, 'fake-group-1');
+    expect(repository._members.single.groupIds, ['fake-group-1']);
+  });
+
+  testWidgets('member editor keeps an unresolved imported group reference', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveGroup(const GroupDraft(name: 'Caretakers'));
+    await repository.saveMember(
+      const MemberDraft(
+        displayName: 'Iris',
+        folderId: 'imported-group',
+        groupIds: ['imported-group'],
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Members');
+    await tester.tap(find.byTooltip(RegExp(r'^Member actions for ')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unknown group (saved reference)'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-member-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-member-button')));
+    await tester.pumpAndSettle();
+    expect(repository._members.single.folderId, 'imported-group');
+    expect(repository._members.single.groupIds, ['imported-group']);
   });
 
   testWidgets('opens local useful links and how-to guides', (tester) async {
@@ -1621,6 +2647,23 @@ void main() {
 
     await openDrawerSection(tester, 'About');
 
+    final darkLogo = tester.widget<Image>(
+      find.byKey(const ValueKey('about-brand-logo')),
+    );
+    expect(
+      ((darkLogo.image as ResizeImage).imageProvider as AssetImage).assetName,
+      'assets/brand/pluris_haven_alternate_dark.png',
+    );
+    await repository.setThemeMode(HavenThemeMode.light);
+    await tester.pumpAndSettle();
+    final lightLogo = tester.widget<Image>(
+      find.byKey(const ValueKey('about-brand-logo')),
+    );
+    expect(
+      ((lightLogo.image as ResizeImage).imageProvider as AssetImage).assetName,
+      'assets/brand/pluris_haven_icon.png',
+    );
+
     expect(
       find.text('Offline-first system, identity, and journaling tools.'),
       findsOneWidget,
@@ -1634,6 +2677,7 @@ void main() {
     );
     expect(find.text('Simply Plural and PluralKit'), findsOneWidget);
     expect(find.text('github.com/EndofTimeWorks/pluris-haven'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Optional support'), 220);
     expect(find.text('Optional support'), findsOneWidget);
     expect(find.text('GitHub Sponsors'), findsOneWidget);
     expect(find.text('patreon.com/EndofTimeWorks'), findsOneWidget);
@@ -1674,7 +2718,7 @@ void main() {
     await openDrawerSection(tester, 'Account Settings');
     expect(
       find.text('Server accounts are unavailable in this app session.'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Member name encryption'), findsOneWidget);
 
@@ -1716,6 +2760,25 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
     await tester.pumpAndSettle();
     expect(find.text('Trusted'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Buckets do not change the separate Privacy field on member profiles',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Edit privacy bucket Trusted'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit privacy bucket'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Description'),
+      'People I trust',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-privacy-bucket-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('People I trust'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
@@ -1745,6 +2808,80 @@ void main() {
         );
     expect(report, isNot(contains('Night Garden')));
     expect(report, isNot(contains('current front:')));
+  });
+
+  testWidgets('privacy bucket picker distinguishes duplicate member names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Privacy buckets');
+    await tester.tap(find.byKey(const ValueKey('add-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Kai ('), findsNWidgets(2));
+    await tester.tap(
+      find.byKey(const ValueKey('privacy-bucket-member-fake-member-2')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('privacy-bucket-name-field')),
+      'Trusted',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-privacy-bucket-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-privacy-bucket-button')));
+    await tester.pumpAndSettle();
+    expect(repository._privacyBuckets.single.memberIds, ['fake-member-2']);
+  });
+
+  testWidgets('sync page points to local encrypted archives', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Sync');
+
+    expect(
+      find.textContaining(
+        'Use Import / Export to save an encrypted .pluris archive.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Encrypted online backup'), findsNothing);
+  });
+
+  testWidgets('empty system name explains why saving is blocked', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+
+    await openDrawerSection(tester, 'Account Settings');
+    await tester.tap(find.byTooltip('Edit system profile'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('system-name-field')), '');
+    await tester.tap(find.byKey(const ValueKey('save-system-profile-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('system-name-field')), findsOneWidget);
+    expect(repository._snapshot.systemName, 'Local system');
   });
 
   testWidgets('adds a local group from the groups section', (tester) async {
@@ -1791,6 +2928,87 @@ void main() {
     expect(repository._snapshot.groupCount, 1);
   });
 
+  testWidgets('keeps an unnamed group draft open for correction', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      '   ',
+    );
+    await tester.ensureVisible(find.byKey(const ValueKey('save-group-button')));
+    await tester.tap(find.byKey(const ValueKey('save-group-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name is required.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    expect(repository._groups, isEmpty);
+  });
+
+  testWidgets('group member picker shows IDs only for duplicate names', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    final river = tester.widget<CheckboxListTile>(
+      find.byKey(const ValueKey('group-member-fake-member-1')),
+    );
+    expect(river.subtitle, isNull);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    final duplicateRiver = tester.widget<CheckboxListTile>(
+      find.byKey(const ValueKey('group-member-fake-member-1')),
+    );
+    expect(duplicateRiver.subtitle, isNotNull);
+  });
+
+  testWidgets('Escape offers to keep an unsaved group', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Groups');
+    await tester.tap(find.text('Add group'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('group-name-field')),
+      'Caretakers',
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    await tester.drag(find.byType(BottomSheet), const Offset(0, 500));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('group-name-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._groups.single.name, 'Caretakers');
+  });
+
   testWidgets('edits and deletes nested groups locally', (tester) async {
     final repository = FakeHavenRepository(
       const HomeSnapshot(
@@ -1830,7 +3048,7 @@ void main() {
     expect(repository._groups.last.name, 'Gatekeepers');
     expect(repository._groups.last.parentGroupId, 'fake-group-1');
 
-    await tester.tap(find.byTooltip('Group actions').first);
+    await tester.tap(find.byTooltip('Group actions for Caretakers'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -1937,7 +3155,9 @@ void main() {
       'choices': <String>[],
     });
 
-    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Custom field actions for Favorite drink \(')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -2009,7 +3229,9 @@ void main() {
 
     await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Custom field actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Custom field actions for Comfort drink \(')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -2162,6 +3384,112 @@ void main() {
           .value,
       const {'energy': 7, 'safe': true},
     );
+  });
+
+  testWidgets('date field accepts typed dates and rejects invalid dates', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'date-field',
+        name: 'Anniversary',
+        fieldType: 'date',
+        position: 0,
+        valueCount: 0,
+      ),
+    ];
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.tap(find.text('Anniversary'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+
+    final field = find.byKey(const ValueKey('custom-field-value-field'));
+    expect(tester.widget<TextField>(field).readOnly, isFalse);
+    expect(find.byTooltip('Choose date'), findsOneWidget);
+    await tester.enterText(field, '2026-02-31');
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a valid date as YYYY-MM-DD.'), findsOneWidget);
+    expect(repository._customFieldValues, isEmpty);
+
+    await tester.enterText(field, '2026-02-28');
+    await tester.tap(
+      find.byKey(const ValueKey('save-custom-field-value-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(repository._customFieldValues.single.value, '2026-02-28');
+  });
+
+  testWidgets('link and colour fields reject values they cannot render', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository._customFields = const [
+      CustomFieldSummary(
+        id: 'link-field',
+        name: 'Reference link',
+        fieldType: 'url',
+        position: 0,
+        valueCount: 0,
+      ),
+      CustomFieldSummary(
+        id: 'colour-field',
+        name: 'Accent',
+        fieldType: 'color',
+        position: 1,
+        valueCount: 0,
+      ),
+    ];
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Custom Fields');
+    await tester.tap(find.text('Reference link'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    final field = find.byKey(const ValueKey('custom-field-value-field'));
+    final save = find.byKey(const ValueKey('save-custom-field-value-button'));
+    await tester.enterText(field, 'not a url');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter a link starting with https:// or http://.'),
+      findsOneWidget,
+    );
+    expect(repository._customFieldValues, isEmpty);
+    await tester.enterText(field, 'https://example.org/help');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(
+      repository._customFieldValues.single.value,
+      'https://example.org/help',
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Accent'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('custom-field-system-value-row')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'blue');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('Use 6 hex digits, like #F2C75C.'), findsOneWidget);
+    expect(repository._customFieldValues, hasLength(1));
   });
 
   testWidgets('renders Markdown fields without loading embedded images', (
@@ -2360,7 +3688,7 @@ void main() {
     );
     expect(repository._notes.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Delete note'));
+    await tester.tap(find.byTooltip('Delete note Grounding edited'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -2368,6 +3696,192 @@ void main() {
     expect(find.text('Grounding'), findsNothing);
     expect(find.text('No notes yet'), findsOneWidget);
     expect(repository._snapshot.noteCount, 0);
+  });
+
+  testWidgets('blank notes stay open and title-only notes save', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Write something before saving.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('note-title-field')), findsOneWidget);
+    expect(repository._notes, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('note-title-field')),
+      'A title is enough',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-note-button')));
+    await tester.pumpAndSettle();
+    expect(repository._notes.single.title, 'A title is enough');
+    expect(repository._notes.single.body, isEmpty);
+  });
+
+  testWidgets('note actions show IDs only for duplicate titles', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveNote(const NoteDraft(title: 'Plan', body: 'One'));
+    await repository.saveNote(const NoteDraft(title: 'Plan', body: 'Two'));
+    await repository.saveNote(
+      const NoteDraft(title: 'Reminder', body: 'Three'),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+
+    expect(find.byTooltip('Delete note Reminder'), findsOneWidget);
+    expect(
+      find.byTooltip(RegExp(r'^Delete note Plan \([^)]+\)$')),
+      findsNWidgets(2),
+    );
+  });
+
+  testWidgets('notes list shows readable Markdown excerpts', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveNote(
+      const NoteDraft(
+        title: 'Reminder',
+        body:
+            '**Bring water** and [check the map](https://example.com).\n- Rest',
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+
+    expect(
+      find.textContaining('Bring water and check the map.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('**Bring water**'), findsNothing);
+    expect(repository._notes.single.body, contains('**Bring water**'));
+  });
+
+  testWidgets('journal title-only entry keeps its about-member target', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Write something before saving.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('journal-title-field')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-title-field')),
+      'About today',
+    );
+    await tester.tap(find.byKey(const ValueKey('journal-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('River').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('journal-author-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kai').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
+    final saveStartedAt = DateTime.now().toUtc();
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.title, 'About today');
+    expect(
+      repository._journals.single.createdAt.isBefore(saveStartedAt),
+      isFalse,
+    );
+    expect(repository._journals.single.body, isEmpty);
+    expect(repository._journals.single.memberId, 'fake-member-1');
+    expect(repository._journals.single.authorMemberId, 'fake-member-2');
+    expect(find.text('Written by Kai'), findsOneWidget);
+
+    await tester.tap(find.text('About a member'));
+    await tester.pumpAndSettle();
+    expect(find.text('About today'), findsOneWidget);
+    await tester.tap(find.text('System journal'));
+    await tester.pumpAndSettle();
+    expect(find.text('About today'), findsNothing);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('About today'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('journal-member-field')), findsNothing);
+    expect(find.text('Written by: Kai'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('journal-member-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('System journal').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.memberId, isNull);
+    expect(repository._journals.single.authorMemberId, 'fake-member-2');
+  });
+
+  testWidgets('editing a journal date keeps its recorded time', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final recordedAt = DateTime(2025, 1, 15, 12, 30).toUtc();
+    repository._journals = [
+      JournalEntry(
+        id: 'backdated-journal',
+        systemId: localSystemId,
+        title: 'Backdated note',
+        body: 'A past entry.',
+        visibility: 'system',
+        createdAt: recordedAt,
+        updatedAt: recordedAt,
+      ),
+    ];
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.text('Backdated note'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('journal-date-field')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('journal-date-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('16').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
+    );
+    await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
+    await tester.pumpAndSettle();
+
+    final savedDate = repository._journals.single.createdAt.toLocal();
+    expect(savedDate, DateTime(2025, 1, 16, 12, 30));
   });
 
   testWidgets('creates edits searches and deletes journal entries', (
@@ -2399,13 +3913,21 @@ void main() {
     );
     await tester.enterText(
       find.byKey(const ValueKey('journal-body-field')),
-      'Lots happened after switching.',
+      '**Lots happened** after switching.',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
     );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Long day'), findsOneWidget);
-    expect(repository._journals.single.body, 'Lots happened after switching.');
+    expect(
+      repository._journals.single.body,
+      '**Lots happened** after switching.',
+    );
+    expect(find.text('Lots happened after switching.'), findsWidgets);
+    expect(find.textContaining('**Lots happened**'), findsNothing);
 
     await tester.enterText(find.byType(TextField).first, 'switching');
     await tester.pumpAndSettle();
@@ -2418,22 +3940,112 @@ void main() {
 
     await tester.tap(find.text('Long day'));
     await tester.pumpAndSettle();
+    expect(find.text('Lots happened after switching.'), findsWidgets);
+    expect(find.byKey(const ValueKey('journal-title-field')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('edit-journal-entry-button')));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('journal-title-field')),
       'Long day edited',
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('save-journal-entry-button')),
     );
     await tester.tap(find.byKey(const ValueKey('save-journal-entry-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Long day edited'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete journal entry'));
+    await tester.ensureVisible(
+      find.byTooltip('Delete journal entry Long day edited'),
+    );
+    await tester.tap(find.byTooltip('Delete journal entry Long day edited'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(repository._journals, isEmpty);
     expect(find.text('No journal entries yet'), findsOneWidget);
+  });
+
+  testWidgets('Escape offers to keep a dirty journal draft', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Journals');
+    await tester.tap(find.byKey(const ValueKey('add-journal-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('journal-body-field')),
+      'Unfinished words',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(BottomSheet), const Offset(0, 500));
+    await tester.pumpAndSettle();
+    expect(find.text('Unfinished words'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(repository._journals.single.body, 'Unfinished words');
+  });
+
+  testWidgets('dirty note dismissal can discard explicitly', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Notes');
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('note-body-field')),
+      'Unsaved note',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+    expect(repository._notes, isEmpty);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Add note'))
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
   });
 
   testWidgets('adds a local message from the chat section', (tester) async {
@@ -2510,7 +4122,9 @@ void main() {
     expect(find.text('Check in after dinner. Bring water.'), findsOneWidget);
     expect(repository._messages.single.memberId, 'fake-member-1');
 
-    await tester.tap(find.byTooltip('Message actions'));
+    await tester.tap(
+      find.byTooltip(RegExp(r'^Message actions for Sage \(.+\)$')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -2520,6 +4134,73 @@ void main() {
     expect(repository._messages, isEmpty);
     expect(find.text('No messages yet'), findsOneWidget);
   });
+
+  testWidgets('chat draft can be saved after backing out', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Chat');
+    await tester.tap(find.text('Add message'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('message-body-field')),
+      'A message worth keeping',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('A message worth keeping'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+    await tester.pumpAndSettle();
+    expect(repository._messages.single.body, 'A message worth keeping');
+  });
+
+  testWidgets(
+    'chat sender follows one fronter and stays explicit for co-fronting',
+    (tester) async {
+      final repository = FakeHavenRepository(_testHomeSnapshot);
+      addTearDown(repository.close);
+      await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+      await repository.saveMember(const MemberDraft(displayName: 'Sol'));
+      await repository.setFrontMembers(['fake-member-1']);
+
+      await tester.pumpWidget(PlurisHavenApp(repository: repository));
+      await tester.pump();
+      await openDrawerSection(tester, 'Chat');
+      await tester.tap(find.text('Add message'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('message-member-field')),
+          matching: find.text('Wren'),
+        ),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('message-body-field')),
+        'I can help.',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-message-button')));
+      await tester.pumpAndSettle();
+      expect(repository._messages.single.memberId, 'fake-member-1');
+
+      await repository.setFrontMembers(['fake-member-1', 'fake-member-2']);
+      await tester.tap(find.text('Add message'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('message-member-field')),
+          matching: find.text('System message'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('sends a local message to a configured channel', (tester) async {
     final repository = FakeHavenRepository(
@@ -2533,7 +4214,15 @@ void main() {
       ),
     );
     addTearDown(repository.close);
-    await repository.saveChatChannel(const ChatChannelDraft(name: 'kitchen'));
+    await repository.saveChatCategory(
+      const ChatCategoryDraft(name: 'Daily life'),
+    );
+    await repository.saveChatChannel(
+      const ChatChannelDraft(
+        name: 'kitchen',
+        categoryId: 'fake-chat-category-1',
+      ),
+    );
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
@@ -2560,6 +4249,51 @@ void main() {
     expect(repository._messages.single.boardKind, 'channel');
     expect(repository._messages.single.channelId, 'fake-chat-channel-1');
     expect(find.textContaining('kitchen channel'), findsOneWidget);
+
+    await repository.saveChatChannel(const ChatChannelDraft(name: 'garden'));
+    await repository.saveMessage(
+      const MessageDraft(
+        body: 'The plants are watered.',
+        boardKind: 'channel',
+        channelId: 'fake-chat-channel-2',
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Channel').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat-category-filter-null')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily life').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsOneWidget);
+    expect(find.text('The plants are watered.'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('chat-category-filter-fake-chat-category-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All categories').last);
+    await tester.pumpAndSettle();
+    expect(find.text('The plants are watered.'), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('chat-channel-filter-null')),
+    );
+    await tester.tap(find.byKey(const ValueKey('chat-channel-filter-null')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily life / kitchen').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsOneWidget);
+    expect(find.text('The plants are watered.'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('chat-channel-filter-fake-chat-channel-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('garden').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tea is ready.'), findsNothing);
+    expect(find.text('The plants are watered.'), findsOneWidget);
   });
 
   testWidgets('manages local chat categories and channels', (tester) async {
@@ -2607,8 +4341,27 @@ void main() {
     expect(repository._chatCategories.single.name, 'Daily life');
     expect(repository._chatChannels.single.name, 'kitchen');
     expect(
+      find.byTooltip(RegExp(r'^Delete channel kitchen \(.+\)$')),
+      findsOneWidget,
+    );
+    expect(
+      find.byTooltip(RegExp(r'^Delete category Daily life \(.+\)$')),
+      findsOneWidget,
+    );
+    expect(
       repository._chatChannels.single.categoryId,
       repository._chatCategories.single.id,
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Manage channels'),
+          )
+          .focusNode
+          ?.hasFocus,
+      isTrue,
     );
   });
 
@@ -2638,6 +4391,18 @@ void main() {
     await tester.tap(find.text('Add reminder'));
     await tester.pumpAndSettle();
 
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('reminder-title-field')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus,
+      isTrue,
+    );
     await tester.enterText(
       find.byKey(const ValueKey('reminder-title-field')),
       'Medication',
@@ -2684,13 +4449,230 @@ void main() {
     expect(repository._reminders.single.enabled, isTrue);
     expect(find.text('on'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete reminder'));
+    await tester.tap(find.byTooltip(RegExp(r'^Delete reminder ')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('Medication'), findsNothing);
     expect(find.text('No reminders yet'), findsOneWidget);
+  });
+
+  testWidgets('reminder save failure keeps the draft open', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository.failReminderSave = true;
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Could not save this reminder. Check whether it still exists and try again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsOneWidget);
+    expect(repository._reminders, isEmpty);
+  });
+
+  testWidgets('Escape offers to save an unfinished reminder', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Unsaved changes'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').last);
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.title, 'Medication');
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Add reminder'),
+          )
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
+  });
+
+  testWidgets('rapid reminder save taps create one reminder', (tester) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    final saveGate = Completer<void>();
+    repository.reminderSaveGate = saveGate;
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    final save = find.byKey(const ValueKey('save-reminder-button'));
+    await tester.tap(save);
+    await tester.tap(save);
+    expect(repository._reminders, isEmpty);
+    saveGate.complete();
+    await tester.pumpAndSettle();
+    expect(repository._reminders, hasLength(1));
+  });
+
+  testWidgets('notification failure does not lose a saved reminder', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    showAddReminderSheet(
+      tester.element(find.byType(RemindersPage)),
+      repository,
+      notificationService: NotificationService.forTesting(
+        permissionChecker: () async => true,
+        permissionRequester: () async => true,
+        scheduledReminderDelivery: () async =>
+            throw StateError('OS unavailable'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._reminders, hasLength(1));
+    expect(find.byKey(const ValueKey('reminder-title-field')), findsNothing);
+    expect(
+      find.text(
+        'Reminder saved, but its notification could not be set. Check notification settings.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('saves 9am and 9.30pm as durable reminder times', (tester) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Meds',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '9am',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.scheduleTime, '09:00');
+
+    await tester.tap(find.text('Add reminder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Evening meds',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '9.30pm',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(
+      repository._reminders
+          .singleWhere((reminder) => reminder.title == 'Evening meds')
+          .scheduleTime,
+      '21:30',
+    );
+  });
+
+  testWidgets('corrects a saved reminder without silently clearing its time', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    final id = await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Weekly on Friday',
+        scheduleKind: 'weekly',
+        scheduleDowMask: 1 << 4,
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    await tester.tap(find.byTooltip(RegExp(r'^Edit reminder ')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '25:99',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter a valid time, such as 09:00 or 9am.'),
+      findsOneWidget,
+    );
+    expect(repository._reminders.single.scheduleTime, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-time-field')),
+      '10:15',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+    expect(repository._reminders.single.id, id);
+    expect(repository._reminders.single.scheduleTime, '10:15');
+    expect(repository._reminders.single.scheduleDowMask, 1 << 4);
   });
 
   testWidgets('stores an after-front reminder with a stable member target', (
@@ -2724,15 +4706,24 @@ void main() {
       find.byKey(const ValueKey('reminder-schedule-kind-field')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('After member fronts').last);
+    await tester.tap(find.text('After a front starts').last);
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('reminder-after-front-delay-field')),
+          )
+          .decoration
+          ?.helperMaxLines,
+      3,
+    );
     await tester.tap(find.byKey(const ValueKey('reminder-front-detail-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Iris').last);
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reminder-after-front-delay-field')),
-      '90',
+      '1h 30m',
     );
     await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
     await tester.pumpAndSettle();
@@ -2742,8 +4733,15 @@ void main() {
     expect(reminder.triggerType, 'event');
     expect(reminder.triggerMemberId, 'fake-member-1');
     expect(reminder.triggerEvent, 'front_started');
-    expect(reminder.delaySeconds, 90);
-    expect(find.text('90 seconds after Iris fronts'), findsOneWidget);
+    expect(reminder.delaySeconds, 5400);
+    expect(find.text('1 hour 30 minutes after Iris fronts'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.edit_outlined).last);
+    await tester.pumpAndSettle();
+    final delayField = tester.widget<TextField>(
+      find.byKey(const ValueKey('reminder-after-front-delay-field')),
+    );
+    expect(delayField.controller?.text, '1h 30m');
   });
 
   testWidgets(
@@ -2943,9 +4941,37 @@ void main() {
     expect(repository._notificationEvents, hasLength(1));
   });
 
+  testWidgets('desktop options do not claim mobile privacy controls', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AppOptionsPage(
+            snapshot: _testHomeSnapshot,
+            customization: AppCustomization.defaults,
+            repository: repository,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Block screenshots'), findsNothing);
+    expect(find.text('Fronting notification'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets(
     'front status notification only requests permission when needed',
     (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final repository = FakeHavenRepository(_testHomeSnapshot);
@@ -2983,12 +5009,15 @@ void main() {
       expect(permissionChecks, 1);
       expect(permissionRequests, 0);
       expect(repository._customization.frontStatusNotification, isTrue);
+      debugDefaultTargetPlatformOverride = null;
     },
   );
 
   testWidgets(
     'front status notification stays disabled when permission is denied',
     (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final repository = FakeHavenRepository(_testHomeSnapshot);
@@ -3027,6 +5056,7 @@ void main() {
         ),
         findsOneWidget,
       );
+      debugDefaultTargetPlatformOverride = null;
     },
   );
 
@@ -3068,6 +5098,20 @@ void main() {
     expect(find.text('Rice'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Vote history'), findsOneWidget);
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel('Dinner?: Soup'), findsOneWidget);
+    expect(find.bySemanticsLabel('Dinner?'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup, not selected'), findsNothing);
+    expect(find.bySemanticsLabel('Vote history: Dinner?'), findsOneWidget);
+    expect(find.byTooltip('Delete poll: Dinner?'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Dinner?'))
+          .getSemanticsData()
+          .flagsCollection
+          .isHeader,
+      isTrue,
+    );
 
     await tester.tap(find.text('Soup'));
     await tester.pumpAndSettle();
@@ -3075,20 +5119,133 @@ void main() {
     final votedPoll = (await repository.watchPolls().first).single;
     expect(votedPoll.selectedCount, 1);
     expect(votedPoll.options.first.selected, isTrue);
+    expect(find.bySemanticsLabel('Dinner?: Soup'), findsOneWidget);
+    expect(find.bySemanticsLabel('Soup, selected'), findsNothing);
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Dinner?: Soup'))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected,
+      Tristate.isTrue,
+    );
 
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect((await repository.watchPolls().first).single.closed, isTrue);
     expect(find.text('Closed'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete poll'));
+    await tester.tap(find.byTooltip('Delete poll: Dinner?'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dinner?'), findsNothing);
     expect(find.text('No polls yet'), findsOneWidget);
+    semantics.dispose();
 
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('duplicate poll questions have distinct accessible actions', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    for (var index = 0; index < 2; index++) {
+      await repository.savePoll(
+        const PollDraft(
+          question: 'Dinner?',
+          kind: PollKind.singleChoice,
+          options: ['Soup', 'Rice'],
+        ),
+      );
+    }
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Polls');
+    await tester.pumpAndSettle();
+    final semantics = tester.ensureSemantics();
+    final polls = await repository.watchPolls().first;
+    expect(polls, hasLength(2));
+    for (final poll in polls) {
+      final question = 'Dinner? (${poll.id.substring(0, 6)})';
+      expect(find.bySemanticsLabel(question), findsOneWidget);
+      expect(find.bySemanticsLabel('$question: Soup'), findsOneWidget);
+      expect(find.bySemanticsLabel('Vote history: $question'), findsOneWidget);
+      expect(find.byTooltip('Delete poll: $question'), findsOneWidget);
+    }
+    semantics.dispose();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('cofronters vote separately through the poll screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final members = await repository.watchMembers().first;
+    await repository.setFrontMembers([for (final member in members) member.id]);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Polls');
+    await tester.tap(find.text('Create poll'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-question-field')),
+      'Dinner?',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-0')),
+      'Soup',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('poll-option-field-1')),
+      'Rice',
+    );
+    await tester.tap(find.byKey(const ValueKey('poll-vote-mode-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Votes by member').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('save-poll-button')));
+    await tester.tap(find.byKey(const ValueKey('save-poll-button')));
+    await tester.pumpAndSettle();
+
+    final poll = (await repository.watchPolls().first).single;
+    await tester.tap(find.byKey(ValueKey('poll-voter-${poll.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kai').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Soup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('poll-voter-${poll.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('River').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rice'));
+    await tester.pumpAndSettle();
+
+    final voted = (await repository.watchPolls().first).single;
+    expect(voted.voteMode, PollVoteMode.perMember);
+    expect(voted.options.first.memberIds, {
+      members.singleWhere((m) => m.displayName == 'Kai').id,
+    });
+    expect(voted.options.last.memberIds, {
+      members.singleWhere((m) => m.displayName == 'River').id,
+    });
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
   });
@@ -3193,32 +5350,87 @@ void main() {
       220,
       scrollable: pageScrollable,
     );
-    final analyticsSwitch = find.byKey(
-      const ValueKey('shortcut-visible-analytics'),
+    final analyticsSwitch = find.descendant(
+      of: find.byType(DashboardShortcutManager),
+      matching: find.byKey(const ValueKey('shortcut-visible-analytics')),
     );
     await tester.scrollUntilVisible(
       analyticsSwitch,
       220,
       scrollable: pageScrollable,
     );
+    final shortcutOrder =
+        (await repository.loadCustomization()).dashboardShortcutOrderIds;
     await tester.tap(analyticsSwitch);
     await tester.pumpAndSettle();
+    expect(
+      (await repository.loadCustomization()).dashboardShortcutOrderIds,
+      shortcutOrder,
+    );
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
       isNot(contains('analytics')),
     );
     await tester.scrollUntilVisible(
-      find.text('Reset dashboard'),
+      find.text('Restore default dashboard shortcuts'),
       220,
       scrollable: pageScrollable,
       maxScrolls: 30,
     );
-    await tester.tap(find.text('Reset dashboard'));
+    await tester.tap(find.text('Restore default dashboard shortcuts'));
     await tester.pumpAndSettle();
     expect(
       (await repository.loadCustomization()).dashboardShortcutIds,
       defaultDashboardShortcutIds,
     );
+  });
+
+  testWidgets('dashboard shortcut stays under the finger when hidden', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'App options');
+
+    final toggle = find.byKey(const ValueKey('shortcut-visible-groups'));
+    await tester.scrollUntilVisible(
+      toggle,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    final before = tester.getCenter(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
+  });
+
+  testWidgets('settings picker returns focus to its launching row', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'App options');
+    await tester.tap(find.text('Visual style'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Material You'));
+    await tester.pumpAndSettle();
+
+    final row = find.widgetWithText(SpSettingsRow, 'Visual style');
+    final inkWell = tester.widget<InkWell>(
+      find.descendant(of: row, matching: find.byType(InkWell)),
+    );
+    expect(inkWell.focusNode?.hasFocus, isTrue);
   });
 
   testWidgets('keeps an intentionally empty dashboard shortcut list', (
@@ -3463,7 +5675,7 @@ void main() {
 
     expect(find.text('Paste JSON'), findsOneWidget);
     expect(
-      find.text('Paste up to 256 KiB. Choose a file for larger exports.'),
+      find.text('Paste up to 32 MiB. Larger exports need a file.'),
       findsOneWidget,
     );
     expect(
@@ -3472,7 +5684,7 @@ void main() {
             find.byKey(const ValueKey('paste-import-json-field')),
           )
           .maxLength,
-      256 * 1024,
+      isNull,
     );
 
     await tester.binding.handlePopRoute();
@@ -3481,6 +5693,229 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Paste JSON'), findsNothing);
     expect(find.text('Import setup'), findsOneWidget);
+  });
+
+  testWidgets('invalid pasted JSON reports parsing failure', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      'this is not json {{',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Could not parse JSON'));
+    expect(find.textContaining('Preview ready'), findsNothing);
+    expect(find.textContaining('Could not parse JSON'), findsWidgets);
+  });
+
+  testWidgets('paste keeps complete JSON at and beyond 256 KiB', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    String? pasted;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  pasted = await showPasteImportJsonSheet(context),
+              child: const Text('Open paste'),
+            ),
+          ),
+        ),
+      ),
+    );
+    const prefix = '{"members":[{"id":"m1","name":"Iris"}],"padding":"';
+    const suffix = '"}';
+    for (final size in [262143, 262144, 262145, 310 * 1024]) {
+      await tester.tap(find.text('Open paste'));
+      await tester.pumpAndSettle();
+      final fullText =
+          '$prefix${List.filled(size - prefix.length - suffix.length, 'x').join()}$suffix';
+      await tester.enterText(
+        find.byKey(const ValueKey('paste-import-json-field')),
+        fullText,
+      );
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('paste-import-json-field')),
+            )
+            .controller!
+            .text
+            .length,
+        size,
+      );
+      await tester.tap(find.text('Preview pasted JSON'));
+      await tester.pumpAndSettle();
+      expect(pasted, fullText);
+      expect(
+        previewImportText(
+          fileName: 'pasted-import.json',
+          text: pasted!,
+          selectedSource: ImportSource.simplyPlural,
+        ).counts['members'],
+        1,
+      );
+    }
+  });
+
+  testWidgets('native archive asks before replacing the system profile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(
+      const HomeSnapshot(
+        systemName: 'Local system',
+        memberCount: 0,
+        groupCount: 0,
+        noteCount: 0,
+        frontHistoryCount: 0,
+        currentFrontLabel: null,
+      ),
+    );
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Imported"},"members":[{"id":"m1","display_name":"Iris"}]}',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(
+      find.textContaining(
+        'Update existing matches will replace your local profile',
+      ),
+      findsWidgets,
+    );
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(
+      tester,
+      find.textContaining('This archive includes a system profile'),
+    );
+    expect(
+      find.textContaining(
+        'Update existing matches will replace your local profile',
+      ),
+      findsWidgets,
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._backgroundJobs, isEmpty);
+  });
+
+  testWidgets('identical archive profile does not raise a conflict', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository.portablePreferenceValues['theme_mode'] = 'dark';
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      '{"format":"pluris_haven.local_archive","version":1,"system":{"id":"local-system","name":"Local system"},"preferences":[{"key":"theme_mode","value":"dark"}]}',
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.textContaining('Import complete'));
+    expect(find.text('Conflicts found'), findsNothing);
+    expect(repository._backgroundJobs, hasLength(1));
+  });
+
+  testWidgets('changed archive preferences require a conflict choice', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    repository.portablePreferenceValues['theme_mode'] = 'dark';
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'system': {'id': 'local-system', 'name': 'Local system'},
+        'preferences': [
+          {'key': 'theme_mode', 'value': 'light'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.text('Conflicts found'));
+
+    expect(find.textContaining('Some app preferences differ'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository._backgroundJobs, isEmpty);
   });
 
   testWidgets('opens failed import job details and copies full error', (
@@ -3532,6 +5967,8 @@ void main() {
     await tester.tap(find.text('simplyplural.json'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Archive import'), findsOneWidget);
+    expect(find.text('Simply Plural'), findsWidgets);
     expect(find.text('Error'), findsOneWidget);
     expect(find.textContaining('FOREIGN KEY constraint failed'), findsWidgets);
 
@@ -3539,6 +5976,44 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Full error copied'), findsOneWidget);
+  });
+
+  testWidgets('pasted import and preview survive visiting another section', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    const archive = '{"members":[{"_id":"sp-member-1","name":"Iris"}]}';
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      archive,
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+
+    await openDrawerSection(tester, 'Members');
+    await openDrawerSection(tester, 'Import / Export');
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    expect(find.textContaining('1 members'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('paste-import-json-field')),
+          )
+          .controller
+          ?.text,
+      archive,
+    );
   });
 
   testWidgets('pasted JSON creates an import preview', (tester) async {
@@ -3626,6 +6101,102 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Preview ready'), findsOneWidget);
+  });
+
+  testWidgets('switching to PluralKit live keeps pasted input isolated', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Import / Export'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'members': [
+          {'_id': 'sp-member-1', 'name': 'Iris'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(find.text('pasted-import.json'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('paste-import-json-field')),
+          )
+          .controller!
+          .text,
+      contains('sp-member-1'),
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(find.text('pasted-import.json'), findsNothing);
+    expect(find.textContaining('Preview ready'), findsNothing);
+    final previewButton = find.widgetWithText(OutlinedButton, 'Preview import');
+    expect(tester.widget<OutlinedButton>(previewButton).onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('pluralkit-token-field')),
+      'pk;test-token',
+    );
+    await tester.pump();
+    expect(tester.widget<OutlinedButton>(previewButton).onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simply Plural').last);
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    expect(find.text('pasted-import.json'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(find.text('pasted-import.json'), findsNothing);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('pluralkit-token-field')),
+          )
+          .controller!
+          .text,
+      'pk;test-token',
+    );
+
+    await openDrawerSection(tester, 'Members');
+    await openDrawerSection(tester, 'Import / Export');
+    expect(find.text('pasted-import.json'), findsOneWidget);
+    expect(find.textContaining('Preview ready'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('import-source-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PluralKit live').last);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('pluralkit-token-field')),
+          )
+          .controller!
+          .text,
+      isEmpty,
+    );
   });
 
   testWidgets('detects renamed import members by their mapped source ID', (
@@ -3880,6 +6451,28 @@ void main() {
     expect(confirmationField.controller!.text, isEmpty);
     expect(passphraseField.obscureText, isFalse);
     expect(find.textContaining('192 bits of randomness'), findsOneWidget);
+    final priorClipboard = copiedArchive;
+    await tester.tap(
+      find.byKey(const ValueKey('copy-archive-recovery-code-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Clipboard history and other apps may keep this code',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(copiedArchive, priorClipboard);
+    await tester.tap(
+      find.byKey(const ValueKey('copy-archive-recovery-code-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Copy recovery code'));
+    await tester.pumpAndSettle();
+    expect(copiedArchive, passphraseField.controller!.text);
+    expect(find.textContaining('Recovery code copied.'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('encrypted-export-confirm-field')),
       'not-the-generated-code',
@@ -3954,16 +6547,28 @@ Future<void> openDrawerSection(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> openDashboardFrontHistory(WidgetTester tester) async {
+  final target = find.text('Front History');
+  if (!tester.any(target)) {
+    await tester.scrollUntilVisible(
+      target,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
+  await tester.pumpAndSettle();
+}
+
 class FakeHavenRepository implements HavenRepository {
   FakeHavenRepository(
     this._snapshot, {
     this.emitCustomizationOnWatch = true,
     this._localArchiveJson,
   }) {
-    _controller = StreamController<HomeSnapshot>.broadcast(
-      sync: true,
-      onListen: () => _controller.add(_snapshot),
-    );
+    _controller = StreamController<HomeSnapshot>.broadcast(sync: true);
     _customizationController = StreamController<AppCustomization>.broadcast(
       sync: true,
     );
@@ -4076,6 +6681,8 @@ class FakeHavenRepository implements HavenRepository {
   List<ChatCategorySummary> _chatCategories = const [];
   List<ChatChannelSummary> _chatChannels = const [];
   List<ReminderSummary> _reminders = const [];
+  bool failReminderSave = false;
+  Completer<void>? reminderSaveGate;
   List<CustomFieldSummary> _customFields = const [];
   List<CustomFieldValueSummary> _customFieldValues = const [];
   List<PollSummary> _polls = const [];
@@ -4124,7 +6731,10 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<HomeSnapshot> watchHomeSnapshot() => _controller.stream;
+  Stream<HomeSnapshot> watchHomeSnapshot() async* {
+    yield _snapshot;
+    yield* _controller.stream;
+  }
 
   @override
   Stream<List<MemberSummary>> watchMembers({
@@ -4163,8 +6773,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<MemberSummary>> watchCurrentFrontMembers() {
-    return _currentFrontMembersController.stream.map(List.unmodifiable);
+  Stream<List<MemberSummary>> watchCurrentFrontMembers() async* {
+    yield List.unmodifiable(_currentFrontMembers());
+    await for (final members in _currentFrontMembersController.stream) {
+      yield List.unmodifiable(members);
+    }
   }
 
   @override
@@ -4274,6 +6887,19 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<AppCustomization> loadCustomization() async => _customization;
+
+  final portablePreferenceValues = <String, String>{};
+
+  @override
+  Future<bool> hasPortablePreferenceConflict(
+    Map<String, String> imported,
+  ) async {
+    return imported.entries.any(
+      (entry) =>
+          portablePreferenceValues.containsKey(entry.key) &&
+          portablePreferenceValues[entry.key] != entry.value,
+    );
+  }
 
   @override
   Future<void> setThemeMode(HavenThemeMode mode) async {
@@ -4402,7 +7028,14 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
-    _customization = _customization.copyWith(dashboardShortcutIds: shortcutIds);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: shortcutIds,
+      dashboardShortcutOrderIds: [
+        ...shortcutIds,
+        for (final id in _customization.dashboardShortcutOrderIds)
+          if (!shortcutIds.contains(id)) id,
+      ],
+    );
     _customizationController.add(_customization);
   }
 
@@ -4441,19 +7074,28 @@ class FakeHavenRepository implements HavenRepository {
 
   @override
   Future<void> setDashboardShortcutVisible(String shortcutId, bool visible) {
-    final ids = _customization.dashboardShortcutIds.toList();
-    final existingIndex = ids.indexOf(shortcutId);
-    if (visible && existingIndex == -1) {
-      ids.add(shortcutId);
-    } else if (!visible && existingIndex != -1) {
-      ids.removeAt(existingIndex);
+    final visibleIds = _customization.dashboardShortcutIds.toSet();
+    final order = _customization.dashboardShortcutOrderIds.toList();
+    if (!order.contains(shortcutId)) order.add(shortcutId);
+    if (visible) {
+      visibleIds.add(shortcutId);
+    } else {
+      visibleIds.remove(shortcutId);
     }
-    return setDashboardShortcutIds(ids);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: [
+        for (final id in order)
+          if (visibleIds.contains(id)) id,
+      ],
+      dashboardShortcutOrderIds: order,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
   Future<void> moveDashboardShortcut(String shortcutId, int delta) {
-    final ids = _customization.dashboardShortcutIds.toList();
+    final ids = _customization.dashboardShortcutIds;
     final index = ids.indexOf(shortcutId);
     if (index == -1 || delta == 0) {
       return Future.value();
@@ -4462,14 +7104,29 @@ class FakeHavenRepository implements HavenRepository {
     if (newIndex == index) {
       return Future.value();
     }
-    final id = ids.removeAt(index);
-    ids.insert(newIndex, id);
-    return setDashboardShortcutIds(ids);
+    final order = _customization.dashboardShortcutOrderIds.toList();
+    order.remove(shortcutId);
+    final neighbourIndex = order.indexOf(ids[newIndex]);
+    order.insert(delta < 0 ? neighbourIndex : neighbourIndex + 1, shortcutId);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: [
+        for (final id in order)
+          if (ids.contains(id)) id,
+      ],
+      dashboardShortcutOrderIds: order,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
   Future<void> resetDashboardShortcuts() {
-    return setDashboardShortcutIds(defaultDashboardShortcutIds);
+    _customization = _customization.copyWith(
+      dashboardShortcutIds: defaultDashboardShortcutIds,
+      dashboardShortcutOrderIds: defaultDashboardShortcutOrderIds,
+    );
+    _customizationController.add(_customization);
+    return Future.value();
   }
 
   @override
@@ -4702,7 +7359,6 @@ class FakeHavenRepository implements HavenRepository {
       return const [];
     }
 
-    _currentCustomFrontLabels = const [];
     _currentFrontMemberIds = [for (final member in selected) member.id];
     _emitCurrentFrontMembers();
     _emitSnapshot(
@@ -4792,6 +7448,40 @@ class FakeHavenRepository implements HavenRepository {
           entry,
     ];
     _frontHistoryController.add(_frontHistory);
+  }
+
+  @override
+  Future<void> endCustomFrontSession(String frontId) async {
+    final active = _frontHistory.where(
+      (entry) =>
+          entry.id == frontId && entry.isActive && entry.memberIds.isEmpty,
+    );
+    if (active.isEmpty) return;
+    final label = active.single.label;
+    _frontHistory = [
+      for (final entry in _frontHistory)
+        if (entry.id == frontId)
+          FrontHistoryEntry(
+            id: entry.id,
+            label: entry.label,
+            statusNote: entry.statusNote,
+            startedAt: entry.startedAt,
+            endedAt: DateTime(2026, 1, 1, 13),
+            memberIds: entry.memberIds,
+          )
+        else
+          entry,
+    ];
+    _frontHistoryController.add(_frontHistory);
+    _currentCustomFrontLabels = [
+      for (final current in _currentCustomFrontLabels)
+        if (current != label) current,
+    ];
+    _emitSnapshot(
+      currentFrontLabel: _currentFrontLabel(),
+      clearCurrentFront:
+          _currentCustomFrontLabels.isEmpty && _currentFrontMemberIds.isEmpty,
+    );
   }
 
   String _frontDraftLabel(FrontHistoryDraft draft) {
@@ -5323,14 +8013,19 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<String?> saveReminder(ReminderDraft draft) async {
+  Future<String?> saveReminder(
+    ReminderDraft draft, {
+    String? reminderId,
+  }) async {
+    if (failReminderSave) throw StateError('Local write failed');
+    await reminderSaveGate?.future;
     final title = draft.title.trim();
     final schedule = draft.scheduleText.trim();
     if (title.isEmpty || schedule.isEmpty) {
       return null;
     }
 
-    final id = 'fake-reminder-${_reminders.length + 1}';
+    final id = reminderId ?? 'fake-reminder-${_reminders.length + 1}';
     _reminders = [
       ReminderSummary(
         id: id,
@@ -5348,7 +8043,8 @@ class FakeHavenRepository implements HavenRepository {
         enabled: draft.enabled,
         updatedAt: DateTime(2026),
       ),
-      ..._reminders,
+      for (final reminder in _reminders)
+        if (reminder.id != id) reminder,
     ];
     _remindersController.add(_reminders);
     return id;
@@ -5409,6 +8105,7 @@ class FakeHavenRepository implements HavenRepository {
         question: question,
         description: _nullIfBlank(draft.description),
         kind: draft.kind,
+        voteMode: draft.voteMode,
         closed: false,
         updatedAt: DateTime(2026),
         options: [
@@ -5427,7 +8124,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Future<void> togglePollOption(String pollId, String optionId) async {
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  }) async {
     _polls = [
       for (final poll in _polls)
         if (poll.id == pollId && !poll.closed)
@@ -5436,6 +8137,7 @@ class FakeHavenRepository implements HavenRepository {
             question: poll.question,
             description: poll.description,
             kind: poll.kind,
+            voteMode: poll.voteMode,
             closed: poll.closed,
             updatedAt: DateTime(2026),
             options: [
@@ -5449,6 +8151,20 @@ class FakeHavenRepository implements HavenRepository {
                       : option.id == optionId
                       ? !option.selected
                       : option.selected,
+                  memberIds:
+                      poll.voteMode == PollVoteMode.perMember &&
+                          memberId != null
+                      ? {
+                          for (final id in option.memberIds)
+                            if (id != memberId ||
+                                (poll.kind == PollKind.multipleChoice &&
+                                    option.id != optionId))
+                              id,
+                          if (option.id == optionId &&
+                              !option.memberIds.contains(memberId))
+                            memberId,
+                        }
+                      : option.memberIds,
                 ),
             ],
           )
@@ -5468,6 +8184,7 @@ class FakeHavenRepository implements HavenRepository {
             question: poll.question,
             description: poll.description,
             kind: poll.kind,
+            voteMode: poll.voteMode,
             closed: true,
             options: poll.options,
             updatedAt: DateTime(2026),
@@ -5499,6 +8216,28 @@ class FakeHavenRepository implements HavenRepository {
       ),
       ..._notificationEvents,
     ];
+    _notificationEventsController.add(_notificationEvents);
+  }
+
+  @override
+  Future<void> markNotificationRead(String eventId) async {
+    _notificationEvents = [
+      for (final event in _notificationEvents)
+        NotificationEventSummary(
+          id: event.id,
+          kind: event.kind,
+          title: event.title,
+          body: event.body,
+          readAt: event.id == eventId ? DateTime(2026) : event.readAt,
+          createdAt: event.createdAt,
+        ),
+    ];
+    _notificationEventsController.add(_notificationEvents);
+  }
+
+  @override
+  Future<void> clearNotificationHistory() async {
+    _notificationEvents = const [];
     _notificationEventsController.add(_notificationEvents);
   }
 
@@ -5733,14 +8472,19 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<Tag>> watchTagsForMember(String memberId) {
-    return _memberTagsController.stream.map((assignments) {
+  Stream<List<Tag>> watchTagsForMember(String memberId) async* {
+    List<Tag> assignedTags(Map<String, List<String>> assignments) {
       final ids = assignments[memberId]?.toSet() ?? const <String>{};
       return List.unmodifiable([
         for (final tag in _tags)
           if (ids.contains(tag.id)) tag,
       ]);
-    });
+    }
+
+    yield assignedTags(_memberTagIds);
+    await for (final assignments in _memberTagsController.stream) {
+      yield assignedTags(assignments);
+    }
   }
 
   @override

@@ -24,6 +24,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
+import 'test_repository.dart';
+
 /// Creates a raw SQLite file at [path], executes [statements] to build a
 /// historical schema shape, and stamps `PRAGMA user_version` to [version].
 void _seedLegacyDatabase({
@@ -635,13 +637,75 @@ void main() {
             'FROM custom_field_value_migration_provenance LIMIT 0',
           )
           .get();
-      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 28);
     },
   );
 
+  test('adds member voting to a version-26 poll database', () async {
+    final dbPath = '${tempDir.path}/legacy_v26.sqlite';
+    final seed = AppDatabase(NativeDatabase(File(dbPath)));
+    await seed.customSelect('SELECT 1').getSingle();
+    await seed.close();
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    try {
+      raw.execute('DROP TABLE poll_member_votes');
+      raw.execute('ALTER TABLE polls DROP COLUMN vote_mode');
+      raw.execute('ALTER TABLE poll_vote_events DROP COLUMN member_id');
+      raw.userVersion = 26;
+    } finally {
+      raw.close();
+    }
+
+    final upgraded = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(upgraded.close);
+    await upgraded.customSelect('SELECT vote_mode FROM polls LIMIT 0').get();
+    await upgraded
+        .customSelect('SELECT member_id FROM poll_vote_events LIMIT 0')
+        .get();
+    await upgraded
+        .customSelect(
+          'SELECT poll_id, option_id, member_id FROM poll_member_votes LIMIT 0',
+        )
+        .get();
+    expect(await _value(upgraded, 'PRAGMA user_version', 'user_version'), 28);
+  });
+
+  test('adds nullable journal authors to a version-27 database', () async {
+    final dbPath = '${tempDir.path}/legacy_v27.sqlite';
+    final seed = AppDatabase(NativeDatabase(File(dbPath)));
+    await testRepository(seed).ensureLocalSystem();
+    await seed.close();
+
+    final raw = sqlite3.sqlite3.open(dbPath);
+    try {
+      raw.execute('ALTER TABLE journal_entries DROP COLUMN author_member_id');
+      raw.execute(
+        'INSERT INTO journal_entries '
+        '(id, system_id, title, body, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
+        ['old-journal', localSystemId, 'Old title', 'Old body', 1, 1],
+      );
+      raw.userVersion = 27;
+    } finally {
+      raw.close();
+    }
+
+    final upgraded = AppDatabase(NativeDatabase(File(dbPath)));
+    addTearDown(upgraded.close);
+    final row = await upgraded
+        .customSelect(
+          "SELECT body, author_member_id FROM journal_entries WHERE id = 'old-journal'",
+        )
+        .getSingle();
+    expect(row.read<String>('body'), 'Old body');
+    expect(row.readNullable<String>('author_member_id'), isNull);
+    expect(await _value(upgraded, 'PRAGMA user_version', 'user_version'), 28);
+  });
+
   test('refuses a newer schema without changing its version', () async {
     final dbPath = '${tempDir.path}/newer_schema.sqlite';
-    _seedLegacyDatabase(path: dbPath, version: 27, statements: const []);
+    _seedLegacyDatabase(path: dbPath, version: 29, statements: const []);
 
     final database = AppDatabase(NativeDatabase(File(dbPath)));
     addTearDown(database.close);
@@ -652,7 +716,7 @@ void main() {
 
     final raw = sqlite3.sqlite3.open(dbPath);
     try {
-      expect(raw.userVersion, 27);
+      expect(raw.userVersion, 29);
     } finally {
       raw.close();
     }
@@ -803,7 +867,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 26);
+    expect(version.data['user_version'], 28);
   });
 
   test('migrates a version-8 database (right after the largest migration '
@@ -876,7 +940,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(version.data['user_version'], 26);
+    expect(version.data['user_version'], 28);
   });
 
   test('a real row written before migration survives the current upgrade '
@@ -998,7 +1062,7 @@ void main() {
       expect(reminder.data['body'], 'legacy reminder');
       expect(reminder.data['trigger_type'], 'repeated');
       expect(reminder.data['schedule_kind'], isNull);
-      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 28);
     },
   );
 
@@ -1088,7 +1152,7 @@ void main() {
         ),
         'Grounded',
       );
-      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 28);
     },
   );
 
@@ -1192,7 +1256,7 @@ void main() {
         ),
         0,
       );
-      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 26);
+      expect(await _value(database, 'PRAGMA user_version', 'user_version'), 28);
     },
   );
 
@@ -1403,6 +1467,6 @@ void main() {
       ),
       'front-1',
     );
-    expect(await value('PRAGMA user_version', 'user_version'), 26);
+    expect(await value('PRAGMA user_version', 'user_version'), 28);
   });
 }

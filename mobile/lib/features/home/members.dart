@@ -18,8 +18,24 @@ class MembersPage extends StatefulWidget {
 
 class _MembersPageState extends State<MembersPage> {
   final _searchController = TextEditingController();
+  late Stream<List<MemberSummary>> _currentFrontStream;
   String _query = '';
   String _filter = 'all';
+  bool _sortByName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFrontStream = widget.repository.watchCurrentFrontMembers();
+  }
+
+  @override
+  void didUpdateWidget(covariant MembersPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      _currentFrontStream = widget.repository.watchCurrentFrontMembers();
+    }
+  }
 
   @override
   void dispose() {
@@ -57,76 +73,127 @@ class _MembersPageState extends State<MembersPage> {
         if (!membersSnapshot.hasData) {
           return const SpPage(children: [SpDataLoadState()]);
         }
-        final members = _filteredMembers(membersSnapshot.data!);
-        final visualTheme = _visualThemeOf(context);
-        final profileLayout =
-            visualTheme == HavenVisualTheme.simplyPlural ||
-            visualTheme == HavenVisualTheme.ampersand;
-        if (profileLayout) {
-          return _buildProfileLayout(
-            context,
-            l10n,
-            filters,
-            members,
-            deleted: _filter == 'deleted',
+        Widget showMembers(Set<String> activeMemberIds) {
+          final members = _filteredMembers(
+            membersSnapshot.data!,
+            activeMemberIds,
+          );
+          final nameCounts = <String, int>{};
+          for (final member in membersSnapshot.data!) {
+            final name = memberNameComparisonKey(member.displayName);
+            nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+          }
+          final visualTheme = _visualThemeOf(context);
+          final profileLayout =
+              visualTheme == HavenVisualTheme.simplyPlural ||
+              visualTheme == HavenVisualTheme.ampersand;
+          if (profileLayout) {
+            return _buildProfileLayout(
+              context,
+              l10n,
+              filters,
+              members,
+              activeMemberIds: activeMemberIds,
+              nameCounts: nameCounts,
+              deleted: _filter == 'deleted',
+            );
+          }
+
+          return SpPage(
+            children: [
+              SpSearchField(
+                hintText: l10n.searchMembersHint,
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 12),
+              SpFilterRow(
+                filters: filters.values.toList(growable: false),
+                selected: filters[_filter]!,
+                onSelected: (label) => setState(
+                  () => _filter = filters.entries
+                      .firstWhere((entry) => entry.value == label)
+                      .key,
+                ),
+              ),
+              _sortControl(l10n),
+              const SizedBox(height: 12),
+              SpCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SpSectionHeader(
+                      title: l10n.navigationMembers,
+                      trailing: StatusPill(
+                        text: '${widget.snapshot?.memberCount ?? 0}',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (members.isEmpty)
+                      SpEmptyState(
+                        title: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.noMembersSavedLocally
+                            : l10n.noMatchingMembers,
+                        body: _query.trim().isEmpty && _filter == 'all'
+                            ? l10n.membersEmptyBody
+                            : l10n.tryAnotherSearchOrFilter,
+                      )
+                    else
+                      for (final member in members) ...[
+                        _memberTile(
+                          member,
+                          deleted: _filter == 'deleted',
+                          isFronting: activeMemberIds.contains(member.id),
+                          duplicateName:
+                              (nameCounts[memberNameComparisonKey(
+                                    member.displayName,
+                                  )] ??
+                                  0) >
+                              1,
+                        ),
+                        if (member != members.last) const Divider(height: 1),
+                      ],
+                    const SizedBox(height: 14),
+                    SpActionRow(
+                      primary: l10n.addMemberButton,
+                      secondary: l10n.importTitle,
+                      onPrimary: () =>
+                          showAddMemberSheet(context, widget.repository),
+                      onSecondary: widget.onImport,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         }
 
-        return SpPage(
-          children: [
-            SpSearchField(
-              hintText: l10n.searchMembersHint,
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            const SizedBox(height: 12),
-            SpFilterRow(
-              filters: filters.values.toList(growable: false),
-              selected: filters[_filter]!,
-              onSelected: (label) => setState(
-                () => _filter = filters.entries
-                    .firstWhere((entry) => entry.value == label)
-                    .key,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SpCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SpSectionHeader(
-                    title: l10n.navigationMembers,
-                    trailing: StatusPill(
-                      text: '${widget.snapshot?.memberCount ?? 0}',
+        return StreamBuilder<List<MemberSummary>>(
+          stream: _currentFrontStream,
+          builder: (context, activeSnapshot) {
+            if (activeSnapshot.hasError && !activeSnapshot.hasData) {
+              if (_filter == 'fronting') {
+                return SpPage(
+                  children: [
+                    SpDataLoadState(
+                      error: activeSnapshot.error,
+                      onRetry: () => setState(() {}),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (members.isEmpty)
-                    SpEmptyState(
-                      title: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.noMembersSavedLocally
-                          : l10n.noMatchingMembers,
-                      body: _query.trim().isEmpty && _filter == 'all'
-                          ? l10n.membersEmptyBody
-                          : l10n.tryAnotherSearchOrFilter,
-                    )
-                  else
-                    for (final member in members) ...[
-                      _memberTile(member, deleted: _filter == 'deleted'),
-                      if (member != members.last) const Divider(height: 1),
-                    ],
-                  const SizedBox(height: 14),
-                  SpActionRow(
-                    primary: l10n.addMemberButton,
-                    secondary: l10n.importTitle,
-                    onPrimary: () =>
-                        showAddMemberSheet(context, widget.repository),
-                    onSecondary: widget.onImport,
-                  ),
-                ],
-              ),
-            ),
-          ],
+                  ],
+                );
+              }
+              return showMembers(const {});
+            }
+            if (!activeSnapshot.hasData) {
+              if (_filter == 'fronting') {
+                return const SpPage(children: [SpDataLoadState()]);
+              }
+              return showMembers(const {});
+            }
+            return showMembers(
+              activeSnapshot.data!.map((member) => member.id).toSet(),
+            );
+          },
         );
       },
     );
@@ -137,6 +204,8 @@ class _MembersPageState extends State<MembersPage> {
     AppLocalizations l10n,
     Map<String, String> filters,
     List<MemberSummary> members, {
+    required Set<String> activeMemberIds,
+    required Map<String, int> nameCounts,
     required bool deleted,
   }) {
     final visualTheme = _visualThemeOf(context);
@@ -165,6 +234,7 @@ class _MembersPageState extends State<MembersPage> {
                       .key,
                 ),
               ),
+              _sortControl(l10n),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -210,7 +280,17 @@ class _MembersPageState extends State<MembersPage> {
                     horizontal: 10,
                     vertical: 6,
                   ),
-                  child: _memberTile(members[index], deleted: deleted),
+                  child: _memberTile(
+                    members[index],
+                    deleted: deleted,
+                    isFronting: activeMemberIds.contains(members[index].id),
+                    duplicateName:
+                        (nameCounts[memberNameComparisonKey(
+                              members[index].displayName,
+                            )] ??
+                            0) >
+                        1,
+                  ),
                 ),
               ),
             ),
@@ -229,35 +309,76 @@ class _MembersPageState extends State<MembersPage> {
     );
   }
 
-  Widget _memberTile(MemberSummary member, {required bool deleted}) {
+  Widget _memberTile(
+    MemberSummary member, {
+    required bool deleted,
+    required bool isFronting,
+    required bool duplicateName,
+  }) {
     if (deleted) {
       return DeletedMemberListTile(
         member: member,
         repository: widget.repository,
+        duplicateName: duplicateName,
       );
     }
-    return MemberListTile(member: member, repository: widget.repository);
+    return MemberListTile(
+      member: member,
+      repository: widget.repository,
+      isFronting: isFronting,
+      duplicateName: duplicateName,
+    );
   }
 
-  List<MemberSummary> _filteredMembers(List<MemberSummary> members) {
-    final frontNames = (widget.snapshot?.currentFrontLabel ?? '')
-        .split(',')
-        .map((name) => name.trim().toLowerCase())
-        .where((name) => name.isNotEmpty)
-        .toSet();
+  Widget _sortControl(AppLocalizations l10n) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: PopupMenuButton<bool>(
+        tooltip: l10n.sortMembers,
+        initialValue: _sortByName,
+        onSelected: (value) => setState(() => _sortByName = value),
+        itemBuilder: (context) => [
+          PopupMenuItem(value: false, child: Text(l10n.savedMemberOrder)),
+          PopupMenuItem(value: true, child: Text(l10n.memberNameOrder)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.sort_rounded, size: 20),
+              const SizedBox(width: 6),
+              Text(_sortByName ? l10n.memberNameOrder : l10n.savedMemberOrder),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    return [
+  List<MemberSummary> _filteredMembers(
+    List<MemberSummary> members,
+    Set<String> activeMemberIds,
+  ) {
+    final filtered = [
       for (final member in members)
         if (_matchesQuery(_query, [member.displayName, member.pronouns]) &&
             switch (_filter) {
               'archived' => member.archived,
-              'fronting' => frontNames.contains(
-                member.displayName.toLowerCase(),
-              ),
+              'fronting' => activeMemberIds.contains(member.id),
               _ => true,
             })
           member,
     ];
+    if (_sortByName) {
+      filtered.sort((a, b) {
+        final byName = a.displayName.toLowerCase().compareTo(
+          b.displayName.toLowerCase(),
+        );
+        return byName != 0 ? byName : a.id.compareTo(b.id);
+      });
+    }
+    return filtered;
   }
 }
 
@@ -266,10 +387,12 @@ class DeletedMemberListTile extends StatelessWidget {
     super.key,
     required this.member,
     required this.repository,
+    required this.duplicateName,
   });
 
   final MemberSummary member;
   final HavenRepository repository;
+  final bool duplicateName;
 
   @override
   Widget build(BuildContext context) {
@@ -293,10 +416,30 @@ class DeletedMemberListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: l10n.memberActionsTooltip,
+          tooltip: duplicateName
+              ? l10n.memberActionsFor(
+                  member.displayName,
+                  member.id.substring(
+                    member.id.length > 8 ? member.id.length - 8 : 0,
+                  ),
+                )
+              : l10n.memberActionsForName(member.displayName),
           onSelected: (value) async {
             if (value == 'restore') {
               await repository.restoreDeletedMember(member.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context)
+                  ..removeCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        member.archived
+                            ? l10n.memberRestoredToArchive(member.displayName)
+                            : l10n.memberRestored(member.displayName),
+                      ),
+                    ),
+                  );
+              }
             } else if (value == 'purge') {
               if (!context.mounted) return;
               confirmDelete(
@@ -322,10 +465,14 @@ class MemberListTile extends StatelessWidget {
     super.key,
     required this.member,
     required this.repository,
+    required this.isFronting,
+    required this.duplicateName,
   });
 
   final MemberSummary member;
   final HavenRepository repository;
+  final bool isFronting;
+  final bool duplicateName;
 
   @override
   Widget build(BuildContext context) {
@@ -356,10 +503,20 @@ class MemberListTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!member.archived)
+            if (isFronting)
+              IconButton(
+                key: ValueKey('end-front-member-${member.id}'),
+                tooltip: l10n.endMemberFrontButton(member.displayName),
+                onPressed: () =>
+                    _endOneMemberFront(context, repository, member),
+                icon: const Icon(Icons.stop_circle_outlined),
+              )
+            else if (!member.archived)
               _FrontActionButton(
-                repository: repository,
                 actionKey: 'member-${member.id}',
+                targetName: member.displayName,
+                targetId: member.id,
+                showId: duplicateName,
                 onPressed: (action) async {
                   final reminders = action == HavenFrontAction.add
                       ? await repository.addFrontMembers([member.id])
@@ -370,13 +527,26 @@ class MemberListTile extends StatelessWidget {
                       repository,
                       reminders,
                     );
+                    if (context.mounted) {
+                      await _syncFrontNotification(context, repository);
+                    }
                   }
                 },
               ),
             PopupMenuButton<String>(
-              tooltip: l10n.memberActionsTooltip,
+              tooltip: duplicateName
+                  ? l10n.memberActionsFor(
+                      member.displayName,
+                      member.id.substring(
+                        member.id.length > 8 ? member.id.length - 8 : 0,
+                      ),
+                    )
+                  : l10n.memberActionsForName(member.displayName),
               onSelected: (value) async {
-                if (value == 'front') {
+                if (value == 'end-front') {
+                  await _endOneMemberFront(context, repository, member);
+                } else if (value == 'front') {
+                  if (!await _confirmReplaceCurrentFront(context)) return;
                   final reminders = await repository.setFrontMembers([
                     member.id,
                   ]);
@@ -386,6 +556,9 @@ class MemberListTile extends StatelessWidget {
                       repository,
                       reminders,
                     );
+                    if (context.mounted) {
+                      await _syncFrontNotification(context, repository);
+                    }
                   }
                 } else if (value == 'edit') {
                   final fullMember = await _fullMember();
@@ -400,20 +573,37 @@ class MemberListTile extends StatelessWidget {
                     initialDraft: _duplicateMemberDraft(fullMember, l10n),
                   );
                 } else if (value == 'archive') {
-                  repository.archiveMember(member.id);
+                  await repository.archiveMember(member.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.memberArchived(member.displayName),
+                          ),
+                        ),
+                      );
+                  }
                 } else if (value == 'restore') {
-                  repository.restoreMember(member.id);
+                  await repository.restoreMember(member.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.memberRestored(member.displayName),
+                          ),
+                        ),
+                      );
+                  }
                 } else if (value == 'delete') {
-                  final impact = await repository.previewMemberDeletion(
-                    member.id,
-                  );
                   if (!context.mounted) return;
                   confirmDelete(
                     context,
                     title: l10n.deleteMemberTitle,
-                    body:
-                        '${l10n.deleteMemberBody(member.displayName)}\n\n'
-                        '${l10n.deleteMemberImpact(impact.groupLinks, impact.tagLinks, impact.namedFrontLinks, impact.privacyBucketLinks, impact.customFieldValues, impact.activeFrontSessions, impact.frontHistoryLinks, impact.notes, impact.messages, impact.journals, impact.reminderTriggers)}',
+                    body: l10n.deleteMemberBody(member.displayName),
                     onDelete: () => repository.deleteMember(member.id),
                     confirmLabel: l10n.removeMemberButton,
                     failureMessage: (error) =>
@@ -422,6 +612,11 @@ class MemberListTile extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
+                if (isFronting)
+                  PopupMenuItem(
+                    value: 'end-front',
+                    child: Text(l10n.endMemberFrontButton(member.displayName)),
+                  ),
                 if (!member.archived)
                   PopupMenuItem(
                     value: 'front',
@@ -461,6 +656,7 @@ class MemberListTile extends StatelessWidget {
     final privacy = member.privacy?.trim();
     final parts = [
       pronouns,
+      if (isFronting) l10n.frontingFilter,
       if (privacy != null && privacy.isNotEmpty) privacy,
       if (member.archived) l10n.archivedStatus,
     ];
@@ -479,55 +675,117 @@ class MemberListTile extends StatelessWidget {
 
 class _FrontActionButton extends StatelessWidget {
   const _FrontActionButton({
-    required this.repository,
     required this.actionKey,
+    required this.targetName,
+    required this.targetId,
     required this.onPressed,
+    this.showId = false,
   });
 
-  final HavenRepository repository;
   final String actionKey;
+  final String targetName;
+  final String targetId;
+  final bool showId;
   final Future<void> Function(HavenFrontAction action) onPressed;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return StreamBuilder<AppCustomization>(
-      stream: repository.watchCustomization(),
-      initialData: AppCustomization.defaults,
-      builder: (context, snapshot) {
-        final action = snapshot.data?.frontAction ?? HavenFrontAction.add;
-        final isAdd = action == HavenFrontAction.add;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              key: ValueKey('front-action-button-$actionKey'),
-              tooltip: isAdd ? l10n.addToFrontButton : l10n.setAsFrontButton,
-              onPressed: () => onPressed(action),
-              icon: Icon(isAdd ? Icons.add_rounded : Icons.play_arrow_rounded),
-            ),
-            PopupMenuButton<HavenFrontAction>(
-              key: ValueKey('front-action-picker-$actionKey'),
-              tooltip: l10n.frontActionPickerTooltip,
-              onSelected: repository.setFrontAction,
-              itemBuilder: (context) => [
-                CheckedPopupMenuItem(
-                  value: HavenFrontAction.add,
-                  checked: isAdd,
-                  child: Text(l10n.addToFrontButton),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: ValueKey('front-action-button-$actionKey'),
+          tooltip: showId
+              ? l10n.frontActionFor(
+                  l10n.addToFrontButton,
+                  targetName,
+                  _shortFrontId(targetId),
+                )
+              : l10n.frontActionForName(l10n.addToFrontButton, targetName),
+          onPressed: () => onPressed(HavenFrontAction.add),
+          icon: const Icon(Icons.add_rounded),
+        ),
+        IconButton(
+          key: ValueKey('front-action-replace-$actionKey'),
+          tooltip: showId
+              ? l10n.frontActionFor(
+                  l10n.replaceCurrentFrontButton,
+                  targetName,
+                  _shortFrontId(targetId),
+                )
+              : l10n.frontActionForName(
+                  l10n.replaceCurrentFrontButton,
+                  targetName,
                 ),
-                CheckedPopupMenuItem(
-                  value: HavenFrontAction.replace,
-                  checked: !isAdd,
-                  child: Text(l10n.setAsFrontButton),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+          onPressed: () async {
+            if (await _confirmReplaceCurrentFront(context)) {
+              await onPressed(HavenFrontAction.replace);
+            }
+          },
+          icon: const Icon(Icons.swap_horiz_rounded),
+        ),
+      ],
     );
   }
+}
+
+Future<bool> _confirmReplaceCurrentFront(BuildContext context) async {
+  final l10n = AppLocalizations.of(context);
+  return await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.replaceCurrentFrontButton),
+          content: Text(l10n.replaceCurrentFrontWarning),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.replaceCurrentFrontButton),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+}
+
+Future<bool> _endOneMemberFront(
+  BuildContext context,
+  HavenRepository repository,
+  MemberSummary member,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.endMemberFrontButton(member.displayName)),
+      content: Text(l10n.endMemberFrontWarning),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: Text(l10n.cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(l10n.endMemberFrontButton(member.displayName)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return false;
+  final active = await repository.watchCurrentFrontMembers().first;
+  if (!context.mounted || !active.any((current) => current.id == member.id)) {
+    return false;
+  }
+  await repository.setFrontMembers([
+    for (final current in active)
+      if (current.id != member.id) current.id,
+  ]);
+  if (context.mounted) await _syncFrontNotification(context, repository);
+  return true;
 }
 
 void showMemberProfileSheet(
@@ -718,26 +976,57 @@ class MemberProfileSheet extends StatelessWidget {
                     label: Text(l10n.shareAvatarTemporarilyButton),
                   ),
                 ],
-                if (!member.archived)
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final reminders = await repository.setFrontMembers([
-                        member.id,
-                      ]);
-                      if (context.mounted) {
-                        await deliverAfterFrontReminders(
-                          context,
-                          repository,
-                          reminders,
-                        );
-                      }
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.radio_button_checked_rounded),
-                    label: Text(l10n.setFrontButton),
-                  ),
+                StreamBuilder<List<MemberSummary>>(
+                  stream: repository.watchCurrentFrontMembers(),
+                  builder: (context, snapshot) {
+                    final isFronting =
+                        snapshot.data?.any(
+                          (current) => current.id == member.id,
+                        ) ??
+                        false;
+                    if (isFronting) {
+                      return OutlinedButton.icon(
+                        key: ValueKey('profile-end-front-${member.id}'),
+                        onPressed: () async {
+                          if (await _endOneMemberFront(
+                                context,
+                                repository,
+                                member,
+                              ) &&
+                              context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        icon: const Icon(Icons.stop_circle_outlined),
+                        label: Text(
+                          l10n.endMemberFrontButton(member.displayName),
+                        ),
+                      );
+                    }
+                    if (member.archived) return const SizedBox.shrink();
+                    return FilledButton.icon(
+                      onPressed: () async {
+                        if (!await _confirmReplaceCurrentFront(context)) return;
+                        final reminders = await repository.setFrontMembers([
+                          member.id,
+                        ]);
+                        if (context.mounted) {
+                          await deliverAfterFrontReminders(
+                            context,
+                            repository,
+                            reminders,
+                          );
+                          if (context.mounted) {
+                            await _syncFrontNotification(context, repository);
+                          }
+                        }
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.radio_button_checked_rounded),
+                      label: Text(l10n.setFrontButton),
+                    );
+                  },
+                ),
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
@@ -772,6 +1061,19 @@ class MemberProfileSheet extends StatelessWidget {
                     }
                     if (context.mounted) {
                       Navigator.pop(context);
+                    }
+                    if (hostContext.mounted) {
+                      ScaffoldMessenger.of(hostContext)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              member.archived
+                                  ? l10n.memberRestored(member.displayName)
+                                  : l10n.memberArchived(member.displayName),
+                            ),
+                          ),
+                        );
                     }
                   },
                   icon: Icon(
@@ -929,6 +1231,7 @@ void showMemberTagsSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    enableDrag: false,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) =>
@@ -954,8 +1257,34 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   final _nameController = TextEditingController();
   final _colorController = TextEditingController(text: '#F2C75C');
   final Set<String> _selectedTagIds = {};
+  final Set<String> _initialTagIds = {};
+  late final Stream<List<Tag>> _tagsStream;
+  late final Stream<List<Tag>> _memberTagsStream;
   bool _seeded = false;
   String? _error;
+
+  bool get _isDirty =>
+      _nameController.text.trim().isNotEmpty ||
+      !_selectedTagIds.containsAll(_initialTagIds) ||
+      !_initialTagIds.containsAll(_selectedTagIds);
+
+  @override
+  void initState() {
+    super.initState();
+    _tagsStream = widget.repository.watchTags();
+    _memberTagsStream = widget.repository.watchTagsForMember(widget.memberId);
+  }
+
+  Future<void> _tryDismiss() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void dispose() {
@@ -965,7 +1294,15 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -977,19 +1314,24 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
           18 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: StreamBuilder<List<Tag>>(
-          stream: widget.repository.watchTags(),
+          stream: _tagsStream,
           initialData: const [],
           builder: (context, allTagsSnapshot) {
             final allTags = allTagsSnapshot.data ?? const <Tag>[];
             return StreamBuilder<List<Tag>>(
-              stream: widget.repository.watchTagsForMember(widget.memberId),
-              initialData: const [],
+              stream: _memberTagsStream,
               builder: (context, memberTagsSnapshot) {
+                if (!memberTagsSnapshot.hasData) {
+                  return SpDataLoadState(error: memberTagsSnapshot.error);
+                }
                 final memberTags = memberTagsSnapshot.data ?? const <Tag>[];
                 if (!_seeded) {
                   _selectedTagIds
                     ..clear()
                     ..addAll(memberTags.map((tag) => tag.id));
+                  _initialTagIds
+                    ..clear()
+                    ..addAll(_selectedTagIds);
                   _seeded = true;
                 }
 
@@ -1113,18 +1455,18 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
     );
   }
 
-  Future<void> _createTag() async {
+  Future<bool> _createTag() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _error = AppLocalizations.of(context).nameTagFirstError);
-      return;
+      return false;
     }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
         () => _error = AppLocalizations.of(context).invalidHexColorError,
       );
-      return;
+      return false;
     }
     final now = DateTime.now().toUtc();
     final tag = Tag(
@@ -1137,23 +1479,31 @@ class _MemberTagsSheetState extends State<MemberTagsSheet> {
     );
     await widget.repository.saveTag(tag);
     if (!mounted) {
-      return;
+      return false;
     }
     setState(() {
       _selectedTagIds.add(tag.id);
       _nameController.clear();
       _error = null;
     });
+    return true;
   }
 
   Future<void> _deleteTag(Tag tag) async {
-    await widget.repository.deleteTag(tag.id);
-    if (mounted) {
-      setState(() => _selectedTagIds.remove(tag.id));
-    }
+    final l10n = AppLocalizations.of(context);
+    await confirmDelete(
+      context,
+      title: l10n.deleteTagTitle(tag.name),
+      body: l10n.deleteTagBody,
+      onDelete: () async {
+        await widget.repository.deleteTag(tag.id);
+        if (mounted) setState(() => _selectedTagIds.remove(tag.id));
+      },
+    );
   }
 
   Future<void> _save() async {
+    if (_nameController.text.trim().isNotEmpty && !await _createTag()) return;
     await widget.repository.setMemberTags(
       widget.memberId,
       _selectedTagIds.toList(growable: false),
@@ -1472,9 +1822,8 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
       textInputAction: multiline
           ? TextInputAction.newline
           : TextInputAction.done,
-      readOnly: type == 'date' || type == 'datetime',
+      readOnly: type == 'datetime',
       onTap: switch (type) {
-        'date' => _pickDate,
         'datetime' => _pickDateTime,
         _ => null,
       },
@@ -1483,9 +1832,15 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
         hintText: noChoices
             ? l10n.customFieldNoChoices
             : l10n.leaveBlankToClearHint,
+        helperText: type == 'date' ? l10n.customFieldDateFormat : null,
         errorText: _valueError,
         suffixIcon: switch (type) {
-          'date' || 'datetime' => const Icon(Icons.calendar_month_rounded),
+          'date' => IconButton(
+            tooltip: l10n.chooseDateButton,
+            onPressed: _pickDate,
+            icon: const Icon(Icons.calendar_month_rounded),
+          ),
+          'datetime' => const Icon(Icons.calendar_month_rounded),
           'url' => const Icon(Icons.link_rounded),
           'color' => const Icon(Icons.palette_outlined),
           'markdown' => const Icon(Icons.text_fields_rounded),
@@ -1517,6 +1872,28 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
           setState(() => _valueError = l10n.customFieldInvalidNumber);
           return;
         }
+      case 'date':
+        if (text.isNotEmpty && !_isValidDateOnly(text)) {
+          setState(() => _valueError = l10n.customFieldInvalidDate);
+          return;
+        }
+        value = text;
+      case 'url':
+        final uri = Uri.tryParse(text);
+        if (text.isNotEmpty &&
+            (uri == null ||
+                (uri.scheme != 'https' && uri.scheme != 'http') ||
+                uri.host.isEmpty)) {
+          setState(() => _valueError = l10n.customFieldInvalidLink);
+          return;
+        }
+        value = text;
+      case 'color':
+        if (text.isNotEmpty && _customFieldColor(text) == null) {
+          setState(() => _valueError = l10n.invalidHexColorError);
+          return;
+        }
+        value = text;
       case 'json':
         if (text.isEmpty) {
           value = null;
@@ -1599,6 +1976,16 @@ String _dateOnlyText(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-'
     '${date.month.toString().padLeft(2, '0')}-'
     '${date.day.toString().padLeft(2, '0')}';
+
+bool _isValidDateOnly(String text) {
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(text);
+  if (match == null) return false;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final date = DateTime.utc(year, month, day);
+  return date.year == year && date.month == month && date.day == day;
+}
 
 String _memberPronouns(MemberSummary member, AppLocalizations l10n) {
   final pronouns = member.pronouns?.trim();
@@ -1741,6 +2128,7 @@ void showMemberSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddMemberSheet(
       repository: repository,
@@ -1781,9 +2169,39 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   String? _folderId;
   final Set<String> _groupIds = {};
   String? _colorError;
+  String? _nameError;
   String? _avatarMessage;
+  bool _isSaving = false;
+  late String _initialSignature;
 
   bool get _isEditing => widget.member != null;
+  bool get _isDirty => _signature() != _initialSignature;
+
+  String _signature() => jsonEncode([
+    _nameController.text,
+    _pronounsController.text,
+    _birthdayController.text,
+    _emojiController.text,
+    _privacyController.text,
+    _descriptionController.text,
+    _avatarController.text,
+    _pluralKitController.text,
+    _colorController.text,
+    _folderId,
+    _groupIds.toList()..sort(),
+  ]);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -1795,11 +2213,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
         _seedFromDraft(draft);
       }
       _attachAvatarPreviewListeners();
+      _initialSignature = _signature();
       return;
     }
 
     _seedFromMember(member);
     _attachAvatarPreviewListeners();
+    _initialSignature = _signature();
   }
 
   void _seedFromMember(MemberSummary member) {
@@ -1868,7 +2288,15 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final previewName = _nameController.text.trim().isEmpty
@@ -1895,7 +2323,13 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               controller: _nameController,
               autofocus: true,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+              decoration: InputDecoration(
+                labelText: l10n.nameFieldLabel,
+                errorText: _nameError,
+              ),
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
             ),
             const SizedBox(height: 10),
             TextField(
@@ -2017,44 +2451,42 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               builder: (context, snapshot) {
                 final groups = snapshot.data ?? const <GroupSummary>[];
                 final groupIds = groups.map((group) => group.id).toSet();
-                if (groups.isNotEmpty &&
-                    _folderId != null &&
-                    !groupIds.contains(_folderId)) {
-                  _folderId = null;
-                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DropdownButtonFormField<String?>(
-                      initialValue: null,
-                      decoration: InputDecoration(
-                        labelText: l10n.primaryGroupFieldLabel,
+                    KeyedSubtree(
+                      key: ValueKey(
+                        'primary-group-${groups.map((group) => group.id).join(',')}-$_folderId',
                       ),
-                      hint: Text(
-                        groups
-                                .where((group) => group.id == _folderId)
-                                .firstOrNull
-                                ?.name ??
-                            l10n.noPrimaryGroupOption,
-                      ),
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(l10n.noPrimaryGroupOption),
+                      child: DropdownButtonFormField<String?>(
+                        key: const ValueKey('member-primary-group-field'),
+                        initialValue: _folderId,
+                        decoration: InputDecoration(
+                          labelText: l10n.primaryGroupFieldLabel,
                         ),
-                        for (final group in groups)
+                        items: [
                           DropdownMenuItem<String?>(
-                            value: group.id,
-                            child: Text(group.name),
+                            value: null,
+                            child: Text(l10n.noPrimaryGroupOption),
                           ),
-                      ],
-                      onChanged: (value) => setState(() {
-                        _folderId = value;
-                        if (_folderId != null) {
-                          _groupIds.add(_folderId!);
-                        }
-                      }),
+                          if (_folderId != null &&
+                              !groupIds.contains(_folderId))
+                            DropdownMenuItem<String?>(
+                              value: _folderId,
+                              child: Text(l10n.unknownGroupLabel),
+                            ),
+                          for (final group in groups)
+                            DropdownMenuItem<String?>(
+                              value: group.id,
+                              child: Text(group.name),
+                            ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _folderId = value;
+                          if (_folderId != null) _groupIds.add(_folderId!);
+                        }),
+                      ),
                     ),
                     if (groups.isNotEmpty) ...[
                       const SizedBox(height: 10),
@@ -2128,7 +2560,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             const SizedBox(height: 14),
             FilledButton(
               key: const ValueKey('save-member-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(
                 _isEditing ? l10n.saveAlterButton : l10n.createAlterButton,
               ),
@@ -2140,6 +2572,16 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
+    final l10n = AppLocalizations.of(context);
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _nameError = l10n.nameRequiredError);
+      return;
+    }
+    if (memberNameHasInvisibleControls(_nameController.text)) {
+      setState(() => _nameError = l10n.memberNameInvisibleControlsError);
+      return;
+    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
@@ -2149,7 +2591,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
 
     final draft = MemberDraft(
-      displayName: _nameController.text,
+      displayName: _nameController.text.trim(),
       pronouns: _pronounsController.text,
       colorHex: colorHex,
       birthday: _birthdayController.text,
@@ -2161,15 +2603,54 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       folderId: _folderId,
       groupIds: _groupIds.toList(growable: false),
     );
-    final member = widget.member;
-    if (member == null) {
-      await widget.repository.saveMember(draft);
-    } else {
-      await widget.repository.updateMember(member.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final member = widget.member;
+      final existing = await widget.repository
+          .watchMembers(includeArchived: true)
+          .first;
+      if (!mounted) return;
+      final nameKey = memberNameComparisonKey(draft.displayName);
+      if (existing.any(
+        (candidate) =>
+            candidate.id != member?.id &&
+            memberNameComparisonKey(candidate.displayName) == nameKey,
+      )) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l10n.memberNameDuplicateTitle),
+            content: Text(l10n.memberNameDuplicateBody(draft.displayName)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.cancelButtonLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(l10n.saveDuplicateMemberButton),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
+      if (member == null) {
+        await widget.repository.saveMember(draft);
+      } else {
+        await widget.repository.updateMember(member.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

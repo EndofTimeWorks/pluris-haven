@@ -21,18 +21,34 @@ enum PollKind {
   }
 }
 
+enum PollVoteMode {
+  shared('shared'),
+  perMember('per_member');
+
+  const PollVoteMode(this.storageValue);
+
+  final String storageValue;
+
+  static PollVoteMode fromStorage(String? value) =>
+      value == perMember.storageValue ? perMember : shared;
+}
+
 class PollOptionSummary {
   const PollOptionSummary({
     required this.id,
     required this.body,
     required this.position,
     required this.selected,
+    this.memberIds = const {},
   });
 
   final String id;
   final String body;
   final int position;
   final bool selected;
+  final Set<String> memberIds;
+
+  int get voteCount => memberIds.length;
 }
 
 class PollSummary {
@@ -41,6 +57,7 @@ class PollSummary {
     required this.question,
     this.description,
     required this.kind,
+    this.voteMode = PollVoteMode.shared,
     required this.closed,
     this.restrictVotingToFronters = false,
     required this.options,
@@ -51,12 +68,15 @@ class PollSummary {
   final String question;
   final String? description;
   final PollKind kind;
+  final PollVoteMode voteMode;
   final bool closed;
   final bool restrictVotingToFronters;
   final List<PollOptionSummary> options;
   final DateTime updatedAt;
 
-  int get selectedCount => options.where((option) => option.selected).length;
+  int get selectedCount => voteMode == PollVoteMode.shared
+      ? options.where((option) => option.selected).length
+      : options.fold(0, (count, option) => count + option.voteCount);
 }
 
 class PollDraft {
@@ -64,6 +84,7 @@ class PollDraft {
     required this.question,
     this.description,
     required this.kind,
+    this.voteMode = PollVoteMode.shared,
     required this.options,
     this.restrictVotingToFronters = false,
   });
@@ -71,6 +92,7 @@ class PollDraft {
   final String question;
   final String? description;
   final PollKind kind;
+  final PollVoteMode voteMode;
   final List<String> options;
   final bool restrictVotingToFronters;
 }
@@ -115,6 +137,9 @@ class LocalPollStore {
     final votes = await (database.select(
       database.pollVotes,
     )..where((vote) => vote.pollId.isIn(pollIds))).get();
+    final memberVotes = await (database.select(
+      database.pollMemberVotes,
+    )..where((vote) => vote.pollId.isIn(pollIds))).get();
     final optionsByPoll = <String, List<PollOption>>{};
     for (final option in options) {
       optionsByPoll.putIfAbsent(option.pollId, () => []).add(option);
@@ -123,6 +148,13 @@ class LocalPollStore {
     for (final vote in votes) {
       selectedByPoll.putIfAbsent(vote.pollId, () => {}).add(vote.optionId);
     }
+    final membersByOption = <String, Map<String, Set<String>>>{};
+    for (final vote in memberVotes) {
+      membersByOption
+          .putIfAbsent(vote.pollId, () => {})
+          .putIfAbsent(vote.optionId, () => {})
+          .add(vote.memberId);
+    }
 
     return [
       for (final row in rows)
@@ -130,6 +162,7 @@ class LocalPollStore {
           row,
           optionsByPoll[row.id] ?? const [],
           selectedByPoll[row.id] ?? const {},
+          membersByOption[row.id] ?? const {},
         ),
     ];
   }
@@ -138,6 +171,7 @@ class LocalPollStore {
     Poll row,
     List<PollOption> options,
     Set<String> selectedOptionIds,
+    Map<String, Set<String>> membersByOption,
   ) async {
     final question = await decryptText(
       row.question,
@@ -158,6 +192,7 @@ class LocalPollStore {
         'description',
       ),
       kind: PollKind.fromStorage(row.kind),
+      voteMode: PollVoteMode.fromStorage(row.voteMode),
       closed: row.closed,
       restrictVotingToFronters: row.restrictVotingToFronters,
       updatedAt: row.updatedAt,
@@ -175,6 +210,7 @@ class LocalPollStore {
                 '',
             position: option.position,
             selected: selectedOptionIds.contains(option.id),
+            memberIds: membersByOption[option.id] ?? const {},
           ),
       ],
     );
@@ -209,6 +245,7 @@ class LocalPollStore {
                 ),
               ),
               kind: Value(draft.kind.storageValue),
+              voteMode: Value(draft.voteMode.storageValue),
               restrictVotingToFronters: Value(draft.restrictVotingToFronters),
               createdAt: now,
               updatedAt: now,
@@ -238,100 +275,172 @@ class LocalPollStore {
     });
   }
 
-  Future<void> toggleOption(String pollId, String optionId) async {
+  Future<void> toggleOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  }) => database.transaction(() async {
     final poll =
         await (database.select(database.polls)..where(
-              (poll) =>
-                  poll.systemId.equals(localSystemId) & poll.id.equals(pollId),
+              (row) =>
+                  row.systemId.equals(localSystemId) & row.id.equals(pollId),
             ))
             .getSingleOrNull();
     if (poll == null || poll.closed) return;
-    if (poll.restrictVotingToFronters && !await _hasCurrentFront()) return;
-
     final option =
         await (database.select(database.pollOptions)..where(
-              (option) =>
-                  option.pollId.equals(pollId) & option.id.equals(optionId),
+              (row) => row.pollId.equals(pollId) & row.id.equals(optionId),
             ))
             .getSingleOrNull();
     if (option == null) return;
 
-    final existing =
-        await (database.select(database.pollVotes)..where(
-              (vote) =>
-                  vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
-            ))
-            .getSingleOrNull();
+    final mode = PollVoteMode.fromStorage(poll.voteMode);
+    if (mode == PollVoteMode.perMember) {
+      if (memberId == null) {
+        throw ArgumentError('Choose a member before voting.');
+      }
+      final member =
+          await (database.select(database.members)..where(
+                (row) =>
+                    row.systemId.equals(localSystemId) &
+                    row.id.equals(memberId) &
+                    row.deletedAt.isNull() &
+                    row.purgedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (member == null) throw ArgumentError.value(memberId, 'memberId');
+      if (poll.restrictVotingToFronters && !await _isCurrentFronter(memberId)) {
+        return;
+      }
+      await _toggleMemberOption(poll, optionId, memberId);
+    } else {
+      if (poll.restrictVotingToFronters && !await _hasCurrentFront()) return;
+      await _toggleSharedOption(poll, optionId);
+    }
+  });
+
+  Future<void> _toggleSharedOption(Poll poll, String optionId) async {
+    final pollId = poll.id;
     final selectedVotes = await (database.select(
       database.pollVotes,
     )..where((vote) => vote.pollId.equals(pollId))).get();
+    final existing = selectedVotes.any((vote) => vote.optionId == optionId);
     final now = DateTime.now().toUtc();
-
-    await database.transaction(() async {
-      if (PollKind.fromStorage(poll.kind) == PollKind.singleChoice) {
-        await (database.delete(
-          database.pollVotes,
-        )..where((vote) => vote.pollId.equals(pollId))).go();
-        for (final vote in selectedVotes) {
-          await _recordVoteEvent(
-            pollId: pollId,
-            optionId: vote.optionId,
-            action: 'cleared',
-            createdAt: now,
-          );
-        }
-        if (existing == null) {
-          await database
-              .into(database.pollVotes)
-              .insert(
-                PollVotesCompanion.insert(
-                  pollId: pollId,
-                  optionId: optionId,
-                  createdAt: now,
-                ),
-              );
-          await _recordVoteEvent(
-            pollId: pollId,
-            optionId: optionId,
-            action: 'selected',
-            createdAt: now,
-          );
-        }
-      } else if (existing == null) {
-        await database
-            .into(database.pollVotes)
-            .insert(
-              PollVotesCompanion.insert(
-                pollId: pollId,
-                optionId: optionId,
-                createdAt: now,
-              ),
-            );
+    if (PollKind.fromStorage(poll.kind) == PollKind.singleChoice) {
+      await (database.delete(
+        database.pollVotes,
+      )..where((vote) => vote.pollId.equals(pollId))).go();
+      for (final vote in selectedVotes) {
         await _recordVoteEvent(
           pollId: pollId,
-          optionId: optionId,
-          action: 'selected',
-          createdAt: now,
-        );
-      } else {
-        await (database.delete(database.pollVotes)..where(
-              (vote) =>
-                  vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
-            ))
-            .go();
-        await _recordVoteEvent(
-          pollId: pollId,
-          optionId: optionId,
+          optionId: vote.optionId,
           action: 'cleared',
           createdAt: now,
         );
       }
-
-      await (database.update(database.polls)
-            ..where((poll) => poll.id.equals(pollId)))
-          .write(PollsCompanion(updatedAt: Value(now)));
-    });
+    } else if (existing) {
+      await (database.delete(database.pollVotes)..where(
+            (vote) =>
+                vote.pollId.equals(pollId) & vote.optionId.equals(optionId),
+          ))
+          .go();
+      await _recordVoteEvent(
+        pollId: pollId,
+        optionId: optionId,
+        action: 'cleared',
+        createdAt: now,
+      );
+    }
+    if (!existing) {
+      await database
+          .into(database.pollVotes)
+          .insert(
+            PollVotesCompanion.insert(
+              pollId: pollId,
+              optionId: optionId,
+              createdAt: now,
+            ),
+          );
+      await _recordVoteEvent(
+        pollId: pollId,
+        optionId: optionId,
+        action: 'selected',
+        createdAt: now,
+      );
+    }
+    await _touchPoll(pollId, now);
   }
+
+  Future<void> _toggleMemberOption(
+    Poll poll,
+    String optionId,
+    String memberId,
+  ) async {
+    final pollId = poll.id;
+    final selectedVotes =
+        await (database.select(database.pollMemberVotes)..where(
+              (vote) =>
+                  vote.pollId.equals(pollId) & vote.memberId.equals(memberId),
+            ))
+            .get();
+    final existing = selectedVotes.any((vote) => vote.optionId == optionId);
+    final now = DateTime.now().toUtc();
+    if (PollKind.fromStorage(poll.kind) == PollKind.singleChoice) {
+      await (database.delete(database.pollMemberVotes)..where(
+            (vote) =>
+                vote.pollId.equals(pollId) & vote.memberId.equals(memberId),
+          ))
+          .go();
+      for (final vote in selectedVotes) {
+        await _recordVoteEvent(
+          pollId: pollId,
+          optionId: vote.optionId,
+          memberId: memberId,
+          action: 'cleared',
+          createdAt: now,
+        );
+      }
+    } else if (existing) {
+      await (database.delete(database.pollMemberVotes)..where(
+            (vote) =>
+                vote.pollId.equals(pollId) &
+                vote.memberId.equals(memberId) &
+                vote.optionId.equals(optionId),
+          ))
+          .go();
+      await _recordVoteEvent(
+        pollId: pollId,
+        optionId: optionId,
+        memberId: memberId,
+        action: 'cleared',
+        createdAt: now,
+      );
+    }
+    if (!existing) {
+      await database
+          .into(database.pollMemberVotes)
+          .insert(
+            PollMemberVotesCompanion.insert(
+              pollId: pollId,
+              optionId: optionId,
+              memberId: memberId,
+              createdAt: now,
+            ),
+          );
+      await _recordVoteEvent(
+        pollId: pollId,
+        optionId: optionId,
+        memberId: memberId,
+        action: 'selected',
+        createdAt: now,
+      );
+    }
+    await _touchPoll(pollId, now);
+  }
+
+  Future<void> _touchPoll(String pollId, DateTime now) =>
+      (database.update(database.polls)..where((row) => row.id.equals(pollId)))
+          .write(PollsCompanion(updatedAt: Value(now)));
 
   Future<void> close(String pollId) {
     return (database.update(database.polls)..where(
@@ -353,6 +462,9 @@ class LocalPollStore {
       )..where((event) => event.pollId.equals(pollId))).go();
       await (database.delete(
         database.pollVotes,
+      )..where((vote) => vote.pollId.equals(pollId))).go();
+      await (database.delete(
+        database.pollMemberVotes,
       )..where((vote) => vote.pollId.equals(pollId))).go();
       await (database.delete(
         database.pollOptions,
@@ -377,12 +489,32 @@ class LocalPollStore {
 
   Future<bool> _hasCurrentFront() async {
     final current =
-        await (database.select(database.frontSessions)..where(
-              (front) =>
-                  front.systemId.equals(localSystemId) & front.endedAt.isNull(),
-            ))
+        await (database.select(database.frontSessions)
+              ..where(
+                (front) =>
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              )
+              ..limit(1))
             .getSingleOrNull();
     return current != null;
+  }
+
+  Future<bool> _isCurrentFronter(String memberId) async {
+    final row = await database
+        .customSelect(
+          '''SELECT 1 FROM front_session_members AS link
+         JOIN front_sessions AS front ON front.id = link.session_id
+         WHERE front.system_id = ? AND front.ended_at IS NULL
+           AND link.member_id = ? LIMIT 1''',
+          variables: [
+            Variable<String>(localSystemId),
+            Variable<String>(memberId),
+          ],
+          readsFrom: {database.frontSessions, database.frontSessionMembers},
+        )
+        .getSingleOrNull();
+    return row != null;
   }
 
   Future<void> _recordVoteEvent({
@@ -390,6 +522,7 @@ class LocalPollStore {
     required String optionId,
     required String action,
     required DateTime createdAt,
+    String? memberId,
   }) {
     return database
         .into(database.pollVoteEvents)
@@ -399,6 +532,7 @@ class LocalPollStore {
             pollId: pollId,
             optionId: optionId,
             action: action,
+            memberId: Value(memberId),
             createdAt: createdAt,
           ),
         );

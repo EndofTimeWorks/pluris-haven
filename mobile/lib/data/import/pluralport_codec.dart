@@ -250,8 +250,8 @@ const _pluralPortArrayModules = {
 };
 
 const _havenArchiveOnlyCollections = {
-  // Draft v0.1 names these record types but does not yet define their fields.
-  // Preserve Haven's complete representation instead of inventing a wire shape.
+  // Haven does not project these collections into the Draft's shared records.
+  // Preserve their complete local representation and report the limitation.
   'groups',
   'group_members',
   'notes',

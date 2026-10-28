@@ -3,7 +3,7 @@
 set -euo pipefail
 
 project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-source_image=${1:-"$project_dir/assets/brand/pluris_haven_icon.png"}
+source_image=${1:-"$project_dir/assets/brand/pluris_haven_app_icon_dark.png"}
 
 if [[ ! -f "$source_image" ]]; then
   echo "Icon source does not exist: $source_image" >&2
@@ -22,11 +22,11 @@ trap 'rm -r -- "$scratch_dir"' EXIT HUP INT TERM
 master_icon="$scratch_dir/master.png"
 master_with_background="$scratch_dir/master-rgb.png"
 adaptive_foreground_source="$scratch_dir/adaptive-foreground-source.png"
-adaptive_background='39 39 87'
+adaptive_background='17 6 45'
 read -r source_red source_green source_blue source_alpha _ < <(
   vips getpoint "$source_image" 0 0 2>/dev/null
 )
-if [[ "$source_red $source_green $source_blue $source_alpha" != '39 39 87 255' ]]; then
+if [[ "$source_red $source_green $source_blue $source_alpha" != '17 6 45 255' ]]; then
   echo 'Icon source background changed; update adaptive foreground extraction deliberately.' >&2
   exit 1
 fi
@@ -38,7 +38,7 @@ vips flatten "$master_icon" "$master_with_background" \
 # The brand source is intentionally an opaque iOS/legacy icon. Build a separate
 # transparent Android adaptive foreground by removing only its exact background
 # colour, preserving every artwork pixel and the original proportions.
-for band_and_background in '0 39 red' '1 39 green' '2 87 blue'; do
+for band_and_background in '0 17 red' '1 6 green' '2 45 blue'; do
   read -r band background name <<<"$band_and_background"
   vips extract_band "$source_image" "$scratch_dir/$name.png" "$band" 2>/dev/null
   vips relational_const "$scratch_dir/$name.png" "$scratch_dir/$name-mask.png" \

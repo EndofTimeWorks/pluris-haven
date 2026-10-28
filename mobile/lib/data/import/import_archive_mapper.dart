@@ -2756,6 +2756,7 @@ Map<String, int> _archiveCounts(Map<String, Object?> archive) => {
   'polls': _listCount(archive['polls']),
   'poll_options': _listCount(archive['poll_options']),
   'poll_votes': _listCount(archive['poll_votes']),
+  'poll_member_votes': _listCount(archive['poll_member_votes']),
   'poll_vote_events': _listCount(archive['poll_vote_events']),
   'fronts': _listCount(archive['fronts']),
   'front_members': _listCount(archive['front_members']),

@@ -257,6 +257,33 @@ class HavenAppearanceOverrides {
   }
 }
 
+bool appearanceColoursReadable({
+  required HavenAppearanceOverrides appearance,
+  required Color background,
+  required Color surface,
+  required Color card,
+  required Color text,
+  required Color mutedText,
+}) {
+  final backgrounds = [
+    appearance.backgroundColor ?? background,
+    appearance.surfaceColor ?? surface,
+    appearance.cardColor ?? card,
+  ];
+  bool readable(Color foreground) => backgrounds.every((colour) {
+    final lighter = foreground.computeLuminance() > colour.computeLuminance()
+        ? foreground.computeLuminance()
+        : colour.computeLuminance();
+    final darker = foreground.computeLuminance() < colour.computeLuminance()
+        ? foreground.computeLuminance()
+        : colour.computeLuminance();
+    return (lighter + .05) / (darker + .05) >= 4.5;
+  });
+
+  return readable(appearance.textColor ?? text) &&
+      readable(appearance.mutedTextColor ?? mutedText);
+}
+
 class AppCustomization {
   const AppCustomization({
     required this.themeMode,
@@ -279,6 +306,7 @@ class AppCustomization {
     required this.compactLists,
     required this.frontAction,
     required this.dashboardShortcutIds,
+    required this.dashboardShortcutOrderIds,
     required this.bottomNavigationShortcutIds,
     required this.languageCode,
   });
@@ -303,6 +331,7 @@ class AppCustomization {
   final bool compactLists;
   final HavenFrontAction frontAction;
   final List<String> dashboardShortcutIds;
+  final List<String> dashboardShortcutOrderIds;
   final List<String> bottomNavigationShortcutIds;
   final String languageCode;
 
@@ -334,6 +363,7 @@ class AppCustomization {
     compactLists: false,
     frontAction: HavenFrontAction.add,
     dashboardShortcutIds: defaultDashboardShortcutIds,
+    dashboardShortcutOrderIds: defaultDashboardShortcutOrderIds,
     bottomNavigationShortcutIds: defaultBottomNavigationShortcutIds,
     languageCode: systemLanguageCode,
   );
@@ -359,6 +389,7 @@ class AppCustomization {
     bool? compactLists,
     HavenFrontAction? frontAction,
     List<String>? dashboardShortcutIds,
+    List<String>? dashboardShortcutOrderIds,
     List<String>? bottomNavigationShortcutIds,
     String? languageCode,
   }) {
@@ -392,6 +423,9 @@ class AppCustomization {
       dashboardShortcutIds: List.unmodifiable(
         dashboardShortcutIds ?? this.dashboardShortcutIds,
       ),
+      dashboardShortcutOrderIds: List.unmodifiable(
+        dashboardShortcutOrderIds ?? this.dashboardShortcutOrderIds,
+      ),
       bottomNavigationShortcutIds: List.unmodifiable(
         bottomNavigationShortcutIds ?? this.bottomNavigationShortcutIds,
       ),
@@ -413,6 +447,35 @@ const defaultDashboardShortcutIds = [
   'reminders',
   'customize',
 ];
+
+const allDashboardShortcutIds = [
+  'members',
+  'front-history',
+  'custom-fronts',
+  'groups',
+  'notes',
+  'journals',
+  'import-export',
+  'sync',
+  'customize',
+  'analytics',
+  'reminders',
+  'custom-fields',
+  'chat',
+  'polls',
+  'useful-links',
+  'privacy-buckets',
+  'user-report',
+  'notification-history',
+  'howtos',
+  'account-settings',
+];
+
+final defaultDashboardShortcutOrderIds = List<String>.unmodifiable([
+  ...defaultDashboardShortcutIds,
+  for (final id in allDashboardShortcutIds)
+    if (!defaultDashboardShortcutIds.contains(id)) id,
+]);
 
 const defaultBottomNavigationShortcutIds = [
   'members',
@@ -495,8 +558,15 @@ class LocalAppCustomizationStore {
   Future<void> setFrontAction(HavenFrontAction action) =>
       _write(_frontActionKey, action.storageValue);
 
-  Future<void> setDashboardShortcutIds(List<String> shortcutIds) =>
-      _write(_dashboardShortcutIdsKey, _serializeIds(shortcutIds));
+  Future<void> setDashboardShortcutIds(List<String> shortcutIds) async {
+    final previousOrder = (await load()).dashboardShortcutOrderIds;
+    final order = [
+      ...shortcutIds,
+      for (final id in previousOrder)
+        if (!shortcutIds.contains(id)) id,
+    ];
+    await _storeDashboardShortcuts(shortcutIds, order);
+  }
 
   Future<void> setBottomNavigationShortcutIds(List<String> shortcutIds) =>
       _write(
@@ -513,30 +583,53 @@ class LocalAppCustomizationStore {
     String shortcutId,
     bool visible,
   ) async {
-    final ids = (await load()).dashboardShortcutIds.toList();
-    final existingIndex = ids.indexOf(shortcutId);
-    if (visible && existingIndex == -1) {
-      ids.add(shortcutId);
-    } else if (!visible && existingIndex != -1) {
-      ids.removeAt(existingIndex);
+    final customization = await load();
+    final visibleIds = customization.dashboardShortcutIds.toSet();
+    final order = customization.dashboardShortcutOrderIds.toList();
+    if (!order.contains(shortcutId)) order.add(shortcutId);
+    if (visible) {
+      visibleIds.add(shortcutId);
+    } else {
+      visibleIds.remove(shortcutId);
     }
-    await setDashboardShortcutIds(ids);
+    await _storeDashboardShortcuts([
+      for (final id in order)
+        if (visibleIds.contains(id)) id,
+    ], order);
   }
 
   Future<void> moveDashboardShortcut(String shortcutId, int delta) async {
     if (delta == 0) return;
-    final ids = (await load()).dashboardShortcutIds.toList();
+    final customization = await load();
+    final ids = customization.dashboardShortcutIds;
+    final order = customization.dashboardShortcutOrderIds.toList();
     final index = ids.indexOf(shortcutId);
     if (index == -1) return;
     final newIndex = (index + delta).clamp(0, ids.length - 1);
     if (newIndex == index) return;
-    final id = ids.removeAt(index);
-    ids.insert(newIndex, id);
-    await setDashboardShortcutIds(ids);
+    order.remove(shortcutId);
+    final neighbour = ids[newIndex];
+    final neighbourIndex = order.indexOf(neighbour);
+    order.insert(delta < 0 ? neighbourIndex : neighbourIndex + 1, shortcutId);
+    final visibleIds = ids.toSet();
+    await _storeDashboardShortcuts([
+      for (final id in order)
+        if (visibleIds.contains(id)) id,
+    ], order);
   }
 
-  Future<void> resetDashboardShortcuts() =>
-      setDashboardShortcutIds(defaultDashboardShortcutIds);
+  Future<void> resetDashboardShortcuts() => _storeDashboardShortcuts(
+    defaultDashboardShortcutIds,
+    defaultDashboardShortcutOrderIds,
+  );
+
+  Future<void> _storeDashboardShortcuts(
+    List<String> visibleIds,
+    List<String> orderIds,
+  ) => database.transaction(() async {
+    await _write(_dashboardShortcutIdsKey, _serializeIds(visibleIds));
+    await _write(_dashboardShortcutOrderIdsKey, _serializeIds(orderIds));
+  });
 
   Future<void> setBottomNavigationShortcutVisible(
     String shortcutId,
@@ -608,6 +701,10 @@ class LocalAppCustomizationStore {
       compactLists: _readBool(values[_compactListsKey]),
       frontAction: HavenFrontAction.fromStorage(values[_frontActionKey]),
       dashboardShortcutIds: _readShortcutIds(values[_dashboardShortcutIdsKey]),
+      dashboardShortcutOrderIds: _readDashboardShortcutOrderIds(
+        values[_dashboardShortcutOrderIdsKey],
+        _readShortcutIds(values[_dashboardShortcutIdsKey]),
+      ),
       bottomNavigationShortcutIds: _readBottomNavigationShortcutIds(
         values[_bottomNavigationShortcutIdsKey],
       ),
@@ -629,6 +726,20 @@ class LocalAppCustomizationStore {
         .where((id) => id.isNotEmpty)
         .toList();
     return ids.isEmpty ? defaultDashboardShortcutIds : List.unmodifiable(ids);
+  }
+
+  List<String> _readDashboardShortcutOrderIds(
+    String? value,
+    List<String> visibleIds,
+  ) {
+    final stored = value == null || value == _emptyShortcutIdsValue
+        ? <String>[]
+        : value.split(',').map((id) => id.trim()).toList();
+    return List.unmodifiable({
+      ...stored.where((id) => id.isNotEmpty),
+      ...visibleIds,
+      ...allDashboardShortcutIds,
+    });
   }
 
   List<String> _readBottomNavigationShortcutIds(String? value) {
@@ -708,6 +819,7 @@ const _largeTextKey = 'large_text';
 const _compactListsKey = 'compact_lists';
 const _frontActionKey = 'front_action';
 const _dashboardShortcutIdsKey = 'dashboard_shortcut_ids';
+const _dashboardShortcutOrderIdsKey = 'dashboard_shortcut_order_ids';
 const _bottomNavigationShortcutIdsKey = 'bottom_navigation_shortcut_ids';
 const _emptyShortcutIdsValue = '__empty__';
 const _languageCodeKey = 'language_code';

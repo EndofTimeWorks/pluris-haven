@@ -12,7 +12,8 @@
   "useCustomColorLabel": "Use custom color",
   "saveCancelled": "Save canceled.",
   "groupsEmptyBody": "Groups keep members organized without needing sync.",
-  "syncOffDescription": "General device synchronization is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.",
+  "privacyBucketsDescription": "Organize members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.",
+  "syncOffDescription": "Device synchronization isn't available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.",
   "importDedupePlurisHaven": "local IDs, PluralKit IDs, normalized names",
   "importDedupeSimplyPlural": "Simply Plural IDs, PluralKit IDs, normalized names",
   "importDedupePluralKitFile": "PluralKit UUIDs, PluralKit short IDs, normalized names",
@@ -47,5 +48,6 @@
   "cardColorLabel": "Card color",
   "textColorLabel": "Text color",
   "mutedTextColorLabel": "Muted text color",
-  "outlineColorLabel": "Outline color"
+  "outlineColorLabel": "Outline color",
+  "appearanceContrastError": "Text colors need more contrast against the background, surface and card colors."
 }

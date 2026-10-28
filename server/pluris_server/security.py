@@ -18,6 +18,9 @@ from pluris_server.models import DeviceSession, RefreshToken, User
 _password_hash = PasswordHash.recommended()
 _password_hash_slots = asyncio.Semaphore(2)
 _password_verify_slots = asyncio.Semaphore(2)
+_password_hash_waiters = asyncio.Semaphore(8)
+_password_verify_waiters = asyncio.Semaphore(8)
+_PASSWORD_WORK_WAIT_SECONDS = 2
 _dummy_hash = _password_hash.hash("pluris-haven-login-timing-placeholder")
 
 
@@ -32,20 +35,35 @@ class PasswordWorkSaturated(Exception):
     """Raised when password work would otherwise queue behind Argon2."""
 
 
-async def _run_password_work(slots: asyncio.Semaphore, function, *args):
-    if slots.locked():
+async def _run_password_work(slots: asyncio.Semaphore, waiters: asyncio.Semaphore, function, *args):
+    if waiters.locked():
         raise PasswordWorkSaturated
-    async with slots:
-        return await asyncio.to_thread(function, *args)
+    async with waiters:
+        try:
+            await asyncio.wait_for(slots.acquire(), timeout=_PASSWORD_WORK_WAIT_SECONDS)
+        except TimeoutError as error:
+            raise PasswordWorkSaturated from error
+        worker = asyncio.create_task(asyncio.to_thread(function, *args))
+
+        def release_slot(done: asyncio.Task) -> None:
+            slots.release()
+            if not done.cancelled():
+                done.exception()
+
+        worker.add_done_callback(release_slot)
+        return await asyncio.shield(worker)
 
 
 async def hash_password(password: str) -> str:
-    return await _run_password_work(_password_hash_slots, _password_hash.hash, password)
+    return await _run_password_work(
+        _password_hash_slots, _password_hash_waiters, _password_hash.hash, password
+    )
 
 
 async def verify_password(password: str, password_hash: str) -> bool:
     return await _run_password_work(
         _password_verify_slots,
+        _password_verify_waiters,
         _password_hash.verify,
         password,
         password_hash,

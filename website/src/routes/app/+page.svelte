@@ -7,9 +7,9 @@
   ];
 
   const next = [
-    ['Use the app today', '/download'],
-    ['Read the changelog', '/changelog'],
-    ['Check distribution notes', '/distribution'],
+    ['Use the app today', '/download', 'Download the Android pre-alpha and verify its checksum.'],
+    ['Read the changelog', '/changelog', 'See the changes in recent Pluris Haven builds.'],
+    ['Check distribution notes', '/distribution', 'Review install channels and update details.'],
   ];
 </script>
 
@@ -43,17 +43,17 @@
     <h2>Expected shape</h2>
     <p>
       The first web build should install as a PWA, import and export without an account, and keep
-      data local by default. Optional sync comes later, after the offline archive format is ready.
+      data local by default. Optional sync is deferred; there is no public sync service today.
     </p>
   </section>
 
   <section>
     <h2>For now</h2>
     <div class="cards">
-      {#each next as [label, href]}
+      {#each next as [label, href, description]}
         <a class="card" {href}>
           <strong>{label}</strong>
-          <span>Open the current public path.</span>
+          <span>{description}</span>
         </a>
       {/each}
     </div>

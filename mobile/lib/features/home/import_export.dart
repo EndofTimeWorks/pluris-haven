@@ -1,6 +1,6 @@
 part of 'home_page.dart';
 
-const _maximumPastedImportCharacters = 256 * 1024;
+const _maximumPastedImportBytes = 32 * 1024 * 1024;
 const _maximumClipboardArchiveBytes = 512 * 1024;
 
 String _withoutRawImportPayloads(String archiveJson) {
@@ -9,10 +9,36 @@ String _withoutRawImportPayloads(String archiveJson) {
   return jsonEncode({...decoded, 'raw_payloads': const <Object?>[]});
 }
 
+typedef _ImportInputDraft = ({
+  String? name,
+  int? size,
+  String? text,
+  List<ImportAvatarAsset> avatars,
+  String passphrase,
+  ImportFileGuess? guess,
+  ImportPreview? preview,
+  RestoreRehearsalSummary? rehearsal,
+  bool retainRawPayloads,
+  String? status,
+  bool canReportIssue,
+});
+
+class ImportPageDraftCache {
+  ImportSource fileSource = ImportSource.simplyPlural;
+  ImportConflictStrategy strategy = ImportConflictStrategy.prompt;
+  _ImportInputDraft? _fileDraft;
+  String pastedText = '';
+}
+
 class ImportExportPage extends StatefulWidget {
-  const ImportExportPage({super.key, required this.repository});
+  const ImportExportPage({
+    super.key,
+    required this.repository,
+    required this.draftCache,
+  });
 
   final HavenRepository repository;
+  final ImportPageDraftCache draftCache;
 
   @override
   State<ImportExportPage> createState() => _ImportExportPageState();
@@ -27,6 +53,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
   List<ImportAvatarAsset> _fileAvatarAssets = const [];
   String _importPassphrase = '';
   String _pluralKitToken = '';
+  String _pastedImportDraft = '';
+  final _importPassphraseController = TextEditingController();
+  final _pluralKitTokenController = TextEditingController();
+  _ImportInputDraft? _fileDraft;
+  _ImportInputDraft? _liveDraft;
   ImportFileGuess? _guess;
   ImportPreview? _preview;
   RestoreRehearsalSummary? _restoreRehearsal;
@@ -43,6 +74,60 @@ class _ImportExportPageState extends State<ImportExportPage> {
   bool get _needsImportPassphrase =>
       (_fileText != null && archiveTextLooksEncrypted(_fileText!)) ||
       _plan.requiresPassphrase;
+
+  @override
+  void initState() {
+    super.initState();
+    _source = widget.draftCache.fileSource;
+    _strategy = widget.draftCache.strategy;
+    _fileDraft = widget.draftCache._fileDraft;
+    _pastedImportDraft = widget.draftCache.pastedText;
+    _restoreDraft(_fileDraft);
+  }
+
+  @override
+  void dispose() {
+    widget.draftCache.strategy = _strategy;
+    widget.draftCache.pastedText = _pastedImportDraft;
+    if (_source == ImportSource.pluralKitLive) {
+      widget.draftCache._fileDraft = _fileDraft;
+    } else {
+      widget.draftCache.fileSource = _source;
+      widget.draftCache._fileDraft = _captureDraft();
+    }
+    _importPassphraseController.dispose();
+    _pluralKitTokenController.dispose();
+    super.dispose();
+  }
+
+  _ImportInputDraft _captureDraft() => (
+    name: _fileName,
+    size: _fileSize,
+    text: _fileText,
+    avatars: _fileAvatarAssets,
+    passphrase: _importPassphrase,
+    guess: _guess,
+    preview: _preview,
+    rehearsal: _restoreRehearsal,
+    retainRawPayloads: _retainRawPayloads,
+    status: _importStatus,
+    canReportIssue: _canReportImportIssue,
+  );
+
+  void _restoreDraft(_ImportInputDraft? draft) {
+    _fileName = draft?.name;
+    _fileSize = draft?.size;
+    _fileText = draft?.text;
+    _fileAvatarAssets = draft?.avatars ?? const [];
+    _importPassphrase = draft?.passphrase ?? '';
+    _importPassphraseController.text = _importPassphrase;
+    _guess = draft?.guess;
+    _preview = draft?.preview;
+    _restoreRehearsal = draft?.rehearsal;
+    _retainRawPayloads = draft?.retainRawPayloads ?? false;
+    _importStatus = draft?.status;
+    _canReportImportIssue = draft?.canReportIssue ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +171,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
           onPassphraseChanged: (value) {
             _importPassphrase = value;
           },
-          onTokenChanged: (value) => _pluralKitToken = value,
+          onTokenChanged: (value) => setState(() => _pluralKitToken = value),
+          passphraseController: _importPassphraseController,
+          tokenController: _pluralKitTokenController,
           onSourceChanged: _selectImportSource,
           onStrategyChanged: (strategy) => setState(() => _strategy = strategy),
           canPreview:
@@ -288,7 +375,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _pasteImportJson() async {
     final l10n = AppLocalizations.of(context);
-    final pasted = await showPasteImportJsonSheet(context);
+    final pasted = await showPasteImportJsonSheet(
+      context,
+      initialText: _pastedImportDraft,
+      onDraftChanged: (value) => _pastedImportDraft = value,
+    );
     if (pasted == null || !mounted) {
       return;
     }
@@ -422,6 +513,12 @@ class _ImportExportPageState extends State<ImportExportPage> {
       textPreview: text,
     );
     final isEncrypted = text != null && archiveTextLooksEncrypted(text);
+    final selectedSource = isEncrypted
+        ? ImportSource.plurisHavenArchive
+        : guess.source ??
+              (_source == ImportSource.pluralKitLive
+                  ? ImportSource.simplyPlural
+                  : _source);
     final generation = ++_previewGeneration;
     setState(() {
       _isPickingImport = true;
@@ -434,27 +531,27 @@ class _ImportExportPageState extends State<ImportExportPage> {
         : await previewImportTextInBackground(
             fileName: displayName,
             text: text,
-            selectedSource: guess.source ?? _source,
+            selectedSource: selectedSource,
             avatarAssets: avatarAssets,
           );
 
     if (!mounted || generation != _previewGeneration) return;
 
     setState(() {
+      if (_source == ImportSource.pluralKitLive) {
+        _liveDraft = _captureDraft();
+      }
       _fileName = displayName;
       _fileSize = fileSize;
       _fileText = text;
       _fileAvatarAssets = avatarAssets;
       _importPassphrase = '';
+      _importPassphraseController.clear();
       _guess = guess;
       _preview = preview;
       _restoreRehearsal = null;
       _canReportImportIssue = false;
-      if (isEncrypted) {
-        _source = ImportSource.plurisHavenArchive;
-      } else if (guess.source != null) {
-        _source = guess.source!;
-      }
+      _source = selectedSource;
       if (_source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
@@ -463,7 +560,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           ? l10n.encryptedArchiveLoaded
           : preview == null
           ? unreadableStatus
-          : l10n.previewReadyStatus(_countSummary(preview.counts));
+          : _previewStatus(l10n, preview);
     });
   }
 
@@ -499,20 +596,36 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _selectImportSource(ImportSource source) async {
     final l10n = AppLocalizations.of(context);
-    final fileName = _fileName;
-    final text = _fileText;
-    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
-
     final generation = ++_previewGeneration;
     setState(() {
+      final wasLive = _source == ImportSource.pluralKitLive;
+      final isLive = source == ImportSource.pluralKitLive;
+      if (wasLive != isLive) {
+        if (wasLive) {
+          _liveDraft = _captureDraft();
+        } else {
+          _fileDraft = _captureDraft();
+          widget.draftCache.fileSource = _source;
+        }
+        _restoreDraft(isLive ? _liveDraft : _fileDraft);
+      }
       _source = source;
       if (source.requiresRawPayloadRetention) {
         _retainRawPayloads = true;
       }
-      _preview = null;
-      _restoreRehearsal = null;
-      _importStatus = l10n.preparingImportPreviewStatus;
+      _isPickingImport = false;
+      if (!isLive) {
+        _preview = null;
+        _restoreRehearsal = null;
+      }
+      if (!isLive) {
+        _importStatus = l10n.preparingImportPreviewStatus;
+      }
     });
+    final fileName = _fileName;
+    final text = _fileText;
+    final isEncrypted = text != null && archiveTextLooksEncrypted(text);
+    if (source == ImportSource.pluralKitLive) return;
     final preview = fileName == null || text == null
         ? null
         : isEncrypted
@@ -532,7 +645,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       _restoreRehearsal = null;
       _importStatus = preview == null
           ? _importStatus
-          : l10n.previewReadyStatus(_countSummary(preview.counts));
+          : _previewStatus(l10n, preview);
     });
     if (preview != null) {
       appDebugLog(
@@ -594,7 +707,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       setState(() {
         _preview = preview;
         _restoreRehearsal = null;
-        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
+        _importStatus = _previewStatus(l10n, preview);
       });
       appDebugLog(
         'Import preview refreshed source=${preview.source.name} file=$fileName '
@@ -613,6 +726,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
   Future<void> _fetchPluralKitPreview() async {
     final l10n = AppLocalizations.of(context);
+    final generation = ++_previewGeneration;
     setState(() {
       _isPickingImport = true;
       _importStatus = l10n.fetchingPluralKitData;
@@ -621,8 +735,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       final text = await PluralKitLiveClient().fetchArchiveJson(
         _pluralKitToken,
       );
-      if (!mounted) return;
-      final generation = ++_previewGeneration;
+      if (!mounted || generation != _previewGeneration) return;
       final preview = await previewImportTextInBackground(
         fileName: 'pluralkit-live.json',
         text: text,
@@ -638,10 +751,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
         _preview = preview;
         _restoreRehearsal = null;
         _isPickingImport = false;
-        _importStatus = l10n.previewReadyStatus(_countSummary(preview.counts));
+        _importStatus = _previewStatus(l10n, preview);
       });
     } on Object catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _previewGeneration) return;
       setState(() {
         _isPickingImport = false;
         _preview = null;
@@ -873,6 +986,32 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
+    final hasArchivePreferences =
+        _source == ImportSource.plurisHavenArchive &&
+        _jsonObjectList(decoded['preferences']).isNotEmpty;
+    final preferenceConflict =
+        hasArchivePreferences &&
+        await widget.repository.hasPortablePreferenceConflict({
+          for (final preference in _jsonObjectList(decoded['preferences']))
+            if (preference['key'] is String && preference['value'] is String)
+              preference['key'] as String: preference['value'] as String,
+        });
+    var systemProfileConflict = false;
+    final archivedSystem = decoded['system'];
+    if (_source == ImportSource.plurisHavenArchive &&
+        archivedSystem is Map<String, Object?>) {
+      final archivedName = _stringValue(archivedSystem['name'])?.trim();
+      if (archivedName != null && archivedName.isNotEmpty) {
+        final local = await widget.repository.watchHomeSnapshot().first;
+        systemProfileConflict =
+            archivedName != local.systemName ||
+            _stringValue(archivedSystem['color_hex']) != local.systemColorHex ||
+            _stringValue(archivedSystem['avatar_url']) !=
+                local.systemAvatarUrl ||
+            _stringValue(archivedSystem['description']) !=
+                local.systemDescription;
+      }
+    }
 
     final existingMembers = await widget.repository.watchMembers().first;
     final existingGroups = await widget.repository.watchGroups().first;
@@ -925,7 +1064,10 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
     }
 
-    if (memberConflicts.isEmpty && groupConflicts.isEmpty) {
+    if (memberConflicts.isEmpty &&
+        groupConflicts.isEmpty &&
+        !systemProfileConflict &&
+        !preferenceConflict) {
       return const _ConflictPromptResult.noConflicts();
     }
 
@@ -938,6 +1080,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
       builder: (context) => _ConflictPromptDialog(
         memberCount: memberConflicts.length,
         groupCount: groupConflicts.length,
+        systemProfileConflict: systemProfileConflict,
+        hasArchivePreferences: hasArchivePreferences,
+        preferenceConflict: preferenceConflict,
         sourceLabel: localizeImportSource(l10n, _source),
       ),
     );
@@ -963,6 +1108,16 @@ class _ImportExportPageState extends State<ImportExportPage> {
         .join(', ');
 
     return visible.isEmpty ? l10n.noRecordsFound : visible;
+  }
+
+  String _previewStatus(AppLocalizations l10n, ImportPreview preview) {
+    if (!preview.canApply) {
+      final problems = preview.warningsAndErrors;
+      if (problems.isNotEmpty) {
+        return localizeImportDiagnostic(l10n, problems.first.diagnostic);
+      }
+    }
+    return l10n.previewReadyStatus(_countSummary(preview.counts));
   }
 
   Future<void> _copyImportDetails(String details) async {
@@ -1007,6 +1162,7 @@ String _importCountLabel(AppLocalizations l10n, String key, int count) {
     'polls' => l10n.importCountPolls,
     'poll_options' => l10n.importCountPollOptions,
     'poll_votes' => l10n.importCountPollVotes,
+    'poll_member_votes' => l10n.importCountPollMemberVotes,
     'poll_vote_events' => l10n.importCountPollVoteEvents,
     'fronts' => l10n.importCountFronts,
     'front_members' => l10n.importCountFrontMembers,
@@ -1067,11 +1223,17 @@ class _ConflictPromptDialog extends StatelessWidget {
   const _ConflictPromptDialog({
     required this.memberCount,
     required this.groupCount,
+    required this.systemProfileConflict,
+    required this.hasArchivePreferences,
+    required this.preferenceConflict,
     required this.sourceLabel,
   });
 
   final int memberCount;
   final int groupCount;
+  final bool systemProfileConflict;
+  final bool hasArchivePreferences;
+  final bool preferenceConflict;
   final String sourceLabel;
 
   @override
@@ -1088,9 +1250,19 @@ class _ConflictPromptDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(l10n.conflictsFoundTitle),
       content: Text(
-        l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
+        [
+          if (parts.isNotEmpty)
+            l10n.importConflictsBody(parts.join(l10n.listAnd), sourceLabel),
+          if (systemProfileConflict) l10n.systemProfileConflictBody,
+          if (preferenceConflict) l10n.archivePreferencesConflictBody,
+          if (hasArchivePreferences) l10n.nativeImportPreferencesPolicy,
+        ].join('\n\n'),
       ),
       actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancelButtonLabel),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context, ImportConflictStrategy.skip),
           child: Text(l10n.skipMatchesButton),
@@ -1241,6 +1413,15 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
               icon: const Icon(Icons.password_rounded),
               label: Text(l10n.generateRecoveryCodeButton),
             ),
+            if (_recoveryCode != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('copy-archive-recovery-code-button'),
+                onPressed: _isSaving ? null : _copyRecoveryCode,
+                icon: const Icon(Icons.copy_rounded),
+                label: Text(l10n.copyRecoveryCodeButton),
+              ),
+            ],
             if (_status != null) ...[
               const SizedBox(height: 10),
               Semantics(
@@ -1293,6 +1474,36 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       _obscurePassphrases = false;
       _status = AppLocalizations.of(context).generatedRecoveryCodeStatus;
     });
+  }
+
+  Future<void> _copyRecoveryCode() async {
+    final recoveryCode = _recoveryCode;
+    if (recoveryCode == null) return;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.copyRecoveryCodeTitle),
+        content: Text(l10n.copyRecoveryCodeWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.copyRecoveryCodeButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await SensitiveClipboard.copy(recoveryCode.value);
+      if (mounted) setState(() => _status = l10n.recoveryCodeCopied);
+    } on Object {
+      if (mounted) setState(() => _status = l10n.recoveryCodeCopyFailed);
+    }
   }
 
   Future<void> _saveEncryptedArchive() async {
@@ -1634,25 +1845,40 @@ class LocalArchiveSheet extends StatelessWidget {
   }
 }
 
-Future<String?> showPasteImportJsonSheet(BuildContext context) {
+Future<String?> showPasteImportJsonSheet(
+  BuildContext context, {
+  String initialText = '',
+  ValueChanged<String>? onDraftChanged,
+}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) => const PasteImportJsonSheet(),
+    builder: (context) => PasteImportJsonSheet(
+      initialText: initialText,
+      onDraftChanged: onDraftChanged,
+    ),
   );
 }
 
 class PasteImportJsonSheet extends StatefulWidget {
-  const PasteImportJsonSheet({super.key});
+  const PasteImportJsonSheet({
+    super.key,
+    this.initialText = '',
+    this.onDraftChanged,
+  });
+
+  final String initialText;
+  final ValueChanged<String>? onDraftChanged;
 
   @override
   State<PasteImportJsonSheet> createState() => _PasteImportJsonSheetState();
 }
 
 class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
-  final _controller = TextEditingController();
+  late final _controller = TextEditingController(text: widget.initialText);
+  bool _tooLarge = false;
 
   @override
   void dispose() {
@@ -1683,22 +1909,16 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
             TextField(
               key: const ValueKey('paste-import-json-field'),
               controller: _controller,
+              onChanged: widget.onDraftChanged,
               autofocus: true,
               minLines: 8,
               maxLines: 14,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              maxLength: _maximumPastedImportCharacters,
-              maxLengthEnforcement: MaxLengthEnforcement.enforced,
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(
-                  _maximumPastedImportCharacters,
-                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                ),
-              ],
               decoration: InputDecoration(
                 hintText: '{"members": [...]}',
                 labelText: l10n.exportJsonLabel,
                 helperText: l10n.pasteJsonSizeHelp,
+                errorText: _tooLarge ? l10n.importFileTooLarge : null,
                 alignLabelWithHint: true,
               ),
             ),
@@ -1706,6 +1926,10 @@ class _PasteImportJsonSheetState extends State<PasteImportJsonSheet> {
             FilledButton.icon(
               onPressed: () {
                 final text = _controller.text.trim();
+                if (utf8.encode(text).length > _maximumPastedImportBytes) {
+                  setState(() => _tooLarge = true);
+                  return;
+                }
                 Navigator.pop(context, text.isEmpty ? null : text);
               },
               icon: const Icon(Icons.fact_check_rounded),
@@ -1735,6 +1959,8 @@ class ImportSetupCard extends StatelessWidget {
     required this.onPreview,
     required this.onPassphraseChanged,
     required this.onTokenChanged,
+    required this.passphraseController,
+    required this.tokenController,
     required this.onSourceChanged,
     required this.onStrategyChanged,
     required this.canPreview,
@@ -1760,6 +1986,8 @@ class ImportSetupCard extends StatelessWidget {
   final VoidCallback onPreview;
   final ValueChanged<String> onPassphraseChanged;
   final ValueChanged<String> onTokenChanged;
+  final TextEditingController passphraseController;
+  final TextEditingController tokenController;
   final ValueChanged<ImportSource> onSourceChanged;
   final ValueChanged<ImportConflictStrategy> onStrategyChanged;
   final ValueChanged<bool> onRetainRawPayloadsChanged;
@@ -1767,6 +1995,7 @@ class ImportSetupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1857,10 +2086,32 @@ class ImportSetupCard extends StatelessWidget {
               }
             },
           ),
+          if (preview?.canApply == true) ...[
+            const SizedBox(height: 8),
+            Text(
+              source != ImportSource.plurisHavenArchive
+                  ? l10n.importPreservesLocalProfile
+                  : strategy == ImportConflictStrategy.prompt
+                  ? l10n.systemProfileConflictBody
+                  : strategy == ImportConflictStrategy.update
+                  ? l10n.nativeImportUpdatesProfile
+                  : l10n.importPreservesLocalProfile,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+            ),
+            if (source == ImportSource.plurisHavenArchive &&
+                (preview?.counts['preferences'] ?? 0) > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.nativeImportPreferencesPolicy,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
+            ],
+          ],
           if (plan.requiresToken) ...[
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('pluralkit-token-field'),
+              controller: tokenController,
               obscureText: true,
               autocorrect: false,
               enableSuggestions: false,
@@ -1875,6 +2126,7 @@ class ImportSetupCard extends StatelessWidget {
             const SizedBox(height: 10),
             TextField(
               key: const ValueKey('import-passphrase-field'),
+              controller: passphraseController,
               obscureText: true,
               onChanged: onPassphraseChanged,
               decoration: InputDecoration(
@@ -1907,8 +2159,6 @@ class ImportSetupCard extends StatelessWidget {
             label: l10n.inputLabel,
             value: localizeImportInput(l10n, source),
           ),
-          const SizedBox(height: 8),
-          ImportMetaRow(label: l10n.jobLabel, value: source.jobSource),
           const SizedBox(height: 8),
           ImportMetaRow(
             label: l10n.dedupeLabel,
@@ -2449,7 +2699,10 @@ class ImportJobRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final title = job.fileName ?? job.type;
+    final typeLabel = job.type == 'import_archive'
+        ? l10n.archiveImportJobType
+        : job.type;
+    final title = job.fileName ?? typeLabel;
     final subtitle = job.error == null
         ? '${job.status} - ${_shortDateTime(context, job.updatedAt)}'
         : '${_oneLineJobError(job.error!)} - ${l10n.tapForDetails}';
@@ -2484,6 +2737,14 @@ class ImportJobRow extends StatelessWidget {
 
   void _showJobDetails(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final typeLabel = job.type == 'import_archive'
+        ? l10n.archiveImportJobType
+        : job.type;
+    final title = job.fileName ?? typeLabel;
+    final source = ImportSource.values.where((item) => item.name == job.source);
+    final sourceLabel = source.isEmpty
+        ? job.source
+        : localizeImportSource(l10n, source.first);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -2507,7 +2768,7 @@ class ImportJobRow extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        job.fileName ?? job.type,
+                        title,
                         style: Theme.of(context).textTheme.titleLarge
                             ?.copyWith(fontWeight: FontWeight.w900),
                       ),
@@ -2516,11 +2777,11 @@ class ImportJobRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _JobDetailLine(label: l10n.typeFieldLabel, value: job.type),
-                if (job.source != null)
+                _JobDetailLine(label: l10n.typeFieldLabel, value: typeLabel),
+                if (sourceLabel != null)
                   _JobDetailLine(
                     label: l10n.sourceFieldLabel,
-                    value: job.source!,
+                    value: sourceLabel,
                   ),
                 _JobDetailLine(
                   label: l10n.createdFieldLabel,

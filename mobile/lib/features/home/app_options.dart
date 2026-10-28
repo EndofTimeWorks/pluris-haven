@@ -117,30 +117,32 @@ class AppOptionsPage extends StatelessWidget {
               value: customization.reducedMotion,
               onChanged: repository.setReducedMotion,
             ),
-            SpSwitchRow(
-              title: l10n.frontingNotificationTitle,
-              subtitle: l10n.frontingNotificationSubtitle,
-              value: customization.frontStatusNotification,
-              onChanged: (enabled) async {
-                if (enabled &&
-                    !await ensureNotificationPermissionForSetup(
-                      notificationService,
-                    )) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.notificationsPermissionDeniedBody),
-                      ),
-                    );
+            if (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS)
+              SpSwitchRow(
+                title: l10n.frontingNotificationTitle,
+                subtitle: l10n.frontingNotificationSubtitle,
+                value: customization.frontStatusNotification,
+                onChanged: (enabled) async {
+                  if (enabled &&
+                      !await ensureNotificationPermissionForSetup(
+                        notificationService,
+                      )) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.notificationsPermissionDeniedBody),
+                        ),
+                      );
+                    }
+                    return;
                   }
-                  return;
-                }
-                await repository.setFrontStatusNotification(enabled);
-                if (!enabled) {
-                  await notificationService.cancelFrontStatusNotification();
-                }
-              },
-            ),
+                  await repository.setFrontStatusNotification(enabled);
+                  if (!enabled) {
+                    await notificationService.cancelFrontStatusNotification();
+                  }
+                },
+              ),
             if (customization.frontStatusNotification &&
                 defaultTargetPlatform == TargetPlatform.android) ...[
               SpSwitchRow(
@@ -188,16 +190,18 @@ class AppOptionsPage extends StatelessWidget {
                 }
               },
             ),
-            SpSwitchRow(
-              title: defaultTargetPlatform == TargetPlatform.iOS
-                  ? l10n.iosPrivacyScreenTitle
-                  : l10n.screenshotBlockingTitle,
-              subtitle: defaultTargetPlatform == TargetPlatform.iOS
-                  ? l10n.iosPrivacyScreenSubtitle
-                  : l10n.screenshotBlockingSubtitle,
-              value: customization.screenshotBlockingEnabled,
-              onChanged: repository.setScreenshotBlockingEnabled,
-            ),
+            if (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS)
+              SpSwitchRow(
+                title: defaultTargetPlatform == TargetPlatform.iOS
+                    ? l10n.iosPrivacyScreenTitle
+                    : l10n.screenshotBlockingTitle,
+                subtitle: defaultTargetPlatform == TargetPlatform.iOS
+                    ? l10n.iosPrivacyScreenSubtitle
+                    : l10n.screenshotBlockingSubtitle,
+                value: customization.screenshotBlockingEnabled,
+                onChanged: repository.setScreenshotBlockingEnabled,
+              ),
             SpSwitchRow(
               title: l10n.highContrastTitle,
               subtitle: l10n.highContrastSubtitle,
@@ -458,21 +462,34 @@ class _AppearanceEditorSheetState extends State<AppearanceEditorSheet> {
       setState(() => _error = AppLocalizations.of(context).hexDigitsErrorText);
       return;
     }
-    await widget.repository.setAppearanceOverrides(
-      HavenAppearanceOverrides(
-        backgroundHex: _normalizeUiHexColor(colors[0]),
-        surfaceHex: _normalizeUiHexColor(colors[1]),
-        cardHex: _normalizeUiHexColor(colors[2]),
-        textHex: _normalizeUiHexColor(colors[3]),
-        mutedTextHex: _normalizeUiHexColor(colors[4]),
-        outlineHex: _normalizeUiHexColor(colors[5]),
-        cardRadius: _radius,
-        textScale: _scale,
-        spacingScale: _spacing,
-        borderWidth: _borderWidth,
-        cardElevation: _elevation,
-      ),
+    final appearance = HavenAppearanceOverrides(
+      backgroundHex: _normalizeUiHexColor(colors[0]),
+      surfaceHex: _normalizeUiHexColor(colors[1]),
+      cardHex: _normalizeUiHexColor(colors[2]),
+      textHex: _normalizeUiHexColor(colors[3]),
+      mutedTextHex: _normalizeUiHexColor(colors[4]),
+      outlineHex: _normalizeUiHexColor(colors[5]),
+      cardRadius: _radius,
+      textScale: _scale,
+      spacingScale: _spacing,
+      borderWidth: _borderWidth,
+      cardElevation: _elevation,
     );
+    final scheme = Theme.of(context).colorScheme;
+    if (!appearanceColoursReadable(
+      appearance: appearance,
+      background: Theme.of(context).scaffoldBackgroundColor,
+      surface: scheme.surface,
+      card: scheme.surfaceContainerHighest,
+      text: scheme.onSurface,
+      mutedText: scheme.onSurfaceVariant,
+    )) {
+      setState(
+        () => _error = AppLocalizations.of(context).appearanceContrastError,
+      );
+      return;
+    }
+    await widget.repository.setAppearanceOverrides(appearance);
     if (mounted) Navigator.pop(context);
   }
 
@@ -979,7 +996,9 @@ class DashboardShortcutManager extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeIds = customization.dashboardShortcutIds;
     final rows = <Widget>[
-      for (final shortcut in _orderedShortcutDefinitions(activeIds))
+      for (final shortcut in _orderedShortcutDefinitions(
+        customization.dashboardShortcutOrderIds,
+      ))
         DashboardShortcutRow(
           shortcut: shortcut,
           visible: activeIds.contains(shortcut.id),

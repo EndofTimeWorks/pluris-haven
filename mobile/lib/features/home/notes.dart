@@ -67,6 +67,11 @@ class _NotesPageState extends State<NotesPage> {
                 member.id: member.displayName,
             };
             final notes = _filteredNotes(noteSnapshot.data!, memberNamesById);
+            final titleCounts = <String, int>{};
+            for (final note in notes) {
+              final title = note.title.trim().toLowerCase();
+              titleCounts[title] = (titleCounts[title] ?? 0) + 1;
+            }
 
             return SpPage(
               children: [
@@ -117,6 +122,10 @@ class _NotesPageState extends State<NotesPage> {
                           NoteListTile(
                             note: note,
                             repository: widget.repository,
+                            duplicateTitle:
+                                (titleCounts[note.title.trim().toLowerCase()] ??
+                                    0) >
+                                1,
                             memberName: note.memberId == null
                                 ? null
                                 : memberNamesById[note.memberId],
@@ -172,18 +181,20 @@ class NoteListTile extends StatelessWidget {
     super.key,
     required this.note,
     required this.repository,
+    required this.duplicateTitle,
     this.memberName,
   });
 
   final NoteSummary note;
   final HavenRepository repository;
+  final bool duplicateTitle;
   final String? memberName;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final body = note.body.trim();
+    final body = _plainTextPreview(note.body);
     final ownerLabel = _noteMemberLabel(note, memberName, l10n);
 
     return Material(
@@ -202,7 +213,14 @@ class NoteListTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: IconButton(
-          tooltip: l10n.deleteNoteTooltip,
+          tooltip: duplicateTitle
+              ? l10n.deleteNoteForTooltip(
+                  note.title,
+                  note.id.substring(
+                    note.id.length > 8 ? note.id.length - 8 : 0,
+                  ),
+                )
+              : l10n.deleteNoteForTitle(note.title),
           onPressed: () => confirmDelete(
             context,
             title: l10n.deleteNoteTitle,
@@ -215,6 +233,38 @@ class NoteListTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _plainTextPreview(String body) {
+  if (body.trim().isEmpty) return '';
+  final text = StringBuffer();
+
+  void appendNodes(List<markdown.Node> nodes) {
+    for (final node in nodes) {
+      if (node is markdown.Text) {
+        text.write(node.text);
+      } else if (node is markdown.Element) {
+        if (node.tag == 'img') continue;
+        appendNodes(node.children ?? const []);
+        if (const {
+          'p',
+          'li',
+          'h1',
+          'h2',
+          'h3',
+          'h4',
+          'h5',
+          'h6',
+          'pre',
+        }.contains(node.tag)) {
+          text.write(' ');
+        }
+      }
+    }
+  }
+
+  appendNodes(markdown.Document().parseLines(body.split('\n')));
+  return text.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 String _noteMemberLabel(
@@ -233,6 +283,35 @@ String _noteMemberLabel(
 
 enum _NoteFilter { all, member, system }
 
+enum _EditorDismissChoice { save, discard }
+
+Future<_EditorDismissChoice?> _askAboutUnsavedChanges(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  return showDialog<_EditorDismissChoice>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.unsavedChangesTitle),
+      content: Text(l10n.unsavedChangesBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(l10n.keepEditingButton),
+        ),
+        TextButton(
+          onPressed: () =>
+              Navigator.pop(dialogContext, _EditorDismissChoice.discard),
+          child: Text(l10n.discardChangesButton),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(dialogContext, _EditorDismissChoice.save),
+          child: Text(l10n.saveButtonLabel),
+        ),
+      ],
+    ),
+  );
+}
+
 extension on _NoteFilter {
   String label(AppLocalizations l10n) => switch (this) {
     _NoteFilter.all => l10n.allFilter,
@@ -249,7 +328,7 @@ void showNoteSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => NoteSheet(repository: repository, note: note),
   );
@@ -272,8 +351,25 @@ class _NoteSheetState extends State<NoteSheet> {
   final _bodyController = TextEditingController();
   String? _memberId;
   bool _preview = false;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.note != null;
+
+  bool get _isDirty =>
+      _titleController.text != (widget.note?.title ?? '') ||
+      _bodyController.text != (widget.note?.body ?? '') ||
+      _memberId != widget.note?.memberId;
+
+  Future<void> _tryDismiss() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -295,7 +391,15 @@ class _NoteSheetState extends State<NoteSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
@@ -326,29 +430,37 @@ class _NoteSheetState extends State<NoteSheet> {
               initialData: const [],
               builder: (context, snapshot) {
                 final members = snapshot.data ?? const <MemberSummary>[];
-                final value = _memberId == null
-                    ? _systemNoteValue
-                    : members.any((member) => member.id == _memberId)
-                    ? _memberId!
-                    : _systemNoteValue;
-                return DropdownButtonFormField<String>(
-                  key: const ValueKey('note-member-field'),
-                  initialValue: value,
-                  decoration: InputDecoration(labelText: l10n.forFieldLabel),
-                  items: [
-                    DropdownMenuItem(
-                      value: _systemNoteValue,
-                      child: Text(l10n.systemNoteLabel),
-                    ),
-                    for (final member in members)
+                final hasSelectedMember = members.any(
+                  (member) => member.id == _memberId,
+                );
+                return KeyedSubtree(
+                  key: ValueKey('note-for-${members.length}-$_memberId'),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('note-member-field'),
+                    initialValue: _memberId ?? _systemNoteValue,
+                    decoration: InputDecoration(labelText: l10n.forFieldLabel),
+                    items: [
                       DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
+                        value: _systemNoteValue,
+                        child: Text(l10n.systemNoteLabel),
                       ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _memberId = value == _systemNoteValue ? null : value;
-                  }),
+                      if (_memberId != null && !hasSelectedMember)
+                        DropdownMenuItem(
+                          value: _memberId,
+                          child: Text(l10n.unknownMemberNoteLabel),
+                        ),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _memberId = value == _systemNoteValue ? null : value;
+                    }),
+                  ),
                 );
               },
             ),
@@ -387,7 +499,7 @@ class _NoteSheetState extends State<NoteSheet> {
             if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-note-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(l10n.saveNoteButton),
             ),
           ],
@@ -397,20 +509,38 @@ class _NoteSheetState extends State<NoteSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
+    if (_titleController.text.trim().isEmpty &&
+        _bodyController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).writeBeforeSaving)),
+      );
+      return;
+    }
     final draft = NoteDraft(
       title: _titleController.text,
       body: _bodyController.text,
       memberId: _memberId,
     );
     final note = widget.note;
-    if (note == null) {
-      await widget.repository.saveNote(draft);
-    } else {
-      await widget.repository.updateNote(note.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      if (note == null) {
+        await widget.repository.saveNote(draft);
+      } else {
+        await widget.repository.updateNote(note.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

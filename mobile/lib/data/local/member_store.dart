@@ -4,6 +4,19 @@ import '../ordering/lexorank.dart';
 import 'app_database.dart';
 import 'local_id.dart';
 
+final _invisibleMemberNameControls = RegExp(
+  r'[\u0000-\u001F\u007F-\u009F\u00AD\u061C\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]',
+);
+
+bool memberNameHasInvisibleControls(String name) =>
+    _invisibleMemberNameControls.hasMatch(name);
+
+String memberNameComparisonKey(String name) => name
+    .replaceAll(_invisibleMemberNameControls, '')
+    .trim()
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .toLowerCase();
+
 typedef EncryptMemberText = Future<String?> Function(
   String memberId,
   String field,
@@ -344,6 +357,9 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
   Future<void> save(MemberDraft draft) async {
     final displayName = draft.displayName.trim();
     if (displayName.isEmpty) return;
+    if (memberNameHasInvisibleControls(displayName)) {
+      throw const FormatException('Member name contains invisible controls.');
+    }
 
     final now = DateTime.now().toUtc();
     final memberId = newLocalId('member');
@@ -407,6 +423,9 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
   Future<void> update(String memberId, MemberDraft draft) async {
     final displayName = draft.displayName.trim();
     if (displayName.isEmpty) return;
+    if (memberNameHasInvisibleControls(displayName)) {
+      throw const FormatException('Member name contains invisible controls.');
+    }
 
     final existing =
         await (database.select(database.members)..where(
@@ -555,7 +574,8 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
         await (database.select(database.journalEntries)..where(
               (journal) =>
                   journal.systemId.equals(localSystemId) &
-                  journal.memberId.equals(memberId),
+                  (journal.memberId.equals(memberId) |
+                      journal.authorMemberId.equals(memberId)),
             ))
             .get();
     final reminderTriggers =
@@ -650,6 +670,22 @@ WHERE fs.system_id = ? AND fsm.member_id = ? AND fs.ended_at IS NULL
 
   Future<void> purge(String memberId) {
     return database.transaction(() async {
+      final target =
+          await (database.select(database.members)..where(
+                (member) =>
+                    member.systemId.equals(localSystemId) &
+                    member.id.equals(memberId) &
+                    member.deletedAt.isNotNull() &
+                    member.purgedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (target == null) return;
+      await (database.delete(database.contentRevisions)..where(
+            (revision) =>
+                revision.targetType.equals('member_bio') &
+                revision.targetId.equals(memberId),
+          ))
+          .go();
       final customFieldValueIds =
           await (database.select(database.customFieldValues)
                 ..where((value) => value.memberId.equals(memberId)))

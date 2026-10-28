@@ -107,14 +107,14 @@ void main() {
     final repository = testRepository(database);
     await repository.ensureLocalSystem();
     await repository.setAppearanceOverrides(
-      const HavenAppearanceOverrides(cardHex: '#102030'),
+      const HavenAppearanceOverrides(cardHex: '#EFEFEF'),
     );
 
     await tester.pumpWidget(PlurisHavenApp(repository: repository));
     await tester.pump();
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(app.theme!.cardTheme.color, const Color(0xFF102030));
+    expect(app.theme!.cardTheme.color, const Color(0xFFEFEFEF));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
@@ -220,7 +220,7 @@ void main() {
   });
 
   test('English is the deterministic Flutter fallback for system locales', () {
-    expect(supportedLanguageLocales.first, const Locale('en'));
+    expect(supportedLanguageLocales.first, const Locale('en', 'GB'));
     expect(supportedLanguageLocales[1], const Locale('en', 'US'));
     expect(
       supportedLanguageForCode(systemLanguageCode).code,

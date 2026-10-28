@@ -1,4 +1,6 @@
 import asyncio
+import re
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -33,6 +35,20 @@ def _production_settings(**overrides: object) -> Settings:
     }
     values.update(overrides)
     return Settings(**values)
+
+
+def test_compose_forwards_every_application_setting() -> None:
+    compose = (Path(__file__).parents[1] / "compose.yml").read_text()
+    forwarded = set(re.findall(r"^      (PLURIS_[A-Z0-9_]+):", compose, re.MULTILINE))
+    expected = {f"PLURIS_{name.upper()}" for name in Settings.model_fields}
+
+    assert expected <= forwarded
+
+
+def test_compose_readiness_probe_uses_the_trusted_public_host() -> None:
+    compose = (Path(__file__).parents[1] / "compose.yml").read_text()
+    assert "http://127.0.0.1:8000/ready" in compose
+    assert "urlsplit(os.environ['PLURIS_PUBLIC_URL']).hostname" in compose
 
 
 def test_production_requires_postgresql() -> None:

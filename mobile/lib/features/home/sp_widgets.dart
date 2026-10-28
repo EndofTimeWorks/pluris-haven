@@ -49,12 +49,14 @@ class SpNavigationEntry extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            '>',
-            style: TextStyle(
-              color: scheme.onSurfaceVariant,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          ExcludeSemantics(
+            child: Text(
+              '>',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -152,7 +154,7 @@ class SpSearchField extends StatelessWidget {
       onChanged: onChanged,
       readOnly: onChanged == null,
       decoration: InputDecoration(
-        hintText: hintText,
+        labelText: hintText,
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: scheme.surfaceContainerHighest,
@@ -227,9 +229,12 @@ class SpSectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
           ),
         ),
         ?trailing,
@@ -310,7 +315,7 @@ class SpDataLoadState extends StatelessWidget {
   }
 }
 
-class SpActionRow extends StatelessWidget {
+class SpActionRow extends StatefulWidget {
   const SpActionRow({
     super.key,
     required this.primary,
@@ -325,13 +330,46 @@ class SpActionRow extends StatelessWidget {
   final VoidCallback? onSecondary;
 
   @override
+  State<SpActionRow> createState() => _SpActionRowState();
+}
+
+class _SpActionRowState extends State<SpActionRow> {
+  final _primaryFocus = FocusNode();
+  final _secondaryFocus = FocusNode();
+
+  @override
+  void dispose() {
+    _primaryFocus.dispose();
+    _secondaryFocus.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final spacing = _spacingOf(context);
     return Row(
       children: [
-        FilledButton(onPressed: onPrimary, child: Text(primary)),
+        FilledButton(
+          focusNode: _primaryFocus,
+          onPressed: widget.onPrimary == null
+              ? null
+              : () {
+                  _primaryFocus.requestFocus();
+                  widget.onPrimary!();
+                },
+          child: Text(widget.primary),
+        ),
         SizedBox(width: 10 * spacing),
-        OutlinedButton(onPressed: onSecondary, child: Text(secondary)),
+        OutlinedButton(
+          focusNode: _secondaryFocus,
+          onPressed: widget.onSecondary == null
+              ? null
+              : () {
+                  _secondaryFocus.requestFocus();
+                  widget.onSecondary!();
+                },
+          child: Text(widget.secondary),
+        ),
       ],
     );
   }
@@ -358,9 +396,15 @@ class SpSettingsGroup extends StatelessWidget {
               16 * spacing,
               8 * spacing,
             ),
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
           for (var i = 0; i < rows.length; i++) ...[
@@ -378,7 +422,7 @@ class SpSettingsGroup extends StatelessWidget {
   }
 }
 
-class SpSettingsRow extends StatelessWidget {
+class SpSettingsRow extends StatefulWidget {
   const SpSettingsRow(
     this.title,
     this.subtitle, {
@@ -395,6 +439,19 @@ class SpSettingsRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool interactive;
   final Widget? subtitleWidget;
+
+  @override
+  State<SpSettingsRow> createState() => _SpSettingsRowState();
+}
+
+class _SpSettingsRowState extends State<SpSettingsRow> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -414,16 +471,16 @@ class SpSettingsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 SizedBox(height: 3 * spacing),
-                subtitleWidget ??
+                widget.subtitleWidget ??
                     Text(
-                      subtitle,
+                      widget.subtitle,
                       style: TextStyle(
                         color: scheme.onSurfaceVariant,
                         fontSize: 13,
@@ -432,33 +489,41 @@ class SpSettingsRow extends StatelessWidget {
               ],
             ),
           ),
-          trailing ??
-              Text(
-                '>',
-                style: TextStyle(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w800,
+          widget.trailing ??
+              ExcludeSemantics(
+                child: Text(
+                  '>',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
         ],
       ),
     );
 
-    if (!interactive) {
+    if (!widget.interactive) {
       return content;
     }
 
     return Semantics(
       button: true,
-      label: '$title. $subtitle',
+      label: '${widget.title}. ${widget.subtitle}',
       child: InkWell(
-        onTap:
-            onTap ??
-            () => showPlannedFeaturePopup(
+        focusNode: _focusNode,
+        onTap: () {
+          _focusNode.requestFocus();
+          if (widget.onTap case final onTap?) {
+            onTap();
+          } else {
+            showPlannedFeaturePopup(
               context,
-              title: title,
-              detail: subtitle,
-            ),
+              title: widget.title,
+              detail: widget.subtitle,
+            );
+          }
+        },
         child: content,
       ),
     );
@@ -546,12 +611,14 @@ class SpCard extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.focusNode,
     this.outlined = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
   });
 
   final Widget child;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
   final bool outlined;
   final EdgeInsetsGeometry padding;
 
@@ -594,6 +661,7 @@ class SpCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(radius),
+        focusNode: focusNode,
         onTap: onTap,
         child: content,
       ),

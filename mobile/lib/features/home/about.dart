@@ -7,12 +7,24 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final darkLogo = Theme.of(context).brightness == Brightness.dark;
     return SpPage(
       children: [
         SpCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Image.asset(
+                darkLogo
+                    ? 'assets/brand/pluris_haven_alternate_dark.png'
+                    : 'assets/brand/pluris_haven_icon.png',
+                key: const ValueKey('about-brand-logo'),
+                width: darkLogo ? 120 : 96,
+                height: darkLogo ? 160 : 96,
+                cacheWidth: 240,
+                excludeFromSemantics: true,
+              ),
+              const SizedBox(height: 12),
               Text(
                 l10n.appName,
                 style: const TextStyle(
@@ -37,6 +49,20 @@ class AboutPage extends StatelessWidget {
         SpSettingsGroup(
           title: l10n.aboutGroupTitle,
           rows: [
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) => SpSettingsRow(
+                l10n.appVersionLabel,
+                snapshot.hasData
+                    ? l10n.appVersionValue(
+                        snapshot.data!.version,
+                        snapshot.data!.buildNumber,
+                      )
+                    : l10n.unknownLabel,
+                trailing: const SizedBox.shrink(),
+                interactive: false,
+              ),
+            ),
             SpSettingsRow(l10n.storageLabel, l10n.storageValue),
             SpSettingsRow(
               l10n.compatibilityLabel,

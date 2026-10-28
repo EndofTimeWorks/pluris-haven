@@ -243,7 +243,22 @@ class GroupListTile extends StatelessWidget {
             onTap: () =>
                 showEditGroupSheet(context, repository, group, allGroups),
             trailing: PopupMenuButton<String>(
-              tooltip: l10n.groupActionsTooltip,
+              tooltip:
+                  allGroups
+                          .where(
+                            (candidate) =>
+                                candidate.name.trim().toLowerCase() ==
+                                group.name.trim().toLowerCase(),
+                          )
+                          .length >
+                      1
+                  ? l10n.groupActionsFor(
+                      group.name,
+                      group.id.substring(
+                        group.id.length > 8 ? group.id.length - 8 : 0,
+                      ),
+                    )
+                  : l10n.groupActionsForName(group.name),
               onSelected: (value) {
                 switch (value) {
                   case 'edit':
@@ -274,6 +289,7 @@ void showAddGroupSheet(BuildContext context, HavenRepository repository) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddGroupSheet(repository: repository),
   );
@@ -289,6 +305,7 @@ void showEditGroupSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    enableDrag: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AddGroupSheet(
       repository: repository,
@@ -322,14 +339,49 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     text: _hexFromAccent(HavenAccentColor.gold),
   );
   String? _colorError;
+  String? _nameError;
   String? _parentGroupId;
   bool _isSubsystem = false;
+  bool _isSaving = false;
+  late Future<List<MemberSummary>> _memberLoad;
+  final Set<String> _selectedMemberIds = {};
+  final Set<String> _initialMemberIds = {};
+  bool _membersLoaded = false;
+  String _memberQuery = '';
+  late String _initialName;
+  late String _initialDescription;
+  late String _initialEmoji;
+  late String _initialColor;
+  String? _initialParentGroupId;
+  late bool _initialIsSubsystem;
 
   bool get _isEditing => widget.group != null;
+  bool get _isDirty =>
+      _nameController.text != _initialName ||
+      _descriptionController.text != _initialDescription ||
+      _emojiController.text != _initialEmoji ||
+      _colorController.text != _initialColor ||
+      _parentGroupId != _initialParentGroupId ||
+      _isSubsystem != _initialIsSubsystem ||
+      _selectedMemberIds.length != _initialMemberIds.length ||
+      !_initialMemberIds.containsAll(_selectedMemberIds);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
     super.initState();
+    _memberLoad = _loadMembers();
     final group = widget.group;
     if (group != null) {
       _nameController.text = group.name;
@@ -343,6 +395,35 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
       _parentGroupId = group.parentGroupId;
       _isSubsystem = group.isSubsystem;
     }
+    _initialName = _nameController.text;
+    _initialDescription = _descriptionController.text;
+    _initialEmoji = _emojiController.text;
+    _initialColor = _colorController.text;
+    _initialParentGroupId = _parentGroupId;
+    _initialIsSubsystem = _isSubsystem;
+  }
+
+  Future<List<MemberSummary>> _loadMembers() async {
+    final members = await widget.repository
+        .watchMembers(includeArchived: true, listOnly: true)
+        .first;
+    if (mounted) {
+      setState(() {
+        if (!_membersLoaded) {
+          final groupId = widget.group?.id;
+          if (groupId != null) {
+            _selectedMemberIds.addAll(
+              members
+                  .where((member) => member.groupIds.contains(groupId))
+                  .map((member) => member.id),
+            );
+          }
+          _initialMemberIds.addAll(_selectedMemberIds);
+          _membersLoaded = true;
+        }
+      });
+    }
+    return members;
   }
 
   @override
@@ -356,138 +437,260 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<GroupSummary>>(
-      stream: widget.repository.watchGroups(),
-      initialData: widget.initialGroups,
-      builder: (context, snapshot) {
-        final l10n = AppLocalizations.of(context);
-        final allGroups = snapshot.data ?? widget.initialGroups;
-        final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
-        if (_parentGroupId != null &&
-            !parentOptions.any((group) => group.id == _parentGroupId)) {
-          _parentGroupId = null;
-        }
-
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              18,
-              0,
-              18,
-              18 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _isEditing ? l10n.editGroupTitle : l10n.addGroupButton,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  key: const ValueKey('group-name-field'),
-                  controller: _nameController,
-                  autofocus: true,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(labelText: l10n.nameFieldLabel),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const ValueKey('group-emoji-field'),
-                  controller: _emojiController,
-                  maxLength: 4,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(labelText: l10n.emojiFieldLabel),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String?>(
-                  key: const ValueKey('group-parent-field'),
-                  initialValue: _parentGroupId,
-                  decoration: InputDecoration(
-                    labelText: l10n.parentGroupFieldLabel,
-                  ),
-                  items: [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text(l10n.noParentOption),
-                    ),
-                    for (final option in parentOptions)
-                      DropdownMenuItem<String?>(
-                        value: option.id,
-                        child: Text(option.name),
-                      ),
-                  ],
-                  onChanged: (value) => setState(() => _parentGroupId = value),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _descriptionController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: l10n.descriptionFieldLabel,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final color in HavenAccentColor.values)
-                      ChoiceChip(
-                        label: Text(_localizedAccentLabel(color, l10n)),
-                        selected:
-                            _normalizeUiHexColor(_colorController.text) ==
-                            _hexFromAccent(color),
-                        onSelected: (_) => setState(() {
-                          _colorController.text = _hexFromAccent(color);
-                          _colorError = null;
-                        }),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const ValueKey('group-color-hex-field'),
-                  controller: _colorController,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: l10n.colorHexFieldLabel,
-                    hintText: '#F2C75C',
-                    errorText: _colorError,
-                  ),
-                  onChanged: (_) {
-                    if (_colorError != null) {
-                      setState(() => _colorError = null);
-                    }
-                  },
-                ),
-                SwitchListTile(
-                  key: const ValueKey('group-subsystem-toggle'),
-                  title: Text(l10n.subsystemToggleTitle),
-                  subtitle: Text(l10n.subsystemToggleBody),
-                  value: _isSubsystem,
-                  onChanged: (value) => setState(() => _isSubsystem = value),
-                ),
-                const SizedBox(height: 14),
-                FilledButton(
-                  key: const ValueKey('save-group-button'),
-                  onPressed: _save,
-                  child: Text(
-                    _isEditing ? l10n.saveChangesButton : l10n.saveGroupButton,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _tryDismiss();
       },
+      child: StreamBuilder<List<GroupSummary>>(
+        stream: widget.repository.watchGroups(),
+        initialData: widget.initialGroups,
+        builder: (context, snapshot) {
+          final l10n = AppLocalizations.of(context);
+          final allGroups = snapshot.data ?? widget.initialGroups;
+          final parentOptions = _parentOptionsFor(allGroups, widget.group?.id);
+          if (_parentGroupId != null &&
+              !parentOptions.any((group) => group.id == _parentGroupId)) {
+            _parentGroupId = null;
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                0,
+                18,
+                18 + MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _isEditing ? l10n.editGroupTitle : l10n.addGroupButton,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    key: const ValueKey('group-name-field'),
+                    controller: _nameController,
+                    autofocus: true,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: l10n.nameFieldLabel,
+                      errorText: _nameError,
+                    ),
+                    onChanged: (_) {
+                      if (_nameError != null) setState(() => _nameError = null);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    key: const ValueKey('group-emoji-field'),
+                    controller: _emojiController,
+                    maxLength: 4,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: l10n.emojiFieldLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String?>(
+                    key: const ValueKey('group-parent-field'),
+                    initialValue: _parentGroupId,
+                    decoration: InputDecoration(
+                      labelText: l10n.parentGroupFieldLabel,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(l10n.noParentOption),
+                      ),
+                      for (final option in parentOptions)
+                        DropdownMenuItem<String?>(
+                          value: option.id,
+                          child: Text(option.name),
+                        ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _parentGroupId = value),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _descriptionController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: l10n.descriptionFieldLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final color in HavenAccentColor.values)
+                        ChoiceChip(
+                          label: Text(_localizedAccentLabel(color, l10n)),
+                          selected:
+                              _normalizeUiHexColor(_colorController.text) ==
+                              _hexFromAccent(color),
+                          onSelected: (_) => setState(() {
+                            _colorController.text = _hexFromAccent(color);
+                            _colorError = null;
+                          }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    key: const ValueKey('group-color-hex-field'),
+                    controller: _colorController,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      labelText: l10n.colorHexFieldLabel,
+                      hintText: '#F2C75C',
+                      errorText: _colorError,
+                    ),
+                    onChanged: (_) {
+                      if (_colorError != null) {
+                        setState(() => _colorError = null);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    key: const ValueKey('group-subsystem-toggle'),
+                    title: Text(l10n.subsystemToggleTitle),
+                    subtitle: Text(l10n.subsystemToggleBody),
+                    value: _isSubsystem,
+                    onChanged: (value) => setState(() => _isSubsystem = value),
+                  ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<List<MemberSummary>>(
+                    future: _memberLoad,
+                    builder: (context, membersSnapshot) {
+                      if (membersSnapshot.hasError) {
+                        return SpDataLoadState(
+                          error: membersSnapshot.error,
+                          onRetry: () => setState(() {
+                            _memberLoad = _loadMembers();
+                          }),
+                        );
+                      }
+                      if (!membersSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final members = membersSnapshot.data!;
+                      final nameCounts = <String, int>{};
+                      for (final member in members) {
+                        final name = memberNameComparisonKey(
+                          member.displayName,
+                        );
+                        nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+                      }
+                      final query = _memberQuery.trim().toLowerCase();
+                      final visible = [
+                        for (final member in members)
+                          if (query.isEmpty ||
+                              member.displayName.toLowerCase().contains(
+                                query,
+                              ) ||
+                              (member.pronouns?.toLowerCase().contains(query) ??
+                                  false))
+                            member,
+                      ];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.groupMembersTitle,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(l10n.groupMembersHelp),
+                          if (members.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              key: const ValueKey('group-member-search-field'),
+                              decoration: InputDecoration(
+                                labelText: l10n.searchMembersHint,
+                              ),
+                              onChanged: (value) =>
+                                  setState(() => _memberQuery = value),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.groupMemberCount(_selectedMemberIds.length),
+                            ),
+                            SizedBox(
+                              height: 220,
+                              child: ListView.builder(
+                                itemCount: visible.length,
+                                itemBuilder: (context, index) {
+                                  final member = visible[index];
+                                  return CheckboxListTile(
+                                    key: ValueKey('group-member-${member.id}'),
+                                    title: Text(member.displayName),
+                                    subtitle:
+                                        (nameCounts[memberNameComparisonKey(
+                                                  member.displayName,
+                                                )] ??
+                                                0) >
+                                            1
+                                        ? Text(
+                                            member.id.substring(
+                                              member.id.length > 8
+                                                  ? member.id.length - 8
+                                                  : 0,
+                                            ),
+                                          )
+                                        : null,
+                                    value: _selectedMemberIds.contains(
+                                      member.id,
+                                    ),
+                                    onChanged: (selected) => setState(() {
+                                      if (selected == true) {
+                                        _selectedMemberIds.add(member.id);
+                                      } else {
+                                        _selectedMemberIds.remove(member.id);
+                                      }
+                                    }),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton(
+                    key: const ValueKey('save-group-button'),
+                    onPressed: _isSaving || !_membersLoaded ? null : _save,
+                    child: Text(
+                      _isEditing
+                          ? l10n.saveChangesButton
+                          : l10n.saveGroupButton,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   Future<void> _save() async {
+    if (_isSaving || !_membersLoaded) return;
+    if (_nameController.text.trim().isEmpty) {
+      setState(
+        () => _nameError = AppLocalizations.of(context).nameRequiredError,
+      );
+      return;
+    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
     if (colorHex == null) {
       setState(
@@ -497,22 +700,33 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
     }
 
     final draft = GroupDraft(
-      name: _nameController.text,
+      name: _nameController.text.trim(),
       parentGroupId: _parentGroupId,
       emoji: _emojiController.text,
       colorHex: colorHex,
       description: _descriptionController.text,
       isSubsystem: _isSubsystem,
+      memberIds: _selectedMemberIds.toList(growable: false),
     );
-    final group = widget.group;
-    if (group == null) {
-      await widget.repository.saveGroup(draft);
-    } else {
-      await widget.repository.updateGroup(group.id, draft);
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final group = widget.group;
+      if (group == null) {
+        await widget.repository.saveGroup(draft);
+      } else {
+        await widget.repository.updateGroup(group.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 }

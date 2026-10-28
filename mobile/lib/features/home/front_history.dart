@@ -16,7 +16,6 @@ class FrontHistoryPage extends StatefulWidget {
 
 class _FrontHistoryPageState extends State<FrontHistoryPage> {
   final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
   late Stream<List<FrontHistoryEntry>> _historyStream;
   String _filter = 'all';
   String _query = '';
@@ -31,19 +30,16 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
     _historyStream = widget.repository.watchRecentFrontHistory(
       limit: _historyLimit,
     );
-    _scrollController.addListener(_loadOlderAtEnd);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
-  void _loadOlderAtEnd() {
-    if (_loadingOlder || !_scrollController.hasClients) return;
-    if (_scrollController.position.extentAfter > 300) return;
+  void _loadOlder() {
+    if (_loadingOlder) return;
     final total = widget.snapshot?.frontHistoryCount ?? 0;
     if (_historyLimit >= total) return;
     setState(() {
@@ -102,14 +98,14 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
         final hasMore =
             (widget.snapshot?.frontHistoryCount ?? entries.length) >
             entries.length;
-        if (_loadingOlder && (!hasMore || entries.length >= _historyLimit)) {
+        if (_loadingOlder &&
+            historySnapshot.connectionState == ConnectionState.active) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => _loadingOlder = false);
           });
         }
 
         return CustomScrollView(
-          controller: _scrollController,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(10, 14, 10, 0),
@@ -194,7 +190,12 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                       child: SpSectionHeader(
                         title: l10n.frontHistoryTitle,
                         trailing: StatusPill(
-                          text: '${filteredEntries.length}/${entries.length}',
+                          text: l10n.frontHistoryShownCount(
+                            filteredEntries.length,
+                            entries.length,
+                            widget.snapshot?.frontHistoryCount ??
+                                entries.length,
+                          ),
                         ),
                       ),
                     ),
@@ -208,7 +209,9 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                             )
                           : SpEmptyState(
                               title: l10n.noMatchingFronts,
-                              body: l10n.noMatchingFrontsBody,
+                              body: hasMore
+                                  ? l10n.frontHistorySearchLimitedBody
+                                  : l10n.noMatchingFrontsBody,
                             ),
                     ),
                 ],
@@ -251,7 +254,10 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
-                        : const SizedBox(height: 1),
+                        : OutlinedButton(
+                            onPressed: _loadOlder,
+                            child: Text(l10n.loadOlderFronts),
+                          ),
                   ),
                 ),
               ),
@@ -260,7 +266,7 @@ class _FrontHistoryPageState extends State<FrontHistoryPage> {
               sliver: SliverToBoxAdapter(
                 child: SpActionRow(
                   primary: l10n.addEntryButton,
-                  secondary: l10n.resetButton,
+                  secondary: l10n.clearFrontHistoryFilters,
                   onPrimary: () => showFrontHistoryEditor(
                     context,
                     repository: widget.repository,
@@ -609,7 +615,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   late final TextEditingController _noteController;
   late final TextEditingController _memberSearchController;
   late DateTime _startedAt;
-  late DateTime _endedAt;
+  DateTime? _endedAt;
   late final Set<String> _memberIds;
   String _memberQuery = '';
   String? _error;
@@ -621,7 +627,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
     final entry = widget.entry;
     _startedAt =
         entry?.startedAt.toLocal() ?? now.subtract(const Duration(hours: 1));
-    _endedAt = entry?.endedAt?.toLocal() ?? now;
+    _endedAt = entry == null ? now : entry.endedAt?.toLocal();
     _memberIds = {...?entry?.memberIds};
     _labelController = TextEditingController(
       text: entry?.memberIds.isEmpty == true ? entry?.label : null,
@@ -670,10 +676,20 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.endedFieldLabel),
-              subtitle: Text(_shortDateTime(context, _endedAt)),
+              subtitle: Text(
+                _endedAt == null
+                    ? l10n.activeStatus
+                    : _shortDateTime(context, _endedAt!),
+              ),
               trailing: const Icon(Icons.event_available_outlined),
               onTap: () => _pickDateTime(start: false),
             ),
+            if (_endedAt != null)
+              TextButton(
+                key: const ValueKey('keep-front-active-button'),
+                onPressed: () => setState(() => _endedAt = null),
+                child: Text(l10n.activeStatus),
+              ),
             const SizedBox(height: 8),
             Text(
               l10n.navigationMembers,
@@ -714,7 +730,9 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
                         children: [
                           for (final member in visibleMembers)
                             FilterChip(
-                              label: Text(member.displayName),
+                              label: Text(
+                                _memberPickerLabel(member, members, l10n),
+                              ),
                               selected: _memberIds.contains(member.id),
                               onSelected: (selected) => setState(() {
                                 if (selected) {
@@ -778,7 +796,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 
   Future<void> _pickDateTime({required bool start}) async {
-    final initial = start ? _startedAt : _endedAt;
+    final initial = start ? _startedAt : (_endedAt ?? DateTime.now());
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -808,7 +826,7 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 
   Future<void> _save() async {
-    if (_endedAt.isBefore(_startedAt)) {
+    if (_endedAt != null && _endedAt!.isBefore(_startedAt)) {
       setState(() => _error = AppLocalizations.of(context).endBeforeStartError);
       return;
     }
@@ -853,6 +871,11 @@ String _frontTimingLabel(
 String _shortDateTime(BuildContext context, DateTime value) {
   final local = value.toLocal();
   final material = MaterialLocalizations.of(context);
-  return '${material.formatShortDate(local)} '
+  final locale = Localizations.localeOf(context);
+  final date = locale.languageCode == 'en'
+      ? intl.DateFormat.yMMMd(locale.countryCode == 'US' ? 'en_US' : 'en_GB')
+            .format(local)
+      : material.formatShortDate(local);
+  return '$date '
       '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}';
 }

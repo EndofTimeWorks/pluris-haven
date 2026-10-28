@@ -18,6 +18,156 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('member poll votes stay attributed through local recovery', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final members = await repository.watchMembers().first;
+    final kai = members.singleWhere((member) => member.displayName == 'Kai');
+    final river = members.singleWhere(
+      (member) => member.displayName == 'River',
+    );
+    await repository.setFrontMembers([kai.id, river.id]);
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.singleChoice,
+        voteMode: PollVoteMode.perMember,
+        options: ['Soup', 'Rice'],
+        restrictVotingToFronters: true,
+      ),
+    );
+    var poll = (await repository.watchPolls().first).single;
+    await repository.togglePollOption(
+      poll.id,
+      poll.options.first.id,
+      memberId: kai.id,
+    );
+    await repository.togglePollOption(
+      poll.id,
+      poll.options.last.id,
+      memberId: river.id,
+    );
+    poll = (await repository.watchPolls().first).single;
+    expect(poll.selectedCount, 2);
+    expect(poll.options.first.memberIds, {kai.id});
+    expect(poll.options.last.memberIds, {river.id});
+    expect(
+      (await repository.watchPollVoteEvents(poll.id).first).map(
+        (event) => event.memberId,
+      ),
+      containsAll([kai.id, river.id]),
+    );
+
+    final archive = await repository.buildLocalArchiveJson();
+    await database.close();
+    final freshDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(freshDatabase.close);
+    final fresh = testRepository(freshDatabase);
+    await fresh.ensureLocalSystem();
+    await fresh.importLocalArchiveJson(archive);
+    final restored = (await fresh.watchPolls().first).single;
+    expect(restored.voteMode, PollVoteMode.perMember);
+    expect(restored.options.first.memberIds, {kai.id});
+    expect(restored.options.last.memberIds, {river.id});
+  });
+
+  test('edited reminder time survives export and fresh restore', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final id = await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Daily at 09:00',
+        scheduleKind: 'daily',
+        scheduleTime: '09:00',
+      ),
+    );
+    expect(id, isNotNull);
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Meds',
+        scheduleText: 'Daily at 10:15',
+        scheduleKind: 'daily',
+        scheduleTime: '10:15',
+      ),
+      reminderId: id,
+    );
+    expect(
+      (await repository.watchReminders().first).single.scheduleTime,
+      '10:15',
+    );
+    final archive = await repository.buildLocalArchiveJson();
+    expect(
+      (jsonDecode(archive)
+          as Map<String, dynamic>)['reminders'][0]['schedule_time'],
+      '10:15',
+    );
+
+    await database.close();
+    final freshDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(freshDatabase.close);
+    final fresh = testRepository(freshDatabase);
+    await fresh.ensureLocalSystem();
+    await fresh.importLocalArchiveJson(
+      archive,
+      strategy: ImportConflictStrategy.update,
+    );
+    expect((await fresh.watchReminders().first).single.scheduleTime, '10:15');
+  });
+
+  test('Skip and foreign imports preserve the local system profile', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.updateSystemProfile(
+      const SystemProfileDraft(
+        name: 'Local name',
+        description: 'Private local profile',
+      ),
+    );
+    final archive = jsonDecode(
+      await repository.buildLocalArchiveJson(),
+    ) as Map<String, dynamic>;
+    (archive['system'] as Map<String, dynamic>)['name'] = 'Imported name';
+
+    for (final strategy in ImportConflictStrategy.values.where(
+      (strategy) => strategy != ImportConflictStrategy.prompt,
+    )) {
+      await repository.importLocalArchiveJson(
+        jsonEncode(archive),
+        strategy: strategy,
+        source: ImportSource.pluralSpace,
+      );
+      expect(
+        (await repository.loadHomeSnapshot()).systemName,
+        'Local name',
+        reason: 'foreign import with $strategy',
+      );
+    }
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.skip,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Local name');
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.create,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Local name');
+    await repository.importLocalArchiveJson(
+      jsonEncode(archive),
+      strategy: ImportConflictStrategy.update,
+    );
+    expect((await repository.loadHomeSnapshot()).systemName, 'Imported name');
+  });
+
   test(
     'keeps locally purged members terminal during archive updates',
     () async {
@@ -448,29 +598,45 @@ void main() {
     },
   );
 
-  test('caps custom field configuration from local archive restores', () async {
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    final repository = testRepository(database);
-    await repository.ensureLocalSystem();
+  test(
+    'rejects oversized custom field configuration without altering data',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
 
-    await repository.importLocalArchiveJson(
-      jsonEncode({
-        'format': 'pluris_haven.local_archive',
-        'version': 1,
-        'custom_fields': [
-          {
-            'id': 'field-1',
-            'name': 'Oversized choices',
-            'configuration': {'choices': List.filled(5001, 'x')},
-          },
-        ],
-      }),
-    );
+      await expectLater(
+        repository.importLocalArchiveJson(
+          jsonEncode({
+            'format': 'pluris_haven.local_archive',
+            'version': 1,
+            'custom_fields': [
+              {
+                'id': 'field-1',
+                'name': 'Oversized choices',
+                'configuration': {'choices': List.filled(5001, 'x')},
+              },
+            ],
+          }),
+        ),
+        throwsArgumentError,
+      );
 
-    final field = (await repository.watchCustomFields().first).single;
-    expect(field.configuration, isEmpty);
-  });
+      expect(await repository.watchCustomFields().first, isEmpty);
+      await expectLater(
+        repository.saveCustomField(
+          CustomFieldDraft(
+            name: 'Oversized',
+            fieldType: 'select',
+            configuration: {'choices': List.filled(5001, 'x')},
+          ),
+        ),
+        throwsArgumentError,
+      );
+      expect(await repository.watchCustomFields().first, isEmpty);
+    },
+  );
 
   test('assigns distinct ordering ranks to new members', () async {
     final database = AppDatabase(NativeDatabase.memory());
@@ -490,6 +656,32 @@ void main() {
       members.map((member) => member.displayName),
       orderedEquals(['River', 'Juniper']),
     );
+  });
+
+  test('rejects invisible and directional controls in member names', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    final member = (await repository.watchMembers().first).single;
+
+    for (final disguisedName in ['Ka\u200Bi', 'ev\u202Eil']) {
+      expect(
+        repository.saveMember(MemberDraft(displayName: disguisedName)),
+        throwsFormatException,
+      );
+      expect(
+        repository.updateMember(
+          member.id,
+          MemberDraft(displayName: disguisedName),
+        ),
+        throwsFormatException,
+      );
+    }
+    expect((await repository.watchMembers().first).single.displayName, 'Kai');
+    expect(memberNameComparisonKey('Ka\u200Bi'), 'kai');
+    expect(memberNameComparisonKey(' Kai  '), 'kai');
   });
 
   test('reuses member decryptions when only metadata changes', () async {
@@ -676,7 +868,10 @@ void main() {
     );
 
     await repository.setFrontMembers([sage.id]);
-    expect((await repository.loadHomeSnapshot()).currentFrontText, 'Sage');
+    expect(
+      (await repository.loadHomeSnapshot()).currentFrontText,
+      'Away, Asleep, Sage',
+    );
   });
 
   test('creates and edits historical front intervals', () async {
@@ -721,6 +916,228 @@ void main() {
     expect(audit.single.beforeSnapshot, contains('Morning'));
     expect(audit.single.afterSnapshot, contains('Blurry'));
   });
+
+  test('replacing selected members preserves overlapping active intervals and custom fronts', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    for (final name in ['Iris', 'Sage', 'River']) {
+      await repository.saveMember(MemberDraft(displayName: name));
+    }
+    final members = await repository.watchMembers().first;
+    final ids = {for (final member in members) member.displayName: member.id};
+
+    await repository.setFrontMembers([ids['Iris']!, ids['Sage']!]);
+    await repository.addCustomFront('Away');
+    final before = await repository.watchFrontHistory().first;
+    final iris = before.singleWhere(
+      (entry) => entry.memberIds.contains(ids['Iris']),
+    );
+    final sage = before.singleWhere(
+      (entry) => entry.memberIds.contains(ids['Sage']),
+    );
+    final custom = before.singleWhere((entry) => entry.label == 'Away');
+
+    await repository.setFrontMembers([ids['Iris']!, ids['River']!]);
+    await repository.setFrontMembers([ids['Iris']!, ids['River']!]);
+    final after = await repository.watchFrontHistory().first;
+    expect(after.singleWhere((entry) => entry.id == iris.id).isActive, isTrue);
+    expect(
+      after.singleWhere((entry) => entry.id == iris.id).startedAt,
+      iris.startedAt,
+    );
+    expect(after.singleWhere((entry) => entry.id == sage.id).isActive, isFalse);
+    expect(
+      after.singleWhere((entry) => entry.id == custom.id).isActive,
+      isTrue,
+    );
+    expect(
+      after.where((entry) => entry.memberIds.contains(ids['River'])),
+      hasLength(1),
+    );
+    expect(after, hasLength(4));
+
+    await repository.setFrontMembers(const []);
+    final clearedMembers = await repository.watchFrontHistory().first;
+    expect(
+      clearedMembers.where(
+        (entry) => entry.memberIds.isNotEmpty && entry.isActive,
+      ),
+      isEmpty,
+    );
+    expect(
+      clearedMembers.singleWhere((entry) => entry.id == custom.id).isActive,
+      isTrue,
+    );
+  });
+
+  test(
+    'deleted custom shortcut leaves an active front reachable to end',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.setFrontMembers([member.id]);
+      await repository.addCustomFront('Away');
+      final before = await repository.watchFrontHistory().first;
+      final memberFront = before.singleWhere(
+        (entry) => entry.memberIds.contains(member.id),
+      );
+      final customFront = before.singleWhere((entry) => entry.label == 'Away');
+      final now = DateTime.now().toUtc();
+      await repository.saveNamedFront(
+        NamedFront(
+          id: 'saved-away',
+          systemId: localSystemId,
+          name: 'Away',
+          customLabel: 'Away',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        const [],
+      );
+
+      await repository.deleteNamedFront('saved-away');
+      expect(await repository.watchNamedFronts().first, isEmpty);
+      expect(
+        (await repository.watchFrontHistory().first)
+            .singleWhere((entry) => entry.id == customFront.id)
+            .isActive,
+        isTrue,
+      );
+      await expectLater(
+        repository.endCustomFrontSession(memberFront.id),
+        throwsFormatException,
+      );
+
+      await repository.endCustomFrontSession(customFront.id);
+      await repository.endCustomFrontSession(customFront.id);
+      final after = await repository.watchFrontHistory().first;
+      expect(
+        after.singleWhere((entry) => entry.id == customFront.id).isActive,
+        isFalse,
+      );
+      expect(
+        after.singleWhere((entry) => entry.id == customFront.id).label,
+        'Away',
+      );
+      expect(
+        after.singleWhere((entry) => entry.id == memberFront.id).isActive,
+        isTrue,
+      );
+      expect((await repository.loadHomeSnapshot()).currentFrontText, 'River');
+      expect(
+        await repository.watchFrontAuditEvents(customFront.id).first,
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'editing an active front keeps its end unset until explicitly supplied',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'River'));
+      final member = (await repository.watchMembers().first).single;
+      await repository.setFrontMembers([member.id]);
+      final active = (await repository.watchFrontHistory().first).single;
+
+      await repository.updateFrontHistoryEntry(
+        active.id,
+        FrontHistoryDraft(
+          startedAt: active.startedAt,
+          endedAt: null,
+          memberIds: active.memberIds,
+          statusNote: 'Updated note',
+        ),
+      );
+      final updated = (await repository.watchFrontHistory().first).single;
+      expect(updated.isActive, isTrue);
+      expect(updated.startedAt, active.startedAt);
+      expect(updated.statusNote, 'Updated note');
+
+      final end = DateTime.now().toUtc();
+      await repository.updateFrontHistoryEntry(
+        active.id,
+        FrontHistoryDraft(
+          startedAt: active.startedAt,
+          endedAt: end,
+          memberIds: active.memberIds,
+          statusNote: 'Updated note',
+        ),
+      );
+      expect(
+        (await repository.watchFrontHistory().first).single.isActive,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'replacing part of an imported grouped front preserves the retained start',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+      await repository.saveMember(const MemberDraft(displayName: 'Sage'));
+      final members = await repository.watchMembers().first;
+      final iris = members.singleWhere(
+        (member) => member.displayName == 'Iris',
+      );
+      final sage = members.singleWhere(
+        (member) => member.displayName == 'Sage',
+      );
+      final started = DateTime.utc(2026, 1, 1, 10);
+      await database
+          .into(database.frontSessions)
+          .insert(
+            FrontSessionsCompanion.insert(
+              id: 'grouped-front',
+              systemId: localSystemId,
+              startedAt: started,
+              createdAt: started,
+              updatedAt: started,
+            ),
+          );
+      for (final member in [iris, sage]) {
+        await database
+            .into(database.frontSessionMembers)
+            .insert(
+              FrontSessionMembersCompanion.insert(
+                sessionId: 'grouped-front',
+                memberId: member.id,
+              ),
+            );
+      }
+      final originalStart =
+          (await repository.watchFrontHistory().first).single.startedAt;
+
+      await repository.setFrontMembers([iris.id]);
+      final history = await repository.watchFrontHistory().first;
+      expect(history, hasLength(2));
+      final retained = history.singleWhere(
+        (entry) => entry.id == 'grouped-front',
+      );
+      expect(retained.isActive, isTrue);
+      expect(retained.memberIds, [iris.id]);
+      expect(retained.startedAt, originalStart);
+      final removed = history.singleWhere(
+        (entry) => entry.id != 'grouped-front',
+      );
+      expect(removed.isActive, isFalse);
+      expect(removed.memberIds, [sage.id]);
+      expect(removed.startedAt, originalStart);
+    },
+  );
 
   test(
     'rolls back a front mutation when its required audit insert fails',
@@ -857,6 +1274,49 @@ END;
     customization = await repository.loadCustomization();
     expect(customization.dashboardShortcutIds, isEmpty);
   });
+
+  test(
+    'dashboard shortcuts keep their positions when hidden and shown',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      final original = await repository.loadCustomization();
+      final originalOrder = original.dashboardShortcutOrderIds;
+      final originalVisible = original.dashboardShortcutIds;
+
+      await repository.setDashboardShortcutVisible('notes', false);
+      var customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, isNot(contains('notes')));
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+
+      await repository.setDashboardShortcutVisible('notes', true);
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, originalVisible);
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+
+      await repository.moveDashboardShortcut('groups', 1);
+      final moved = await repository.loadCustomization();
+      expect(
+        moved.dashboardShortcutIds.indexOf('groups'),
+        originalVisible.indexOf('groups') + 1,
+      );
+      await repository.setDashboardShortcutVisible('groups', false);
+      await repository.setDashboardShortcutVisible('groups', true);
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, moved.dashboardShortcutIds);
+      expect(
+        customization.dashboardShortcutOrderIds,
+        moved.dashboardShortcutOrderIds,
+      );
+
+      await repository.resetDashboardShortcuts();
+      customization = await repository.loadCustomization();
+      expect(customization.dashboardShortcutIds, defaultDashboardShortcutIds);
+      expect(customization.dashboardShortcutOrderIds, originalOrder);
+    },
+  );
 
   test('migrates plaintext member names to encrypted storage', () async {
     final database = AppDatabase(NativeDatabase.memory());
@@ -1376,7 +1836,10 @@ END;
         database.members,
       )..where((row) => row.id.equals(member.id))).getSingle();
       expect(storedMember.deletedAt, isNotNull);
-      expect(await repository.setFrontMembers([member.id]), isEmpty);
+      await expectLater(
+        repository.setFrontMembers([member.id]),
+        throwsA(isA<FormatException>()),
+      );
       expect(await database.select(database.groupMembers).get(), hasLength(1));
       expect(await database.select(database.memberTags).get(), hasLength(1));
       expect(
@@ -2239,6 +2702,15 @@ END;
     expect(disabledReminders.single.enabled, isFalse);
     expect(events.single.kind, 'front');
     expect(events.single.title, 'Front changed');
+    expect(events.single.isUnread, isTrue);
+    await repository.markNotificationRead(events.single.id);
+    final readEvent = (await repository.watchNotificationEvents().first).single;
+    expect(readEvent.isUnread, isFalse);
+    await repository.markNotificationRead(events.single.id);
+    expect(
+      (await repository.watchNotificationEvents().first).single.readAt,
+      readEvent.readAt,
+    );
   });
 
   test(
@@ -2582,36 +3054,46 @@ END;
     expect(multipleChoicePoll.selectedCount, 2);
   });
 
-  test(
-    'enforces a currently-fronting requirement for restricted polls',
-    () async {
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
-      final repository = testRepository(database);
-      await repository.ensureLocalSystem();
-      await repository.saveMember(const MemberDraft(displayName: 'Iris'));
-      final member = (await repository.watchMembers().first).single;
-      await repository.savePoll(
-        const PollDraft(
-          question: 'Take a break?',
-          kind: PollKind.singleChoice,
-          options: ['Yes', 'No'],
-          restrictVotingToFronters: true,
-        ),
-      );
-      var poll = (await repository.watchPolls().first).single;
-      expect(poll.restrictVotingToFronters, isTrue);
+  for (final kind in PollKind.values) {
+    test(
+      'enforces a currently-fronting requirement for ${kind.label} polls',
+      () async {
+        final database = AppDatabase(NativeDatabase.memory());
+        addTearDown(database.close);
+        final repository = testRepository(database);
+        await repository.ensureLocalSystem();
+        await repository.saveMember(const MemberDraft(displayName: 'Iris'));
+        await repository.saveMember(const MemberDraft(displayName: 'River'));
+        final members = await repository.watchMembers().first;
+        await repository.savePoll(
+          PollDraft(
+            question: 'Take a break?',
+            kind: kind,
+            options: const ['Yes', 'No'],
+            restrictVotingToFronters: true,
+          ),
+        );
+        var poll = (await repository.watchPolls().first).single;
+        expect(poll.restrictVotingToFronters, isTrue);
 
-      await repository.togglePollOption(poll.id, poll.options.first.id);
-      poll = (await repository.watchPolls().first).single;
-      expect(poll.selectedCount, 0);
+        await repository.togglePollOption(poll.id, poll.options.first.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.selectedCount, 0);
 
-      await repository.setFrontMembers([member.id]);
-      await repository.togglePollOption(poll.id, poll.options.first.id);
-      poll = (await repository.watchPolls().first).single;
-      expect(poll.selectedCount, 1);
-    },
-  );
+        await repository.setFrontMembers([members.first.id]);
+        await repository.togglePollOption(poll.id, poll.options.first.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.selectedCount, 1);
+        expect(poll.options.first.selected, isTrue);
+
+        await repository.addFrontMembers([members.last.id]);
+        await repository.togglePollOption(poll.id, poll.options.last.id);
+        poll = (await repository.watchPolls().first).single;
+        expect(poll.options.last.selected, isTrue);
+        expect(poll.selectedCount, kind == PollKind.singleChoice ? 1 : 2);
+      },
+    );
+  }
 
   test('round-trips persisted poll closing and retention settings', () async {
     final sourceDatabase = AppDatabase(NativeDatabase.memory());
@@ -2714,6 +3196,7 @@ END;
         id: 'journal-1',
         systemId: localSystemId,
         memberId: member.id,
+        authorMemberId: member.id,
         title: 'Switch notes',
         body: 'Felt close to front.',
         visibility: 'system',
@@ -2797,6 +3280,7 @@ END;
     expect((archive['tags'] as List), hasLength(1));
     expect((archive['member_tags'] as List), hasLength(1));
     expect((archive['journals'] as List), hasLength(1));
+    expect((archive['journals'] as List).single['author_member_id'], member.id);
     expect((archive['content_revisions'] as List), hasLength(1));
     expect((archive['polls'] as List), hasLength(1));
     expect((archive['poll_options'] as List), hasLength(2));
@@ -2833,6 +3317,7 @@ END;
       'polls': 'polls',
       'poll_options': 'poll_options',
       'poll_votes': 'poll_votes',
+      'poll_member_votes': 'poll_member_votes',
       'front_sessions': 'fronts',
       'front_session_members': 'front_members',
       'import_records': 'import_records',
@@ -2909,6 +3394,36 @@ END;
     expect(preferences.single['key'], 'theme_mode');
     expect(preferences.single['value'], 'light');
   });
+
+  test(
+    'reports only changed portable preferences as import conflicts',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await repository.setThemeMode(HavenThemeMode.dark);
+      await repository.setAppLockEnabled(true);
+
+      expect(
+        await repository.hasPortablePreferenceConflict({
+          'theme_mode': 'dark',
+          'app_lock_enabled': 'false',
+        }),
+        isFalse,
+      );
+      expect(
+        await repository.hasPortablePreferenceConflict({
+          'font_family': 'serif',
+        }),
+        isFalse,
+      );
+      expect(
+        await repository.hasPortablePreferenceConflict({'theme_mode': 'light'}),
+        isTrue,
+      );
+    },
+  );
 
   test(
     'does not activate device or security-local preferences from an archive',
@@ -3029,6 +3544,7 @@ END;
         id: 'journal-1',
         systemId: localSystemId,
         memberId: member.id,
+        authorMemberId: member.id,
         title: 'Switch notes',
         body: 'Felt close to front.',
         visibility: 'system',
@@ -3103,6 +3619,10 @@ END;
     expect(sourceArchive['group_members'], hasLength(1));
     expect(sourceArchive['member_tags'], hasLength(1));
     expect(sourceArchive['journals'], hasLength(1));
+    expect(
+      (sourceArchive['journals'] as List).single['author_member_id'],
+      member.id,
+    );
     expect(sourceArchive['content_revisions'], hasLength(1));
     expect(sourceArchive['front_audit_events'], hasLength(1));
     expect(sourceArchive['poll_vote_events'], hasLength(1));
@@ -3166,6 +3686,10 @@ END;
     expect(targetArchive['group_members'], hasLength(1));
     expect(targetArchive['member_tags'], hasLength(1));
     expect(targetArchive['journals'], hasLength(1));
+    expect(
+      (targetArchive['journals'] as List).single['author_member_id'],
+      member.id,
+    );
     expect(targetArchive['content_revisions'], hasLength(1));
     expect(targetArchive['front_audit_events'], hasLength(1));
     expect(targetArchive['poll_vote_events'], hasLength(1));

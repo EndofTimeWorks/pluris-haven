@@ -18,6 +18,8 @@ class _MessagesPageState extends State<MessagesPage> {
   final _searchController = TextEditingController();
   String _query = '';
   String _boardFilter = 'all';
+  String? _categoryFilterId;
+  String? _channelFilterId;
 
   @override
   void dispose() {
@@ -36,11 +38,37 @@ class _MessagesPageState extends State<MessagesPage> {
           stream: widget.repository.watchChatChannels(includeArchived: true),
           initialData: const [],
           builder: (context, channelSnapshot) {
+            final channels =
+                channelSnapshot.data ?? const <ChatChannelSummary>[];
             final channelNamesById = {
-              for (final channel
-                  in channelSnapshot.data ?? const <ChatChannelSummary>[])
-                channel.id: channel.name,
+              for (final channel in channels) channel.id: channel.name,
             };
+            final channelCategoriesById = {
+              for (final channel in channels) channel.id: channel.categoryId,
+            };
+            final selectedCategoryId =
+                channels.any(
+                  (channel) => channel.categoryId == _categoryFilterId,
+                )
+                ? _categoryFilterId
+                : null;
+            final selectedChannelId =
+                channels.any(
+                  (channel) =>
+                      channel.id == _channelFilterId &&
+                      (selectedCategoryId == null ||
+                          channel.categoryId == selectedCategoryId),
+                )
+                ? _channelFilterId
+                : null;
+            final channelNameCounts = <String, int>{};
+            for (final channel in channels) {
+              channelNameCounts.update(
+                channel.name,
+                (count) => count + 1,
+                ifAbsent: () => 1,
+              );
+            }
             return StreamBuilder<List<MemberSummary>>(
               stream: widget.repository.watchMembers(includeArchived: true),
               initialData: const [],
@@ -55,6 +83,13 @@ class _MessagesPageState extends State<MessagesPage> {
                       (message) =>
                           (_boardFilter == 'all' ||
                               message.boardKind == _boardFilter) &&
+                          (_boardFilter != 'channel' ||
+                              selectedCategoryId == null ||
+                              channelCategoriesById[message.channelId] ==
+                                  selectedCategoryId) &&
+                          (_boardFilter != 'channel' ||
+                              selectedChannelId == null ||
+                              message.channelId == selectedChannelId) &&
                           _matchesQuery(_query, [
                             message.body,
                             _messageSenderLabel(
@@ -99,6 +134,98 @@ class _MessagesPageState extends State<MessagesPage> {
                       onSelectionChanged: (value) =>
                           setState(() => _boardFilter = value.single),
                     ),
+                    if (_boardFilter == 'channel' && channels.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      StreamBuilder<List<ChatCategorySummary>>(
+                        stream: widget.repository.watchChatCategories(),
+                        initialData: const [],
+                        builder: (context, categorySnapshot) {
+                          final categoryNames = {
+                            for (final category
+                                in categorySnapshot.data ??
+                                    const <ChatCategorySummary>[])
+                              category.id: category.name,
+                          };
+                          String labelFor(ChatChannelSummary channel) {
+                            final category = categoryNames[channel.categoryId];
+                            final name = category == null
+                                ? channel.name
+                                : '$category / ${channel.name}';
+                            if (channelNameCounts[channel.name] == 1) {
+                              return name;
+                            }
+                            final id = channel.id;
+                            return '$name (${id.substring(id.length > 8 ? id.length - 8 : 0)})';
+                          }
+
+                          final categories =
+                              categorySnapshot.data ??
+                              const <ChatCategorySummary>[];
+                          return Column(
+                            children: [
+                              if (categories.isNotEmpty) ...[
+                                DropdownButtonFormField<String?>(
+                                  key: ValueKey(
+                                    'chat-category-filter-$selectedCategoryId',
+                                  ),
+                                  isExpanded: true,
+                                  initialValue: selectedCategoryId,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.categoryViewFieldLabel,
+                                  ),
+                                  items: [
+                                    DropdownMenuItem<String?>(
+                                      value: null,
+                                      child: Text(l10n.allCategoriesFilter),
+                                    ),
+                                    for (final category in categories)
+                                      DropdownMenuItem<String?>(
+                                        value: category.id,
+                                        child: Text(category.name),
+                                      ),
+                                  ],
+                                  onChanged: (id) => setState(() {
+                                    _categoryFilterId = id;
+                                    _channelFilterId = null;
+                                  }),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              DropdownButtonFormField<String?>(
+                                key: ValueKey(
+                                  'chat-channel-filter-$selectedChannelId',
+                                ),
+                                isExpanded: true,
+                                initialValue: selectedChannelId,
+                                decoration: InputDecoration(
+                                  labelText: l10n.channelViewFieldLabel,
+                                ),
+                                items: [
+                                  DropdownMenuItem<String?>(
+                                    value: null,
+                                    child: Text(l10n.allChannelsFilter),
+                                  ),
+                                  for (final channel in channels)
+                                    if (selectedCategoryId == null ||
+                                        channel.categoryId ==
+                                            selectedCategoryId)
+                                      DropdownMenuItem<String?>(
+                                        value: channel.id,
+                                        child: Text(
+                                          labelFor(channel),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                ],
+                                onChanged: (id) =>
+                                    setState(() => _channelFilterId = id),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     SpCard(
                       child: Column(
@@ -111,10 +238,12 @@ class _MessagesPageState extends State<MessagesPage> {
                           const SizedBox(height: 12),
                           if (messages.isEmpty)
                             SpEmptyState(
-                              title: _query.trim().isEmpty
+                              title:
+                                  _query.trim().isEmpty && _boardFilter == 'all'
                                   ? l10n.noMessagesYet
                                   : l10n.noMatchingMessages,
-                              body: _query.trim().isEmpty
+                              body:
+                                  _query.trim().isEmpty && _boardFilter == 'all'
                                   ? l10n.messagesEmptyBody
                                   : l10n.tryAnotherSearch,
                             )
@@ -231,7 +360,12 @@ class MessageTile extends StatelessWidget {
                 child: const Icon(Icons.edit_outlined, size: 18),
               ),
             PopupMenuButton<String>(
-              tooltip: l10n.messageActionsTooltip,
+              tooltip: l10n.messageActionsFor(
+                senderLabel,
+                message.id.substring(
+                  message.id.length > 8 ? message.id.length - 8 : 0,
+                ),
+              ),
               onSelected: (action) {
                 if (action == 'reply') {
                   showMessageSheet(context, repository, parentMessage: message);
@@ -285,6 +419,7 @@ void showMessageSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    enableDrag: false,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => MessageSheet(
@@ -328,11 +463,39 @@ class _MessageSheetState extends State<MessageSheet> {
 
   final _bodyController = TextEditingController();
   String? _memberId;
+  String? _initialMemberId;
+  bool _senderTouched = false;
   String _boardKind = 'system';
   String? _boardMemberId;
   String? _channelId;
 
   bool get _isEditing => widget.message != null;
+  bool _isSaving = false;
+
+  bool get _isDirty =>
+      _bodyController.text != (widget.message?.body ?? '') ||
+      _memberId != _initialMemberId ||
+      _boardKind !=
+          (widget.message?.boardKind ??
+              widget.parentMessage?.boardKind ??
+              'system') ||
+      _boardMemberId !=
+          (widget.message?.boardMemberId ??
+              widget.parentMessage?.boardMemberId) ||
+      _channelId !=
+          (widget.message?.channelId ?? widget.parentMessage?.channelId);
+
+  Future<void> _tryDismiss() async {
+    if (_isSaving) return;
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final choice = await _askAboutUnsavedChanges(context);
+    if (!mounted) return;
+    if (choice == _EditorDismissChoice.discard) Navigator.pop(context);
+    if (choice == _EditorDismissChoice.save) await _save();
+  }
 
   @override
   void initState() {
@@ -340,11 +503,31 @@ class _MessageSheetState extends State<MessageSheet> {
     final message = widget.message;
     _bodyController.text = message?.body ?? '';
     _memberId = message?.memberId;
+    _initialMemberId = _memberId;
     _boardKind =
         message?.boardKind ?? widget.parentMessage?.boardKind ?? 'system';
     _boardMemberId =
         message?.boardMemberId ?? widget.parentMessage?.boardMemberId;
     _channelId = message?.channelId ?? widget.parentMessage?.channelId;
+    if (message == null) _loadDefaultSender();
+  }
+
+  Future<void> _loadDefaultSender() async {
+    try {
+      final fronters = await widget.repository.watchCurrentFrontMembers().first;
+      if (!mounted ||
+          fronters.length != 1 ||
+          _senderTouched ||
+          _bodyController.text.isNotEmpty) {
+        return;
+      }
+      setState(() {
+        _memberId = fronters.single.id;
+        _initialMemberId = _memberId;
+      });
+    } on Object {
+      // The System sender remains available if the current front cannot load.
+    }
   }
 
   @override
@@ -354,7 +537,15 @@ class _MessageSheetState extends State<MessageSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _tryDismiss();
+    },
+    child: _buildContents(context),
+  );
+
+  Widget _buildContents(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -384,24 +575,30 @@ class _MessageSheetState extends State<MessageSheet> {
                     : members.any((member) => member.id == _memberId)
                     ? _memberId!
                     : _systemMessageValue;
-                return DropdownButtonFormField<String>(
-                  key: const ValueKey('message-member-field'),
-                  initialValue: value,
-                  decoration: InputDecoration(labelText: l10n.fromFieldLabel),
-                  items: [
-                    DropdownMenuItem(
-                      value: _systemMessageValue,
-                      child: Text(l10n.systemMessageLabel),
-                    ),
-                    for (final member in members)
+                return KeyedSubtree(
+                  key: ValueKey('message-sender-$value'),
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('message-member-field'),
+                    initialValue: value,
+                    decoration: InputDecoration(labelText: l10n.fromFieldLabel),
+                    items: [
                       DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
+                        value: _systemMessageValue,
+                        child: Text(l10n.systemMessageLabel),
                       ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _memberId = value == _systemMessageValue ? null : value;
-                  }),
+                      for (final member in members)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() {
+                      _senderTouched = true;
+                      _memberId = value == _systemMessageValue ? null : value;
+                    }),
+                  ),
                 );
               },
             ),
@@ -450,7 +647,9 @@ class _MessageSheetState extends State<MessageSheet> {
                       for (final member in members)
                         DropdownMenuItem(
                           value: member.id,
-                          child: Text(member.displayName),
+                          child: Text(
+                            _memberPickerLabel(member, members, l10n),
+                          ),
                         ),
                     ],
                     onChanged: (value) =>
@@ -516,7 +715,7 @@ class _MessageSheetState extends State<MessageSheet> {
             if (_isEditing) const SizedBox(height: 10),
             FilledButton(
               key: const ValueKey('save-message-button'),
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               child: Text(
                 _isEditing ? l10n.saveMessageButton : l10n.saveButtonLabel,
               ),
@@ -528,6 +727,7 @@ class _MessageSheetState extends State<MessageSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (_boardKind == 'member' && _boardMemberId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -553,14 +753,25 @@ class _MessageSheetState extends State<MessageSheet> {
       parentMessageId:
           widget.message?.parentMessageId ?? widget.parentMessage?.id,
     );
-    final message = widget.message;
-    if (message == null) {
-      await widget.repository.saveMessage(draft);
-    } else {
-      await widget.repository.updateMessage(message.id, draft);
-    }
-    if (mounted) {
-      Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      final message = widget.message;
+      if (message == null) {
+        await widget.repository.saveMessage(draft);
+      } else {
+        await widget.repository.updateMessage(message.id, draft);
+      }
+      if (mounted) Navigator.pop(context);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotSaveDraft),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -640,7 +851,12 @@ class _ChatOrganisationSheet extends StatelessWidget {
                       isThreeLine:
                           channel.description?.trim().isNotEmpty == true,
                       trailing: IconButton(
-                        tooltip: l10n.deleteButton,
+                        tooltip: l10n.deleteChannelFor(
+                          channel.name,
+                          channel.id.substring(
+                            channel.id.length > 8 ? channel.id.length - 8 : 0,
+                          ),
+                        ),
                         icon: const Icon(Icons.delete_outline_rounded),
                         onPressed: () => confirmDelete(
                           context,
@@ -684,7 +900,12 @@ class _ChatOrganisationSheet extends StatelessWidget {
                           ? Text(category.description!)
                           : null,
                       trailing: IconButton(
-                        tooltip: l10n.deleteButton,
+                        tooltip: l10n.deleteCategoryFor(
+                          category.name,
+                          category.id.substring(
+                            category.id.length > 8 ? category.id.length - 8 : 0,
+                          ),
+                        ),
                         icon: const Icon(Icons.delete_outline_rounded),
                         onPressed: () => confirmDelete(
                           context,

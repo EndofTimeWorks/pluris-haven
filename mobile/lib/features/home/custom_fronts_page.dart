@@ -121,6 +121,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                       _CustomFrontRow(
                         repository: widget.repository,
                         front: customFronts[index],
+                        showId: _hasDuplicateFrontTitle(
+                          customFronts[index],
+                          fronts,
+                        ),
                         showDivider: index != customFronts.length - 1,
                         compactActions: false,
                         onUse: (action) =>
@@ -144,12 +148,19 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _FrontActionButton(
-                            repository: widget.repository,
                             actionKey: 'named-front-${front.id}',
+                            targetName: front.name,
+                            targetId: front.id,
+                            showId: _hasDuplicateFrontTitle(front, fronts),
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteNamedFrontTooltip,
+                            tooltip: _hasDuplicateFrontTitle(front, fronts)
+                                ? l10n.deleteFrontFor(
+                                    front.name,
+                                    _shortFrontId(front.id),
+                                  )
+                                : l10n.deleteFrontForName(front.name),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -240,6 +251,7 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                     child: _CustomFrontRow(
                       repository: widget.repository,
                       front: front,
+                      showId: _hasDuplicateFrontTitle(front, fronts),
                       showDivider: false,
                       compactActions: true,
                       onUse: (action) => _applyFront(front, action),
@@ -278,12 +290,19 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _FrontActionButton(
-                            repository: widget.repository,
                             actionKey: 'named-front-${front.id}',
+                            targetName: front.name,
+                            targetId: front.id,
+                            showId: _hasDuplicateFrontTitle(front, fronts),
                             onPressed: (action) => _applyFront(front, action),
                           ),
                           IconButton(
-                            tooltip: l10n.deleteNamedFrontTooltip,
+                            tooltip: _hasDuplicateFrontTitle(front, fronts)
+                                ? l10n.deleteFrontFor(
+                                    front.name,
+                                    _shortFrontId(front.id),
+                                  )
+                                : l10n.deleteFrontForName(front.name),
                             onPressed: () => _deleteFront(front),
                             icon: const Icon(Icons.delete_outline_rounded),
                           ),
@@ -322,6 +341,10 @@ class _CustomFrontsPageState extends State<CustomFrontsPage> {
     if (!mounted) {
       return;
     }
+    await _syncFrontNotification(context, widget.repository);
+    if (!mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -347,6 +370,7 @@ class _CustomFrontRow extends StatelessWidget {
   const _CustomFrontRow({
     required this.repository,
     required this.front,
+    required this.showId,
     required this.showDivider,
     required this.compactActions,
     required this.onUse,
@@ -356,6 +380,7 @@ class _CustomFrontRow extends StatelessWidget {
 
   final HavenRepository repository;
   final NamedFront front;
+  final bool showId;
   final bool showDivider;
   final bool compactActions;
   final Future<void> Function(HavenFrontAction action) onUse;
@@ -372,7 +397,9 @@ class _CustomFrontRow extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: l10n.customFrontSemanticLabel(title),
+          label: l10n.customFrontSemanticLabel(
+            showId ? l10n.memberWithId(title, _shortFrontId(front.id)) : title,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ListTile(
@@ -400,11 +427,19 @@ class _CustomFrontRow extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _FrontActionButton(
-                          repository: repository,
                           actionKey: 'named-front-${front.id}',
+                          targetName: title,
+                          targetId: front.id,
+                          showId: showId,
                           onPressed: onUse,
                         ),
                         PopupMenuButton<String>(
+                          tooltip: showId
+                              ? l10n.frontActionsFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.frontActionsForName(title),
                           onSelected: (value) {
                             if (value == 'edit') {
                               onEdit();
@@ -429,17 +464,29 @@ class _CustomFrontRow extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _FrontActionButton(
-                          repository: repository,
                           actionKey: 'named-front-${front.id}',
+                          targetName: title,
+                          targetId: front.id,
+                          showId: showId,
                           onPressed: onUse,
                         ),
                         IconButton(
-                          tooltip: l10n.editCustomFrontTooltip,
+                          tooltip: showId
+                              ? l10n.editFrontFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.editFrontForName(title),
                           onPressed: onEdit,
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         IconButton(
-                          tooltip: l10n.deleteCustomFrontTooltip,
+                          tooltip: showId
+                              ? l10n.deleteFrontFor(
+                                  title,
+                                  _shortFrontId(front.id),
+                                )
+                              : l10n.deleteFrontForName(title),
                           onPressed: onDelete,
                           icon: const Icon(Icons.delete_outline_rounded),
                         ),
@@ -453,6 +500,9 @@ class _CustomFrontRow extends StatelessWidget {
     );
   }
 }
+
+String _shortFrontId(String id) =>
+    id.substring(id.length > 8 ? id.length - 8 : 0);
 
 class _CustomFrontEditorSheet extends StatefulWidget {
   const _CustomFrontEditorSheet({required this.repository, this.front});
@@ -471,6 +521,8 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
   late final TextEditingController _avatarController;
   late final TextEditingController _descriptionController;
   String? _avatarMessage;
+  bool _nameInvalid = false;
+  bool _colorInvalid = false;
 
   @override
   void initState() {
@@ -560,7 +612,10 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               controller: _nameController,
               autofocus: !editing,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.nameFieldLabel),
+              decoration: InputDecoration(
+                labelText: l10n.nameFieldLabel,
+                errorText: _nameInvalid ? l10n.nameRequiredError : null,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -570,6 +625,7 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
               decoration: InputDecoration(
                 labelText: l10n.colourFieldLabel,
                 hintText: '#F2C75C',
+                errorText: _colorInvalid ? l10n.invalidHexColorError : null,
                 prefixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _colorController,
                   builder: (context, value, child) {
@@ -655,18 +711,12 @@ class _CustomFrontEditorSheetState extends State<_CustomFrontEditorSheet> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      return;
-    }
     final colorHex = _normalizeUiHexColor(_colorController.text);
-    if (colorHex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).invalidHexColorError),
-        ),
-      );
-      return;
-    }
+    setState(() {
+      _nameInvalid = name.isEmpty;
+      _colorInvalid = colorHex == null;
+    });
+    if (_nameInvalid || _colorInvalid) return;
 
     final now = DateTime.now().toUtc();
     final existing = widget.front;
@@ -809,6 +859,16 @@ String _frontTitle(NamedFront front) {
     return label;
   }
   return front.name;
+}
+
+bool _hasDuplicateFrontTitle(NamedFront front, Iterable<NamedFront> fronts) {
+  final title = _frontTitle(front).trim().toLowerCase();
+  return fronts
+          .where(
+            (candidate) => _frontTitle(candidate).trim().toLowerCase() == title,
+          )
+          .length >
+      1;
 }
 
 String? _nullIfBlank(String value) {

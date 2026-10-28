@@ -234,6 +234,7 @@ ImportPreview _previewPlurisArchive(
     'polls': _listCount(decoded['polls']),
     'poll_options': _listCount(decoded['poll_options']),
     'poll_votes': _listCount(decoded['poll_votes']),
+    'poll_member_votes': _listCount(decoded['poll_member_votes']),
     'poll_vote_events': _listCount(decoded['poll_vote_events']),
     'fronts': _listCount(decoded['fronts']),
     'front_members': _listCount(decoded['front_members']),
@@ -256,6 +257,29 @@ ImportPreview _previewPlurisArchive(
     ),
   );
 
+  final frontIds = _archiveIds(decoded['fronts']);
+  final memberIds = _archiveIds(decoded['members']);
+  final links = decoded['front_members'];
+  if (links is List) {
+    final orphaned = links.where((link) {
+      if (link is! Map) return true;
+      return !frontIds.contains(link['session_id']) ||
+          !memberIds.contains(link['member_id']);
+    }).length;
+    if (orphaned > 0) {
+      events.add(
+        ImportPreviewEvent(
+          severity: ImportPreviewSeverity.warning,
+          stage: ImportPreviewStage.validate,
+          diagnostic: ImportDiagnostic(
+            ImportDiagnosticCode.orphanedFrontReferences,
+            {'count': orphaned},
+          ),
+        ),
+      );
+    }
+  }
+
   return ImportPreview(
     source: ImportSource.plurisHavenArchive,
     fileName: fileName,
@@ -265,6 +289,14 @@ ImportPreview _previewPlurisArchive(
       (event) => event.severity != ImportPreviewSeverity.error,
     ),
   );
+}
+
+Set<String> _archiveIds(Object? value) {
+  if (value is! List) return const {};
+  return {
+    for (final row in value)
+      if (row is Map && row['id'] is String) row['id'] as String,
+  };
 }
 
 ImportPreview _previewSimplyPlural(
@@ -434,6 +466,7 @@ const _importablePreviewCountKeys = {
   'polls',
   'poll_options',
   'poll_votes',
+  'poll_member_votes',
   'poll_vote_events',
   'fronts',
   'named_fronts',

@@ -47,6 +47,10 @@ String localizeImportDiagnostic(
         diagnostic.argument<int>('members'),
         diagnostic.argument<int>('fronts'),
       ),
+    ImportDiagnosticCode.orphanedFrontReferences =>
+      l10n.importDiagnosticOrphanedFrontReferences(
+        diagnostic.argument<int>('count'),
+      ),
     ImportDiagnosticCode.recognizedRecords =>
       l10n.importDiagnosticRecognizedRecords,
     ImportDiagnosticCode.noImportableRecords =>

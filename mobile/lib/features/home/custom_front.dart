@@ -1,5 +1,21 @@
 part of 'home_page.dart';
 
+String _activeCustomFrontName(
+  FrontHistoryEntry entry,
+  Iterable<FrontHistoryEntry> activeFronts,
+  AppLocalizations l10n,
+) {
+  final name = entry.label.trim().toLowerCase();
+  final duplicate =
+      activeFronts
+          .where((front) => front.label.trim().toLowerCase() == name)
+          .length >
+      1;
+  return duplicate
+      ? l10n.memberWithId(entry.label, _shortFrontId(entry.id))
+      : entry.label;
+}
+
 class CustomFrontSheet extends StatefulWidget {
   const CustomFrontSheet({super.key, required this.repository});
 
@@ -16,8 +32,32 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   final _savedFrontSearchController = TextEditingController();
   final _saveNameController = TextEditingController();
   final _selectedMemberIds = <String>{};
+  final _activeMemberIds = <String>{};
+  bool _currentFrontLoaded = false;
+  bool _currentFrontLoadFailed = false;
   String _memberQuery = '';
   String _savedFrontQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentFront();
+  }
+
+  Future<void> _loadCurrentFront() async {
+    try {
+      final members = await widget.repository.watchCurrentFrontMembers().first;
+      if (!mounted) return;
+      setState(() {
+        _selectedMemberIds.addAll(members.map((member) => member.id));
+        _activeMemberIds.addAll(members.map((member) => member.id));
+        _currentFrontLoaded = true;
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() => _currentFrontLoadFailed = true);
+    }
+  }
 
   @override
   void dispose() {
@@ -33,320 +73,61 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          0,
-          18,
-          18 + MediaQuery.viewInsetsOf(context).bottom,
+      child: SizedBox(
+        height:
+            MediaQuery.sizeOf(context).height * 0.9 -
+            MediaQuery.viewInsetsOf(context).bottom,
+        child: Column(
+          children: [
+            Expanded(child: _buildScrollableContents(context, l10n)),
+            _buildSelectionBar(context, l10n),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionBar(BuildContext context, AppLocalizations l10n) {
+    return Material(
+      key: const ValueKey('front-selection-bar'),
+      color: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              l10n.setFrontButton,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            StreamBuilder<List<MemberSummary>>(
-              stream: widget.repository.watchMembers(listOnly: true),
-              initialData: const [],
-              builder: (context, snapshot) {
-                final members = snapshot.data ?? const <MemberSummary>[];
-                final visibleMembers = [
-                  for (final member in members)
-                    if (_matchesQuery(_memberQuery, [
-                      member.displayName,
-                      member.pronouns,
-                      member.description,
-                      member.pluralKitId,
-                    ]))
-                      member,
-                ];
-                final selectedNames = [
-                  for (final member in members)
-                    if (_selectedMemberIds.contains(member.id))
-                      member.displayName,
-                ];
-                if (members.isEmpty) {
-                  return SpEmptyState(
-                    title: l10n.noMembersYetTitle,
-                    body: l10n.noMembersFrontPickerBody,
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SpSearchField(
-                      key: const ValueKey('front-member-search-field'),
-                      hintText: l10n.searchMembersHint,
-                      controller: _memberSearchController,
-                      onChanged: (value) =>
-                          setState(() => _memberQuery = value),
-                    ),
-                    if (selectedNames.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        l10n.selectedMembersSummary(selectedNames.join(', ')),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    if (visibleMembers.isEmpty)
-                      SpEmptyState(
-                        title: l10n.noMatchingMembersTitle,
-                        body: l10n.noMatchingMembersBody,
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final member in visibleMembers)
-                            FilterChip(
-                              label: Text(member.displayName),
-                              selected: _selectedMemberIds.contains(member.id),
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedMemberIds.add(member.id);
-                                  } else {
-                                    _selectedMemberIds.remove(member.id);
-                                  }
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ActionChip(
-                          avatar: const Icon(Icons.clear_all_rounded),
-                          label: Text(l10n.clearSelectionButton),
-                          onPressed: _selectedMemberIds.isEmpty
-                              ? null
-                              : () => setState(_selectedMemberIds.clear),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      key: const ValueKey('set-selected-members-front-button'),
-                      onPressed: _selectedMemberIds.isEmpty
-                          ? null
-                          : _setMemberFront,
-                      child: Text(
-                        _selectedMemberIds.length <= 1
-                            ? l10n.setSelectedButton
-                            : l10n.setCofrontButton,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      key: const ValueKey('save-selected-named-front-button'),
-                      onPressed: _selectedMemberIds.isEmpty
-                          ? null
-                          : _showSaveSelectedFrontSheet,
-                      child: Text(l10n.saveSelectedNamedFrontButton),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 12),
-            StreamBuilder<List<NamedFront>>(
-              stream: widget.repository.watchNamedFronts(),
-              initialData: const [],
-              builder: (context, snapshot) {
-                final allNamedFronts = snapshot.data ?? const <NamedFront>[];
-                final namedFronts = [
-                  for (final front in allNamedFronts)
-                    if (_matchesQuery(_savedFrontQuery, [
-                      front.name,
-                      front.customLabel,
-                      front.description,
-                      front.colorHex,
-                    ]))
-                      front,
-                ];
-                if (allNamedFronts.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.savedFrontsTitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SpSearchField(
-                      key: const ValueKey('saved-front-search-field'),
-                      hintText: l10n.searchSavedFrontsHint,
-                      controller: _savedFrontSearchController,
-                      onChanged: (value) =>
-                          setState(() => _savedFrontQuery = value),
-                    ),
-                    const SizedBox(height: 10),
-                    if (namedFronts.isEmpty)
-                      SpEmptyState(
-                        title: l10n.noMatchingSavedFrontsTitle,
-                        body: l10n.noMatchingSavedFrontsBody,
-                      ),
-                    for (final front in namedFronts)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Material(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(14),
-                          clipBehavior: Clip.antiAlias,
-                          child: ListTile(
-                            contentPadding: const EdgeInsetsDirectional.only(
-                              start: 12,
-                              end: 6,
-                            ),
-                            leading: _NamedFrontAvatar(front: front),
-                            title: Text(
-                              front.customLabel?.trim().isNotEmpty == true
-                                  ? front.customLabel!.trim()
-                                  : front.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  front.customLabel?.trim().isNotEmpty == true
-                                      ? l10n.customFrontLabel
-                                      : l10n.namedCombinationLabel,
-                                ),
-                                if (front.description?.trim().isNotEmpty ==
-                                    true)
-                                  Text(
-                                    front.description!.trim(),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                              ],
-                            ),
-                            onTap: null,
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _FrontActionButton(
-                                  repository: widget.repository,
-                                  actionKey:
-                                      'dashboard-named-front-${front.id}',
-                                  onPressed: (action) =>
-                                      _applyNamedFront(front, action),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.deleteSavedFrontTooltip,
-                                  onPressed: () => _deleteNamedFront(front),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                  ],
-                );
-              },
-            ),
-            Text(
-              l10n.customFrontLabel,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('custom-front-label-field'),
-              controller: _controller,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.labelFieldLabel),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('custom-front-color-hex-field'),
-              controller: _customFrontColorController,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _setFront(_controller.text),
-              decoration: InputDecoration(
-                labelText: l10n.colourFieldLabel,
-                hintText: '#F2C75C',
-                prefixIcon: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _customFrontColorController,
-                  builder: (context, value, child) {
-                    final color = _colorFromHex(
-                      _normalizeUiHexColor(value.text),
-                      fallback: Theme.of(context).colorScheme.primary,
-                    );
-                    return Center(
-                      widthFactor: 1,
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
+            Text(l10n.selectedMembersSummary('${_selectedMemberIds.length}')),
+            const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(
-                  child: FilledButton(
-                    key: const ValueKey('make-custom-front-current-button'),
-                    onPressed: () => _setFront(_controller.text),
-                    child: Text(l10n.setButtonLabel),
+                  child: Semantics(
+                    label: l10n.addToFrontButton,
+                    child: OutlinedButton(
+                      key: const ValueKey('add-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : () => _setMemberFront(replaceExisting: false),
+                      child: ExcludeSemantics(
+                        child: Text(l10n.addSelectedFrontButton),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(
-                    key: const ValueKey('save-custom-front-button'),
-                    onPressed: () => _saveCustomFront(_controller.text),
-                    child: Text(l10n.saveButtonLabel),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _clearFront,
-                    child: Text(l10n.clearButton),
+                  child: Semantics(
+                    label: l10n.replaceCurrentMembersButton,
+                    child: FilledButton(
+                      key: const ValueKey('set-selected-members-front-button'),
+                      onPressed: _selectedMemberIds.isEmpty
+                          ? null
+                          : () => _setMemberFront(replaceExisting: true),
+                      child: ExcludeSemantics(
+                        child: Text(l10n.replaceSelectedFrontButton),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -357,29 +138,539 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     );
   }
 
+  Widget _buildScrollableContents(BuildContext context, AppLocalizations l10n) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.setFrontButton,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          StreamBuilder<List<MemberSummary>>(
+            stream: _currentFrontLoaded
+                ? widget.repository.watchMembers(listOnly: true)
+                : null,
+            initialData: const [],
+            builder: (context, snapshot) {
+              if (_currentFrontLoadFailed) {
+                return SpEmptyState(
+                  title: l10n.dataLoadFailedTitle,
+                  body: l10n.dataLoadFailedBody,
+                );
+              }
+              if (!_currentFrontLoaded) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final members = snapshot.data ?? const <MemberSummary>[];
+              final nameCounts = <String, int>{};
+              for (final member in members) {
+                final name = memberNameComparisonKey(member.displayName);
+                nameCounts[name] = (nameCounts[name] ?? 0) + 1;
+              }
+              final visibleMembers =
+                  [
+                    for (final member in members)
+                      if (_matchesQuery(_memberQuery, [
+                        member.displayName,
+                        member.pronouns,
+                        member.description,
+                        member.pluralKitId,
+                      ]))
+                        member,
+                  ]..sort((left, right) {
+                    final leftActive = _activeMemberIds.contains(left.id);
+                    final rightActive = _activeMemberIds.contains(right.id);
+                    if (leftActive != rightActive) return leftActive ? -1 : 1;
+                    return left.displayName.toLowerCase().compareTo(
+                      right.displayName.toLowerCase(),
+                    );
+                  });
+              final selectedNames = [
+                for (final member in members)
+                  if (_selectedMemberIds.contains(member.id))
+                    member.displayName,
+              ];
+              if (members.isEmpty) {
+                return SpEmptyState(
+                  title: l10n.noMembersYetTitle,
+                  body: l10n.noMembersFrontPickerBody,
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SpSearchField(
+                    key: const ValueKey('front-member-search-field'),
+                    hintText: l10n.searchMembersHint,
+                    controller: _memberSearchController,
+                    onChanged: (value) => setState(() => _memberQuery = value),
+                  ),
+                  if (selectedNames.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.selectedMembersSummary(selectedNames.join(', ')),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          key: const ValueKey(
+                            'save-selected-named-front-button',
+                          ),
+                          onPressed: _showSaveSelectedFrontSheet,
+                          child: Text(l10n.saveSelectedNamedFrontButton),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(_selectedMemberIds.clear),
+                          child: Text(l10n.clearSelectionButton),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  if (visibleMembers.isEmpty)
+                    SpEmptyState(
+                      title: l10n.noMatchingMembersTitle,
+                      body: l10n.noMatchingMembersBody,
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final member in visibleMembers)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FilterChip(
+                                label: Text(
+                                  (nameCounts[memberNameComparisonKey(
+                                                member.displayName,
+                                              )] ??
+                                              0) >
+                                          1
+                                      ? l10n.memberWithId(
+                                          member.displayName,
+                                          member.id.substring(
+                                            member.id.length > 8
+                                                ? member.id.length - 8
+                                                : 0,
+                                          ),
+                                        )
+                                      : member.displayName,
+                                ),
+                                selected: _selectedMemberIds.contains(
+                                  member.id,
+                                ),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedMemberIds.add(member.id);
+                                    } else {
+                                      _selectedMemberIds.remove(member.id);
+                                    }
+                                  });
+                                },
+                              ),
+                              if (_activeMemberIds.contains(member.id))
+                                IconButton(
+                                  key: ValueKey('end-front-${member.id}'),
+                                  tooltip: l10n.endMemberFrontButton(
+                                    member.displayName,
+                                  ),
+                                  onPressed: () => _endMemberFront(member),
+                                  icon: const Icon(Icons.stop_circle_outlined),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 12),
+          StreamBuilder<List<FrontHistoryEntry>>(
+            stream: widget.repository.watchFrontHistory(),
+            builder: (context, snapshot) {
+              final activeCustomFronts = [
+                for (final entry
+                    in snapshot.data ?? const <FrontHistoryEntry>[])
+                  if (entry.isActive && entry.memberIds.isEmpty) entry,
+              ];
+              if (activeCustomFronts.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.activeCustomFrontsTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final entry in activeCustomFronts)
+                    ListTile(
+                      key: ValueKey('active-custom-front-${entry.id}'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        _activeCustomFrontName(entry, activeCustomFronts, l10n),
+                      ),
+                      trailing: IconButton(
+                        key: ValueKey('end-custom-front-${entry.id}'),
+                        tooltip: l10n.endCustomFrontButton(
+                          _activeCustomFrontName(
+                            entry,
+                            activeCustomFronts,
+                            l10n,
+                          ),
+                        ),
+                        onPressed: () => _endCustomFront(
+                          entry,
+                          _activeCustomFrontName(
+                            entry,
+                            activeCustomFronts,
+                            l10n,
+                          ),
+                        ),
+                        icon: const Icon(Icons.stop_circle_outlined),
+                      ),
+                    ),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
+          StreamBuilder<List<NamedFront>>(
+            stream: widget.repository.watchNamedFronts(),
+            initialData: const [],
+            builder: (context, snapshot) {
+              final allNamedFronts = snapshot.data ?? const <NamedFront>[];
+              final namedFronts = [
+                for (final front in allNamedFronts)
+                  if (_matchesQuery(_savedFrontQuery, [
+                    front.name,
+                    front.customLabel,
+                    front.description,
+                    front.colorHex,
+                  ]))
+                    front,
+              ];
+              if (allNamedFronts.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.savedFrontsTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SpSearchField(
+                    key: const ValueKey('saved-front-search-field'),
+                    hintText: l10n.searchSavedFrontsHint,
+                    controller: _savedFrontSearchController,
+                    onChanged: (value) =>
+                        setState(() => _savedFrontQuery = value),
+                  ),
+                  const SizedBox(height: 10),
+                  if (namedFronts.isEmpty)
+                    SpEmptyState(
+                      title: l10n.noMatchingSavedFrontsTitle,
+                      body: l10n.noMatchingSavedFrontsBody,
+                    ),
+                  for (final front in namedFronts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Material(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          contentPadding: const EdgeInsetsDirectional.only(
+                            start: 12,
+                            end: 6,
+                          ),
+                          leading: _NamedFrontAvatar(front: front),
+                          title: Text(
+                            front.customLabel?.trim().isNotEmpty == true
+                                ? front.customLabel!.trim()
+                                : front.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                front.customLabel?.trim().isNotEmpty == true
+                                    ? l10n.customFrontLabel
+                                    : l10n.namedCombinationLabel,
+                              ),
+                              if (front.description?.trim().isNotEmpty == true)
+                                Text(
+                                  front.description!.trim(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                          onTap: null,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _FrontActionButton(
+                                actionKey: 'dashboard-named-front-${front.id}',
+                                targetName: _frontTitle(front),
+                                targetId: front.id,
+                                showId: _hasDuplicateFrontTitle(
+                                  front,
+                                  namedFronts,
+                                ),
+                                onPressed: (action) =>
+                                    _applyNamedFront(front, action),
+                              ),
+                              IconButton(
+                                tooltip:
+                                    _hasDuplicateFrontTitle(front, namedFronts)
+                                    ? l10n.deleteFrontFor(
+                                        _frontTitle(front),
+                                        _shortFrontId(front.id),
+                                      )
+                                    : l10n.deleteFrontForName(
+                                        _frontTitle(front),
+                                      ),
+                                onPressed: () => _deleteNamedFront(front),
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
+          Text(
+            l10n.customFrontLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const ValueKey('custom-front-label-field'),
+            controller: _controller,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(labelText: l10n.labelFieldLabel),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const ValueKey('custom-front-color-hex-field'),
+            controller: _customFrontColorController,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _setFront(_controller.text),
+            decoration: InputDecoration(
+              labelText: l10n.colourFieldLabel,
+              hintText: '#F2C75C',
+              prefixIcon: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _customFrontColorController,
+                builder: (context, value, child) {
+                  final color = _colorFromHex(
+                    _normalizeUiHexColor(value.text),
+                    fallback: Theme.of(context).colorScheme.primary,
+                  );
+                  return Center(
+                    widthFactor: 1,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      key: const ValueKey('make-custom-front-current-button'),
+                      onPressed: () => _setFront(_controller.text),
+                      child: Text(l10n.setButtonLabel),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const ValueKey('save-custom-front-button'),
+                      onPressed: () => _saveCustomFront(_controller.text),
+                      child: Text(l10n.saveButtonLabel),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: _clearFront,
+                child: Text(l10n.endAllCurrentFrontsButton),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _setFront(String label) async {
+    if (!await _confirmReplaceCurrentFront(context) || !mounted) return;
     final reminders = await widget.repository.setCustomFront(label);
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(label.trim());
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
-  Future<void> _setMemberFront() async {
-    final label = await _selectedMemberFrontLabel();
-    final reminders = await widget.repository.setFrontMembers(
-      _selectedMemberIds.toList(),
-    );
+  Future<void> _setMemberFront({required bool replaceExisting}) async {
+    if (replaceExisting) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(AppLocalizations.of(context).replaceCurrentMembersButton),
+          content: Text(
+            AppLocalizations.of(context).replaceCurrentMembersWarning,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(AppLocalizations.of(context).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(
+                AppLocalizations.of(context).replaceCurrentMembersButton,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    final ids = _selectedMemberIds.toList();
+    final reminders = replaceExisting
+        ? await widget.repository.setFrontMembers(ids)
+        : await widget.repository.addFrontMembers(ids);
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(label);
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _endMemberFront(MemberSummary member) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endMemberFrontButton(member.displayName)),
+        content: Text(l10n.endMemberFrontWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endMemberFrontButton(member.displayName)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final active = await widget.repository.watchCurrentFrontMembers().first;
+    if (!mounted) return;
+    await widget.repository.setFrontMembers([
+      for (final current in active)
+        if (current.id != member.id) current.id,
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _activeMemberIds.remove(member.id);
+      _selectedMemberIds.remove(member.id);
+    });
+    await _syncFrontNotification(context, widget.repository);
+  }
+
+  Future<void> _endCustomFront(
+    FrontHistoryEntry entry,
+    String displayName,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endCustomFrontButton(displayName)),
+        content: Text(l10n.endCustomFrontWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endCustomFrontButton(displayName)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.repository.endCustomFrontSession(entry.id);
+    if (mounted) await _syncFrontNotification(context, widget.repository);
   }
 
   Future<void> _applyNamedFront(
@@ -392,69 +683,41 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
     if (mounted) {
       await deliverAfterFrontReminders(context, widget.repository, reminders);
     }
-    await _syncFrontNotification(
-      front.customLabel?.trim().isNotEmpty == true
-          ? front.customLabel!.trim()
-          : front.name,
-    );
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
   }
 
   Future<void> _clearFront() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.endAllCurrentFrontsButton),
+        content: Text(l10n.endAllCurrentFrontsWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.endAllCurrentFrontsButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await widget.repository.clearCurrentFront();
-    await _syncFrontNotification(null);
+    if (mounted) {
+      await _syncFrontNotification(context, widget.repository);
+    }
     if (mounted) {
       Navigator.pop(context);
     }
-  }
-
-  Future<String> _selectedMemberFrontLabel() async {
-    final ids = _selectedMemberIds.toSet();
-    final members = await widget.repository.watchMembers(listOnly: true).first;
-    final labels = [
-      for (final member in members)
-        if (ids.contains(member.id)) member.displayName,
-    ];
-    return labels.join(', ');
-  }
-
-  Future<void> _syncFrontNotification(String? label) async {
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final frontLabel = label?.trim();
-    final hasFront = frontLabel != null && frontLabel.isNotEmpty;
-    final notificationCopy = _notificationCopy(l10n);
-    try {
-      final customization = await widget.repository.loadCustomization();
-      if (customization.frontStatusNotification) {
-        await NotificationService.instance.showFrontStatusNotification(
-          frontLabel: hasFront ? frontLabel : null,
-          copy: notificationCopy,
-          showOnLockScreen: customization.frontStatusShowOnLockScreen,
-          revealMemberName: customization.frontStatusRevealMemberName,
-        );
-      } else {
-        await NotificationService.instance.cancelFrontStatusNotification();
-      }
-    } on Object catch (error, stackTrace) {
-      appDebugLog(
-        'Front status notification failed',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-
-    await widget.repository.recordNotificationEvent(
-      NotificationEventDraft(
-        kind: 'front',
-        title: hasFront ? l10n.frontChangedTitle : l10n.frontClearedTitle,
-        body: hasFront
-            ? l10n.memberIsFronting(frontLabel)
-            : l10n.noOneFrontingBody,
-      ),
-    );
   }
 
   Future<void> _showSaveSelectedFrontSheet() async {
@@ -599,6 +862,48 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       ),
     );
   }
+}
+
+Future<void> _syncFrontNotification(
+  BuildContext context,
+  HavenRepository repository,
+) async {
+  if (!context.mounted) return;
+  final l10n = AppLocalizations.of(context);
+  final frontLabel = (await repository.watchHomeSnapshot().first)
+      .currentFrontLabel
+      ?.trim();
+  final hasFront = frontLabel != null && frontLabel.isNotEmpty;
+  final notificationCopy = _notificationCopy(l10n);
+  try {
+    final customization = await repository.loadCustomization();
+    if (customization.frontStatusNotification) {
+      await NotificationService.instance.showFrontStatusNotification(
+        frontLabel: hasFront ? frontLabel : null,
+        copy: notificationCopy,
+        showOnLockScreen: customization.frontStatusShowOnLockScreen,
+        revealMemberName: customization.frontStatusRevealMemberName,
+      );
+    } else {
+      await NotificationService.instance.cancelFrontStatusNotification();
+    }
+  } on Object catch (error, stackTrace) {
+    appDebugLog(
+      'Front status notification failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  await repository.recordNotificationEvent(
+    NotificationEventDraft(
+      kind: 'front',
+      title: hasFront ? l10n.frontChangedTitle : l10n.frontClearedTitle,
+      body: hasFront
+          ? l10n.setFrontConfirmation(frontLabel)
+          : l10n.noOneFrontingBody,
+    ),
+  );
 }
 
 class _NamedFrontAvatar extends StatelessWidget {

@@ -125,7 +125,7 @@ class FrontHistoryDraft {
   });
 
   final DateTime startedAt;
-  final DateTime endedAt;
+  final DateTime? endedAt;
   final List<String> memberIds;
   final String? label;
   final String? statusNote;
@@ -192,6 +192,8 @@ abstract interface class HavenRepository {
   Stream<AppCustomization> watchCustomization();
 
   Future<AppCustomization> loadCustomization();
+
+  Future<bool> hasPortablePreferenceConflict(Map<String, String> imported);
 
   Future<void> setThemeMode(HavenThemeMode mode);
 
@@ -282,6 +284,8 @@ abstract interface class HavenRepository {
 
   Future<void> updateFrontHistoryEntry(String frontId, FrontHistoryDraft draft);
 
+  Future<void> endCustomFrontSession(String frontId);
+
   Future<void> deleteFrontSession(String frontId);
 
   Future<void> saveGroup(GroupDraft draft);
@@ -341,7 +345,7 @@ abstract interface class HavenRepository {
 
   Future<void> deleteChatChannel(String channelId);
 
-  Future<String?> saveReminder(ReminderDraft draft);
+  Future<String?> saveReminder(ReminderDraft draft, {String? reminderId});
 
   Future<void> setReminderEnabled(String reminderId, bool enabled);
 
@@ -349,7 +353,11 @@ abstract interface class HavenRepository {
 
   Future<void> savePoll(PollDraft draft);
 
-  Future<void> togglePollOption(String pollId, String optionId);
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  });
 
   Future<void> closePoll(String pollId);
 
@@ -362,6 +370,10 @@ abstract interface class HavenRepository {
   Future<void> deletePrivacyBucket(String bucketId);
 
   Future<void> recordNotificationEvent(NotificationEventDraft draft);
+
+  Future<void> markNotificationRead(String eventId);
+
+  Future<void> clearNotificationHistory();
 
   Future<List<ReminderSummary>> setCustomFront(String label);
 
