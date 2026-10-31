@@ -429,6 +429,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                   key: ValueKey('journal-about-${members.length}-$_memberId'),
                   child: DropdownButtonFormField<String>(
                     key: const ValueKey('journal-member-field'),
+                    isExpanded: true,
                     initialValue: _memberId ?? _systemJournalValue,
                     decoration: InputDecoration(
                       labelText: l10n.journalAboutMemberFieldLabel,
@@ -448,6 +449,8 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -473,6 +476,7 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                   ),
                   child: DropdownButtonFormField<String>(
                     key: const ValueKey('journal-author-field'),
+                    isExpanded: true,
                     initialValue: _authorMemberId ?? _authorNotRecordedValue,
                     decoration: InputDecoration(
                       labelText: l10n.journalAuthorFieldLabel,
@@ -492,6 +496,8 @@ class _JournalEntrySheetState extends State<JournalEntrySheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],

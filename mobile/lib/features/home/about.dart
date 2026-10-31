@@ -196,11 +196,10 @@ Future<void> confirmDelete(
     try {
       await onDelete();
     } on Object catch (error) {
+      appDebugLog('Could not remove item', error: error);
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            failureMessage?.call(error) ?? l10n.deleteFailed(error.toString()),
-          ),
+          content: Text(failureMessage?.call(error) ?? l10n.actionFailedPlain),
         ),
       );
     }

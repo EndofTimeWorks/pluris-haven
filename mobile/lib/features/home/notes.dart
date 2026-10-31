@@ -437,6 +437,7 @@ class _NoteSheetState extends State<NoteSheet> {
                   key: ValueKey('note-for-${members.length}-$_memberId'),
                   child: DropdownButtonFormField<String>(
                     key: const ValueKey('note-member-field'),
+                    isExpanded: true,
                     initialValue: _memberId ?? _systemNoteValue,
                     decoration: InputDecoration(labelText: l10n.forFieldLabel),
                     items: [
@@ -454,6 +455,8 @@ class _NoteSheetState extends State<NoteSheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],

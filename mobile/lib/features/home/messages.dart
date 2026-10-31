@@ -579,6 +579,7 @@ class _MessageSheetState extends State<MessageSheet> {
                   key: ValueKey('message-sender-$value'),
                   child: DropdownButtonFormField<String>(
                     key: const ValueKey('message-member-field'),
+                    isExpanded: true,
                     initialValue: value,
                     decoration: InputDecoration(labelText: l10n.fromFieldLabel),
                     items: [
@@ -591,6 +592,8 @@ class _MessageSheetState extends State<MessageSheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -636,6 +639,7 @@ class _MessageSheetState extends State<MessageSheet> {
                   final members = snapshot.data ?? const <MemberSummary>[];
                   return DropdownButtonFormField<String>(
                     key: const ValueKey('message-board-member-field'),
+                    isExpanded: true,
                     initialValue:
                         members.any((member) => member.id == _boardMemberId)
                         ? _boardMemberId
@@ -649,6 +653,8 @@ class _MessageSheetState extends State<MessageSheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],

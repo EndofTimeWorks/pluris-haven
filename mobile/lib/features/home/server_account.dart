@@ -915,10 +915,11 @@ class _ServerBackupPanelState extends State<ServerBackupPanel> {
         _restoreMessage = AppLocalizations.of(context).encryptedBackupRestored;
       });
     } on Object catch (error) {
+      appDebugLog('Encrypted backup restore failed', error: error);
       if (!mounted) return;
       setState(() {
         _restoreMessage = AppLocalizations.of(context)
-            .encryptedBackupRestoreFailed(error.toString());
+            .encryptedBackupRestoreFailedPlain;
       });
     } finally {
       if (mounted) {

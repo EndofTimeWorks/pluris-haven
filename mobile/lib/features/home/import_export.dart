@@ -716,8 +716,9 @@ class _ImportExportPageState extends State<ImportExportPage> {
       );
     } on Object catch (error) {
       if (!mounted || generation != _previewGeneration) return;
+      appDebugLog('Encrypted archive preview failed', error: error);
       setState(() {
-        _preview = _encryptedArchiveFailedPreview(fileName, error);
+        _preview = _encryptedArchiveFailedPreview(fileName);
         _restoreRehearsal = null;
         _importStatus = l10n.decryptArchiveFailed;
       });
@@ -755,12 +756,13 @@ class _ImportExportPageState extends State<ImportExportPage> {
       });
     } on Object catch (error) {
       if (!mounted || generation != _previewGeneration) return;
+      appDebugLog('PluralKit preview failed', error: error);
       setState(() {
         _isPickingImport = false;
         _preview = null;
         _importStatus = error is PluralKitResponseTooLargeException
             ? l10n.pluralKitResponseTooLarge
-            : l10n.pluralKitImportFailed(error.toString());
+            : l10n.importFailedPlain;
       });
     }
   }
@@ -810,6 +812,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       });
     } on Object catch (error) {
       if (!mounted) return;
+      appDebugLog('Restore rehearsal failed', error: error);
       setState(() {
         _isRehearsingRestore = false;
         _restoreRehearsal = RestoreRehearsalSummary(
@@ -818,7 +821,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           counts: const {},
           checkedAt: DateTime.now().toUtc(),
           elapsed: Duration.zero,
-          error: error.toString(),
+          error: l10n.restoreRehearsalFailedBody,
         );
         _importStatus = l10n.restoreRehearsalFailedStatus;
       });
@@ -908,10 +911,11 @@ class _ImportExportPageState extends State<ImportExportPage> {
         });
       }
     } on Object catch (error) {
+      appDebugLog('Import failed', error: error);
       if (mounted) {
         setState(() {
           _isApplyingImport = false;
-          _importStatus = l10n.importFailedStatus(error.toString());
+          _importStatus = l10n.importFailedPlain;
         });
       }
       return;
@@ -959,7 +963,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
     );
   }
 
-  ImportPreview _encryptedArchiveFailedPreview(String fileName, Object error) {
+  ImportPreview _encryptedArchiveFailedPreview(String fileName) {
+    final l10n = AppLocalizations.of(context);
     return ImportPreview(
       source: ImportSource.plurisHavenArchive,
       fileName: fileName,
@@ -971,7 +976,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
           stage: ImportPreviewStage.decrypt,
           diagnostic: ImportDiagnostic(
             ImportDiagnosticCode.encryptedArchiveDecryptFailed,
-            {'error': error.toString()},
+            {'error': l10n.archiveAuthenticationFailedReason},
           ),
         ),
       ],
@@ -1554,9 +1559,10 @@ class _EncryptedArchiveSheetState extends State<EncryptedArchiveSheet> {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     } on Object catch (error) {
       if (!mounted) return;
+      appDebugLog('Encrypted archive save failed', error: error);
       setState(() {
         _isSaving = false;
-        _status = l10n.couldNotSaveEncryptedArchive(error.toString());
+        _status = l10n.fileSaveFailedPlain;
       });
     }
   }
@@ -1633,12 +1639,10 @@ class LocalArchiveSheet extends StatelessWidget {
                   Semantics(
                     container: true,
                     liveRegion: true,
-                    label: l10n.archiveErrorSemanticLabel(
-                      snapshot.error.toString(),
-                    ),
+                    label: l10n.archiveBuildFailedPlain,
                     child: ExcludeSemantics(
                       child: Text(
-                        l10n.couldNotBuildArchive(snapshot.error.toString()),
+                        l10n.archiveBuildFailedPlain,
                         style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                     ),
@@ -1727,9 +1731,10 @@ class LocalArchiveSheet extends StatelessWidget {
       if (!messenger.mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.archiveCopied)));
     } on Object catch (error) {
+      appDebugLog('Archive copy failed', error: error);
       if (!messenger.mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.couldNotCopyArchive(error.toString()))),
+        SnackBar(content: Text(l10n.clipboardCopyFailedPlain)),
       );
     }
   }
@@ -1771,12 +1776,11 @@ class LocalArchiveSheet extends StatelessWidget {
         SnackBar(content: Text(saved ? l10n.archiveSaved : l10n.saveCancelled)),
       );
     } on Object catch (error) {
+      appDebugLog('Archive save failed', error: error);
       if (!messenger.mounted) {
         return;
       }
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.couldNotSaveArchive(error.toString()))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.fileSaveFailedPlain)));
     }
   }
 
@@ -1821,10 +1825,9 @@ class LocalArchiveSheet extends StatelessWidget {
         ),
       );
     } on Object catch (error) {
+      appDebugLog('PluralPort file save failed', error: error);
       if (!messenger.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.couldNotSavePluralPortFile('$error'))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.fileSaveFailedPlain)));
     }
   }
 

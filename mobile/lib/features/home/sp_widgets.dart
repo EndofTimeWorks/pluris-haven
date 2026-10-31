@@ -457,6 +457,7 @@ class _SpSettingsRowState extends State<SpSettingsRow> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final spacing = _spacingOf(context);
+    final isAction = widget.interactive && widget.onTap != null;
     final content = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: 16 * spacing,
@@ -470,85 +471,68 @@ class _SpSettingsRowState extends State<SpSettingsRow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                ExcludeSemantics(
+                  excluding: isAction,
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 SizedBox(height: 3 * spacing),
                 widget.subtitleWidget ??
-                    Text(
-                      widget.subtitle,
-                      style: TextStyle(
-                        color: scheme.onSurfaceVariant,
-                        fontSize: 13,
+                    ExcludeSemantics(
+                      excluding: isAction,
+                      child: Text(
+                        widget.subtitle,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
               ],
             ),
           ),
-          widget.trailing ??
-              ExcludeSemantics(
-                child: Text(
-                  '>',
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
-                  ),
+          if (widget.trailing case final trailing?)
+            Semantics(container: true, child: trailing)
+          else if (isAction)
+            ExcludeSemantics(
+              child: Text(
+                '>',
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
+            ),
         ],
       ),
     );
 
-    if (!widget.interactive) {
+    if (!isAction) {
       return content;
     }
 
     return Semantics(
+      container: true,
+      explicitChildNodes: true,
       button: true,
-      label: '${widget.title}. ${widget.subtitle}',
+      label: widget.subtitleWidget == null
+          ? '${widget.title}. ${widget.subtitle}'
+          : widget.title,
       child: InkWell(
         focusNode: _focusNode,
         onTap: () {
           _focusNode.requestFocus();
-          if (widget.onTap case final onTap?) {
-            onTap();
-          } else {
-            showPlannedFeaturePopup(
-              context,
-              title: widget.title,
-              detail: widget.subtitle,
-            );
-          }
+          widget.onTap!();
         },
         child: content,
       ),
     );
   }
-}
-
-Future<void> showPlannedFeaturePopup(
-  BuildContext context, {
-  required String title,
-  required String detail,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      title: Text(title),
-      content: Text(AppLocalizations.of(context).plannedFeatureBody(detail)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(AppLocalizations.of(context).okButtonLabel),
-        ),
-      ],
-    ),
-  );
 }
 
 class SpSwitchRow extends StatelessWidget {

@@ -1070,11 +1070,12 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
       final ref = await _storeManualAvatar(file.name, bytes);
       if (mounted) setState(() => _avatarUrl = ref);
     } on Object catch (error) {
+      appDebugLog('System avatar save failed', error: error);
       if (mounted) {
         setState(
           () => _error =
               _manualAvatarValidationMessage(l10n, error) ??
-              l10n.couldNotSaveImage(error.toString()),
+              l10n.fileSaveFailedPlain,
         );
       }
     }
@@ -1106,10 +1107,11 @@ class _SystemProfileEditorSheetState extends State<SystemProfileEditorSheet> {
       );
       if (mounted) Navigator.pop(context);
     } on Object catch (error) {
+      appDebugLog('System profile save failed', error: error);
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = error.toString();
+          _error = AppLocalizations.of(context).profileSaveFailedPlain;
         });
       }
     }

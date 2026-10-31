@@ -415,6 +415,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             const SizedBox(height: 10),
             DropdownButtonFormField<ReminderScheduleKind>(
               key: const ValueKey('reminder-schedule-kind-field'),
+              isExpanded: true,
               initialValue: _scheduleKind,
               decoration: InputDecoration(labelText: l10n.scheduleFieldLabel),
               items: [
@@ -434,6 +435,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             if (_scheduleKind == ReminderScheduleKind.weekly) ...[
               DropdownButtonFormField<String>(
                 key: const ValueKey('reminder-weekday-field'),
+                isExpanded: true,
                 initialValue: _weekday,
                 decoration: InputDecoration(labelText: l10n.dayFieldLabel),
                 items: [
@@ -465,6 +467,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             if (_scheduleKind == ReminderScheduleKind.monthly) ...[
               DropdownButtonFormField<int>(
                 key: const ValueKey('reminder-month-day-field'),
+                isExpanded: true,
                 initialValue: _monthDay,
                 decoration: InputDecoration(
                   labelText: l10n.dayOfMonthFieldLabel,
@@ -489,6 +492,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                   final members = snapshot.data ?? const <MemberSummary>[];
                   return DropdownButtonFormField<String?>(
                     key: const ValueKey('reminder-front-detail-field'),
+                    isExpanded: true,
                     initialValue: _triggerMemberId,
                     decoration: InputDecoration(
                       labelText: l10n.afterFrontTargetLabel,
@@ -513,6 +517,8 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                           value: member.id,
                           child: Text(
                             _memberPickerLabel(member, members, l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],

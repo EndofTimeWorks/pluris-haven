@@ -499,6 +499,7 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String?>(
                     key: const ValueKey('group-parent-field'),
+                    isExpanded: true,
                     initialValue: _parentGroupId,
                     decoration: InputDecoration(
                       labelText: l10n.parentGroupFieldLabel,
@@ -511,7 +512,11 @@ class _AddGroupSheetState extends State<AddGroupSheet> {
                       for (final option in parentOptions)
                         DropdownMenuItem<String?>(
                           value: option.id,
-                          child: Text(option.name),
+                          child: Text(
+                            option.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                     ],
                     onChanged: (value) =>
