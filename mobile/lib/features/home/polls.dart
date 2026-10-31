@@ -396,38 +396,46 @@ Future<void> showPollVoteHistory(
                     stream: repository.watchMembers(includeArchived: true),
                     initialData: const [],
                     builder: (context, memberSnapshot) {
-                      final members =
-                          memberSnapshot.data ?? const <MemberSummary>[];
-                      final names = <String, int>{};
-                      for (final member in members) {
-                        names.update(
-                          memberNameComparisonKey(member.displayName),
-                          (count) => count + 1,
-                          ifAbsent: () => 1,
-                        );
-                      }
-                      final membersById = {
-                        for (final member in members) member.id: member,
-                      };
-                      return Column(
-                        children: [
-                          for (final event in events)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                l10n.pollVoteEventLabel(
-                                  optionNames[event.optionId] ??
-                                      l10n.unknownPollOptionLabel,
-                                  event.action == 'selected'
-                                      ? l10n.pollVoteSelected
-                                      : l10n.pollVoteCleared,
+                      return StreamBuilder<List<MemberSummary>>(
+                        stream: repository.watchDeletedMembers(),
+                        initialData: const [],
+                        builder: (context, removedSnapshot) {
+                          final members = [
+                            ...?memberSnapshot.data,
+                            ...?removedSnapshot.data,
+                          ];
+                          final names = <String, int>{};
+                          for (final member in members) {
+                            names.update(
+                              memberNameComparisonKey(member.displayName),
+                              (count) => count + 1,
+                              ifAbsent: () => 1,
+                            );
+                          }
+                          final membersById = {
+                            for (final member in members) member.id: member,
+                          };
+                          return Column(
+                            children: [
+                              for (final event in events)
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(
+                                    l10n.pollVoteEventLabel(
+                                      optionNames[event.optionId] ??
+                                          l10n.unknownPollOptionLabel,
+                                      event.action == 'selected'
+                                          ? l10n.pollVoteSelected
+                                          : l10n.pollVoteCleared,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${_pollVoterLabel(event.memberId, membersById, names, l10n)} · ${_shortDateTime(context, event.createdAt)}',
+                                  ),
                                 ),
-                              ),
-                              subtitle: Text(
-                                '${_pollVoterLabel(event.memberId, membersById, names, l10n)} · ${_shortDateTime(context, event.createdAt)}',
-                              ),
-                            ),
-                        ],
+                            ],
+                          );
+                        },
                       );
                     },
                   ),

@@ -3590,7 +3590,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String purgeMemberBody(String name) {
-    return 'Permanently delete $name\'s private profile content? Historical attribution remains as a minimal tombstone.';
+    return 'Permanently delete $name\'s private profile content? Their name and profile will be erased. Front and poll history will retain a member ID without the profile.';
   }
 
   @override
@@ -3598,7 +3598,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteMemberBody(String name) {
-    return 'Remove $name from active lists? Their current front will end. History and content stay available, and you can restore their profile from Removed.';
+    return 'Remove $name from active lists? Their current front will end. History, including votes, stays available and you can restore their profile from Removed.';
   }
 
   @override

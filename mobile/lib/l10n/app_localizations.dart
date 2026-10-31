@@ -6140,7 +6140,7 @@ abstract class AppLocalizations {
   /// No description provided for @purgeMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'Permanently delete {name}\'s private profile content? Historical attribution remains as a minimal tombstone.'**
+  /// **'Permanently delete {name}\'s private profile content? Their name and profile will be erased. Front and poll history will retain a member ID without the profile.'**
   String purgeMemberBody(String name);
 
   /// No description provided for @purgeMemberButton.
@@ -6152,7 +6152,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMemberBody.
   ///
   /// In en, this message translates to:
-  /// **'Remove {name} from active lists? Their current front will end. History and content stay available, and you can restore their profile from Removed.'**
+  /// **'Remove {name} from active lists? Their current front will end. History, including votes, stays available and you can restore their profile from Removed.'**
   String deleteMemberBody(String name);
 
   /// No description provided for @memberArchived.
