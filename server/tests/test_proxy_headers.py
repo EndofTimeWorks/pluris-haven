@@ -98,3 +98,106 @@ def test_failed_logins_cannot_lock_out_account_from_another_ip(client: TestClien
 
     assert attacker_limited.status_code == 429
     assert legitimate.status_code == 200
+
+
+def test_distributed_failed_logins_share_account_bucket_without_lockout(
+    client: TestClient,
+) -> None:
+    register(client, "victim@example.com", "Victim")
+    client.app.state.auth_rate_limiter.max_attempts = 10
+    client.app.state.failed_login_rate_limiter.max_attempts = 2
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        wrong = {
+            "email": "victim@example.com",
+            "password": "wrong password phrase",
+            "device_name": "Test device",
+        }
+        results = [
+            proxied.post(
+                "/v1/auth/login",
+                headers={"X-Forwarded-For": address},
+                json=wrong,
+            )
+            for address in ("198.51.100.4", "203.0.113.8", "192.0.2.12")
+        ]
+        legitimate = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "192.0.2.13"},
+            json={**wrong, "password": "correct horse battery staple"},
+        )
+
+    assert [response.status_code for response in results] == [401, 401, 429]
+    assert results[-1].headers["Retry-After"]
+    assert legitimate.status_code == 200
+
+
+def test_failed_login_limit_does_not_reveal_account_existence(client: TestClient) -> None:
+    register(client, "exists@example.com", "Existing")
+    client.app.state.auth_rate_limiter.max_attempts = 10
+    client.app.state.failed_login_rate_limiter.max_attempts = 1
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        results = {}
+        for email in ("exists@example.com", "absent@example.com"):
+            results[email] = [
+                proxied.post(
+                    "/v1/auth/login",
+                    headers={"X-Forwarded-For": address},
+                    json={
+                        "email": email,
+                        "password": "wrong password phrase",
+                        "device_name": "Test device",
+                    },
+                )
+                for address in ("198.51.100.4", "203.0.113.8")
+            ]
+
+    assert [response.status_code for response in results["exists@example.com"]] == [401, 429]
+    assert [response.status_code for response in results["absent@example.com"]] == [401, 429]
+    assert results["exists@example.com"][1].json() == results["absent@example.com"][1].json()
+
+
+def test_ipv6_clients_in_one_64_share_a_login_bucket(client: TestClient) -> None:
+    client.app.state.auth_rate_limiter.max_attempts = 1
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        login = {
+            "email": "absent@example.com",
+            "password": "wrong password phrase",
+            "device_name": "Test device",
+        }
+        responses = [
+            proxied.post(
+                "/v1/auth/login",
+                headers={"X-Forwarded-For": address},
+                json=login,
+            )
+            for address in ("2001:db8:abcd:1::1", "2001:db8:abcd:1::2", "2001:db8:abcd:2::1")
+        ]
+
+    assert [response.status_code for response in responses] == [401, 429, 401]
+
+
+def test_ipv4_mapped_ipv6_uses_the_ipv4_login_bucket(client: TestClient) -> None:
+    client.app.state.auth_rate_limiter.max_attempts = 1
+    proxied_app = ProxyHeadersMiddleware(client.app, trusted_hosts="127.0.0.1")
+    with TestClient(proxied_app, client=("127.0.0.1", 8000)) as proxied:
+        login = {
+            "email": "absent@example.com",
+            "password": "wrong password phrase",
+            "device_name": "Test device",
+        }
+        first = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "198.51.100.4"},
+            json=login,
+        )
+        mapped = proxied.post(
+            "/v1/auth/login",
+            headers={"X-Forwarded-For": "::ffff:198.51.100.4"},
+            json=login,
+        )
+
+    assert first.status_code == 401
+    assert mapped.status_code == 429

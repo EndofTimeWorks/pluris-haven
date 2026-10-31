@@ -59,9 +59,10 @@
   <section>
     <h2>Online services</h2>
     <p>
-      Hosted accounts, online backups, and device sync are not currently offered. Local encrypted
-      archives can be exported and restored without an account. The app does not include advertising
-      or behavioural profiling.
+      Pluris Haven does not currently offer a public hosted account, online backup, or device sync
+      service. An existing private server connection may still appear in the app. It is separate
+      from local archive recovery: you can export and restore a local encrypted archive without an
+      account. The app does not include advertising or behavioural profiling.
     </p>
     <p>
       Remote avatar downloads happen only when you import or choose a remote avatar. They contact

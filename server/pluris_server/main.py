@@ -130,6 +130,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         window_seconds=active_settings.auth_rate_limit_window_seconds,
         key_pepper=active_settings.friend_code_pepper,
     )
+    app.state.failed_login_rate_limiter = DatabaseRateLimiter(
+        app.state.session_factory,
+        max_attempts=active_settings.failed_login_rate_limit_attempts,
+        window_seconds=active_settings.failed_login_rate_limit_window_seconds,
+        key_pepper=active_settings.friend_code_pepper,
+    )
     app.state.refresh_ip_rate_limiter = DatabaseRateLimiter(
         app.state.session_factory,
         max_attempts=active_settings.refresh_ip_rate_limit_attempts,

@@ -1,6 +1,7 @@
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from ipaddress import ip_address, ip_network
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
@@ -56,6 +57,19 @@ ACCOUNT_DELETION_GRACE = timedelta(days=30)
 _logger = logging.getLogger("pluris.auth")
 
 
+def _client_rate_limit_key(request: Request) -> str:
+    host = request.client.host if request.client is not None else "unknown"
+    try:
+        address = ip_address(host)
+    except ValueError:
+        return host
+    if address.version == 6 and address.ipv4_mapped is not None:
+        address = address.ipv4_mapped
+    if address.version == 6:
+        return str(ip_network(f"{address}/64", strict=False))
+    return str(address)
+
+
 async def _deliver_password_reset(email_sender: EmailSender, recipient: str, token: str) -> None:
     try:
         await email_sender.send_password_reset(recipient, token)
@@ -76,7 +90,7 @@ async def _enforce_rate_limit(
     subject: str | None = None,
     include_client: bool = True,
 ) -> None:
-    client_host = request.client.host if request.client is not None else "unknown"
+    client_host = _client_rate_limit_key(request)
     keys = [f"auth:{operation.value}:ip:{client_host}"] if include_client else []
     # A caller must not exhaust an email-wide login bucket and deny that
     # account access from a different IP. Login remains limited per client.
@@ -97,7 +111,7 @@ async def _enforce_rate_limit(
 
 
 async def _enforce_refresh_ip_limit(request: Request) -> None:
-    client_host = request.client.host if request.client is not None else "unknown"
+    client_host = _client_rate_limit_key(request)
     retry_after = await request.app.state.refresh_ip_rate_limiter.retry_after(
         [f"auth:refresh:ip:{client_host}"]
     )
@@ -105,6 +119,25 @@ async def _enforce_refresh_ip_limit(request: Request) -> None:
         log_security_signal(
             SecuritySignal.AUTH_RATE_LIMITED,
             operation=SecurityOperation.REFRESH,
+            reason=SecurityReason.RATE_LIMIT,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
+async def _enforce_failed_login_limit(request: Request, email: str) -> None:
+    # Check this only after the password has been verified. Wrong guesses from
+    # many addresses share a bucket, while a valid password can still sign in.
+    retry_after = await request.app.state.failed_login_rate_limiter.retry_after(
+        [f"auth:login:failed:subject:{email}"]
+    )
+    if retry_after is not None:
+        log_security_signal(
+            SecuritySignal.AUTH_RATE_LIMITED,
+            operation=SecurityOperation.LOGIN,
             reason=SecurityReason.RATE_LIMIT,
         )
         raise HTTPException(
@@ -191,6 +224,7 @@ async def login(
     user = await db.scalar(select(User).where(User.email == email))
     if user is None:
         await dummy_verify_password(payload.password)
+        await _enforce_failed_login_limit(request, email)
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
             operation=SecurityOperation.LOGIN,
@@ -198,6 +232,7 @@ async def login(
         )
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not await verify_password(payload.password, user.password_hash):
+        await _enforce_failed_login_limit(request, email)
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
             operation=SecurityOperation.LOGIN,

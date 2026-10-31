@@ -128,9 +128,14 @@ Keep `PLURIS_REGISTRATION_ENABLED=false` and
 - readiness, authentication-failure, and database-capacity monitoring
 
 The server applies shared database-backed rate limits to registration, login,
-refresh, and friend requests. Configure `PLURIS_AUTH_RATE_LIMIT_ATTEMPTS` and
-`PLURIS_AUTH_RATE_LIMIT_WINDOW_SECONDS` when needed. A separate broad IP limit
-protects refresh from floods of unique invalid tokens.
+refresh, and friend requests. Login limits group IPv6 clients by /64 and treat
+IPv4-mapped addresses as IPv4. Failed passwords also share a bucket per email
+across client addresses. That bucket returns a generic rate-limit response for
+further wrong guesses, while a correct password can still sign in. Configure
+`PLURIS_AUTH_RATE_LIMIT_ATTEMPTS`, `PLURIS_AUTH_RATE_LIMIT_WINDOW_SECONDS`,
+`PLURIS_FAILED_LOGIN_RATE_LIMIT_ATTEMPTS`, and
+`PLURIS_FAILED_LOGIN_RATE_LIMIT_WINDOW_SECONDS` when needed. A separate broad
+IP limit protects refresh from floods of unique invalid tokens.
 
 Updated clients send a random nonce with refresh rotation. One matching retry
 within `PLURIS_REFRESH_RETRY_GRACE_SECONDS` replaces the first response token,
