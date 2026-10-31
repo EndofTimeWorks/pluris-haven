@@ -1756,11 +1756,15 @@ class _CustomFieldValueSheetState extends State<CustomFieldValueSheet> {
       final values = <String>{...choices, ?_selectedChoice}.toList();
       return DropdownButtonFormField<String>(
         key: const ValueKey('custom-field-value-field'),
+        isExpanded: true,
         initialValue: _selectedChoice,
         decoration: InputDecoration(labelText: l10n.valueFieldLabel),
         items: [
           for (final choice in values)
-            DropdownMenuItem(value: choice, child: Text(choice)),
+            DropdownMenuItem(
+              value: choice,
+              child: Text(choice, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
         ],
         onChanged: (value) => setState(() => _selectedChoice = value),
       );
@@ -2452,6 +2456,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                       ),
                       child: DropdownButtonFormField<String?>(
                         key: const ValueKey('member-primary-group-field'),
+                        isExpanded: true,
                         initialValue: _folderId,
                         decoration: InputDecoration(
                           labelText: l10n.primaryGroupFieldLabel,
@@ -2470,7 +2475,11 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                           for (final group in groups)
                             DropdownMenuItem<String?>(
                               value: group.id,
-                              child: Text(group.name),
+                              child: Text(
+                                group.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                         ],
                         onChanged: (value) => setState(() {

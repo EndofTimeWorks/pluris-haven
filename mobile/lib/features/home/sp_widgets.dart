@@ -347,30 +347,39 @@ class _SpActionRowState extends State<SpActionRow> {
   @override
   Widget build(BuildContext context) {
     final spacing = _spacingOf(context);
-    return Row(
-      children: [
-        FilledButton(
-          focusNode: _primaryFocus,
-          onPressed: widget.onPrimary == null
-              ? null
-              : () {
-                  _primaryFocus.requestFocus();
-                  widget.onPrimary!();
-                },
-          child: Text(widget.primary),
-        ),
-        SizedBox(width: 10 * spacing),
-        OutlinedButton(
-          focusNode: _secondaryFocus,
-          onPressed: widget.onSecondary == null
-              ? null
-              : () {
-                  _secondaryFocus.requestFocus();
-                  widget.onSecondary!();
-                },
-          child: Text(widget.secondary),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) => Wrap(
+        spacing: 10 * spacing,
+        runSpacing: 8 * spacing,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+            child: FilledButton(
+              focusNode: _primaryFocus,
+              onPressed: widget.onPrimary == null
+                  ? null
+                  : () {
+                      _primaryFocus.requestFocus();
+                      widget.onPrimary!();
+                    },
+              child: Text(widget.primary),
+            ),
+          ),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+            child: OutlinedButton(
+              focusNode: _secondaryFocus,
+              onPressed: widget.onSecondary == null
+                  ? null
+                  : () {
+                      _secondaryFocus.requestFocus();
+                      widget.onSecondary!();
+                    },
+              child: Text(widget.secondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

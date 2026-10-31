@@ -232,6 +232,7 @@ class _PollTileState extends State<PollTile> {
                     : null;
                 return DropdownButtonFormField<String>(
                   key: ValueKey('poll-voter-${poll.id}'),
+                  isExpanded: true,
                   initialValue: selectedId,
                   decoration: InputDecoration(
                     labelText: l10n.pollVoteAsMemberLabel,
@@ -241,7 +242,11 @@ class _PollTileState extends State<PollTile> {
                     for (final member in members)
                       DropdownMenuItem(
                         value: member.id,
-                        child: Text(_pollMemberLabel(member, duplicateNames)),
+                        child: Text(
+                          _pollMemberLabel(member, duplicateNames),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                   onChanged: members.isEmpty

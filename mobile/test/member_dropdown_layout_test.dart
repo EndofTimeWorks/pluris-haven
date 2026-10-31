@@ -65,4 +65,52 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
   });
+
+  testWidgets('a long voter name fits the poll selector', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    const memberName =
+        'Juniper-Marisol the Very Long Member Name That Must Remain Readable';
+    await repository.saveMember(const MemberDraft(displayName: memberName));
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.singleChoice,
+        voteMode: PollVoteMode.perMember,
+        options: ['Soup', 'Rice'],
+      ),
+    );
+    final poll = (await repository.watchPolls().first).single;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.5)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: PollsPage(repository: repository, onImport: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'initial poll card');
+    final voter = find.byKey(ValueKey('poll-voter-${poll.id}'));
+    await tester.ensureVisible(voter);
+    await tester.tap(voter);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'open voter menu');
+    await tester.tap(find.text(memberName).last);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'selected voter');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
 }

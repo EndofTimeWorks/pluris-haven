@@ -674,6 +674,7 @@ class _MessageSheetState extends State<MessageSheet> {
                       snapshot.data ?? const <ChatChannelSummary>[];
                   return DropdownButtonFormField<String>(
                     key: const ValueKey('message-channel-field'),
+                    isExpanded: true,
                     initialValue:
                         channels.any((channel) => channel.id == _channelId)
                         ? _channelId
@@ -685,7 +686,11 @@ class _MessageSheetState extends State<MessageSheet> {
                       for (final channel in channels)
                         DropdownMenuItem(
                           value: channel.id,
-                          child: Text(channel.name),
+                          child: Text(
+                            channel.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                     ],
                     onChanged: (value) => setState(() => _channelId = value),
