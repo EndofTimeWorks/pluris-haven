@@ -7370,6 +7370,14 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
+  Future<void> endMemberFront(String memberId) async {
+    await setFrontMembers([
+      for (final id in _currentFrontMemberIds)
+        if (id != memberId) id,
+    ]);
+  }
+
+  @override
   Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds) async {
     final ids = memberIds.toSet();
     final selected = _visibleMembers

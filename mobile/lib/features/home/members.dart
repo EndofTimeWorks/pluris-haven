@@ -606,8 +606,6 @@ class MemberListTile extends StatelessWidget {
                     body: l10n.deleteMemberBody(member.displayName),
                     onDelete: () => repository.deleteMember(member.id),
                     confirmLabel: l10n.removeMemberButton,
-                    failureMessage: (error) =>
-                        l10n.removeMemberFailed(error.toString()),
                   );
                 }
               },
@@ -776,14 +774,7 @@ Future<bool> _endOneMemberFront(
     ),
   );
   if (confirmed != true || !context.mounted) return false;
-  final active = await repository.watchCurrentFrontMembers().first;
-  if (!context.mounted || !active.any((current) => current.id == member.id)) {
-    return false;
-  }
-  await repository.setFrontMembers([
-    for (final current in active)
-      if (current.id != member.id) current.id,
-  ]);
+  await repository.endMemberFront(member.id);
   if (context.mounted) await _syncFrontNotification(context, repository);
   return true;
 }

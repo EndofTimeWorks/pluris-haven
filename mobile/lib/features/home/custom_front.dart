@@ -152,7 +152,10 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
           const SizedBox(height: 10),
           StreamBuilder<List<MemberSummary>>(
             stream: _currentFrontLoaded
-                ? widget.repository.watchMembers(listOnly: true)
+                ? widget.repository.watchMembers(
+                    includeArchived: true,
+                    listOnly: true,
+                  )
                 : null,
             initialData: const [],
             builder: (context, snapshot) {
@@ -165,7 +168,11 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
               if (!_currentFrontLoaded) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final members = snapshot.data ?? const <MemberSummary>[];
+              final members = [
+                for (final member in snapshot.data ?? const <MemberSummary>[])
+                  if (!member.archived || _activeMemberIds.contains(member.id))
+                    member,
+              ];
               final nameCounts = <String, int>{};
               for (final member in members) {
                 final name = memberNameComparisonKey(member.displayName);
@@ -632,12 +639,7 @@ class _CustomFrontSheetState extends State<CustomFrontSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final active = await widget.repository.watchCurrentFrontMembers().first;
-    if (!mounted) return;
-    await widget.repository.setFrontMembers([
-      for (final current in active)
-        if (current.id != member.id) current.id,
-    ]);
+    await widget.repository.endMemberFront(member.id);
     if (!mounted) return;
     setState(() {
       _activeMemberIds.remove(member.id);

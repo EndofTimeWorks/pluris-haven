@@ -302,7 +302,8 @@ ORDER BY m.lexo_rank ASC, m.created_at ASC, m.id ASC
           await (database.select(database.members)..where(
                 (member) =>
                     member.systemId.equals(localSystemId) &
-                    member.archived.equals(false) &
+                    member.deletedAt.isNull() &
+                    member.purgedAt.isNull() &
                     member.isCustomFront.equals(false) &
                     member.id.isIn(memberIds.toList()),
               ))

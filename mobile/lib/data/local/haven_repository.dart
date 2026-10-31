@@ -497,7 +497,10 @@ class LocalHavenRepository implements HavenRepository {
       _members.archive(memberId, archived: false);
 
   @override
-  Future<void> deleteMember(String memberId) => _members.delete(memberId);
+  Future<void> deleteMember(String memberId) => database.transaction(() async {
+    await _frontEndMemberFront(memberId);
+    await _members.delete(memberId);
+  });
 
   @override
   Future<void> restoreDeletedMember(String memberId) =>
@@ -565,6 +568,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) =>
       _frontSetFrontMembers(memberIds);
+
+  @override
+  Future<void> endMemberFront(String memberId) =>
+      _frontEndMemberFront(memberId);
 
   @override
   Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds) =>
