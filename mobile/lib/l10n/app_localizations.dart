@@ -337,6 +337,54 @@ abstract class AppLocalizations {
   /// **'Your saved data has not been removed. Try again, or restart the app if the problem continues.'**
   String get dataLoadFailedBody;
 
+  /// No description provided for @actionFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete that action. Try again.'**
+  String get actionFailedPlain;
+
+  /// No description provided for @profileSaveFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the system profile. Check the fields and try again.'**
+  String get profileSaveFailedPlain;
+
+  /// No description provided for @importFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed. Check the file and try again.'**
+  String get importFailedPlain;
+
+  /// No description provided for @archiveBuildFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not build the archive. Your local data remains saved.'**
+  String get archiveBuildFailedPlain;
+
+  /// No description provided for @fileSaveFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the file on this device. Try again or choose another export option.'**
+  String get fileSaveFailedPlain;
+
+  /// No description provided for @clipboardCopyFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy the archive. Try again or save it as a file.'**
+  String get clipboardCopyFailedPlain;
+
+  /// No description provided for @archiveAuthenticationFailedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the passphrase and whether the file is complete.'**
+  String get archiveAuthenticationFailedReason;
+
+  /// No description provided for @encryptedBackupRestoreFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore this encrypted backup. Check its recovery details and try again.'**
+  String get encryptedBackupRestoreFailedPlain;
+
   /// No description provided for @retryButton.
   ///
   /// In en, this message translates to:
@@ -6766,6 +6814,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End time must be after the start time.'**
   String get endBeforeStartError;
+
+  /// No description provided for @activeFrontFutureStartError.
+  ///
+  /// In en, this message translates to:
+  /// **'An active front cannot start in the future.'**
+  String get activeFrontFutureStartError;
+
+  /// No description provided for @memberAlreadyFrontingError.
+  ///
+  /// In en, this message translates to:
+  /// **'A selected member already has an active front.'**
+  String get memberAlreadyFrontingError;
+
+  /// No description provided for @frontHistorySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this front history entry. Try again.'**
+  String get frontHistorySaveFailed;
 
   /// No description provided for @chooseMembersOrLabelError.
   ///

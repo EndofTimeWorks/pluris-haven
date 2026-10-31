@@ -1,14 +1,51 @@
 import 'dart:convert';
 
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
 import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
+import 'package:pluris_haven/main.dart';
 
 import 'test_repository.dart';
 
 void main() {
+  testWidgets('front picker keeps an archived active member selected', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Wren'));
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    final members = await repository.watchMembers().first;
+    final wren = members.singleWhere((member) => member.displayName == 'Wren');
+    final kai = members.singleWhere((member) => member.displayName == 'Kai');
+    await repository.setFrontMembers([wren.id, kai.id]);
+    await repository.archiveMember(wren.id);
+
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await tester.tap(find.text('Make current front'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Wren'))
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, 'Kai'))
+          .selected,
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
   test(
     'ending Kai preserves archived Wren and an active custom front',
     () async {

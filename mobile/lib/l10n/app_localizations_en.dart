@@ -139,6 +139,37 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your saved data has not been removed. Try again, or restart the app if the problem continues.';
 
   @override
+  String get actionFailedPlain => 'Could not complete that action. Try again.';
+
+  @override
+  String get profileSaveFailedPlain =>
+      'Could not save the system profile. Check the fields and try again.';
+
+  @override
+  String get importFailedPlain =>
+      'Import failed. Check the file and try again.';
+
+  @override
+  String get archiveBuildFailedPlain =>
+      'Could not build the archive. Your local data remains saved.';
+
+  @override
+  String get fileSaveFailedPlain =>
+      'Could not save the file on this device. Try again or choose another export option.';
+
+  @override
+  String get clipboardCopyFailedPlain =>
+      'Could not copy the archive. Try again or save it as a file.';
+
+  @override
+  String get archiveAuthenticationFailedReason =>
+      'Check the passphrase and whether the file is complete.';
+
+  @override
+  String get encryptedBackupRestoreFailedPlain =>
+      'Could not restore this encrypted backup. Check its recovery details and try again.';
+
+  @override
   String get retryButton => 'Try again';
 
   @override
@@ -3936,6 +3967,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get endBeforeStartError => 'End time must be after the start time.';
+
+  @override
+  String get activeFrontFutureStartError =>
+      'An active front cannot start in the future.';
+
+  @override
+  String get memberAlreadyFrontingError =>
+      'A selected member already has an active front.';
+
+  @override
+  String get frontHistorySaveFailed =>
+      'Could not save this front history entry. Try again.';
 
   @override
   String get chooseMembersOrLabelError =>

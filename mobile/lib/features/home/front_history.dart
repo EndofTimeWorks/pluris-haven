@@ -826,14 +826,17 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     if (_endedAt != null && _endedAt!.isBefore(_startedAt)) {
-      setState(() => _error = AppLocalizations.of(context).endBeforeStartError);
+      setState(() => _error = l10n.endBeforeStartError);
+      return;
+    }
+    if (_endedAt == null && _startedAt.isAfter(DateTime.now())) {
+      setState(() => _error = l10n.activeFrontFutureStartError);
       return;
     }
     if (_memberIds.isEmpty && _labelController.text.trim().isEmpty) {
-      setState(
-        () => _error = AppLocalizations.of(context).chooseMembersOrLabelError,
-      );
+      setState(() => _error = l10n.chooseMembersOrLabelError);
       return;
     }
     final draft = FrontHistoryDraft(
@@ -843,10 +846,32 @@ class _FrontHistoryEditorSheetState extends State<FrontHistoryEditorSheet> {
       label: _labelController.text,
       statusNote: _noteController.text,
     );
-    if (widget.entry == null) {
-      await widget.repository.saveFrontHistoryEntry(draft);
-    } else {
-      await widget.repository.updateFrontHistoryEntry(widget.entry!.id, draft);
+    try {
+      if (widget.entry == null) {
+        await widget.repository.saveFrontHistoryEntry(draft);
+      } else {
+        await widget.repository.updateFrontHistoryEntry(
+          widget.entry!.id,
+          draft,
+        );
+      }
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _error = switch (error.message) {
+          'Front end cannot be before its start.' => l10n.endBeforeStartError,
+          'An active front cannot start in the future.' =>
+            l10n.activeFrontFutureStartError,
+          'A selected member already has an active front.' =>
+            l10n.memberAlreadyFrontingError,
+          _ => l10n.frontHistorySaveFailed,
+        },
+      );
+      return;
+    } on Object {
+      if (!mounted) return;
+      setState(() => _error = l10n.frontHistorySaveFailed);
+      return;
     }
     if (mounted) Navigator.pop(context);
   }
