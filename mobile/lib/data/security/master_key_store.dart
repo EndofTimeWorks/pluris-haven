@@ -40,17 +40,61 @@ class SecureStorageUpgradeException implements Exception {
 }
 
 class PlatformMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
-  static const _fileName = '.pluris-haven-master-key-v1';
+  PlatformMasterKeyProvisioningStore({
+    this.documentsDirectory,
+    this.supportDirectory,
+    bool? isIos,
+  }) : _isIos = isIos ?? Platform.isIOS;
 
-  Future<File> _file() async =>
-      File('${(await getApplicationDocumentsDirectory()).path}/$_fileName');
+  static const _fileName = '.pluris-haven-master-key-v1';
+  final Directory? documentsDirectory;
+  final Directory? supportDirectory;
+  final bool _isIos;
+
+  Future<Directory> _documents() async =>
+      documentsDirectory ?? await getApplicationDocumentsDirectory();
+
+  Future<Directory> _support() async =>
+      supportDirectory ?? await getApplicationSupportDirectory();
+
+  Future<File> _file() async => File(
+    '${(_isIos ? await _support() : await _documents()).path}/$_fileName',
+  );
 
   @override
-  Future<bool> isProvisioned() async => (await _file()).exists();
+  Future<bool> isProvisioned() async {
+    if (!_isIos) return (await _file()).exists();
+    final documents = await _documents();
+
+    // Older iOS builds wrote the marker into Documents, which can restore to
+    // a new device without the device-bound key. A marker alone is not data.
+    // If any encrypted files did restore, keep refusing a replacement key,
+    // even when no marker survived the backup.
+    final support = await _support();
+    for (final suffix in ['', '-wal', '-shm']) {
+      if (await File('${support.path}/pluris_haven.sqlite$suffix').exists()) {
+        return true;
+      }
+    }
+    final avatars = Directory('${documents.path}/avatars');
+    if (await avatars.exists() &&
+        !await avatars.list(followLinks: false).isEmpty) {
+      return true;
+    }
+    // A marker without encrypted files is safe to replace. The older marker
+    // can be present after restoring an iCloud backup to another device.
+    return false;
+  }
 
   @override
   Future<void> markProvisioned() async {
-    await (await _file()).writeAsString('provisioned', flush: true);
+    final marker = await _file();
+    await marker.parent.create(recursive: true);
+    await marker.writeAsString('provisioned', flush: true);
+    if (_isIos) {
+      final legacyMarker = File('${(await _documents()).path}/$_fileName');
+      if (await legacyMarker.exists()) await legacyMarker.delete();
+    }
   }
 }
 

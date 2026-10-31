@@ -81,21 +81,31 @@ import UniformTypeIdentifiers
     }
   }
 
-  // Local archives are encrypted but should not enter iCloud/iTunes backups.
-  // Mark their containing directories so files created by Flutter afterwards,
-  // including the SQLite archive, inherit the exclusion.
+  // The keychain key is device-bound, so backing up encrypted local files or
+  // the old provisioning marker cannot provide a restorable installation.
   private func excludePrivateDataFromBackup() {
     let manager = FileManager.default
-    let directories = [
-      manager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
-      manager.urls(for: .documentDirectory, in: .userDomainMask).first?
-        .appendingPathComponent("avatars", isDirectory: true),
-    ].compactMap { $0 }
-    var values = URLResourceValues()
-    values.isExcludedFromBackup = true
-    for var directory in directories {
-      try? manager.createDirectory(at: directory, withIntermediateDirectories: true)
-      try? directory.setResourceValues(values)
+    let support = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+    let documents = manager.urls(for: .documentDirectory, in: .userDomainMask).first
+    for directory in [
+      support,
+      documents?.appendingPathComponent("avatars", isDirectory: true),
+    ].compactMap({ $0 }) {
+      do {
+        try PrivateBackupExclusion.excludeDirectory(directory)
+      } catch {
+        NSLog("Pluris Haven: could not exclude private directory from backup")
+      }
+    }
+    for file in [
+      support?.appendingPathComponent(".pluris-haven-master-key-v1"),
+      documents?.appendingPathComponent(".pluris-haven-master-key-v1"),
+    ].compactMap({ $0 }) {
+      do {
+        try PrivateBackupExclusion.excludeExistingFile(file)
+      } catch {
+        NSLog("Pluris Haven: could not exclude key marker from backup")
+      }
     }
   }
 
@@ -211,6 +221,24 @@ import UniformTypeIdentifiers
     backgroundEngine?.destroyContext()
     backgroundEngine = nil
     task.setTaskCompleted(success: success)
+  }
+}
+
+enum PrivateBackupExclusion {
+  static func excludeDirectory(_ directory: URL) throws {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    var url = directory
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try url.setResourceValues(values)
+  }
+
+  static func excludeExistingFile(_ file: URL) throws {
+    guard FileManager.default.fileExists(atPath: file.path) else { return }
+    var url = file
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try url.setResourceValues(values)
   }
 }
 

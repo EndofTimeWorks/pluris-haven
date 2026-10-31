@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
@@ -95,6 +97,118 @@ void main() {
     );
     expect(storage.values, isEmpty);
   });
+
+  test(
+    'iOS restores a marker alone without stranding a fresh install',
+    () async {
+      final root = await Directory.systemTemp.createTemp('haven-key-restore-');
+      addTearDown(() => root.delete(recursive: true));
+      final documents = Directory('${root.path}/Documents')..createSync();
+      final support = Directory('${root.path}/Application Support');
+      final legacyMarker = File('${documents.path}/.pluris-haven-master-key-v1')
+        ..writeAsStringSync('provisioned');
+      final provisioning = PlatformMasterKeyProvisioningStore(
+        documentsDirectory: documents,
+        supportDirectory: support,
+        isIos: true,
+      );
+      final storage = MemorySecureValueStore();
+
+      expect(await provisioning.isProvisioned(), isFalse);
+      final crypto = await HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: provisioning,
+      ).loadOrCreateCrypto();
+      expect(await crypto.decrypt(await crypto.encrypt('River')), 'River');
+      expect(storage.values, hasLength(1));
+      expect(legacyMarker.existsSync(), isFalse);
+      expect(
+        File('${support.path}/.pluris-haven-master-key-v1').existsSync(),
+        isTrue,
+      );
+    },
+  );
+
+  test('iOS refuses a new key when any local database file remains', () async {
+    for (final suffix in ['', '-wal', '-shm']) {
+      final root = await Directory.systemTemp.createTemp('haven-key-data-');
+      addTearDown(() => root.delete(recursive: true));
+      final documents = Directory('${root.path}/Documents')..createSync();
+      final support = Directory('${root.path}/Application Support')
+        ..createSync();
+      File('${support.path}/pluris_haven.sqlite$suffix').createSync();
+      final storage = MemorySecureValueStore();
+
+      expect(
+        HavenMasterKeyStore(
+          storage: storage,
+          provisioningStore: PlatformMasterKeyProvisioningStore(
+            documentsDirectory: documents,
+            supportDirectory: support,
+            isIos: true,
+          ),
+        ).loadOrCreateCrypto,
+        throwsA(isA<MissingMasterKeyException>()),
+      );
+      expect(storage.values, isEmpty);
+    }
+  });
+
+  test('iOS refuses a new key when a restored avatar remains', () async {
+    final root = await Directory.systemTemp.createTemp('haven-key-avatar-');
+    addTearDown(() => root.delete(recursive: true));
+    final documents = Directory('${root.path}/Documents')..createSync();
+    final support = Directory('${root.path}/Application Support');
+    final avatars = Directory('${documents.path}/avatars')..createSync();
+    File('${avatars.path}/river').writeAsStringSync('encrypted avatar');
+    final storage = MemorySecureValueStore();
+
+    expect(
+      HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: PlatformMasterKeyProvisioningStore(
+          documentsDirectory: documents,
+          supportDirectory: support,
+          isIos: true,
+        ),
+      ).loadOrCreateCrypto,
+      throwsA(isA<MissingMasterKeyException>()),
+    );
+    expect(storage.values, isEmpty);
+  });
+
+  test(
+    'iOS migrates an old marker without changing an available key',
+    () async {
+      final root = await Directory.systemTemp.createTemp('haven-key-legacy-');
+      addTearDown(() => root.delete(recursive: true));
+      final documents = Directory('${root.path}/Documents')..createSync();
+      final support = Directory('${root.path}/Application Support');
+      final legacyMarker = File('${documents.path}/.pluris-haven-master-key-v1')
+        ..writeAsStringSync('provisioned');
+      final storage = MemorySecureValueStore();
+      final existingCrypto = await HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: MemoryMasterKeyProvisioningStore(),
+      ).loadOrCreateCrypto();
+      final ciphertext = await existingCrypto.encrypt('Wren');
+
+      final recoveredCrypto = await HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: PlatformMasterKeyProvisioningStore(
+          documentsDirectory: documents,
+          supportDirectory: support,
+          isIos: true,
+        ),
+      ).loadOrCreateCrypto();
+      expect(await recoveredCrypto.decrypt(ciphertext), 'Wren');
+      expect(legacyMarker.existsSync(), isFalse);
+      expect(
+        File('${support.path}/.pluris-haven-master-key-v1').existsSync(),
+        isTrue,
+      );
+    },
+  );
 }
 
 class MemorySecureValueStore implements SecureValueStore {
