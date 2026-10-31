@@ -184,9 +184,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Could not remove this item: Bad state: storage unavailable'),
+      find.text('Could not complete that action. Try again.'),
       findsOneWidget,
     );
+    expect(find.textContaining('storage unavailable'), findsNothing);
   });
 
   testWidgets('shows migration failure after bootstrap closes its database', (
