@@ -1,105 +1,69 @@
 # Project state
 
-This is the current decision record. States distinguish product intent from
-implementation; this is not an alpha feature checklist.
+Pluris Haven is **pre-alpha**. Alpha is the next milestone; moving to beta needs a separate
+decision. This page records product decisions. The [completion ledger](completion-ledger.md) tracks
+implementation and test evidence.
 
-## Maturity and release
+## Local product
 
-- **DECIDED:** Pluris Haven is **PRE-ALPHA**. **ALPHA** is next; beta is later
-  and requires an explicit transition. Breaking changes and incomplete features
-  remain acceptable through alpha.
-- **IMPLEMENTED:** Development releases and versioned prereleases are separate.
-  Play internal testing is integrated into the versioned release path, but it
-  does not determine product maturity or block website metadata for a published
-  GitHub release.
-- **DECIDED:** Play closed testing is intended for the alpha distribution path;
-  its implementation and external verification remain pending.
-- **IMPLEMENTED:** Recent practical pre-alpha upgrades migrate protected local
-  `ph1:` text to context-bound `ph2:` before legacy reads are retired. This is a
-  practical pre-alpha-to-alpha upgrade baseline, not eternal support for every
-  experimental build.
+The mobile app and offline use come first. Members, fronts and other local features must work
+without an account or network connection. Private content must not leave the device as plaintext by
+default. Some database metadata, including relationships and timestamps, is not encrypted.
 
-## Product and data model
+Simply Plural-style ease of use, quick common tasks and deep customisation are product goals. People
+must be able to choose their own terms. Notes and journals use Markdown and revision history;
+message edit history is also wanted.
 
-- **DECIDED:** Mobile and offline/local functionality come first. Private local
-  use works without an account, server, or Internet; servers are optional relay,
-  backup, federation, hosted-account and remote-notification infrastructure.
-- **DECIDED:** Sync must be transport-independent: direct device, LAN and manual
-  encrypted transport can technically work without a server. Familiar Simply
-  Plural workflows, few-click common tasks and deep customisation matter.
-- **PARTIAL:** Basic polls and reminders exist. Advanced plural-specific polls,
-  delayed-after-front and member-scoped queued/digest reminders are wanted, not
-  automatic alpha blockers.
-- **PARTIAL / VERIFIED (local):** Front audit, revision restore, local chat
-  categories/channels, and recoverable member deletion have coherent local
-  persistence and regression coverage. System Safety/break-glass, revision
-  pinning, configurable retention, device/sync deletion semantics, and richer
-  chat product behaviour remain incomplete. Chats are wanted;
-  categories/channels are preserved for that direction.
-- **DECIDED:** Notes and journals use Markdown and revision history. Note history
-  supersedes the older no-note-history decision. Message edit/history behaviour
-  is also wanted.
+Basic polls and reminders work locally. More complex voting rules, queued and digest reminders,
+retention rules and System Safety still need decisions or implementation. These advanced features do
+not automatically block alpha. Front audits, revision restore, chat categories and channels, and
+recoverable member deletion have local persistence and tests; their remaining behaviour is tracked
+in the ledger.
 
-## Interop and identity
+The scoped local API is implemented for narrow read access but hidden until Experimental feature
+controls are ready. It binds to loopback while the app is unlocked, uses per-client grants and
+exposes no raw vault access or writes. An old enable preference is retired at startup.
 
-- **DECIDED:** Simply Plural import is core. PluralKit file/live import exists;
-  bidirectional sync is future.
-- **IMPLEMENTED / VERIFIED (local):** OpenPlural v0.1 file/archive import uses
-  the current preview/review/publish path, stable source-ID dedupe, asset
-  extraction and encrypted raw-extension preservation. Representative fixture
-  coverage exists; do not claim compatibility beyond the supported v0.1 shape
-  without real-export evidence. OpenPlural export/standard governance remains
-  separate.
-- **IMPLEMENTED / VERIFIED (local):** PluralPort support is limited to Draft
-  v0.1 JSON file import and export based on the format documentation in the
-  separate PluralPort site repository. Import uses Haven's existing
-  preview/review/publish path and requires encrypted retention of original
-  records and extensions. Only concretely documented System, Member and
-  fronting fields are projected; record types without a Draft v0.1 field shape
-  stay opaque. Export reports Haven-only or underspecified data and preserves it
-  under `extensions.pluris_haven`. Independent real-export compatibility
-  evidence is still missing. This is not live sync, federation, or a PluralPort
-  service.
-- **DEFERRED:** Authenticated PluralSpace API import.
-- **DECIDED:** No friendship directory. Deliberate handles, rotating codes,
-  links and QR discovery are preferred.
-- **DECIDED:** Trusted recovery contacts are wanted for preconfigured recovery
-  capability, never ordinary private-data access. Exact threshold/share
-  cryptography remains unresolved and must not be invented casually.
-- **DECIDED:** Hosted federation and portable user-held identity are long-term
-  product direction and are **not required for Alpha**. They are separate from
-  PluralPort file interchange.
+## Import and identity
 
-## Security, access and policy
+Simply Plural import is core. PluralKit file and bounded live import exist; bidirectional sync is
+later work. OpenPlural v0.1 file import has local fixture and preview coverage, but broad
+real-export compatibility has not been proved. PluralPort Draft v0.1 file import/export maps
+systems, members and fronts. Other records are retained rather than assigned unratified wire
+meanings. There is no PluralPort conformance suite yet. File interchange does not imply live sync or
+federation.
 
-- **IMPLEMENTED:** App Lock is per-device privacy. Unknown state fails closed
-  without premature authentication; losing OS credentials never silently
-  disables an already-enabled lock.
-- **IMPLEMENTED:** Hosted password recovery uses a one-time emailed token entered
-  in the existing mobile flow. Browser reset/deep-link infrastructure is not the
-  current recovery UX.
-- **NOT IMPLEMENTED / NOT VERIFIED:** Web-to-app deep links. The website has an
-  Android `assetlinks.json`, but Android has no verified-link intent filter or
-  `android:autoVerify`, iOS has no Associated Domains entitlement/AASA file,
-  and the app has no corresponding route handler. Domain ownership and the
-  association file alone do not establish working App Links or Universal Links.
-- **DECIDED:** Hosted accounts are 13+. Rooted/jailbroken devices warn, not
-  block. Low-cognitive-load mode remains wanted. CLI/TUI is **SUPERSEDED** and
-  dropped.
-- **IMPLEMENTED / VERIFIED (local):** The first native scoped local API is
-  consented, disabled by default, loopback-only and bound to the unlocked app.
-  Its persisted endpoint and serialized lifecycle do not silently rotate or
-  outlive a later lock. It has per-client encrypted grants, revocation, narrow
-  read scopes and deterministic errors; it intentionally exposes no writes or
-  raw vault access.
+Sync, if implemented, must not depend on one hosted server. Manual encrypted transport, direct
+devices and LAN transport remain possible directions. Hosted federation and portable user-held
+identity are long-term work, not alpha requirements. Authenticated PluralSpace API import is
+deferred.
 
-## Current completion priorities
+There will be no friendship directory. Discovery should be deliberate through exact handles,
+rotating codes, links or QR. Trusted recovery contacts are wanted, but the share/threshold design is
+undecided; do not invent it to close a checklist item.
 
-The remaining work includes local chats and messages, revision flows for notes,
-journals and messages, advanced reminders and polls, System Safety and front
-auditing, customisation and accessibility, Play closed testing, release
-automation and the remaining alpha gates.
+## Security and access
 
-Hosted federation/portable-identity protocol work, desktop/private-web/watch
-clients, plugins, authenticated PluralSpace API import and other explicitly
-deferred platform work are not Alpha prerequisites.
+App Lock is per-device. Unknown startup state stays protected, and loss of OS credentials must not
+silently disable an enabled lock. Password-protected local archives provide portable recovery;
+device-key server snapshots do not.
+
+Hosted accounts are optional and outside the current local-product priority. The server prototype
+has one-time emailed password recovery; public registration remains disabled. Hosted accounts are
+intended for people aged 13 or older. No public production service is assumed here.
+
+Web-to-app deep links are not implemented or verified. The Android association file alone is not a
+working App Link, and iOS lacks the corresponding association and route handling. Rooted or
+jailbroken devices receive a warning, not a block. Low-cognitive-load mode remains a goal. CLI/TUI
+clients were dropped.
+
+## Release boundary
+
+Development builds and versioned releases are separate. Play internal testing is part of the
+versioned path; closed alpha testing still needs external configuration and verification. A store
+path does not change product maturity. Recent supported pre-alpha databases migrate protected `ph1:`
+text to context-bound `ph2:`; this is a practical upgrade path, not a promise to support every
+experimental build forever.
+
+See [distribution](distribution.md) for release channels and
+[engineering readiness](engineering-readiness.md) for the remaining checks.

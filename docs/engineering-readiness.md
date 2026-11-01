@@ -1,156 +1,53 @@
 # Engineering readiness
 
-Internal pre-alpha readiness record, last checked against the local candidate
-on 2026-10-07.
+Pluris Haven is **pre-alpha**. This page lists what still needs evidence before an alpha release. It
+is not a claim that the current branch or a locally built APK is ready to publish.
+[Distribution](distribution.md) describes the release workflow; the
+[completion ledger](completion-ledger.md) records local fixes and their tests.
 
-This document records evidence, not marketing status. Pluris Haven remains
-**PRE-ALPHA**; alpha is the next maturity stage after the current completion and
-distribution work is ready.
+## Release path
 
-## Current locally verified baseline
+The repository has separate CI paths for development builds and deliberate versioned releases.
+Android release jobs produce APKs and an AAB. The macOS CI path can build an unsigned iOS IPA. The
+versioned workflow is designed to wait for required artefacts before publishing the canonical GitHub
+Release.
 
-- The protected local-text upgrade path migrates supported recent `ph1:` data to
-  context-bound `ph2:` data before later readers/migrations, in both foreground
-  and background startup.
-- App Lock hides private UI while persisted security state is unknown without
-  triggering premature OS authentication, and remains fail-closed if device
-  credentials disappear.
-- Notification permission logic separates explicit prompting from nonprompting
-  delivery checks. Reminder/front delivery does not claim notification success
-  when permission blocks delivery.
-- Phase-1 local data changes are covered by direct migration and lifecycle
-  tests: backup upload reconciliation, transactional revision edits/restores,
-  front-audit preservation, chat tombstones, poll re-import, deletion/purge and
-  custom-field provenance. This is local verification only; it is not hosted
-  CI, real-device, store, or multi-device/sync evidence.
-- The complete Flutter test suite and `flutter analyze` passed after the final
-  notification/recovery cleanup. The Android build uses Gradle 9.3.1, AGP
-  9.1.0, and Kotlin 2.4.0. It retains Flutter's documented temporary legacy
-  Kotlin and DSL settings because stable `sentry_flutter` 9.30.1 still applies
-  KGP. The verified Flutter baseline is 3.47.6.
-- The full server suite passed with one-time-token password recovery, verifying
-  STARTTLS, response-path-independent background email delivery, encrypted
-  backups, and queued backup-deletion cleanup covered.
-- The static website passes its build, type/check, generated accessibility and
-  security-header/CSP checks.
-- Release workflows pass static `actionlint` validation. Real GitHub-hosted CI
-  and external publication paths must still be checked separately; static YAML
-  validation is not an external release verification.
+Play internal-track upload automation and a manually dispatched existing-release path for a
+configured testing track are present. Neither a successful local workflow check nor source code
+proves a Play Console upload. Closed-track configuration, a real upload or promotion, and retry
+behaviour still need external verification. Signed iOS installation and TestFlight/App Store
+distribution need Apple credentials and device testing.
 
-## Release/distribution state
+The server prototype is optional. Public registration remains disabled; it is not a prerequisite for
+local alpha use. Device-key snapshots are not portable recovery. Password-protected local archives
+are the recovery path to test across devices.
 
-- Android release builds produce signed APKs plus an AAB using the configured
-  upload-key path.
-- Versioned release automation waits for Android and unsigned-iOS artifacts
-  before creating the canonical GitHub Release.
-- Play internal-testing automation runs only after that GitHub Release.
-- Website release metadata/deployment is independent of Play after GitHub
-  publication.
-- Play closed testing is wanted for alpha but is not implemented/verified yet.
-- Current Play authentication uses a service-account JSON secret through
-  `google-github-actions/auth`; WIF/OIDC should be evaluated as release
-  hardening if compatible with the real publisher path.
-- Current CI can build an unsigned iOS IPA on `macos-26-intel` with Xcode 26.4.1.
-  Signed/TestFlight distribution still needs Apple credentials and device
-  validation.
+## Evidence still needed
 
-## Product work before alpha is called ready
+- Run the final Flutter, migration, localisation and website checks at the exact release commit.
+  Investigate hosted CI failures instead of substituting earlier local results.
+- Install a signed Android artefact over supported earlier builds, then check local data,
+  encryption-key availability, archives, reminders and front history after restart.
+- Restore an encrypted local archive into a separate fresh installation and verify its
+  relationships, votes, reminders, history and assets.
+- Build and install on iOS, then test App Lock, backup exclusion, key loss, notification permission
+  and delivery, screen capture, file dialogs and upgrade behaviour. An unsigned IPA build is compile
+  evidence only.
+- Use TalkBack and VoiceOver on representative screens. Check keyboard and switch access, large
+  text, focus return, contrast and reduced motion. Widget semantics tests do not establish device
+  behaviour.
+- Test representative real exports for each advertised import source. A source-shaped fixture proves
+  only the cases in that fixture. In particular, independent PluralPort Draft v0.1 files and real
+  OpenPlural exports are needed before broad compatibility claims.
+- Verify the exact GitHub Actions trigger and artefact chain, tag signature, checksums, Play signing
+  identity, website metadata update and failure recovery. A static workflow check is not a hosted
+  run.
+- Complete Play Console listing, Data Safety, age rating, tester instructions and signing
+  configuration before store publication.
 
-The following work remains before the project can be called alpha-ready:
+Keep private exports, avatars, tokens, passwords and recovery archives out of Git. Checked-in
+fixtures should state their source and the behaviour they test. Do not add fixtures solely to
+increase a test count.
 
-- Obtain and test representative real OpenPlural exports before making a
-  broader compatibility claim.
-- Finish exposed local chat/message/category/channel product paths.
-- Finish note/journal/message revision/history/restore behaviour that is already
-  decided.
-- Keep the narrow scoped/revocable local API contract verified as it expands.
-  Its current Alpha exposure is hidden and startup retires older enable choices;
-  do not expose raw vault access or sensitive writes without explicit scope and
-  safety design.
-- Finish the already-decided advanced reminder, poll, front-audit and System
-  Safety gaps that are exposed in the alpha UI.
-- Reconcile customisation, terminology, low-cognitive-load and accessibility
-  gaps.
-- Implement/configure Play closed testing and run real GitHub/Play workflow
-  verification.
-- Keep documentation/store claims aligned with what has actually been verified.
-- Obtain independent PluralPort Draft v0.1 files and verify import/export
-  behaviour beyond the checked-in format fixtures.
-
-Hosted federation, desktop/private-web clients, watch clients, plugins and other
-explicitly deferred platform work are not alpha prerequisites.
-
-## Server/hosted-service conditions
-
-The optional server is not ready for public registration.
-
-Accounts, sessions, password changes/recovery, deletion/recovery, encrypted
-backup upload/download, and experimental friends/blocking exist. Production
-registration remains disabled because verified email and other hosted-service
-operational/policy gates are not complete.
-
-Keep registration and friends disabled by default until their explicit gates are
-satisfied. Password recovery being implemented does not by itself make public
-registration ready.
-
-## Import compatibility evidence
-
-- **Simply Plural:** importer/re-import coverage plus private/local acceptance
-  tooling for realistic exports.
-- **PluralKit:** file and bounded live-token coverage.
-- **Tupperbox:** a sanitised roster fixture covers preview, normalisation,
-  publish and source-ID re-import dedupe; do not claim broad real-export
-  compatibility without representative exports.
-- **PluralSpace:** a sanitised roster/front fixture covers that same local path;
-  authenticated live API import remains deferred.
-- **Ampersand:** a sanitised database-export fixture covers that same local path.
-- **Prism:** source/plan scaffolding exists, but it is not a verified current
-  compatibility claim.
-- **OpenPlural:** current v0.1 file/archive path has mapper, preview/review,
-  source-ID dedupe, ZIP asset and raw-extension fixture coverage. Obtain and
-  test a real export before making a broad compatibility claim.
-- **PluralPort:** Draft v0.1 JSON file detection, validation, import mapping,
-  mandatory encrypted source-record retention, documented-field export and loss
-  warnings have local tests and a reachable UI path. Underspecified record types
-  remain opaque rather than receiving invented wire fields. Independent
-  real-export compatibility evidence remains missing.
-
-Do not claim real-export compatibility merely because a source shape, parser or
-mapper test exists.
-
-## Still needs real environment/device coverage
-
-- Inspect and run the real safe GitHub CI/test workflows against the pushed
-  baseline; investigate CI-only failures rather than relying on local parity.
-- Perform an actual Play internal upload before marking that external path
-  verified, then configure/verify the intended closed-testing path.
-- Smoke-test Android upgrade/migration using actual distributed artifacts.
-- Replace the temporary Android Kotlin/DSL compatibility settings once
-  `sentry_flutter` supports built-in Kotlin and the selected Flutter release
-  builds with the new AGP DSL.
-- Sign/install iOS builds and verify notification permission, App Lock,
-  screen-capture privacy and upgrade behaviour on simulator/physical hardware.
-- Perform TalkBack, VoiceOver, keyboard, switch access, large-text, contrast and
-  reduced-motion passes on devices.
-- Profile large imports and decrypt-heavy screens on representative Android/iOS
-  hardware.
-
-## Private test data
-
-- Keep private exports, avatars, tokens, passwords and recovery archives out of
-  Git.
-- Checked-in fixtures must say where they came from and what they test.
-- Add fixtures for real compatibility problems, not to increase the count.
-
-## Release rules
-
-- Local use must not depend on the server.
-- The server must not receive plaintext private content by default.
-- Device-key snapshots are not portable recovery; password-protected archives
-  are the portable path.
-- Database migrations need tests using realistic rows from the affected schema.
-- An unsigned iOS build is compile evidence, not a signed release.
-- `actionlint` is static workflow evidence, not a successful GitHub Actions run.
-- Automated accessibility checks do not replace device testing.
-- Record the command, CI run, artifact, device test, or external-service result
-  behind any readiness change.
+The most recent local commands and results are in the [completion ledger](completion-ledger.md).
+Physical-device, store and live service checks remain open until their own evidence is recorded.

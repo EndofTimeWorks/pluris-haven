@@ -1001,35 +1001,49 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       }
 
       await database.transaction(() async {
-        if (strategy == ImportConflictStrategy.create &&
-            (members.isNotEmpty || groups.isNotEmpty || fronts.isNotEmpty)) {
-          final existingMemberIds = members.isEmpty
-              ? <String>{}
-              : (await database.select(database.members).get())
-                    .map((member) => member.id)
-                    .toSet();
-          final existingGroupIds = groups.isEmpty
-              ? <String>{}
-              : (await database.select(database.systemGroups).get())
-                    .map((group) => group.id)
-                    .toSet();
-          final existingFrontIds = fronts.isEmpty
-              ? <String>{}
-              : (await database.select(database.frontSessions).get())
-                    .map((front) => front.id)
-                    .toSet();
-          if (members.any(
-                (member) =>
-                    existingMemberIds.contains(_stringValue(member['id'])),
-              ) ||
-              groups.any(
-                (group) => existingGroupIds.contains(_stringValue(group['id'])),
-              ) ||
-              fronts.any(
-                (front) => existingFrontIds.contains(_stringValue(front['id'])),
-              )) {
+        final identityCollections = <String, List<Map<String, Object?>>>{
+          'members': members,
+          'system_groups': groups,
+          'notes': notes,
+          'chat_categories': chatCategories,
+          'chat_channels': chatChannels,
+          'messages': messages,
+          'reminders': reminders,
+          'tags': tags,
+          'journal_entries': journals,
+          'content_revisions': contentRevisions,
+          'custom_field_values': customFieldValues,
+          'custom_field_value_migration_provenance':
+              customFieldMigrationProvenance,
+          'polls': polls,
+          'poll_options': pollOptions,
+          'poll_vote_events': pollVoteEvents,
+          'front_sessions': fronts,
+          'front_audit_events': frontAuditEvents,
+          'named_fronts': namedFronts,
+          'privacy_buckets': privacyBuckets,
+          'notification_events': notificationEvents,
+          'import_payloads': rawPayloads,
+        };
+        for (final entry in identityCollections.entries) {
+          if (entry.value.isEmpty) continue;
+          final importedIds = entry.value
+              .map((row) => _stringValue(row['id']))
+              .whereType<String>()
+              .toSet();
+          if (importedIds.length != entry.value.length) {
             throw const FormatException(
-              'A member, group or front with the same archive ID already exists. Choose Skip matches or Update existing, or restore into a fresh installation.',
+              'The archive contains repeated or missing record IDs. Correct the archive before importing it.',
+            );
+          }
+          if (strategy != ImportConflictStrategy.create) continue;
+          final existingIds =
+              (await database.customSelect('SELECT id FROM ${entry.key}').get())
+                  .map((row) => row.read<String>('id'))
+                  .toSet();
+          if (importedIds.intersection(existingIds).isNotEmpty) {
+            throw const FormatException(
+              'An imported record with the same archive ID already exists. Choose Skip matches or Update existing, or restore into a fresh installation.',
             );
           }
         }
