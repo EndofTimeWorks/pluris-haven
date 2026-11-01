@@ -1,7 +1,7 @@
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from ipaddress import ip_address, ip_network
+from ipaddress import IPv6Address, ip_address, ip_network
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
@@ -63,9 +63,10 @@ def _client_rate_limit_key(request: Request) -> str:
         address = ip_address(host)
     except ValueError:
         return host
-    if address.version == 6 and address.ipv4_mapped is not None:
-        address = address.ipv4_mapped
-    if address.version == 6:
+    if isinstance(address, IPv6Address):
+        mapped = address.ipv4_mapped
+        if mapped is not None:
+            return str(mapped)
         return str(ip_network(f"{address}/64", strict=False))
     return str(address)
 
