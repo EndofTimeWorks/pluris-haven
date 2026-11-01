@@ -3,7 +3,7 @@
 The mobile app owns the main copy of a person's data. Local features do not
 depend on an account, network connection, or Pluris Haven server.
 
-The current Drift database uses schema version 26. Its tables cover:
+The current Drift database uses schema version 28. Its tables cover:
 
 - the system profile, members, groups, tags, and privacy buckets;
 - custom fields, custom-field type-migration provenance, and named fronts;
@@ -24,6 +24,13 @@ purged member or message tombstone. Custom-field migration provenance is
 removed with the member-owned value it records, so it is not retained or
 exported after purge. Local tests cover this invariant; device, sync, and
 multi-replica deletion evidence remains future work.
+
+Archiving a member hides them from ordinary pickers but does not end their
+front or erase their votes. Removing a member ends only their own active front
+and keeps their profile recoverable. A permanent purge erases the profile name
+and private fields but retains vote and front-history references to the member
+ID without the profile, so historical poll totals do not change. A separate
+decision is needed before offering deletion of historical votes.
 
 ## Encryption boundary
 

@@ -28,6 +28,13 @@ class MissingMasterKeyException implements Exception {
       'The device encryption key is missing. Restore a backup to recover your data.';
 }
 
+class CorruptMasterKeyException implements Exception {
+  const CorruptMasterKeyException();
+
+  @override
+  String toString() => 'The stored device encryption key is invalid.';
+}
+
 class SecureStorageUpgradeException implements Exception {
   const SecureStorageUpgradeException(this.status);
 
@@ -40,17 +47,56 @@ class SecureStorageUpgradeException implements Exception {
 }
 
 class PlatformMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
-  static const _fileName = '.pluris-haven-master-key-v1';
+  PlatformMasterKeyProvisioningStore({
+    this.documentsDirectory,
+    this.supportDirectory,
+    bool? isIos,
+  }) : _isIos = isIos ?? Platform.isIOS;
 
-  Future<File> _file() async =>
-      File('${(await getApplicationDocumentsDirectory()).path}/$_fileName');
+  static const _fileName = '.pluris-haven-master-key-v1';
+  final Directory? documentsDirectory;
+  final Directory? supportDirectory;
+  final bool _isIos;
+
+  Future<Directory> _documents() async =>
+      documentsDirectory ?? await getApplicationDocumentsDirectory();
+
+  Future<Directory> _support() async =>
+      supportDirectory ?? await getApplicationSupportDirectory();
+
+  Future<File> _file() async => File(
+    '${(_isIos ? await _support() : await _documents()).path}/$_fileName',
+  );
 
   @override
-  Future<bool> isProvisioned() async => (await _file()).exists();
+  Future<bool> isProvisioned() async {
+    final support = await _support();
+    for (final suffix in ['', '-wal', '-shm']) {
+      if (await File('${support.path}/pluris_haven.sqlite$suffix').exists()) {
+        return true;
+      }
+    }
+    final documents = await _documents();
+    final avatars = Directory('${documents.path}/avatars');
+    if (await avatars.exists() &&
+        !await avatars.list(followLinks: false).isEmpty) {
+      return true;
+    }
+    // Older iOS builds wrote the marker into Documents. A backup can restore
+    // that marker without the device-bound key or any encrypted local files.
+    // On other platforms, retain the existing marker as evidence of a key.
+    return !_isIos && await (await _file()).exists();
+  }
 
   @override
   Future<void> markProvisioned() async {
-    await (await _file()).writeAsString('provisioned', flush: true);
+    final marker = await _file();
+    await marker.parent.create(recursive: true);
+    await marker.writeAsString('provisioned', flush: true);
+    if (_isIos) {
+      final legacyMarker = File('${(await _documents()).path}/$_fileName');
+      if (await legacyMarker.exists()) await legacyMarker.delete();
+    }
   }
 }
 
@@ -115,10 +161,16 @@ class HavenMasterKeyStore {
 
   Future<HavenCrypto> _loadOrCreateCrypto() async {
     final stored = await _storage.read(_masterKeyName);
-    if (stored != null && stored.isNotEmpty) {
-      final bytes = base64Url.decode(stored);
+    if (stored != null) {
+      if (stored.isEmpty) throw const CorruptMasterKeyException();
+      late final List<int> bytes;
+      try {
+        bytes = base64Url.decode(stored);
+      } on FormatException {
+        throw const CorruptMasterKeyException();
+      }
       if (bytes.length != 32) {
-        throw const FormatException('Stored encryption key is invalid.');
+        throw const CorruptMasterKeyException();
       }
       await _provisioningStore.markProvisioned();
       return HavenCrypto(await deriveMasterKey(bytes));

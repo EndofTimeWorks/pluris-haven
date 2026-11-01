@@ -103,8 +103,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 12),
             if (stats.sessions == 0)
               SpEmptyState(
-                title: l10n.noAnalyticsTitle,
-                body: l10n.noAnalyticsBody,
+                title: entries.isNotEmpty && _window != _AnalyticsWindow.all
+                    ? l10n.noAnalyticsInWindowTitle
+                    : l10n.noAnalyticsTitle,
+                body: entries.isNotEmpty && _window != _AnalyticsWindow.all
+                    ? l10n.noAnalyticsInWindowBody
+                    : l10n.noAnalyticsBody,
               )
             else ...[
               _AnalyticsSummary(stats: stats),
@@ -141,29 +145,107 @@ class _FrontTimelineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colours = [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+      Theme.of(context).colorScheme.tertiary,
+      Theme.of(context).colorScheme.error,
+    ];
+    final starts = stats.timeline.map((segment) => segment.start);
+    final ends = stats.timeline.map((segment) => segment.end);
+    final first = starts.reduce((a, b) => a.isBefore(b) ? a : b);
+    final last = ends.reduce((a, b) => a.isAfter(b) ? a : b);
+    final chartHeight = math.max(
+      220.0,
+      stats.timelineLanes.length * MediaQuery.textScalerOf(context).scale(28),
+    );
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SpSectionHeader(title: l10n.frontTimelineTitle),
           const SizedBox(height: 12),
-          RepaintBoundary(
-            child: SizedBox(
-              height: 220,
-              width: double.infinity,
-              child: CustomPaint(
-                painter: _FrontTimelinePainter(
-                  segments: stats.timeline,
-                  lanes: stats.timelineLanes,
-                  colours: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                    Theme.of(context).colorScheme.tertiary,
-                    Theme.of(context).colorScheme.error,
-                  ],
-                  gridColour: Theme.of(context).colorScheme.outlineVariant,
+          SizedBox(
+            height: chartHeight,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 104,
+                  child: Column(
+                    children: [
+                      for (final lane in stats.timelineLanes)
+                        Expanded(
+                          child: Semantics(
+                            container: true,
+                            label: lane,
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ExcludeSemantics(
+                                child: Tooltip(
+                                  message: lane,
+                                  child: Text(
+                                    lane,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _FrontTimelinePainter(
+                        segments: stats.timeline,
+                        lanes: stats.timelineLanes,
+                        colours: colours,
+                        gridColour: Theme.of(context)
+                            .colorScheme
+                            .outlineVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 112, top: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _shortDateTime(context, first),
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    _shortDateTime(context, last),
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.frontTimelineRange(
+              _shortDateTime(context, first),
+              _shortDateTime(context, last),
+            ),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
             ),
           ),
         ],
@@ -280,6 +362,17 @@ class _AnalyticsSummary extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              l10n.summedFrontTimeExplanation,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -341,6 +434,8 @@ class _TopFrontsCard extends StatelessWidget {
           const SizedBox(height: 12),
           for (final item in top) ...[
             Semantics(
+              container: true,
+              excludeSemantics: true,
               label: l10n.frontAnalyticsSemantic(
                 item.label,
                 _formatAnalyticsDuration(l10n, item.totalSeconds),
@@ -410,6 +505,9 @@ class _HourChartCard extends StatelessWidget {
       1,
       (current, value) => value > current ? value : current,
     );
+    final maxLabel = maxSeconds < 60
+        ? l10n.reminderDelaySeconds(maxSeconds)
+        : _formatAnalyticsDuration(l10n, maxSeconds);
 
     return SpCard(
       child: Column(
@@ -420,33 +518,75 @@ class _HourChartCard extends StatelessWidget {
           SizedBox(
             height: 120,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (var hour = 0; hour < 24; hour++)
-                  Expanded(
-                    child: Semantics(
-                      label: l10n.hourAnalyticsSemantic(
-                        hour,
-                        _formatAnalyticsDuration(l10n, stats.hourSeconds[hour]),
+                SizedBox(
+                  width: 72,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        maxLabel,
+                        key: const ValueKey('hour-chart-maximum'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: FractionallySizedBox(
-                            heightFactor: stats.hourSeconds[hour] / maxSeconds,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: scheme.secondary,
-                                borderRadius: BorderRadius.circular(4),
+                      Text(
+                        l10n.durationMinutes(0),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var hour = 0; hour < 24; hour++)
+                        Expanded(
+                          child: Semantics(
+                            container: true,
+                            label: l10n.hourAnalyticsSemantic(
+                              hour,
+                              _formatAnalyticsDuration(
+                                l10n,
+                                stats.hourSeconds[hour],
                               ),
-                              child: const SizedBox(width: double.infinity),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 1.5,
+                              ),
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: FractionallySizedBox(
+                                  heightFactor:
+                                      stats.hourSeconds[hour] / maxSeconds,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: scheme.secondary,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const SizedBox(
+                                      width: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
@@ -459,6 +599,11 @@ class _HourChartCard extends StatelessWidget {
               Spacer(),
               Text('23', style: TextStyle(fontSize: 12)),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.hourOfDayExplanation,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
           ),
         ],
       ),
@@ -546,6 +691,7 @@ _FrontAnalytics _buildAnalytics(
   final since = window.duration == null ? null : now.subtract(window.duration!);
   final labels = <String, _LabelAccumulator>{};
   final timeline = <_TimelineSegment>[];
+  final intervals = <({DateTime start, DateTime end})>[];
   final hourSeconds = List<int>.filled(24, 0);
   var totalSeconds = 0;
   var longestSeconds = 0;
@@ -574,10 +720,31 @@ _FrontAnalytics _buildAnalytics(
     labelStats.sessions += 1;
     labelStats.totalSeconds += seconds;
 
-    _addHourBuckets(hourSeconds, interval.start, interval.end);
+    intervals.add(interval);
     timeline.add(
       _TimelineSegment(label: label, start: interval.start, end: interval.end),
     );
+  }
+
+  // The headline sums time per front. This chart shows elapsed time with at
+  // least one front active, so overlapping entries share the same clock time.
+  intervals.sort((a, b) => a.start.compareTo(b.start));
+  DateTime? occupiedStart;
+  DateTime? occupiedEnd;
+  for (final interval in intervals) {
+    if (occupiedStart == null) {
+      occupiedStart = interval.start;
+      occupiedEnd = interval.end;
+    } else if (interval.start.isAfter(occupiedEnd!)) {
+      _addHourBuckets(hourSeconds, occupiedStart, occupiedEnd);
+      occupiedStart = interval.start;
+      occupiedEnd = interval.end;
+    } else if (interval.end.isAfter(occupiedEnd)) {
+      occupiedEnd = interval.end;
+    }
+  }
+  if (occupiedStart != null) {
+    _addHourBuckets(hourSeconds, occupiedStart, occupiedEnd!);
   }
 
   final topLabels =

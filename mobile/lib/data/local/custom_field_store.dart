@@ -701,9 +701,14 @@ String normalizeCustomFieldType(String value) {
 String? encodeCustomFieldConfiguration(Map<String, Object?> configuration) {
   if (configuration.isEmpty) return null;
   final encoded = jsonEncode(configuration);
-  return encoded.length <= maximumCustomFieldConfigurationCharacters
-      ? encoded
-      : null;
+  if (encoded.length > maximumCustomFieldConfigurationCharacters) {
+    throw ArgumentError.value(
+      encoded.length,
+      'configuration length',
+      'Custom field configuration exceeds $maximumCustomFieldConfigurationCharacters characters.',
+    );
+  }
+  return encoded;
 }
 
 Map<String, Object?> decodeCustomFieldConfiguration(String? stored) {

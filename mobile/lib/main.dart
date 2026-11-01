@@ -7,6 +7,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart' as material_ui show ColorScheme;
 
 import 'background/background_tasks.dart';
+import 'data/local/app_customization.dart' show appearanceColoursReadable;
 import 'data/local/app_database.dart';
 import 'data/local/haven_repository.dart';
 import 'data/local/local_migrations.dart';
@@ -52,6 +53,7 @@ class BootstrapDependencies {
     this.runMigrations = runLocalMigrations,
     this.retireLegacyLocalApi = _retireLegacyLocalApi,
     this.startServices = _startStartupServices,
+    this.keyLoadWarningDelay = const Duration(seconds: 15),
   });
 
   final AppDatabase Function() openDatabase;
@@ -63,6 +65,7 @@ class BootstrapDependencies {
   final LocalMigrationRunner runMigrations;
   final LocalApiRetirement retireLegacyLocalApi;
   final StartupServices startServices;
+  final Duration keyLoadWarningDelay;
 }
 
 Future<HavenCrypto> _loadStartupCrypto() =>
@@ -104,7 +107,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
   LocalHavenRepository? _repository;
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
-  var _missingMasterKey = false;
+  _KeyFailure? _keyFailure;
+  var _retryingStartup = false;
+  var _waitingForKey = false;
   Object? _startupError;
 
   @override
@@ -116,13 +121,31 @@ class _BootstrapAppState extends State<BootstrapApp> {
   }
 
   Future<void> _openLocalArchive() async {
-    final database = widget.dependencies.openDatabase();
+    final keyLoadTimer = Timer(widget.dependencies.keyLoadWarningDelay, () {
+      if (mounted) setState(() => _waitingForKey = true);
+    });
     late final HavenCrypto crypto;
     try {
       crypto = await widget.dependencies.loadCrypto();
     } on MissingMasterKeyException {
-      await database.close();
-      if (mounted) setState(() => _missingMasterKey = true);
+      if (mounted) setState(() => _keyFailure = _KeyFailure.missing);
+      return;
+    } on CorruptMasterKeyException {
+      if (mounted) setState(() => _keyFailure = _KeyFailure.corrupt);
+      return;
+    } on SecureStorageUpgradeException catch (error, stackTrace) {
+      appDebugLog(
+        'Secure storage upgrade could not load the encryption key',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        setState(
+          () => _keyFailure = error.status.hasDataLoss
+              ? _KeyFailure.corrupt
+              : _KeyFailure.unavailable,
+        );
+      }
       return;
     } on Object catch (error, stackTrace) {
       appDebugLog(
@@ -130,11 +153,17 @@ class _BootstrapAppState extends State<BootstrapApp> {
         error: error,
         stackTrace: stackTrace,
       );
-      await database.close();
-      if (mounted) setState(() => _startupError = error);
+      if (mounted) setState(() => _keyFailure = _KeyFailure.unavailable);
       return;
+    } finally {
+      keyLoadTimer.cancel();
+      if (mounted && _waitingForKey) {
+        setState(() => _waitingForKey = false);
+      }
     }
+    AppDatabase? database;
     try {
+      database = widget.dependencies.openDatabase();
       final repository = widget.dependencies.createRepository(database, crypto);
       await widget.dependencies.runMigrations(repository);
       final localApi = widget.dependencies.createLocalApi(repository);
@@ -155,7 +184,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
         error: error,
         stackTrace: stackTrace,
       );
-      await database.close();
+      await database?.close();
       if (mounted) setState(() => _startupError = error);
       return;
     }
@@ -175,6 +204,16 @@ class _BootstrapAppState extends State<BootstrapApp> {
     }
   }
 
+  void _retryStartup() {
+    if (_retryingStartup) return;
+    _retryingStartup = true;
+    setState(() {
+      _keyFailure = null;
+      _startupError = null;
+    });
+    unawaited(_openLocalArchive().whenComplete(() => _retryingStartup = false));
+  }
+
   @override
   void dispose() {
     unawaited(_localApi?.close() ?? Future<void>.value());
@@ -183,8 +222,20 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_missingMasterKey) return const MissingMasterKeyApp();
-    if (_startupError != null) return const LocalMigrationFailureApp();
+    switch (_keyFailure) {
+      case _KeyFailure.missing:
+        return MissingMasterKeyApp(onRetry: _retryStartup);
+      case _KeyFailure.corrupt:
+        return CorruptMasterKeyApp(onRetry: _retryStartup);
+      case _KeyFailure.unavailable:
+        return KeyStoreUnavailableApp(onRetry: _retryStartup);
+      case null:
+        break;
+    }
+    if (_startupError != null) {
+      return LocalMigrationFailureApp(onRetry: _retryStartup);
+    }
+    if (_waitingForKey) return const WaitingForKeyApp();
     final repository = _repository;
     if (repository != null) {
       return PlurisHavenApp(
@@ -198,6 +249,52 @@ class _BootstrapAppState extends State<BootstrapApp> {
       home: Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
+}
+
+enum _KeyFailure { missing, corrupt, unavailable }
+
+class WaitingForKeyApp extends StatelessWidget {
+  const WaitingForKeyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    supportedLocales: supportedLanguageLocales,
+    localizationsDelegates: const [
+      FallbackAppLocalizationsDelegate(),
+      GlobalMaterialLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+    ],
+    home: Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.waitingForEncryptionKeyTitle,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(l10n.waitingForEncryptionKeyBody),
+                  const SizedBox(height: 16),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 Future<void> _completeStartup() async {
@@ -227,45 +324,125 @@ Future<void> _completeStartup() async {
 }
 
 class MissingMasterKeyApp extends StatelessWidget {
-  const MissingMasterKeyApp({super.key});
+  const MissingMasterKeyApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.encryptionKeyUnavailableTitle,
+    body: (l10n) => l10n.encryptionKeyUnavailableBody,
+  );
+}
+
+class CorruptMasterKeyApp extends StatelessWidget {
+  const CorruptMasterKeyApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.corruptEncryptionKeyTitle,
+    body: (l10n) => l10n.corruptEncryptionKeyBody,
+  );
+}
+
+class KeyStoreUnavailableApp extends StatelessWidget {
+  const KeyStoreUnavailableApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.keyStoreTemporarilyUnavailableTitle,
+    body: (l10n) => l10n.keyStoreTemporarilyUnavailableBody,
+  );
+}
+
+class _KeyRecoveryApp extends StatelessWidget {
+  const _KeyRecoveryApp({
+    required this.onRetry,
+    required this.title,
+    required this.body,
+  });
+
+  final VoidCallback onRetry;
+  final String Function(AppLocalizations) title;
+  final String Function(AppLocalizations) body;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(local-data-model): validate device-transfer recovery on real devices.
-    return const MaterialApp(
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Encryption key missing',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return MaterialApp(
+      supportedLocales: supportedLanguageLocales,
+      localizationsDelegates: const [
+        FallbackAppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      home: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Scaffold(
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title(l10n),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(body(l10n)),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.tryAgainButton),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(l10n.restoreFromEncryptedArchiveLabel),
+                          content: Text(l10n.recoveryArchiveStepsBody),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(l10n.okButtonLabel),
+                            ),
+                          ],
+                        ),
+                      ),
+                      child: Text(l10n.restoreFromEncryptedArchiveLabel),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'This device no longer has the key that decrypts your local data. '
-                  'Pluris Haven will not replace it. Restore an encrypted backup on '
-                  'a device that still has the original key.',
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
 class LocalMigrationFailureApp extends StatelessWidget {
-  const LocalMigrationFailureApp({super.key});
+  const LocalMigrationFailureApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(local-data-model): offer a non-destructive archive recovery path.
     return MaterialApp(
       supportedLocales: supportedLanguageLocales,
       localizationsDelegates: const [
@@ -294,6 +471,11 @@ class LocalMigrationFailureApp extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(l10n.localMigrationFailureBody),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.tryAgainButton),
+                    ),
                   ],
                 ),
               ),
@@ -487,6 +669,28 @@ class PlurisHavenApp extends StatelessWidget {
     };
   }
 
+  static HavenAppearanceOverrides _renderedAppearanceColours({
+    required HavenAppearanceOverrides appearance,
+    required Color background,
+    required Color surface,
+    required Color card,
+    required Color text,
+    required Color mutedText,
+  }) {
+    if (!appearance.hasColorOverrides ||
+        appearanceColoursReadable(
+          appearance: appearance,
+          background: background,
+          surface: surface,
+          card: card,
+          text: text,
+          mutedText: mutedText,
+        )) {
+      return appearance;
+    }
+    return const HavenAppearanceOverrides();
+  }
+
   ThemeData _buildTheme(
     AppCustomization customization,
     Brightness brightness, {
@@ -512,6 +716,14 @@ class PlurisHavenApp extends StatelessWidget {
             ),
       );
       final baseTheme = ThemeData.from(colorScheme: scheme, useMaterial3: true);
+      final renderedColours = _renderedAppearanceColours(
+        appearance: appearance,
+        background: scheme.surface,
+        surface: scheme.surface,
+        card: scheme.surfaceContainerHighest,
+        text: scheme.onSurface,
+        mutedText: scheme.onSurfaceVariant,
+      );
       return baseTheme.copyWith(
         textTheme: baseTheme.textTheme.apply(
           fontFamily: customization.fontFamily.fontFamily,
@@ -526,7 +738,8 @@ class PlurisHavenApp extends StatelessWidget {
             spacingScale: appearance.spacingScale,
           ),
         ],
-        scaffoldBackgroundColor: appearance.backgroundColor ?? scheme.surface,
+        scaffoldBackgroundColor:
+            renderedColours.backgroundColor ?? scheme.surface,
         visualDensity: visualDensity,
         appBarTheme: AppBarTheme(
           backgroundColor: scheme.surface,
@@ -585,12 +798,22 @@ class PlurisHavenApp extends StatelessWidget {
         : highContrast
         ? (isDark ? const Color(0xFF747991) : const Color(0xFF6D6680))
         : (isDark ? const Color(0xFF3A3E50) : const Color(0xFFD6D0E3));
-    final effectiveSurface = appearance.surfaceColor ?? surface;
-    final effectiveBackground = appearance.backgroundColor ?? background;
-    final effectiveCard = appearance.cardColor ?? card;
-    final effectiveOnSurface = appearance.textColor ?? onSurface;
-    final effectiveMuted = appearance.mutedTextColor ?? muted;
-    final effectiveOutline = appearance.outlineColor ?? outline;
+    // Keep the stored palette intact, but render the safe base palette if an
+    // imported or previously saved override is unreadable in this brightness.
+    final colours = _renderedAppearanceColours(
+      appearance: appearance,
+      background: background,
+      surface: surface,
+      card: card,
+      text: onSurface,
+      mutedText: muted,
+    );
+    final effectiveSurface = colours.surfaceColor ?? surface;
+    final effectiveBackground = colours.backgroundColor ?? background;
+    final effectiveCard = colours.cardColor ?? card;
+    final effectiveOnSurface = colours.textColor ?? onSurface;
+    final effectiveMuted = colours.mutedTextColor ?? muted;
+    final effectiveOutline = colours.outlineColor ?? outline;
     final cardRadius = appearance.cardRadius ?? (simplyPlural ? 16 : 12);
     final baseTheme = ThemeData(
       brightness: brightness,
@@ -685,24 +908,31 @@ class PlurisHavenApp extends StatelessWidget {
             brightness: brightness,
           )
         : dynamicScheme;
+    final colours = _renderedAppearanceColours(
+      appearance: appearance,
+      background: baseScheme.surface,
+      surface: baseScheme.surface,
+      card: baseScheme.surfaceContainerHighest,
+      text: baseScheme.onSurface,
+      mutedText: baseScheme.onSurfaceVariant,
+    );
     return baseScheme.copyWith(
-      surface: appearance.surfaceColor ?? baseScheme.surface,
-      surfaceDim: appearance.surfaceColor ?? baseScheme.surfaceDim,
-      surfaceBright: appearance.surfaceColor ?? baseScheme.surfaceBright,
+      surface: colours.surfaceColor ?? baseScheme.surface,
+      surfaceDim: colours.surfaceColor ?? baseScheme.surfaceDim,
+      surfaceBright: colours.surfaceColor ?? baseScheme.surfaceBright,
       surfaceContainerLowest:
-          appearance.surfaceColor ?? baseScheme.surfaceContainerLowest,
+          colours.surfaceColor ?? baseScheme.surfaceContainerLowest,
       surfaceContainerLow:
-          appearance.surfaceColor ?? baseScheme.surfaceContainerLow,
-      surfaceContainer: appearance.cardColor ?? baseScheme.surfaceContainer,
+          colours.surfaceColor ?? baseScheme.surfaceContainerLow,
+      surfaceContainer: colours.cardColor ?? baseScheme.surfaceContainer,
       surfaceContainerHigh:
-          appearance.cardColor ?? baseScheme.surfaceContainerHigh,
+          colours.cardColor ?? baseScheme.surfaceContainerHigh,
       surfaceContainerHighest:
-          appearance.cardColor ?? baseScheme.surfaceContainerHighest,
-      onSurface: appearance.textColor ?? baseScheme.onSurface,
-      onSurfaceVariant:
-          appearance.mutedTextColor ?? baseScheme.onSurfaceVariant,
-      outline: appearance.outlineColor ?? baseScheme.outline,
-      outlineVariant: appearance.outlineColor ?? baseScheme.outlineVariant,
+          colours.cardColor ?? baseScheme.surfaceContainerHighest,
+      onSurface: colours.textColor ?? baseScheme.onSurface,
+      onSurfaceVariant: colours.mutedTextColor ?? baseScheme.onSurfaceVariant,
+      outline: colours.outlineColor ?? baseScheme.outline,
+      outlineVariant: colours.outlineColor ?? baseScheme.outlineVariant,
     );
   }
 

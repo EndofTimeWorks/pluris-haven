@@ -65,11 +65,16 @@ export 'group_store.dart' show GroupDraft, GroupSummary;
 export 'note_store.dart' show NoteDraft, NoteSummary;
 export 'message_store.dart' show MessageDraft, MessageSummary;
 export 'member_store.dart'
-    show MemberDeletionImpact, MemberDraft, MemberSummary;
+    show
+        MemberDeletionImpact,
+        MemberDraft,
+        MemberSummary,
+        memberNameComparisonKey,
+        memberNameHasInvisibleControls;
 export 'notification_event_store.dart'
     show NotificationEventDraft, NotificationEventSummary;
 export 'poll_store.dart'
-    show PollDraft, PollKind, PollOptionSummary, PollSummary;
+    show PollDraft, PollKind, PollOptionSummary, PollSummary, PollVoteMode;
 export 'privacy_bucket_store.dart'
     show PrivacyBucketDraft, PrivacyBucketSummary;
 export 'reminder_store.dart' show ReminderDraft, ReminderSummary;
@@ -247,6 +252,9 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> ensureLocalSystem() => _ensureLocalSystem();
 
   Future<void> migrateLegacyLocalTextToAad() => _migrateLegacyLocalTextToAad();
+
+  Future<void> clearCompletedImportJobPayloads() =>
+      _backgroundClearCompletedImportJobPayloads();
 
   Future<void> migrateUnauthenticatedEmptyCiphertexts() =>
       _migrateUnauthenticatedEmptyCiphertexts();
@@ -489,14 +497,69 @@ class LocalHavenRepository implements HavenRepository {
       _members.archive(memberId, archived: false);
 
   @override
-  Future<void> deleteMember(String memberId) => _members.delete(memberId);
+  Future<void> deleteMember(String memberId) => database.transaction(() async {
+    await _frontEndMemberFront(memberId);
+    await _members.delete(memberId);
+  });
 
   @override
   Future<void> restoreDeletedMember(String memberId) =>
       _members.restoreDeleted(memberId);
 
   @override
-  Future<void> purgeMember(String memberId) => _members.purge(memberId);
+  Future<void> purgeMember(String memberId) async {
+    final member =
+        await (database.select(database.members)..where(
+              (row) =>
+                  row.systemId.equals(localSystemId) &
+                  row.id.equals(memberId) &
+                  row.deletedAt.isNotNull() &
+                  row.purgedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    if (member == null) return;
+    final avatar = await _decryptMember(member, 'avatar_url', member.avatarUrl);
+    await _members.purge(memberId);
+    if (avatar?.startsWith(localAvatarReferencePrefix) == true &&
+        !await _isAvatarReferenced(avatar!)) {
+      await _avatarStore.delete(avatar);
+    }
+  }
+
+  Future<bool> _isAvatarReferenced(String reference) async {
+    final systems = await database.select(database.pluralSystems).get();
+    for (final system in systems) {
+      if (await _decryptLocalText(
+            system.avatarUrl,
+            'plural_systems',
+            system.id,
+            'avatar_url',
+          ) ==
+          reference) {
+        return true;
+      }
+    }
+    final members = await database.select(database.members).get();
+    for (final member in members) {
+      if (await _decryptMember(member, 'avatar_url', member.avatarUrl) ==
+          reference) {
+        return true;
+      }
+    }
+    final fronts = await database.select(database.namedFronts).get();
+    for (final front in fronts) {
+      if (await _decryptLocalText(
+            front.avatarUrl,
+            'named_fronts',
+            front.id,
+            'avatar_url',
+          ) ==
+          reference) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @override
   Future<MemberDeletionImpact> previewMemberDeletion(String memberId) =>
@@ -505,6 +568,10 @@ class LocalHavenRepository implements HavenRepository {
   @override
   Future<List<ReminderSummary>> setFrontMembers(List<String> memberIds) =>
       _frontSetFrontMembers(memberIds);
+
+  @override
+  Future<void> endMemberFront(String memberId) =>
+      _frontEndMemberFront(memberId);
 
   @override
   Future<List<ReminderSummary>> addFrontMembers(List<String> memberIds) =>
@@ -523,6 +590,10 @@ class LocalHavenRepository implements HavenRepository {
     String frontId,
     FrontHistoryDraft draft,
   ) => _frontUpdateFrontHistoryEntry(frontId, draft);
+
+  @override
+  Future<void> endCustomFrontSession(String frontId) =>
+      _frontEndCustomFrontSession(frontId);
 
   @override
   Future<void> deleteFrontSession(String frontId) =>
@@ -636,7 +707,8 @@ class LocalHavenRepository implements HavenRepository {
       _chat.deleteChannel(channelId);
 
   @override
-  Future<String?> saveReminder(ReminderDraft draft) => _reminders.save(draft);
+  Future<String?> saveReminder(ReminderDraft draft, {String? reminderId}) =>
+      _reminders.save(draft, reminderId: reminderId);
 
   @override
   Future<void> setReminderEnabled(String reminderId, bool enabled) =>
@@ -650,8 +722,11 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> savePoll(PollDraft draft) => _polls.save(draft);
 
   @override
-  Future<void> togglePollOption(String pollId, String optionId) =>
-      _polls.toggleOption(pollId, optionId);
+  Future<void> togglePollOption(
+    String pollId,
+    String optionId, {
+    String? memberId,
+  }) => _polls.toggleOption(pollId, optionId, memberId: memberId);
 
   @override
   Future<void> closePoll(String pollId) => _polls.close(pollId);
@@ -663,11 +738,35 @@ class LocalHavenRepository implements HavenRepository {
   Future<void> recordNotificationEvent(NotificationEventDraft draft) =>
       _notificationEvents.record(draft);
 
+  @override
+  Future<void> markNotificationRead(String eventId) =>
+      _notificationEvents.markRead(eventId);
+
+  @override
+  Future<void> clearNotificationHistory() => _notificationEvents.clear();
+
   Future<bool> _preferenceEquals(String key, String expectedValue) async {
     final preference = await (database.select(
       database.appPreferences,
     )..where((row) => row.key.equals(key))).getSingleOrNull();
     return preference?.value == expectedValue;
+  }
+
+  @override
+  Future<bool> hasPortablePreferenceConflict(
+    Map<String, String> imported,
+  ) async {
+    if (imported.isEmpty) return false;
+    final local = {
+      for (final row in await database.select(database.appPreferences).get())
+        if (_archivePreferencePortability(row.key) ==
+            _ArchivePreferencePortability.portableUserIntent)
+          row.key: row.value,
+    };
+    return imported.entries.any(
+      (entry) =>
+          local.containsKey(entry.key) && local[entry.key] != entry.value,
+    );
   }
 
   Future<void> _writePreference(String key, String value) {

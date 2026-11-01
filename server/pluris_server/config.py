@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     max_blocks_per_user: int = Field(default=1_000, ge=1, le=100_000)
     auth_rate_limit_attempts: int = Field(default=10, ge=1, le=1_000)
     auth_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86_400)
+    failed_login_rate_limit_attempts: int = Field(default=30, ge=1, le=1_000)
+    failed_login_rate_limit_window_seconds: int = Field(default=900, ge=1, le=86_400)
     refresh_ip_rate_limit_attempts: int = Field(default=120, ge=1, le=10_000)
     refresh_retry_grace_seconds: int = Field(default=10, ge=0, le=60)
     auth_max_body_bytes: int = Field(default=64 * 1024, ge=1024, le=1024 * 1024)

@@ -139,6 +139,37 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your saved data has not been removed. Try again, or restart the app if the problem continues.';
 
   @override
+  String get actionFailedPlain => 'Could not complete that action. Try again.';
+
+  @override
+  String get profileSaveFailedPlain =>
+      'Could not save the system profile. Check the fields and try again.';
+
+  @override
+  String get importFailedPlain =>
+      'Import failed. Check the file and try again.';
+
+  @override
+  String get archiveBuildFailedPlain =>
+      'Could not build the archive. Your local data remains saved.';
+
+  @override
+  String get fileSaveFailedPlain =>
+      'Could not save the file on this device. Try again or choose another export option.';
+
+  @override
+  String get clipboardCopyFailedPlain =>
+      'Could not copy the archive. Try again or save it as a file.';
+
+  @override
+  String get archiveAuthenticationFailedReason =>
+      'Check the passphrase and whether the file is complete.';
+
+  @override
+  String get encryptedBackupRestoreFailedPlain =>
+      'Could not restore this encrypted backup. Check its recovery details and try again.';
+
+  @override
   String get retryButton => 'Try again';
 
   @override
@@ -251,7 +282,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bottomNavigationShortcutsBody =>
-      'Choose up to three quick destinations. Dashboard and the menu stay available.';
+      'Choose up to three tabs. You can still open everything from the menu.';
 
   @override
   String get navigationShortcutShownLabel => 'shown in bottom navigation';
@@ -265,10 +296,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get resetNavigationTitle => 'Reset navigation';
+  String get resetNavigationTitle => 'Restore default bottom shortcuts';
 
   @override
-  String get resetNavigationValue => 'restore default quick destinations';
+  String get resetNavigationValue => 'replace these shortcuts and their order';
 
   @override
   String get shortcutShownLabel => 'shown on dashboard';
@@ -283,10 +314,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moveDownTooltip => 'Move down';
 
   @override
-  String get resetDashboardTitle => 'Reset dashboard';
+  String get resetDashboardTitle => 'Restore default dashboard shortcuts';
 
   @override
-  String get resetDashboardValue => 'restore default shortcut order';
+  String get resetDashboardValue => 'replace these shortcuts and their order';
 
   @override
   String get syncOffTitle => 'Device sync is not available';
@@ -296,7 +327,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncOffDescription =>
-      'General device synchronisation is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
+      'Device synchronisation isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.';
 
   @override
   String get encryptedSyncLabel => 'Encrypted sync';
@@ -314,10 +345,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupsLabel => 'Backups';
 
   @override
-  String get backupsValue => 'manual for now';
+  String get backupsValue => 'encrypted .pluris files in Import / Export';
 
   @override
   String get notificationHistoryTitle => 'Notification history';
+
+  @override
+  String get clearNotificationHistoryButton => 'Clear history';
+
+  @override
+  String get clearNotificationHistoryTitle => 'Clear notification history?';
+
+  @override
+  String get clearNotificationHistoryBody =>
+      'This removes notification history stored on this device and from future exports. Existing archives and other copies are unchanged.';
 
   @override
   String get noNotificationsYetTitle => 'No notifications yet';
@@ -330,6 +371,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newStatusPill => 'new';
 
   @override
+  String markNotificationReadButton(String title) {
+    return 'Mark $title as read';
+  }
+
+  @override
   String get appTagline =>
       'Offline-first system, identity, and journaling tools.';
 
@@ -339,6 +385,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutGroupTitle => 'About';
+
+  @override
+  String get appVersionLabel => 'App version';
+
+  @override
+  String appVersionValue(String version, String buildNumber) {
+    return '$version (build $buildNumber)';
+  }
 
   @override
   String get storageLabel => 'Storage';
@@ -377,6 +431,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDashboardShortcutsTitle => 'No dashboard shortcuts';
+
+  @override
+  String get firstRunTitle => 'Start here';
+
+  @override
+  String get firstRunBody =>
+      'Add a member or bring in your existing data. You can do both later from the menu.';
+
+  @override
+  String get firstRunImportAction => 'Bring in existing data';
 
   @override
   String get noDashboardShortcutsBody =>
@@ -641,7 +705,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteServerAccountBody =>
-      'This signs you out and schedules server data for deletion in 30 days. Sign in with the same email and password within that time to recover it. Local app data stays on this device.';
+      'This signs you out and schedules server data for deletion in 30 days. To recover the account during that time, reset its password, then sign in. Local app data stays on this device.';
 
   @override
   String get currentPasswordLabel => 'Current password';
@@ -918,6 +982,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteReminderTooltip => 'Delete reminder';
 
   @override
+  String deleteReminderFor(String title, String schedule) {
+    return 'Delete reminder $title, $schedule';
+  }
+
+  @override
   String get deleteReminderTitle => 'Delete reminder?';
 
   @override
@@ -933,7 +1002,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthlySchedule => 'Monthly';
 
   @override
-  String get afterFrontSchedule => 'After member fronts';
+  String get afterFrontSchedule => 'After a front starts';
 
   @override
   String get titleFieldLabel => 'Title';
@@ -943,6 +1012,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dayFieldLabel => 'Day';
+
+  @override
+  String get daysFieldLabel => 'Days';
+
+  @override
+  String get selectAtLeastOneWeekdayError => 'Select at least one day.';
 
   @override
   String get dayOfMonthFieldLabel => 'Day of month';
@@ -982,21 +1057,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose one member, or trigger for any newly started front.';
 
   @override
-  String get afterFrontDelayLabel => 'Delay after fronting (seconds)';
+  String get afterFrontDelayLabel => 'Delay after fronting';
 
   @override
   String get afterFrontDelayHelper =>
-      'Deliver this reminder after this many seconds. Use 0 for immediately.';
+      'Use 0 for immediately, 90m, or 1h 30m. A number alone means seconds.';
 
   @override
   String get afterFrontDelayError =>
-      'Enter zero or a positive whole number of seconds.';
+      'Enter 0 or a positive delay, such as 90m or 1h 30m.';
 
   @override
   String get anyFrontStartsOption => 'Any front starts';
 
   @override
   String get timeFieldLabel => 'Time';
+
+  @override
+  String get chooseReminderTime => 'Choose reminder time';
 
   @override
   String get timeFieldHelper => '24-hour local time, like 09:00';
@@ -1020,7 +1098,48 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get afterSelectedFrontStarts => 'After a selected front starts';
+  String get afterSelectedFrontStarts => 'When any front starts';
+
+  @override
+  String get anyFrontStartsTrigger => 'any front starts';
+
+  @override
+  String memberFrontsTrigger(String detail) {
+    return '$detail fronts';
+  }
+
+  @override
+  String reminderDelayHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reminderDelayMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reminderDelaySeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
 
   @override
   String afterFrontLabel(String detail) {
@@ -1028,8 +1147,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String afterFrontDelayedLabel(int delay, String detail) {
-    return '$delay seconds after $detail fronts';
+  String afterFrontDelayedLabel(String delay, String detail) {
+    return '$delay after $detail';
   }
 
   @override
@@ -1136,7 +1255,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pasteJsonSizeHelp =>
-      'Paste up to 256 KiB. Choose a file for larger exports.';
+      'Paste up to 32 MiB. Larger exports need a file.';
+
+  @override
+  String get unsavedChangesTitle => 'Unsaved changes';
+
+  @override
+  String get unsavedChangesBody => 'Save your changes before closing?';
+
+  @override
+  String get keepEditingButton => 'Keep editing';
+
+  @override
+  String get discardChangesButton => 'Discard changes';
+
+  @override
+  String get editReminderTooltip => 'Edit reminder';
+
+  @override
+  String editReminderFor(String title, String schedule) {
+    return 'Edit reminder $title, $schedule';
+  }
+
+  @override
+  String get reminderTimeError => 'Enter a valid time, such as 09:00 or 9am.';
+
+  @override
+  String get couldNotSaveReminder =>
+      'Could not save this reminder. Check whether it still exists and try again.';
+
+  @override
+  String get encryptionKeyUnavailableTitle => 'Encryption key unavailable';
+
+  @override
+  String get encryptionKeyUnavailableBody =>
+      'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.';
+
+  @override
+  String get keyStoreTemporarilyUnavailableTitle =>
+      'Encryption key temporarily unavailable';
+
+  @override
+  String get keyStoreTemporarilyUnavailableBody =>
+      'Unlock your device or keyring, then try again. Your local files have not been replaced.';
+
+  @override
+  String get corruptEncryptionKeyTitle => 'Encryption key cannot be read';
+
+  @override
+  String get corruptEncryptionKeyBody =>
+      'This device has an invalid encryption key. Keep the app files. Restore a password-protected archive on a fresh installation or another device.';
+
+  @override
+  String get restoreFromEncryptedArchiveLabel =>
+      'How to restore an encrypted archive';
+
+  @override
+  String get recoveryArchiveStepsBody =>
+      'On a fresh installation, open Import / Export, choose the encrypted archive and enter its recovery code. Keep this device and its files until you have checked the restored data.';
+
+  @override
+  String get waitingForEncryptionKeyTitle => 'Waiting for encryption key';
+
+  @override
+  String get waitingForEncryptionKeyBody =>
+      'Unlock your device keyring if needed. Pluris Haven will continue when the key becomes available. If it remains here, restart the app after unlocking. Keep the app\'s files: clearing storage may lose data.';
+
+  @override
+  String get tryAgainButton => 'Try again';
+
+  @override
+  String get reminderSavedNotificationFailed =>
+      'Reminder saved, but its notification could not be set. Check notification settings.';
 
   @override
   String get previewPastedJson => 'Preview pasted JSON';
@@ -1321,7 +1511,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputLabel => 'Input';
 
   @override
-  String get jobLabel => 'Job';
+  String get archiveImportJobType => 'Archive import';
 
   @override
   String get dedupeLabel => 'Dedupe';
@@ -1419,7 +1609,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importDedupeAmpersand => 'Ampersand UUIDs, normalised names';
 
   @override
-  String get importConflictPrompt => 'Ask for each match';
+  String get importConflictPrompt => 'Ask how to handle matches';
+
+  @override
+  String get importPreservesLocalProfile =>
+      'Your local system profile will stay unchanged.';
+
+  @override
+  String get nativeImportUpdatesProfile =>
+      'Update existing matches will replace your local system profile.';
+
+  @override
+  String get systemProfileConflictBody =>
+      'This archive includes a system profile. Update existing matches will replace your local profile. Skip and Create will keep it unchanged.';
+
+  @override
+  String get archivePreferencesConflictBody =>
+      'Some app preferences differ from settings already saved on this device.';
+
+  @override
+  String get nativeImportPreferencesPolicy =>
+      'For app preferences, Skip matches and Create duplicates keep settings you already have. Update existing replaces matching settings. Only portable preferences are imported.';
 
   @override
   String get importConflictCreate => 'Create new records';
@@ -1507,6 +1717,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importReasonPluralSpaceMarkers =>
       'file contains PluralSpace markers';
+
+  @override
+  String get importReasonAmpersandMarkers =>
+      'file contains Ampersand database markers';
 
   @override
   String get importReasonOpenPluralMarkers =>
@@ -1600,6 +1814,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importCountPollVotes => 'poll votes';
+
+  @override
+  String get importCountPollMemberVotes => 'member votes';
 
   @override
   String get importCountPollVoteEvents => 'poll vote events';
@@ -2351,6 +2568,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String frontConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count front-history entries',
+      one: '1 front-history entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get listAnd => ' and ';
 
   @override
@@ -2386,6 +2614,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get generatedRecoveryCodeStatus =>
       'Generated locally with 192 bits of randomness. Save it in your password manager, then re-enter it below. Pluris Haven cannot recover it.';
+
+  @override
+  String get copyRecoveryCodeButton => 'Copy recovery code';
+
+  @override
+  String get copyRecoveryCodeTitle => 'Copy recovery code?';
+
+  @override
+  String get copyRecoveryCodeWarning =>
+      'Clipboard history and other apps may keep this code. Anyone with the code and archive can read your data.';
+
+  @override
+  String get recoveryCodeCopied =>
+      'Recovery code copied. Clear it from your clipboard when finished.';
+
+  @override
+  String get recoveryCodeCopyFailed =>
+      'Could not copy the recovery code. You can still write it down.';
 
   @override
   String get showRecoveryCodeTooltip => 'Show recovery code';
@@ -2593,6 +2839,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteNoteTooltip => 'Delete note';
 
   @override
+  String deleteNoteForTooltip(String name, String id) {
+    return 'Delete note $name ($id)';
+  }
+
+  @override
+  String deleteNoteForTitle(String name) {
+    return 'Delete note $name';
+  }
+
+  @override
   String get deleteNoteTitle => 'Delete note?';
 
   @override
@@ -2685,17 +2941,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPollButton => 'Create poll';
 
   @override
-  String pollOptionSemanticLabel(String option, String status) {
-    return '$option, $status';
-  }
-
-  @override
-  String get selectedStatus => 'selected';
-
-  @override
-  String get notSelectedStatus => 'not selected';
-
-  @override
   String pollSelectionSummary(String kind, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2730,6 +2975,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get votingFieldLabel => 'Voting';
+
+  @override
+  String get pollVoteModeLabel => 'Vote mode';
+
+  @override
+  String get pollSharedChoiceLabel => 'Shared system choice';
+
+  @override
+  String get pollMemberVoteLabel => 'Votes by member';
+
+  @override
+  String get pollVoteAsMemberLabel => 'Vote as member';
+
+  @override
+  String get pollChooseMemberHint => 'Choose a member';
+
+  @override
+  String get pollCouldNotVote => 'Could not record this vote. Try again.';
+
+  @override
+  String importDiagnosticOrphanedFrontReferences(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count front links refer to missing sessions or members',
+      one: '1 front link refers to a missing session or member',
+    );
+    return '$_temp0. The affected history may appear without a member after import.';
+  }
+
+  @override
+  String pollVoteCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
 
   @override
   String pollOptionFieldLabel(int number) {
@@ -2799,6 +3084,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addJournalEntryButton => 'Add journal entry';
 
   @override
+  String get journalAboutMemberFieldLabel => 'About';
+
+  @override
+  String get journalAuthorFieldLabel => 'Written by';
+
+  @override
+  String get journalDateFieldLabel => 'Journal date';
+
+  @override
+  String get journalTimeFieldLabel => 'Journal time';
+
+  @override
+  String get journalAuthorNotRecorded => 'Not recorded';
+
+  @override
+  String journalWrittenBy(String name) {
+    return 'Written by $name';
+  }
+
+  @override
+  String get aboutMemberFilter => 'About a member';
+
+  @override
+  String get systemJournalLabel => 'System journal';
+
+  @override
+  String memberJournalLabel(String name) {
+    return 'About $name';
+  }
+
+  @override
   String get untitledEntry => 'Untitled entry';
 
   @override
@@ -2806,6 +3122,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteJournalEntryTooltip => 'Delete journal entry';
+
+  @override
+  String deleteJournalEntryFor(String title, String id) {
+    return 'Delete journal entry $title ($id)';
+  }
+
+  @override
+  String deleteJournalEntryForTitle(String title) {
+    return 'Delete journal entry $title';
+  }
 
   @override
   String get deleteJournalEntryTitle => 'Delete journal entry?';
@@ -2828,6 +3154,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get writeBeforeSaving => 'Write something before saving.';
+
+  @override
+  String get couldNotSaveDraft =>
+      'Could not save. Your draft is still open; try again.';
 
   @override
   String get searchGroupsHint => 'Search groups';
@@ -2879,6 +3209,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupActionsTooltip => 'Group actions';
+
+  @override
+  String groupActionsFor(String name, String id) {
+    return 'Group actions for $name ($id)';
+  }
+
+  @override
+  String groupActionsForName(String name) {
+    return 'Group actions for $name';
+  }
 
   @override
   String get deleteGroupTitle => 'Delete group?';
@@ -2991,6 +3331,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageActionsTooltip => 'Message actions';
 
   @override
+  String messageActionsFor(String sender, String id) {
+    return 'Message actions for $sender ($id)';
+  }
+
+  @override
   String get messageEditedLabel => 'Edited';
 
   @override
@@ -3025,6 +3370,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelFilter => 'Channel';
 
   @override
+  String get categoryViewFieldLabel => 'View category';
+
+  @override
+  String get allCategoriesFilter => 'All categories';
+
+  @override
+  String get channelViewFieldLabel => 'View channel';
+
+  @override
+  String get allChannelsFilter => 'All channels';
+
+  @override
   String channelBoardMessageMetadata(
     String channel,
     String sender,
@@ -3042,6 +3399,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoriesTitle => 'Categories';
+
+  @override
+  String deleteChannelFor(String name, String id) {
+    return 'Delete channel $name ($id)';
+  }
+
+  @override
+  String deleteCategoryFor(String name, String id) {
+    return 'Delete category $name ($id)';
+  }
 
   @override
   String get addChannelButton => 'Add channel';
@@ -3218,14 +3585,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchMembersHint => 'Search members';
 
   @override
+  String get sortMembers => 'Sort members';
+
+  @override
+  String get savedMemberOrder => 'Saved order';
+
+  @override
+  String get memberNameOrder => 'Name A–Z';
+
+  @override
   String get noMembersSavedLocally => 'No members saved locally';
 
   @override
   String get noMatchingMembers => 'No matching members';
 
   @override
-  String get membersEmptyBody =>
-      'Add members here or import a Simply Plural export.';
+  String get membersEmptyBody => 'Add a member or import your data.';
 
   @override
   String get addMemberButton => 'Add member';
@@ -3255,7 +3630,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String purgeMemberBody(String name) {
-    return 'Permanently delete $name\'s private profile content? Historical attribution remains as a minimal tombstone.';
+    return 'Permanently delete $name\'s private profile content? Their name and profile will be erased. Front and poll history will retain a member ID without the profile.';
   }
 
   @override
@@ -3263,24 +3638,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteMemberBody(String name) {
-    return '$name will be removed from member lists and cannot be selected for new fronts. Existing front history, notes, messages, reminders, and attribution stay in this device\'s history. Group links, tags, saved-front membership, privacy-bucket membership, and custom-field values are retained for restore and removed only by permanent purge. Active fronting ends.';
+    return 'Remove $name from active lists? Their current front will end. History, including votes, stays available and you can restore their profile from Removed.';
   }
 
   @override
-  String deleteMemberImpact(
-    int groupLinks,
-    int tagLinks,
-    int namedFrontLinks,
-    int privacyBucketLinks,
-    int customFieldValues,
-    int activeFrontSessions,
-    int frontHistoryLinks,
-    int notes,
-    int messages,
-    int journals,
-    int reminderTriggers,
-  ) {
-    return 'Removal summary -- group links: $groupLinks; tag links: $tagLinks; saved-front links: $namedFrontLinks; privacy-bucket membership: $privacyBucketLinks; custom-field values removed only by permanent purge: $customFieldValues; active front sessions ending: $activeFrontSessions. Historical links retained -- front history: $frontHistoryLinks; notes: $notes; messages: $messages; journals: $journals; reminder triggers: $reminderTriggers.';
+  String memberArchived(String name) {
+    return '$name moved to Archived.';
+  }
+
+  @override
+  String memberRestored(String name) {
+    return '$name restored to active members.';
+  }
+
+  @override
+  String memberRestoredToArchive(String name) {
+    return '$name restored to Archived. Restore them there to make them active.';
   }
 
   @override
@@ -3290,7 +3663,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToFrontButton => 'Add member to current front';
 
   @override
+  String get addSelectedFrontButton => 'Add selected';
+
+  @override
   String get setAsFrontButton => 'Make current front';
+
+  @override
+  String get replaceCurrentFrontButton => 'Replace current front';
+
+  @override
+  String get replaceCurrentFrontWarning =>
+      'This ends other active member fronts. Continue?';
+
+  @override
+  String endMemberFrontButton(String name) {
+    return 'End $name\'s front';
+  }
+
+  @override
+  String get endMemberFrontWarning =>
+      'This ends only this member\'s active front. Other members and custom fronts stay current. Continue?';
+
+  @override
+  String get activeCustomFrontsTitle => 'Active custom fronts';
+
+  @override
+  String endCustomFrontButton(String name) {
+    return 'End $name\'s front';
+  }
+
+  @override
+  String get endCustomFrontWarning =>
+      'This ends only this custom front. Other active fronts stay current, and its history remains available. Continue?';
+
+  @override
+  String get endAllCurrentFrontsButton => 'End all current fronts';
+
+  @override
+  String get endAllCurrentFrontsWarning =>
+      'This ends every active member and custom front. Their history remains available. Continue?';
+
+  @override
+  String get replaceCurrentMembersButton => 'Replace selected members';
+
+  @override
+  String get replaceSelectedFrontButton => 'Replace members';
+
+  @override
+  String get replaceCurrentMembersWarning =>
+      'This ends active member fronts that are not selected. Active custom fronts stay current. Continue?';
+
+  @override
+  String memberActionsFor(String name, String id) {
+    return 'Member actions for $name ($id)';
+  }
+
+  @override
+  String memberActionsForName(String name) {
+    return 'Member actions for $name';
+  }
+
+  @override
+  String memberWithId(String name, String id) {
+    return '$name ($id)';
+  }
 
   @override
   String get frontActionPickerTooltip => 'Choose front action';
@@ -3357,6 +3793,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use tags for roles, statuses, subsystems, or any slices that do not need a full group.';
 
   @override
+  String deleteTagTitle(String name) {
+    return 'Delete tag $name?';
+  }
+
+  @override
+  String get deleteTagBody => 'This removes the tag from every member.';
+
+  @override
   String get noTagsYet => 'No tags yet.';
 
   @override
@@ -3406,7 +3850,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberPreviewName => 'Preview';
 
   @override
-  String get alterProfileTitle => 'Alter profile';
+  String get alterProfileTitle => 'Member profile';
 
   @override
   String get birthdayFieldHint => 'YYYY-MM-DD, MM-DD, or free text';
@@ -3427,13 +3871,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPrimaryGroupOption => 'No primary group';
 
   @override
+  String get unknownGroupLabel => 'Unknown group (saved reference)';
+
+  @override
   String get memberGroupsTitle => 'Member groups';
 
   @override
-  String get saveAlterButton => 'Save alter';
+  String get groupMembersTitle => 'Members in this group';
 
   @override
-  String get createAlterButton => 'Create alter';
+  String get groupMembersHelp =>
+      'Choose members here. Primary groups can be changed on each member\'s profile.';
+
+  @override
+  String get saveAlterButton => 'Save member';
+
+  @override
+  String get createAlterButton => 'Create member';
 
   @override
   String get openingImagePickerStatus => 'Opening image picker...';
@@ -3555,6 +4009,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get endBeforeStartError => 'End time must be after the start time.';
 
   @override
+  String get activeFrontFutureStartError =>
+      'An active front cannot start in the future.';
+
+  @override
+  String get memberAlreadyFrontingError =>
+      'A selected member already has an active front.';
+
+  @override
+  String get frontHistorySaveFailed =>
+      'Could not save this front history entry. Try again.';
+
+  @override
   String get chooseMembersOrLabelError =>
       'Choose members or enter a custom label.';
 
@@ -3570,7 +4036,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldsImportDescription =>
-      'Import a Simply Plural export to bring custom profile fields into the local archive.';
+      'Supported imports can bring custom profile fields into the local archive.';
 
   @override
   String customFieldsWithValues(int count) {
@@ -3588,7 +4054,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldsEmptyBody =>
-      'SP custom fields will show here after import.';
+      'Add a field here, or import fields from a supported file.';
 
   @override
   String get addFieldButton => 'Add field';
@@ -3606,6 +4072,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFieldActionsTooltip => 'Custom field actions';
+
+  @override
+  String customFieldActionsFor(String name, String id) {
+    return 'Custom field actions for $name ($id)';
+  }
 
   @override
   String get deleteCustomFieldTitle => 'Delete custom field?';
@@ -3708,6 +4179,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customFieldChoicesHint => 'One choice per line';
 
   @override
+  String get customFieldDateFormat => 'Use YYYY-MM-DD or choose a date.';
+
+  @override
+  String get customFieldInvalidDate => 'Enter a valid date as YYYY-MM-DD.';
+
+  @override
+  String get customFieldInvalidLink =>
+      'Enter a link starting with https:// or http://.';
+
+  @override
+  String get chooseDateButton => 'Choose date';
+
+  @override
   String get customFieldChoicesTooMany => 'Use no more than 100 choices.';
 
   @override
@@ -3772,7 +4256,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customFrontsEmptyBody =>
-      'Add one here, or import them from SimplyPlural.';
+      'Add one here, or import custom fronts from a supported file.';
 
   @override
   String get tryDifferentSearch => 'Try a different search.';
@@ -3790,6 +4274,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteNamedFrontTooltip => 'Delete named front';
 
   @override
+  String frontActionsFor(String name, String id) {
+    return 'Front actions for $name ($id)';
+  }
+
+  @override
+  String frontActionsForName(String name) {
+    return 'Front actions for $name';
+  }
+
+  @override
+  String frontActionFor(String action, String name, String id) {
+    return '$action: $name ($id)';
+  }
+
+  @override
+  String frontActionForName(String action, String name) {
+    return '$action: $name';
+  }
+
+  @override
+  String editFrontFor(String name, String id) {
+    return 'Edit front $name ($id)';
+  }
+
+  @override
+  String editFrontForName(String name) {
+    return 'Edit front $name';
+  }
+
+  @override
+  String deleteFrontFor(String name, String id) {
+    return 'Delete front $name ($id)';
+  }
+
+  @override
+  String deleteFrontForName(String name) {
+    return 'Delete front $name';
+  }
+
+  @override
   String setFrontConfirmation(String name) {
     return 'Set $name as front';
   }
@@ -3802,7 +4326,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteSavedFrontBody =>
-      'This only removes the saved shortcut. Front history stays.';
+      'This removes the saved shortcut. Current fronts and history stay available. You can end an active custom front from the front picker.';
 
   @override
   String customFrontSemanticLabel(String name) {
@@ -3931,7 +4455,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howToTrackFrontStep3 =>
-      'Use Clear when nobody is fronting or the state ended.';
+      'Use End all current fronts when nobody is fronting or the state ended.';
 
   @override
   String get howToTrackFrontStep4 => 'Front History keeps the local timeline.';
@@ -4083,14 +4607,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontTimelineTitle => 'Front timeline';
 
   @override
+  String frontTimelineRange(String start, String end) {
+    return 'From $start to $end';
+  }
+
+  @override
   String get noAnalyticsTitle => 'No analytics yet';
 
   @override
   String get noAnalyticsBody =>
-      'Make a front current or import Simply Plural front history to fill this in.';
+      'Make a front current or import front history to fill this in.';
 
   @override
-  String get totalFrontTimeLabel => 'Total front time';
+  String get noAnalyticsInWindowTitle => 'No fronts in this period';
+
+  @override
+  String get noAnalyticsInWindowBody =>
+      'Choose a longer period or All to see earlier front history.';
+
+  @override
+  String get totalFrontTimeLabel => 'Summed front time';
+
+  @override
+  String get summedFrontTimeExplanation =>
+      'Overlapping front sessions are counted separately.';
 
   @override
   String get sessionsLabel => 'Sessions';
@@ -4106,6 +4646,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hourOfDayTitle => 'Hour of day';
+
+  @override
+  String get hourOfDayExplanation =>
+      'Time with anyone fronting, by local hour. Overlapping fronts count once here.';
 
   @override
   String get unknownLabel => 'Unknown';
@@ -4127,6 +4671,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadOlderFronts => 'Load older fronts';
+
+  @override
+  String frontHistoryShownCount(int shown, int loaded, int total) {
+    return '$shown shown, $loaded loaded of $total total';
+  }
+
+  @override
+  String get frontHistorySearchLimitedBody =>
+      'No matches in the loaded history. Load older fronts to search more entries.';
+
+  @override
+  String get clearFrontHistoryFilters => 'Clear filters';
 
   @override
   String get analyticsNinetyDays => '90d';
@@ -4280,7 +4836,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyBucketsDescription =>
-      'Group members by who may see them. Sharing stays off until sync is configured.';
+      'Organise members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.';
+
+  @override
+  String editPrivacyBucketNamed(String name) {
+    return 'Edit privacy bucket $name';
+  }
 
   @override
   String get noPrivacyBucketsTitle => 'No privacy buckets';
@@ -4353,6 +4914,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameRequiredError => 'Name is required.';
+
+  @override
+  String get memberNameInvisibleControlsError =>
+      'Remove invisible or directional control characters from the name.';
+
+  @override
+  String get memberNameDuplicateTitle => 'Member name already in use';
+
+  @override
+  String memberNameDuplicateBody(String name) {
+    return 'A member named $name already exists. You can keep both; the app will show an ID where the names need distinguishing.';
+  }
+
+  @override
+  String get saveDuplicateMemberButton => 'Save anyway';
 
   @override
   String get disabledStatusLabel => 'disabled';
@@ -4504,6 +5080,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localReportStage => 'stage: pre-alpha';
+
+  @override
+  String localReportVersion(String version, String buildNumber) {
+    return 'app version: $version (build $buildNumber)';
+  }
 
   @override
   String localReportMembers(int count) {
@@ -4663,6 +5244,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveAppearanceButton => 'Save appearance';
 
   @override
+  String get appearanceContrastError =>
+      'Text colours need more contrast against the background, surface and card colours.';
+
+  @override
   String deleteFailed(String error) {
     return 'Could not remove this item: $error';
   }
@@ -4718,7 +5303,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get syncOffDescription =>
-      'General device synchronization is not implemented. Pluris Haven keeps data on this device; manual encrypted server backups are a separate recovery feature.';
+      'Device synchronization isn\'t available. Your data stays here. Use Import / Export to save an encrypted .pluris archive.';
 
   @override
   String get importCancelledStatus => 'Import canceled.';
@@ -4831,6 +5416,10 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get customizeDashboardTitle => 'Customize dashboard';
 
   @override
+  String get privacyBucketsDescription =>
+      'Organize members into local groups. Buckets do not change the separate Privacy field on member profiles or share data.';
+
+  @override
   String get appearanceSubtitle => 'colors, shape and text size';
 
   @override
@@ -4850,4 +5439,8 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get outlineColorLabel => 'Outline color';
+
+  @override
+  String get appearanceContrastError =>
+      'Text colors need more contrast against the background, surface and card colors.';
 }

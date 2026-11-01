@@ -33,7 +33,7 @@ const supportedLanguages = [
   SupportedLanguage('da', 'Dansk'),
   SupportedLanguage('de', 'Deutsch'),
   SupportedLanguage('el', 'Ελληνικά'),
-  SupportedLanguage('en', 'English (UK)'),
+  SupportedLanguage('en', 'English (UK)', flutterLocale: Locale('en', 'GB')),
   SupportedLanguage('en-US', 'English (US)'),
   SupportedLanguage('es', 'español'),
   SupportedLanguage('fa', 'فارسی'),
@@ -76,7 +76,7 @@ const supportedLanguages = [
 
 List<Locale> get supportedLanguageLocales {
   return [
-    const Locale('en'),
+    const Locale('en', 'GB'),
     const Locale('en', 'US'),
     for (final language in supportedLanguages)
       if (language.code != systemLanguageCode &&

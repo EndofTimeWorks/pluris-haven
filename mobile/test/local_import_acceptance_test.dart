@@ -8,6 +8,7 @@ import 'package:pluris_haven/data/import/import_archive_mapper.dart';
 import 'package:pluris_haven/data/import/import_file_decoder.dart';
 import 'package:pluris_haven/data/import/import_sources.dart';
 import 'package:pluris_haven/data/local/app_database.dart';
+import 'package:pluris_haven/data/local/haven_repository.dart';
 import 'package:pluris_haven/data/security/archive_encryption.dart';
 
 import 'test_repository.dart';
@@ -16,6 +17,159 @@ void main() {
   final exportPath = Platform.environment['PLURIS_SP_EXPORT'];
   final avatarsPath = Platform.environment['PLURIS_SP_AVATARS'];
   final localArchivePath = Platform.environment['PLURIS_HAVEN_ARCHIVE'];
+
+  test('local fronting and related data survive encrypted recovery', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveMember(const MemberDraft(displayName: 'Kai'));
+    await repository.saveMember(const MemberDraft(displayName: 'River'));
+    final members = await repository.watchMembers().first;
+    final kai = members.singleWhere((member) => member.displayName == 'Kai');
+    final river = members.singleWhere(
+      (member) => member.displayName == 'River',
+    );
+    await repository.saveGroup(
+      GroupDraft(name: 'Day crew', memberIds: [kai.id, river.id]),
+    );
+    await repository.setFrontMembers([kai.id]);
+    final original = (await repository.watchFrontHistory().first).single;
+    await repository.setFrontMembers([kai.id, river.id]);
+    await repository.updateFrontHistoryEntry(
+      original.id,
+      FrontHistoryDraft(
+        startedAt: original.startedAt,
+        endedAt: null,
+        memberIds: [kai.id],
+        statusNote: 'Working together',
+      ),
+    );
+    await repository.savePoll(
+      const PollDraft(
+        question: 'Dinner?',
+        kind: PollKind.singleChoice,
+        options: ['Soup', 'Rice'],
+        restrictVotingToFronters: true,
+      ),
+    );
+    final poll = (await repository.watchPolls().first).single;
+    await repository.togglePollOption(poll.id, poll.options.first.id);
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Medication',
+        scheduleText: 'Daily at 09:00',
+        scheduleKind: 'daily',
+        scheduleTime: '09:00',
+      ),
+    );
+
+    final before = await repository.watchFrontHistory().first;
+    expect(before, hasLength(2));
+    expect(
+      before.singleWhere((entry) => entry.id == original.id).isActive,
+      isTrue,
+    );
+    final code = await generateArchiveRecoveryCode();
+    final encrypted = await encryptArchiveJson(
+      archiveJson: await repository.buildLocalArchiveJson(),
+      recoveryCode: code,
+    );
+    final archive = await decryptArchiveJson(
+      encryptedArchiveJson: encrypted,
+      passphrase: code.value,
+    );
+    await database.close();
+    final restoredDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(restoredDatabase.close);
+    final restored = testRepository(restoredDatabase);
+    await restored.ensureLocalSystem();
+    final rehearsal = await restored.rehearseLocalArchiveRestore(archive);
+    expect(rehearsal.canRestore, isTrue, reason: rehearsal.error);
+    await restored.importLocalArchiveJson(archive);
+
+    final restoredMembers = await restored.watchMembers().first;
+    expect(restoredMembers, hasLength(2));
+    final restoredGroup = (await restored.watchGroups().first).single;
+    expect(restoredGroup.name, 'Day crew');
+    expect(restoredGroup.memberCount, 2);
+    expect(
+      restoredMembers.every(
+        (member) => member.groupIds.contains(restoredGroup.id),
+      ),
+      isTrue,
+    );
+    final restoredFronts = await restored.watchFrontHistory().first;
+    expect(restoredFronts, hasLength(2));
+    final retained = restoredFronts.singleWhere(
+      (entry) => entry.id == original.id,
+    );
+    expect(retained.isActive, isTrue);
+    expect(retained.startedAt, original.startedAt);
+    expect(retained.statusNote, 'Working together');
+    expect((await restored.watchPolls().first).single.selectedCount, 1);
+    expect(
+      (await restored.watchReminders().first).single.scheduleTime,
+      '09:00',
+    );
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  test(
+    'empty appearance preferences restore from plain and encrypted archives',
+    () async {
+      final sourceDatabase = AppDatabase(NativeDatabase.memory());
+      addTearDown(sourceDatabase.close);
+      final source = testRepository(sourceDatabase);
+      await source.ensureLocalSystem();
+      await source.saveMember(const MemberDraft(displayName: 'River'));
+      await source.setAppearanceOverrides(const HavenAppearanceOverrides());
+      await source.setCustomAccentColor(null);
+
+      final archive = await source.buildLocalArchiveJson();
+      final decoded = jsonDecode(archive) as Map<String, dynamic>;
+      final preferences = decoded['preferences'] as List<dynamic>;
+      expect(
+        preferences.where(
+          (entry) =>
+              entry['key'] == 'appearance_overrides' && entry['value'] == '',
+        ),
+        hasLength(1),
+      );
+      expect(
+        preferences.where(
+          (entry) =>
+              entry['key'] == 'custom_accent_hex' && entry['value'] == '',
+        ),
+        hasLength(1),
+      );
+
+      final code = await generateArchiveRecoveryCode();
+      final encrypted = await encryptArchiveJson(
+        archiveJson: archive,
+        recoveryCode: code,
+      );
+      final decrypted = await decryptArchiveJson(
+        encryptedArchiveJson: encrypted,
+        passphrase: code.value,
+      );
+      await sourceDatabase.close();
+
+      for (final archiveText in [archive, decrypted]) {
+        final targetDatabase = AppDatabase(NativeDatabase.memory());
+        addTearDown(targetDatabase.close);
+        final target = testRepository(targetDatabase);
+        await target.ensureLocalSystem();
+        final rehearsal = await target.rehearseLocalArchiveRestore(archiveText);
+        expect(rehearsal.canRestore, isTrue, reason: rehearsal.error);
+        await target.importLocalArchiveJson(archiveText);
+        expect((await target.watchMembers().first).single.displayName, 'River');
+        expect((await target.loadCustomization()).appearance.isEmpty, isTrue);
+        expect((await target.loadCustomization()).customAccentHex, isNull);
+        await targetDatabase.close();
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 
   test(
     'imports and restores a local Simply Plural export without data loss',

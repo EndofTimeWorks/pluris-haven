@@ -1,120 +1,53 @@
 # Product goals
 
-Pluris Haven is a local-first app made by systems. It is for systems, other
-collectives, individuals, and anyone else who finds the tools useful.
+Pluris Haven is a local-first app made by systems, for systems and anyone else who finds its tools
+useful. “System”, “member” and “front” are defaults, not labels someone must adopt.
 
-No one has to use words such as “system”, “member”, or “front”. Those are useful
-defaults, not requirements.
+## What the app is for
 
-## What works now
+People should be able to record members, groups, fronts, notes, journals, messages, polls and
+reminders without creating an account. Local data should remain usable offline. Import, export and
+portable recovery are maintained features, not one-time migration tools.
 
-The mobile app stores the main local system data without requiring an account,
-including members, groups, tags, custom fields, fronts, notes, journals,
-messages, polls, reminders, preferences, import history and recovery data.
+The app supports Simply Plural and PluralKit import paths. OpenPlural v0.1 has a file import path
+with local fixture coverage. Tupperbox, PluralSpace and Ampersand have file mappers, but
+representative real exports are still needed before broad compatibility claims. PluralPort Draft
+v0.1 file import/export maps systems, members and fronts and retains unsupported records as
+encrypted source data. It is separate from live sync and federation. See the
+[completion ledger](completion-ledger.md) for the current limits of each path.
 
-Simply Plural and PluralKit have tested import paths. OpenPlural v0.1 has a
-current file/archive import path with representative fixture coverage, stable
-source-ID dedupe and raw-extension preservation. Tupperbox, PluralSpace and
-Ampersand have current file-normalisation paths with checked-in mapper coverage.
-Do not advertise a source as fully compatible merely because a parser or mapper
-exists.
+Password-protected local archives are the portable recovery route. Optional server snapshots depend
+on device-held keys and cannot replace those archives. No local feature should require the server.
+Friendship, if used, shares nothing by default and has no browsing directory.
 
-PluralPort Draft v0.1 JSON file import and export use the existing Haven review
-and local-file flows. Unknown, unsupported, and underspecified source records
-and extensions are retained as encrypted raw payloads. Haven-only or
-underspecified exported data is namespaced and accompanied by a warning. This
-portable file support is distinct from OpenPlural v0.1 and does not implement
-live sync, federation, or a hosted PluralPort service.
-
-Password-protected archives are the portable recovery path. Encrypted server
-snapshots use device-held key material, upload in checked chunks, and can be
-downloaded/restored by a client that still has the required key. Server
-snapshots do not replace portable recovery archives.
-
-Accounts and friends are optional. Friends remain experimental and disabled by
-default. There is no friendship directory; discovery should be deliberate
-through exact handles, rotating codes, links or QR.
-
-Hosted password recovery uses a one-time emailed token. Public registration
-remains disabled until its remaining safety gates, including verified email,
-are actually implemented.
-
-## Rules for the product
-
-- Local features must keep working without an account or network connection.
-- Private content must not leave the device as plaintext by default.
-- Sync must be transport-independent; a central server is optional
-  infrastructure rather than the owner of the data model.
-- Import and export are maintained features, not one-off migration tools.
-- PluralPort interchange follows the documented portable JSON format rather
-  than exposing Haven's database, outbox, or sync architecture.
-- Self-hosted servers use the same public protocol as the official server where
-  that protocol is implemented.
-- Accessibility is part of release work.
-- The app must not ask anyone to prove or medicalise their identity.
-- Friendship and collaboration are separate; friendship shares nothing by
-  default.
-- Product/docs/store claims must distinguish implemented, verified and merely
-  planned functionality.
-
-Local text is encrypted with a device key. The SQLite file still exposes some
-metadata, including row counts, relationships, timestamps, and status flags.
-Reducing that exposure would need a separate full-database encryption design.
+The local database encrypts private text and stored avatar references. It still exposes some
+metadata, such as row counts, relationships, timestamps and status flags. Hiding that metadata would
+need a separate database design.
 
 ## Language and inclusion
 
-- Do not assume one identity, name, gender, set of pronouns, or mind per body or
-  account.
-- Do not assume plurality, singlet identity, switching, amnesia, origin,
-  diagnosis, or relationships between members.
-- Use chosen names, pronouns, and terms.
-- Use neutral “they” unless someone has supplied different language.
-- Use **entity** for a portable identity that may belong to a system,
-  collective, or individual.
-- Use **account holder** when discussing ownership or consent. Use **person** or
-  **people** when the bodily, human, or legal meaning matters.
-- Keep assumptions local to the feature that needs them. Explain them and let
-  people opt out where possible.
-- Preserve an imported tool's terms and data without applying those terms to
-  everyone else.
+Do not assume one identity, name, gender, set of pronouns or mind per body. Do not assume plurality,
+switching, amnesia, origin, diagnosis or a particular relationship between members. Use someone's
+chosen words and pronouns; use neutral “they” where none have been supplied.
 
-## Before alpha
+Use **entity** for a portable identity that could belong to a system, collective or individual. Use
+**account holder** for ownership and consent, and **person** or **people** when the human or legal
+meaning matters. Preserve imported terms without applying them to everyone else. Explain any
+feature-specific assumption and allow people to opt out where practical. The app must not ask anyone
+to prove or medicalise their identity.
 
-- Finish local chats/messages/categories/channels already represented in the
-  data model and product decisions.
-- Finish the note, journal, and message revision and restore flows already in
-  the design.
-- Build the scoped, revocable, permission-based local API as a near-term
-  integration surface; it must not expose ambient decrypted-vault access.
-- Finish the already-decided advanced reminder, poll, front-audit and System
-  Safety paths.
-- Finish low-cognitive-load, terminology, customisation and accessibility gaps.
-- Prepare Play closed alpha testing in addition to the existing internal-test
-  release path, and verify the real CI/release workflows.
-- Complete remaining real-device accessibility and Apple signing/runtime tests.
-- Obtain independent PluralPort Draft v0.1 export/import evidence before making
-  broad compatibility claims.
-- Keep registration disabled until verified email and the other production
-  gates are ready.
+## Boundaries
 
-Trusted recovery contacts are wanted, but their exact cryptographic share and
-threshold scheme remains unresolved. Do not invent that cryptography simply to
-mark the feature complete.
+Accessibility belongs in release work. Privacy controls, import/export and recovery must not depend
+on payment. Product and store copy must distinguish implemented behaviour from tested behaviour and
+plans.
 
-## Later / deferred
+Before alpha, finish the local paths that are exposed to users, close data integrity and
+accessibility gaps, test upgrades and recovery on devices, and verify the release workflow with real
+artefacts. The [project state](project-state.md) records decisions; the
+[engineering readiness](engineering-readiness.md) page records release checks.
 
-- Hosted portable-identity and federation protocol implementation.
-- Desktop and private browser clients.
-- Watch clients and plugin ecosystems.
-- Authenticated PluralSpace API import.
-- Optional full-database encryption that also hides local metadata.
-- Other platform work explicitly recorded as deferred in `docs/project-state.md`.
-
-## Not planned
-
-- Requiring an account for local features.
-- Copying another plurality app screen for screen.
-- A friendship browsing/search directory.
-- Routine scanning of private content.
-- Paid feature tiers on the official server.
-- CLI/TUI clients.
+Hosted federation, desktop and private-browser clients, watch clients, plugins, authenticated
+PluralSpace API import and full-database encryption are later work. Requiring an account for local
+use, a friendship directory, routine scanning of private content, paid tiers for core access and
+CLI/TUI clients are not planned.

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '#lib/release.js';
-  import { obtainiumRedirectUrl } from '#lib/obtainium-config.js';
+  import lightLogo from '#lib/assets/favicon.svg';
 
   const status = [
     ['Version', mobileRelease.version],
@@ -46,6 +46,16 @@
 
 <main id="main-content" tabindex="-1">
   <section class="intro" aria-labelledby="intro-heading">
+    <div class="brand-art" aria-hidden="true">
+      <img
+        class="dark-logo"
+        src="/brand/pluris-haven-alternate-dark.png"
+        width="1200"
+        height="1600"
+        alt=""
+      />
+      <img class="light-logo" src={lightLogo} width="96" height="96" alt="" />
+    </div>
     <p class="release-state">Android pre-alpha · {mobileRelease.version}</p>
     <h1 id="intro-heading">Pluris Haven</h1>
     <p class="lede">
@@ -77,7 +87,7 @@
       The APK is signed through Google Play App Signing and published with checksums and build
       metadata. Obtainium can follow the same release file.
     </p>
-    <p><a href={obtainiumRedirectUrl}>Add Pluris Haven to Obtainium</a></p>
+    <p><a href="/obtainium">Add Pluris Haven to Obtainium</a></p>
   </section>
 
   <section class="two-column" aria-label="Feature status">
@@ -132,8 +142,8 @@
 
   :global(body) {
     margin: 0;
-    background: #151820;
-    color: #f4f0ff;
+    background: var(--page-bg);
+    color: var(--text);
     font-family:
       ui-sans-serif,
       system-ui,
@@ -145,7 +155,7 @@
   }
 
   :global(a) {
-    color: #d5ccff;
+    color: var(--link);
     text-underline-offset: 0.18em;
   }
 
@@ -166,11 +176,11 @@
   }
 
   .site-head {
-    border-bottom: 1px solid #343846;
+    border-bottom: 1px solid var(--border);
   }
 
   .brand {
-    color: #f4f0ff;
+    color: var(--text);
     font-size: 1.05rem;
     font-weight: 750;
     text-decoration: none;
@@ -183,7 +193,7 @@
   }
 
   nav a {
-    color: #c9c4d4;
+    color: var(--body-text);
   }
 
   main {
@@ -196,16 +206,50 @@
   }
 
   section + section {
-    border-top: 1px solid #343846;
+    border-top: 1px solid var(--border);
   }
 
   .intro {
     padding-block: clamp(48px, 7vw, 72px) 48px;
   }
 
+  .brand-art {
+    float: right;
+    width: clamp(104px, 22vw, 168px);
+    margin: 0 0 16px 24px;
+  }
+
+  .brand-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .brand-art .light-logo {
+    display: none;
+  }
+
+  :global(html[data-theme='light']) .brand-art .dark-logo {
+    display: none;
+  }
+
+  :global(html[data-theme='light']) .brand-art .light-logo {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :global(html:not([data-theme='dark'])) .brand-art .dark-logo {
+      display: none;
+    }
+
+    :global(html:not([data-theme='dark'])) .brand-art .light-logo {
+      display: block;
+    }
+  }
+
   .release-state,
   .caution {
-    color: #aaa4b5;
+    color: var(--muted-text);
     font-size: 0.92rem;
   }
 
@@ -231,7 +275,7 @@
   p,
   li,
   dd {
-    color: #c9c4d4;
+    color: var(--body-text);
     line-height: 1.65;
   }
 
@@ -252,27 +296,28 @@
     min-height: 48px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #565b6d;
+    border: 1px solid var(--button-border);
     border-radius: 6px;
     padding: 0 16px;
-    color: #f4f0ff;
+    color: var(--text);
     font-weight: 700;
     text-decoration: none;
   }
 
   .button.primary {
-    border-color: #7863ff;
-    background: #6750f0;
+    border-color: var(--primary-border);
+    background: var(--primary-bg);
+    color: var(--primary-text);
   }
 
   .button:hover,
   .button:focus-visible {
-    border-color: #a99aff;
+    border-color: var(--button-hover-border);
   }
 
   .button span {
     margin-left: 8px;
-    color: #ebe7ff;
+    color: var(--button-subtext);
     font-size: 0.86rem;
   }
 
@@ -284,17 +329,17 @@
     display: grid;
     grid-template-columns: minmax(100px, 0.35fr) 1fr;
     gap: 20px;
-    border-bottom: 1px solid #343846;
+    border-bottom: 1px solid var(--border);
     padding-block: 10px;
   }
 
   .status-list dt {
-    color: #aaa4b5;
+    color: var(--muted-text);
   }
 
   .status-list dd {
     margin: 0;
-    color: #f4f0ff;
+    color: var(--text);
   }
 
   .two-column {
@@ -314,8 +359,8 @@
   }
 
   footer {
-    border-top: 1px solid #343846;
-    color: #aaa4b5;
+    border-top: 1px solid var(--border);
+    color: var(--muted-text);
     font-size: 0.9rem;
   }
 

@@ -5,12 +5,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from pluris_server import security_events as security_event_store
 from pluris_server.account_cleanup import sweep_deleted_accounts
 from pluris_server.mail import MemoryEmailSender
-from pluris_server.models import BackupSnapshot, SecurityEvent, SecurityEventType, User
+from pluris_server.models import (
+    BackupSnapshot,
+    PasswordResetToken,
+    SecurityEvent,
+    SecurityEventType,
+    User,
+)
 from pluris_server.routers import auth as auth_router
 from pluris_server.security import PasswordWorkSaturated
 from tests.conftest import auth, register
@@ -259,6 +265,11 @@ def test_security_events_are_private_and_cursor_paginated(
     assert other_events.status_code == 200
     assert other_events.json() == []
 
+    oversized_cursor = client.get(
+        f"/v1/auth/security-events?before_id={2**70}", headers=fresh_headers
+    )
+    assert oversized_cursor.status_code == 422
+
 
 def test_security_event_history_is_bounded(
     client: TestClient,
@@ -266,7 +277,7 @@ def test_security_event_history_is_bounded(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     owner = register(client, "bounded-events@example.com", "Bounded events")
-    monkeypatch.setattr(security_event_store, "MAX_SECURITY_EVENTS_PER_USER", 5)
+    monkeypatch.setattr(security_event_store, "MAX_BACKUP_RECOVERY_EVENTS_PER_USER", 5)
 
     async def add_events() -> None:
         async with client.app.state.session_factory() as session:
@@ -381,6 +392,73 @@ def test_password_reset_request_hides_delivery_failure(
     assert known.status_code == 202
     assert known.json() == unknown.json()
     assert "Password reset email delivery failed" in caplog.text
+
+
+def test_repeated_reset_requests_do_not_flood_mail_or_invalidate_first_link(
+    client: TestClient, fast_passwords: None
+) -> None:
+    register(client, "reset-flood@example.com", "Reset flood")
+    sender = client.app.state.email_sender
+    assert isinstance(sender, MemoryEmailSender)
+
+    for _ in range(3):
+        response = client.post(
+            "/v1/auth/password/reset-request",
+            json={"email": "reset-flood@example.com"},
+        )
+        assert response.status_code == 202
+    assert len(sender.sent) == 1
+
+    reset = client.post(
+        "/v1/auth/password/reset",
+        json={
+            "token": sender.sent[0].token,
+            "new_password": "new correct horse battery staple",
+        },
+    )
+    assert reset.status_code == 200, reset.text
+
+
+def test_later_reset_request_keeps_first_link_until_password_changes(
+    client: TestClient, fast_passwords: None
+) -> None:
+    register(client, "reset-later@example.com", "Reset later")
+    sender = client.app.state.email_sender
+    assert isinstance(sender, MemoryEmailSender)
+    url = "/v1/auth/password/reset-request"
+    assert client.post(url, json={"email": "reset-later@example.com"}).status_code == 202
+    first_token = sender.sent[-1].token
+
+    async def age_request() -> None:
+        async with client.app.state.session_factory() as session:
+            user_id = await session.scalar(
+                select(User.id).where(User.email == "reset-later@example.com")
+            )
+            await session.execute(
+                update(PasswordResetToken)
+                .where(PasswordResetToken.user_id == user_id)
+                .values(issued_at=datetime.now(UTC) - timedelta(minutes=11))
+            )
+            await session.commit()
+
+    asyncio.run(age_request())
+    assert client.post(url, json={"email": "reset-later@example.com"}).status_code == 202
+    assert len(sender.sent) == 2
+    second_token = sender.sent[-1].token
+    assert (
+        client.post(
+            "/v1/auth/password/reset",
+            json={"token": first_token, "new_password": "new correct horse battery staple"},
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            "/v1/auth/password/reset",
+            json={"token": second_token, "new_password": "another correct horse battery staple"},
+        ).status_code
+        == 400
+    )
 
 
 def test_duplicate_registration_and_bad_password(client: TestClient) -> None:

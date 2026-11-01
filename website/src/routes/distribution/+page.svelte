@@ -1,6 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '#lib/release.js';
-  import { obtainiumRedirectUrl, repositoryUrl } from '#lib/obtainium-config.js';
+  import { repositoryUrl } from '#lib/obtainium-config.js';
 </script>
 
 <svelte:head>
@@ -31,7 +31,7 @@
     <div class="actions">
       <a class="button primary" href={mobileRelease.universalApk.url}> Download signed APK </a>
       <a class="button" href={mobileRelease.releaseUrl}>Release files</a>
-      <a class="button" href={obtainiumRedirectUrl}>Get it on Obtainium</a>
+      <a class="button" href="/obtainium">Get it on Obtainium</a>
     </div>
   </section>
 

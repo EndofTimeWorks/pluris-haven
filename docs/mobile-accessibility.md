@@ -1,8 +1,8 @@
 # Mobile accessibility
 
-Accessibility is part of the app contract. Pluris Haven should work for screen
-reader users, blind and low-vision users, keyboard/switch users, low-mobility
-users, and people who need reduced motion or simpler screens.
+Pluris Haven should work with screen readers, keyboards and switches, large
+text, reduced motion, and simpler layouts. Controls should also be usable by
+people with low vision or limited mobility.
 
 ## Rules for UI work
 

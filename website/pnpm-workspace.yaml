@@ -5,3 +5,9 @@ overrides:
 
 allowBuilds:
   esbuild: true
+
+auditConfig:
+  # GHSA-gcqx-w48m-w2h4 has no patch. deepmerge is used only by Svelte's
+  # development tooling to merge checked-in build configuration.
+  ignoreGhsas:
+    - GHSA-gcqx-w48m-w2h4
