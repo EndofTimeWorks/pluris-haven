@@ -868,7 +868,8 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
 
       var effectiveStrategy = _strategy;
-      if (effectiveStrategy == ImportConflictStrategy.prompt) {
+      if (effectiveStrategy == ImportConflictStrategy.prompt ||
+          effectiveStrategy == ImportConflictStrategy.create) {
         final conflictResult = await _promptForConflicts(archiveJson);
         if (conflictResult.cancelled) {
           if (mounted) {
@@ -991,6 +992,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
 
     final importMembers = _jsonObjectList(decoded['members']);
     final importGroups = _jsonObjectList(decoded['groups']);
+    final importFronts = _jsonObjectList(decoded['fronts']);
     final hasArchivePreferences =
         _source == ImportSource.plurisHavenArchive &&
         _jsonObjectList(decoded['preferences']).isNotEmpty;
@@ -1018,59 +1020,51 @@ class _ImportExportPageState extends State<ImportExportPage> {
       }
     }
 
-    final existingMembers = await widget.repository.watchMembers().first;
+    final existingMembers = await widget.repository
+        .watchMembers(includeArchived: true, includeCustomFronts: true)
+        .first;
+    final deletedMembers = await widget.repository.watchDeletedMembers().first;
     final existingGroups = await widget.repository.watchGroups().first;
 
     final memberConflicts = <Map<String, Object?>>[];
     final groupConflicts = <Map<String, Object?>>[];
+    final frontConflicts = <Map<String, Object?>>[];
 
-    if (importMembers.isNotEmpty && existingMembers.isNotEmpty) {
-      final dedupe = MemberDedupeIndex([
-        for (final member in existingMembers)
-          ExistingMemberIdentity(
-            localId: member.id,
-            displayName: member.displayName,
-            source: _source,
-            sourceMemberId: member.id,
-            pluralKitId: member.pluralKitId,
-            isCustomFront: member.isCustomFront,
-          ),
-      ]);
+    if (importMembers.isNotEmpty) {
+      final existingIds = {
+        for (final member in existingMembers) member.id,
+        for (final member in deletedMembers) member.id,
+      };
       for (final candidate in importMembers) {
-        final resolution = dedupe.resolve(
-          ImportMemberCandidate(
-            source: _source,
-            displayName: _stringValue(candidate['display_name']) ?? '',
-            sourceMemberId:
-                _stringValue(candidate['source_member_id']) ??
-                (_source == ImportSource.plurisHavenArchive
-                    ? _stringValue(candidate['id'])
-                    : null),
-            pluralKitId: _stringValue(candidate['pluralkit_id']),
-            isCustomFront: candidate['is_custom_front'] == true,
-          ),
-          strategy: ImportConflictStrategy.prompt,
-        );
-        if (resolution.disposition == ImportDedupeDisposition.skipped) {
+        if (existingIds.contains(_stringValue(candidate['id']))) {
           memberConflicts.add(candidate);
         }
       }
     }
 
-    if (importGroups.isNotEmpty && existingGroups.isNotEmpty) {
-      final existingNames = existingGroups
-          .map((g) => g.name.trim().toLowerCase())
-          .toSet();
+    if (importGroups.isNotEmpty) {
+      final existingIds = existingGroups.map((group) => group.id).toSet();
       for (final candidate in importGroups) {
-        final name = _stringValue(candidate['name'])?.trim().toLowerCase();
-        if (name != null && existingNames.contains(name)) {
+        if (existingIds.contains(_stringValue(candidate['id']))) {
           groupConflicts.add(candidate);
+        }
+      }
+    }
+
+    if (importFronts.isNotEmpty) {
+      final existingIds = (await widget.repository.watchFrontHistory().first)
+          .map((front) => front.id)
+          .toSet();
+      for (final candidate in importFronts) {
+        if (existingIds.contains(_stringValue(candidate['id']))) {
+          frontConflicts.add(candidate);
         }
       }
     }
 
     if (memberConflicts.isEmpty &&
         groupConflicts.isEmpty &&
+        frontConflicts.isEmpty &&
         !systemProfileConflict &&
         !preferenceConflict) {
       return const _ConflictPromptResult.noConflicts();
@@ -1085,6 +1079,7 @@ class _ImportExportPageState extends State<ImportExportPage> {
       builder: (context) => _ConflictPromptDialog(
         memberCount: memberConflicts.length,
         groupCount: groupConflicts.length,
+        frontCount: frontConflicts.length,
         systemProfileConflict: systemProfileConflict,
         hasArchivePreferences: hasArchivePreferences,
         preferenceConflict: preferenceConflict,
@@ -1228,6 +1223,7 @@ class _ConflictPromptDialog extends StatelessWidget {
   const _ConflictPromptDialog({
     required this.memberCount,
     required this.groupCount,
+    required this.frontCount,
     required this.systemProfileConflict,
     required this.hasArchivePreferences,
     required this.preferenceConflict,
@@ -1236,6 +1232,7 @@ class _ConflictPromptDialog extends StatelessWidget {
 
   final int memberCount;
   final int groupCount;
+  final int frontCount;
   final bool systemProfileConflict;
   final bool hasArchivePreferences;
   final bool preferenceConflict;
@@ -1250,6 +1247,9 @@ class _ConflictPromptDialog extends StatelessWidget {
     }
     if (groupCount > 0) {
       parts.add(l10n.groupConflictCount(groupCount));
+    }
+    if (frontCount > 0) {
+      parts.add(l10n.frontConflictCount(frontCount));
     }
 
     return AlertDialog(
@@ -1272,11 +1272,12 @@ class _ConflictPromptDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context, ImportConflictStrategy.skip),
           child: Text(l10n.skipMatchesButton),
         ),
-        TextButton(
-          onPressed: () =>
-              Navigator.pop(context, ImportConflictStrategy.create),
-          child: Text(l10n.createDuplicatesButton),
-        ),
+        if (memberCount == 0 && groupCount == 0 && frontCount == 0)
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, ImportConflictStrategy.create),
+            child: Text(l10n.createDuplicatesButton),
+          ),
         FilledButton(
           onPressed: () =>
               Navigator.pop(context, ImportConflictStrategy.update),

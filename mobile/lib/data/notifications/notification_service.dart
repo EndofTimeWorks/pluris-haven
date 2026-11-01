@@ -33,6 +33,8 @@ class NotificationService {
     this._permissionRequester,
     this._triggeredReminderDelivery,
     this._scheduledReminderDelivery,
+    this._scheduledNotificationForTesting,
+    this._cancelNotificationForTesting,
   ]);
   static final NotificationService instance = NotificationService._();
   static const frontStatusNotificationId = 1001;
@@ -43,12 +45,17 @@ class NotificationService {
     required Future<bool> Function() permissionRequester,
     Future<bool> Function()? triggeredReminderDelivery,
     Future<bool> Function()? scheduledReminderDelivery,
+    Future<void> Function(int id, tz.TZDateTime date)?
+    scheduledNotificationForTesting,
+    Future<void> Function(int id)? cancelNotificationForTesting,
   }) {
     return NotificationService._(
       permissionChecker,
       permissionRequester,
       triggeredReminderDelivery,
       scheduledReminderDelivery,
+      scheduledNotificationForTesting,
+      cancelNotificationForTesting,
     );
   }
 
@@ -57,6 +64,9 @@ class NotificationService {
   final Future<bool> Function()? _permissionRequester;
   final Future<bool> Function()? _triggeredReminderDelivery;
   final Future<bool> Function()? _scheduledReminderDelivery;
+  final Future<void> Function(int id, tz.TZDateTime date)?
+  _scheduledNotificationForTesting;
+  final Future<void> Function(int id)? _cancelNotificationForTesting;
   bool _initialized = false;
   bool _setupFailed = false;
 
@@ -138,6 +148,9 @@ class NotificationService {
     return hash == 0 ? 1 : hash;
   }
 
+  int weeklyReminderNotificationId(String reminderId, int weekday) =>
+      reminderNotificationId('weekly:$reminderId:$weekday');
+
   Future<bool> scheduleReminderNotification({
     required String reminderId,
     required String title,
@@ -145,31 +158,33 @@ class NotificationService {
     required TimeOfDay time,
     DateTimeComponents repeat = DateTimeComponents.time,
     int? weekday,
+    int? weekdaysMask,
     int? monthDay,
     required NotificationCopy copy,
   }) async {
+    await cancelReminderNotification(reminderId);
     if (!await notificationsPermitted()) return false;
     final scheduledReminderDelivery = _scheduledReminderDelivery;
     if (scheduledReminderDelivery != null) {
       return scheduledReminderDelivery();
     }
-    if (_plugin == null) return false;
+    if (_plugin == null && _scheduledNotificationForTesting == null) {
+      return false;
+    }
 
-    final id = reminderNotificationId(reminderId);
     final now = tz.TZDateTime.now(tz.local);
-    final scheduledDate = switch (repeat) {
-      DateTimeComponents.dayOfWeekAndTime => nextWeeklyDateForTesting(
-        now,
-        time,
-        weekday ?? now.weekday,
-      ),
-      DateTimeComponents.dayOfMonthAndTime => _nextMonthlyDate(
-        now,
-        time,
-        monthDay ?? now.day,
-      ),
-      _ => nextDailyDateForTesting(now, time),
-    };
+    final weekdays = repeat == DateTimeComponents.dayOfWeekAndTime
+        ? [
+            for (var day = DateTime.monday; day <= DateTime.sunday; day++)
+              if (weekdaysMask == null
+                  ? day == (weekday ?? now.weekday)
+                  : weekdaysMask & (1 << (day - 1)) != 0)
+                day,
+          ]
+        : <int>[];
+    if (repeat == DateTimeComponents.dayOfWeekAndTime && weekdays.isEmpty) {
+      return false;
+    }
 
     final androidDetails = AndroidNotificationDetails(
       'reminders',
@@ -185,20 +200,53 @@ class NotificationService {
     );
     final hideAppleContent = defaultTargetPlatform == TargetPlatform.iOS;
 
-    await _plugin!.zonedSchedule(
-      id: id,
-      title: hideAppleContent ? copy.privateReminderTitle : title,
-      body: hideAppleContent ? null : body,
-      scheduledDate: scheduledDate,
-      notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: repeat,
-    );
+    try {
+      for (final day
+          in repeat == DateTimeComponents.dayOfWeekAndTime
+              ? weekdays
+              : <int>[0]) {
+        final id = day == 0
+            ? reminderNotificationId(reminderId)
+            : weeklyReminderNotificationId(reminderId, day);
+        final scheduledDate = switch (repeat) {
+          DateTimeComponents.dayOfWeekAndTime => nextWeeklyDateForTesting(
+            now,
+            time,
+            day,
+          ),
+          DateTimeComponents.dayOfMonthAndTime => _nextMonthlyDate(
+            now,
+            time,
+            monthDay ?? now.day,
+          ),
+          _ => nextDailyDateForTesting(now, time),
+        };
+        if (_scheduledNotificationForTesting case final schedule?) {
+          await schedule(id, scheduledDate);
+        } else {
+          await _plugin!.zonedSchedule(
+            id: id,
+            title: hideAppleContent ? copy.privateReminderTitle : title,
+            body: hideAppleContent ? null : body,
+            scheduledDate: scheduledDate,
+            notificationDetails: details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: repeat,
+          );
+        }
+      }
+    } on Object {
+      await cancelReminderNotification(reminderId);
+      rethrow;
+    }
     return true;
   }
 
-  Future<void> cancelReminderNotification(String reminderId) {
-    return cancelNotification(reminderNotificationId(reminderId));
+  Future<void> cancelReminderNotification(String reminderId) async {
+    await cancelNotification(reminderNotificationId(reminderId));
+    for (var day = DateTime.monday; day <= DateTime.sunday; day++) {
+      await cancelNotification(weeklyReminderNotificationId(reminderId, day));
+    }
   }
 
   Future<bool> showTriggeredReminderNotification({
@@ -311,6 +359,10 @@ class NotificationService {
   }
 
   Future<void> cancelNotification(int id) async {
+    if (_cancelNotificationForTesting case final cancel?) {
+      await cancel(id);
+      return;
+    }
     await _plugin?.cancel(id: id);
   }
 

@@ -10,6 +10,115 @@ import 'package:pluris_haven/l10n/app_localizations.dart';
 import 'test_repository.dart';
 
 void main() {
+  testWidgets(
+    'weekly day choices and Save remain usable at double text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 700);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(() {
+        tester.view.reset();
+        tester.platformDispatcher.clearTextScaleFactorTestValue();
+      });
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = testRepository(database);
+      await repository.ensureLocalSystem();
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AddReminderSheet(
+              repository: repository,
+              notificationService: NotificationService.forTesting(
+                permissionChecker: () async => false,
+                permissionRequester: () async => false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('reminder-title-field')),
+        'Medication',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('reminder-schedule-kind-field')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Weekly').last);
+      await tester.pumpAndSettle();
+      final friday = find.byKey(const ValueKey('reminder-weekday-5'));
+      await tester.ensureVisible(friday);
+      await tester.tap(friday);
+      final save = find.byKey(const ValueKey('save-reminder-button'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(
+        (await repository.watchReminders().first).single.scheduleDowMask,
+        17,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 10));
+    },
+  );
+
+  testWidgets('enabling an unschedulable reminder warns without losing it', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await repository.saveReminder(
+      const ReminderDraft(
+        title: 'Medication',
+        scheduleText: 'Weekly on Monday at 08:30',
+        scheduleKind: 'weekly',
+        scheduleTime: '08:30',
+        scheduleDowMask: 1,
+        enabled: false,
+      ),
+    );
+    final reminder = (await repository.watchReminders().first).single;
+    final notificationService = NotificationService.forTesting(
+      permissionChecker: () async => true,
+      permissionRequester: () async => true,
+      scheduledReminderDelivery: () async => false,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ReminderTile(
+            reminder: reminder,
+            repository: repository,
+            notificationService: notificationService,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect((await repository.watchReminders().first).single.enabled, isTrue);
+    expect(
+      find.text(
+        'Reminder saved, but its notification could not be set. Check notification settings.',
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('reminder form shows missing title and time at their fields', (
     tester,
   ) async {

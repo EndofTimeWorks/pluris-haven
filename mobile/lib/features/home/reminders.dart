@@ -126,11 +126,23 @@ class ReminderTile extends StatelessWidget {
     Future<void> setEnabled(bool enabled) async {
       await repository.setReminderEnabled(reminder.id, enabled);
       if (enabled) {
-        await scheduleReminderSummary(reminder.copyWithEnabled(), l10n);
+        var scheduled = false;
+        try {
+          scheduled = await scheduleReminderSummary(
+            reminder.copyWithEnabled(),
+            l10n,
+            notificationService: notificationService,
+          );
+        } on Object {
+          // The reminder stays saved; show the delivery failure to the user.
+        }
+        if (!scheduled && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.reminderSavedNotificationFailed)),
+          );
+        }
       } else {
-        await NotificationService.instance.cancelReminderNotification(
-          reminder.id,
-        );
+        await notificationService.cancelReminderNotification(reminder.id);
       }
     }
 
@@ -207,8 +219,9 @@ class ReminderTile extends StatelessWidget {
                   title: l10n.deleteReminderTitle,
                   body: l10n.deleteReminderBody,
                   onDelete: () async {
-                    await NotificationService.instance
-                        .cancelReminderNotification(reminder.id);
+                    await notificationService.cancelReminderNotification(
+                      reminder.id,
+                    );
                     await repository.deleteReminder(reminder.id);
                   },
                 ),
@@ -283,13 +296,14 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   final _timeController = TextEditingController(text: '09:00');
   final _afterFrontDelayController = TextEditingController(text: '0');
   ReminderScheduleKind _scheduleKind = ReminderScheduleKind.daily;
-  String _weekday = 'Monday';
+  Set<int> _weekdays = {DateTime.monday};
   int _monthDay = 1;
   String? _triggerMemberId;
   String? _triggerMemberName;
   bool _invalidTitle = false;
   bool _invalidTime = false;
   bool _invalidDelay = false;
+  bool _invalidWeekdays = false;
   bool _isSaving = false;
   late String _initialSignature;
 
@@ -301,7 +315,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
     _timeController.text,
     _afterFrontDelayController.text,
     _scheduleKind.storageValue,
-    _weekday,
+    (_weekdays.toList()..sort()),
     _monthDay,
     _triggerMemberId,
   ]);
@@ -336,19 +350,12 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         ReminderScheduleKind.fromStorage(reminder.scheduleKind) ??
         _kindFromScheduleText(reminder.scheduleText) ??
         ReminderScheduleKind.daily;
-    final weekday =
-        _weekdayFromMask(reminder.scheduleDowMask) ??
-        _weekdayFromScheduleText(reminder.scheduleText);
-    if (weekday != null) {
-      _weekday = const [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday',
-      ][weekday - 1];
+    final weekdays = _weekdaysFromMask(reminder.scheduleDowMask);
+    if (weekdays.isNotEmpty) {
+      _weekdays = weekdays;
+    } else if (_weekdayFromScheduleText(reminder.scheduleText)
+        case final day?) {
+      _weekdays = {day};
     }
     _monthDay =
         reminder.scheduleDom ??
@@ -433,35 +440,32 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             ),
             const SizedBox(height: 10),
             if (_scheduleKind == ReminderScheduleKind.weekly) ...[
-              DropdownButtonFormField<String>(
+              Text(l10n.daysFieldLabel),
+              Wrap(
                 key: const ValueKey('reminder-weekday-field'),
-                isExpanded: true,
-                initialValue: _weekday,
-                decoration: InputDecoration(labelText: l10n.dayFieldLabel),
-                items: [
-                  DropdownMenuItem(value: 'Monday', child: Text(l10n.monday)),
-                  DropdownMenuItem(value: 'Tuesday', child: Text(l10n.tuesday)),
-                  DropdownMenuItem(
-                    value: 'Wednesday',
-                    child: Text(l10n.wednesday),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Thursday',
-                    child: Text(l10n.thursday),
-                  ),
-                  DropdownMenuItem(value: 'Friday', child: Text(l10n.friday)),
-                  DropdownMenuItem(
-                    value: 'Saturday',
-                    child: Text(l10n.saturday),
-                  ),
-                  DropdownMenuItem(value: 'Sunday', child: Text(l10n.sunday)),
+                spacing: 6,
+                children: [
+                  for (var day = DateTime.monday; day <= DateTime.sunday; day++)
+                    FilterChip(
+                      key: ValueKey('reminder-weekday-$day'),
+                      label: Text(_localisedWeekdayNumber(l10n, day)),
+                      selected: _weekdays.contains(day),
+                      onSelected: (selected) => setState(() {
+                        if (selected) {
+                          _weekdays.add(day);
+                        } else {
+                          _weekdays.remove(day);
+                        }
+                        _invalidWeekdays = false;
+                      }),
+                    ),
                 ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _weekday = value);
-                  }
-                },
               ),
+              if (_invalidWeekdays)
+                Text(
+                  l10n.selectAtLeastOneWeekdayError,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               const SizedBox(height: 10),
             ],
             if (_scheduleKind == ReminderScheduleKind.monthly) ...[
@@ -624,6 +628,10 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       setState(() => _invalidDelay = true);
       return;
     }
+    if (_scheduleKind == ReminderScheduleKind.weekly && _weekdays.isEmpty) {
+      setState(() => _invalidWeekdays = true);
+      return;
+    }
     if (_scheduleKind != ReminderScheduleKind.afterFront &&
         _parseTime(_timeController.text.trim()) == null) {
       setState(() => _invalidTime = true);
@@ -655,7 +663,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           scheduleKind: _scheduleKind.storageValue,
           scheduleTime: scheduleTime,
           scheduleDowMask: _scheduleKind == ReminderScheduleKind.weekly
-              ? _weekdayMask(_weekdayNumber(_weekday))
+              ? _weekdaysMask(_weekdays)
               : null,
           scheduleDom: _scheduleKind == ReminderScheduleKind.monthly
               ? _monthDay
@@ -703,33 +711,40 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         await widget.notificationService.cancelReminderNotification(reminderId);
       }
       final time = _parseTime(scheduleTime ?? '');
+      var notificationScheduled = true;
       if (time != null &&
           _scheduleKind != ReminderScheduleKind.afterFront &&
           (widget.reminder?.enabled ?? true)) {
-        await widget.notificationService.scheduleReminderNotification(
-          reminderId: reminderId,
-          title: title,
-          body: body.isEmpty ? null : body,
-          time: time,
-          repeat: switch (_scheduleKind) {
-            ReminderScheduleKind.weekly => DateTimeComponents.dayOfWeekAndTime,
-            ReminderScheduleKind.monthly =>
-              DateTimeComponents.dayOfMonthAndTime,
-            _ => DateTimeComponents.time,
-          },
-          weekday: _scheduleKind == ReminderScheduleKind.weekly
-              ? _weekdayNumber(_weekday)
-              : null,
-          monthDay: _scheduleKind == ReminderScheduleKind.monthly
-              ? _monthDay
-              : null,
-          copy: _notificationCopy(l10n),
-        );
+        notificationScheduled = await widget.notificationService
+            .scheduleReminderNotification(
+              reminderId: reminderId,
+              title: title,
+              body: body.isEmpty ? null : body,
+              time: time,
+              repeat: switch (_scheduleKind) {
+                ReminderScheduleKind.weekly =>
+                  DateTimeComponents.dayOfWeekAndTime,
+                ReminderScheduleKind.monthly =>
+                  DateTimeComponents.dayOfMonthAndTime,
+                _ => DateTimeComponents.time,
+              },
+              weekdaysMask: _scheduleKind == ReminderScheduleKind.weekly
+                  ? _weekdaysMask(_weekdays)
+                  : null,
+              monthDay: _scheduleKind == ReminderScheduleKind.monthly
+                  ? _monthDay
+                  : null,
+              copy: _notificationCopy(l10n),
+            );
       }
       if (mounted) Navigator.pop(context);
       if (!notificationPermission) {
         messenger.showSnackBar(
           SnackBar(content: Text(l10n.notificationsPermissionDeniedBody)),
+        );
+      } else if (!notificationScheduled) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.reminderSavedNotificationFailed)),
         );
       }
     } on Object {
@@ -775,8 +790,8 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         time.isEmpty ? l10n.dailySchedule : l10n.dailyScheduleAt(time),
       ReminderScheduleKind.weekly =>
         time.isEmpty
-            ? '${l10n.weeklySchedule} ${_localisedWeekday(l10n, _weekday)}'
-            : l10n.weeklyScheduleAt(_localisedWeekday(l10n, _weekday), time),
+            ? '${l10n.weeklySchedule} ${_weekdaysLabel(l10n, _weekdays)}'
+            : l10n.weeklyScheduleAt(_weekdaysLabel(l10n, _weekdays), time),
       ReminderScheduleKind.monthly =>
         time.isEmpty
             ? '${l10n.monthlySchedule} ${l10n.dayFieldLabel.toLowerCase()} $_monthDay'
@@ -920,41 +935,47 @@ extension on ReminderSummary {
   }
 }
 
-Future<void> scheduleReminderSummary(
+Future<bool> scheduleReminderSummary(
   ReminderSummary reminder,
-  AppLocalizations l10n,
-) async {
-  if (!reminder.enabled) return;
+  AppLocalizations l10n, {
+  NotificationService? notificationService,
+}) async {
+  if (!reminder.enabled) return false;
   final kind =
       ReminderScheduleKind.fromStorage(reminder.scheduleKind) ??
       _kindFromScheduleText(reminder.scheduleText);
-  if (kind == null || kind == ReminderScheduleKind.afterFront) return;
+  if (kind == ReminderScheduleKind.afterFront) return true;
+  if (kind == null) return false;
 
   final time = _parseReminderTime(
     reminder.scheduleTime ?? _timeFromScheduleText(reminder.scheduleText) ?? '',
   );
-  if (time == null) return;
+  if (time == null) return false;
 
-  await NotificationService.instance.scheduleReminderNotification(
-    reminderId: reminder.id,
-    title: reminder.title,
-    body: reminder.body,
-    time: time,
-    repeat: switch (kind) {
-      ReminderScheduleKind.weekly => DateTimeComponents.dayOfWeekAndTime,
-      ReminderScheduleKind.monthly => DateTimeComponents.dayOfMonthAndTime,
-      _ => DateTimeComponents.time,
-    },
-    weekday: kind == ReminderScheduleKind.weekly
-        ? _weekdayFromMask(reminder.scheduleDowMask) ??
-              _weekdayFromScheduleText(reminder.scheduleText)
-        : null,
-    monthDay: kind == ReminderScheduleKind.monthly
-        ? reminder.scheduleDom ??
-              _monthDayFromScheduleText(reminder.scheduleText)
-        : null,
-    copy: _notificationCopy(l10n),
-  );
+  return (notificationService ?? NotificationService.instance)
+      .scheduleReminderNotification(
+        reminderId: reminder.id,
+        title: reminder.title,
+        body: reminder.body,
+        time: time,
+        repeat: switch (kind) {
+          ReminderScheduleKind.weekly => DateTimeComponents.dayOfWeekAndTime,
+          ReminderScheduleKind.monthly => DateTimeComponents.dayOfMonthAndTime,
+          _ => DateTimeComponents.time,
+        },
+        weekday: kind == ReminderScheduleKind.weekly
+            ? _weekdayFromMask(reminder.scheduleDowMask) ??
+                  _weekdayFromScheduleText(reminder.scheduleText)
+            : null,
+        weekdaysMask: kind == ReminderScheduleKind.weekly
+            ? reminder.scheduleDowMask
+            : null,
+        monthDay: kind == ReminderScheduleKind.monthly
+            ? reminder.scheduleDom ??
+                  _monthDayFromScheduleText(reminder.scheduleText)
+            : null,
+        copy: _notificationCopy(l10n),
+      );
 }
 
 Future<void> deliverAfterFrontReminders(
@@ -1037,6 +1058,33 @@ int _weekdayNumber(String weekday) {
 int _weekdayMask(int weekday) {
   return 1 << (weekday - 1);
 }
+
+int _weekdaysMask(Set<int> weekdays) =>
+    weekdays.fold(0, (mask, weekday) => mask | _weekdayMask(weekday));
+
+Set<int> _weekdaysFromMask(int? mask) => {
+  for (var weekday = DateTime.monday; weekday <= DateTime.sunday; weekday++)
+    if (mask != null && (mask & _weekdayMask(weekday)) != 0) weekday,
+};
+
+String _weekdaysLabel(AppLocalizations l10n, Set<int> weekdays) => [
+  for (var weekday = DateTime.monday; weekday <= DateTime.sunday; weekday++)
+    if (weekdays.contains(weekday)) _localisedWeekdayNumber(l10n, weekday),
+].join(', ');
+
+String _localisedWeekdayNumber(AppLocalizations l10n, int weekday) =>
+    _localisedWeekday(
+      l10n,
+      const [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ][weekday - 1],
+    );
 
 int? _weekdayFromMask(int? mask) {
   if (mask == null) return null;

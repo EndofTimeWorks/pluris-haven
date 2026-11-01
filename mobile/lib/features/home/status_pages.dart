@@ -19,6 +19,17 @@ class LocalPrivacyPage extends StatelessWidget {
         final l10n = AppLocalizations.of(context);
         final scheme = Theme.of(context).colorScheme;
         final buckets = snapshot.data ?? const <PrivacyBucketSummary>[];
+        String accessibleBucketName(PrivacyBucketSummary bucket) {
+          final duplicates = buckets.where(
+            (item) =>
+                item.name.trim().toLowerCase() ==
+                bucket.name.trim().toLowerCase(),
+          );
+          if (duplicates.length < 2) return bucket.name;
+          final id = bucket.id;
+          return '${bucket.name} (${id.substring(id.length > 8 ? id.length - 8 : 0)})';
+        }
+
         return SpPage(
           children: [
             SpCard(
@@ -71,7 +82,7 @@ class LocalPrivacyPage extends StatelessWidget {
                             children: [
                               IconButton(
                                 tooltip: l10n.editPrivacyBucketNamed(
-                                  bucket.name,
+                                  accessibleBucketName(bucket),
                                 ),
                                 icon: const Icon(Icons.edit_outlined),
                                 onPressed: () => showPrivacyBucketEditor(
@@ -81,7 +92,9 @@ class LocalPrivacyPage extends StatelessWidget {
                                 ),
                               ),
                               IconButton(
-                                tooltip: l10n.deleteNamedItem(bucket.name),
+                                tooltip: l10n.deleteNamedItem(
+                                  accessibleBucketName(bucket),
+                                ),
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: () => confirmDelete(
                                   context,

@@ -143,6 +143,12 @@ class LocalReminderStore {
     final title = draft.title.trim();
     final scheduleText = draft.scheduleText.trim();
     if (title.isEmpty || scheduleText.isEmpty) return null;
+    if (draft.scheduleKind == 'weekly' &&
+        (draft.scheduleDowMask == null ||
+            draft.scheduleDowMask! < 1 ||
+            draft.scheduleDowMask! > 0x7f)) {
+      throw const FormatException('Select at least one valid weekday.');
+    }
 
     final now = DateTime.now().toUtc();
     final id = reminderId ?? newLocalId('reminder');

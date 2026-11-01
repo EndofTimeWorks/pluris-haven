@@ -228,13 +228,16 @@ void main() {
   testWidgets('shows recovery guidance when startup crypto is corrupt', (
     tester,
   ) async {
-    final database = _TrackingDatabase();
+    var databaseOpens = 0;
 
     await tester.pumpWidget(
       BootstrapApp(
         dependencies: BootstrapDependencies(
-          openDatabase: () => database,
-          loadCrypto: () async => throw const FormatException('bad key'),
+          openDatabase: () {
+            databaseOpens++;
+            return _TrackingDatabase();
+          },
+          loadCrypto: () async => throw const CorruptMasterKeyException(),
         ),
       ),
     );
@@ -242,9 +245,55 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(database.closed, isTrue);
-    expect(find.byType(LocalMigrationFailureApp), findsOneWidget);
+    expect(databaseOpens, 0);
+    expect(find.byType(CorruptMasterKeyApp), findsOneWidget);
+    expect(find.text('How to restore an encrypted archive'), findsOneWidget);
+    await tester.tap(find.text('How to restore an encrypted archive'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('On a fresh installation'), findsOneWidget);
+    expect(find.textContaining('Keep this device'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('temporary key-store failure can retry without opening data', (
+    tester,
+  ) async {
+    final databases = <_TrackingDatabase>[];
+    var attempts = 0;
+    await tester.pumpWidget(
+      BootstrapApp(
+        dependencies: BootstrapDependencies(
+          openDatabase: () {
+            final database = _TrackingDatabase();
+            databases.add(database);
+            return database;
+          },
+          loadCrypto: () async {
+            attempts++;
+            if (attempts == 1) {
+              throw PlatformException(code: 'keyring_locked');
+            }
+            return testCrypto();
+          },
+          runMigrations: (_) async {},
+          retireLegacyLocalApi: (_) async {},
+          startServices: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(KeyStoreUnavailableApp), findsOneWidget);
+    expect(databases, isEmpty);
+    expect(find.textContaining('files have not been replaced'), findsOneWidget);
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(attempts, 2);
+    expect(databases, hasLength(1));
+    expect(find.byType(PlurisHavenApp), findsOneWidget);
+    await databases.single.close();
   });
 
   testWidgets('retries local startup after a migration failure', (
@@ -312,7 +361,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(databases.single.closed, isTrue);
+    expect(databases, isEmpty);
     expect(find.text('Encryption key unavailable'), findsOneWidget);
     expect(
       find.textContaining('clearing storage may lose data'),
@@ -322,7 +371,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(attempts, 2);
     expect(find.byType(PlurisHavenApp), findsOneWidget);
-    expect(databases, hasLength(2));
+    expect(databases, hasLength(1));
     expect(databases.last.closed, isFalse);
     await databases.last.close();
   });
@@ -2811,6 +2860,31 @@ void main() {
     expect(report, isNot(contains('current front:')));
   });
 
+  testWidgets('duplicate privacy bucket actions include stable IDs', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository._privacyBuckets = const [
+      PrivacyBucketSummary(id: 'bucket-one12345', name: 'Trusted'),
+      PrivacyBucketSummary(id: 'bucket-two67890', name: 'Trusted'),
+    ];
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Privacy buckets');
+
+    expect(
+      find.byTooltip('Edit privacy bucket Trusted (one12345)'),
+      findsOneWidget,
+    );
+    expect(
+      find.byTooltip('Edit privacy bucket Trusted (two67890)'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Delete Trusted (one12345)'), findsOneWidget);
+    expect(find.byTooltip('Delete Trusted (two67890)'), findsOneWidget);
+  });
+
   testWidgets('privacy bucket picker distinguishes duplicate member names', (
     tester,
   ) async {
@@ -4414,9 +4488,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Weekly').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('reminder-weekday-field')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Friday').last);
+    await tester.tap(find.byKey(const ValueKey('reminder-weekday-5')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reminder-time-field')),
@@ -4430,13 +4502,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Medication'), findsOneWidget);
-    expect(find.textContaining('Weekly on Friday at'), findsOneWidget);
+    expect(find.textContaining('Weekly on Monday, Friday at'), findsOneWidget);
     expect(find.textContaining('8:30'), findsOneWidget);
     expect(find.text('With water'), findsOneWidget);
     expect(find.text('on'), findsOneWidget);
     expect(repository._reminders.single.scheduleKind, 'weekly');
     expect(repository._reminders.single.scheduleTime, '08:30');
-    expect(repository._reminders.single.scheduleDowMask, 1 << 4);
+    expect(repository._reminders.single.scheduleDowMask, (1 << 0) | (1 << 4));
 
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
@@ -4570,6 +4642,40 @@ void main() {
 
     expect(repository._reminders, hasLength(1));
     expect(find.byKey(const ValueKey('reminder-title-field')), findsNothing);
+    expect(
+      find.text(
+        'Reminder saved, but its notification could not be set. Check notification settings.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unscheduled reminder reports notification failure', (
+    tester,
+  ) async {
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Reminders');
+    showAddReminderSheet(
+      tester.element(find.byType(RemindersPage)),
+      repository,
+      notificationService: NotificationService.forTesting(
+        permissionChecker: () async => true,
+        permissionRequester: () async => true,
+        scheduledReminderDelivery: () async => false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reminder-title-field')),
+      'Medication',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-reminder-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository._reminders, hasLength(1));
     expect(
       find.text(
         'Reminder saved, but its notification could not be set. Check notification settings.',
@@ -5406,6 +5512,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     final before = tester.getCenter(toggle);
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const ValueKey('shortcut-up-groups')))
+          .tooltip,
+      'Move up: Groups',
+    );
     await tester.tap(toggle);
     await tester.pumpAndSettle();
     expect((tester.getCenter(toggle).dy - before.dy).abs(), lessThan(30));
@@ -5873,6 +5985,150 @@ void main() {
     await _pumpUntilFound(tester, find.textContaining('Import complete'));
     expect(find.text('Conflicts found'), findsNothing);
     expect(repository._backgroundJobs, hasLength(1));
+  });
+
+  testWidgets('archived member identity still requires an import choice', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository.seedMember(
+      const MemberSummary(
+        id: 'archived-member',
+        displayName: 'Kai',
+        archived: true,
+      ),
+    );
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(
+      find.byType(DropdownButtonFormField<ImportConflictStrategy>),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create new records').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'system': {'id': 'local-system', 'name': 'Local system'},
+        'members': [
+          {'id': 'archived-member', 'display_name': 'Kai renamed'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.text('Conflicts found'));
+    expect(
+      find.textContaining('1 member from this Pluris Haven archive'),
+      findsOneWidget,
+    );
+    expect(find.text('Create duplicates'), findsNothing);
+  });
+
+  testWidgets('matching front history IDs cannot be silently duplicated', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository._frontHistory = [
+      FrontHistoryEntry(
+        id: 'front-existing',
+        label: 'Kai',
+        startedAt: DateTime.utc(2026, 10, 1),
+      ),
+    ];
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'system': {'id': 'local-system', 'name': 'Local system'},
+        'fronts': [
+          {'id': 'front-existing', 'started_at': '2026-10-01T00:00:00Z'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.text('Conflicts found'));
+    expect(find.textContaining('1 front-history entry'), findsOneWidget);
+    expect(find.text('Create duplicates'), findsNothing);
+    expect(repository._backgroundJobs, isEmpty);
+  });
+
+  testWidgets('distinct group IDs do not conflict just because names match', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeHavenRepository(_testHomeSnapshot);
+    addTearDown(repository.close);
+    repository._groups = const [GroupSummary(id: 'old-group', name: 'Family')];
+    await tester.pumpWidget(PlurisHavenApp(repository: repository));
+    await tester.pump();
+    await openDrawerSection(tester, 'Import / Export');
+    await tester.tap(find.byKey(const ValueKey('paste-import-json-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('paste-import-json-field')),
+      jsonEncode({
+        'format': 'pluris_haven.local_archive',
+        'version': 1,
+        'system': {'id': 'local-system', 'name': 'Local system'},
+        'groups': [
+          {'id': 'new-group', 'name': 'Family'},
+        ],
+      }),
+    );
+    await tester.tap(find.text('Preview pasted JSON'));
+    await _pumpUntilFound(tester, find.textContaining('Preview ready'));
+    final importButton = find.byKey(const ValueKey('import-archive-button'));
+    await tester.scrollUntilVisible(
+      importButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pumpAndSettle();
+    await tester.tap(importButton);
+    await _pumpUntilFound(tester, find.textContaining('Import complete'));
+    expect(find.text('Conflicts found'), findsNothing);
   });
 
   testWidgets('changed archive preferences require a conflict choice', (
@@ -6635,10 +6891,7 @@ class FakeHavenRepository implements HavenRepository {
               _notificationEventsController.add(_notificationEvents),
         );
     _frontHistoryController =
-        StreamController<List<FrontHistoryEntry>>.broadcast(
-          sync: true,
-          onListen: () => _frontHistoryController.add(_frontHistory),
-        );
+        StreamController<List<FrontHistoryEntry>>.broadcast(sync: true);
     _backgroundJobsController =
         StreamController<List<BackgroundJobSummary>>.broadcast(
           sync: true,
@@ -6861,8 +7114,11 @@ class FakeHavenRepository implements HavenRepository {
   }
 
   @override
-  Stream<List<FrontHistoryEntry>> watchFrontHistory() {
-    return _frontHistoryController.stream.map(List.unmodifiable);
+  Stream<List<FrontHistoryEntry>> watchFrontHistory() async* {
+    yield List.unmodifiable(_frontHistory);
+    await for (final entries in _frontHistoryController.stream) {
+      yield List.unmodifiable(entries);
+    }
   }
 
   @override

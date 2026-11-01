@@ -1896,6 +1896,18 @@ abstract class AppLocalizations {
   /// **'Day'**
   String get dayFieldLabel;
 
+  /// No description provided for @daysFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get daysFieldLabel;
+
+  /// No description provided for @selectAtLeastOneWeekdayError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one day.'**
+  String get selectAtLeastOneWeekdayError;
+
   /// No description provided for @dayOfMonthFieldLabel.
   ///
   /// In en, this message translates to:
@@ -2327,6 +2339,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.'**
   String get encryptionKeyUnavailableBody;
+
+  /// No description provided for @keyStoreTemporarilyUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encryption key temporarily unavailable'**
+  String get keyStoreTemporarilyUnavailableTitle;
+
+  /// No description provided for @keyStoreTemporarilyUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock your device or keyring, then try again. Your local files have not been replaced.'**
+  String get keyStoreTemporarilyUnavailableBody;
+
+  /// No description provided for @corruptEncryptionKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encryption key cannot be read'**
+  String get corruptEncryptionKeyTitle;
+
+  /// No description provided for @corruptEncryptionKeyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has an invalid encryption key. Keep the app files. Restore a password-protected archive on a fresh installation or another device.'**
+  String get corruptEncryptionKeyBody;
+
+  /// No description provided for @restoreFromEncryptedArchiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How to restore an encrypted archive'**
+  String get restoreFromEncryptedArchiveLabel;
+
+  /// No description provided for @recoveryArchiveStepsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'On a fresh installation, open Import / Export, choose the encrypted archive and enter its recovery code. Keep this device and its files until you have checked the restored data.'**
+  String get recoveryArchiveStepsBody;
 
   /// No description provided for @waitingForEncryptionKeyTitle.
   ///
@@ -4344,6 +4392,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 group} other{{count} groups}}'**
   String groupConflictCount(int count);
+
+  /// No description provided for @frontConflictCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 front-history entry} other{{count} front-history entries}}'**
+  String frontConflictCount(int count);
 
   /// No description provided for @listAnd.
   ///

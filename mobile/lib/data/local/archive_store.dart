@@ -1001,6 +1001,38 @@ extension LocalHavenRepositoryArchive on LocalHavenRepository {
       }
 
       await database.transaction(() async {
+        if (strategy == ImportConflictStrategy.create &&
+            (members.isNotEmpty || groups.isNotEmpty || fronts.isNotEmpty)) {
+          final existingMemberIds = members.isEmpty
+              ? <String>{}
+              : (await database.select(database.members).get())
+                    .map((member) => member.id)
+                    .toSet();
+          final existingGroupIds = groups.isEmpty
+              ? <String>{}
+              : (await database.select(database.systemGroups).get())
+                    .map((group) => group.id)
+                    .toSet();
+          final existingFrontIds = fronts.isEmpty
+              ? <String>{}
+              : (await database.select(database.frontSessions).get())
+                    .map((front) => front.id)
+                    .toSet();
+          if (members.any(
+                (member) =>
+                    existingMemberIds.contains(_stringValue(member['id'])),
+              ) ||
+              groups.any(
+                (group) => existingGroupIds.contains(_stringValue(group['id'])),
+              ) ||
+              fronts.any(
+                (front) => existingFrontIds.contains(_stringValue(front['id'])),
+              )) {
+            throw const FormatException(
+              'A member, group or front with the same archive ID already exists. Choose Skip matches or Update existing, or restore into a fresh installation.',
+            );
+          }
+        }
         if (importSystemProfile) {
           final name = _stringValue(systemRecord['name'])?.trim();
           if (name != null && name.isNotEmpty) {

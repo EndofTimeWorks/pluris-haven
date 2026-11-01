@@ -107,7 +107,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   LocalHavenRepository? _repository;
   ServerAccountController? _serverAccount;
   LocalApiController? _localApi;
-  var _missingMasterKey = false;
+  _KeyFailure? _keyFailure;
   var _retryingStartup = false;
   var _waitingForKey = false;
   Object? _startupError;
@@ -121,7 +121,6 @@ class _BootstrapAppState extends State<BootstrapApp> {
   }
 
   Future<void> _openLocalArchive() async {
-    final database = widget.dependencies.openDatabase();
     final keyLoadTimer = Timer(widget.dependencies.keyLoadWarningDelay, () {
       if (mounted) setState(() => _waitingForKey = true);
     });
@@ -129,8 +128,24 @@ class _BootstrapAppState extends State<BootstrapApp> {
     try {
       crypto = await widget.dependencies.loadCrypto();
     } on MissingMasterKeyException {
-      await database.close();
-      if (mounted) setState(() => _missingMasterKey = true);
+      if (mounted) setState(() => _keyFailure = _KeyFailure.missing);
+      return;
+    } on CorruptMasterKeyException {
+      if (mounted) setState(() => _keyFailure = _KeyFailure.corrupt);
+      return;
+    } on SecureStorageUpgradeException catch (error, stackTrace) {
+      appDebugLog(
+        'Secure storage upgrade could not load the encryption key',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        setState(
+          () => _keyFailure = error.status.hasDataLoss
+              ? _KeyFailure.corrupt
+              : _KeyFailure.unavailable,
+        );
+      }
       return;
     } on Object catch (error, stackTrace) {
       appDebugLog(
@@ -138,8 +153,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
         error: error,
         stackTrace: stackTrace,
       );
-      await database.close();
-      if (mounted) setState(() => _startupError = error);
+      if (mounted) setState(() => _keyFailure = _KeyFailure.unavailable);
       return;
     } finally {
       keyLoadTimer.cancel();
@@ -147,7 +161,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
         setState(() => _waitingForKey = false);
       }
     }
+    AppDatabase? database;
     try {
+      database = widget.dependencies.openDatabase();
       final repository = widget.dependencies.createRepository(database, crypto);
       await widget.dependencies.runMigrations(repository);
       final localApi = widget.dependencies.createLocalApi(repository);
@@ -168,7 +184,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
         error: error,
         stackTrace: stackTrace,
       );
-      await database.close();
+      await database?.close();
       if (mounted) setState(() => _startupError = error);
       return;
     }
@@ -192,7 +208,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
     if (_retryingStartup) return;
     _retryingStartup = true;
     setState(() {
-      _missingMasterKey = false;
+      _keyFailure = null;
       _startupError = null;
     });
     unawaited(_openLocalArchive().whenComplete(() => _retryingStartup = false));
@@ -206,8 +222,15 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_missingMasterKey) {
-      return MissingMasterKeyApp(onRetry: _retryStartup);
+    switch (_keyFailure) {
+      case _KeyFailure.missing:
+        return MissingMasterKeyApp(onRetry: _retryStartup);
+      case _KeyFailure.corrupt:
+        return CorruptMasterKeyApp(onRetry: _retryStartup);
+      case _KeyFailure.unavailable:
+        return KeyStoreUnavailableApp(onRetry: _retryStartup);
+      case null:
+        break;
     }
     if (_startupError != null) {
       return LocalMigrationFailureApp(onRetry: _retryStartup);
@@ -227,6 +250,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
     );
   }
 }
+
+enum _KeyFailure { missing, corrupt, unavailable }
 
 class WaitingForKeyApp extends StatelessWidget {
   const WaitingForKeyApp({super.key});
@@ -304,6 +329,51 @@ class MissingMasterKeyApp extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.encryptionKeyUnavailableTitle,
+    body: (l10n) => l10n.encryptionKeyUnavailableBody,
+  );
+}
+
+class CorruptMasterKeyApp extends StatelessWidget {
+  const CorruptMasterKeyApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.corruptEncryptionKeyTitle,
+    body: (l10n) => l10n.corruptEncryptionKeyBody,
+  );
+}
+
+class KeyStoreUnavailableApp extends StatelessWidget {
+  const KeyStoreUnavailableApp({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => _KeyRecoveryApp(
+    onRetry: onRetry,
+    title: (l10n) => l10n.keyStoreTemporarilyUnavailableTitle,
+    body: (l10n) => l10n.keyStoreTemporarilyUnavailableBody,
+  );
+}
+
+class _KeyRecoveryApp extends StatelessWidget {
+  const _KeyRecoveryApp({
+    required this.onRetry,
+    required this.title,
+    required this.body,
+  });
+
+  final VoidCallback onRetry;
+  final String Function(AppLocalizations) title;
+  final String Function(AppLocalizations) body;
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       supportedLocales: supportedLanguageLocales,
@@ -318,25 +388,42 @@ class MissingMasterKeyApp extends StatelessWidget {
           final l10n = AppLocalizations.of(context);
           return Scaffold(
             body: SafeArea(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      l10n.encryptionKeyUnavailableTitle,
+                      title(l10n),
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(l10n.encryptionKeyUnavailableBody),
+                    Text(body(l10n)),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: onRetry,
                       child: Text(l10n.tryAgainButton),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(l10n.restoreFromEncryptedArchiveLabel),
+                          content: Text(l10n.recoveryArchiveStepsBody),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(l10n.okButtonLabel),
+                            ),
+                          ],
+                        ),
+                      ),
+                      child: Text(l10n.restoreFromEncryptedArchiveLabel),
                     ),
                   ],
                 ),

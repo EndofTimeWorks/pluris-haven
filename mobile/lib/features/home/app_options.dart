@@ -1099,13 +1099,13 @@ class DashboardShortcutRow extends StatelessWidget {
           ),
           IconButton(
             key: ValueKey('shortcut-up-${shortcut.id}'),
-            tooltip: l10n.moveUpTooltip,
+            tooltip: '${l10n.moveUpTooltip}: ${shortcut.title(l10n)}',
             onPressed: visible && canMoveUp ? onMoveUp : null,
             icon: const Icon(Icons.keyboard_arrow_up_rounded),
           ),
           IconButton(
             key: ValueKey('shortcut-down-${shortcut.id}'),
-            tooltip: l10n.moveDownTooltip,
+            tooltip: '${l10n.moveDownTooltip}: ${shortcut.title(l10n)}',
             onPressed: visible && canMoveDown ? onMoveDown : null,
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),

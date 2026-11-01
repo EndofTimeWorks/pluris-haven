@@ -1014,6 +1014,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dayFieldLabel => 'Day';
 
   @override
+  String get daysFieldLabel => 'Days';
+
+  @override
+  String get selectAtLeastOneWeekdayError => 'Select at least one day.';
+
+  @override
   String get dayOfMonthFieldLabel => 'Day of month';
 
   @override
@@ -1284,6 +1290,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get encryptionKeyUnavailableBody =>
       'This device cannot read its local encryption key. If your keyring is locked, unlock it and try again. Keep the app\'s files: clearing storage may lose data. A password-protected Pluris Haven archive can be restored on another device.';
+
+  @override
+  String get keyStoreTemporarilyUnavailableTitle =>
+      'Encryption key temporarily unavailable';
+
+  @override
+  String get keyStoreTemporarilyUnavailableBody =>
+      'Unlock your device or keyring, then try again. Your local files have not been replaced.';
+
+  @override
+  String get corruptEncryptionKeyTitle => 'Encryption key cannot be read';
+
+  @override
+  String get corruptEncryptionKeyBody =>
+      'This device has an invalid encryption key. Keep the app files. Restore a password-protected archive on a fresh installation or another device.';
+
+  @override
+  String get restoreFromEncryptedArchiveLabel =>
+      'How to restore an encrypted archive';
+
+  @override
+  String get recoveryArchiveStepsBody =>
+      'On a fresh installation, open Import / Export, choose the encrypted archive and enter its recovery code. Keep this device and its files until you have checked the restored data.';
 
   @override
   String get waitingForEncryptionKeyTitle => 'Waiting for encryption key';
@@ -2534,6 +2563,17 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count groups',
       one: '1 group',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String frontConflictCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count front-history entries',
+      one: '1 front-history entry',
     );
     return '$_temp0';
   }

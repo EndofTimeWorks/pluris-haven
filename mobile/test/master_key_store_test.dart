@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pluris_haven/data/security/master_key_store.dart';
 
@@ -78,17 +79,135 @@ void main() {
     final storage = MemorySecureValueStore()
       ..values['pluris_haven.master_key.v1'] = 'aW52YWxpZA==';
 
-    expect(
+    await expectLater(
       HavenMasterKeyStore(storage: storage).loadOrCreateCrypto,
-      throwsFormatException,
+      throwsA(isA<CorruptMasterKeyException>()),
     );
+  });
+
+  test('does not replace an empty stored key', () async {
+    final storage = MemorySecureValueStore()
+      ..values['pluris_haven.master_key.v1'] = '';
+    await expectLater(
+      HavenMasterKeyStore(storage: storage).loadOrCreateCrypto,
+      throwsA(isA<CorruptMasterKeyException>()),
+    );
+    expect(storage.values['pluris_haven.master_key.v1'], '');
+  });
+
+  test(
+    'temporary secure-storage read failure preserves the original key',
+    () async {
+      final storage = _FailingReadStorage();
+      final provisioned = MemoryMasterKeyProvisioningStore();
+      final originalCrypto = await HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: provisioned,
+      ).loadOrCreateCrypto();
+      final ciphertext = await originalCrypto.encrypt('Kai');
+      final savedKey = storage.values['pluris_haven.master_key.v1'];
+      storage.failNextRead = true;
+
+      await expectLater(
+        HavenMasterKeyStore(
+          storage: storage,
+          provisioningStore: provisioned,
+        ).loadOrCreateCrypto,
+        throwsA(isA<PlatformException>()),
+      );
+      expect(storage.values['pluris_haven.master_key.v1'], savedKey);
+      final retryCrypto = await HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: provisioned,
+      ).loadOrCreateCrypto();
+      expect(await retryCrypto.decrypt(ciphertext), 'Kai');
+    },
+  );
+
+  test('a failed marker write resumes with the same stored key', () async {
+    final storage = MemorySecureValueStore();
+    final provisioned = _FailingMarkerStore()..failNextMark = true;
+    await expectLater(
+      HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: provisioned,
+      ).loadOrCreateCrypto,
+      throwsA(isA<FileSystemException>()),
+    );
+    final savedKey = storage.values['pluris_haven.master_key.v1'];
+    expect(savedKey, isNotEmpty);
+
+    final recovered = await HavenMasterKeyStore(
+      storage: storage,
+      provisioningStore: provisioned,
+    ).loadOrCreateCrypto();
+    expect(await recovered.decrypt(await recovered.encrypt('River')), 'River');
+    expect(storage.values['pluris_haven.master_key.v1'], savedKey);
+    expect(provisioned.provisioned, isTrue);
+  });
+
+  test(
+    'non-iOS refuses a new key if the marker is lost but data remains',
+    () async {
+      for (final suffix in ['', '-wal', '-shm']) {
+        final root = await Directory.systemTemp.createTemp('haven-key-loss-');
+        addTearDown(() => root.delete(recursive: true));
+        final documents = Directory('${root.path}/Documents')..createSync();
+        final support = Directory('${root.path}/Application Support')
+          ..createSync();
+        final file = File('${support.path}/pluris_haven.sqlite$suffix')
+          ..writeAsStringSync('encrypted bytes');
+        final storage = MemorySecureValueStore();
+        final provisioning = PlatformMasterKeyProvisioningStore(
+          documentsDirectory: documents,
+          supportDirectory: support,
+          isIos: false,
+        );
+
+        expect(await provisioning.isProvisioned(), isTrue);
+        await expectLater(
+          HavenMasterKeyStore(
+            storage: storage,
+            provisioningStore: provisioning,
+          ).loadOrCreateCrypto,
+          throwsA(isA<MissingMasterKeyException>()),
+        );
+        expect(file.readAsStringSync(), 'encrypted bytes');
+        expect(storage.values, isEmpty);
+      }
+    },
+  );
+
+  test('non-iOS refuses a new key when an encrypted avatar remains', () async {
+    final root = await Directory.systemTemp.createTemp('haven-avatar-loss-');
+    addTearDown(() => root.delete(recursive: true));
+    final documents = Directory('${root.path}/Documents')..createSync();
+    final support = Directory('${root.path}/Application Support');
+    final avatars = Directory('${documents.path}/avatars')..createSync();
+    final avatar = File('${avatars.path}/kai')
+      ..writeAsStringSync('encrypted avatar');
+    final storage = MemorySecureValueStore();
+
+    await expectLater(
+      HavenMasterKeyStore(
+        storage: storage,
+        provisioningStore: PlatformMasterKeyProvisioningStore(
+          documentsDirectory: documents,
+          supportDirectory: support,
+          isIos: false,
+        ),
+      ).loadOrCreateCrypto,
+      throwsA(isA<MissingMasterKeyException>()),
+    );
+    expect(avatar.readAsStringSync(), 'encrypted avatar');
+    expect(storage.values, isEmpty);
   });
 
   test('does not replace a missing provisioned master key', () async {
     final storage = MemorySecureValueStore();
     final provisioned = MemoryMasterKeyProvisioningStore()..provisioned = true;
 
-    expect(
+    await expectLater(
       HavenMasterKeyStore(
         storage: storage,
         provisioningStore: provisioned,
@@ -139,7 +258,7 @@ void main() {
       File('${support.path}/pluris_haven.sqlite$suffix').createSync();
       final storage = MemorySecureValueStore();
 
-      expect(
+      await expectLater(
         HavenMasterKeyStore(
           storage: storage,
           provisioningStore: PlatformMasterKeyProvisioningStore(
@@ -163,7 +282,7 @@ void main() {
     File('${avatars.path}/river').writeAsStringSync('encrypted avatar');
     final storage = MemorySecureValueStore();
 
-    expect(
+    await expectLater(
       HavenMasterKeyStore(
         storage: storage,
         provisioningStore: PlatformMasterKeyProvisioningStore(
@@ -241,5 +360,31 @@ class MemoryMasterKeyProvisioningStore implements MasterKeyProvisioningStore {
   @override
   Future<void> markProvisioned() async {
     provisioned = true;
+  }
+}
+
+class _FailingReadStorage extends MemorySecureValueStore {
+  var failNextRead = false;
+
+  @override
+  Future<String?> read(String key) {
+    if (failNextRead) {
+      failNextRead = false;
+      throw PlatformException(code: 'temporarily_unavailable');
+    }
+    return super.read(key);
+  }
+}
+
+class _FailingMarkerStore extends MemoryMasterKeyProvisioningStore {
+  var failNextMark = false;
+
+  @override
+  Future<void> markProvisioned() {
+    if (failNextMark) {
+      failNextMark = false;
+      throw const FileSystemException('marker temporarily unavailable');
+    }
+    return super.markProvisioned();
   }
 }

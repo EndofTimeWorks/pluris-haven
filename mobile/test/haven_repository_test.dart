@@ -18,6 +18,60 @@ import 'package:pluris_haven/data/security/haven_crypto.dart';
 import 'test_repository.dart';
 
 void main() {
+  test('multiple weekly reminder days survive archive recovery', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    final mask = (1 << 0) | (1 << 4);
+    await repository.saveReminder(
+      ReminderDraft(
+        title: 'Medication',
+        scheduleText: 'Weekly on Monday, Friday at 08:30',
+        scheduleKind: 'weekly',
+        scheduleTime: '08:30',
+        scheduleDowMask: mask,
+      ),
+    );
+    final archive = await repository.buildLocalArchiveJson();
+    expect(
+      (jsonDecode(archive)
+          as Map<String, dynamic>)['reminders'][0]['schedule_dow_mask'],
+      mask,
+    );
+    await database.close();
+
+    final restoredDatabase = AppDatabase(NativeDatabase.memory());
+    addTearDown(restoredDatabase.close);
+    final restored = testRepository(restoredDatabase);
+    await restored.ensureLocalSystem();
+    await restored.importLocalArchiveJson(archive);
+    final reminder = (await restored.watchReminders().first).single;
+    expect(reminder.scheduleKind, 'weekly');
+    expect(reminder.scheduleDowMask, mask);
+    expect(reminder.scheduleTime, '08:30');
+  });
+
+  test('weekly reminders require at least one valid weekday', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = testRepository(database);
+    await repository.ensureLocalSystem();
+    await expectLater(
+      repository.saveReminder(
+        const ReminderDraft(
+          title: 'Medication',
+          scheduleText: 'Weekly',
+          scheduleKind: 'weekly',
+          scheduleTime: '08:30',
+          scheduleDowMask: 0,
+        ),
+      ),
+      throwsFormatException,
+    );
+    expect(await repository.watchReminders().first, isEmpty);
+  });
+
   test('member poll votes stay attributed through local recovery', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
