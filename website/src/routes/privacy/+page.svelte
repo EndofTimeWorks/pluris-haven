@@ -10,8 +10,9 @@
     <h1>Privacy</h1>
     <p>
       Pluris Haven is operated by EndofTimeWorks LLC, doing business as EndofTimeWorks. The app does
-      not need an account for personal local use. Online features should explain what data leaves
-      the device before they run.
+      not need an account for personal local use. There is no public Pluris Haven server or hosted
+      account service in this pre-alpha. Online features should explain what data leaves the device
+      before they run.
     </p>
   </section>
 
@@ -56,16 +57,12 @@
   </section>
 
   <section>
-    <h2>Optional hosted accounts and backups</h2>
+    <h2>Online services</h2>
     <p>
-      The app works locally without an account. If you choose a hosted account, the server stores
-      your email address, display name, account ID, password hash, session and security records, and
-      encrypted backup metadata needed to operate that account.
-    </p>
-    <p>
-      Backup contents are encrypted on the device before upload. Pluris Haven stores the encrypted
-      chunks but cannot read the system records inside them. The app does not include advertising or
-      behavioral profiling.
+      Pluris Haven does not currently offer a public hosted account, online backup, or device sync
+      service. An existing private server connection may still appear in the app. It is separate
+      from local archive recovery: you can export and restore a local encrypted archive without an
+      account. The app does not include advertising or behavioural profiling.
     </p>
     <p>
       Remote avatar downloads happen only when you import or choose a remote avatar. They contact
@@ -76,13 +73,12 @@
   <section>
     <h2>Deletion and export</h2>
     <p>
-      You can export local data from the app. You can delete individual hosted backups without
-      deleting the account, or request account deletion in the app. Account deletion disables the
-      account immediately and permanently removes its hosted data after a 30-day recovery period.
+      You can export local data from the app. Local data and copies you have exported remain under
+      your control. There is no public hosted account to delete in this pre-alpha.
     </p>
     <div class="actions">
       <a class="button" href="/terms">Read terms draft</a>
-      <a class="button" href="/account-deletion">Delete a hosted account</a>
+      <a class="button" href="/account-deletion">Account deletion status</a>
       <a class="button" href="/support">Report a concern</a>
     </div>
   </section>

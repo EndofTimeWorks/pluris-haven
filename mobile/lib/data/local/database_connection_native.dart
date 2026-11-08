@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../security/local_file_permissions.dart';
+
 QueryExecutor openDatabaseConnection() {
   return LazyDatabase(() async {
     final supportDirectory = await getApplicationSupportDirectory();
@@ -16,6 +18,16 @@ QueryExecutor openDatabaseConnection() {
     final databaseFile = File(
       p.join(supportDirectory.path, 'pluris_haven.sqlite'),
     );
+    if (Platform.isLinux) {
+      await supportDirectory.create(recursive: true);
+      await protectLocalDirectory(supportDirectory);
+      await databaseFile.create();
+      await protectLocalFile(databaseFile);
+      for (final suffix in ['-wal', '-shm']) {
+        final auxiliary = File('${databaseFile.path}$suffix');
+        if (await auxiliary.exists()) await protectLocalFile(auxiliary);
+      }
+    }
     return NativeDatabase.createInBackground(
       databaseFile,
       setup: _configureDatabase,

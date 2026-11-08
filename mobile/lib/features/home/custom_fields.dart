@@ -113,7 +113,10 @@ class CustomFieldTile extends StatelessWidget {
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         trailing: PopupMenuButton<String>(
-          tooltip: l10n.customFieldActionsTooltip,
+          tooltip: l10n.customFieldActionsFor(
+            field.name,
+            field.id.substring(field.id.length > 8 ? field.id.length - 8 : 0),
+          ),
           onSelected: (value) {
             if (value == 'edit') {
               showCustomFieldSheet(context, repository, field: field);
@@ -466,6 +469,7 @@ class _AddCustomFieldSheetState extends State<AddCustomFieldSheet> {
                   decoration: InputDecoration(
                     labelText: l10n.customFieldChoicesLabel,
                     hintText: l10n.customFieldChoicesHint,
+                    helperText: l10n.customFieldChoicesHint,
                     errorText: _choicesError,
                   ),
                 ),

@@ -1,86 +1,134 @@
 # Completion ledger
 
-This ledger tracks the remaining pre-alpha implementation work. It complements,
-but does not replace, the current decisions in
-[`project-state.md`](project-state.md), product boundaries in
-[`product-goals.md`](product-goals.md), and release evidence in
-[`engineering-readiness.md`](engineering-readiness.md). Later decisions in
-`project-state.md` win if a historical source disagrees.
+This is the current pre-alpha remediation status. “Fixed” below means the specified local path
+passed tests; it does not mean Android, iOS or a screen reader has been checked. The October
+black-box report remains the source for reproduction steps. [Project state](project-state.md) holds
+product decisions, and [engineering readiness](engineering-readiness.md) holds release checks.
 
-Last checked against the local pre-publication candidate on 2026-09-16.
-`COMPLETE` means all applicable local product layers are present; `VERIFIED`
-also requires recorded test or runtime evidence. External and device evidence
-is recorded separately.
+## Data integrity and recovery
 
-## P0 -- data, privacy and truthful claims
+- **F14, N7–N12, N14 — Fixed locally.** Add/replace fronting preserves unchanged sessions and active
+  custom fronts. One member can end without ending other or archived fronters. Co-fronting polls
+  accept multiple active members. Repository and widget regressions pass; check touch and
+  screen-reader behaviour on a device.
+- **Manual front history — Fixed for new writes.** Persistence rejects end-before-start, invalid
+  future active starts and duplicate active sessions for one member. Co-fronting remains valid, and
+  editing an active entry leaves it active. Existing invalid rows remain readable and exportable;
+  test upgrades with historical device data.
+- **N33 — Partial.** Startup checks the key before opening the database. Missing, corrupt and
+  temporarily inaccessible keys have distinct guidance and Retry. Existing database, WAL, SHM or
+  avatar data prevents a new key being provisioned. Original data stays untouched. Test interrupted
+  recovery, restart and restored-device states on Android and iOS.
+- **iOS backup marker — Fixed in source; device check needed.** The marker is backup-excluded. A
+  restored marker can be replaced only when no encrypted data remains; a missing key with data fails
+  closed. Dart file-state tests pass. Swift and iCloud restore checks need macOS/iOS.
+- **Empty archive preferences — Fixed locally.** Reset appearance can produce an empty value. Plain
+  and encrypted restore tests accept it without accepting a missing value.
+- **Portable archives — Implemented locally.** Password-protected `.phx.json` archives restore local
+  data and the current front into a fresh database. Keep older readers. The streaming `.pluris`
+  format is partial and cannot replace this recovery path yet.
+- **Local encryption upgrade — Fixed locally.** Supported recent `ph1:` values migrate to
+  context-bound `ph2:`; a signed-device upgrade from an earlier distributed build remains to be
+  tested.
+- **App Lock and notification permissions — Fixed locally; device checks needed.** Widget tests
+  cover protected startup and fail-closed credential loss, and notification setup and delivery
+  permission paths. Device authentication and Apple permission timing still need testing.
+- **Member purge and votes — Fixed for current lifecycle.** Archive and recoverable removal retain
+  vote history. Purge clears profile data and member-owned links while retaining a stable historical
+  ID and poll totals. Changing historical vote retention needs an owner decision.
 
-| Item                                            | State / maturity                                  | Remaining work                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Recent `ph1:` to AAD-bound `ph2:` local upgrade | **COMPLETE / VERIFIED (local)**                   | Foreground/background ordering and direct legacy-ciphertext regression exist. Real-device upgrade from a distributed earlier build remains part of alpha release evidence.                                                                                                                                                                                                                                                                                  |
-| App Lock bootstrap and credential loss          | **COMPLETE / VERIFIED (local)**                   | Widget coverage verifies ready/protected/inert startup and fail-closed credential loss. iOS/Android device authentication smoke tests remain external/device work.                                                                                                                                                                                                                                                                                          |
-| Notification permission truthfulness            | **COMPLETE / VERIFIED (local)**                   | Explicit setup prompting and nonprompting delivery checks are covered. Apple dialog timing remains device verification.                                                                                                                                                                                                                                                                                                                                     |
-| Portable recovery and encrypted server backup   | **PARTIAL / VERIFIED (primitive + legacy local)** | Legacy JSON recovery and encrypted server-backup paths have local coverage, including retry-safe server blob finalisation. A versioned `PLUR`/Argon2id/wrapped-DEK/zstd/AEAD frame primitive and tamper/bounds tests now exist, but the app still emits whole-file `.phx.json` envelopes. Streaming/atomic `.pluris` creation, wrapper lifecycle, restore checkpoint/verification/rehearsal, and compatibility integration remain. Preserve legacy readers. |
-| Documentation and public capability claims      | **PARTIAL**                                       | Reconcile each importer/product surface as it becomes verified; do not advertise mapper-only compatibility.                                                                                                                                                                                                                                                                                                                                                 |
+## Imports and local features
 
-## P1 -- local product and interoperability
+- **N27, N52, F63 — Partial.** Native preferences conflicts are prompted, orphaned front links are
+  flagged, pasted drafts survive navigation, and job labels are readable. Create rejects colliding
+  content IDs inside the transaction before writes; repeated or missing IDs in an archive fail for
+  every choice. Existing custom-field definitions can still be reused after member purge. The
+  preview does not cover every record type, Create does not remap IDs, and adapter round trips need
+  more evidence.
+- **PluralPort Draft v0.1 — Partial.** File import/export maps systems, members and fronts.
+  Unsupported records stay in encrypted source data. Reference checks and import results need work;
+  there is no published conformance suite. This is distinct from live sync.
+- **OpenPlural v0.1 — Locally tested.** File/ZIP import, preview, source-ID dedupe, assets and
+  raw-extension preservation have fixture coverage. Real exports are needed for broad compatibility
+  claims.
+- **Simply Plural, PluralKit — Locally tested.** Simply Plural and PluralKit file paths and bounded
+  PluralKit live import have tests. Bidirectional sync is deferred.
+- **Tupperbox, PluralSpace, Ampersand — Partial.** Source-shaped sanitised fixtures cover preview,
+  normalisation and repeat-import dedupe. Broader claims need real exporter files. Authenticated
+  PluralSpace API import is deferred.
+- **N24 — Fixed locally.** Journals keep subject and optional author separately, allow backdating,
+  open in read view and preserve those fields in archives. Existing entries keep an unrecorded
+  author.
+- **N25 — Fixed locally.** Chat filters by board, category and stable channel ID. Category names
+  appear in channel choices; multiple fronters do not silently choose an author. Device selection
+  announcements need checking.
+- **Notes, journals and messages — Locally tested.** Content is encrypted; production edits create
+  revisions, and history, pin and restore are reachable. Destructive revision protection remains
+  part of System Safety.
+- **N43 — Fixed in source; delivery check needed.** Weekly reminders persist multiple weekdays
+  through archive restore. Stable notification IDs cancel obsolete schedules on edit, disable and
+  delete. Scheduling failures are shown without deleting the saved reminder. Native delivery,
+  permissions and timezone changes while closed need device tests.
+- **N3 — Fixed locally.** Dot-separated 12-hour times such as 9.30pm store as 21:30.
+- **N13, F30 — Fixed locally.** Hourly overlap counts once, timeline rows have names and endpoints,
+  and the hour chart has a value scale. Check charts with device screen readers.
+- **Advanced polls and reminders — Partial.** Shared and member-attributed votes, co-fronting
+  restrictions, daily/weekly/monthly and after-front reminders exist. Poll retention, result
+  visibility and edit rules, and queued/digest reminder semantics still need decisions.
+- **System Safety — Blocked on decisions.** Pending-action storage exists but production actions do
+  not use it. Decide protected actions, grace period, reauthentication and break-glass rules before
+  exposure.
 
-| Item                                                   | State / maturity                         | Remaining work                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------------------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OpenPlural v0.1 file import                            | **COMPLETE / VERIFIED (local)**          | Current `ImportSource`, plan/guess, ZIP decoder, preview/review/publish path, stable source-ID dedupe, raw-extension preservation and representative fixture/UI coverage are present. Broad real-export compatibility remains release evidence, not an advertised claim.                                                                                                                                                                                       |
-| PluralPort Draft v0.1 file import/export               | **IMPLEMENTED / VERIFIED (local)**       | JSON envelope/UTC validation, source detection, preview/review/publish import, mandatory encrypted retention of original records/extensions, and a reachable export action are present. Only concretely documented System, Member and fronting fields are projected; underspecified record types stay in `extensions.pluris_haven` with a structured warning. Independent real-export compatibility evidence remains missing; no live protocol is implemented. |
-| Simply Plural import                                   | **COMPLETE / VERIFIED (local)**          | Current parser, preview/review/publish, dedupe and acceptance coverage exist. Keep real-export/device evidence current for release claims.                                                                                                                                                                                                                                                                                                                     |
-| PluralKit file/live import                             | **COMPLETE / VERIFIED (local)**          | File and bounded live-token paths exist. Bidirectional sync is deferred.                                                                                                                                                                                                                                                                                                                                                                                       |
-| Tupperbox, PluralSpace file and Ampersand file support | **PARTIAL / VERIFIED (sanitised local)** | Each has a source-shaped sanitised fixture covering preview, normalisation, publish and stable repeat-import dedupe. Representative real exporter files are still needed before broad compatibility claims. Authenticated PluralSpace API import is deferred.                                                                                                                                                                                                  |
-| Local chats, categories and channels                   | **PARTIAL / VERIFIED (local)**           | Encrypted category/channel persistence, archive support, category/channel management, system/member/channel boards, member authors, replies, editing and soft-deleted messages are reachable locally. Front association, richer member-wall navigation and System Safety wiring remain.                                                                                                                                                                        |
-| Notes and journals Markdown revision history           | **COMPLETE / VERIFIED (local)**          | Notes and journals are encrypted at rest; production edits snapshot prior content; Markdown preview, history, pin and restore are reachable from each editor; restoring snapshots the current version for undo; archive coverage and direct local regression coverage are present. Destructive revision safety remains part of System Safety work.                                                                                                             |
-| Message revision history                               | **COMPLETE / VERIFIED (local)**          | Production message edits snapshot prior encrypted content, show a visible edited state and expose the shared history/pin/restore UI. Restoring records the current body for undo. Destructive revision/unpin protection remains part of the separately blocked System Safety policy.                                                                                                                                                                           |
-| Scoped local API v1 core                               | **IMPLEMENTED / HIDDEN**                 | The loopback implementation, encrypted per-client grants, scopes and revocation remain in the tree, but its navigation/dashboard entry is hidden from Alpha because it lacks the required global Experimental toggle and per-feature exposure controls. Startup retires the old enable preference, so a listener cannot restart from a hidden legacy choice. Sensitive writes, raw-vault access and remote binding remain absent.                              |
+## Access, navigation and website
 
-## P2 -- local behaviour already decided
+- **N28, N31 — Partial.** Dashboard scaling, UK history dates, large-text dropdowns and a narrow 2×
+  weekly-reminder form passed local checks. More scaled and RTL screens need testing.
+- **N29 — Partial.** Front picker, shared rows, settings rows and tested note/reminder flows return
+  focus to their launcher. Confirmed deletion returns focus to a surviving control. Other sheets and
+  disabled controls need checking.
+- **N53, F37 — Partial.** Member, group, note, journal, reminder, poll and saved-front actions have
+  contextual labels; duplicate names use a short ID where needed. Decorative chevrons are omitted
+  from semantics. Other controls and duplicate announcements need a device pass.
+- **N54 — Fixed in client; device check needed.** Poll options include their question and selection
+  state. Verify reading order with TalkBack or VoiceOver.
+- **Settings and errors — Fixed for changed controls.** Shared settings rows no longer repeat their
+  spoken title or open planned-feature dialogs. Representative long-name dropdowns fit, and changed
+  delete, import, archive, profile and backup errors show plain messages. Other paths need review.
+- **N62, N63 — Fixed locally; device check needed.** Notification events are separate semantics rows
+  with persistent Mark as read. Large-text front-picker actions remain reachable.
+- **Member name spoofing — Fixed for new edits.** Invisible and direction controls are rejected,
+  duplicate visible names prompt a warning, and existing duplicates are distinguished in pickers.
+  Imported names are not rewritten.
+- **Privacy buckets — Partial.** Existing buckets can be edited. They remain separate from the
+  member profile Privacy text; unifying the models needs a decision.
+- **F3, N36 — F3 partial; N36 fixed.** The member editor uses member wording, and empty states
+  mention supported imports rather than only Simply Plural. Technical fields remain visible to
+  everyone.
+- **N30, N32 — N30 open; N32 fixed locally.** Shortcut order survives hiding and showing. Visual
+  inconsistencies remain.
+- **W4, W5 — Fixed in source.** Website theme and support checks pass. The owner approved
+  `security@plurishaven.app` for general support and security reports; mailbox delivery and real
+  browser preference switching still need checking.
+- **Local API — Implemented but hidden.** Narrow loopback read scopes and per-client grants exist.
+  The UI remains hidden until Experimental controls are ready; startup retires the old enable
+  choice.
+- **Internal background sync — No-op.** The registered task currently returns success without
+  synchronising. Do not advertise it as sync.
+- **Server accounts, online backup, federation — Deferred.** No public server is in the current
+  local-product scope. Historical S1–S9 and N45–N48 are not marked fixed by this ledger. A narrow
+  login-rate regression was fixed in source and tested at `/v1/auth/login`; no public endpoint was
+  inspected or changed.
 
-| Item                                         | State / maturity                  | Remaining work                                                                                                                                                                                                                                                                                                                                                                                                            |
-| -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reminders                                    | **PARTIAL / BLOCKED-DECISION**    | Daily/weekly/monthly and after-front paths are reachable; after-front reminders can target a member or any front and configure a non-negative delivery delay; permission checks and notification-event recording are truthful. Define queue/digest batching, retention, ordering and acknowledgement semantics before implementing that advanced layer; timezone/recurrence edge coverage and delivery-history UX remain. |
-| Polls                                        | **PARTIAL / VERIFIED (local)**    | Single/multi choice, local options/votes, action-only vote history, close state and currently-fronting-only enforcement are reachable. Deadlines, retention/purge, hidden/live result rules, member-attributed audit and post-vote edit/freeze semantics remain.                                                                                                                                                          |
-| Front history and front audit                | **PARTIAL / VERIFIED (local)**    | Local fronts/history and custom fronts work. Editing a front-history entry or status note records encrypted before/after snapshots and exposes readable local history. Deletion preserves stable audit provenance while detaching the deleted live front; rollback coverage proves the paired write is atomic. Creation audit, revision presentation refinements and System Safety integration remain.                    |
-| System Safety                                | **SCAFFOLDED / BLOCKED-DECISION** | Pending-action persistence/cancel/finalisation APIs exist, but no production writer creates actions. Before wiring destructive paths, decide the protected-action matrix, grace duration, reauthentication contract and break-glass boundary; management UI and regressions follow that decision.                                                                                                                         |
-| Internal background synchronisation          | **NO-OP / NOT IMPLEMENTED**       | The registered `pluris_haven.sync` background task currently returns success without reading, writing, sending, or applying sync state. Do not describe it as synchronisation. Outbox/retry/conflict/cursor design remains a separate Pluris-internal workstream.                                                                                                                                                         |
-| Customisation, terminology and accessibility | **PARTIAL**                       | Themes, typography, navigation, spacing and several accessibility preferences exist. Audit semantic colours, terminology, visual assets and the low-cognitive-load mode; the latter needs a materially simpler reachable UX plus tests. Root/jailbreak remains warn-only.                                                                                                                                                 |
+## Latest local verification
 
-## P2 -- distribution, CI and alpha readiness
+The last full run against this code passed **509 Flutter tests with 2 skipped**. The schema
+migration suite passed **13 tests**. Changed-code analysis, Dart format and localisation checks
+passed. Whole-package analysis still reports one unused import in the owner's pre-existing untracked
+`mobile/test/cac_demo_import_test.dart`; that file was not changed. The website check, build,
+generated-page accessibility and security-header checks passed. The Android debug APK built with
+SHA-256 `518f55f58dae92ba98835fcf58ac769e0601260fedacb4fafe73a0b38afc3d6d`.
 
-| Item                                              | State / maturity                          | Remaining work                                                                                                                                                                                                                                                                                     |
-| ------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Development and versioned GitHub release topology | **IMPLEMENTED / VERIFIED (local-static)** | Version parsing, artifact/checksum flow and GitHub Release → independent Play/website fan-out exist. Need safe real GitHub Actions evidence and retry/repair-path evidence.                                                                                                                        |
-| Google Play internal testing                      | **IMPLEMENTED / BLOCKED-EXTERNAL**        | Automation uploads the published release AAB after canonical GitHub publication. A real authorised Console upload is required before external verification.                                                                                                                                        |
-| Google Play closed alpha testing                  | **IMPLEMENTED / BLOCKED-EXTERNAL**        | A manual existing-release workflow accepts the exact configured Play track identifier, verifies the signed tag and AAB checksum, avoids duplicate version uploads and never recreates GitHub artifacts. Play Console track configuration and a real upload/promotion remain external verification. |
-| Store/listing readiness                           | **PARTIAL / BLOCKED-EXTERNAL**            | Local checklist and URLs must be verified against current site/deployment; Data Safety, age rating, listing media, tester instructions, signing/App Signing and Console values require authorised external configuration.                                                                          |
-| GitHub-hosted CI evidence                         | **MISSING / BLOCKED-EXTERNAL**            | Static workflow validation is not CI evidence. Inspect safe workflows and run/inspect nonpublishing GitHub Actions against a pushed commit.                                                                                                                                                        |
-| Android upgrade/artifact evidence                 | **PARTIAL / BLOCKED-EXTERNAL**            | Local builds/checks and migration tests exist. Test a real signed artifact upgrade from supported pre-alpha state.                                                                                                                                                                                 |
-| Apple release/device evidence                     | **BLOCKED-EXTERNAL**                      | Linux can inspect bundle IDs, manifests and workflow assumptions. Signed install, notification/App Lock/privacy/accessibility/upgrade testing require macOS and simulator/physical hardware.                                                                                                       |
-
-## Deferred, superseded and blocked decisions
-
-| Item                                                                                       | State                | Boundary                                                                                                                               |
-| ------------------------------------------------------------------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Authenticated PluralSpace API import                                                       | **DEFERRED**         | Do not implement without an explicit auth/resource-scope decision.                                                                     |
-| Portable identity and federation protocol                                                  | **DEFERRED**         | Product direction is decided; implementation is long-term and not part of this work.                                                   |
-| Desktop/private browser/watch clients, plugins, third-party ecosystem, standby replication | **DEFERRED**         | Not alpha completion scope.                                                                                                            |
-| CLI/TUI                                                                                    | **SUPERSEDED**       | Do not restore.                                                                                                                        |
-| Trusted recovery contacts                                                                  | **BLOCKED-DECISION** | Product intent is decided, but threshold/share cryptography and recovery mechanics are unresolved; do not invent primitives or policy. |
-| Multiple top-level systems and coercion/decoy behaviour                                    | **BLOCKED-DECISION** | Current product details are unresolved.                                                                                                |
-
-## Completion protocol
-
-For each row advanced by implementation, record the applicable path:
-
-```text
-model/schema → persistence → production writer → production reader → UI/API
-→ validation/enforcement → migration/compatibility → tests → reachable path
-→ truthful docs/status
-```
-
-For release work, additionally record trigger, version validation, required
-checks, artifact/checksum evidence, publication ordering, retry/idempotency,
-target failure reporting and actual CI/external-service evidence. A local test
-or static workflow check never upgrades an external target to `VERIFIED`.
+No Android runner was attached and this host has no `/dev/kvm`; the APK was not run. iOS, iCloud
+restore, native notification delivery, TalkBack and VoiceOver remain unverified. No database schema
+or archive format changed in the latest client batches. Tests cover the specified paths, not every
+old black-box finding.

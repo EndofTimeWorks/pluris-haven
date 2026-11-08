@@ -1,6 +1,7 @@
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from ipaddress import IPv6Address, ip_address, ip_network
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
@@ -56,6 +57,20 @@ ACCOUNT_DELETION_GRACE = timedelta(days=30)
 _logger = logging.getLogger("pluris.auth")
 
 
+def _client_rate_limit_key(request: Request) -> str:
+    host = request.client.host if request.client is not None else "unknown"
+    try:
+        address = ip_address(host)
+    except ValueError:
+        return host
+    if isinstance(address, IPv6Address):
+        mapped = address.ipv4_mapped
+        if mapped is not None:
+            return str(mapped)
+        return str(ip_network(f"{address}/64", strict=False))
+    return str(address)
+
+
 async def _deliver_password_reset(email_sender: EmailSender, recipient: str, token: str) -> None:
     try:
         await email_sender.send_password_reset(recipient, token)
@@ -76,9 +91,11 @@ async def _enforce_rate_limit(
     subject: str | None = None,
     include_client: bool = True,
 ) -> None:
-    client_host = request.client.host if request.client is not None else "unknown"
+    client_host = _client_rate_limit_key(request)
     keys = [f"auth:{operation.value}:ip:{client_host}"] if include_client else []
-    if subject is not None:
+    # A caller must not exhaust an email-wide login bucket and deny that
+    # account access from a different IP. Login remains limited per client.
+    if subject is not None and operation != SecurityOperation.LOGIN:
         keys.append(f"auth:{operation.value}:subject:{subject}")
     retry_after = await request.app.state.auth_rate_limiter.retry_after(keys)
     if retry_after is not None:
@@ -95,7 +112,7 @@ async def _enforce_rate_limit(
 
 
 async def _enforce_refresh_ip_limit(request: Request) -> None:
-    client_host = request.client.host if request.client is not None else "unknown"
+    client_host = _client_rate_limit_key(request)
     retry_after = await request.app.state.refresh_ip_rate_limiter.retry_after(
         [f"auth:refresh:ip:{client_host}"]
     )
@@ -103,6 +120,25 @@ async def _enforce_refresh_ip_limit(request: Request) -> None:
         log_security_signal(
             SecuritySignal.AUTH_RATE_LIMITED,
             operation=SecurityOperation.REFRESH,
+            reason=SecurityReason.RATE_LIMIT,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
+async def _enforce_failed_login_limit(request: Request, email: str) -> None:
+    # Check this only after the password has been verified. Wrong guesses from
+    # many addresses share a bucket, while a valid password can still sign in.
+    retry_after = await request.app.state.failed_login_rate_limiter.retry_after(
+        [f"auth:login:failed:subject:{email}"]
+    )
+    if retry_after is not None:
+        log_security_signal(
+            SecuritySignal.AUTH_RATE_LIMITED,
+            operation=SecurityOperation.LOGIN,
             reason=SecurityReason.RATE_LIMIT,
         )
         raise HTTPException(
@@ -189,6 +225,7 @@ async def login(
     user = await db.scalar(select(User).where(User.email == email))
     if user is None:
         await dummy_verify_password(payload.password)
+        await _enforce_failed_login_limit(request, email)
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
             operation=SecurityOperation.LOGIN,
@@ -196,6 +233,7 @@ async def login(
         )
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not await verify_password(payload.password, user.password_hash):
+        await _enforce_failed_login_limit(request, email)
         log_security_signal(
             SecuritySignal.AUTH_REJECTED,
             operation=SecurityOperation.LOGIN,
@@ -327,30 +365,36 @@ async def request_password_reset(
 ) -> MessageResponse:
     email = str(payload.email).strip().casefold()
     await _enforce_rate_limit(request, SecurityOperation.PASSWORD_RESET_REQUEST, email)
-    user = await db.scalar(select(User).where(User.email == email))
+    user = await db.scalar(select(User).where(User.email == email).with_for_update())
     if user is not None and (not user.disabled or _deletion_recovery_open(user, datetime.now(UTC))):
         now = datetime.now(UTC)
-        await db.execute(
-            update(PasswordResetToken)
-            .where(PasswordResetToken.user_id == user.id, PasswordResetToken.used_at.is_(None))
-            .values(used_at=now)
-        )
-        token = secrets.token_urlsafe(48)
-        db.add(
-            PasswordResetToken(
-                user_id=user.id,
-                token_digest=digest_token(token, purpose="password_reset"),
-                issued_at=now,
-                expires_at=now + timedelta(minutes=settings.password_reset_token_minutes),
+        recent = await db.scalar(
+            select(PasswordResetToken.id)
+            .where(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.used_at.is_(None),
+                PasswordResetToken.expires_at > now,
+                PasswordResetToken.issued_at > now - timedelta(minutes=10),
             )
+            .limit(1)
         )
-        await db.commit()
-        background_tasks.add_task(
-            _deliver_password_reset,
-            request.app.state.email_sender,
-            user.email,
-            token,
-        )
+        if recent is None:
+            token = secrets.token_urlsafe(48)
+            db.add(
+                PasswordResetToken(
+                    user_id=user.id,
+                    token_digest=digest_token(token, purpose="password_reset"),
+                    issued_at=now,
+                    expires_at=now + timedelta(minutes=settings.password_reset_token_minutes),
+                )
+            )
+            await db.commit()
+            background_tasks.add_task(
+                _deliver_password_reset,
+                request.app.state.email_sender,
+                user.email,
+                token,
+            )
     return MessageResponse(detail="If that account exists, a reset token has been sent")
 
 
@@ -384,7 +428,11 @@ async def reset_password(
     ):
         raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
 
-    reset_token.used_at = now
+    await db.execute(
+        update(PasswordResetToken)
+        .where(PasswordResetToken.user_id == user.id, PasswordResetToken.used_at.is_(None))
+        .values(used_at=now)
+    )
     user.password_hash = await hash_password(payload.new_password)
     recovered = _deletion_recovery_open(user, now)
     if recovered:
@@ -494,7 +542,7 @@ async def security_events(
     auth: CurrentAuth,
     db: Db,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    before_id: Annotated[int | None, Query(ge=1)] = None,
+    before_id: Annotated[int | None, Query(ge=1, le=2**63 - 1)] = None,
 ) -> list[SecurityEvent]:
     query = select(SecurityEvent).where(SecurityEvent.user_id == auth.user.id)
     if before_id is not None:

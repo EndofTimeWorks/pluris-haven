@@ -7544,6 +7544,18 @@ class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
     requiredDuringInsert: false,
     defaultValue: const Constant('single_choice'),
   );
+  static const VerificationMeta _voteModeMeta = const VerificationMeta(
+    'voteMode',
+  );
+  @override
+  late final GeneratedColumn<String> voteMode = GeneratedColumn<String>(
+    'vote_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('shared'),
+  );
   static const VerificationMeta _restrictVotingToFrontersMeta =
       const VerificationMeta('restrictVotingToFronters');
   @override
@@ -7623,6 +7635,7 @@ class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
     question,
     description,
     kind,
+    voteMode,
     restrictVotingToFronters,
     closesAt,
     retentionDays,
@@ -7676,6 +7689,12 @@ class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
       context.handle(
         _kindMeta,
         kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('vote_mode')) {
+      context.handle(
+        _voteModeMeta,
+        voteMode.isAcceptableOrUnknown(data['vote_mode']!, _voteModeMeta),
       );
     }
     if (data.containsKey('restrict_voting_to_fronters')) {
@@ -7753,6 +7772,10 @@ class $PollsTable extends Polls with TableInfo<$PollsTable, Poll> {
         DriftSqlType.string,
         data['${effectivePrefix}kind'],
       )!,
+      voteMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vote_mode'],
+      )!,
       restrictVotingToFronters: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}restrict_voting_to_fronters'],
@@ -7792,6 +7815,7 @@ class Poll extends DataClass implements Insertable<Poll> {
   final String question;
   final String? description;
   final String kind;
+  final String voteMode;
   final bool restrictVotingToFronters;
   final DateTime? closesAt;
   final int? retentionDays;
@@ -7804,6 +7828,7 @@ class Poll extends DataClass implements Insertable<Poll> {
     required this.question,
     this.description,
     required this.kind,
+    required this.voteMode,
     required this.restrictVotingToFronters,
     this.closesAt,
     this.retentionDays,
@@ -7821,6 +7846,7 @@ class Poll extends DataClass implements Insertable<Poll> {
       map['description'] = Variable<String>(description);
     }
     map['kind'] = Variable<String>(kind);
+    map['vote_mode'] = Variable<String>(voteMode);
     map['restrict_voting_to_fronters'] = Variable<bool>(
       restrictVotingToFronters,
     );
@@ -7845,6 +7871,7 @@ class Poll extends DataClass implements Insertable<Poll> {
           ? const Value.absent()
           : Value(description),
       kind: Value(kind),
+      voteMode: Value(voteMode),
       restrictVotingToFronters: Value(restrictVotingToFronters),
       closesAt: closesAt == null && nullToAbsent
           ? const Value.absent()
@@ -7869,6 +7896,7 @@ class Poll extends DataClass implements Insertable<Poll> {
       question: serializer.fromJson<String>(json['question']),
       description: serializer.fromJson<String?>(json['description']),
       kind: serializer.fromJson<String>(json['kind']),
+      voteMode: serializer.fromJson<String>(json['voteMode']),
       restrictVotingToFronters: serializer.fromJson<bool>(
         json['restrictVotingToFronters'],
       ),
@@ -7888,6 +7916,7 @@ class Poll extends DataClass implements Insertable<Poll> {
       'question': serializer.toJson<String>(question),
       'description': serializer.toJson<String?>(description),
       'kind': serializer.toJson<String>(kind),
+      'voteMode': serializer.toJson<String>(voteMode),
       'restrictVotingToFronters': serializer.toJson<bool>(
         restrictVotingToFronters,
       ),
@@ -7905,6 +7934,7 @@ class Poll extends DataClass implements Insertable<Poll> {
     String? question,
     Value<String?> description = const Value.absent(),
     String? kind,
+    String? voteMode,
     bool? restrictVotingToFronters,
     Value<DateTime?> closesAt = const Value.absent(),
     Value<int?> retentionDays = const Value.absent(),
@@ -7917,6 +7947,7 @@ class Poll extends DataClass implements Insertable<Poll> {
     question: question ?? this.question,
     description: description.present ? description.value : this.description,
     kind: kind ?? this.kind,
+    voteMode: voteMode ?? this.voteMode,
     restrictVotingToFronters:
         restrictVotingToFronters ?? this.restrictVotingToFronters,
     closesAt: closesAt.present ? closesAt.value : this.closesAt,
@@ -7936,6 +7967,7 @@ class Poll extends DataClass implements Insertable<Poll> {
           ? data.description.value
           : this.description,
       kind: data.kind.present ? data.kind.value : this.kind,
+      voteMode: data.voteMode.present ? data.voteMode.value : this.voteMode,
       restrictVotingToFronters: data.restrictVotingToFronters.present
           ? data.restrictVotingToFronters.value
           : this.restrictVotingToFronters,
@@ -7957,6 +7989,7 @@ class Poll extends DataClass implements Insertable<Poll> {
           ..write('question: $question, ')
           ..write('description: $description, ')
           ..write('kind: $kind, ')
+          ..write('voteMode: $voteMode, ')
           ..write('restrictVotingToFronters: $restrictVotingToFronters, ')
           ..write('closesAt: $closesAt, ')
           ..write('retentionDays: $retentionDays, ')
@@ -7974,6 +8007,7 @@ class Poll extends DataClass implements Insertable<Poll> {
     question,
     description,
     kind,
+    voteMode,
     restrictVotingToFronters,
     closesAt,
     retentionDays,
@@ -7990,6 +8024,7 @@ class Poll extends DataClass implements Insertable<Poll> {
           other.question == this.question &&
           other.description == this.description &&
           other.kind == this.kind &&
+          other.voteMode == this.voteMode &&
           other.restrictVotingToFronters == this.restrictVotingToFronters &&
           other.closesAt == this.closesAt &&
           other.retentionDays == this.retentionDays &&
@@ -8004,6 +8039,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
   final Value<String> question;
   final Value<String?> description;
   final Value<String> kind;
+  final Value<String> voteMode;
   final Value<bool> restrictVotingToFronters;
   final Value<DateTime?> closesAt;
   final Value<int?> retentionDays;
@@ -8017,6 +8053,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
     this.question = const Value.absent(),
     this.description = const Value.absent(),
     this.kind = const Value.absent(),
+    this.voteMode = const Value.absent(),
     this.restrictVotingToFronters = const Value.absent(),
     this.closesAt = const Value.absent(),
     this.retentionDays = const Value.absent(),
@@ -8031,6 +8068,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
     required String question,
     this.description = const Value.absent(),
     this.kind = const Value.absent(),
+    this.voteMode = const Value.absent(),
     this.restrictVotingToFronters = const Value.absent(),
     this.closesAt = const Value.absent(),
     this.retentionDays = const Value.absent(),
@@ -8049,6 +8087,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
     Expression<String>? question,
     Expression<String>? description,
     Expression<String>? kind,
+    Expression<String>? voteMode,
     Expression<bool>? restrictVotingToFronters,
     Expression<DateTime>? closesAt,
     Expression<int>? retentionDays,
@@ -8063,6 +8102,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
       if (question != null) 'question': question,
       if (description != null) 'description': description,
       if (kind != null) 'kind': kind,
+      if (voteMode != null) 'vote_mode': voteMode,
       if (restrictVotingToFronters != null)
         'restrict_voting_to_fronters': restrictVotingToFronters,
       if (closesAt != null) 'closes_at': closesAt,
@@ -8080,6 +8120,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
     Value<String>? question,
     Value<String?>? description,
     Value<String>? kind,
+    Value<String>? voteMode,
     Value<bool>? restrictVotingToFronters,
     Value<DateTime?>? closesAt,
     Value<int?>? retentionDays,
@@ -8094,6 +8135,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
       question: question ?? this.question,
       description: description ?? this.description,
       kind: kind ?? this.kind,
+      voteMode: voteMode ?? this.voteMode,
       restrictVotingToFronters:
           restrictVotingToFronters ?? this.restrictVotingToFronters,
       closesAt: closesAt ?? this.closesAt,
@@ -8122,6 +8164,9 @@ class PollsCompanion extends UpdateCompanion<Poll> {
     }
     if (kind.present) {
       map['kind'] = Variable<String>(kind.value);
+    }
+    if (voteMode.present) {
+      map['vote_mode'] = Variable<String>(voteMode.value);
     }
     if (restrictVotingToFronters.present) {
       map['restrict_voting_to_fronters'] = Variable<bool>(
@@ -8157,6 +8202,7 @@ class PollsCompanion extends UpdateCompanion<Poll> {
           ..write('question: $question, ')
           ..write('description: $description, ')
           ..write('kind: $kind, ')
+          ..write('voteMode: $voteMode, ')
           ..write('restrictVotingToFronters: $restrictVotingToFronters, ')
           ..write('closesAt: $closesAt, ')
           ..write('retentionDays: $retentionDays, ')
@@ -8741,6 +8787,328 @@ class PollVotesCompanion extends UpdateCompanion<PollVote> {
     return (StringBuffer('PollVotesCompanion(')
           ..write('pollId: $pollId, ')
           ..write('optionId: $optionId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PollMemberVotesTable extends PollMemberVotes
+    with TableInfo<$PollMemberVotesTable, PollMemberVote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PollMemberVotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pollIdMeta = const VerificationMeta('pollId');
+  @override
+  late final GeneratedColumn<String> pollId = GeneratedColumn<String>(
+    'poll_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES polls (id)',
+    ),
+  );
+  static const VerificationMeta _optionIdMeta = const VerificationMeta(
+    'optionId',
+  );
+  @override
+  late final GeneratedColumn<String> optionId = GeneratedColumn<String>(
+    'option_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES poll_options (id)',
+    ),
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES members (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pollId, optionId, memberId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'poll_member_votes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PollMemberVote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('poll_id')) {
+      context.handle(
+        _pollIdMeta,
+        pollId.isAcceptableOrUnknown(data['poll_id']!, _pollIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pollIdMeta);
+    }
+    if (data.containsKey('option_id')) {
+      context.handle(
+        _optionIdMeta,
+        optionId.isAcceptableOrUnknown(data['option_id']!, _optionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_optionIdMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memberIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pollId, optionId, memberId};
+  @override
+  PollMemberVote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PollMemberVote(
+      pollId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poll_id'],
+      )!,
+      optionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}option_id'],
+      )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PollMemberVotesTable createAlias(String alias) {
+    return $PollMemberVotesTable(attachedDatabase, alias);
+  }
+}
+
+class PollMemberVote extends DataClass implements Insertable<PollMemberVote> {
+  final String pollId;
+  final String optionId;
+  final String memberId;
+  final DateTime createdAt;
+  const PollMemberVote({
+    required this.pollId,
+    required this.optionId,
+    required this.memberId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['poll_id'] = Variable<String>(pollId);
+    map['option_id'] = Variable<String>(optionId);
+    map['member_id'] = Variable<String>(memberId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PollMemberVotesCompanion toCompanion(bool nullToAbsent) {
+    return PollMemberVotesCompanion(
+      pollId: Value(pollId),
+      optionId: Value(optionId),
+      memberId: Value(memberId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PollMemberVote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PollMemberVote(
+      pollId: serializer.fromJson<String>(json['pollId']),
+      optionId: serializer.fromJson<String>(json['optionId']),
+      memberId: serializer.fromJson<String>(json['memberId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pollId': serializer.toJson<String>(pollId),
+      'optionId': serializer.toJson<String>(optionId),
+      'memberId': serializer.toJson<String>(memberId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PollMemberVote copyWith({
+    String? pollId,
+    String? optionId,
+    String? memberId,
+    DateTime? createdAt,
+  }) => PollMemberVote(
+    pollId: pollId ?? this.pollId,
+    optionId: optionId ?? this.optionId,
+    memberId: memberId ?? this.memberId,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PollMemberVote copyWithCompanion(PollMemberVotesCompanion data) {
+    return PollMemberVote(
+      pollId: data.pollId.present ? data.pollId.value : this.pollId,
+      optionId: data.optionId.present ? data.optionId.value : this.optionId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollMemberVote(')
+          ..write('pollId: $pollId, ')
+          ..write('optionId: $optionId, ')
+          ..write('memberId: $memberId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pollId, optionId, memberId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PollMemberVote &&
+          other.pollId == this.pollId &&
+          other.optionId == this.optionId &&
+          other.memberId == this.memberId &&
+          other.createdAt == this.createdAt);
+}
+
+class PollMemberVotesCompanion extends UpdateCompanion<PollMemberVote> {
+  final Value<String> pollId;
+  final Value<String> optionId;
+  final Value<String> memberId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PollMemberVotesCompanion({
+    this.pollId = const Value.absent(),
+    this.optionId = const Value.absent(),
+    this.memberId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PollMemberVotesCompanion.insert({
+    required String pollId,
+    required String optionId,
+    required String memberId,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : pollId = Value(pollId),
+       optionId = Value(optionId),
+       memberId = Value(memberId),
+       createdAt = Value(createdAt);
+  static Insertable<PollMemberVote> custom({
+    Expression<String>? pollId,
+    Expression<String>? optionId,
+    Expression<String>? memberId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pollId != null) 'poll_id': pollId,
+      if (optionId != null) 'option_id': optionId,
+      if (memberId != null) 'member_id': memberId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PollMemberVotesCompanion copyWith({
+    Value<String>? pollId,
+    Value<String>? optionId,
+    Value<String>? memberId,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PollMemberVotesCompanion(
+      pollId: pollId ?? this.pollId,
+      optionId: optionId ?? this.optionId,
+      memberId: memberId ?? this.memberId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pollId.present) {
+      map['poll_id'] = Variable<String>(pollId.value);
+    }
+    if (optionId.present) {
+      map['option_id'] = Variable<String>(optionId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PollMemberVotesCompanion(')
+          ..write('pollId: $pollId, ')
+          ..write('optionId: $optionId, ')
+          ..write('memberId: $memberId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -12492,6 +12860,20 @@ class $JournalEntriesTable extends JournalEntries
       'REFERENCES members (id)',
     ),
   );
+  static const VerificationMeta _authorMemberIdMeta = const VerificationMeta(
+    'authorMemberId',
+  );
+  @override
+  late final GeneratedColumn<String> authorMemberId = GeneratedColumn<String>(
+    'author_member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES members (id)',
+    ),
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -12549,6 +12931,7 @@ class $JournalEntriesTable extends JournalEntries
     id,
     systemId,
     memberId,
+    authorMemberId,
     title,
     body,
     visibility,
@@ -12584,6 +12967,15 @@ class $JournalEntriesTable extends JournalEntries
       context.handle(
         _memberIdMeta,
         memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
+    if (data.containsKey('author_member_id')) {
+      context.handle(
+        _authorMemberIdMeta,
+        authorMemberId.isAcceptableOrUnknown(
+          data['author_member_id']!,
+          _authorMemberIdMeta,
+        ),
       );
     }
     if (data.containsKey('title')) {
@@ -12643,6 +13035,10 @@ class $JournalEntriesTable extends JournalEntries
         DriftSqlType.string,
         data['${effectivePrefix}member_id'],
       ),
+      authorMemberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_member_id'],
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -12676,6 +13072,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
   final String id;
   final String systemId;
   final String? memberId;
+  final String? authorMemberId;
   final String? title;
   final String body;
   final String visibility;
@@ -12685,6 +13082,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     required this.id,
     required this.systemId,
     this.memberId,
+    this.authorMemberId,
     this.title,
     required this.body,
     required this.visibility,
@@ -12698,6 +13096,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     map['system_id'] = Variable<String>(systemId);
     if (!nullToAbsent || memberId != null) {
       map['member_id'] = Variable<String>(memberId);
+    }
+    if (!nullToAbsent || authorMemberId != null) {
+      map['author_member_id'] = Variable<String>(authorMemberId);
     }
     if (!nullToAbsent || title != null) {
       map['title'] = Variable<String>(title);
@@ -12716,6 +13117,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       memberId: memberId == null && nullToAbsent
           ? const Value.absent()
           : Value(memberId),
+      authorMemberId: authorMemberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorMemberId),
       title: title == null && nullToAbsent
           ? const Value.absent()
           : Value(title),
@@ -12735,6 +13139,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       id: serializer.fromJson<String>(json['id']),
       systemId: serializer.fromJson<String>(json['systemId']),
       memberId: serializer.fromJson<String?>(json['memberId']),
+      authorMemberId: serializer.fromJson<String?>(json['authorMemberId']),
       title: serializer.fromJson<String?>(json['title']),
       body: serializer.fromJson<String>(json['body']),
       visibility: serializer.fromJson<String>(json['visibility']),
@@ -12749,6 +13154,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       'id': serializer.toJson<String>(id),
       'systemId': serializer.toJson<String>(systemId),
       'memberId': serializer.toJson<String?>(memberId),
+      'authorMemberId': serializer.toJson<String?>(authorMemberId),
       'title': serializer.toJson<String?>(title),
       'body': serializer.toJson<String>(body),
       'visibility': serializer.toJson<String>(visibility),
@@ -12761,6 +13167,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     String? id,
     String? systemId,
     Value<String?> memberId = const Value.absent(),
+    Value<String?> authorMemberId = const Value.absent(),
     Value<String?> title = const Value.absent(),
     String? body,
     String? visibility,
@@ -12770,6 +13177,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     id: id ?? this.id,
     systemId: systemId ?? this.systemId,
     memberId: memberId.present ? memberId.value : this.memberId,
+    authorMemberId: authorMemberId.present
+        ? authorMemberId.value
+        : this.authorMemberId,
     title: title.present ? title.value : this.title,
     body: body ?? this.body,
     visibility: visibility ?? this.visibility,
@@ -12781,6 +13191,9 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
       id: data.id.present ? data.id.value : this.id,
       systemId: data.systemId.present ? data.systemId.value : this.systemId,
       memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      authorMemberId: data.authorMemberId.present
+          ? data.authorMemberId.value
+          : this.authorMemberId,
       title: data.title.present ? data.title.value : this.title,
       body: data.body.present ? data.body.value : this.body,
       visibility: data.visibility.present
@@ -12797,6 +13210,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('memberId: $memberId, ')
+          ..write('authorMemberId: $authorMemberId, ')
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('visibility: $visibility, ')
@@ -12811,6 +13225,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
     id,
     systemId,
     memberId,
+    authorMemberId,
     title,
     body,
     visibility,
@@ -12824,6 +13239,7 @@ class JournalEntry extends DataClass implements Insertable<JournalEntry> {
           other.id == this.id &&
           other.systemId == this.systemId &&
           other.memberId == this.memberId &&
+          other.authorMemberId == this.authorMemberId &&
           other.title == this.title &&
           other.body == this.body &&
           other.visibility == this.visibility &&
@@ -12835,6 +13251,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
   final Value<String> id;
   final Value<String> systemId;
   final Value<String?> memberId;
+  final Value<String?> authorMemberId;
   final Value<String?> title;
   final Value<String> body;
   final Value<String> visibility;
@@ -12845,6 +13262,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     this.id = const Value.absent(),
     this.systemId = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.authorMemberId = const Value.absent(),
     this.title = const Value.absent(),
     this.body = const Value.absent(),
     this.visibility = const Value.absent(),
@@ -12856,6 +13274,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     required String id,
     required String systemId,
     this.memberId = const Value.absent(),
+    this.authorMemberId = const Value.absent(),
     this.title = const Value.absent(),
     required String body,
     this.visibility = const Value.absent(),
@@ -12871,6 +13290,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     Expression<String>? id,
     Expression<String>? systemId,
     Expression<String>? memberId,
+    Expression<String>? authorMemberId,
     Expression<String>? title,
     Expression<String>? body,
     Expression<String>? visibility,
@@ -12882,6 +13302,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
       if (id != null) 'id': id,
       if (systemId != null) 'system_id': systemId,
       if (memberId != null) 'member_id': memberId,
+      if (authorMemberId != null) 'author_member_id': authorMemberId,
       if (title != null) 'title': title,
       if (body != null) 'body': body,
       if (visibility != null) 'visibility': visibility,
@@ -12895,6 +13316,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     Value<String>? id,
     Value<String>? systemId,
     Value<String?>? memberId,
+    Value<String?>? authorMemberId,
     Value<String?>? title,
     Value<String>? body,
     Value<String>? visibility,
@@ -12906,6 +13328,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
       id: id ?? this.id,
       systemId: systemId ?? this.systemId,
       memberId: memberId ?? this.memberId,
+      authorMemberId: authorMemberId ?? this.authorMemberId,
       title: title ?? this.title,
       body: body ?? this.body,
       visibility: visibility ?? this.visibility,
@@ -12926,6 +13349,9 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
     }
     if (memberId.present) {
       map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (authorMemberId.present) {
+      map['author_member_id'] = Variable<String>(authorMemberId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -12954,6 +13380,7 @@ class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
           ..write('id: $id, ')
           ..write('systemId: $systemId, ')
           ..write('memberId: $memberId, ')
+          ..write('authorMemberId: $authorMemberId, ')
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('visibility: $visibility, ')
@@ -13914,6 +14341,20 @@ class $PollVoteEventsTable extends PollVoteEvents
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES members (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -13931,6 +14372,7 @@ class $PollVoteEventsTable extends PollVoteEvents
     pollId,
     optionId,
     action,
+    memberId,
     createdAt,
   ];
   @override
@@ -13974,6 +14416,12 @@ class $PollVoteEventsTable extends PollVoteEvents
     } else if (isInserting) {
       context.missing(_actionMeta);
     }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -14007,6 +14455,10 @@ class $PollVoteEventsTable extends PollVoteEvents
         DriftSqlType.string,
         data['${effectivePrefix}action'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -14025,12 +14477,14 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
   final String pollId;
   final String optionId;
   final String action;
+  final String? memberId;
   final DateTime createdAt;
   const PollVoteEvent({
     required this.id,
     required this.pollId,
     required this.optionId,
     required this.action,
+    this.memberId,
     required this.createdAt,
   });
   @override
@@ -14040,6 +14494,9 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
     map['poll_id'] = Variable<String>(pollId);
     map['option_id'] = Variable<String>(optionId);
     map['action'] = Variable<String>(action);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -14050,6 +14507,9 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
       pollId: Value(pollId),
       optionId: Value(optionId),
       action: Value(action),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       createdAt: Value(createdAt),
     );
   }
@@ -14064,6 +14524,7 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
       pollId: serializer.fromJson<String>(json['pollId']),
       optionId: serializer.fromJson<String>(json['optionId']),
       action: serializer.fromJson<String>(json['action']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -14075,6 +14536,7 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
       'pollId': serializer.toJson<String>(pollId),
       'optionId': serializer.toJson<String>(optionId),
       'action': serializer.toJson<String>(action),
+      'memberId': serializer.toJson<String?>(memberId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -14084,12 +14546,14 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
     String? pollId,
     String? optionId,
     String? action,
+    Value<String?> memberId = const Value.absent(),
     DateTime? createdAt,
   }) => PollVoteEvent(
     id: id ?? this.id,
     pollId: pollId ?? this.pollId,
     optionId: optionId ?? this.optionId,
     action: action ?? this.action,
+    memberId: memberId.present ? memberId.value : this.memberId,
     createdAt: createdAt ?? this.createdAt,
   );
   PollVoteEvent copyWithCompanion(PollVoteEventsCompanion data) {
@@ -14098,6 +14562,7 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
       pollId: data.pollId.present ? data.pollId.value : this.pollId,
       optionId: data.optionId.present ? data.optionId.value : this.optionId,
       action: data.action.present ? data.action.value : this.action,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -14109,13 +14574,15 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
           ..write('pollId: $pollId, ')
           ..write('optionId: $optionId, ')
           ..write('action: $action, ')
+          ..write('memberId: $memberId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, pollId, optionId, action, createdAt);
+  int get hashCode =>
+      Object.hash(id, pollId, optionId, action, memberId, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14124,6 +14591,7 @@ class PollVoteEvent extends DataClass implements Insertable<PollVoteEvent> {
           other.pollId == this.pollId &&
           other.optionId == this.optionId &&
           other.action == this.action &&
+          other.memberId == this.memberId &&
           other.createdAt == this.createdAt);
 }
 
@@ -14132,6 +14600,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
   final Value<String> pollId;
   final Value<String> optionId;
   final Value<String> action;
+  final Value<String?> memberId;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const PollVoteEventsCompanion({
@@ -14139,6 +14608,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
     this.pollId = const Value.absent(),
     this.optionId = const Value.absent(),
     this.action = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -14147,6 +14617,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
     required String pollId,
     required String optionId,
     required String action,
+    this.memberId = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -14159,6 +14630,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
     Expression<String>? pollId,
     Expression<String>? optionId,
     Expression<String>? action,
+    Expression<String>? memberId,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -14167,6 +14639,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
       if (pollId != null) 'poll_id': pollId,
       if (optionId != null) 'option_id': optionId,
       if (action != null) 'action': action,
+      if (memberId != null) 'member_id': memberId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -14177,6 +14650,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
     Value<String>? pollId,
     Value<String>? optionId,
     Value<String>? action,
+    Value<String?>? memberId,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -14185,6 +14659,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
       pollId: pollId ?? this.pollId,
       optionId: optionId ?? this.optionId,
       action: action ?? this.action,
+      memberId: memberId ?? this.memberId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -14205,6 +14680,9 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
     if (action.present) {
       map['action'] = Variable<String>(action.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -14221,6 +14699,7 @@ class PollVoteEventsCompanion extends UpdateCompanion<PollVoteEvent> {
           ..write('pollId: $pollId, ')
           ..write('optionId: $optionId, ')
           ..write('action: $action, ')
+          ..write('memberId: $memberId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -16432,6 +16911,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PollsTable polls = $PollsTable(this);
   late final $PollOptionsTable pollOptions = $PollOptionsTable(this);
   late final $PollVotesTable pollVotes = $PollVotesTable(this);
+  late final $PollMemberVotesTable pollMemberVotes = $PollMemberVotesTable(
+    this,
+  );
   late final $FrontSessionsTable frontSessions = $FrontSessionsTable(this);
   late final $FrontSessionMembersTable frontSessionMembers =
       $FrontSessionMembersTable(this);
@@ -16498,6 +16980,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     polls,
     pollOptions,
     pollVotes,
+    pollMemberVotes,
     frontSessions,
     frontSessionMembers,
     importRecords,
@@ -16526,10 +17009,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'members',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('poll_member_votes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'front_sessions',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('front_audit_events', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'members',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('poll_vote_events', kind: UpdateKind.update)],
     ),
   ]);
 }
@@ -18142,10 +18639,11 @@ class $$PluralSystemsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (systemGroupsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          SystemGroup
+                          SystemGroup,
+                          $SystemGroupsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18156,17 +18654,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).systemGroupsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (membersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Member
+                          Member,
+                          $MembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18177,17 +18674,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).membersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (notesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Note
+                          Note,
+                          $NotesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18198,17 +18694,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).notesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (chatCategoriesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ChatCategory
+                          ChatCategory,
+                          $ChatCategoriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18219,17 +18714,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).chatCategoriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (chatChannelsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ChatChannel
+                          ChatChannel,
+                          $ChatChannelsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18240,17 +18734,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).chatChannelsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (messagesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Message
+                          Message,
+                          $MessagesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18261,17 +18754,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).messagesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (remindersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Reminder
+                          Reminder,
+                          $RemindersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18282,17 +18774,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).remindersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (customFieldDefinitionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          CustomFieldDefinition
+                          CustomFieldDefinition,
+                          $CustomFieldDefinitionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18303,17 +18794,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).customFieldDefinitionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (pollsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Poll
+                          Poll,
+                          $PollsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18324,17 +18814,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).pollsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (frontSessionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          FrontSession
+                          FrontSession,
+                          $FrontSessionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18345,17 +18834,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).frontSessionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (importRecordsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ImportRecord
+                          ImportRecord,
+                          $ImportRecordsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18366,17 +18854,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).importRecordsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (importPayloadsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          ImportPayload
+                          ImportPayload,
+                          $ImportPayloadsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18387,17 +18874,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).importPayloadsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (backgroundJobsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          BackgroundJob
+                          BackgroundJob,
+                          $BackgroundJobsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18408,17 +18894,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).backgroundJobsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (notificationEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          NotificationEvent
+                          NotificationEvent,
+                          $NotificationEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18429,17 +18914,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).notificationEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (tagsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          Tag
+                          Tag,
+                          $TagsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18450,17 +18934,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).tagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (journalEntriesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          JournalEntry
+                          JournalEntry,
+                          $JournalEntriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18471,17 +18954,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).journalEntriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (pendingActionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          PendingAction
+                          PendingAction,
+                          $PendingActionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18492,17 +18974,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).pendingActionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (namedFrontsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          NamedFront
+                          NamedFront,
+                          $NamedFrontsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18513,17 +18994,16 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).namedFrontsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                       if (privacyBucketsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PluralSystem,
                           $PluralSystemsTable,
-                          PrivacyBucket
+                          PrivacyBucket,
+                          $PrivacyBucketsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PluralSystemsTableReferences
@@ -18534,10 +19014,8 @@ class $$PluralSystemsTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.systemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'system_id',
                           typedResults: items,
                         ),
                     ];
@@ -19050,10 +19528,11 @@ class $$SystemGroupsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (groupMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           SystemGroup,
                           $SystemGroupsTable,
-                          GroupMember
+                          GroupMember,
+                          $GroupMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$SystemGroupsTableReferences
@@ -19064,10 +19543,8 @@ class $$SystemGroupsTableTableManager
                                 table,
                                 p0,
                               ).groupMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.groupId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'group_id',
                           typedResults: items,
                         ),
                     ];
@@ -19203,6 +19680,26 @@ final class $$MembersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$PollMemberVotesTable, List<PollMemberVote>>
+  _pollMemberVotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollMemberVotes,
+    aliasName: 'members__id__poll_member_votes__member_id',
+  );
+
+  $$PollMemberVotesTableProcessedTableManager get pollMemberVotesRefs {
+    final manager = $$PollMemberVotesTableTableManager(
+      $_db,
+      $_db.pollMemberVotes,
+    ).filter((f) => f.memberId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _pollMemberVotesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $FrontSessionMembersTable,
     List<FrontSessionMember>
@@ -19246,18 +19743,59 @@ final class $$MembersTableReferences
   }
 
   static MultiTypedResultKey<$JournalEntriesTable, List<JournalEntry>>
-  _journalEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+  _journalsAboutMemberTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.journalEntries,
     aliasName: 'members__id__journal_entries__member_id',
   );
 
-  $$JournalEntriesTableProcessedTableManager get journalEntriesRefs {
+  $$JournalEntriesTableProcessedTableManager get journalsAboutMember {
     final manager = $$JournalEntriesTableTableManager(
       $_db,
       $_db.journalEntries,
     ).filter((f) => f.memberId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_journalEntriesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _journalsAboutMemberTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$JournalEntriesTable, List<JournalEntry>>
+  _journalsAuthoredByMemberTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.journalEntries,
+        aliasName: 'members__id__journal_entries__author_member_id',
+      );
+
+  $$JournalEntriesTableProcessedTableManager get journalsAuthoredByMember {
+    final manager = $$JournalEntriesTableTableManager(
+      $_db,
+      $_db.journalEntries,
+    ).filter((f) => f.authorMemberId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _journalsAuthoredByMemberTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PollVoteEventsTable, List<PollVoteEvent>>
+  _pollVoteEventsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollVoteEvents,
+    aliasName: 'members__id__poll_vote_events__member_id',
+  );
+
+  $$PollVoteEventsTableProcessedTableManager get pollVoteEventsRefs {
+    final manager = $$PollVoteEventsTableTableManager(
+      $_db,
+      $_db.pollVoteEvents,
+    ).filter((f) => f.memberId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pollVoteEventsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -19497,6 +20035,31 @@ class $$MembersTableFilterComposer
     return f(composer);
   }
 
+  Expression<bool> pollMemberVotesRefs(
+    Expression<bool> Function($$PollMemberVotesTableFilterComposer f) f,
+  ) {
+    final $$PollMemberVotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableFilterComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> frontSessionMembersRefs(
     Expression<bool> Function($$FrontSessionMembersTableFilterComposer f) f,
   ) {
@@ -19547,7 +20110,7 @@ class $$MembersTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> journalEntriesRefs(
+  Expression<bool> journalsAboutMember(
     Expression<bool> Function($$JournalEntriesTableFilterComposer f) f,
   ) {
     final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
@@ -19563,6 +20126,56 @@ class $$MembersTableFilterComposer
           }) => $$JournalEntriesTableFilterComposer(
             $db: $db,
             $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> journalsAuthoredByMember(
+    Expression<bool> Function($$JournalEntriesTableFilterComposer f) f,
+  ) {
+    final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.authorMemberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pollVoteEventsRefs(
+    Expression<bool> Function($$PollVoteEventsTableFilterComposer f) f,
+  ) {
+    final $$PollVoteEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVoteEvents,
+      getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVoteEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.pollVoteEvents,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -19921,6 +20534,31 @@ class $$MembersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> pollMemberVotesRefs<T extends Object>(
+    Expression<T> Function($$PollMemberVotesTableAnnotationComposer a) f,
+  ) {
+    final $$PollMemberVotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> frontSessionMembersRefs<T extends Object>(
     Expression<T> Function($$FrontSessionMembersTableAnnotationComposer a) f,
   ) {
@@ -19972,7 +20610,7 @@ class $$MembersTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> journalEntriesRefs<T extends Object>(
+  Expression<T> journalsAboutMember<T extends Object>(
     Expression<T> Function($$JournalEntriesTableAnnotationComposer a) f,
   ) {
     final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
@@ -19988,6 +20626,56 @@ class $$MembersTableAnnotationComposer
           }) => $$JournalEntriesTableAnnotationComposer(
             $db: $db,
             $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> journalsAuthoredByMember<T extends Object>(
+    Expression<T> Function($$JournalEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.authorMemberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> pollVoteEventsRefs<T extends Object>(
+    Expression<T> Function($$PollVoteEventsTableAnnotationComposer a) f,
+  ) {
+    final $$PollVoteEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollVoteEvents,
+      getReferencedColumn: (t) => t.memberId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollVoteEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollVoteEvents,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -20067,9 +20755,12 @@ class $$MembersTableTableManager
             bool systemId,
             bool groupMembersRefs,
             bool customFieldValuesRefs,
+            bool pollMemberVotesRefs,
             bool frontSessionMembersRefs,
             bool memberTagsRefs,
-            bool journalEntriesRefs,
+            bool journalsAboutMember,
+            bool journalsAuthoredByMember,
+            bool pollVoteEventsRefs,
             bool namedFrontMembersRefs,
             bool privacyBucketMembersRefs,
           })
@@ -20198,9 +20889,12 @@ class $$MembersTableTableManager
                 systemId = false,
                 groupMembersRefs = false,
                 customFieldValuesRefs = false,
+                pollMemberVotesRefs = false,
                 frontSessionMembersRefs = false,
                 memberTagsRefs = false,
-                journalEntriesRefs = false,
+                journalsAboutMember = false,
+                journalsAuthoredByMember = false,
+                pollVoteEventsRefs = false,
                 namedFrontMembersRefs = false,
                 privacyBucketMembersRefs = false,
               }) {
@@ -20209,9 +20903,12 @@ class $$MembersTableTableManager
                   explicitlyWatchedTables: [
                     if (groupMembersRefs) db.groupMembers,
                     if (customFieldValuesRefs) db.customFieldValues,
+                    if (pollMemberVotesRefs) db.pollMemberVotes,
                     if (frontSessionMembersRefs) db.frontSessionMembers,
                     if (memberTagsRefs) db.memberTags,
-                    if (journalEntriesRefs) db.journalEntries,
+                    if (journalsAboutMember) db.journalEntries,
+                    if (journalsAuthoredByMember) db.journalEntries,
+                    if (pollVoteEventsRefs) db.pollVoteEvents,
                     if (namedFrontMembersRefs) db.namedFrontMembers,
                     if (privacyBucketMembersRefs) db.privacyBucketMembers,
                   ],
@@ -20248,10 +20945,11 @@ class $$MembersTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (groupMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          GroupMember
+                          GroupMember,
+                          $GroupMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20262,17 +20960,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).groupMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (customFieldValuesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          CustomFieldValue
+                          CustomFieldValue,
+                          $CustomFieldValuesTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20283,17 +20980,36 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).customFieldValuesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
+                          typedResults: items,
+                        ),
+                      if (pollMemberVotesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Member,
+                          $MembersTable,
+                          PollMemberVote,
+                          $PollMemberVotesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MembersTableReferences
+                              ._pollMemberVotesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MembersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollMemberVotesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (frontSessionMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          FrontSessionMember
+                          FrontSessionMember,
+                          $FrontSessionMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20304,17 +21020,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).frontSessionMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (memberTagsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          MemberTag
+                          MemberTag,
+                          $MemberTagsTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20325,38 +21040,76 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).memberTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
-                      if (journalEntriesRefs)
-                        await $_getPrefetchedData<
+                      if (journalsAboutMember)
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          JournalEntry
+                          JournalEntry,
+                          $JournalEntriesTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
-                              ._journalEntriesRefsTable(db),
+                              ._journalsAboutMemberTable(db),
                           managerFromTypedResult: (p0) =>
                               $$MembersTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).journalEntriesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                              ).journalsAboutMember,
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
+                          typedResults: items,
+                        ),
+                      if (journalsAuthoredByMember)
+                        await $_getPrefetchedDataByColumns<
+                          Member,
+                          $MembersTable,
+                          JournalEntry,
+                          $JournalEntriesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MembersTableReferences
+                              ._journalsAuthoredByMemberTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MembersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalsAuthoredByMember,
+                          currentColumn: 'id',
+                          referencedColumn: 'author_member_id',
+                          typedResults: items,
+                        ),
+                      if (pollVoteEventsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Member,
+                          $MembersTable,
+                          PollVoteEvent,
+                          $PollVoteEventsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MembersTableReferences
+                              ._pollVoteEventsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MembersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollVoteEventsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (namedFrontMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          NamedFrontMember
+                          NamedFrontMember,
+                          $NamedFrontMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20367,17 +21120,16 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).namedFrontMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                       if (privacyBucketMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Member,
                           $MembersTable,
-                          PrivacyBucketMember
+                          PrivacyBucketMember,
+                          $PrivacyBucketMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$MembersTableReferences
@@ -20388,10 +21140,8 @@ class $$MembersTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.memberId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'member_id',
                           typedResults: items,
                         ),
                     ];
@@ -20418,9 +21168,12 @@ typedef $$MembersTableProcessedTableManager =
         bool systemId,
         bool groupMembersRefs,
         bool customFieldValuesRefs,
+        bool pollMemberVotesRefs,
         bool frontSessionMembersRefs,
         bool memberTagsRefs,
-        bool journalEntriesRefs,
+        bool journalsAboutMember,
+        bool journalsAuthoredByMember,
+        bool pollVoteEventsRefs,
         bool namedFrontMembersRefs,
         bool privacyBucketMembersRefs,
       })
@@ -21531,10 +22284,11 @@ class $$ChatCategoriesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (chatChannelsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ChatCategory,
                           $ChatCategoriesTable,
-                          ChatChannel
+                          ChatChannel,
+                          $ChatChannelsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ChatCategoriesTableReferences
@@ -21545,10 +22299,8 @@ class $$ChatCategoriesTableTableManager
                                 table,
                                 p0,
                               ).chatChannelsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.categoryId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'category_id',
                           typedResults: items,
                         ),
                     ];
@@ -22186,10 +22938,11 @@ class $$ChatChannelsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (messagesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ChatChannel,
                           $ChatChannelsTable,
-                          Message
+                          Message,
+                          $MessagesTable
                         >(
                           currentTable: table,
                           referencedTable: $$ChatChannelsTableReferences
@@ -22200,10 +22953,8 @@ class $$ChatChannelsTableTableManager
                                 table,
                                 p0,
                               ).messagesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.channelId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'channel_id',
                           typedResults: items,
                         ),
                     ];
@@ -23914,10 +24665,11 @@ class $$CustomFieldDefinitionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (customFieldValuesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           CustomFieldDefinition,
                           $CustomFieldDefinitionsTable,
-                          CustomFieldValue
+                          CustomFieldValue,
+                          $CustomFieldValuesTable
                         >(
                           currentTable: table,
                           referencedTable:
@@ -23929,17 +24681,16 @@ class $$CustomFieldDefinitionsTableTableManager
                                 table,
                                 p0,
                               ).customFieldValuesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.fieldId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'field_id',
                           typedResults: items,
                         ),
                       if (customFieldValueMigrationProvenanceRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           CustomFieldDefinition,
                           $CustomFieldDefinitionsTable,
-                          CustomFieldValueMigrationProvenanceData
+                          CustomFieldValueMigrationProvenanceData,
+                          $CustomFieldValueMigrationProvenanceTable
                         >(
                           currentTable: table,
                           referencedTable:
@@ -23953,10 +24704,8 @@ class $$CustomFieldDefinitionsTableTableManager
                                 table,
                                 p0,
                               ).customFieldValueMigrationProvenanceRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.fieldId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'field_id',
                           typedResults: items,
                         ),
                     ];
@@ -24808,6 +25557,7 @@ typedef $$PollsTableCreateCompanionBuilder = PollsCompanion Function({
   required String question,
   Value<String?> description,
   Value<String> kind,
+  Value<String> voteMode,
   Value<bool> restrictVotingToFronters,
   Value<DateTime?> closesAt,
   Value<int?> retentionDays,
@@ -24822,6 +25572,7 @@ typedef $$PollsTableUpdateCompanionBuilder = PollsCompanion Function({
   Value<String> question,
   Value<String?> description,
   Value<String> kind,
+  Value<String> voteMode,
   Value<bool> restrictVotingToFronters,
   Value<DateTime?> closesAt,
   Value<int?> retentionDays,
@@ -24888,6 +25639,26 @@ final class $$PollsTableReferences
     );
   }
 
+  static MultiTypedResultKey<$PollMemberVotesTable, List<PollMemberVote>>
+  _pollMemberVotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollMemberVotes,
+    aliasName: 'polls__id__poll_member_votes__poll_id',
+  );
+
+  $$PollMemberVotesTableProcessedTableManager get pollMemberVotesRefs {
+    final manager = $$PollMemberVotesTableTableManager(
+      $_db,
+      $_db.pollMemberVotes,
+    ).filter((f) => f.pollId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _pollMemberVotesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$PollVoteEventsTable, List<PollVoteEvent>>
   _pollVoteEventsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.pollVoteEvents,
@@ -24932,6 +25703,11 @@ class $$PollsTableFilterComposer extends Composer<_$AppDatabase, $PollsTable> {
 
   ColumnFilters<String> get kind => $composableBuilder(
     column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voteMode => $composableBuilder(
+    column: $table.voteMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25038,6 +25814,31 @@ class $$PollsTableFilterComposer extends Composer<_$AppDatabase, $PollsTable> {
     return f(composer);
   }
 
+  Expression<bool> pollMemberVotesRefs(
+    Expression<bool> Function($$PollMemberVotesTableFilterComposer f) f,
+  ) {
+    final $$PollMemberVotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableFilterComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> pollVoteEventsRefs(
     Expression<bool> Function($$PollVoteEventsTableFilterComposer f) f,
   ) {
@@ -25090,6 +25891,11 @@ class $$PollsTableOrderingComposer
 
   ColumnOrderings<String> get kind => $composableBuilder(
     column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voteMode => $composableBuilder(
+    column: $table.voteMode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -25169,6 +25975,9 @@ class $$PollsTableAnnotationComposer
 
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get voteMode =>
+      $composableBuilder(column: $table.voteMode, builder: (column) => column);
 
   GeneratedColumn<bool> get restrictVotingToFronters => $composableBuilder(
     column: $table.restrictVotingToFronters,
@@ -25265,6 +26074,31 @@ class $$PollsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> pollMemberVotesRefs<T extends Object>(
+    Expression<T> Function($$PollMemberVotesTableAnnotationComposer a) f,
+  ) {
+    final $$PollMemberVotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.pollId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> pollVoteEventsRefs<T extends Object>(
     Expression<T> Function($$PollVoteEventsTableAnnotationComposer a) f,
   ) {
@@ -25308,6 +26142,7 @@ class $$PollsTableTableManager
             bool systemId,
             bool pollOptionsRefs,
             bool pollVotesRefs,
+            bool pollMemberVotesRefs,
             bool pollVoteEventsRefs,
           })
         > {
@@ -25329,6 +26164,7 @@ class $$PollsTableTableManager
                 Value<String> question = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String> kind = const Value.absent(),
+                Value<String> voteMode = const Value.absent(),
                 Value<bool> restrictVotingToFronters = const Value.absent(),
                 Value<DateTime?> closesAt = const Value.absent(),
                 Value<int?> retentionDays = const Value.absent(),
@@ -25342,6 +26178,7 @@ class $$PollsTableTableManager
                 question: question,
                 description: description,
                 kind: kind,
+                voteMode: voteMode,
                 restrictVotingToFronters: restrictVotingToFronters,
                 closesAt: closesAt,
                 retentionDays: retentionDays,
@@ -25357,6 +26194,7 @@ class $$PollsTableTableManager
                 required String question,
                 Value<String?> description = const Value.absent(),
                 Value<String> kind = const Value.absent(),
+                Value<String> voteMode = const Value.absent(),
                 Value<bool> restrictVotingToFronters = const Value.absent(),
                 Value<DateTime?> closesAt = const Value.absent(),
                 Value<int?> retentionDays = const Value.absent(),
@@ -25370,6 +26208,7 @@ class $$PollsTableTableManager
                 question: question,
                 description: description,
                 kind: kind,
+                voteMode: voteMode,
                 restrictVotingToFronters: restrictVotingToFronters,
                 closesAt: closesAt,
                 retentionDays: retentionDays,
@@ -25391,6 +26230,7 @@ class $$PollsTableTableManager
                 systemId = false,
                 pollOptionsRefs = false,
                 pollVotesRefs = false,
+                pollMemberVotesRefs = false,
                 pollVoteEventsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -25398,6 +26238,7 @@ class $$PollsTableTableManager
                   explicitlyWatchedTables: [
                     if (pollOptionsRefs) db.pollOptions,
                     if (pollVotesRefs) db.pollVotes,
+                    if (pollMemberVotesRefs) db.pollMemberVotes,
                     if (pollVoteEventsRefs) db.pollVoteEvents,
                   ],
                   addJoins:
@@ -25433,10 +26274,11 @@ class $$PollsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (pollOptionsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Poll,
                           $PollsTable,
-                          PollOption
+                          PollOption,
+                          $PollOptionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
@@ -25447,14 +26289,17 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollOptionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                       if (pollVotesRefs)
-                        await $_getPrefetchedData<Poll, $PollsTable, PollVote>(
+                        await $_getPrefetchedDataByColumns<
+                          Poll,
+                          $PollsTable,
+                          PollVote,
+                          $PollVotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
                               ._pollVotesRefsTable(db),
@@ -25464,17 +26309,36 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollVotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
+                          typedResults: items,
+                        ),
+                      if (pollMemberVotesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Poll,
+                          $PollsTable,
+                          PollMemberVote,
+                          $PollMemberVotesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PollsTableReferences
+                              ._pollMemberVotesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PollsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollMemberVotesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                       if (pollVoteEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Poll,
                           $PollsTable,
-                          PollVoteEvent
+                          PollVoteEvent,
+                          $PollVoteEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollsTableReferences
@@ -25485,10 +26349,8 @@ class $$PollsTableTableManager
                                 table,
                                 p0,
                               ).pollVoteEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pollId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'poll_id',
                           typedResults: items,
                         ),
                     ];
@@ -25515,6 +26377,7 @@ typedef $$PollsTableProcessedTableManager =
         bool systemId,
         bool pollOptionsRefs,
         bool pollVotesRefs,
+        bool pollMemberVotesRefs,
         bool pollVoteEventsRefs,
       })
     >;
@@ -25569,6 +26432,26 @@ final class $$PollOptionsTableReferences
     ).filter((f) => f.optionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_pollVotesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PollMemberVotesTable, List<PollMemberVote>>
+  _pollMemberVotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pollMemberVotes,
+    aliasName: 'poll_options__id__poll_member_votes__option_id',
+  );
+
+  $$PollMemberVotesTableProcessedTableManager get pollMemberVotesRefs {
+    final manager = $$PollMemberVotesTableTableManager(
+      $_db,
+      $_db.pollMemberVotes,
+    ).filter((f) => f.optionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _pollMemberVotesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -25656,6 +26539,31 @@ class $$PollOptionsTableFilterComposer
           }) => $$PollVotesTableFilterComposer(
             $db: $db,
             $table: $db.pollVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pollMemberVotesRefs(
+    Expression<bool> Function($$PollMemberVotesTableFilterComposer f) f,
+  ) {
+    final $$PollMemberVotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.optionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableFilterComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -25805,6 +26713,31 @@ class $$PollOptionsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> pollMemberVotesRefs<T extends Object>(
+    Expression<T> Function($$PollMemberVotesTableAnnotationComposer a) f,
+  ) {
+    final $$PollMemberVotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pollMemberVotes,
+      getReferencedColumn: (t) => t.optionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollMemberVotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollMemberVotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> pollVoteEventsRefs<T extends Object>(
     Expression<T> Function($$PollVoteEventsTableAnnotationComposer a) f,
   ) {
@@ -25847,6 +26780,7 @@ class $$PollOptionsTableTableManager
           PrefetchHooks Function({
             bool pollId,
             bool pollVotesRefs,
+            bool pollMemberVotesRefs,
             bool pollVoteEventsRefs,
           })
         > {
@@ -25901,12 +26835,14 @@ class $$PollOptionsTableTableManager
               ({
                 pollId = false,
                 pollVotesRefs = false,
+                pollMemberVotesRefs = false,
                 pollVoteEventsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (pollVotesRefs) db.pollVotes,
+                    if (pollMemberVotesRefs) db.pollMemberVotes,
                     if (pollVoteEventsRefs) db.pollVoteEvents,
                   ],
                   addJoins:
@@ -25942,10 +26878,11 @@ class $$PollOptionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (pollVotesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PollOption,
                           $PollOptionsTable,
-                          PollVote
+                          PollVote,
+                          $PollVotesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollOptionsTableReferences
@@ -25956,17 +26893,36 @@ class $$PollOptionsTableTableManager
                                 table,
                                 p0,
                               ).pollVotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.optionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'option_id',
+                          typedResults: items,
+                        ),
+                      if (pollMemberVotesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          PollOption,
+                          $PollOptionsTable,
+                          PollMemberVote,
+                          $PollMemberVotesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PollOptionsTableReferences
+                              ._pollMemberVotesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PollOptionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pollMemberVotesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'option_id',
                           typedResults: items,
                         ),
                       if (pollVoteEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PollOption,
                           $PollOptionsTable,
-                          PollVoteEvent
+                          PollVoteEvent,
+                          $PollVoteEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PollOptionsTableReferences
@@ -25977,10 +26933,8 @@ class $$PollOptionsTableTableManager
                                 table,
                                 p0,
                               ).pollVoteEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.optionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'option_id',
                           typedResults: items,
                         ),
                     ];
@@ -26006,6 +26960,7 @@ typedef $$PollOptionsTableProcessedTableManager =
       PrefetchHooks Function({
         bool pollId,
         bool pollVotesRefs,
+        bool pollMemberVotesRefs,
         bool pollVoteEventsRefs,
       })
     >;
@@ -26367,6 +27322,478 @@ typedef $$PollVotesTableProcessedTableManager =
       (PollVote, $$PollVotesTableReferences),
       PollVote,
       PrefetchHooks Function({bool pollId, bool optionId})
+    >;
+typedef $$PollMemberVotesTableCreateCompanionBuilder =
+    PollMemberVotesCompanion Function({
+      required String pollId,
+      required String optionId,
+      required String memberId,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$PollMemberVotesTableUpdateCompanionBuilder =
+    PollMemberVotesCompanion Function({
+      Value<String> pollId,
+      Value<String> optionId,
+      Value<String> memberId,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$PollMemberVotesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $PollMemberVotesTable, PollMemberVote> {
+  $$PollMemberVotesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PollsTable _pollIdTable(_$AppDatabase db) =>
+      db.polls.createAlias('poll_member_votes__poll_id__polls__id');
+
+  $$PollsTableProcessedTableManager get pollId {
+    final $_column = $_itemColumn<String>('poll_id')!;
+
+    final manager = $$PollsTableTableManager(
+      $_db,
+      $_db.polls,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pollIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PollOptionsTable _optionIdTable(_$AppDatabase db) => db.pollOptions
+      .createAlias('poll_member_votes__option_id__poll_options__id');
+
+  $$PollOptionsTableProcessedTableManager get optionId {
+    final $_column = $_itemColumn<String>('option_id')!;
+
+    final manager = $$PollOptionsTableTableManager(
+      $_db,
+      $_db.pollOptions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_optionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MembersTable _memberIdTable(_$AppDatabase db) =>
+      db.members.createAlias('poll_member_votes__member_id__members__id');
+
+  $$MembersTableProcessedTableManager get memberId {
+    final $_column = $_itemColumn<String>('member_id')!;
+
+    final manager = $$MembersTableTableManager(
+      $_db,
+      $_db.members,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_memberIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PollMemberVotesTableFilterComposer
+    extends Composer<_$AppDatabase, $PollMemberVotesTable> {
+  $$PollMemberVotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PollsTableFilterComposer get pollId {
+    final $$PollsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableFilterComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableFilterComposer get optionId {
+    final $$PollOptionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableFilterComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableFilterComposer get memberId {
+    final $$MembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableFilterComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollMemberVotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PollMemberVotesTable> {
+  $$PollMemberVotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PollsTableOrderingComposer get pollId {
+    final $$PollsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableOrderingComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableOrderingComposer get optionId {
+    final $$PollOptionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableOrderingComposer get memberId {
+    final $$MembersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableOrderingComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollMemberVotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PollMemberVotesTable> {
+  $$PollMemberVotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$PollsTableAnnotationComposer get pollId {
+    final $$PollsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pollId,
+      referencedTable: $db.polls,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.polls,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PollOptionsTableAnnotationComposer get optionId {
+    final $$PollOptionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.optionId,
+      referencedTable: $db.pollOptions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PollOptionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableAnnotationComposer get memberId {
+    final $$MembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PollMemberVotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PollMemberVotesTable,
+          PollMemberVote,
+          $$PollMemberVotesTableFilterComposer,
+          $$PollMemberVotesTableOrderingComposer,
+          $$PollMemberVotesTableAnnotationComposer,
+          $$PollMemberVotesTableCreateCompanionBuilder,
+          $$PollMemberVotesTableUpdateCompanionBuilder,
+          (PollMemberVote, $$PollMemberVotesTableReferences),
+          PollMemberVote,
+          PrefetchHooks Function({bool pollId, bool optionId, bool memberId})
+        > {
+  $$PollMemberVotesTableTableManager(
+    _$AppDatabase db,
+    $PollMemberVotesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PollMemberVotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PollMemberVotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PollMemberVotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> pollId = const Value.absent(),
+                Value<String> optionId = const Value.absent(),
+                Value<String> memberId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PollMemberVotesCompanion(
+                pollId: pollId,
+                optionId: optionId,
+                memberId: memberId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pollId,
+                required String optionId,
+                required String memberId,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PollMemberVotesCompanion.insert(
+                pollId: pollId,
+                optionId: optionId,
+                memberId: memberId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PollMemberVotesTable, PollMemberVote>(table),
+                  $$PollMemberVotesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({pollId = false, optionId = false, memberId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (pollId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pollId,
+                            referencedTable: $$PollMemberVotesTableReferences
+                                ._pollIdTable(db),
+                            referencedColumn: $$PollMemberVotesTableReferences
+                                ._pollIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (optionId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.optionId,
+                            referencedTable: $$PollMemberVotesTableReferences
+                                ._optionIdTable(db),
+                            referencedColumn: $$PollMemberVotesTableReferences
+                                ._optionIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (memberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.memberId,
+                            referencedTable: $$PollMemberVotesTableReferences
+                                ._memberIdTable(db),
+                            referencedColumn: $$PollMemberVotesTableReferences
+                                ._memberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PollMemberVotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PollMemberVotesTable,
+      PollMemberVote,
+      $$PollMemberVotesTableFilterComposer,
+      $$PollMemberVotesTableOrderingComposer,
+      $$PollMemberVotesTableAnnotationComposer,
+      $$PollMemberVotesTableCreateCompanionBuilder,
+      $$PollMemberVotesTableUpdateCompanionBuilder,
+      (PollMemberVote, $$PollMemberVotesTableReferences),
+      PollMemberVote,
+      PrefetchHooks Function({bool pollId, bool optionId, bool memberId})
     >;
 typedef $$FrontSessionsTableCreateCompanionBuilder =
     FrontSessionsCompanion Function({
@@ -26884,10 +28311,11 @@ class $$FrontSessionsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (frontSessionMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           FrontSession,
                           $FrontSessionsTable,
-                          FrontSessionMember
+                          FrontSessionMember,
+                          $FrontSessionMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$FrontSessionsTableReferences
@@ -26898,17 +28326,16 @@ class $$FrontSessionsTableTableManager
                                 table,
                                 p0,
                               ).frontSessionMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sessionId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'session_id',
                           typedResults: items,
                         ),
                       if (frontAuditEventsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           FrontSession,
                           $FrontSessionsTable,
-                          FrontAuditEvent
+                          FrontAuditEvent,
+                          $FrontAuditEventsTable
                         >(
                           currentTable: table,
                           referencedTable: $$FrontSessionsTableReferences
@@ -26919,10 +28346,8 @@ class $$FrontSessionsTableTableManager
                                 table,
                                 p0,
                               ).frontAuditEventsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.frontId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'front_id',
                           typedResults: items,
                         ),
                     ];
@@ -27707,10 +29132,11 @@ class $$ImportRecordsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (importPayloadsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ImportRecord,
                           $ImportRecordsTable,
-                          ImportPayload
+                          ImportPayload,
+                          $ImportPayloadsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ImportRecordsTableReferences
@@ -27721,10 +29147,8 @@ class $$ImportRecordsTableTableManager
                                 table,
                                 p0,
                               ).importPayloadsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.importRecordId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'import_record_id',
                           typedResults: items,
                         ),
                     ];
@@ -29581,14 +31005,19 @@ class $$TagsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (memberTagsRefs)
-                    await $_getPrefetchedData<Tag, $TagsTable, MemberTag>(
+                    await $_getPrefetchedDataByColumns<
+                      Tag,
+                      $TagsTable,
+                      MemberTag,
+                      $MemberTagsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$TagsTableReferences
                           ._memberTagsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$TagsTableReferences(db, table, p0).memberTagsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.tagId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'tag_id',
                       typedResults: items,
                     ),
                 ];
@@ -29958,6 +31387,7 @@ typedef $$JournalEntriesTableCreateCompanionBuilder =
       required String id,
       required String systemId,
       Value<String?> memberId,
+      Value<String?> authorMemberId,
       Value<String?> title,
       required String body,
       Value<String> visibility,
@@ -29970,6 +31400,7 @@ typedef $$JournalEntriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> systemId,
       Value<String?> memberId,
+      Value<String?> authorMemberId,
       Value<String?> title,
       Value<String> body,
       Value<String> visibility,
@@ -30015,6 +31446,23 @@ final class $$JournalEntriesTableReferences
       $_db.members,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_memberIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MembersTable _authorMemberIdTable(_$AppDatabase db) =>
+      db.members.createAlias('journal_entries__author_member_id__members__id');
+
+  $$MembersTableProcessedTableManager? get authorMemberId {
+    final $_column = $_itemColumn<String>('author_member_id');
+    if ($_column == null) return null;
+    final manager = $$MembersTableTableManager(
+      $_db,
+      $_db.members,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_authorMemberIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -30088,6 +31536,29 @@ class $$JournalEntriesTableFilterComposer
     final $$MembersTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableFilterComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableFilterComposer get authorMemberId {
+    final $$MembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
       referencedTable: $db.members,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -30192,6 +31663,29 @@ class $$JournalEntriesTableOrderingComposer
     );
     return composer;
   }
+
+  $$MembersTableOrderingComposer get authorMemberId {
+    final $$MembersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableOrderingComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$JournalEntriesTableAnnotationComposer
@@ -30268,6 +31762,29 @@ class $$JournalEntriesTableAnnotationComposer
     );
     return composer;
   }
+
+  $$MembersTableAnnotationComposer get authorMemberId {
+    final $$MembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.authorMemberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$JournalEntriesTableTableManager
@@ -30283,7 +31800,11 @@ class $$JournalEntriesTableTableManager
           $$JournalEntriesTableUpdateCompanionBuilder,
           (JournalEntry, $$JournalEntriesTableReferences),
           JournalEntry,
-          PrefetchHooks Function({bool systemId, bool memberId})
+          PrefetchHooks Function({
+            bool systemId,
+            bool memberId,
+            bool authorMemberId,
+          })
         > {
   $$JournalEntriesTableTableManager(
     _$AppDatabase db,
@@ -30303,6 +31824,7 @@ class $$JournalEntriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> systemId = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> authorMemberId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<String> visibility = const Value.absent(),
@@ -30313,6 +31835,7 @@ class $$JournalEntriesTableTableManager
                 id: id,
                 systemId: systemId,
                 memberId: memberId,
+                authorMemberId: authorMemberId,
                 title: title,
                 body: body,
                 visibility: visibility,
@@ -30325,6 +31848,7 @@ class $$JournalEntriesTableTableManager
                 required String id,
                 required String systemId,
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> authorMemberId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 required String body,
                 Value<String> visibility = const Value.absent(),
@@ -30335,6 +31859,7 @@ class $$JournalEntriesTableTableManager
                 id: id,
                 systemId: systemId,
                 memberId: memberId,
+                authorMemberId: authorMemberId,
                 title: title,
                 body: body,
                 visibility: visibility,
@@ -30350,56 +31875,68 @@ class $$JournalEntriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({systemId = false, memberId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (systemId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.systemId,
-                        referencedTable: $$JournalEntriesTableReferences
-                            ._systemIdTable(db),
-                        referencedColumn: $$JournalEntriesTableReferences
-                            ._systemIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-                    if (memberId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.memberId,
-                        referencedTable: $$JournalEntriesTableReferences
-                            ._memberIdTable(db),
-                        referencedColumn: $$JournalEntriesTableReferences
-                            ._memberIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({systemId = false, memberId = false, authorMemberId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (systemId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.systemId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._systemIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._systemIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (memberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.memberId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._memberIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._memberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (authorMemberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.authorMemberId,
+                            referencedTable: $$JournalEntriesTableReferences
+                                ._authorMemberIdTable(db),
+                            referencedColumn: $$JournalEntriesTableReferences
+                                ._authorMemberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -30416,7 +31953,11 @@ typedef $$JournalEntriesTableProcessedTableManager =
       $$JournalEntriesTableUpdateCompanionBuilder,
       (JournalEntry, $$JournalEntriesTableReferences),
       JournalEntry,
-      PrefetchHooks Function({bool systemId, bool memberId})
+      PrefetchHooks Function({
+        bool systemId,
+        bool memberId,
+        bool authorMemberId,
+      })
     >;
 typedef $$ContentRevisionsTableCreateCompanionBuilder =
     ContentRevisionsCompanion Function({
@@ -31026,6 +32567,7 @@ typedef $$PollVoteEventsTableCreateCompanionBuilder =
       required String pollId,
       required String optionId,
       required String action,
+      Value<String?> memberId,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -31035,6 +32577,7 @@ typedef $$PollVoteEventsTableUpdateCompanionBuilder =
       Value<String> pollId,
       Value<String> optionId,
       Value<String> action,
+      Value<String?> memberId,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -31075,6 +32618,23 @@ final class $$PollVoteEventsTableReferences
       $_db.pollOptions,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_optionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MembersTable _memberIdTable(_$AppDatabase db) =>
+      db.members.createAlias('poll_vote_events__member_id__members__id');
+
+  $$MembersTableProcessedTableManager? get memberId {
+    final $_column = $_itemColumn<String>('member_id');
+    if ($_column == null) return null;
+    final manager = $$MembersTableTableManager(
+      $_db,
+      $_db.members,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_memberIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -31143,6 +32703,29 @@ class $$PollVoteEventsTableFilterComposer
           }) => $$PollOptionsTableFilterComposer(
             $db: $db,
             $table: $db.pollOptions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MembersTableFilterComposer get memberId {
+    final $$MembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableFilterComposer(
+            $db: $db,
+            $table: $db.members,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -31222,6 +32805,29 @@ class $$PollVoteEventsTableOrderingComposer
     );
     return composer;
   }
+
+  $$MembersTableOrderingComposer get memberId {
+    final $$MembersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableOrderingComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PollVoteEventsTableAnnotationComposer
@@ -31287,6 +32893,29 @@ class $$PollVoteEventsTableAnnotationComposer
     );
     return composer;
   }
+
+  $$MembersTableAnnotationComposer get memberId {
+    final $$MembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.memberId,
+      referencedTable: $db.members,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.members,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PollVoteEventsTableTableManager
@@ -31302,7 +32931,7 @@ class $$PollVoteEventsTableTableManager
           $$PollVoteEventsTableUpdateCompanionBuilder,
           (PollVoteEvent, $$PollVoteEventsTableReferences),
           PollVoteEvent,
-          PrefetchHooks Function({bool pollId, bool optionId})
+          PrefetchHooks Function({bool pollId, bool optionId, bool memberId})
         > {
   $$PollVoteEventsTableTableManager(
     _$AppDatabase db,
@@ -31323,6 +32952,7 @@ class $$PollVoteEventsTableTableManager
                 Value<String> pollId = const Value.absent(),
                 Value<String> optionId = const Value.absent(),
                 Value<String> action = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PollVoteEventsCompanion(
@@ -31330,6 +32960,7 @@ class $$PollVoteEventsTableTableManager
                 pollId: pollId,
                 optionId: optionId,
                 action: action,
+                memberId: memberId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -31339,6 +32970,7 @@ class $$PollVoteEventsTableTableManager
                 required String pollId,
                 required String optionId,
                 required String action,
+                Value<String?> memberId = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => PollVoteEventsCompanion.insert(
@@ -31346,6 +32978,7 @@ class $$PollVoteEventsTableTableManager
                 pollId: pollId,
                 optionId: optionId,
                 action: action,
+                memberId: memberId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -31357,56 +32990,68 @@ class $$PollVoteEventsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({pollId = false, optionId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (pollId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.pollId,
-                        referencedTable: $$PollVoteEventsTableReferences
-                            ._pollIdTable(db),
-                        referencedColumn: $$PollVoteEventsTableReferences
-                            ._pollIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-                    if (optionId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.optionId,
-                        referencedTable: $$PollVoteEventsTableReferences
-                            ._optionIdTable(db),
-                        referencedColumn: $$PollVoteEventsTableReferences
-                            ._optionIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({pollId = false, optionId = false, memberId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (pollId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.pollId,
+                            referencedTable: $$PollVoteEventsTableReferences
+                                ._pollIdTable(db),
+                            referencedColumn: $$PollVoteEventsTableReferences
+                                ._pollIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (optionId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.optionId,
+                            referencedTable: $$PollVoteEventsTableReferences
+                                ._optionIdTable(db),
+                            referencedColumn: $$PollVoteEventsTableReferences
+                                ._optionIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+                        if (memberId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.memberId,
+                            referencedTable: $$PollVoteEventsTableReferences
+                                ._memberIdTable(db),
+                            referencedColumn: $$PollVoteEventsTableReferences
+                                ._memberIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -31423,7 +33068,7 @@ typedef $$PollVoteEventsTableProcessedTableManager =
       $$PollVoteEventsTableUpdateCompanionBuilder,
       (PollVoteEvent, $$PollVoteEventsTableReferences),
       PollVoteEvent,
-      PrefetchHooks Function({bool pollId, bool optionId})
+      PrefetchHooks Function({bool pollId, bool optionId, bool memberId})
     >;
 typedef $$PendingActionsTableCreateCompanionBuilder =
     PendingActionsCompanion Function({
@@ -32303,10 +33948,11 @@ class $$NamedFrontsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (namedFrontMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           NamedFront,
                           $NamedFrontsTable,
-                          NamedFrontMember
+                          NamedFrontMember,
+                          $NamedFrontMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$NamedFrontsTableReferences
@@ -32317,10 +33963,8 @@ class $$NamedFrontsTableTableManager
                                 table,
                                 p0,
                               ).namedFrontMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.namedFrontId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'named_front_id',
                           typedResults: items,
                         ),
                     ];
@@ -33142,10 +34786,11 @@ class $$PrivacyBucketsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (privacyBucketMembersRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           PrivacyBucket,
                           $PrivacyBucketsTable,
-                          PrivacyBucketMember
+                          PrivacyBucketMember,
+                          $PrivacyBucketMembersTable
                         >(
                           currentTable: table,
                           referencedTable: $$PrivacyBucketsTableReferences
@@ -33156,10 +34801,8 @@ class $$PrivacyBucketsTableTableManager
                                 table,
                                 p0,
                               ).privacyBucketMembersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.bucketId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'bucket_id',
                           typedResults: items,
                         ),
                     ];
@@ -33587,6 +35230,8 @@ class $AppDatabaseManager {
       $$PollOptionsTableTableManager(_db, _db.pollOptions);
   $$PollVotesTableTableManager get pollVotes =>
       $$PollVotesTableTableManager(_db, _db.pollVotes);
+  $$PollMemberVotesTableTableManager get pollMemberVotes =>
+      $$PollMemberVotesTableTableManager(_db, _db.pollMemberVotes);
   $$FrontSessionsTableTableManager get frontSessions =>
       $$FrontSessionsTableTableManager(_db, _db.frontSessions);
   $$FrontSessionMembersTableTableManager get frontSessionMembers =>

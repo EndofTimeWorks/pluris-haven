@@ -1,6 +1,6 @@
 <script lang="ts">
   import { mobileRelease } from '#lib/release.js';
-  import { obtainiumRedirectUrl, repositoryUrl } from '#lib/obtainium-config.js';
+  import { repositoryUrl } from '#lib/obtainium-config.js';
 </script>
 
 <svelte:head>
@@ -30,7 +30,7 @@
       <a class="button primary" href={mobileRelease.universalApk.url}>
         Download universal APK ({mobileRelease.universalApk.size})
       </a>
-      <a class="button" href={obtainiumRedirectUrl}>Get it on Obtainium</a>
+      <a class="button" href="/obtainium">Get it on Obtainium</a>
     </div>
     <p class="muted">
       This is the same Play-app-signing-key-signed universal APK used for direct download and
@@ -59,7 +59,7 @@
       GitHub publishes a checksum list and build record beside every versioned release. On Linux or
       macOS, compare the downloaded universal APK with the expected SHA-256 value:
     </p>
-    <pre><code>sha256sum {mobileRelease.universalApk.name}</code></pre>
+    <pre class="wrapped-command"><code>sha256sum {mobileRelease.universalApk.name}</code></pre>
     <div class="actions">
       <a class="button" href={mobileRelease.checksumsUrl}>All SHA-256 checksums</a>
       <a class="button" href={mobileRelease.buildMetadataUrl}>Build metadata</a>
@@ -80,7 +80,7 @@
       updates.
     </p>
     <div class="actions">
-      <a class="button primary" href={obtainiumRedirectUrl}>Add to Obtainium</a>
+      <a class="button primary" href="/obtainium">Add to Obtainium</a>
       <a class="button" href="https://obtainium.imranr.dev">Obtainium website</a>
     </div>
     <p class="muted">

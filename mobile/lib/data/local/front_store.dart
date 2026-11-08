@@ -101,32 +101,56 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
   Future<List<ReminderSummary>> _frontAddFrontMembers(List<String> memberIds) =>
       _frontApplyMembers(memberIds, replaceExisting: false);
 
+  Future<void> _frontEndMemberFront(String memberId) async {
+    await _frontApplyMembers(
+      const [],
+      replaceExisting: true,
+      memberIdToEnd: memberId,
+    );
+  }
+
   Future<List<ReminderSummary>> _frontApplyMembers(
     List<String> memberIds, {
     required bool replaceExisting,
+    String? memberIdToEnd,
   }) async {
     final ids = memberIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList();
-    if (ids.isEmpty) {
-      if (replaceExisting) await _frontClearCurrentFront();
-      return const [];
-    }
-
-    final members =
-        await (database.select(database.members)..where(
-              (member) =>
-                  member.systemId.equals(localSystemId) &
-                  member.archived.equals(false) &
-                  member.deletedAt.isNull() &
-                  member.isCustomFront.equals(false) &
-                  member.id.isIn(ids),
-            ))
-            .get();
-    if (members.isEmpty) {
-      if (replaceExisting) await _frontClearCurrentFront();
+    if (ids.isEmpty && memberIdToEnd == null) {
+      if (replaceExisting) {
+        final now = DateTime.now().toUtc();
+        await database.transaction(() async {
+          final active =
+              await (database.select(database.frontSessions)..where(
+                    (front) =>
+                        front.systemId.equals(localSystemId) &
+                        front.endedAt.isNull(),
+                  ))
+                  .get();
+          final links = active.isEmpty
+              ? const <FrontSessionMember>[]
+              : await (database.select(database.frontSessionMembers)..where(
+                      (link) => link.sessionId.isIn(
+                        active.map((front) => front.id).toList(),
+                      ),
+                    ))
+                    .get();
+          final memberSessionIds = links.map((link) => link.sessionId).toSet();
+          if (memberSessionIds.isNotEmpty) {
+            await (database.update(
+              database.frontSessions,
+            )..where((front) => front.id.isIn(memberSessionIds))).write(
+              FrontSessionsCompanion(
+                endedAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+          }
+        });
+      }
       return const [];
     }
 
@@ -151,22 +175,127 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
       for (final link in openLinks) {
         activeMemberIds.add(link.memberId);
       }
-      final desiredMemberIds = members.map((member) => member.id).toSet();
-      final hasCustomFront = openSessions.any(
-        (session) => session.label != null,
-      );
+      if (memberIdToEnd != null && !activeMemberIds.contains(memberIdToEnd)) {
+        return const <ReminderSummary>[];
+      }
+      final members = memberIdToEnd != null
+          ? const <Member>[]
+          : await (database.select(database.members)..where(
+                  (member) =>
+                      member.systemId.equals(localSystemId) &
+                      member.deletedAt.isNull() &
+                      member.purgedAt.isNull() &
+                      member.isCustomFront.equals(false) &
+                      member.id.isIn(ids),
+                ))
+                .get();
+      final availableMembers = [
+        for (final member in members)
+          if (!member.archived || activeMemberIds.contains(member.id)) member,
+      ];
+      if (memberIdToEnd == null && availableMembers.isEmpty) {
+        throw const FormatException('No available members were selected.');
+      }
+      if (memberIdToEnd == null && availableMembers.length != ids.length) {
+        throw const FormatException('An unavailable member was selected.');
+      }
+      final desiredMemberIds = memberIdToEnd == null
+          ? availableMembers.map((member) => member.id).toSet()
+          : (activeMemberIds.toSet()..remove(memberIdToEnd));
       if (replaceExisting &&
-          !hasCustomFront &&
           activeMemberIds.length == desiredMemberIds.length &&
           activeMemberIds.containsAll(desiredMemberIds)) {
         return const <ReminderSummary>[];
       }
-      if (replaceExisting) await _endOpenFrontSessions(now);
+      if (replaceExisting) {
+        final retainedMemberIds = <String>{};
+        for (final session in openSessions) {
+          final sessionMemberIds = {
+            for (final link in openLinks)
+              if (link.sessionId == session.id) link.memberId,
+          };
+          if (sessionMemberIds.isEmpty) continue;
+          final retained = sessionMemberIds.intersection(desiredMemberIds);
+          retainedMemberIds.addAll(retained);
+          if (retained.length == sessionMemberIds.length) continue;
+          if (retained.isEmpty) {
+            await (database.update(
+              database.frontSessions,
+            )..where((front) => front.id.equals(session.id))).write(
+              FrontSessionsCompanion(
+                endedAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+            continue;
+          }
+          // Imported sessions may contain several members. Keep the original
+          // interval open for retained members and close a copy for removals.
+          final endedId = newLocalId('front');
+          await database
+              .into(database.frontSessions)
+              .insert(
+                FrontSessionsCompanion.insert(
+                  id: endedId,
+                  systemId: localSystemId,
+                  label: Value(
+                    await _encryptNullableLocalText(
+                      await _decryptLocalText(
+                        session.label,
+                        'front_sessions',
+                        session.id,
+                        'label',
+                      ),
+                      'front_sessions',
+                      endedId,
+                      'label',
+                    ),
+                  ),
+                  statusNote: Value(
+                    await _encryptNullableLocalText(
+                      await _decryptLocalText(
+                        session.statusNote,
+                        'front_sessions',
+                        session.id,
+                        'status_note',
+                      ),
+                      'front_sessions',
+                      endedId,
+                      'status_note',
+                    ),
+                  ),
+                  startedAt: session.startedAt,
+                  endedAt: Value(now),
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              );
+          for (final removedId in sessionMemberIds.difference(retained)) {
+            await (database.delete(database.frontSessionMembers)..where(
+                  (link) =>
+                      link.sessionId.equals(session.id) &
+                      link.memberId.equals(removedId),
+                ))
+                .go();
+            await database
+                .into(database.frontSessionMembers)
+                .insert(
+                  FrontSessionMembersCompanion.insert(
+                    sessionId: endedId,
+                    memberId: removedId,
+                  ),
+                );
+          }
+        }
+        activeMemberIds
+          ..clear()
+          ..addAll(retainedMemberIds);
+      }
 
       var offset = 0;
       final newlyStartedMemberIds = <String>{};
-      for (final member in members) {
-        if (!replaceExisting && activeMemberIds.contains(member.id)) {
+      for (final member in availableMembers) {
+        if (activeMemberIds.contains(member.id)) {
           continue;
         }
         final startedAt = now.add(Duration(microseconds: offset++));
@@ -193,6 +322,7 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
         newlyStartedMemberIds.add(member.id);
       }
 
+      if (memberIdToEnd != null) return const <ReminderSummary>[];
       return _reminders.claimAfterFront(
         newlyStartedMemberIds: newlyStartedMemberIds,
         frontStarted: newlyStartedMemberIds.isNotEmpty,
@@ -255,8 +385,8 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     required bool create,
   }) async {
     final startedAt = draft.startedAt.toUtc();
-    final endedAt = draft.endedAt.toUtc();
-    if (endedAt.isBefore(startedAt)) {
+    final endedAt = draft.endedAt?.toUtc();
+    if (endedAt != null && endedAt.isBefore(startedAt)) {
       throw const FormatException('Front end cannot be before its start.');
     }
     final memberIds = draft.memberIds.toSet().toList(growable: false);
@@ -266,6 +396,66 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
     }
     await database.transaction(() async {
       final before = create ? null : await _frontSnapshot(frontId);
+      final existing = create
+          ? null
+          : await (database.select(database.frontSessions)..where(
+                  (front) =>
+                      front.systemId.equals(localSystemId) &
+                      front.id.equals(frontId),
+                ))
+                .getSingleOrNull();
+      if (!create && existing == null) {
+        throw const FormatException('Front history entry was not found.');
+      }
+      if (endedAt == null &&
+          startedAt.isAfter(now) &&
+          (existing == null ||
+              existing.endedAt != null ||
+              !existing.startedAt.isAtSameMomentAs(startedAt))) {
+        throw const FormatException(
+          'An active front cannot start in the future.',
+        );
+      }
+      if (endedAt == null && memberIds.isNotEmpty) {
+        final previousMemberIds = existing == null || existing.endedAt != null
+            ? const <String>{}
+            : (await (database.select(
+                    database.frontSessionMembers,
+                  )..where((link) => link.sessionId.equals(frontId))).get())
+                  .map((link) => link.memberId)
+                  .toSet();
+        final newlyActiveMemberIds = memberIds.toSet().difference(
+          previousMemberIds,
+        );
+        if (newlyActiveMemberIds.isNotEmpty) {
+          final openSessions =
+              await (database.select(database.frontSessions)..where(
+                    (front) =>
+                        front.systemId.equals(localSystemId) &
+                        front.endedAt.isNull() &
+                        front.id.isNotIn([frontId]),
+                  ))
+                  .get();
+          if (openSessions.isNotEmpty) {
+            final duplicate =
+                await (database.select(database.frontSessionMembers)
+                      ..where(
+                        (link) =>
+                            link.sessionId.isIn(
+                              openSessions.map((front) => front.id).toList(),
+                            ) &
+                            link.memberId.isIn(newlyActiveMemberIds.toList()),
+                      )
+                      ..limit(1))
+                    .getSingleOrNull();
+            if (duplicate != null) {
+              throw const FormatException(
+                'A selected member already has an active front.',
+              );
+            }
+          }
+        }
+      }
       if (create) {
         await database
             .into(database.frontSessions)
@@ -423,6 +613,41 @@ extension LocalHavenRepositoryFronts on LocalHavenRepository {
                 front.systemId.equals(localSystemId) & front.id.equals(frontId),
           ))
           .go();
+    });
+  }
+
+  Future<void> _frontEndCustomFrontSession(String frontId) async {
+    await database.transaction(() async {
+      final session =
+          await (database.select(database.frontSessions)..where(
+                (front) =>
+                    front.id.equals(frontId) &
+                    front.systemId.equals(localSystemId) &
+                    front.endedAt.isNull(),
+              ))
+              .getSingleOrNull();
+      if (session == null) return;
+      final memberLink =
+          await (database.select(database.frontSessionMembers)
+                ..where((link) => link.sessionId.equals(frontId))
+                ..limit(1))
+              .getSingleOrNull();
+      if (memberLink != null) {
+        throw const FormatException(
+          'This is a member front, not a custom front.',
+        );
+      }
+      final before = await _frontSnapshot(frontId);
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.frontSessions,
+      )..where((front) => front.id.equals(frontId))).write(
+        FrontSessionsCompanion(endedAt: Value(now), updatedAt: Value(now)),
+      );
+      final after = await _frontSnapshot(frontId);
+      if (before != null && after != null) {
+        await _frontRecordAudit(frontId, before, after);
+      }
     });
   }
 
